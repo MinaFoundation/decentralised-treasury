@@ -1,0 +1,29 @@
+diff --git a/dist/node/index.d.ts b/dist/node/index.d.ts
+index ca80862dc218e8777b5739bdafd5b7ced0ac01f0..749502a111fcaef418d203e887e3b3f798c2716e 100644
+--- a/dist/node/index.d.ts
++++ b/dist/node/index.d.ts
+@@ -71,6 +71,11 @@ import { ZkFunction as ZkFunction_ } from './lib/proof-system/zkfunction.js';
+ export { Experimental };
+ import * as V2_ from './lib/mina/v2/index.js';
+ import { Field } from './lib/provable/wrapped.js';
++export { parseFetchedAccount } from './lib/mina/v1/fetch.js';
++export { parseFetchedAccount } from './lib/mina/v1/account.js';
++export type { AuthRequired } from './bindings/mina-transaction/v1/transaction-leaves-json.js';
++export { FetchedAccount } from './lib/mina/v1/graphql.js';
++
+ /**
+  * This module exposes APIs that are unstable, in the sense that the API surface is expected to change.
+  * (Not unstable in the sense that they are less functional or tested than other parts.)
+diff --git a/dist/node/index.js b/dist/node/index.js
+index 325d67cf05fe3fe2f38862d8903678f062ad0dc1..eb865fb2381cbc3c6f140bf870b9418973a04e00 100644
+--- a/dist/node/index.js
++++ b/dist/node/index.js
+@@ -59,6 +59,8 @@ import { Recursive as Recursive_ } from './lib/proof-system/recursive.js';
+ import { ProvableBigInt as ProvableBigInt_, createProvableBigInt as createProvableBigInt_, } from './lib/provable/bigint.js';
+ import { ZkFunction as ZkFunction_ } from './lib/proof-system/zkfunction.js';
+ export { Experimental };
++export { parseFetchedAccount } from './lib/mina/v1/fetch.js';
++
+ import * as V2_ from './lib/mina/v2/index.js';
+ const Experimental_ = {
+     memoizeWitness,

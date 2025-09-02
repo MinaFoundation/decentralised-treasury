@@ -1,0 +1,32 @@
+{
+  "name": "@repo/sdk",
+  "type": "module",
+  "scripts": {
+    "lightnet": "zkapp-cli lightnet",
+    "run": "tsx",
+    "cli": "tsx src/cli.ts",
+    "test": "tsx --test",
+    "build": "tsc",
+    "test:watch": "tsx watch --test ./test/**/* ./src/**/*",
+    "test:proofs-enabled": "PROOFS_ENABLED=true tsx --test"
+  },
+  "dependencies": {
+    "@types/lodash": "^4.17.20",
+    "add": "^2.0.6",
+    "commander": "^14.0.0",
+    "lodash": "^4.17.21",
+    "pnpm": "^10.14.0",
+    "stream-json": "^1.9.1",
+    "tsyringe": "^4.10.0",
+    "zkapp-cli": "^0.22.9",
+    "zod": "^4.0.17"
+  },
+  "devDependencies": {
+    "@types/node": "^22.15.3",
+    "ts-node": "^10.9.2",
+    "tsx": "^4.20.4"
+  },
+  "peerDependencies": {
+    "o1js": "^2.8.0"
+  }
+}

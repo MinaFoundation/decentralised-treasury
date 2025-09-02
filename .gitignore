@@ -36,3 +36,6 @@ yarn-error.log*
 # Misc
 .DS_Store
 *.pem
+
+staking-epoch-ledger.json
+test-ledger.json
