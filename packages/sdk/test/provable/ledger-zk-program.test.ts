@@ -22,12 +22,16 @@ import {
   ProgramInput,
   ProgramOutput,
   stakingLedgerTree,
+  VOTING_TREE_HEIGHT,
   VotingAccount,
   votingLedgerTree,
 } from "../../src/provable/ledger-zk-program";
 import _, { orderBy } from "lodash";
 
 export const proofsEnabled = process.env.PROOFS_ENABLED === "true";
+
+let proofs: Proof<ProgramInput, ProgramOutput>[] = [];
+let testVotingLedgerTree = new MerkleTree(VOTING_TREE_HEIGHT);
 
 it("should compile the program", async () => {
   await ledgerZkProgram.compile({
@@ -69,9 +73,19 @@ it("should digest a range of indexes", async () => {
     );
 
     accounts[index.toString()] = account;
+
+    testVotingLedgerTree.setLeaf(
+      BigInt(index),
+      Poseidon.hash(
+        VotingAccount.toFields(
+          new VotingAccount({
+            balance: account.balance,
+          })
+        )
+      )
+    );
   });
 
-  let proofs: Proof<ProgramInput, ProgramOutput>[] = [];
   console.log(
     "digesting total of",
     TEST_ITERATIONS * ACCOUNT_BATCH_SIZE,
@@ -158,5 +172,29 @@ it("should digest a range of indexes", async () => {
     votingLedgerRoot.toString() ===
       proofs[0].publicOutput.votingLedgerRoot.toString(),
     "calculated voting ledger root does not match the proven voting ledger root"
+  );
+});
+
+it("should create an exhaust proof", async () => {
+  const mergeProof = proofs[0];
+  const { proof } = await ledgerZkProgram.exhaust(
+    mergeProof.publicInput,
+    mergeProof
+  );
+  Provable.log("exhaust proof", proof.publicInput, proof.publicOutput);
+  Provable.log(
+    "Voting ledger tree root",
+    testVotingLedgerTree.getRoot().toString()
+  );
+
+  assert(
+    testVotingLedgerTree.getRoot().toString() ===
+      proof.publicOutput.votingLedgerRoot.toString()
+  );
+  assert(proof.publicOutput.exhausted.toBoolean());
+  assert(proof.publicInput.index.toBigint() === 0n);
+  assert(
+    proof.publicOutput.index.toBigint() ===
+      BigInt(ACCOUNT_BATCH_SIZE * TEST_ITERATIONS - 1)
   );
 });

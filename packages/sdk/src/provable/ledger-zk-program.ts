@@ -43,9 +43,6 @@ export let votingAccounts: Record<string, VotingAccount | undefined> = {};
 
 export class ProgramInput extends Struct({
   index: UInt32,
-  // TODO: not use an input total currency, but just sum up the currency for the batch, and then merge batches currencies
-  // seems like there is an existing precondition for this value, so we dont need to sum it up here
-  totalCurrency: UInt64,
   stakingLedgerRoot: Field,
   // TODO: use 2^32 tree and double check the voting account's witness index against the staking ledger witness index
   votingLedgerRoot: Field, // empty root
@@ -53,9 +50,8 @@ export class ProgramInput extends Struct({
 
 export class ProgramOutput extends Struct({
   index: UInt32,
-  totalCurrency: UInt64,
   votingLedgerRoot: Field, // final root
-  // votingLedgerST  -> explore an idea of instructions
+  // votingLedgerST  -> explore an idea of instructions --> aws lambda limits parelelization to 7k instances at a given time per region?
   exhausted: Bool,
 }) {}
 
@@ -218,11 +214,62 @@ export async function upsertVotingAccount(
   );
 }
 
+export async function checkIndexIsEmptyInStakingLedger(
+  index: UInt32,
+  stakingLedgerRoot: Field
+) {
+  // check if account is in the staking ledger
+  let witness = await Provable.witnessAsync(MerkleWitness32, async () => {
+    return new MerkleWitness32(
+      stakingLedgerTree.getWitness(BigInt(index.toBigint()))
+    );
+  });
+
+  const emptyAccountPlaceholder = Field(0);
+  const calculatedIndex = witness.calculateIndex();
+  // TODO: use whatever the empty value is in the staking ledger tree
+  const calculatedRoot = witness.calculateRoot(emptyAccountPlaceholder);
+
+  // assert that the placeholder we're working with is indeed part of the staking ledger
+  calculatedRoot.assertEquals(stakingLedgerRoot);
+
+  return calculatedIndex;
+}
+
 export const ledgerZkProgram = ZkProgram({
   name: "ledger-zk-program",
   publicInput: ProgramInput,
   publicOutput: ProgramOutput,
   methods: {
+    exhaust: {
+      privateInputs: [SelfProof],
+      method: async (
+        publicInput: ProgramInput,
+        proof: SelfProof<ProgramInput, ProgramOutput>
+      ) => {
+        proof.verify();
+
+        const input = proof.publicInput;
+        const output = proof.publicOutput;
+
+        Poseidon.hash(ProgramInput.toFields(publicInput)).assertEquals(
+          Poseidon.hash(ProgramInput.toFields(input))
+        );
+
+        const nextIndex = output.index.add(1);
+        await checkIndexIsEmptyInStakingLedger(
+          nextIndex,
+          input.stakingLedgerRoot
+        );
+
+        return {
+          publicOutput: {
+            ...output,
+            exhausted: Bool(true),
+          },
+        };
+      },
+    },
     merge: {
       privateInputs: [SelfProof, SelfProof],
       method: async (
@@ -230,8 +277,7 @@ export const ledgerZkProgram = ZkProgram({
         proof1: SelfProof<ProgramInput, ProgramOutput>,
         proof2: SelfProof<ProgramInput, ProgramOutput>
       ) => {
-        let { index, stakingLedgerRoot, totalCurrency, votingLedgerRoot } =
-          publicInput;
+        let { index, stakingLedgerRoot, votingLedgerRoot } = publicInput;
 
         proof1.verify();
         proof2.verify();
@@ -252,7 +298,6 @@ export const ledgerZkProgram = ZkProgram({
         return {
           publicOutput: {
             index: output2.index,
-            totalCurrency: output2.totalCurrency,
             votingLedgerRoot: output2.votingLedgerRoot,
             exhausted: Bool(false),
           },
@@ -263,8 +308,7 @@ export const ledgerZkProgram = ZkProgram({
       // TODO: accounts could come served via a witness from a service / dependency
       privateInputs: [],
       method: async (publicInput: ProgramInput) => {
-        let { index, stakingLedgerRoot, totalCurrency, votingLedgerRoot } =
-          publicInput;
+        let { index, stakingLedgerRoot, votingLedgerRoot } = publicInput;
 
         for (let i = 0; i < ACCOUNT_BATCH_SIZE; i++) {
           const account = await Provable.witnessAsync(Account, async () => {
@@ -298,13 +342,6 @@ export const ledgerZkProgram = ZkProgram({
               stakingLedgerRoot
             );
 
-          // // add the balance of the account to the total currency, but only if it's a mina account
-          // totalCurrency = Provable.if(
-          //   isMinaAccount,
-          //   totalCurrency.add(account.balance),
-          //   totalCurrency
-          // );
-
           const votingAccount = await Provable.witnessAsync(
             VotingAccount,
             async () => {
@@ -336,8 +373,6 @@ export const ledgerZkProgram = ZkProgram({
           publicOutput: {
             // since we incremented index at the end of the loop, we need to subtract 1 to get the actual index
             index: index.sub(1),
-            totalCurrency,
-            // do a difference method for checking i+1 in the tree for being empty to signify exhaustion
             exhausted: Bool(false),
             votingLedgerRoot,
           },
