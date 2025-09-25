@@ -1,8 +1,8 @@
 diff --git a/dist/node/index.d.ts b/dist/node/index.d.ts
-index ca80862dc218e8777b5739bdafd5b7ced0ac01f0..749502a111fcaef418d203e887e3b3f798c2716e 100644
+index ca80862dc218e8777b5739bdafd5b7ced0ac01f0..b408cdb9361173fb63aa600edb6ab9011b5ef193 100644
 --- a/dist/node/index.d.ts
 +++ b/dist/node/index.d.ts
-@@ -71,6 +71,11 @@ import { ZkFunction as ZkFunction_ } from './lib/proof-system/zkfunction.js';
+@@ -71,6 +71,12 @@ import { ZkFunction as ZkFunction_ } from './lib/proof-system/zkfunction.js';
  export { Experimental };
  import * as V2_ from './lib/mina/v2/index.js';
  import { Field } from './lib/provable/wrapped.js';
@@ -10,20 +10,64 @@ index ca80862dc218e8777b5739bdafd5b7ced0ac01f0..749502a111fcaef418d203e887e3b3f7
 +export { parseFetchedAccount } from './lib/mina/v1/account.js';
 +export type { AuthRequired } from './bindings/mina-transaction/v1/transaction-leaves-json.js';
 +export { FetchedAccount } from './lib/mina/v1/graphql.js';
++export { Actions } from './lib/mina/v1/account-update.js';
 +
  /**
   * This module exposes APIs that are unstable, in the sense that the API surface is expected to change.
   * (Not unstable in the sense that they are less functional or tested than other parts.)
 diff --git a/dist/node/index.js b/dist/node/index.js
-index 325d67cf05fe3fe2f38862d8903678f062ad0dc1..eb865fb2381cbc3c6f140bf870b9418973a04e00 100644
+index 325d67cf05fe3fe2f38862d8903678f062ad0dc1..3688cd7c407e30605f157dc20c2a2ed3e2048d53 100644
 --- a/dist/node/index.js
 +++ b/dist/node/index.js
-@@ -59,6 +59,8 @@ import { Recursive as Recursive_ } from './lib/proof-system/recursive.js';
+@@ -59,6 +59,9 @@ import { Recursive as Recursive_ } from './lib/proof-system/recursive.js';
  import { ProvableBigInt as ProvableBigInt_, createProvableBigInt as createProvableBigInt_, } from './lib/provable/bigint.js';
  import { ZkFunction as ZkFunction_ } from './lib/proof-system/zkfunction.js';
  export { Experimental };
 +export { parseFetchedAccount } from './lib/mina/v1/fetch.js';
++export { Actions } from './lib/mina/v1/account-update.js';
 +
  import * as V2_ from './lib/mina/v2/index.js';
  const Experimental_ = {
      memoizeWitness,
+diff --git a/dist/node/lib/mina/v1/local-blockchain.d.ts b/dist/node/lib/mina/v1/local-blockchain.d.ts
+index 9a387d3b1be50e8aecf94562cf3223676b52767e..21f475e8aa01f5cbd0f4f356f7a33409b46dfcca 100644
+--- a/dist/node/lib/mina/v1/local-blockchain.d.ts
++++ b/dist/node/lib/mina/v1/local-blockchain.d.ts
+@@ -6,6 +6,7 @@ import { NetworkId } from '../../../mina-signer/src/types.js';
+ import { TupleN } from '../../util/types.js';
+ import { Transaction, PendingTransactionPromise } from './transaction.js';
+ import { type FeePayerSpec, type ActionStates } from './mina-instance.js';
++import { NetworkValue } from './precondition.js';
+ export { LocalBlockchain, TestPublicKey };
+ type TestPublicKey = PublicKey & {
+     key: PrivateKey;
+@@ -59,6 +60,7 @@ declare function LocalBlockchain({ proofsEnabled, enforceTransactionLimits }?: {
+             epochLength: UInt32;
+         };
+     };
++    setNetworkState(networkState: NetworkValue): void;
+     sendTransaction(txn: Transaction<boolean, boolean>): PendingTransactionPromise;
+     transaction(sender: FeePayerSpec, f: () => Promise<void>): import("./transaction.js").TransactionPromise<false, false>;
+     applyJsonTransaction(json: string): void;
+diff --git a/src/lib/mina/v1/local-blockchain.ts b/src/lib/mina/v1/local-blockchain.ts
+index 0da336f05426873496b56c4d42b5252e98d6356f..0017524d350e9c1e5cba735f440afb4ab1bc3402 100644
+--- a/src/lib/mina/v1/local-blockchain.ts
++++ b/src/lib/mina/v1/local-blockchain.ts
+@@ -37,6 +37,7 @@ import {
+   verifyAccountUpdate,
+ } from './transaction-validation.js';
+ import { prettifyStacktrace } from '../../util/errors.js';
++import { NetworkValue } from './precondition.js';
+ 
+ export { LocalBlockchain, TestPublicKey };
+ 
+@@ -119,6 +120,9 @@ async function LocalBlockchain({ proofsEnabled = true, enforceTransactionLimits
+     getNetworkState() {
+       return networkState;
+     },
++    setNetworkState(networkState: NetworkValue) {
++      networkState = networkState;
++    },
+     sendTransaction(txn: Transaction<boolean, boolean>): PendingTransactionPromise {
+       return toPendingTransactionPromise(async () => {
+         let zkappCommandJson = ZkappCommand.toJSON(txn.transaction);

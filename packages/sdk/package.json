@@ -4,11 +4,13 @@
   "scripts": {
     "lightnet": "zkapp-cli lightnet",
     "run": "tsx",
-    "cli": "tsx src/cli.ts",
-    "test": "tsx --test",
-    "build": "tsc",
-    "test:watch": "tsx watch --test ./test/**/* ./src/**/*",
-    "test:proofs-enabled": "PROOFS_ENABLED=true tsx --test"
+    "cli": "ts-node src/cli.ts",
+    "test": "NODE_NO_WARNINGS=1 node --loader ts-node/esm --test",
+    "test:all": "NODE_NO_WARNINGS=1 node --loader ts-node/esm --test ./test/**/*.test.ts",
+    "test:watch": "NODE_NO_WARNINGS=1 NODE_OPTIONS='--trace-uncaught' node --loader ts-node/esm --watch --test",
+    "test:watch:all": "NODE_NO_WARNINGS=1 node --loader ts-node/esm --watch --test ./test/**/*.test.ts",
+    "test:proofs-enabled": "NODE_NO_WARNINGS=1 PROOFS_ENABLED=true node --loader ts-node/esm --test",
+    "test:proofs-enabled:all": "NODE_NO_WARNINGS=1 PROOFS_ENABLED=true node --loader ts-node/esm --test ./test/**/*.test.ts"
   },
   "dependencies": {
     "@types/lodash": "^4.17.20",
@@ -24,6 +26,7 @@
   "devDependencies": {
     "@types/node": "^22.15.3",
     "ts-node": "^10.9.2",
+    "tslib": "^2.8.1",
     "tsx": "^4.20.4"
   },
   "peerDependencies": {

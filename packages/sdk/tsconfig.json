@@ -1,7 +1,7 @@
 {
   "compilerOptions": {
     "target": "es2021", // goal: ship *the most modern syntax* that is supported by *all* browsers that support our Wasm
-    "module": "nodenext", // allow top-level await
+    "module": "NodeNext", // allow top-level await
     "lib": ["dom", "esnext"],
     "outDir": "./build",
     "rootDir": ".",
@@ -22,5 +22,5 @@
     "importHelpers": true, // bundle optimization to reduce size
     "baseUrl": "." // base directory for module resolution
   },
-  "include": ["./src"]
+  "include": ["./src", "./test"]
 }

@@ -1,0 +1,279 @@
+import { it } from "node:test";
+import assert from "node:assert";
+import { TreasuryOwnerSmartContract } from "../../../src/provable/contracts/treasury-owner.js";
+import {
+  AccountUpdate,
+  fetchAccount,
+  Field,
+  MerkleTree,
+  Mina,
+  Poseidon,
+  PrivateKey,
+  Provable,
+  Reducer,
+  UInt64,
+} from "o1js";
+import {
+  Vote,
+  VOTE_ACTION_BATCH_SIZE,
+  VoteAction,
+  VoteReducer,
+  voteReducerContext,
+  SideLoadedVoteReducerProof,
+} from "../../../src/provable/contracts/treasury-proposal/vote-reducer.js";
+
+import { appendActionToHashList } from "../../../src/provable/hashing-helpers.js";
+import { TreasuryProposalSmartContract } from "../../../src/provable/contracts/treasury-proposal/treasury-proposal.js";
+import {
+  VOTING_LEDGER_TREE_HEIGHT,
+  VotingAccount,
+} from "../../../src/provable/staking-ledger-to-voting-ledger.js";
+import { VotingAccountInMemoryService } from "../../../src/services/voting-account-service.js";
+import { VoteNullifierInMemoryService } from "../../../src/services/vote-nullifier-service.js";
+import {
+  MerkleTree256InMemoryService,
+  PrefilledMerkleTree256InMemoryService,
+  MerkleWitness256,
+} from "../../../src/services/merkle-tree-service.js";
+import { createDummyVoteActions } from "../../../test/utils.js";
+
+const proofsEnabled = process.env.PROOFS_ENABLED === "true";
+
+const Local = await Mina.LocalBlockchain({
+  proofsEnabled,
+});
+
+Mina.setActiveInstance(Local);
+
+const votingLedgerTree = new MerkleTree(VOTING_LEDGER_TREE_HEIGHT);
+const voteNullifierTree = new MerkleTree(VOTING_LEDGER_TREE_HEIGHT);
+
+const votingAccountTreeService = new PrefilledMerkleTree256InMemoryService();
+const votingAccountService = new VotingAccountInMemoryService();
+const voteNullifierService = new VoteNullifierInMemoryService();
+const voteNullifierTreeService = new MerkleTree256InMemoryService();
+
+voteReducerContext.set({
+  votingAccountTree: votingAccountTreeService,
+  votingAccounts: votingAccountService,
+  voteNullifiers: voteNullifierService,
+  voteNullifierTree: voteNullifierTreeService,
+});
+
+const { verificationKey: voteReducerVerificationKey } =
+  await VoteReducer.compile({
+    proofsEnabled,
+  });
+
+TreasuryProposalSmartContract.voteReducerVerificationKey =
+  voteReducerVerificationKey;
+await TreasuryProposalSmartContract.compile();
+TreasuryOwnerSmartContract.proposalContractVerificationKey =
+  TreasuryProposalSmartContract._verificationKey;
+
+await TreasuryOwnerSmartContract.compile();
+
+const testAccount = Local.testAccounts[1];
+const voterPrivateKey1 = PrivateKey.random();
+const voterPublicKey1 = voterPrivateKey1.toPublicKey();
+const voterPrivateKey2 = PrivateKey.random();
+const voterPublicKey2 = voterPrivateKey2.toPublicKey();
+
+const treasuryOwnerPrivateKey = PrivateKey.random();
+const treasuryOwnerPublicKey = treasuryOwnerPrivateKey.toPublicKey();
+
+const treasuryProposalPrivateKey = PrivateKey.random();
+const treasuryProposalPublicKey = treasuryProposalPrivateKey.toPublicKey();
+
+const treasuryOwner = new TreasuryOwnerSmartContract(treasuryOwnerPublicKey);
+const treasuryProposal = new TreasuryProposalSmartContract(
+  treasuryProposalPublicKey,
+  treasuryOwner.deriveTokenId()
+);
+
+it("should create a proposal", async () => {
+  const tx = await Mina.transaction(testAccount, async () => {
+    AccountUpdate.fundNewAccount(testAccount, 2);
+    await treasuryOwner.deploy();
+    await treasuryOwner.createProposal({
+      amount: UInt64.from(100),
+      recipient: treasuryProposalPublicKey,
+    });
+  });
+
+  tx.sign([
+    testAccount.key,
+    treasuryOwnerPrivateKey,
+    treasuryProposalPrivateKey,
+  ]);
+  await tx.prove();
+
+  const pendingTx = await tx.send();
+  await pendingTx.wait();
+});
+
+it("should vote on a proposal", async () => {
+  const tx = await Mina.transaction(testAccount, async () => {
+    // pay for creating the voter account
+    AccountUpdate.fundNewAccount(testAccount, 1);
+    await treasuryOwner.vote(
+      treasuryProposalPublicKey,
+      voterPublicKey1,
+      Vote.YAY
+    );
+  });
+
+  tx.sign([testAccount.key, voterPrivateKey1]);
+
+  await tx.prove();
+  const pendingTx = await tx.send();
+  await pendingTx.wait();
+});
+
+it("should vote on a proposal from a new account", async () => {
+  const tx = await Mina.transaction(testAccount, async () => {
+    // pay for creating the voter account
+    AccountUpdate.fundNewAccount(testAccount, 1);
+    await treasuryOwner.vote(
+      treasuryProposalPublicKey,
+      voterPublicKey2,
+      Vote.NAY
+    );
+  });
+
+  tx.sign([testAccount.key, voterPrivateKey2]);
+
+  await tx.prove();
+  const pendingTx = await tx.send();
+  await pendingTx.wait();
+});
+
+it("should tally votes", async () => {
+  const actions = await Mina.getActions(
+    treasuryProposalPublicKey,
+    {},
+    treasuryOwner.deriveTokenId()
+  );
+
+  await fetchAccount({
+    publicKey: treasuryProposalPublicKey,
+    tokenId: treasuryOwner.deriveTokenId(),
+  });
+  const actionState = treasuryProposal.account.actionState.get();
+
+  const actionData = actions[0].actions[0];
+  const actionFields = actionData.map((action) => Field(action));
+
+  let finalHash = appendActionToHashList(
+    Reducer.initialActionState,
+    actionFields
+  );
+
+  Provable.log("actionState", actionState);
+
+  const voteActions = [
+    ...actions
+      .map((action) => action.actions[0])
+      .map((action) => action.map((action) => Field(action)))
+      .map((action) => VoteAction.fromFields(action)),
+    ...createDummyVoteActions(VOTE_ACTION_BATCH_SIZE),
+  ].slice(0, VOTE_ACTION_BATCH_SIZE);
+
+  const votingAccount1 = new VotingAccount({ balance: UInt64.from(100) });
+  const votingAccount2 = new VotingAccount({ balance: UInt64.from(200) });
+
+  votingAccountService.setVotingAccount(
+    voterPublicKey1.toBase58(),
+    votingAccount1
+  );
+
+  votingAccountService.setVotingAccount(
+    voterPublicKey2.toBase58(),
+    votingAccount2
+  );
+
+  votingLedgerTree.setLeaf(
+    Poseidon.hash(voterPublicKey1.toFields()).toBigInt(),
+    Poseidon.hash(VotingAccount.toFields(votingAccount1))
+  );
+
+  votingLedgerTree.setLeaf(
+    Poseidon.hash(voterPublicKey2.toFields()).toBigInt(),
+    Poseidon.hash(VotingAccount.toFields(votingAccount2))
+  );
+
+  votingAccountTreeService.setWitness(
+    Poseidon.hash(voterPublicKey1.toFields()).toBigInt(),
+    new MerkleWitness256(
+      votingLedgerTree.getWitness(
+        Poseidon.hash(voterPublicKey1.toFields()).toBigInt()
+      )
+    )
+  );
+
+  votingAccountTreeService.setWitness(
+    Poseidon.hash(voterPublicKey2.toFields()).toBigInt(),
+    new MerkleWitness256(
+      votingLedgerTree.getWitness(
+        Poseidon.hash(voterPublicKey2.toFields()).toBigInt()
+      )
+    )
+  );
+
+  const proof = await VoteReducer.reduceBatch(
+    {
+      fromActionsHash: Reducer.initialActionState,
+      votingLedgerRoot: votingLedgerTree.getRoot(),
+      fromNullifierRoot: voteNullifierTree.getRoot(),
+      yay: UInt64.from(0),
+      nay: UInt64.from(0),
+      abstain: UInt64.from(0),
+    },
+    voteActions
+  );
+
+  Provable.log("actions", actions);
+  Provable.log("proof", proof.proof.publicOutput.toActionsHash);
+
+  const tx = await Mina.transaction(testAccount, async () => {
+    await treasuryOwner.tallyVotes(
+      treasuryProposalPublicKey,
+      SideLoadedVoteReducerProof.fromProof(proof.proof)
+    );
+  });
+
+  tx.sign([testAccount.key]);
+
+  await tx.prove();
+  const pendingTx = await tx.send();
+  await pendingTx.wait();
+
+  const votePassed = await treasuryProposal.votePassed.fetch();
+  Provable.log("votePassed", votePassed);
+});
+
+it("should fail while attempting to vote on the proposal contract directly", async () => {
+  let error: Error;
+  try {
+    const proposal = new TreasuryProposalSmartContract(
+      treasuryProposalPublicKey,
+      treasuryOwner.deriveTokenId()
+    );
+    const tx = await Mina.transaction(testAccount, async () => {
+      await proposal.vote({
+        vote: Vote.YAY,
+        publicKey: voterPublicKey1,
+      });
+
+      await treasuryOwner.approveAccountUpdate(proposal.self);
+    });
+
+    tx.sign([testAccount.key, voterPrivateKey1]);
+    await tx.prove();
+  } catch (e) {
+    error = e as Error;
+  }
+  assert(
+    error.message.includes("No external account updates allowed for this token")
+  );
+});

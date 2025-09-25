@@ -1,5 +1,6 @@
-import { PrivateKey, Account } from "o1js";
+import { PrivateKey, Account, parseFetchedAccount } from "o1js";
 import fs from "fs";
+import { ocamlToGraphQL } from "./mappers/account-mapper.js";
 
 function getAccount() {
   return {
@@ -34,7 +35,7 @@ function getAccount() {
     token_symbol: "",
   };
 }
-
+// TODO: we should NOT always use a new random account dataset for testing
 export async function createTestAccounts(numberOfAccounts: number) {
   console.log(`Creating ${numberOfAccounts} accounts...`);
   const accounts: any[] = [];
@@ -56,5 +57,15 @@ export async function createTestAccounts(numberOfAccounts: number) {
     }
   }
 
-  return accounts;
+  // TODO: remove this once we use the actual ledger Account representation
+  return accounts.map((account) => {
+    const parsedAccount = parseFetchedAccount(ocamlToGraphQL(account));
+    return {
+      ...Account.empty(),
+      publicKey: parsedAccount.publicKey,
+      // delegate: parsedAccount.delegate ?? parsedAccount.publicKey,
+      delegate: parsedAccount.publicKey,
+      balance: parsedAccount.balance,
+    };
+  });
 }
