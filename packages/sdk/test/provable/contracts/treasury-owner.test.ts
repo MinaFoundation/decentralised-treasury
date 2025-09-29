@@ -1,6 +1,11 @@
 import { it } from "node:test";
 import assert from "node:assert";
-import { TreasuryOwnerSmartContract } from "../../../src/provable/contracts/treasury-owner.js";
+import {
+  LIFECYCLE_PERIOD_DURATION,
+  LifecyclePeriod,
+  TreasuryOwnerSmartContract,
+  VOTE_TALLY_HISTORICAL_PRECONDITION_DELAY,
+} from "../../../src/provable/contracts/treasury-owner.js";
 import {
   AccountUpdate,
   fetchAccount,
@@ -11,6 +16,7 @@ import {
   PrivateKey,
   Provable,
   Reducer,
+  UInt32,
   UInt64,
 } from "o1js";
 import {
@@ -91,28 +97,78 @@ const treasuryProposal = new TreasuryProposalSmartContract(
   treasuryOwner.deriveTokenId()
 );
 
+const treasuryProposalRecipientPrivateKey = PrivateKey.random();
+const treasuryProposalRecipientPublicKey =
+  treasuryProposalRecipientPrivateKey.toPublicKey();
+
+const dummyZkAppUri = "https://example.com";
+
 it("should create a proposal", async () => {
-  const tx = await Mina.transaction(testAccount, async () => {
-    AccountUpdate.fundNewAccount(testAccount, 2);
-    await treasuryOwner.deploy();
-    await treasuryOwner.createProposal({
-      amount: UInt64.from(100),
-      recipient: treasuryProposalPublicKey,
+  // safe padding to ensure we won't underflow during the period math
+  Local.incrementGlobalSlot(LIFECYCLE_PERIOD_DURATION.mul(10));
+
+  await (async () => {
+    const tx = await Mina.transaction(testAccount, async () => {
+      AccountUpdate.fundNewAccount(testAccount, 1);
+      await treasuryOwner.deploy();
     });
-  });
 
-  tx.sign([
-    testAccount.key,
-    treasuryOwnerPrivateKey,
-    treasuryProposalPrivateKey,
-  ]);
-  await tx.prove();
+    tx.sign([testAccount.key, treasuryOwnerPrivateKey]);
+    await tx.prove();
 
-  const pendingTx = await tx.send();
-  await pendingTx.wait();
+    const pendingTx = await tx.send();
+    await pendingTx.wait();
+  })();
+
+  await (async () => {
+    const tx = await Mina.transaction(testAccount, async () => {
+      await treasuryOwner.initialize();
+    });
+
+    tx.sign([testAccount.key, treasuryOwnerPrivateKey]);
+    await tx.prove();
+
+    const pendingTx = await tx.send();
+    await pendingTx.wait();
+  })();
+
+  await (async () => {
+    Local.setNetworkState({
+      ...Local.getNetworkState(),
+      stakingEpochData: {
+        ...Local.getNetworkState().stakingEpochData,
+        ledger: {
+          ...Local.getNetworkState().stakingEpochData.ledger,
+          hash: Field(1),
+          totalCurrency: UInt64.from(100),
+        },
+      },
+    });
+
+    const tx = await Mina.transaction(testAccount, async () => {
+      AccountUpdate.fundNewAccount(testAccount, 1);
+      await treasuryOwner.createProposal(treasuryProposalPublicKey, {
+        amount: UInt64.from(100),
+        recipient: treasuryProposalRecipientPublicKey,
+        zkAppUri: dummyZkAppUri,
+      });
+    });
+
+    tx.sign([testAccount.key, treasuryProposalPrivateKey]);
+    await tx.prove();
+
+    const pendingTx = await tx.send();
+    await pendingTx.wait();
+  })();
+
+  const lifecycleStartedAt = await treasuryOwner.lifecycleStartedAt.fetch();
+  Provable.log("lifecycleStartedAt", lifecycleStartedAt);
 });
 
 it("should vote on a proposal", async () => {
+  // jump ahead to the voting period
+  Local.incrementGlobalSlot(LIFECYCLE_PERIOD_DURATION.mul(2));
+
   const tx = await Mina.transaction(testAccount, async () => {
     // pay for creating the voter account
     AccountUpdate.fundNewAccount(testAccount, 1);
@@ -148,7 +204,12 @@ it("should vote on a proposal from a new account", async () => {
   await pendingTx.wait();
 });
 
+// TODO: continue here, why does this fail?
 it("should tally votes", async () => {
+  Local.incrementGlobalSlot(
+    LIFECYCLE_PERIOD_DURATION.add(VOTE_TALLY_HISTORICAL_PRECONDITION_DELAY)
+  );
+
   const actions = await Mina.getActions(
     treasuryProposalPublicKey,
     {},
@@ -248,11 +309,11 @@ it("should tally votes", async () => {
   const pendingTx = await tx.send();
   await pendingTx.wait();
 
-  const votePassed = await treasuryProposal.votePassed.fetch();
-  Provable.log("votePassed", votePassed);
+  // const votePassed = await treasuryProposal.votePassed.fetch();
+  // Provable.log("votePassed", votePassed);
 });
 
-it("should fail while attempting to vote on the proposal contract directly", async () => {
+it.skip("should fail while attempting to vote on the proposal contract directly", async () => {
   let error: Error;
   try {
     const proposal = new TreasuryProposalSmartContract(

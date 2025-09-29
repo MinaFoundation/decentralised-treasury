@@ -49,6 +49,20 @@ index 9a387d3b1be50e8aecf94562cf3223676b52767e..21f475e8aa01f5cbd0f4f356f7a33409
      sendTransaction(txn: Transaction<boolean, boolean>): PendingTransactionPromise;
      transaction(sender: FeePayerSpec, f: () => Promise<void>): import("./transaction.js").TransactionPromise<false, false>;
      applyJsonTransaction(json: string): void;
+diff --git a/dist/node/lib/mina/v1/local-blockchain.js b/dist/node/lib/mina/v1/local-blockchain.js
+index 788d8e559784044ed4b7f85d7f602e33baab406c..d8c4dd53dda75fcf85266d71902a0ccd57a1ffcf 100644
+--- a/dist/node/lib/mina/v1/local-blockchain.js
++++ b/dist/node/lib/mina/v1/local-blockchain.js
+@@ -83,6 +83,9 @@ async function LocalBlockchain({ proofsEnabled = true, enforceTransactionLimits
+         getNetworkState() {
+             return networkState;
+         },
++        setNetworkState(newNetworkState) {
++            networkState = newNetworkState;
++        },
+         sendTransaction(txn) {
+             return toPendingTransactionPromise(async () => {
+                 let zkappCommandJson = ZkappCommand.toJSON(txn.transaction);
 diff --git a/src/lib/mina/v1/local-blockchain.ts b/src/lib/mina/v1/local-blockchain.ts
 index 0da336f05426873496b56c4d42b5252e98d6356f..0017524d350e9c1e5cba735f440afb4ab1bc3402 100644
 --- a/src/lib/mina/v1/local-blockchain.ts

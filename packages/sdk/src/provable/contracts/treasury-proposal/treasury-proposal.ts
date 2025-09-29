@@ -10,6 +10,7 @@ import {
   PublicKey,
   Provable,
   VerificationKey,
+  UInt64,
 } from "o1js";
 import { SideLoadedVoteReducerProof, VoteAction } from "./vote-reducer.js";
 
@@ -17,7 +18,13 @@ import { SideLoadedVoteReducerProof, VoteAction } from "./vote-reducer.js";
 export class TreasuryProposalSmartContract extends SmartContract {
   public static voteReducerVerificationKey: VerificationKey;
   reducer = Reducer({ actionType: VoteAction });
-  @state(Field) votePassed = State<Field>();
+
+  @state(PublicKey) recipient = State<PublicKey>();
+
+  @state(UInt64) lifecycleId = State<UInt64>();
+
+  @state(Field) stakingEpochDataLedgerHash = State<Field>();
+  @state(UInt64) stakingEpochDataLedgerTotalCurrency = State<UInt64>();
 
   @method
   public async vote(voteAction: VoteAction) {
@@ -37,9 +44,9 @@ export class TreasuryProposalSmartContract extends SmartContract {
       voteReducerProof.publicOutput.toActionsHash,
       "toActionsHash does not match on chain state"
     );
-
-    const votePassed = this.votePassed.getAndRequireEquals();
-    // TODO: should be an enum NOT_TALLIED/PASSING/FAILING or something?
-    this.votePassed.set(Field(1));
   }
+
+  // TODO
+  @method
+  public async execute() {}
 }
