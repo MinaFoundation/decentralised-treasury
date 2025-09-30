@@ -2,6 +2,7 @@ import _ from "lodash";
 import {
   // Account,
   Bool,
+  DynamicProof,
   Field,
   MerkleTree,
   MerkleWitness,
@@ -337,3 +338,12 @@ export const StakingLedgerToVotingLedger = ZkProgram({
     },
   },
 });
+
+export class SideLoadedStakingLedgerToVotingLedgerProof extends DynamicProof<
+  StakingLedgerToVotingLedgerProgramInput,
+  StakingLedgerToVotingLedgerProgramOutput
+> {
+  static publicInputType = StakingLedgerToVotingLedgerProgramInput;
+  static publicOutputType = StakingLedgerToVotingLedgerProgramOutput;
+  static maxProofsVerified = 0 as const;
+}

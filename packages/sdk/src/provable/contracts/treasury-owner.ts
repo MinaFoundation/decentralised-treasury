@@ -19,6 +19,7 @@ import {
   Vote,
 } from "./treasury-proposal/vote-reducer.js";
 import { TreasuryProposalSmartContract } from "./treasury-proposal/treasury-proposal.js";
+import { SideLoadedStakingLedgerToVotingLedgerProof } from "../staking-ledger-to-voting-ledger.js";
 
 export class Proposal extends Struct({
   amount: UInt64,
@@ -30,9 +31,10 @@ export class Proposal extends Struct({
 // 3360 slots = 1 week @ 480 slots per day
 export const LIFECYCLE_PERIOD_DURATION = UInt32.from(3360);
 export const SLOT_PRECONDITION_PADDING = UInt32.from(5);
-// TODO: these two have to be the same, otherwise there'll be two separate preconditions for the same network state
+// historical preconditions can go 5 slots in the past, while we also
+// allow SLOT_PRECONDITION_PADDING slots in the future for globalSlotSinceGenesis
 export const VOTE_TALLY_HISTORICAL_PRECONDITION_DELAY =
-  SLOT_PRECONDITION_PADDING;
+  SLOT_PRECONDITION_PADDING.add(5);
 
 export class LifecyclePeriod extends UInt32 {
   // doubles as execution period too
@@ -55,6 +57,7 @@ export class TreasuryOwnerSmartContract extends TokenContract {
 
   // these two are tracked on-chain in order to enable execution of "old" proposals from previous lifecycles
   @state(UInt64) lifecycleId = State<UInt64>();
+  @state(LifecyclePeriod) currentPeriod = State<LifecyclePeriod>();
 
   @state(Field) stakingEpochDataLedgerHash = State<Field>();
   @state(UInt64) stakingEpochDataLedgerTotalCurrency = State<UInt64>();
@@ -63,20 +66,21 @@ export class TreasuryOwnerSmartContract extends TokenContract {
     let lifecycleStartedAt = this.lifecycleStartedAt.getAndRequireEquals();
     const globalSlotSinceGenesis = this.network.globalSlotSinceGenesis.get();
 
-    Provable.log("updateLifecycleState", {
-      lifecycleStartedAt,
-      globalSlotSinceGenesis,
-    });
-
     // transaction should be valid if it's within the current lifecycle
     let lifecycleId = this.lifecycleId.getAndRequireEquals();
 
     let currentPeriod = new LifecyclePeriod(
       globalSlotSinceGenesis
+        // fast forward the current slot by SLOT_PRECONDITION_PADDING
+        // to offset the precondition upper bound
+        .add(SLOT_PRECONDITION_PADDING)
         .sub(lifecycleStartedAt)
         .div(LIFECYCLE_PERIOD_DURATION)
     );
 
+    // we need to keep track of currentPeriod on chain too,
+    // otherwise when someone updates the lifecycle state during the next lifecycle's PROPOSAL period
+    // we will not correctly detect if a new lifecycle is starting
     const isLifecycleResetting = currentPeriod.greaterThanOrEqual(
       LifecyclePeriod.NUMBER_OF_PERIODS
     );
@@ -103,6 +107,7 @@ export class TreasuryOwnerSmartContract extends TokenContract {
 
     this.lifecycleId.set(lifecycleId);
     this.lifecycleStartedAt.set(lifecycleStartedAt);
+    // this.currentPeriod.set(currentPeriod);
 
     /**
      * This precondition ensures that any transaction that updates the lifecycle state
@@ -214,6 +219,10 @@ export class TreasuryOwnerSmartContract extends TokenContract {
       },
       {
         isSome: Bool(true),
+        value: proposal.amount.toFields()[0],
+      },
+      {
+        isSome: Bool(true),
         value: this.lifecycleId.getAndRequireEquals().toFields()[0],
       },
       {
@@ -227,10 +236,6 @@ export class TreasuryOwnerSmartContract extends TokenContract {
         value: this.stakingEpochDataLedgerTotalCurrency
           .getAndRequireEquals()
           .toFields()[0],
-      },
-      {
-        isSome: Bool(false),
-        value: Field(0),
       },
       {
         isSome: Bool(false),
@@ -290,15 +295,21 @@ export class TreasuryOwnerSmartContract extends TokenContract {
   @method
   public async tallyVotes(
     proposalPublicKey: PublicKey,
-    voteTallyProof: SideLoadedVoteReducerProof
+    voteReducerProof: SideLoadedVoteReducerProof,
+    stakingLedgerToVotingLedgerProof: SideLoadedStakingLedgerToVotingLedgerProof
   ) {
     const proposal = new TreasuryProposalSmartContract(
       proposalPublicKey,
       this.deriveTokenId()
     );
 
-    voteTallyProof.verify(
+    // proofs need to be verified at the top level here, not only in the nested proposal.tallyVotes method
+    voteReducerProof.verify(
       TreasuryProposalSmartContract.voteReducerVerificationKey
+    );
+
+    stakingLedgerToVotingLedgerProof.verify(
+      TreasuryProposalSmartContract.stakingLedgerToVotingLedgerVerificationKey
     );
 
     const globalSlotSinceGenesis = this.network.globalSlotSinceGenesis.get();
@@ -318,7 +329,10 @@ export class TreasuryOwnerSmartContract extends TokenContract {
 
     await this.ensureHistoricalPreconditionDelay();
 
-    await proposal.tallyVotes(voteTallyProof);
+    await proposal.tallyVotes(
+      voteReducerProof,
+      stakingLedgerToVotingLedgerProof
+    );
 
     this.approve(proposal.self);
   }
@@ -330,14 +344,23 @@ export class TreasuryOwnerSmartContract extends TokenContract {
       this.deriveTokenId()
     );
 
-    const lifecycleId = this.lifecycleId.getAndRequireEquals();
+    await this.updateLifecycleState();
+
+    // TODO: why cannot i get the latest set lifecycleId using .get()?
+    const lifecycleId = UInt64.fromFields([this.self.update.appState[1].value]);
+    // const lifecycleId = this.lifecycleId.getAndRequireEquals();
     const proposalLifecycleId = proposal.lifecycleId.getAndRequireEquals();
 
     proposalLifecycleId
       .lessThan(lifecycleId)
       .assertTrue("Only proposals from the previous lifecycle can be executed");
 
-    await proposal.execute();
+    // TODO: figure out how to do this from the proposal itself to maintain
+    // proposal type decoupling from owner execution
+    this.self.balance.subInPlace(proposal.amount.getAndRequireEquals());
+
+    // TODO: is this.self.publicKey safe?
+    await proposal.execute(this.self);
 
     this.approve(proposal.self);
   }
