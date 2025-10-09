@@ -1,5 +1,5 @@
 diff --git a/dist/node/index.d.ts b/dist/node/index.d.ts
-index ca80862dc218e8777b5739bdafd5b7ced0ac01f0..b408cdb9361173fb63aa600edb6ab9011b5ef193 100644
+index ca80862dc218e8777b5739bdafd5b7ced0ac01f0..f4750ffd2a80915f998781054cd48d3518ee263b 100644
 --- a/dist/node/index.d.ts
 +++ b/dist/node/index.d.ts
 @@ -71,6 +71,12 @@ import { ZkFunction as ZkFunction_ } from './lib/proof-system/zkfunction.js';
@@ -15,8 +15,14 @@ index ca80862dc218e8777b5739bdafd5b7ced0ac01f0..b408cdb9361173fb63aa600edb6ab901
  /**
   * This module exposes APIs that are unstable, in the sense that the API surface is expected to change.
   * (Not unstable in the sense that they are less functional or tested than other parts.)
+@@ -133,3 +139,4 @@ declare namespace Experimental {
+     type ActionBatch<Action> = BatchReducer_.ActionBatch<Action>;
+ }
+ export * as Core from './bindings/index.js';
++export { StateHash as StateHashBase58, TokenId as TokenIdBase58, ReceiptChainHash as ReceiptChainHashBase58 } from './lib/mina/v1/base58-encodings.js';
+\ No newline at end of file
 diff --git a/dist/node/index.js b/dist/node/index.js
-index 325d67cf05fe3fe2f38862d8903678f062ad0dc1..3688cd7c407e30605f157dc20c2a2ed3e2048d53 100644
+index 325d67cf05fe3fe2f38862d8903678f062ad0dc1..63ec621c8ce86e677a27025833699abb5d78671f 100644
 --- a/dist/node/index.js
 +++ b/dist/node/index.js
 @@ -59,6 +59,9 @@ import { Recursive as Recursive_ } from './lib/proof-system/recursive.js';
@@ -29,6 +35,12 @@ index 325d67cf05fe3fe2f38862d8903678f062ad0dc1..3688cd7c407e30605f157dc20c2a2ed3
  import * as V2_ from './lib/mina/v2/index.js';
  const Experimental_ = {
      memoizeWitness,
+@@ -121,4 +124,5 @@ var Experimental;
+ Error.stackTraceLimit = 100000;
+ // export parts of the low-level bindings interface for advanced users
+ export * as Core from './bindings/index.js';
++export { StateHash as StateHashBase58, TokenId as TokenIdBase58, ReceiptChainHash as ReceiptChainHashBase58 } from './lib/mina/v1/base58-encodings.js';
+ //# sourceMappingURL=index.js.map
 diff --git a/dist/node/lib/mina/v1/local-blockchain.d.ts b/dist/node/lib/mina/v1/local-blockchain.d.ts
 index 9a387d3b1be50e8aecf94562cf3223676b52767e..21f475e8aa01f5cbd0f4f356f7a33409b46dfcca 100644
 --- a/dist/node/lib/mina/v1/local-blockchain.d.ts
@@ -63,6 +75,17 @@ index 788d8e559784044ed4b7f85d7f602e33baab406c..d8c4dd53dda75fcf85266d71902a0ccd
          sendTransaction(txn) {
              return toPendingTransactionPromise(async () => {
                  let zkappCommandJson = ZkappCommand.toJSON(txn.transaction);
+diff --git a/src/index.ts b/src/index.ts
+index f9233757f84f7468e6df1ba2a5aae57206b49d4c..55a84879606a399b1feaf0467fd74602d0dbaa3c 100644
+--- a/src/index.ts
++++ b/src/index.ts
+@@ -226,3 +226,5 @@ Error.stackTraceLimit = 100000;
+ 
+ // export parts of the low-level bindings interface for advanced users
+ export * as Core from './bindings/index.js';
++
++export { StateHash as StateHashBase58, TokenId as TokenIdBase58, ReceiptChainHash as ReceiptChainHashBase58 } from './lib/mina/v1/base58-encodings.js';
+\ No newline at end of file
 diff --git a/src/lib/mina/v1/local-blockchain.ts b/src/lib/mina/v1/local-blockchain.ts
 index 0da336f05426873496b56c4d42b5252e98d6356f..0017524d350e9c1e5cba735f440afb4ab1bc3402 100644
 --- a/src/lib/mina/v1/local-blockchain.ts

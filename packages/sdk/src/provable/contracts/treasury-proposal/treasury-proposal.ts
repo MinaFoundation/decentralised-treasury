@@ -25,6 +25,7 @@ export class VoteResult extends Field {
   public static UNKNOWN = Field(0);
   public static APPROVED = Field(1);
   public static REJECTED = Field(2);
+  public static PAUSED = Field(3);
 }
 
 // TODO: set correct starting permissions
@@ -156,4 +157,7 @@ export class TreasuryProposalSmartContract extends SmartContract {
 
     this.approve(recipientAccountUpdate);
   }
+
+  @method
+  public async pause() {}
 }

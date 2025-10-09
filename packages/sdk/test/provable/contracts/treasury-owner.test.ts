@@ -123,6 +123,19 @@ const dummyZkAppUri = "https://example.com";
 const votingAccount1 = new VotingAccount({ balance: UInt64.from(300) });
 const votingAccount2 = new VotingAccount({ balance: UInt64.from(100) });
 
+const multisigPrivateKey1 = PrivateKey.random();
+const multisigPublicKey1 = multisigPrivateKey1.toPublicKey();
+const multisigPrivateKey2 = PrivateKey.random();
+const multisigPublicKey2 = multisigPrivateKey2.toPublicKey();
+const multisigPrivateKey3 = PrivateKey.random();
+const multisigPublicKey3 = multisigPrivateKey3.toPublicKey();
+
+const multiSigCommitment = Poseidon.hash([
+  ...multisigPublicKey1.toFields(),
+  ...multisigPublicKey2.toFields(),
+  ...multisigPublicKey3.toFields(),
+]);
+
 votingAccountService.setVotingAccount(
   voterPublicKey1.toBase58(),
   votingAccount1
@@ -180,7 +193,7 @@ it("should create a proposal", async () => {
 
   await (async () => {
     const tx = await Mina.transaction(testAccount, async () => {
-      await treasuryOwner.initialize();
+      await treasuryOwner.initialize(multiSigCommitment);
     });
 
     tx.sign([testAccount.key, treasuryOwnerPrivateKey]);

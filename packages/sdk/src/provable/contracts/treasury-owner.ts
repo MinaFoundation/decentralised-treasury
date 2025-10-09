@@ -4,8 +4,10 @@ import {
   Bool,
   Field,
   Permissions,
+  Poseidon,
   Provable,
   PublicKey,
+  Signature,
   State,
   Struct,
   TokenContract,
@@ -20,6 +22,7 @@ import {
 } from "./treasury-proposal/vote-reducer.js";
 import { TreasuryProposalSmartContract } from "./treasury-proposal/treasury-proposal.js";
 import { SideLoadedStakingLedgerToVotingLedgerProof } from "../staking-ledger-to-voting-ledger.js";
+import { hashWithPrefix } from "../hashing-helpers.js";
 
 export class Proposal extends Struct({
   amount: UInt64,
@@ -35,6 +38,7 @@ export const SLOT_PRECONDITION_PADDING = UInt32.from(5);
 // allow SLOT_PRECONDITION_PADDING slots in the future for globalSlotSinceGenesis
 export const VOTE_TALLY_HISTORICAL_PRECONDITION_DELAY =
   SLOT_PRECONDITION_PADDING.add(5);
+export const MULTISIG_SIGNATURES_COUNT = 3;
 
 export class LifecyclePeriod extends UInt32 {
   // doubles as execution period too
@@ -45,6 +49,24 @@ export class LifecyclePeriod extends UInt32 {
 
   public static NUMBER_OF_PERIODS = UInt32.from(4);
 }
+
+export class MultiSigSignature extends Signature {
+  public static prefixPause = "decentralized-treasury-pause";
+  public static prefixUnpause = "decentralized-treasury-unpause";
+
+  public static dataPause(proposalPublicKey: PublicKey) {
+    return hashWithPrefix(this.prefixPause, [...proposalPublicKey.toFields()]);
+  }
+
+  public static dataUnpause(proposalPublicKey: PublicKey) {
+    return hashWithPrefix(this.prefixUnpause, [
+      ...proposalPublicKey.toFields(),
+    ]);
+  }
+}
+export class MultiSigSignatures extends Struct({
+  signatures: Provable.Array(MultiSigSignature, MULTISIG_SIGNATURES_COUNT),
+}) {}
 
 // TODO: set correct starting permissions
 export class TreasuryOwnerSmartContract extends TokenContract {
@@ -62,6 +84,9 @@ export class TreasuryOwnerSmartContract extends TokenContract {
   @state(Field) stakingEpochDataLedgerHash = State<Field>();
   @state(UInt64) stakingEpochDataLedgerTotalCurrency = State<UInt64>();
 
+  // hash of multisig addresses
+  @state(Field) multiSigCommitment = State<Field>();
+
   public async updateLifecycleState(globalSlotSinceGenesisUpper?: UInt32) {
     let lifecycleStartedAt = this.lifecycleStartedAt.getAndRequireEquals();
     const globalSlotSinceGenesis = this.network.globalSlotSinceGenesis.get();
@@ -73,9 +98,9 @@ export class TreasuryOwnerSmartContract extends TokenContract {
       globalSlotSinceGenesis
         // fast forward the current slot by SLOT_PRECONDITION_PADDING
         // to offset the precondition upper bound
-        .add(SLOT_PRECONDITION_PADDING)
-        .sub(lifecycleStartedAt)
-        .div(LIFECYCLE_PERIOD_DURATION)
+        .add(SLOT_PRECONDITION_PADDING) // +5
+        .sub(lifecycleStartedAt) // 10000
+        .div(LIFECYCLE_PERIOD_DURATION) // 3360
     );
 
     // we need to keep track of currentPeriod on chain too,
@@ -177,8 +202,10 @@ export class TreasuryOwnerSmartContract extends TokenContract {
   }
 
   @method
-  public async initialize() {
+  public async initialize(multiSigCommitment: Field) {
+    // TODO: do we need more preconditions here?
     const lifecycleStartedAt = this.lifecycleStartedAt.getAndRequireEquals();
+
     lifecycleStartedAt
       .equals(UInt32.from(0))
       .assertTrue("Contract has already been initialized");
@@ -188,6 +215,7 @@ export class TreasuryOwnerSmartContract extends TokenContract {
       this.network.globalSlotSinceGenesis.getAndRequireEquals();
     this.lifecycleStartedAt.set(globalSlotSinceGenesis);
     this.lifecycleId.set(UInt64.from(0));
+    this.multiSigCommitment.set(multiSigCommitment);
   }
 
   @method
@@ -361,6 +389,21 @@ export class TreasuryOwnerSmartContract extends TokenContract {
 
     // TODO: is this.self.publicKey safe?
     await proposal.execute(this.self);
+
+    this.approve(proposal.self);
+  }
+
+  @method
+  public async pauseProposal(
+    proposalPublicKey: PublicKey,
+    signatures: MultiSigSignatures
+  ) {
+    const proposal = new TreasuryProposalSmartContract(
+      proposalPublicKey,
+      this.deriveTokenId()
+    );
+
+    await proposal.pause();
 
     this.approve(proposal.self);
   }
