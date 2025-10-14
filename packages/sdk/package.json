@@ -30,6 +30,6 @@
     "tsx": "^4.20.4"
   },
   "peerDependencies": {
-    "o1js": "^2.8.0"
+    "o1js": "file:/Users/maht0rz/Projects/mina-foundation/o1js"
   }
 }

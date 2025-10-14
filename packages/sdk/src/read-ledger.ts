@@ -18,6 +18,7 @@ import {
   TokenIdBase58,
   ReceiptChainHashBase58,
   UInt32,
+  Bool,
 } from "o1js";
 
 export async function readLedger(
@@ -53,12 +54,13 @@ export async function readLedger(
           votingFor: StateHashBase58.fromBase58(value.voting_for),
           timing: value.timing
             ? new Timing({
+                isTimed: Bool(true),
                 initialMinimumBalance: UInt64.from(
                   value.timing.initial_minimum_balance
                 ),
-                cliffTime: UInt64.from(value.timing.cliff_time),
+                cliffTime: UInt32.from(value.timing.cliff_time),
                 cliffAmount: UInt64.from(value.timing.cliff_amount),
-                vestingPeriod: UInt64.from(value.timing.vesting_period),
+                vestingPeriod: UInt32.from(value.timing.vesting_period),
                 vestingIncrement: UInt64.from(value.timing.vesting_increment),
               })
             : Timing.empty(),
@@ -71,6 +73,26 @@ export async function readLedger(
             setPermissions: Permission.fromString(
               value.permissions.set_permissions
             ),
+            setVerificationKey: [
+              Permission.fromString(
+                value.permissions.set_verification_key.auth
+              ),
+              UInt32.from(value.permissions.set_verification_key.txn_version),
+            ],
+            setZkappUri: Permission.fromString(value.permissions.set_zkapp_uri),
+            editActionState: Permission.fromString(
+              value.permissions.edit_action_state
+            ),
+            setTokenSymbol: Permission.fromString(
+              value.permissions.set_token_symbol
+            ),
+            incrementNonce: Permission.fromString(
+              value.permissions.increment_nonce
+            ),
+            setVotingFor: Permission.fromString(
+              value.permissions.set_voting_for
+            ),
+            setTiming: Permission.fromString(value.permissions.set_timing),
           }),
           // TODO: implement zk app support
           zkapp: Zkapp.empty(),

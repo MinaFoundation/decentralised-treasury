@@ -9,27 +9,43 @@ import {
   VerificationKey,
   TokenId,
   UInt32,
+  ReceiptChainHashBase58,
+  StateHashBase58,
 } from "o1js";
 
 export const accountHashPrefix = "MinaAccount*********";
 
 export class Timing extends Struct({
+  isTimed: Bool,
   initialMinimumBalance: UInt64,
-  cliffTime: UInt64,
+  cliffTime: UInt32,
   cliffAmount: UInt64,
-  vestingPeriod: UInt64,
+  vestingPeriod: UInt32,
   vestingIncrement: UInt64,
 }) {
+  public static empty() {
+    return new Timing({
+      isTimed: Bool(false),
+      initialMinimumBalance: UInt64.from(0),
+      cliffTime: UInt32.from(0),
+      cliffAmount: UInt64.from(0),
+      vestingPeriod: UInt32.from(1),
+      vestingIncrement: UInt64.from(0),
+    });
+  }
   public static toHashInput(timing: Timing) {
-    return [
-      packed(timing.initialMinimumBalance.toFields()[0], 64),
-      packed(timing.cliffTime.toFields()[0], 64),
-      packed(timing.cliffAmount.toFields()[0], 64),
-      packed(timing.vestingPeriod.toFields()[0], 64),
-      packed(timing.vestingIncrement.toFields()[0], 64),
-    ]
-      .reverse()
-      .reduce(append, { fieldElements: [], packeds: [] });
+    return (
+      [
+        packed(timing.isTimed.toField(), 1),
+        packed(timing.initialMinimumBalance.toFields()[0], 64),
+        packed(timing.cliffTime.toFields()[0], 32),
+        packed(timing.cliffAmount.toFields()[0], 64),
+        packed(timing.vestingPeriod.toFields()[0], 32),
+        packed(timing.vestingIncrement.toFields()[0], 64),
+      ]
+        // .reverse()
+        .reduce(append, { fieldElements: [], packeds: [] })
+    );
   }
 }
 
@@ -39,13 +55,15 @@ export class Permission extends Struct({
   signatureSufficient: Bool,
 }) {
   public static toHashInput(permission: Permission) {
-    return [
-      packed(permission.constant.toField(), 1),
-      packed(permission.signatureNecessary.toField(), 1),
-      packed(permission.signatureSufficient.toField(), 1),
-    ]
-      .reverse()
-      .reduce(append, { fieldElements: [], packeds: [] });
+    return (
+      [
+        packed(permission.constant.toField(), 1),
+        packed(permission.signatureNecessary.toField(), 1),
+        packed(permission.signatureSufficient.toField(), 1),
+      ]
+        // .reverse()
+        .reduce(append, { fieldElements: [], packeds: [] })
+    );
   }
 
   public static fromString(string: string) {
@@ -121,24 +139,26 @@ export class Permissions extends Struct({
   setTiming: Permission,
 }) {
   public static toHashInput(permissions: Permissions) {
-    return [
-      Permission.toHashInput(permissions.editState),
-      Permission.toHashInput(permissions.send),
-      Permission.toHashInput(permissions.receive),
-      Permission.toHashInput(permissions.access),
-      Permission.toHashInput(permissions.setDelegate),
-      Permission.toHashInput(permissions.setPermissions),
-      Permission.toHashInput(permissions.setVerificationKey[0] as Permission),
-      packed((permissions.setVerificationKey[1] as UInt32).toFields()[0], 32),
-      Permission.toHashInput(permissions.setZkappUri),
-      Permission.toHashInput(permissions.editActionState),
-      Permission.toHashInput(permissions.setTokenSymbol),
-      Permission.toHashInput(permissions.incrementNonce),
-      Permission.toHashInput(permissions.setVotingFor),
-      Permission.toHashInput(permissions.setTiming),
-    ]
-      .reverse()
-      .reduce(append, { fieldElements: [], packeds: [] });
+    return (
+      [
+        Permission.toHashInput(permissions.editState),
+        Permission.toHashInput(permissions.access),
+        Permission.toHashInput(permissions.send),
+        Permission.toHashInput(permissions.receive),
+        Permission.toHashInput(permissions.setDelegate),
+        Permission.toHashInput(permissions.setPermissions),
+        Permission.toHashInput(permissions.setVerificationKey[0] as Permission),
+        packed((permissions.setVerificationKey[1] as UInt32).toFields()[0], 32),
+        Permission.toHashInput(permissions.setZkappUri),
+        Permission.toHashInput(permissions.editActionState),
+        Permission.toHashInput(permissions.setTokenSymbol),
+        Permission.toHashInput(permissions.incrementNonce),
+        Permission.toHashInput(permissions.setVotingFor),
+        Permission.toHashInput(permissions.setTiming),
+      ]
+        // .reverse()
+        .reduce(append, { fieldElements: [], packeds: [] })
+    );
   }
 }
 
@@ -173,11 +193,47 @@ export class Account extends Struct({
   permissions: Permissions,
   zkapp: Zkapp,
 }) {
+  public static empty() {
+    return new Account({
+      pk: PublicKey.empty(),
+      tokenId: TokenId.fromBase58(
+        "wSHV2S4qX9jFsLjQo8r1BsMLH2ZRKsZx6EJd1sbozGPieEC4Jf"
+      ),
+      tokenSymbol: TokenSymbol.empty(),
+      balance: UInt64.from(0),
+      nonce: UInt32.from(0),
+      receiptChainHash: ReceiptChainHashBase58.fromBase58(
+        "2mzbV7WevxLuchs2dAMY4vQBS6XttnCUF8Hvks4XNBQ5qiSGGBQe"
+      ),
+      delegate: PublicKey.empty(),
+      votingFor: StateHashBase58.fromBase58(
+        "3NK2tkzqqK5spR2sZ7tujjqPksL45M3UUrcA4WhCkeiPtnugyE2x"
+      ),
+      timing: Timing.empty(),
+      permissions: new Permissions({
+        editState: Permission.signature(),
+        access: Permission.none(),
+        send: Permission.signature(),
+        receive: Permission.none(),
+        setDelegate: Permission.signature(),
+        setPermissions: Permission.signature(),
+        setVerificationKey: [Permission.signature(), UInt32.from(3)],
+        setZkappUri: Permission.signature(),
+        editActionState: Permission.signature(),
+        setTokenSymbol: Permission.signature(),
+        incrementNonce: Permission.signature(),
+        setVotingFor: Permission.signature(),
+        setTiming: Permission.signature(),
+      }),
+      zkapp: Zkapp.empty(),
+    });
+  }
+
   public static toHashInput(account: Account) {
     return [
       append(field(account.pk.x), packed(account.pk.isOdd.toField(), 1)),
       field(account.tokenId.toFields()[0]),
-      field(account.tokenSymbol.field),
+      packed(account.tokenSymbol.field, 48),
       packed(account.balance.toFields()[0], 64),
       packed(account.nonce.toFields()[0], 32),
       field(account.receiptChainHash.toFields()[0]),
