@@ -131,9 +131,9 @@ const multisigPrivateKey3 = PrivateKey.random();
 const multisigPublicKey3 = multisigPrivateKey3.toPublicKey();
 
 const multiSigCommitment = Poseidon.hash([
-  ...multisigPublicKey1.toFields(),
-  ...multisigPublicKey2.toFields(),
-  ...multisigPublicKey3.toFields(),
+  ...[multisigPublicKey1, multisigPublicKey2, multisigPublicKey3].flatMap(
+    (participant) => participant.toFields()
+  ),
 ]);
 
 votingAccountService.setVotingAccount(

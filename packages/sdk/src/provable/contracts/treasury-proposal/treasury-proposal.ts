@@ -21,7 +21,7 @@ export const REQUIRED_PARTICIPATION_PERCENTAGE = 2;
 // cannot be lower than 51% due to the math implementation in the contract
 export const REQUIRED_SUPERMAJORITY_PERCENTAGE = 75;
 
-export class VoteResult extends Field {
+export class ProposalStatus extends Field {
   public static UNKNOWN = Field(0);
   public static APPROVED = Field(1);
   public static REJECTED = Field(2);
@@ -43,11 +43,17 @@ export class TreasuryProposalSmartContract extends SmartContract {
   @state(Field) stakingEpochDataLedgerHash = State<Field>();
   @state(UInt64) stakingEpochDataLedgerTotalCurrency = State<UInt64>();
 
-  @state(VoteResult) approved = State<VoteResult>();
+  @state(ProposalStatus) status = State<ProposalStatus>();
   @state(UInt64) paidOutAmount = State<UInt64>();
+
+  public async requireNotPaused() {
+    const status = this.status.getAndRequireEquals();
+    status.equals(ProposalStatus.PAUSED).not().assertTrue("Proposal is paused");
+  }
 
   @method
   public async vote(voteAction: VoteAction) {
+    await this.requireNotPaused();
     this.reducer.dispatch(voteAction);
   }
 
@@ -56,10 +62,11 @@ export class TreasuryProposalSmartContract extends SmartContract {
     voteReducerProof: SideLoadedVoteReducerProof,
     stakingLedgerToVotingLedgerProof: SideLoadedStakingLedgerToVotingLedgerProof
   ) {
+    await this.requireNotPaused();
     // TODO: need better naming
-    const isApproved = this.approved.getAndRequireEquals();
+    const status = this.status.getAndRequireEquals();
 
-    isApproved.equals(VoteResult.UNKNOWN).assertTrue("Vote result already set");
+    status.equals(ProposalStatus.UNKNOWN).assertTrue("Vote result already set");
 
     // proofs need to be verified here, even though they're already verified at the top level in the treasury owner contract
     voteReducerProof.verify(
@@ -127,22 +134,23 @@ export class TreasuryProposalSmartContract extends SmartContract {
 
     const voteResult = Provable.if(
       approved,
-      VoteResult.APPROVED,
-      VoteResult.REJECTED
+      ProposalStatus.APPROVED,
+      ProposalStatus.REJECTED
     );
 
-    this.approved.set(voteResult);
+    this.status.set(voteResult);
   }
 
   @method
   public async execute(treasuryOwnerAccountUpdate: AccountUpdate) {
-    const approved = this.approved.getAndRequireEquals();
+    await this.requireNotPaused();
+    const status = this.status.getAndRequireEquals();
     const recipient = this.recipient.getAndRequireEquals();
     const amount = this.amount.getAndRequireEquals();
     // we keep track paidOutAmount in preparation for future treasury sharding for the delegation program
     const paidOutAmount = this.paidOutAmount.getAndRequireEquals();
 
-    approved.equals(VoteResult.APPROVED).assertTrue("Proposal not approved");
+    status.equals(ProposalStatus.APPROVED).assertTrue("Proposal not approved");
     paidOutAmount
       .equals(UInt64.from(0))
       .assertTrue("Proposal already paid out");
@@ -159,5 +167,14 @@ export class TreasuryProposalSmartContract extends SmartContract {
   }
 
   @method
-  public async pause() {}
+  public async pause() {
+    this.status.set(ProposalStatus.PAUSED);
+  }
+
+  @method
+  public async unpause() {
+    const status = this.status.getAndRequireEquals();
+    status.equals(ProposalStatus.PAUSED).assertTrue("Proposal is not paused");
+    this.status.set(ProposalStatus.UNKNOWN);
+  }
 }

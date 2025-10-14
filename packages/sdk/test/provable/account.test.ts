@@ -94,16 +94,16 @@ it("should build the tree", async () => {
   console.timeEnd("build tree");
   Provable.log("root", root);
 
-  const Lightnet = Mina.Network("http://127.0.0.1:8080/graphql");
-  Mina.setActiveInstance(Lightnet);
+  // const Lightnet = Mina.Network("http://127.0.0.1:8080/graphql");
+  // Mina.setActiveInstance(Lightnet);
 
-  await Mina.transaction(
-    PublicKey.fromBase58(
-      "B62qikT41XWwfMuoRC1SBvQxBfvHPnYfY7Hm9TUWNQXMLka5eP4xowB"
-    ),
-    async () => {
-      const networkState = await Mina.getNetworkState();
-      Provable.log("network state", networkState);
-    }
-  );
+  // await Mina.transaction(
+  //   PublicKey.fromBase58(
+  //     "B62qikT41XWwfMuoRC1SBvQxBfvHPnYfY7Hm9TUWNQXMLka5eP4xowB"
+  //   ),
+  //   async () => {
+  //     const networkState = await Mina.getNetworkState();
+  //     Provable.log("network state", networkState);
+  //   }
+  // );
 });
