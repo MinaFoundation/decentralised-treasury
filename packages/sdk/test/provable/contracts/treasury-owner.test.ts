@@ -162,9 +162,6 @@ votingAccountTreeService.setWitness(
 );
 
 it("should create a proposal", async () => {
-  // safe padding to ensure we won't underflow during the period math
-  Local.incrementGlobalSlot(LIFECYCLE_PERIOD_DURATION.mul(10));
-
   await (async () => {
     const tx = await Mina.transaction(testAccount, async () => {
       AccountUpdate.fundNewAccount(testAccount, 1);
@@ -180,7 +177,7 @@ it("should create a proposal", async () => {
 
   await (async () => {
     const tx = await Mina.transaction(testAccount, async () => {
-      await treasuryOwner.initialize();
+      await treasuryOwner.initialize(UInt32.from(0));
     });
 
     tx.sign([testAccount.key, treasuryOwnerPrivateKey]);
@@ -206,11 +203,15 @@ it("should create a proposal", async () => {
 
     const tx = await Mina.transaction(testAccount, async () => {
       AccountUpdate.fundNewAccount(testAccount, 1);
-      await treasuryOwner.createProposal(treasuryProposalPublicKey, {
-        amount,
-        recipient: treasuryProposalRecipientPublicKey,
-        zkAppUri: dummyZkAppUri,
-      });
+      await treasuryOwner.createProposal(
+        treasuryProposalPublicKey,
+        {
+          amount,
+          recipient: treasuryProposalRecipientPublicKey,
+          zkAppUri: dummyZkAppUri,
+        },
+        UInt32.from(0)
+      );
     });
 
     tx.sign([testAccount.key, treasuryProposalPrivateKey]);
@@ -220,7 +221,7 @@ it("should create a proposal", async () => {
     await pendingTx.wait();
   })();
 
-  const lifecycleStartedAt = await treasuryOwner.lifecycleStartedAt.fetch();
+  // const lifecycleStartedAt = await treasuryOwner.lifecycleStartedAt.fetch();
 });
 
 it("should vote on a proposal", async () => {

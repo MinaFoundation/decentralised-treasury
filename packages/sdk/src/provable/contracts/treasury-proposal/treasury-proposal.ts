@@ -12,6 +12,7 @@ import {
   VerificationKey,
   UInt64,
   AccountUpdate,
+  UInt32,
 } from "o1js";
 import { SideLoadedVoteReducerProof, VoteAction } from "./vote-reducer.js";
 import { SideLoadedStakingLedgerToVotingLedgerProof } from "../../staking-ledger-to-voting-ledger.js";
@@ -37,7 +38,7 @@ export class TreasuryProposalSmartContract extends SmartContract {
   @state(PublicKey) recipient = State<PublicKey>();
   @state(UInt64) amount = State<UInt64>();
 
-  @state(UInt64) lifecycleId = State<UInt64>();
+  @state(UInt32) lifecycleId = State<UInt32>();
 
   @state(Field) stakingEpochDataLedgerHash = State<Field>();
   @state(UInt64) stakingEpochDataLedgerTotalCurrency = State<UInt64>();

@@ -53,152 +53,89 @@ export class TreasuryOwnerSmartContract extends TokenContract {
     hash: Field;
   };
 
-  @state(UInt32) lifecycleStartedAt = State<UInt32>();
-
-  // these two are tracked on-chain in order to enable execution of "old" proposals from previous lifecycles
-  @state(UInt64) lifecycleId = State<UInt64>();
-  @state(LifecyclePeriod) currentPeriod = State<LifecyclePeriod>();
+  @state(UInt32) treasuryDeployedAtSlot = State<UInt32>();
 
   @state(Field) stakingEpochDataLedgerHash = State<Field>();
   @state(UInt64) stakingEpochDataLedgerTotalCurrency = State<UInt64>();
 
-  public async updateLifecycleState(globalSlotSinceGenesisUpper?: UInt32) {
-    let lifecycleStartedAt = this.lifecycleStartedAt.getAndRequireEquals();
-    const globalSlotSinceGenesis = this.network.globalSlotSinceGenesis.get();
-
-    // transaction should be valid if it's within the current lifecycle
-    let lifecycleId = this.lifecycleId.getAndRequireEquals();
-
-    let currentPeriod = new LifecyclePeriod(
-      globalSlotSinceGenesis
-        // fast forward the current slot by SLOT_PRECONDITION_PADDING
-        // to offset the precondition upper bound
-        .add(SLOT_PRECONDITION_PADDING)
-        .sub(lifecycleStartedAt)
-        .div(LIFECYCLE_PERIOD_DURATION)
-    );
-
-    // we need to keep track of currentPeriod on chain too,
-    // otherwise when someone updates the lifecycle state during the next lifecycle's PROPOSAL period
-    // we will not correctly detect if a new lifecycle is starting
-    const isLifecycleResetting = currentPeriod.greaterThanOrEqual(
-      LifecyclePeriod.NUMBER_OF_PERIODS
-    );
-
-    // return either the current period, or cycle back to the first period
-    currentPeriod = Provable.if(
-      isLifecycleResetting,
-      LifecyclePeriod.PROPOSAL,
-      currentPeriod
-    );
-
-    // advance lifecycle ID if we're starting a new lifecycle
-    lifecycleId = Provable.if(
-      isLifecycleResetting,
-      lifecycleId.add(UInt64.from(1)),
-      lifecycleId
-    );
-
-    lifecycleStartedAt = Provable.if(
-      isLifecycleResetting,
-      globalSlotSinceGenesis,
-      lifecycleStartedAt
-    );
-
-    this.lifecycleId.set(lifecycleId);
-    this.lifecycleStartedAt.set(lifecycleStartedAt);
-    // this.currentPeriod.set(currentPeriod);
-
-    /**
-     * This precondition ensures that any transaction that updates the lifecycle state
-     * is valid for at least SLOT_PRECONDITION_PADDING slots. This also creates a situation
-     * where the `lifecycleStartedAt` can change between transactions, as they each use
-     * different `globalSlotSinceGenesis` values.
-     *
-     * Therefore the `lifecycleStartedAt` has a precision of SLOT_PRECONDITION_PADDING slots.
-     *
-     * It's not feasible to have a strict equals precondition on `globalSlotsSinceGenesis`, since this
-     * would make the transactions valid for only a single slot.
-     */
-    this.network.globalSlotSinceGenesis.requireBetween(
-      globalSlotSinceGenesis,
-      globalSlotSinceGenesisUpper ??
-        globalSlotSinceGenesis.add(SLOT_PRECONDITION_PADDING)
-    );
-
-    let stakingEpochDataLedgerHash =
-      this.stakingEpochDataLedgerHash.getAndRequireEquals();
-    let stakingEpochDataLedgerTotalCurrency =
-      this.stakingEpochDataLedgerTotalCurrency.getAndRequireEquals();
-
+  public async snapshotStakingEpochData() {
     const networkStakingEpochDataLedgerHash =
       this.network.stakingEpochData.ledger.hash.getAndRequireEquals();
     const networkStakingEpochDataLedgerTotalCurrency =
       this.network.stakingEpochData.ledger.totalCurrency.getAndRequireEquals();
 
-    // update the staking epoch data snapshots only if a new lifecycle is starting
-    // there might be cases where the staking epoch data may change during the proposal period
-    // effectively this means the staking epoch data is only "fixed" after the proposal period ends
-    stakingEpochDataLedgerHash = Provable.if(
-      isLifecycleResetting,
-      networkStakingEpochDataLedgerHash,
-      stakingEpochDataLedgerHash
-    );
-    stakingEpochDataLedgerTotalCurrency = Provable.if(
-      isLifecycleResetting,
-      networkStakingEpochDataLedgerTotalCurrency,
-      stakingEpochDataLedgerTotalCurrency
-    );
-
     this.stakingEpochDataLedgerHash.set(networkStakingEpochDataLedgerHash);
     this.stakingEpochDataLedgerTotalCurrency.set(
       networkStakingEpochDataLedgerTotalCurrency
     );
-
-    return currentPeriod;
-  }
-
-  // we need to delay vote tallying, since the action state precondition allows for 5 historical slots
-  // to be used for the action state hash, since we delay the tallying, no vote actions can be left out
-  public async ensureHistoricalPreconditionDelay() {
-    const lifecycleStartedAt = this.lifecycleStartedAt.getAndRequireEquals();
-    const globalSlotSinceGenesis = this.network.globalSlotSinceGenesis.get();
-
-    const globalSlotsSinceCooldownPeriodStart = lifecycleStartedAt.add(
-      LIFECYCLE_PERIOD_DURATION.mul(LifecyclePeriod.COOLDOWN)
-    );
-
-    globalSlotSinceGenesis
-      .sub(globalSlotsSinceCooldownPeriodStart)
-      .greaterThanOrEqual(VOTE_TALLY_HISTORICAL_PRECONDITION_DELAY)
-      .assertTrue(
-        "Insufficient slots passed since start of the cooldown period, please wait a few slots"
-      );
   }
 
   @method
-  public async initialize() {
-    const lifecycleStartedAt = this.lifecycleStartedAt.getAndRequireEquals();
-    lifecycleStartedAt
+  public async initialize(treasuryDeployedAtSlot: UInt32) {
+    const currentTreasuryDeployedAtSlot =
+      this.treasuryDeployedAtSlot.getAndRequireEquals();
+
+    currentTreasuryDeployedAtSlot
       .equals(UInt32.from(0))
       .assertTrue("Contract has already been initialized");
 
-    // TODO: make this requireBetween
-    const globalSlotSinceGenesis =
-      this.network.globalSlotSinceGenesis.getAndRequireEquals();
-    this.lifecycleStartedAt.set(globalSlotSinceGenesis);
-    this.lifecycleId.set(UInt64.from(0));
+    this.treasuryDeployedAtSlot.set(treasuryDeployedAtSlot);
+  }
+
+  public async requireLifecyclePeriodGreaterThanOrEqual(
+    period: LifecyclePeriod,
+    lifecycleId: UInt32
+  ) {
+    await this.requireLifecyclePeriod(period, lifecycleId, Bool(true));
+  }
+
+  public async requireLifecyclePeriod(
+    period: LifecyclePeriod,
+    lifecycleId: UInt32,
+    // used if a lifecycle period has no upper bound, e.g. to allow
+    // tallying votes / execution anytime after the cooldown period
+    noUpperBoundToSlot: Bool = Bool(false)
+  ) {
+    const treasuryDeployedAtSlot =
+      this.treasuryDeployedAtSlot.getAndRequireEquals();
+
+    const fromSlot = treasuryDeployedAtSlot
+      // fast forward to the start of the requested lifecycle
+      .add(
+        LIFECYCLE_PERIOD_DURATION.mul(
+          LifecyclePeriod.NUMBER_OF_PERIODS.mul(lifecycleId)
+        )
+      )
+      // fast forward to the start of the requested period
+      .add(LIFECYCLE_PERIOD_DURATION.mul(period));
+
+    const toSlot = Provable.if(
+      noUpperBoundToSlot,
+      UInt32.MAXINT(),
+      fromSlot.add(LIFECYCLE_PERIOD_DURATION)
+    );
+
+    Provable.log(
+      "requireLifecyclePeriod",
+      period,
+      lifecycleId,
+      fromSlot,
+      toSlot
+    );
+
+    this.network.globalSlotSinceGenesis.requireBetween(fromSlot, toSlot);
   }
 
   @method
   public async createProposal(
     proposalPublicKey: PublicKey,
-    proposal: Proposal
+    proposal: Proposal,
+    lifecycleId: UInt32
   ) {
-    const currentPeriod = await this.updateLifecycleState();
-    currentPeriod
-      .equals(LifecyclePeriod.PROPOSAL)
-      .assertTrue("Not in proposal period");
+    Provable.log("createProposal", { lifecycleId });
+
+    await this.snapshotStakingEpochData();
+    await this.requireLifecyclePeriod(LifecyclePeriod.PROPOSAL, lifecycleId);
 
     const proposalUpdate = AccountUpdate.createSigned(
       proposalPublicKey,
@@ -223,7 +160,7 @@ export class TreasuryOwnerSmartContract extends TokenContract {
       },
       {
         isSome: Bool(true),
-        value: this.lifecycleId.getAndRequireEquals().toFields()[0],
+        value: lifecycleId.toFields()[0],
       },
       {
         isSome: Bool(true),
@@ -267,17 +204,14 @@ export class TreasuryOwnerSmartContract extends TokenContract {
       this.deriveTokenId()
     );
 
-    const lifecycleId = this.lifecycleId.getAndRequireEquals();
     const proposalLifecycleId = proposal.lifecycleId.getAndRequireEquals();
-    const currentPeriod = await this.updateLifecycleState();
 
-    proposalLifecycleId
-      .equals(lifecycleId)
-      .assertTrue("Proposal must be from the current lifecycle");
+    Provable.log("vote", { proposalLifecycleId });
 
-    currentPeriod
-      .equals(LifecyclePeriod.VOTING)
-      .assertTrue("Not in voting period");
+    await this.requireLifecyclePeriod(
+      LifecyclePeriod.VOTING,
+      proposalLifecycleId
+    );
 
     await proposal.vote({
       vote,
@@ -286,7 +220,7 @@ export class TreasuryOwnerSmartContract extends TokenContract {
 
     // TODO: this creates a new account if it doesnt exist, it'll cost 1 MINA
     // it could be free if we just check a hand crafted signature instead
-    // this becomes relevant if a delegate publcyic key is used that is not in the current L1 ledger
+    // this becomes relevant if a delegate public key is used that is not in the current L1 ledger
     AccountUpdate.createSigned(publicKey);
 
     this.approve(proposal.self);
@@ -312,22 +246,16 @@ export class TreasuryOwnerSmartContract extends TokenContract {
       TreasuryProposalSmartContract.stakingLedgerToVotingLedgerVerificationKey
     );
 
-    const globalSlotSinceGenesis = this.network.globalSlotSinceGenesis.get();
-    const currentPeriod = await this.updateLifecycleState(
-      globalSlotSinceGenesis.add(VOTE_TALLY_HISTORICAL_PRECONDITION_DELAY)
-    );
-    const lifecycleId = this.lifecycleId.getAndRequireEquals();
     const proposalLifecycleId = proposal.lifecycleId.getAndRequireEquals();
+    Provable.log("tallyVotes", { proposalLifecycleId });
 
-    // allow vote tallying
-    currentPeriod
-      .equals(LifecyclePeriod.COOLDOWN)
-      .or(proposalLifecycleId.lessThan(lifecycleId))
-      .assertTrue(
-        "In order to tally votes, you must be in the cooldown period or the proposal must be from the previous lifecycle"
-      );
+    await this.requireLifecyclePeriodGreaterThanOrEqual(
+      LifecyclePeriod.COOLDOWN,
+      proposalLifecycleId
+    );
 
-    await this.ensureHistoricalPreconditionDelay();
+    // TODO: replace with chain of AUs proving action state coherence
+    // await this.ensureHistoricalPreconditionDelay();
 
     await proposal.tallyVotes(
       voteReducerProof,
@@ -344,16 +272,14 @@ export class TreasuryOwnerSmartContract extends TokenContract {
       this.deriveTokenId()
     );
 
-    await this.updateLifecycleState();
-
-    // TODO: why cannot i get the latest set lifecycleId using .get()?
-    const lifecycleId = UInt64.fromFields([this.self.update.appState[1].value]);
-    // const lifecycleId = this.lifecycleId.getAndRequireEquals();
     const proposalLifecycleId = proposal.lifecycleId.getAndRequireEquals();
+    Provable.log("executeProposal", { proposalLifecycleId });
 
-    proposalLifecycleId
-      .lessThan(lifecycleId)
-      .assertTrue("Only proposals from the previous lifecycle can be executed");
+    await this.requireLifecyclePeriodGreaterThanOrEqual(
+      LifecyclePeriod.PROPOSAL,
+      // only allow execution of proposals from the previous lifecycle
+      proposalLifecycleId.add(1)
+    );
 
     // TODO: figure out how to do this from the proposal itself to maintain
     // proposal type decoupling from owner execution
