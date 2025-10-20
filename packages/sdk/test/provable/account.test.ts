@@ -96,15 +96,6 @@ it("should build the tree", async () => {
   const root = tree.getRoot();
   const accounts = await readLedger("test/provable/staking-epoch-ledger.json");
 
-  // Provable.log("merkle path", tree.getWitness(0n));
-
-  // Provable.log(
-  //   "staking ledger hash",
-  //   LedgerHashBase58.fromBase58(
-  //     "jxJoqEgKwaentpB89TqDZQwp3SXt25A4hE8Z7duuS4ZdMXE5K2m"
-  //   )
-  // );
-
   console.time("build tree");
   accounts.forEach((account, index) => {
     const hashInput = Account.toHashInput(account);

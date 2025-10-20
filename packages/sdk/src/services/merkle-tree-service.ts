@@ -1,11 +1,22 @@
-import { BaseMerkleWitness } from "node_modules/o1js/dist/node/lib/provable/merkle-tree.js";
-import { Field, MerkleTree, MerkleWitness } from "o1js";
+import {
+  Field,
+  MerkleTree,
+  MerkleWitness,
+  PrefixedMerkleTree,
+  PrefixedMerkleWitness,
+} from "o1js";
+import {
+  accountHashPrefix,
+  Account,
+  packToFields,
+} from "../provable/account.js";
+import { hashWithPrefix } from "../provable/hashing-helpers.js";
 
-export class MerkleWitness32 extends MerkleWitness(32) {}
+export class PrefixedMerkleWitness36 extends PrefixedMerkleWitness(36) {}
 export class MerkleWitness256 extends MerkleWitness(256) {}
 
-export interface MerkleTree32Service {
-  getWitness: (index: bigint) => Promise<MerkleWitness32>;
+export interface PrefixedMerkleTree36Service {
+  getWitness: (index: bigint) => Promise<PrefixedMerkleWitness36>;
   setLeaf: (index: bigint, leaf: Field) => Promise<void>;
 }
 
@@ -14,18 +25,56 @@ export interface MerkleTree256Service {
   setLeaf: (index: bigint, leaf: Field) => Promise<void>;
 }
 
-export class PrefilledMerkleTree32InMemoryService
-  implements MerkleTree32Service
-{
-  public witnesses: Record<string, MerkleWitness32> = {};
+export const accountLedgerHashPrefixes = [
+  "MinaMklTree000******",
+  "MinaMklTree001******",
+  "MinaMklTree002******",
+  "MinaMklTree003******",
+  "MinaMklTree004******",
+  "MinaMklTree005******",
+  "MinaMklTree006******",
+  "MinaMklTree007******",
+  "MinaMklTree008******",
+  "MinaMklTree009******",
+  "MinaMklTree010******",
+  "MinaMklTree011******",
+  "MinaMklTree012******",
+  "MinaMklTree013******",
+  "MinaMklTree014******",
+  "MinaMklTree015******",
+  "MinaMklTree016******",
+  "MinaMklTree017******",
+  "MinaMklTree018******",
+  "MinaMklTree019******",
+  "MinaMklTree020******",
+  "MinaMklTree021******",
+  "MinaMklTree022******",
+  "MinaMklTree023******",
+  "MinaMklTree024******",
+  "MinaMklTree025******",
+  "MinaMklTree026******",
+  "MinaMklTree027******",
+  "MinaMklTree028******",
+  "MinaMklTree029******",
+  "MinaMklTree030******",
+  "MinaMklTree031******",
+  "MinaMklTree032******",
+  "MinaMklTree033******",
+  "MinaMklTree034******",
+];
 
-  public getWitness(index: bigint): Promise<MerkleWitness32> {
-    return this.witnesses[index.toString()] ?? MerkleWitness32.empty();
+export class PrefilledPrefixedMerkleTree36InMemoryService
+  implements PrefixedMerkleTree36Service
+{
+  public witnesses: Record<string, PrefixedMerkleWitness36> = {};
+
+  public getWitness(index: bigint): Promise<PrefixedMerkleWitness36> {
+    return this.witnesses[index.toString()] ?? PrefixedMerkleWitness36.empty();
   }
 
   public async setWitness(
     index: bigint,
-    witness: MerkleWitness32
+    witness: PrefixedMerkleWitness36
   ): Promise<void> {
     this.witnesses[index.toString()] = witness;
   }
@@ -35,11 +84,22 @@ export class PrefilledMerkleTree32InMemoryService
   }
 }
 
-export class MerkleTree32InMemoryService implements MerkleTree32Service {
-  public tree: MerkleTree = new MerkleTree(32);
+const emptyAccount = Account.empty();
+const hashInput = Account.toHashInput(emptyAccount);
+const fields = packToFields(hashInput);
+const emptyAccountHash = hashWithPrefix(accountHashPrefix, fields);
 
-  public async getWitness(index: bigint): Promise<MerkleWitness32> {
-    return new MerkleWitness32(this.tree.getWitness(index));
+export class PrefixedMerkleTree36InMemoryService
+  implements PrefixedMerkleTree36Service
+{
+  public tree: PrefixedMerkleTree = new PrefixedMerkleTree(
+    36,
+    emptyAccountHash,
+    accountLedgerHashPrefixes
+  );
+
+  public async getWitness(index: bigint): Promise<PrefixedMerkleWitness36> {
+    return new PrefixedMerkleWitness36(this.tree.getWitness(index));
   }
 
   public async setLeaf(index: bigint, leaf: Field): Promise<void> {

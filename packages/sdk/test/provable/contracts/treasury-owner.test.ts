@@ -174,6 +174,9 @@ votingAccountTreeService.setWitness(
   )
 );
 
+// TODO
+it.todo("should pause the treasury", async () => {});
+
 it("should create a proposal", async () => {
   await (async () => {
     const tx = await Mina.transaction(testAccount, async () => {
@@ -257,6 +260,9 @@ it("should vote on a proposal", async () => {
   const pendingTx = await tx.send();
   await pendingTx.wait();
 });
+
+// TODO
+it.todo("should pause the proposal", async () => {});
 
 it("should vote on a proposal from a new account", async () => {
   const tx = await Mina.transaction(testAccount, async () => {

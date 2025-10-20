@@ -11,6 +11,7 @@ import {
   UInt32,
   ReceiptChainHashBase58,
   StateHashBase58,
+  Poseidon,
 } from "o1js";
 
 export const accountHashPrefix = "MinaAccount*********";
@@ -162,6 +163,7 @@ export class Permissions extends Struct({
   }
 }
 
+// TODO: implement zkapp support
 // export class Zkapp extends Struct({
 //   appState: Field,
 //   verificationKey: VerificationKey,
@@ -227,6 +229,12 @@ export class Account extends Struct({
       }),
       zkapp: Zkapp.empty(),
     });
+  }
+
+  public static isEmpty(account: Account) {
+    return Poseidon.hash(Account.toFields(account)).equals(
+      Poseidon.hash(Account.toFields(Account.empty()))
+    );
   }
 
   public static toHashInput(account: Account) {

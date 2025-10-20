@@ -64,7 +64,6 @@ export class TreasuryProposalSmartContract extends SmartContract {
     stakingLedgerToVotingLedgerProof: SideLoadedStakingLedgerToVotingLedgerProof
   ) {
     await this.requireNotPaused();
-    // TODO: need better naming
     const status = this.status.getAndRequireEquals();
 
     status.equals(ProposalStatus.UNKNOWN).assertTrue("Vote result already set");
@@ -176,6 +175,7 @@ export class TreasuryProposalSmartContract extends SmartContract {
   public async unpause() {
     const status = this.status.getAndRequireEquals();
     status.equals(ProposalStatus.PAUSED).assertTrue("Proposal is not paused");
+    // TODO: make sure setting the status back to unknown makes sense
     this.status.set(ProposalStatus.UNKNOWN);
   }
 }

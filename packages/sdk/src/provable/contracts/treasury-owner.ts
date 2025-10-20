@@ -50,16 +50,16 @@ export class LifecyclePeriod extends UInt32 {
   public static NUMBER_OF_PERIODS = UInt32.from(4);
 }
 
+// Mina Foundation Decentralized Treasury
+export const multisigPrefix = "MFDT";
 export class MultisigSignature extends Signature {
-  public static prefixPauseProposal = "decentralized-treasury-pause-proposal";
-  public static prefixUnpauseProposal =
-    "decentralized-treasury-unpause-proposal";
+  public static prefixPauseProposal = `${multisigPrefix}pp`;
+  public static prefixUnpauseProposal = `${multisigPrefix}upp`;
 
-  public static prefixPause = "decentralized-treasury-pause";
-  public static prefixUnpause = "decentralized-treasury-unpause";
+  public static prefixPauseTreasury = `${multisigPrefix}pt`;
+  public static prefixUnpauseTreasury = `${multisigPrefix}upt`;
 
-  public static prefixRotateMultisigKeys =
-    "decentralized-treasury-rotate-multisig-keys";
+  public static prefixRotateMultisigKeys = `${multisigPrefix}rmk`;
 
   public static dataPauseProposal(proposalPublicKey: PublicKey, nonce: UInt32) {
     return [
@@ -83,11 +83,11 @@ export class MultisigSignature extends Signature {
   }
 
   public static dataPauseTreasury(nonce: UInt32) {
-    return [hashWithPrefix(this.prefixPause, [...nonce.toFields()])];
+    return [hashWithPrefix(this.prefixPauseTreasury, [...nonce.toFields()])];
   }
 
   public static dataUnpauseTreasury(nonce: UInt32) {
-    return [hashWithPrefix(this.prefixUnpause, [...nonce.toFields()])];
+    return [hashWithPrefix(this.prefixUnpauseTreasury, [...nonce.toFields()])];
   }
 }
 export class MultisigSignatures extends Struct({

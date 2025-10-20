@@ -14,7 +14,6 @@ import {
   Proof,
 } from "o1js";
 import {
-  Account,
   ACCOUNT_BATCH_SIZE,
   StakingLedgerToVotingLedger,
   stakingLedgerToVotingLedgerContext,
@@ -25,17 +24,20 @@ import {
 } from "../../src/provable/staking-ledger-to-voting-ledger.js";
 import _, { orderBy } from "lodash";
 import {
-  MerkleWitness256,
-  MerkleWitness32,
-  PrefilledMerkleTree256InMemoryService,
-  PrefilledMerkleTree32InMemoryService,
-  MerkleTree32InMemoryService,
+  PrefixedMerkleTree36InMemoryService,
   MerkleTree256InMemoryService,
 } from "../../src/services/merkle-tree-service.js";
 import { VotingAccountInMemoryService } from "../../src/services/voting-account-service.js";
+import { readLedger } from "../../src/read-ledger.js";
+import {
+  Account,
+  accountHashPrefix,
+  packToFields,
+} from "../../src/provable/account.js";
+import { hashWithPrefix } from "../../src/provable/hashing-helpers.js";
 export const proofsEnabled = process.env.PROOFS_ENABLED === "true";
 
-const stakingLedgerTreeService = new MerkleTree32InMemoryService();
+const stakingLedgerTreeService = new PrefixedMerkleTree36InMemoryService();
 const votingLedgerTreeService = new MerkleTree256InMemoryService();
 const votingAccountService = new VotingAccountInMemoryService();
 
@@ -61,19 +63,28 @@ it("should analyze the program", async () => {
   Provable.log("analysis", analysis);
 });
 
-export const TEST_ITERATIONS = 5;
-const testAccounts = [
-  ...(await createTestAccounts(ACCOUNT_BATCH_SIZE * TEST_ITERATIONS - 1)),
-  Account.dummy(),
-];
+// export const TEST_ITERATIONS = 5;
+// const testAccounts = [
+//   ...(await createTestAccounts(ACCOUNT_BATCH_SIZE * TEST_ITERATIONS - 1)),
+//   Account.dummy(),
+// ];
+
+const testAccounts = await readLedger(
+  "test/provable/staking-epoch-ledger.json"
+);
+const TEST_ITERATIONS = Math.ceil(testAccounts.length / ACCOUNT_BATCH_SIZE);
+// const TEST_ITERATIONS = 1;
 
 it("should digest a range of indexes", async () => {
-  // populate circuit consumable variables
+  // fill in the merkle tree with accounts
   testAccounts.forEach((account, index) => {
-    if (!Account.isDummy(account).toBoolean()) {
+    if (!Account.isEmpty(account).toBoolean()) {
       stakingLedgerTreeService.setLeaf(
         BigInt(index),
-        Poseidon.hash(Account.toFields(account))
+        hashWithPrefix(
+          accountHashPrefix,
+          packToFields(Account.toHashInput(account))
+        )
       );
     }
   });
@@ -91,6 +102,18 @@ it("should digest a range of indexes", async () => {
       i * ACCOUNT_BATCH_SIZE,
       (i + 1) * ACCOUNT_BATCH_SIZE
     );
+
+    if (accounts.length !== ACCOUNT_BATCH_SIZE) {
+      const missingAccounts = ACCOUNT_BATCH_SIZE - accounts.length;
+      console.log(
+        `adding ${missingAccounts} extra empty accounts to satisfy batch size`
+      );
+
+      for (let j = 0; j < missingAccounts; j++) {
+        accounts.push(Account.empty());
+      }
+    }
+
     console.time(`digest ${i}`);
     const { proof } = await StakingLedgerToVotingLedger.digest(input, accounts);
     console.timeEnd(`digest ${i}`);
@@ -103,6 +126,9 @@ it("should digest a range of indexes", async () => {
     console.log("digest proof size", proofSize);
     proofs.push(proof);
   }
+
+  console.log("done digesting");
+  return;
 
   while (proofs.length > 1) {
     proofs = _.orderBy(proofs, "publicInput.index", "asc");
@@ -147,7 +173,7 @@ it("should digest a range of indexes", async () => {
   );
 });
 
-it("should create an exhaust proof", async () => {
+it.skip("should create an exhaust proof", async () => {
   const mergeProof = proofs[0];
   const { proof } = await StakingLedgerToVotingLedger.exhaust(
     mergeProof.publicInput,

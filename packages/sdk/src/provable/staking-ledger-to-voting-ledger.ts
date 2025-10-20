@@ -11,6 +11,7 @@ import {
   PublicKey,
   SelfProof,
   Struct,
+  // TODO: replace with UInt36 or larger, since the ledger is height 36
   UInt32,
   UInt64,
   ZkProgram,
@@ -18,14 +19,17 @@ import {
 import {
   MerkleTree256Service,
   MerkleWitness256,
-  MerkleWitness32,
-  MerkleTree32Service,
+  PrefixedMerkleWitness36,
+  PrefixedMerkleTree36Service,
+  accountLedgerHashPrefixes,
 } from "../services/merkle-tree-service.js";
 import { ContextProvider } from "../providers/context-provider.js";
 import { VotingAccountService } from "../services/voting-account-service.js";
+import { Account, accountHashPrefix, packToFields } from "./account.js";
+import { hashWithPrefix } from "./hashing-helpers.js";
 
 export interface StakingLedgerToVotingLedgerContext {
-  stakingLedgerTree: MerkleTree32Service;
+  stakingLedgerTree: PrefixedMerkleTree36Service;
   votingLedgerTree: MerkleTree256Service;
   votingAccounts: VotingAccountService;
 }
@@ -33,24 +37,7 @@ export interface StakingLedgerToVotingLedgerContext {
 export const stakingLedgerToVotingLedgerContext =
   new ContextProvider<StakingLedgerToVotingLedgerContext>();
 
-// TODO: replace this class with the real o1js Account, once i figure out how to witness it
-export class Account extends Struct({
-  publicKey: PublicKey,
-  delegate: PublicKey,
-  balance: UInt64,
-}) {
-  public static dummy() {
-    return Account.empty();
-  }
-
-  public static isDummy(account: Account) {
-    return Poseidon.hash(Account.toFields(account)).equals(
-      Poseidon.hash(Account.toFields(Account.empty()))
-    );
-  }
-}
-
-export const STAKING_LEDGER_TREE_HEIGHT = 32;
+export const STAKING_LEDGER_TREE_HEIGHT = 36;
 export const VOTING_LEDGER_TREE_HEIGHT = 256;
 
 export const ACCOUNT_BATCH_SIZE = 5;
@@ -65,7 +52,7 @@ export class VotingAccount extends Struct({
     return VotingAccount.empty();
   }
 
-  public static isDummy(votingAccount: VotingAccount) {
+  public static isEmpty(votingAccount: VotingAccount) {
     return Poseidon.hash(VotingAccount.toFields(votingAccount)).equals(
       Poseidon.hash(VotingAccount.toFields(VotingAccount.empty()))
     );
@@ -86,7 +73,7 @@ export class StakingLedgerToVotingLedgerProgramOutput extends Struct({
   exhausted: Bool,
 }) {}
 
-export const emptyAccountPlaceholder = Field(0);
+export const emptyVotingAccountLeaf = Field(0);
 
 export const StakingLedgerToVotingLedger = ZkProgram({
   name: "staking-ledger-to-voting-ledger",
@@ -122,15 +109,27 @@ export const StakingLedgerToVotingLedger = ZkProgram({
         const nextIndex = output.index.add(1);
 
         // check the next index is empty in the staking ledger
-        let witness = await Provable.witnessAsync(MerkleWitness32, async () => {
-          return await context.stakingLedgerTree.getWitness(
-            BigInt(nextIndex.toBigint())
-          );
-        });
+        let witness = await Provable.witnessAsync(
+          PrefixedMerkleWitness36,
+          async () => {
+            return await context.stakingLedgerTree.getWitness(
+              BigInt(nextIndex.toBigint())
+            );
+          }
+        );
+
+        const emptyAccount = Account.empty();
+        const emptyAccountLeaf = hashWithPrefix(
+          accountHashPrefix,
+          packToFields(Account.toHashInput(emptyAccount))
+        );
 
         const calculatedIndex = witness.calculateIndex();
         // TODO: use whatever the empty value is in the staking ledger tree
-        const calculatedRoot = witness.calculateRoot(emptyAccountPlaceholder);
+        const calculatedRoot = witness.calculateRoot(
+          emptyAccountLeaf,
+          accountLedgerHashPrefixes
+        );
 
         // assert that the empty placeholder we're working with is indeed part of the staking ledger
         calculatedRoot.assertEquals(input.stakingLedgerRoot);
@@ -145,7 +144,7 @@ export const StakingLedgerToVotingLedger = ZkProgram({
       },
     },
     /**
-     * Merge two adjacent digestproofs into a single proof
+     * Merge two adjacent digest proofs into a single proof
      */
     merge: {
       privateInputs: [SelfProof, SelfProof],
@@ -210,7 +209,7 @@ export const StakingLedgerToVotingLedger = ZkProgram({
           // TODO: handle cases where the index points to an empty account / dummy account
           // check if account is in the staking ledger
           let accountWitness = await Provable.witnessAsync(
-            MerkleWitness32,
+            PrefixedMerkleWitness36,
             async () => {
               return await context.stakingLedgerTree.getWitness(
                 index.toBigint()
@@ -218,13 +217,25 @@ export const StakingLedgerToVotingLedger = ZkProgram({
             }
           );
 
-          const accountHash = Poseidon.hash(Account.toFields(account));
+          const emptyAccount = Account.empty();
+          const emptyAccountLeaf = hashWithPrefix(
+            accountHashPrefix,
+            packToFields(Account.toHashInput(emptyAccount))
+          );
+
+          const accountLeaf = hashWithPrefix(
+            accountHashPrefix,
+            packToFields(Account.toHashInput(account))
+          );
 
           const calculatedStakingLedgerIndex = accountWitness.calculateIndex();
-          const calculatedStakingLedgerRoot =
-            accountWitness.calculateRoot(accountHash);
+          const calculatedStakingLedgerRoot = accountWitness.calculateRoot(
+            accountLeaf,
+            accountLedgerHashPrefixes
+          );
           const calculatedEmptyStakingLedgerRoot = accountWitness.calculateRoot(
-            emptyAccountPlaceholder
+            emptyAccountLeaf,
+            accountLedgerHashPrefixes
           );
 
           // assert that we're working with an account at the correct index
@@ -238,7 +249,7 @@ export const StakingLedgerToVotingLedger = ZkProgram({
             .equals(stakingLedgerRoot)
             // if the account is a dummy, we check the root against a root calculated with an empty account placeholder
             .or(
-              Account.isDummy(account).and(
+              Account.isEmpty(account).and(
                 calculatedEmptyStakingLedgerRoot.equals(stakingLedgerRoot)
               )
             )
@@ -280,7 +291,7 @@ export const StakingLedgerToVotingLedger = ZkProgram({
           const calculatedVotingLedgerRoot =
             votingAccountWitness.calculateRoot(votingAccountHash);
           const calculatedEmptyVotingLedgerRoot =
-            votingAccountWitness.calculateRoot(emptyAccountPlaceholder);
+            votingAccountWitness.calculateRoot(emptyVotingAccountLeaf);
 
           calculatedVotingAccountIndex.assertEquals(
             Poseidon.hash(delegateAddress.toFields()),
@@ -292,7 +303,7 @@ export const StakingLedgerToVotingLedger = ZkProgram({
             .equals(votingLedgerRoot)
             // or if the voting ledger entry is empty, ensure that a dummy account is used
             .or(
-              VotingAccount.isDummy(votingAccount).and(
+              VotingAccount.isEmpty(votingAccount).and(
                 calculatedEmptyVotingLedgerRoot.equals(votingLedgerRoot)
               )
             )
@@ -321,6 +332,9 @@ export const StakingLedgerToVotingLedger = ZkProgram({
             );
             return Field(0);
           });
+
+          // TODO: should we be incrementing the index even if the account is a dummy?
+          // how does this affect the exhaust proof?
 
           // we've started at the input index, and with each iteration we move to the next account
           index = index.add(1);
