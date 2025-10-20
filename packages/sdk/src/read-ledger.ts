@@ -57,11 +57,15 @@ export async function readLedger(
                 isTimed: Bool(true),
                 initialMinimumBalance: UInt64.from(
                   value.timing.initial_minimum_balance
-                ),
+                ).mul(1_000_000_000),
                 cliffTime: UInt32.from(value.timing.cliff_time),
-                cliffAmount: UInt64.from(value.timing.cliff_amount),
+                cliffAmount: UInt64.from(value.timing.cliff_amount).mul(
+                  1_000_000_000
+                ),
                 vestingPeriod: UInt32.from(value.timing.vesting_period),
-                vestingIncrement: UInt64.from(value.timing.vesting_increment),
+                vestingIncrement: UInt64.from(
+                  value.timing.vesting_increment
+                ).mul(1_000_000_000),
               })
             : Timing.empty(),
           permissions: new Permissions({
@@ -97,7 +101,7 @@ export async function readLedger(
           // TODO: implement zk app support
           zkapp: Zkapp.empty(),
 
-          balance: UInt64.from(value.balance),
+          balance: UInt64.from(value.balance).mul(1_000_000_000),
           delegate: PublicKey.fromBase58(value.delegate),
         });
 

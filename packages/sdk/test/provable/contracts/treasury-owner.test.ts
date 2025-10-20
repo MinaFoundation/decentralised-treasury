@@ -31,7 +31,7 @@ import {
 import { appendActionToHashList } from "../../../src/provable/hashing-helpers.js";
 import {
   TreasuryProposalSmartContract,
-  VoteResult,
+  ProposalStatus,
 } from "../../../src/provable/contracts/treasury-proposal/treasury-proposal.js";
 import {
   SideLoadedStakingLedgerToVotingLedgerProof,
@@ -368,9 +368,9 @@ it("should tally votes", async () => {
   const pendingTx = await tx.send();
   await pendingTx.wait();
 
-  const voteApproved = await treasuryProposal.approved.fetch();
+  const voteApproved = await treasuryProposal.status.fetch();
   assert(
-    voteApproved.equals(VoteResult.APPROVED).toBoolean(),
+    voteApproved.equals(ProposalStatus.APPROVED).toBoolean(),
     "Vote not approved"
   );
 });
