@@ -4,8 +4,10 @@ import {
   Bool,
   Field,
   Permissions,
+  Poseidon,
   Provable,
   PublicKey,
+  Signature,
   State,
   Struct,
   TokenContract,
@@ -20,6 +22,7 @@ import {
 } from "./treasury-proposal/vote-reducer.js";
 import { TreasuryProposalSmartContract } from "./treasury-proposal/treasury-proposal.js";
 import { SideLoadedStakingLedgerToVotingLedgerProof } from "../staking-ledger-to-voting-ledger.js";
+import { hashWithPrefix } from "../hashing-helpers.js";
 
 export class Proposal extends Struct({
   amount: UInt64,
@@ -35,6 +38,7 @@ export const SLOT_PRECONDITION_PADDING = UInt32.from(5);
 // allow SLOT_PRECONDITION_PADDING slots in the future for globalSlotSinceGenesis
 export const VOTE_TALLY_HISTORICAL_PRECONDITION_DELAY =
   SLOT_PRECONDITION_PADDING.add(5);
+export const MULTISIG_SIGNATURES_COUNT = 3;
 
 export class LifecyclePeriod extends UInt32 {
   // doubles as execution period too
@@ -46,17 +50,66 @@ export class LifecyclePeriod extends UInt32 {
   public static NUMBER_OF_PERIODS = UInt32.from(4);
 }
 
+export class MultisigSignature extends Signature {
+  public static prefixPauseProposal = "decentralized-treasury-pause-proposal";
+  public static prefixUnpauseProposal =
+    "decentralized-treasury-unpause-proposal";
+
+  public static prefixPause = "decentralized-treasury-pause";
+  public static prefixUnpause = "decentralized-treasury-unpause";
+
+  public static prefixRotateMultisigKeys =
+    "decentralized-treasury-rotate-multisig-keys";
+
+  public static dataPauseProposal(proposalPublicKey: PublicKey, nonce: UInt32) {
+    return [
+      hashWithPrefix(this.prefixPauseProposal, [
+        ...proposalPublicKey.toFields(),
+        ...nonce.toFields(),
+      ]),
+    ];
+  }
+
+  public static dataUnpauseProposal(
+    proposalPublicKey: PublicKey,
+    nonce: UInt32
+  ) {
+    return [
+      hashWithPrefix(this.prefixUnpauseProposal, [
+        ...proposalPublicKey.toFields(),
+        ...nonce.toFields(),
+      ]),
+    ];
+  }
+
+  public static dataPauseTreasury(nonce: UInt32) {
+    return [hashWithPrefix(this.prefixPause, [...nonce.toFields()])];
+  }
+
+  public static dataUnpauseTreasury(nonce: UInt32) {
+    return [hashWithPrefix(this.prefixUnpause, [...nonce.toFields()])];
+  }
+}
+export class MultisigSignatures extends Struct({
+  signatures: Provable.Array(MultisigSignature, MULTISIG_SIGNATURES_COUNT),
+}) {}
+
 // TODO: set correct starting permissions
 export class TreasuryOwnerSmartContract extends TokenContract {
   public static proposalContractVerificationKey?: {
     data: string;
     hash: Field;
   };
+  public static multisigParticipants: PublicKey[] = [];
 
   @state(UInt32) treasuryDeployedAtSlot = State<UInt32>();
 
   @state(Field) stakingEpochDataLedgerHash = State<Field>();
   @state(UInt64) stakingEpochDataLedgerTotalCurrency = State<UInt64>();
+
+  // hash of multisig addresses
+  @state(Field) multisigCommitment = State<Field>();
+  @state(Bool) paused = State<Bool>();
 
   public async snapshotStakingEpochData() {
     const networkStakingEpochDataLedgerHash =
@@ -71,7 +124,10 @@ export class TreasuryOwnerSmartContract extends TokenContract {
   }
 
   @method
-  public async initialize(treasuryDeployedAtSlot: UInt32) {
+  public async initialize(
+    treasuryDeployedAtSlot: UInt32,
+    multisigCommitment: Field
+  ) {
     const currentTreasuryDeployedAtSlot =
       this.treasuryDeployedAtSlot.getAndRequireEquals();
 
@@ -80,6 +136,7 @@ export class TreasuryOwnerSmartContract extends TokenContract {
       .assertTrue("Contract has already been initialized");
 
     this.treasuryDeployedAtSlot.set(treasuryDeployedAtSlot);
+    this.multisigCommitment.set(multisigCommitment);
   }
 
   public async requireLifecyclePeriodGreaterThanOrEqual(
@@ -136,6 +193,7 @@ export class TreasuryOwnerSmartContract extends TokenContract {
 
     await this.snapshotStakingEpochData();
     await this.requireLifecyclePeriod(LifecyclePeriod.PROPOSAL, lifecycleId);
+    await this.requireNotPaused();
 
     const proposalUpdate = AccountUpdate.createSigned(
       proposalPublicKey,
@@ -199,6 +257,7 @@ export class TreasuryOwnerSmartContract extends TokenContract {
     publicKey: PublicKey,
     vote: Vote
   ) {
+    this.requireNotPaused();
     const proposal = new TreasuryProposalSmartContract(
       proposalPublicKey,
       this.deriveTokenId()
@@ -232,6 +291,7 @@ export class TreasuryOwnerSmartContract extends TokenContract {
     voteReducerProof: SideLoadedVoteReducerProof,
     stakingLedgerToVotingLedgerProof: SideLoadedStakingLedgerToVotingLedgerProof
   ) {
+    this.requireNotPaused();
     const proposal = new TreasuryProposalSmartContract(
       proposalPublicKey,
       this.deriveTokenId()
@@ -267,6 +327,7 @@ export class TreasuryOwnerSmartContract extends TokenContract {
 
   @method
   public async executeProposal(proposalPublicKey: PublicKey) {
+    this.requireNotPaused();
     const proposal = new TreasuryProposalSmartContract(
       proposalPublicKey,
       this.deriveTokenId()
@@ -289,6 +350,107 @@ export class TreasuryOwnerSmartContract extends TokenContract {
     await proposal.execute(this.self);
 
     this.approve(proposal.self);
+  }
+
+  public async verifyMultisigSignatures(
+    data: Field[],
+    { signatures }: MultisigSignatures
+  ) {
+    const multiSigCommitment = this.multisigCommitment.getAndRequireEquals();
+    const multisigParticipants = Provable.witness(
+      Provable.Array(PublicKey, MULTISIG_SIGNATURES_COUNT),
+      () => {
+        return TreasuryOwnerSmartContract.multisigParticipants;
+      }
+    );
+
+    signatures.forEach((signature, i) => {
+      signature
+        .verify(multisigParticipants[i], data)
+        .assertTrue("Invalid multisig signature");
+    });
+
+    const currentMultiSigCommitment = Poseidon.hash([
+      ...multisigParticipants.flatMap((participant) => participant.toFields()),
+    ]);
+
+    currentMultiSigCommitment
+      .equals(multiSigCommitment)
+      .assertTrue("Invalid multisig commitment");
+  }
+
+  // TODO: implement this
+  @method
+  public async rotateMultisigKeys(signatures: MultisigSignatures) {}
+
+  @method
+  public async pauseProposal(
+    proposalPublicKey: PublicKey,
+    signatures: MultisigSignatures
+  ) {
+    const proposal = new TreasuryProposalSmartContract(
+      proposalPublicKey,
+      this.deriveTokenId()
+    );
+
+    const nonce = proposal.account.nonce.getAndRequireEquals();
+    proposal.self.body.incrementNonce = Bool(true);
+
+    const data = MultisigSignature.dataPauseProposal(proposalPublicKey, nonce);
+    this.verifyMultisigSignatures(data, signatures);
+
+    await proposal.pause();
+
+    this.approve(proposal.self);
+  }
+
+  @method
+  public async unpauseProposal(
+    proposalPublicKey: PublicKey,
+    signatures: MultisigSignatures
+  ) {
+    const proposal = new TreasuryProposalSmartContract(
+      proposalPublicKey,
+      this.deriveTokenId()
+    );
+
+    const proposalNonce = proposal.account.nonce.getAndRequireEquals();
+    proposal.self.body.incrementNonce = Bool(true);
+
+    const data = MultisigSignature.dataUnpauseProposal(
+      proposalPublicKey,
+      proposalNonce
+    );
+    this.verifyMultisigSignatures(data, signatures);
+
+    await proposal.unpause();
+
+    this.approve(proposal.self);
+  }
+
+  @method
+  public async pauseTreasury(signatures: MultisigSignatures) {
+    const nonce = this.account.nonce.getAndRequireEquals();
+    this.self.body.incrementNonce = Bool(true);
+    const data = MultisigSignature.dataPauseTreasury(nonce);
+
+    this.verifyMultisigSignatures(data, signatures);
+    this.paused.set(Bool(true));
+  }
+
+  @method
+  public async unpauseTreasury(signatures: MultisigSignatures) {
+    const nonce = this.account.nonce.getAndRequireEquals();
+    this.self.body.incrementNonce = Bool(true);
+    const data = MultisigSignature.dataUnpauseTreasury(nonce);
+
+    this.verifyMultisigSignatures(data, signatures);
+    this.paused.set(Bool(false));
+  }
+
+  public async requireNotPaused() {
+    const paused = this.paused.getAndRequireEquals();
+    paused.not().assertTrue("Contract is paused");
   }
 
   public async approveBase(updates: AccountUpdateForest) {

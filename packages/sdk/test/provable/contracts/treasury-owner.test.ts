@@ -31,7 +31,7 @@ import {
 import { appendActionToHashList } from "../../../src/provable/hashing-helpers.js";
 import {
   TreasuryProposalSmartContract,
-  VoteResult,
+  ProposalStatus,
 } from "../../../src/provable/contracts/treasury-proposal/treasury-proposal.js";
 import {
   SideLoadedStakingLedgerToVotingLedgerProof,
@@ -123,6 +123,19 @@ const dummyZkAppUri = "https://example.com";
 const votingAccount1 = new VotingAccount({ balance: UInt64.from(300) });
 const votingAccount2 = new VotingAccount({ balance: UInt64.from(100) });
 
+const multisigPrivateKey1 = PrivateKey.random();
+const multisigPublicKey1 = multisigPrivateKey1.toPublicKey();
+const multisigPrivateKey2 = PrivateKey.random();
+const multisigPublicKey2 = multisigPrivateKey2.toPublicKey();
+const multisigPrivateKey3 = PrivateKey.random();
+const multisigPublicKey3 = multisigPrivateKey3.toPublicKey();
+
+const multiSigCommitment = Poseidon.hash([
+  ...[multisigPublicKey1, multisigPublicKey2, multisigPublicKey3].flatMap(
+    (participant) => participant.toFields()
+  ),
+]);
+
 votingAccountService.setVotingAccount(
   voterPublicKey1.toBase58(),
   votingAccount1
@@ -177,7 +190,7 @@ it("should create a proposal", async () => {
 
   await (async () => {
     const tx = await Mina.transaction(testAccount, async () => {
-      await treasuryOwner.initialize(UInt32.from(0));
+      await treasuryOwner.initialize(UInt32.from(0), multiSigCommitment);
     });
 
     tx.sign([testAccount.key, treasuryOwnerPrivateKey]);
@@ -356,9 +369,9 @@ it("should tally votes", async () => {
   const pendingTx = await tx.send();
   await pendingTx.wait();
 
-  const voteApproved = await treasuryProposal.approved.fetch();
+  const voteApproved = await treasuryProposal.status.fetch();
   assert(
-    voteApproved.equals(VoteResult.APPROVED).toBoolean(),
+    voteApproved.equals(ProposalStatus.APPROVED).toBoolean(),
     "Vote not approved"
   );
 });

@@ -1,6 +1,6 @@
 ## Scripts
 
-`lightnet:start` - Start a local Mina Lightnet network
+`lightnet start` - Start a local Mina Lightnet network
 
 ## Miscelaneous
 
