@@ -75,6 +75,13 @@ export class StakingLedgerToVotingLedgerProgramOutput extends Struct({
 
 export const emptyVotingAccountLeaf = Field(0);
 
+export interface StakingLedgerToVotingLedgerTrace {
+  publicInput: StakingLedgerToVotingLedgerProgramInput;
+  privateInput: {
+    accounts: Account[];
+  };
+}
+
 export const StakingLedgerToVotingLedger = ZkProgram({
   name: "staking-ledger-to-voting-ledger",
   publicInput: StakingLedgerToVotingLedgerProgramInput,
@@ -247,6 +254,7 @@ export const StakingLedgerToVotingLedger = ZkProgram({
           // assert that the account we're working with is indeed part of the staking ledger
           calculatedStakingLedgerRoot
             .equals(stakingLedgerRoot)
+            // TODO: don't think we need isEmpty checks anymore since real ledger empty entry is an actual empty account not Field(0)
             // if the account is a dummy, we check the root against a root calculated with an empty account placeholder
             .or(
               Account.isEmpty(account).and(

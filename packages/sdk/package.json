@@ -10,9 +10,11 @@
     "test:watch": "NODE_NO_WARNINGS=1 NODE_OPTIONS='--trace-uncaught' node --loader ts-node/esm --watch --test",
     "test:watch:all": "NODE_NO_WARNINGS=1 node --loader ts-node/esm --watch --test ./test/**/*.test.ts",
     "test:proofs-enabled": "NODE_NO_WARNINGS=1 PROOFS_ENABLED=true node --loader ts-node/esm --test",
-    "test:proofs-enabled:all": "NODE_NO_WARNINGS=1 PROOFS_ENABLED=true node --loader ts-node/esm --test ./test/**/*.test.ts"
+    "test:proofs-enabled:all": "NODE_NO_WARNINGS=1 PROOFS_ENABLED=true node --loader ts-node/esm --test ./test/**/*.test.ts",
+    "docker:build:local-o1js": "docker build -t decentralized-treasury-worker --progress=plain --file ./docker/worker.Dockerfile --build-context o1js=../../../o1js ."
   },
   "dependencies": {
+    "@docker/node-sdk": "^0.0.11",
     "@types/lodash": "^4.17.20",
     "add": "^2.0.6",
     "commander": "^14.0.0",
@@ -20,6 +22,7 @@
     "pnpm": "^10.14.0",
     "stream-json": "^1.9.1",
     "tsyringe": "^4.10.0",
+    "zeromq": "^6.5.0",
     "zkapp-cli": "^0.22.9",
     "zod": "^4.0.17"
   },
@@ -27,9 +30,10 @@
     "@types/node": "^22.15.3",
     "ts-node": "^10.9.2",
     "tslib": "^2.8.1",
-    "tsx": "^4.20.4"
+    "tsx": "^4.20.4",
+    "o1js": "file:/Users/maht0rz/Projects/mina-foundation/o1js"
   },
   "peerDependencies": {
-    "o1js": "file:/Users/maht0rz/Projects/mina-foundation/o1js"
+    "o1js": "2.8.0"
   }
 }

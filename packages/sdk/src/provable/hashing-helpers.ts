@@ -1,6 +1,4 @@
-import { Field, Poseidon } from "o1js";
-// TODO: need a better way to import this
-import { prefixToField } from "./../../node_modules/o1js/dist/node/bindings/lib/binable.js";
+import { Field, Poseidon, prefixToField } from "o1js";
 
 // hashing helpers
 export function initialState() {

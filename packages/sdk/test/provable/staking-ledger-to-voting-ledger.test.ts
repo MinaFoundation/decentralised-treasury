@@ -19,6 +19,7 @@ import {
   stakingLedgerToVotingLedgerContext,
   StakingLedgerToVotingLedgerProgramInput,
   StakingLedgerToVotingLedgerProgramOutput,
+  StakingLedgerToVotingLedgerTrace,
   VOTING_LEDGER_TREE_HEIGHT,
   VotingAccount,
 } from "../../src/provable/staking-ledger-to-voting-ledger.js";
@@ -89,6 +90,7 @@ it("should digest a range of indexes", async () => {
     }
   });
 
+  let traces: StakingLedgerToVotingLedgerTrace[] = [];
   console.log("digesting total of", testAccounts.length, "accounts");
   for (let i = 0; i < TEST_ITERATIONS; i++) {
     const input = {
@@ -115,8 +117,16 @@ it("should digest a range of indexes", async () => {
     }
 
     console.time(`digest ${i}`);
+    await new Promise((resolve) => setTimeout(resolve, 100));
     const { proof } = await StakingLedgerToVotingLedger.digest(input, accounts);
     console.timeEnd(`digest ${i}`);
+
+    // traces.push({
+    //   publicInput: input,
+    //   privateInput: {
+    //     accounts: accounts,
+    //   },
+    // });
     Provable.log("proof", i, proof.publicInput, proof.publicOutput);
 
     const proofSize = new TextEncoder().encode(
@@ -127,9 +137,10 @@ it("should digest a range of indexes", async () => {
     proofs.push(proof);
   }
 
-  console.log("done digesting");
-  return;
+  Provable.log("traces", traces.length, traces);
 
+  let mergeProofIndex = 0;
+  // TODO: this throws wasm unreachable when digesting the lightnet ledger
   while (proofs.length > 1) {
     proofs = _.orderBy(proofs, "publicInput.index", "asc");
     let proof1 = proofs[0];
@@ -146,6 +157,18 @@ it("should digest a range of indexes", async () => {
     }
 
     console.time(`merge`);
+    Provable.log("merge", {
+      proof1: {
+        publicInput: proof1.publicInput,
+        publicOutput: proof1.publicOutput,
+      },
+      proof2: {
+        publicInput: proof2.publicInput,
+        publicOutput: proof2.publicOutput,
+      },
+    });
+
+    await new Promise((resolve) => setTimeout(resolve, 500));
     const { proof } = await StakingLedgerToVotingLedger.merge(
       proof1.publicInput,
       proof1,
@@ -156,7 +179,13 @@ it("should digest a range of indexes", async () => {
     // Remove the two proofs that were just merged
     proofs = proofs.filter((p) => p !== proof1 && p !== proof2);
 
-    Provable.log("merge proof", proof.publicInput, proof.publicOutput);
+    Provable.log(
+      "merge proof",
+      mergeProofIndex,
+      proof.publicInput,
+      proof.publicOutput
+    );
+    mergeProofIndex++;
 
     proofs.push(proof);
   }
@@ -175,6 +204,10 @@ it("should digest a range of indexes", async () => {
 
 it.skip("should create an exhaust proof", async () => {
   const mergeProof = proofs[0];
+  Provable.log(
+    "creating exhaust proof for index",
+    mergeProof.publicOutput.index.add(1)
+  );
   const { proof } = await StakingLedgerToVotingLedger.exhaust(
     mergeProof.publicInput,
     mergeProof

@@ -22,5 +22,9 @@
     "importHelpers": true, // bundle optimization to reduce size
     "baseUrl": "." // base directory for module resolution
   },
+  "ts-node": {
+    "logError": true,
+    "pretty": true
+  },
   "include": ["./src", "./test"]
 }
