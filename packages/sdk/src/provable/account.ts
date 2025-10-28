@@ -12,6 +12,8 @@ import {
   ReceiptChainHashBase58,
   StateHashBase58,
   Poseidon,
+  Provable,
+  PrivateKey,
 } from "o1js";
 
 export const accountHashPrefix = "MinaAccount*********";
@@ -195,6 +197,18 @@ export class Account extends Struct({
   permissions: Permissions,
   zkapp: Zkapp,
 }) {
+  // TODO: this is a hack to bypass checks during fromJSON, it'll result in returning an empty account if the deserialization fails
+  public static fromJSON(json: Record<string, any>): Account {
+    let account: Account;
+    try {
+      account = super.fromJSON(json as any);
+    } catch (error) {
+      Provable.log("error deserializing account", error);
+      account = Account.empty();
+    }
+    return account;
+  }
+
   public static empty() {
     return new Account({
       pk: PublicKey.empty(),

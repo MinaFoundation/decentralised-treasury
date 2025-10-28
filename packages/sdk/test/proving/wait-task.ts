@@ -25,45 +25,48 @@ export class BaseTask {
   }
 }
 
-export class WaitTask extends BaseTask implements Task {
+export class WaitTask extends BaseTask implements Task<number, string> {
   public name = "wait";
-  public status = TaskStatus.PENDING;
-
-  public constructor(public id: number) {
-    super();
-  }
+  public id?: number;
+  public input: number;
 
   get serializers() {
     return {
-      input: () => {},
-      output: () => {},
+      input: async (input: number) => input.toString(),
+      output: async (output: string) => output,
+    };
+  }
+
+  get deserializers() {
+    return {
+      input: async (input: string) => Number(input),
+      output: async (output: string) => output,
     };
   }
 
   public static async prepare() {
     console.log("preparing wait task");
 
-    console.time("compile");
-    const files = readdirSync(`${process.cwd()}/cache`);
-    console.log("files", files);
-    await StakingLedgerToVotingLedger.compile({
-      cache: Cache.FileSystem(`${process.cwd()}/cache`),
-    });
-    console.timeEnd("compile");
+    // console.time("compile");
+    // const files = readdirSync(`${process.cwd()}/cache`);
+    // console.log("files", files);
+    // await StakingLedgerToVotingLedger.compile({
+    //   cache: Cache.FileSystem(`${process.cwd()}/cache`),
+    // });
+    // console.timeEnd("compile");
   }
 
-  public async run() {
-    const waitTime = Math.floor(Math.random() * 4000) + 1000;
+  public async run(waitTime: number) {
     console.log("waiting for", waitTime, "seconds", this.id);
     await new Promise((resolve) => setTimeout(resolve, waitTime));
-
-    console.time("compile in worker");
-    console.log("cache path", `${process.cwd()}/cache`);
-    const files = readdirSync(`${process.cwd()}/cache`);
-    console.log("files", files);
-    await StakingLedgerToVotingLedger.compile({
-      cache: Cache.FileSystem(`${process.cwd()}/cache`),
-    });
-    console.timeEnd("compile in worker");
+    return `waited for ${waitTime} seconds`;
+    // console.time("compile in worker");
+    // console.log("cache path", `${process.cwd()}/cache`);
+    // const files = readdirSync(`${process.cwd()}/cache`);
+    // console.log("files", files);
+    // await StakingLedgerToVotingLedger.compile({
+    //   cache: Cache.FileSystem(`${process.cwd()}/cache`),
+    // });
+    // console.timeEnd("compile in worker");
   }
 }

@@ -12,6 +12,7 @@ import {
   parseFetchedAccount,
   Provable,
   Proof,
+  PublicKey,
 } from "o1js";
 import {
   ACCOUNT_BATCH_SIZE,
@@ -70,11 +71,20 @@ it("should analyze the program", async () => {
 //   Account.dummy(),
 // ];
 
-const testAccounts = await readLedger(
-  "test/provable/staking-epoch-ledger.json"
+let testAccounts = await readLedger("test/provable/staking-epoch-ledger.json");
+
+// if you want to iterate over the whole ledger, you can use this
+// const TEST_ITERATIONS = Math.ceil(testAccounts.length / ACCOUNT_BATCH_SIZE);
+
+// iterate over 10*ACCOUNT_BATCH_SIZE accounts
+const TEST_ITERATIONS = 10;
+
+const totalSupply = testAccounts.reduce(
+  (acc, account) => acc.add(account.balance),
+  UInt64.from(0)
 );
-const TEST_ITERATIONS = Math.ceil(testAccounts.length / ACCOUNT_BATCH_SIZE);
-// const TEST_ITERATIONS = 1;
+
+Provable.log("total supply", totalSupply.toString());
 
 it("should digest a range of indexes", async () => {
   // fill in the merkle tree with accounts
@@ -90,12 +100,21 @@ it("should digest a range of indexes", async () => {
     }
   });
 
-  let traces: StakingLedgerToVotingLedgerTrace[] = [];
-  console.log("digesting total of", testAccounts.length, "accounts");
+  console.log(
+    "digesting total of",
+    TEST_ITERATIONS * ACCOUNT_BATCH_SIZE,
+    "accounts",
+    "out of",
+    testAccounts.length,
+    "accounts"
+  );
+
+  let publicOutput: StakingLedgerToVotingLedgerProgramOutput;
+
   for (let i = 0; i < TEST_ITERATIONS; i++) {
     const input = {
       index: UInt32.from(i * ACCOUNT_BATCH_SIZE),
-      totalCurrency: UInt64.from(0),
+      totalCurrency: publicOutput?.totalCurrency ?? UInt64.from(0),
       stakingLedgerRoot: stakingLedgerTreeService.tree.getRoot(),
       votingLedgerRoot: votingLedgerTreeService.tree.getRoot(),
     };
@@ -121,12 +140,8 @@ it("should digest a range of indexes", async () => {
     const { proof } = await StakingLedgerToVotingLedger.digest(input, accounts);
     console.timeEnd(`digest ${i}`);
 
-    // traces.push({
-    //   publicInput: input,
-    //   privateInput: {
-    //     accounts: accounts,
-    //   },
-    // });
+    publicOutput = proof.publicOutput;
+
     Provable.log("proof", i, proof.publicInput, proof.publicOutput);
 
     const proofSize = new TextEncoder().encode(
@@ -136,8 +151,6 @@ it("should digest a range of indexes", async () => {
     console.log("digest proof size", proofSize);
     proofs.push(proof);
   }
-
-  Provable.log("traces", traces.length, traces);
 
   let mergeProofIndex = 0;
   // TODO: this throws wasm unreachable when digesting the lightnet ledger

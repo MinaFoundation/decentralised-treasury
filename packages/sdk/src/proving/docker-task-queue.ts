@@ -3,10 +3,11 @@ import { TaskQueue } from "./task-queue.js";
 import * as zmq from "zeromq";
 import { DockerClient } from "@docker/node-sdk";
 
+const PROOFS_ENABLED = process.env.PROOFS_ENABLED === "true";
 export class DockerTaskQueue extends TaskQueue {
   public static image = "decentralized-treasury-worker:latest";
-  public static dockerMaxNanoCpus = 10 * 10 ** 9;
-  public static dockerMaxMemory = 5 * 10 ** 9; // 5GB
+  public static dockerMaxNanoCpus = 4 * 10 ** 9;
+  public static dockerMaxMemory = 6 * 10 ** 9; // 6GB
   public docker: DockerClient;
   public containerIds: string[] = [];
 
@@ -20,8 +21,9 @@ export class DockerTaskQueue extends TaskQueue {
 
     for (let i = 0; i < this.maxConcurrentTasks; i++) {
       const sock = new zmq.Request();
-      sock.bindSync(`tcp://localhost:${5554 + i}`);
-      console.log("sock bound", i, `tcp://localhost:${5554 + i}`);
+      const port = 5554 + i;
+      sock.bindSync(`tcp://localhost:${port}`);
+      console.log("sock bound", i, `tcp://localhost:${port}`);
 
       await this.docker.containerDelete(`decentralized-treasury-worker-${i}`, {
         force: true,
@@ -29,7 +31,10 @@ export class DockerTaskQueue extends TaskQueue {
 
       const response = await this.docker.containerCreate(
         {
-          Env: ["DT_TASK_QUEUE_HOST=host.docker.internal"],
+          Env: [
+            "DT_TASK_QUEUE_HOST=host.docker.internal",
+            PROOFS_ENABLED ? "PROOFS_ENABLED=true" : "PROOFS_ENABLED=false",
+          ],
           WorkingDir: `/app`,
           Image: DockerTaskQueue.image,
           Cmd: [
@@ -37,10 +42,10 @@ export class DockerTaskQueue extends TaskQueue {
             "--loader",
             "ts-node/esm",
             fromWorkerFile,
-            i.toString(),
+            port.toString(),
           ],
           HostConfig: {
-            Binds: [`${process.cwd()}:/app/${process.cwd()}`],
+            Binds: [`${process.cwd()}:/app/${process.cwd()}:delegated`],
             NanoCpus: DockerTaskQueue.dockerMaxNanoCpus,
             Memory: DockerTaskQueue.dockerMaxMemory,
           },
@@ -51,6 +56,7 @@ export class DockerTaskQueue extends TaskQueue {
       );
 
       await this.docker.containerStart(response.Id);
+      console.log("container started", response);
       this.containerIds.push(response.Id);
 
       this.workers.push({

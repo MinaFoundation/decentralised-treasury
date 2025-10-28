@@ -7,21 +7,38 @@ export enum TaskStatus {
   COMPLETED = "completed",
 }
 
-export interface Task {
+export interface TaskSerializers<Input, Output> {
+  input: (input: Input) => Promise<string>;
+  output: (output: Output) => Promise<string>;
+}
+
+export interface TaskDeserializers<Input, Output> {
+  input: (input: string) => Promise<Input>;
+  output: (output: string) => Promise<Output>;
+}
+export interface Task<Input, Output> {
+  id?: number;
+  name: string;
+  input: Input;
+  run: (input: Input) => Promise<Output>;
+  output?: Output;
+  status?: TaskStatus;
+  serializers: TaskSerializers<Input, Output>;
+  deserializers: TaskDeserializers<Input, Output>;
+}
+
+export interface SerializedTask {
   id: number;
   name: string;
-  run: () => Promise<void>;
-  serializers: {
-    input: () => void;
-    output: () => void;
-  };
-  status: TaskStatus;
-  result?: unknown;
+  input: string;
+  output?: string;
 }
 
 export class TaskQueue {
-  public tasks: Task[] = [];
-  public onTaskComplete: (task: Task) => Promise<void> = async () => {};
+  public tasks: Task<unknown, unknown>[] = [];
+  public nextTaskId = 1;
+  public onTaskComplete: (task: Task<unknown, unknown>) => Promise<void> =
+    async () => {};
   public workers: {
     process: ChildProcess;
     isBusy: boolean;
@@ -36,7 +53,9 @@ export class TaskQueue {
     }
   }
 
-  public async addTask(task: Task) {
+  public async addTask(task: Task<unknown, unknown>) {
+    task.status = TaskStatus.PENDING;
+    task.id = this.nextTaskId++;
     this.tasks.push(task);
   }
 
@@ -56,20 +75,40 @@ export class TaskQueue {
     for (const worker of this.workers) {
       if (!worker.isBusy && this.tasks.length > 0) {
         worker.isBusy = true;
-        const task = this.tasks.find((t) => t.status === TaskStatus.PENDING);
+        const task = this.tasks[0];
 
         if (task) {
-          task.status = TaskStatus.RUNNING;
-          await worker.sock.send(JSON.stringify(task));
-          worker.sock.receive().then(async ([msg]) => {
-            worker.isBusy = false;
-            task.result = JSON.parse(msg.toString());
-            task.status = TaskStatus.COMPLETED;
-            await this.onTaskComplete(task);
-            this.tasks = this.tasks.filter((t) => t.id !== task.id);
-            // continue working tasks, assuming a worker freed up
-            this.workTasks();
-          });
+          this.tasks = this.tasks.filter((t) => t.id !== task.id);
+
+          const serializedTask: SerializedTask = {
+            id: task.id,
+            name: task.name,
+            input: await task.serializers.input(task.input),
+          };
+
+          console.log("sending task", serializedTask);
+          await worker.sock.send(JSON.stringify(serializedTask));
+
+          worker.sock
+            .receive()
+            .then(async ([msg]) => {
+              let serializedTaskResult: SerializedTask = JSON.parse(
+                msg.toString()
+              );
+
+              worker.isBusy = false;
+              task.output = await task.deserializers.output(
+                serializedTaskResult.output
+              );
+
+              await this.onTaskComplete(task);
+
+              // continue working tasks, assuming a worker freed up
+              this.workTasks();
+            })
+            .catch((error) => {
+              throw error;
+            });
         }
       }
     }
@@ -79,12 +118,13 @@ export class TaskQueue {
     for (let i = 0; i < this.maxConcurrentTasks; i++) {
       console.log("spawning worker", i);
       const sock = new zmq.Request();
-      sock.bindSync(`tcp://localhost:${5554 + i}`);
-      console.log("sock bound", i, `tcp://localhost:${5554 + i}`);
+      const port = 5554 + i;
+      sock.bindSync(`tcp://localhost:${port}`);
+      console.log("sock bound", i, `tcp://localhost:${port}`);
 
       const childProcess = spawn(
         "node",
-        ["--loader", "ts-node/esm", fromWorkerFile, i.toString()],
+        ["--loader", "ts-node/esm", fromWorkerFile, port.toString()],
         {
           stdio: "inherit",
         }

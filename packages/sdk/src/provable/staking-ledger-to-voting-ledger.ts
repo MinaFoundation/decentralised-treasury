@@ -64,6 +64,7 @@ export class StakingLedgerToVotingLedgerProgramInput extends Struct({
   stakingLedgerRoot: Field,
   // TODO: use 2^32 tree and double check the voting account's witness index against the staking ledger witness index
   votingLedgerRoot: Field, // empty root
+  totalCurrency: UInt64,
 }) {}
 
 export class StakingLedgerToVotingLedgerProgramOutput extends Struct({
@@ -71,6 +72,7 @@ export class StakingLedgerToVotingLedgerProgramOutput extends Struct({
   votingLedgerRoot: Field, // final root
   // votingLedgerST  -> explore an idea of instructions --> aws lambda limits parelelization to 7k instances at a given time per region?
   exhausted: Bool,
+  totalCurrency: UInt64,
 }) {}
 
 export const emptyVotingAccountLeaf = Field(0);
@@ -166,7 +168,8 @@ export const StakingLedgerToVotingLedger = ZkProgram({
           StakingLedgerToVotingLedgerProgramOutput
         >
       ) => {
-        let { index, stakingLedgerRoot, votingLedgerRoot } = publicInput;
+        let { index, stakingLedgerRoot, votingLedgerRoot, totalCurrency } =
+          publicInput;
 
         proof1.verify();
         proof2.verify();
@@ -187,11 +190,13 @@ export const StakingLedgerToVotingLedger = ZkProgram({
         input1.stakingLedgerRoot.assertEquals(input1.stakingLedgerRoot);
         output1.index.add(1).assertEquals(input2.index);
         output1.votingLedgerRoot.assertEquals(input2.votingLedgerRoot);
+        output1.totalCurrency.assertEquals(input2.totalCurrency);
 
         return {
           publicOutput: {
             index: output2.index,
             votingLedgerRoot: output2.votingLedgerRoot,
+            totalCurrency: output2.totalCurrency,
             exhausted: Bool(false),
           },
         };
@@ -208,7 +213,8 @@ export const StakingLedgerToVotingLedger = ZkProgram({
         accounts: Account[]
       ) => {
         const context = stakingLedgerToVotingLedgerContext.get();
-        let { index, stakingLedgerRoot, votingLedgerRoot } = publicInput;
+        let { index, stakingLedgerRoot, votingLedgerRoot, totalCurrency } =
+          publicInput;
 
         for (let i = 0; i < ACCOUNT_BATCH_SIZE; i++) {
           const account = accounts[i];
@@ -250,6 +256,15 @@ export const StakingLedgerToVotingLedger = ZkProgram({
             index.toFields()[0],
             "staking ledger tree account index not matching"
           );
+
+          Provable.log("debug", {
+            index,
+            account,
+            calculatedStakingLedgerIndex,
+            calculatedStakingLedgerRoot,
+            calculatedEmptyStakingLedgerRoot,
+            stakingLedgerRoot,
+          });
 
           // assert that the account we're working with is indeed part of the staking ledger
           calculatedStakingLedgerRoot
@@ -306,6 +321,17 @@ export const StakingLedgerToVotingLedger = ZkProgram({
             "voting ledger witness index not matching"
           );
 
+          Provable.log("debug", {
+            index,
+            pk: account.pk,
+            balance: account.balance,
+            delegateAddress,
+            votingAccount,
+            calculatedVotingLedgerRoot,
+            votingLedgerRoot,
+            calculatedEmptyVotingLedgerRoot,
+          });
+
           // assert that the account we're working with is indeed part of the voting ledger
           calculatedVotingLedgerRoot
             .equals(votingLedgerRoot)
@@ -318,6 +344,7 @@ export const StakingLedgerToVotingLedger = ZkProgram({
             .assertTrue("voting ledger root does not match");
 
           // !!! TODO: balance contains unvested tokens, need to subtract the vested amount
+          totalCurrency = totalCurrency.add(account.balance);
           // append updated delegate account to the new voting weight ledger
           votingAccount.balance = votingAccount.balance.add(account.balance);
           const updatedVotingAccountHash = Poseidon.hash(
@@ -354,6 +381,7 @@ export const StakingLedgerToVotingLedger = ZkProgram({
             index: index.sub(1),
             exhausted: Bool(false),
             votingLedgerRoot,
+            totalCurrency,
           },
         };
       },

@@ -11,6 +11,7 @@ import {
   packToFields,
 } from "../provable/account.js";
 import { hashWithPrefix } from "../provable/hashing-helpers.js";
+import { Capturable } from "../providers/context-provider.js";
 
 export class PrefixedMerkleWitness36 extends PrefixedMerkleWitness(36) {}
 export class MerkleWitness256 extends MerkleWitness(256) {}
@@ -66,21 +67,26 @@ export const accountLedgerHashPrefixes = [
 export class PrefilledPrefixedMerkleTree36InMemoryService
   implements PrefixedMerkleTree36Service
 {
-  public witnesses: Record<string, PrefixedMerkleWitness36> = {};
+  public witnesses: Record<string, PrefixedMerkleWitness36[]> = {};
 
-  public getWitness(index: bigint): Promise<PrefixedMerkleWitness36> {
-    return this.witnesses[index.toString()] ?? PrefixedMerkleWitness36.empty();
+  public async getWitness(index: bigint): Promise<PrefixedMerkleWitness36> {
+    const witnesses = this.witnesses[index.toString()];
+    const witness = witnesses.shift() ?? PrefixedMerkleWitness36.empty();
+    this.witnesses[index.toString()] = witnesses;
+    return witness;
   }
 
   public async setWitness(
     index: bigint,
     witness: PrefixedMerkleWitness36
   ): Promise<void> {
-    this.witnesses[index.toString()] = witness;
+    this.witnesses[index.toString()] ??= [];
+    this.witnesses[index.toString()].push(witness);
   }
 
   public async setLeaf(index: bigint, leaf: Field): Promise<void> {
-    throw new Error("Unable to set leaf on prefilled merkle tree provider");
+    console.log("skipping set leaf on prefilled merkle tree provider", index);
+    // throw new Error("Unable to set leaf on prefilled merkle tree provider");
   }
 }
 
@@ -90,7 +96,9 @@ const fields = packToFields(hashInput);
 const emptyAccountHash = hashWithPrefix(accountHashPrefix, fields);
 
 export class PrefixedMerkleTree36InMemoryService
-  implements PrefixedMerkleTree36Service
+  implements
+    PrefixedMerkleTree36Service,
+    Capturable<Record<string, PrefixedMerkleWitness36>>
 {
   public tree: PrefixedMerkleTree = new PrefixedMerkleTree(
     36,
@@ -98,8 +106,18 @@ export class PrefixedMerkleTree36InMemoryService
     accountLedgerHashPrefixes
   );
 
+  public captured: Record<string, PrefixedMerkleWitness36> = {};
+
+  public startCapture(): void {
+    this.captured = {};
+  }
+
   public async getWitness(index: bigint): Promise<PrefixedMerkleWitness36> {
-    return new PrefixedMerkleWitness36(this.tree.getWitness(index));
+    const witness = new PrefixedMerkleWitness36(
+      this.tree.getWitness(index) ?? PrefixedMerkleWitness36.empty()
+    );
+    this.captured[index.toString()] = witness;
+    return witness;
   }
 
   public async setLeaf(index: bigint, leaf: Field): Promise<void> {
@@ -110,34 +128,57 @@ export class PrefixedMerkleTree36InMemoryService
 export class PrefilledMerkleTree256InMemoryService
   implements MerkleTree256Service
 {
-  public witnesses: Record<string, MerkleWitness256> = {};
+  public witnesses: Record<string, MerkleWitness256[]> = {};
 
   public getWitness(index: bigint): Promise<MerkleWitness256> {
-    return this.witnesses[index.toString()] ?? MerkleWitness256.empty();
+    const witnesses = this.witnesses[index.toString()];
+    const witness = witnesses.shift();
+    this.witnesses[index.toString()] = witnesses;
+
+    return witness ?? MerkleWitness256.empty();
   }
 
   public async setWitness(
     index: bigint,
     witness: MerkleWitness256
   ): Promise<void> {
-    this.witnesses[index.toString()] = witness;
+    const witnesses = this.witnesses[index.toString()] ?? [];
+    witnesses.push(witness);
+    this.witnesses[index.toString()] = witnesses;
   }
 
   public async setLeaf(index: bigint, leaf: Field): Promise<void> {
-    throw new Error("Unable to set leaf on prefilled merkle tree provider");
+    console.log("skipping set leaf on prefilled merkle tree provider", index);
+    // throw new Error("Unable to set leaf on prefilled merkle tree provider");
   }
 }
 
-export class MerkleTree256InMemoryService implements MerkleTree256Service {
+export class MerkleTree256InMemoryService
+  implements
+    MerkleTree256Service,
+    Capturable<Record<string, MerkleWitness256[]>>
+{
   public tree: MerkleTree = new MerkleTree(256);
+  public captured: Record<string, MerkleWitness256[]> = {};
+
+  public startCapture(): void {
+    this.captured = {};
+  }
 
   public async getWitness(
     index: bigint
   ): Promise<MerkleWitness256 | undefined> {
-    return (
-      new MerkleWitness256(this.tree.getWitness(index)) ??
-      MerkleWitness256.empty()
+    const witness = new MerkleWitness256(
+      this.tree.getWitness(index) ?? MerkleWitness256.empty()
     );
+    this.captured[index.toString()] ??= [];
+    this.captured[index.toString()].push(witness);
+    console.log(
+      "captured witness",
+      index.toString(),
+      witness.path[1].toString()
+    );
+    return witness;
   }
 
   public async setLeaf(index: bigint, leaf: Field): Promise<void> {
