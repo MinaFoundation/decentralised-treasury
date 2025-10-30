@@ -23,12 +23,7 @@ import {
 import { TreasuryProposalSmartContract } from "./treasury-proposal/treasury-proposal.js";
 import { SideLoadedStakingLedgerToVotingLedgerProof } from "../staking-ledger-to-voting-ledger.js";
 import { hashWithPrefix } from "../hashing-helpers.js";
-
-export class Proposal extends Struct({
-  amount: UInt64,
-  recipient: PublicKey,
-  zkAppUri: String,
-}) {}
+import { Proposal } from "./treasury-proposal/treasury-proposal.js";
 
 // TODO: doublecheck constant values
 // 3360 slots = 1 week @ 480 slots per day
@@ -100,6 +95,7 @@ export class TreasuryOwnerSmartContract extends TokenContract {
     data: string;
     hash: Field;
   };
+
   public static multisigParticipants: PublicKey[] = [];
 
   @state(UInt32) treasuryDeployedAtSlot = State<UInt32>();
@@ -128,6 +124,8 @@ export class TreasuryOwnerSmartContract extends TokenContract {
     treasuryDeployedAtSlot: UInt32,
     multisigCommitment: Field
   ) {
+    this.account.provedState.getAndRequireEquals().assertFalse();
+
     const currentTreasuryDeployedAtSlot =
       this.treasuryDeployedAtSlot.getAndRequireEquals();
 
@@ -181,6 +179,32 @@ export class TreasuryOwnerSmartContract extends TokenContract {
     );
 
     this.network.globalSlotSinceGenesis.requireBetween(fromSlot, toSlot);
+  }
+
+  @method
+  public async updateProposal(
+    proposalPublicKey: PublicKey,
+    proposalUpdate: Proposal
+  ) {
+    Provable.log("updateProposal", { proposalPublicKey });
+
+    const proposal = new TreasuryProposalSmartContract(
+      proposalPublicKey,
+      this.deriveTokenId()
+    );
+
+    const proposalLifecycleId = proposal.lifecycleId.getAndRequireEquals();
+
+    await this.snapshotStakingEpochData();
+    await this.requireLifecyclePeriod(
+      LifecyclePeriod.PROPOSAL,
+      proposalLifecycleId
+    );
+    await this.requireNotPaused();
+
+    await proposal.update(proposalUpdate);
+
+    this.approve(proposal.self);
   }
 
   @method
@@ -247,8 +271,21 @@ export class TreasuryOwnerSmartContract extends TokenContract {
     );
 
     // TODO: make sure the permissions are sufficiently restrictive
-    proposalUpdate.account.permissions.set(Permissions.default());
+    if (TreasuryProposalSmartContract.permissionType == "signature") {
+      console.log("setting signature permissions during createProposal");
+      proposalUpdate.account.permissions.set({
+        ...Permissions.default(),
+        editState: Permissions.signature(),
+        send: Permissions.signature(),
+        editActionState: Permissions.signature(),
+      });
+    } else {
+      proposalUpdate.account.permissions.set(Permissions.default());
+    }
+
     proposalUpdate.account.zkappUri.set(proposal.zkAppUri);
+
+    this.approve(proposalUpdate);
   }
 
   @method
@@ -364,6 +401,7 @@ export class TreasuryOwnerSmartContract extends TokenContract {
       }
     );
 
+    // TODO: implement n/m multisig signatures verification
     signatures.forEach((signature, i) => {
       signature
         .verify(multisigParticipants[i], data)
@@ -379,9 +417,9 @@ export class TreasuryOwnerSmartContract extends TokenContract {
       .assertTrue("Invalid multisig commitment");
   }
 
-  // TODO: implement this
-  @method
-  public async rotateMultisigKeys(signatures: MultisigSignatures) {}
+  // TODO: implement this, but also merge other breakglass calls to prevent wrap circuit method count limits
+  // @method
+  // public async rotateMultisigKeys(signatures: MultisigSignatures) {}
 
   @method
   public async pauseProposal(

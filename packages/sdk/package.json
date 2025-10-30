@@ -4,7 +4,7 @@
   "scripts": {
     "lightnet": "zkapp-cli lightnet",
     "run": "tsx",
-    "cli": "ts-node src/cli.ts",
+    "cli": "NODE_NO_WARNINGS=1 node --loader ts-node/esm src/cli.ts",
     "test": "NODE_NO_WARNINGS=1 node --loader ts-node/esm --test",
     "test:all": "NODE_NO_WARNINGS=1 node --loader ts-node/esm --test ./test/**/*.test.ts",
     "test:watch": "NODE_NO_WARNINGS=1 NODE_OPTIONS='--trace-uncaught' node --loader ts-node/esm --watch --test",

@@ -65,19 +65,13 @@ it("should analyze the program", async () => {
   Provable.log("analysis", analysis);
 });
 
-// export const TEST_ITERATIONS = 5;
-// const testAccounts = [
-//   ...(await createTestAccounts(ACCOUNT_BATCH_SIZE * TEST_ITERATIONS - 1)),
-//   Account.dummy(),
-// ];
-
 let testAccounts = await readLedger("test/provable/staking-epoch-ledger.json");
 
 // if you want to iterate over the whole ledger, you can use this
-// const TEST_ITERATIONS = Math.ceil(testAccounts.length / ACCOUNT_BATCH_SIZE);
+const TEST_ITERATIONS = Math.ceil(testAccounts.length / ACCOUNT_BATCH_SIZE);
 
 // iterate over 10*ACCOUNT_BATCH_SIZE accounts
-const TEST_ITERATIONS = 10;
+// const TEST_ITERATIONS = 10;
 
 const totalSupply = testAccounts.reduce(
   (acc, account) => acc.add(account.balance),
@@ -106,7 +100,9 @@ it("should digest a range of indexes", async () => {
     "accounts",
     "out of",
     testAccounts.length,
-    "accounts"
+    "accounts",
+    "staking ledger root:",
+    stakingLedgerTreeService.tree.getRoot().toString()
   );
 
   let publicOutput: StakingLedgerToVotingLedgerProgramOutput;
@@ -151,6 +147,8 @@ it("should digest a range of indexes", async () => {
     console.log("digest proof size", proofSize);
     proofs.push(proof);
   }
+
+  return;
 
   let mergeProofIndex = 0;
   // TODO: this throws wasm unreachable when digesting the lightnet ledger

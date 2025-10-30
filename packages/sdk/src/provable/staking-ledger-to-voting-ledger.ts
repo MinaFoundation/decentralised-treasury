@@ -257,15 +257,6 @@ export const StakingLedgerToVotingLedger = ZkProgram({
             "staking ledger tree account index not matching"
           );
 
-          Provable.log("debug", {
-            index,
-            account,
-            calculatedStakingLedgerIndex,
-            calculatedStakingLedgerRoot,
-            calculatedEmptyStakingLedgerRoot,
-            stakingLedgerRoot,
-          });
-
           // assert that the account we're working with is indeed part of the staking ledger
           calculatedStakingLedgerRoot
             .equals(stakingLedgerRoot)
@@ -320,17 +311,6 @@ export const StakingLedgerToVotingLedger = ZkProgram({
             Poseidon.hash(delegateAddress.toFields()),
             "voting ledger witness index not matching"
           );
-
-          Provable.log("debug", {
-            index,
-            pk: account.pk,
-            balance: account.balance,
-            delegateAddress,
-            votingAccount,
-            calculatedVotingLedgerRoot,
-            votingLedgerRoot,
-            calculatedEmptyVotingLedgerRoot,
-          });
 
           // assert that the account we're working with is indeed part of the voting ledger
           calculatedVotingLedgerRoot

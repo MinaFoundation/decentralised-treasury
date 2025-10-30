@@ -17,6 +17,12 @@ import {
 import { SideLoadedVoteReducerProof, VoteAction } from "./vote-reducer.js";
 import { SideLoadedStakingLedgerToVotingLedgerProof } from "../../staking-ledger-to-voting-ledger.js";
 
+export class Proposal extends Struct({
+  amount: UInt64,
+  recipient: PublicKey,
+  zkAppUri: String,
+}) {}
+
 // TODO: need a better name for this, its a divider not a percentage, 2 = 50%
 export const REQUIRED_PARTICIPATION_PERCENTAGE = 2;
 // cannot be lower than 51% due to the math implementation in the contract
@@ -29,10 +35,12 @@ export class ProposalStatus extends Field {
   public static PAUSED = Field(3);
 }
 
+// TODO: add a method to update zkAppUri within the same the PROPOSAL period
 // TODO: set correct starting permissions
 export class TreasuryProposalSmartContract extends SmartContract {
   public static voteReducerVerificationKey: VerificationKey;
   public static stakingLedgerToVotingLedgerVerificationKey: VerificationKey;
+  public static permissionType: "proof" | "signature" = "proof";
 
   reducer = Reducer({ actionType: VoteAction });
 
@@ -177,5 +185,12 @@ export class TreasuryProposalSmartContract extends SmartContract {
     status.equals(ProposalStatus.PAUSED).assertTrue("Proposal is not paused");
     // TODO: make sure setting the status back to unknown makes sense
     this.status.set(ProposalStatus.UNKNOWN);
+  }
+
+  @method
+  public async update(proposal: Proposal) {
+    this.recipient.set(proposal.recipient);
+    this.amount.set(proposal.amount);
+    this.account.zkappUri.set(proposal.zkAppUri);
   }
 }

@@ -173,11 +173,6 @@ export class MerkleTree256InMemoryService
     );
     this.captured[index.toString()] ??= [];
     this.captured[index.toString()].push(witness);
-    console.log(
-      "captured witness",
-      index.toString(),
-      witness.path[1].toString()
-    );
     return witness;
   }
 

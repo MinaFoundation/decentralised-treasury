@@ -108,7 +108,7 @@ export async function readLedger(
         accounts.push(account);
       })
       .on("end", () => {
-        console.log(`Total accounts processed: ${accountCount}`);
+        console.log(`Total accounts loaded: ${accountCount}`);
         resolve(accounts);
       })
       .on("error", reject);
