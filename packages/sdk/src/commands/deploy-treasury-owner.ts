@@ -12,6 +12,7 @@ import {
   UInt64,
 } from "o1js";
 import {
+  LIFECYCLE_PERIOD_DURATION,
   MULTISIG_SIGNATURES_COUNT,
   TreasuryOwnerSmartContract,
 } from "../provable/contracts/treasury-owner.js";
@@ -26,7 +27,9 @@ import {
 } from "../provable/contracts/treasury-proposal/vote-reducer.js";
 import { StakingLedgerToVotingLedger } from "../provable/staking-ledger-to-voting-ledger.js";
 
-export async function compileTreasuryContracts() {
+export async function compileTreasuryContracts(
+  lifecyclePeriodDuration: UInt32 = LIFECYCLE_PERIOD_DURATION
+) {
   const votingAccountTreeService = new PrefilledMerkleTree256InMemoryService();
   const votingAccountService = new VotingAccountInMemoryService();
   const voteNullifierService = new VoteNullifierInMemoryService();
@@ -60,6 +63,8 @@ export async function compileTreasuryContracts() {
   await TreasuryProposalSmartContract.compile();
   TreasuryOwnerSmartContract.proposalContractVerificationKey =
     TreasuryProposalSmartContract._verificationKey;
+  TreasuryOwnerSmartContract.lifecyclePeriodDuration = lifecyclePeriodDuration;
+  Provable.log("lifecyclePeriodDuration", lifecyclePeriodDuration);
   console.timeEnd("compile TreasuryProposalSmartContract");
 
   console.log("compiling TreasuryOwnerSmartContract");
@@ -132,6 +137,12 @@ export default function deployTreasuryOwnerCommandFactory(program: Command) {
       "Skip deploying the treasury owner contract, only initialize it",
       false
     )
+    .option(
+      "--lifecycle-period-duration <lifecycle-period-duration>",
+      "Duration of the lifecycle period",
+      (value) => UInt32.from(value),
+      LIFECYCLE_PERIOD_DURATION
+    )
     .action(
       async ({
         treasuryOwnerPrivateKey,
@@ -144,6 +155,7 @@ export default function deployTreasuryOwnerCommandFactory(program: Command) {
         nonce,
         memo,
         skipDeploy,
+        lifecyclePeriodDuration,
       }: {
         treasuryOwnerPrivateKey: PrivateKey;
         treasuryDeployedAtSlot: UInt32;
@@ -155,8 +167,9 @@ export default function deployTreasuryOwnerCommandFactory(program: Command) {
         nonce: number | undefined;
         memo: string | undefined;
         skipDeploy: boolean;
+        lifecyclePeriodDuration: UInt32;
       }) => {
-        await compileTreasuryContracts();
+        await compileTreasuryContracts(lifecyclePeriodDuration);
 
         const Network = Mina.Network({
           mina: minaNodeUrl,

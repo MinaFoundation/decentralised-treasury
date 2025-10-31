@@ -85,13 +85,17 @@ export class TreasuryProposalSmartContract extends SmartContract {
     );
 
     // TODO: add logic such as if the current period allows for vote tallying
-    const actionState = this.account.actionState.getAndRequireEquals();
+    // const actionState = this.account.actionState.getAndRequireEquals();
+    // TODO: add logic to check for all 5 existing possible action states
+    this.account.actionState.requireEquals(
+      voteReducerProof.publicOutput.toActionsHash
+    );
 
     // TODO: is this already the historical 5 "slot" action hash precondition?
-    actionState.assertEquals(
-      voteReducerProof.publicOutput.toActionsHash,
-      "toActionsHash does not match on chain state"
-    );
+    // actionState.assertEquals(
+    //   voteReducerProof.publicOutput.toActionsHash,
+    //   "toActionsHash does not match on chain state"
+    // );
 
     const {
       publicInput: voteReducerPublicInput,
@@ -122,6 +126,12 @@ export class TreasuryProposalSmartContract extends SmartContract {
       REQUIRED_PARTICIPATION_PERCENTAGE
     );
 
+    Provable.log("totalParticipatingVotes", {
+      totalParticipatingVotes,
+      requiredParticipation,
+      totalCurrency: stakingEpochDataLedgerTotalCurrency,
+    });
+
     totalParticipatingVotes
       .greaterThanOrEqual(requiredParticipation)
       .assertTrue("Participation not met");
@@ -149,6 +159,16 @@ export class TreasuryProposalSmartContract extends SmartContract {
     this.status.set(voteResult);
   }
 
+  @method
+  public async update(proposal: Proposal) {
+    this.recipient.set(proposal.recipient);
+    this.amount.set(proposal.amount);
+    this.account.zkappUri.set(proposal.zkAppUri);
+  }
+
+  // TODO: utilise @method.returns to send back AU-like instructions to the parent,
+  // this way we can let the parent know what things we want to happen as part of the execution
+  // such as updating the parant's balance
   @method
   public async execute(treasuryOwnerAccountUpdate: AccountUpdate) {
     await this.requireNotPaused();
@@ -185,12 +205,5 @@ export class TreasuryProposalSmartContract extends SmartContract {
     status.equals(ProposalStatus.PAUSED).assertTrue("Proposal is not paused");
     // TODO: make sure setting the status back to unknown makes sense
     this.status.set(ProposalStatus.UNKNOWN);
-  }
-
-  @method
-  public async update(proposal: Proposal) {
-    this.recipient.set(proposal.recipient);
-    this.amount.set(proposal.amount);
-    this.account.zkappUri.set(proposal.zkAppUri);
   }
 }

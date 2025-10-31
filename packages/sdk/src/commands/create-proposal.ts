@@ -10,7 +10,10 @@ import {
   UInt64,
 } from "o1js";
 import { PublicKey } from "o1js";
-import { TreasuryOwnerSmartContract } from "../provable/contracts/treasury-owner.js";
+import {
+  LIFECYCLE_PERIOD_DURATION,
+  TreasuryOwnerSmartContract,
+} from "../provable/contracts/treasury-owner.js";
 import { compileTreasuryContracts } from "./deploy-treasury-owner.js";
 import { TreasuryProposalSmartContract } from "../provable/contracts/treasury-proposal/treasury-proposal.js";
 
@@ -86,6 +89,12 @@ export default function createProposalCommandFactory(program: Command) {
         .choices(["proof", "signature"])
         .default("proof")
     )
+    .option(
+      "--lifecycle-period-duration <lifecycle-period-duration>",
+      "Duration of the lifecycle period",
+      (value) => UInt32.from(value),
+      LIFECYCLE_PERIOD_DURATION
+    )
     .action(
       async ({
         amount,
@@ -102,6 +111,7 @@ export default function createProposalCommandFactory(program: Command) {
         nonce,
         memo,
         permissionType,
+        lifecyclePeriodDuration,
       }: {
         amount: UInt64;
         recipientPublicKey: PublicKey;
@@ -117,6 +127,7 @@ export default function createProposalCommandFactory(program: Command) {
         nonce: number;
         memo: string;
         permissionType: "proof" | "signature";
+        lifecyclePeriodDuration: UInt32;
       }) => {
         console.log(
           "Creating proposal",
@@ -127,7 +138,7 @@ export default function createProposalCommandFactory(program: Command) {
 
         TreasuryProposalSmartContract.permissionType = permissionType;
 
-        await compileTreasuryContracts();
+        await compileTreasuryContracts(lifecyclePeriodDuration);
 
         const Network = Mina.Network({
           mina: minaNodeUrl,

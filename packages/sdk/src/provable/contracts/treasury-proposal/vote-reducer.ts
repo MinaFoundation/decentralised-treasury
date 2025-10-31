@@ -194,6 +194,8 @@ export const VoteReducer = ZkProgram({
             voteReducerErrors.CALCULATED_NULLIFIER_ROOT_DOES_NOT_MATCH_TO_NULLIFIER_ROOT
           );
 
+          // TODO: make this a soft failure, dont count the vote if it has already been nullified
+          // we have to make sure the checks here are sufficient given the amount/lack of validation in action dispatch
           // assert that the nullifier has not been used yet
           voteNullifier.assertFalse(
             voteReducerErrors.VOTE_HAS_ALREADY_BEEN_NULLIFIED

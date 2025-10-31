@@ -41,3 +41,5 @@ staking-epoch-ledger.json
 test-ledger.json
 
 packages/sdk/cache
+packages/sdk/daemon.json
+packages/sdk/.data

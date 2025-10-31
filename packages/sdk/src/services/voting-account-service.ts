@@ -5,7 +5,7 @@ import {
   MerkleTree256InMemoryService,
   MerkleTree256Service,
 } from "./merkle-tree-service.js";
-import { Poseidon, PublicKey } from "o1js";
+import { Poseidon, Provable, PublicKey, UInt64 } from "o1js";
 
 export class VotingAccountService {
   public getVotingAccount: (publicKey: string) => Promise<VotingAccount>;
@@ -68,15 +68,28 @@ export class VotingAccountInMemoryService
     return votingAccountService;
   }
 
-  public async toMerkleTreeService(): Promise<MerkleTree256Service> {
+  public async toMerkleTreeService(): Promise<MerkleTree256InMemoryService> {
     const merkleTreeService = new MerkleTree256InMemoryService();
 
     for (const [publicKey, votingAccount] of Object.entries(
       this.votingAccounts
     )) {
+      let publicKeyObj: PublicKey;
+      // TODO: fromBase58 fails for empty public keys, figure out why the voting ledger even contains an empty public key
+      try {
+        publicKeyObj = PublicKey.fromBase58(publicKey);
+      } catch (error) {
+        publicKeyObj = PublicKey.empty();
+      }
       await merkleTreeService.setLeaf(
-        Poseidon.hash(PublicKey.fromBase58(publicKey).toFields()).toBigInt(),
-        Poseidon.hash(VotingAccount.toFields(votingAccount))
+        Poseidon.hash(publicKeyObj.toFields()).toBigInt(),
+        Poseidon.hash(
+          VotingAccount.toFields(
+            new VotingAccount({
+              balance: UInt64.from(votingAccount.balance),
+            })
+          )
+        )
       );
     }
 

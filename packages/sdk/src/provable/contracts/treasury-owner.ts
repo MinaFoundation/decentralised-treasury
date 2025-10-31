@@ -25,9 +25,8 @@ import { SideLoadedStakingLedgerToVotingLedgerProof } from "../staking-ledger-to
 import { hashWithPrefix } from "../hashing-helpers.js";
 import { Proposal } from "./treasury-proposal/treasury-proposal.js";
 
-// TODO: doublecheck constant values
-// 3360 slots = 1 week @ 480 slots per day
-export const LIFECYCLE_PERIOD_DURATION = UInt32.from(3360);
+// 7140 slots = ~2 weeks, this is the mainnet configuration
+export const LIFECYCLE_PERIOD_DURATION = UInt32.from(7140);
 export const SLOT_PRECONDITION_PADDING = UInt32.from(5);
 // historical preconditions can go 5 slots in the past, while we also
 // allow SLOT_PRECONDITION_PADDING slots in the future for globalSlotSinceGenesis
@@ -96,6 +95,8 @@ export class TreasuryOwnerSmartContract extends TokenContract {
     hash: Field;
   };
 
+  public static lifecyclePeriodDuration = LIFECYCLE_PERIOD_DURATION;
+
   public static multisigParticipants: PublicKey[] = [];
 
   @state(UInt32) treasuryDeployedAtSlot = State<UInt32>();
@@ -117,6 +118,12 @@ export class TreasuryOwnerSmartContract extends TokenContract {
     this.stakingEpochDataLedgerTotalCurrency.set(
       networkStakingEpochDataLedgerTotalCurrency
     );
+
+    return {
+      stakingEpochDataLedgerHash: networkStakingEpochDataLedgerHash,
+      stakingEpochDataLedgerTotalCurrency:
+        networkStakingEpochDataLedgerTotalCurrency,
+    };
   }
 
   @method
@@ -154,20 +161,25 @@ export class TreasuryOwnerSmartContract extends TokenContract {
     const treasuryDeployedAtSlot =
       this.treasuryDeployedAtSlot.getAndRequireEquals();
 
+    Provable.log(
+      "requireLifecyclePeriod",
+      TreasuryOwnerSmartContract.lifecyclePeriodDuration
+    );
+
     const fromSlot = treasuryDeployedAtSlot
       // fast forward to the start of the requested lifecycle
       .add(
-        LIFECYCLE_PERIOD_DURATION.mul(
+        TreasuryOwnerSmartContract.lifecyclePeriodDuration.mul(
           LifecyclePeriod.NUMBER_OF_PERIODS.mul(lifecycleId)
         )
       )
       // fast forward to the start of the requested period
-      .add(LIFECYCLE_PERIOD_DURATION.mul(period));
+      .add(TreasuryOwnerSmartContract.lifecyclePeriodDuration.mul(period));
 
     const toSlot = Provable.if(
       noUpperBoundToSlot,
       UInt32.MAXINT(),
-      fromSlot.add(LIFECYCLE_PERIOD_DURATION)
+      fromSlot.add(TreasuryOwnerSmartContract.lifecyclePeriodDuration)
     );
 
     Provable.log(
@@ -215,7 +227,8 @@ export class TreasuryOwnerSmartContract extends TokenContract {
   ) {
     Provable.log("createProposal", { lifecycleId });
 
-    await this.snapshotStakingEpochData();
+    const { stakingEpochDataLedgerHash, stakingEpochDataLedgerTotalCurrency } =
+      await this.snapshotStakingEpochData();
     await this.requireLifecyclePeriod(LifecyclePeriod.PROPOSAL, lifecycleId);
     await this.requireNotPaused();
 
@@ -244,17 +257,14 @@ export class TreasuryOwnerSmartContract extends TokenContract {
         isSome: Bool(true),
         value: lifecycleId.toFields()[0],
       },
+      // TODO: this seems to be not working on lightnet proposal create
       {
         isSome: Bool(true),
-        value: this.stakingEpochDataLedgerHash
-          .getAndRequireEquals()
-          .toFields()[0],
+        value: stakingEpochDataLedgerHash.toFields()[0],
       },
       {
         isSome: Bool(true),
-        value: this.stakingEpochDataLedgerTotalCurrency
-          .getAndRequireEquals()
-          .toFields()[0],
+        value: stakingEpochDataLedgerTotalCurrency.toFields()[0],
       },
       {
         isSome: Bool(false),
@@ -288,6 +298,9 @@ export class TreasuryOwnerSmartContract extends TokenContract {
     this.approve(proposalUpdate);
   }
 
+  // TODO: implement some form of a spam prevention, e.g.: requiring the voter to:
+  // exist in the voting ledger with a delegated balance > 0
+  // TODO: move some of this logic to the proposal contract itself?
   @method
   public async vote(
     proposalPublicKey: PublicKey,
@@ -318,6 +331,10 @@ export class TreasuryOwnerSmartContract extends TokenContract {
     // it could be free if we just check a hand crafted signature instead
     // this becomes relevant if a delegate public key is used that is not in the current L1 ledger
     AccountUpdate.createSigned(publicKey);
+
+    if (TreasuryProposalSmartContract.permissionType == "signature") {
+      proposal.self.requireSignature();
+    }
 
     this.approve(proposal.self);
   }
@@ -359,6 +376,10 @@ export class TreasuryOwnerSmartContract extends TokenContract {
       stakingLedgerToVotingLedgerProof
     );
 
+    if (TreasuryProposalSmartContract.permissionType == "signature") {
+      proposal.self.requireSignature();
+    }
+
     this.approve(proposal.self);
   }
 
@@ -385,6 +406,10 @@ export class TreasuryOwnerSmartContract extends TokenContract {
 
     // TODO: is this.self.publicKey safe?
     await proposal.execute(this.self);
+
+    if (TreasuryProposalSmartContract.permissionType == "signature") {
+      proposal.self.requireSignature();
+    }
 
     this.approve(proposal.self);
   }
@@ -466,25 +491,25 @@ export class TreasuryOwnerSmartContract extends TokenContract {
     this.approve(proposal.self);
   }
 
-  @method
-  public async pauseTreasury(signatures: MultisigSignatures) {
-    const nonce = this.account.nonce.getAndRequireEquals();
-    this.self.body.incrementNonce = Bool(true);
-    const data = MultisigSignature.dataPauseTreasury(nonce);
+  // @method
+  // public async pauseTreasury(signatures: MultisigSignatures) {
+  //   const nonce = this.account.nonce.getAndRequireEquals();
+  //   this.self.body.incrementNonce = Bool(true);
+  //   const data = MultisigSignature.dataPauseTreasury(nonce);
 
-    this.verifyMultisigSignatures(data, signatures);
-    this.paused.set(Bool(true));
-  }
+  //   this.verifyMultisigSignatures(data, signatures);
+  //   this.paused.set(Bool(true));
+  // }
 
-  @method
-  public async unpauseTreasury(signatures: MultisigSignatures) {
-    const nonce = this.account.nonce.getAndRequireEquals();
-    this.self.body.incrementNonce = Bool(true);
-    const data = MultisigSignature.dataUnpauseTreasury(nonce);
+  // @method
+  // public async unpauseTreasury(signatures: MultisigSignatures) {
+  //   const nonce = this.account.nonce.getAndRequireEquals();
+  //   this.self.body.incrementNonce = Bool(true);
+  //   const data = MultisigSignature.dataUnpauseTreasury(nonce);
 
-    this.verifyMultisigSignatures(data, signatures);
-    this.paused.set(Bool(false));
-  }
+  //   this.verifyMultisigSignatures(data, signatures);
+  //   this.paused.set(Bool(false));
+  // }
 
   public async requireNotPaused() {
     const paused = this.paused.getAndRequireEquals();

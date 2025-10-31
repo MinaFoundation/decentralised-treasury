@@ -132,7 +132,7 @@ export class PrefilledMerkleTree256InMemoryService
 
   public getWitness(index: bigint): Promise<MerkleWitness256> {
     const witnesses = this.witnesses[index.toString()];
-    const witness = witnesses.shift();
+    const witness = witnesses ? witnesses.shift() : undefined;
     this.witnesses[index.toString()] = witnesses;
 
     return witness ?? MerkleWitness256.empty();

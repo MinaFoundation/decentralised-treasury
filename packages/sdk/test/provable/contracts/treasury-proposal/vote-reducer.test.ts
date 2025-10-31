@@ -134,6 +134,11 @@ it("should tally votes actions batch", async () => {
     actions
   );
 
+  Provable.log({
+    publicOutput: proof.proof.publicOutput,
+    publicInput: proof.proof.publicInput,
+  });
+
   assert(
     proof.proof.publicOutput.yay.toBigInt() ===
       testAccounts[0].balance.toBigInt() + testAccounts[3].balance.toBigInt()
