@@ -36,15 +36,11 @@ export interface StakingLedgerToVotingLedgerDigestTaskOutput {
 
 const proofsEnabled = process.env.PROOFS_ENABLED === "true";
 
-export class StakingLedgerToVotingLedgerDigestTask
-  implements
-    Task<
-      StakingLedgerToVotingLedgerDigestTaskInput,
-      StakingLedgerToVotingLedgerDigestTaskOutput
-    >
-{
+export class StakingLedgerToVotingLedgerDigestTask extends Task<
+  StakingLedgerToVotingLedgerDigestTaskInput,
+  StakingLedgerToVotingLedgerDigestTaskOutput
+> {
   public name = "staking-ledger-to-voting-ledger-digest";
-  public input: StakingLedgerToVotingLedgerDigestTaskInput;
 
   public static async prepare() {
     console.log("compiling staking ledger to voting ledger", {
