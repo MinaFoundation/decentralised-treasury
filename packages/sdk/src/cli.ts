@@ -9,20 +9,22 @@ import readProposalCommandFactory from "./commands/read-proposal.js";
 import voteOnProposalCommandFactory from "./commands/vote-on-proposal.js";
 import tallyVotesCommandFactory from "./commands/tally-votes.js";
 import executeProposalCommandFactory from "./commands/execute-proposal.js";
+import stakingLedgerCommandFactory from "./commands/staking-ledger.js";
 
 const program = new Command();
 
 [
-  stakingLedgerToVotingLedgerCommand,
-  deployTreasuryOwnerCommand,
-  generateKeypairsCommandFactory,
-  lightnetAcquireKeyPairCommandFactory,
-  transferCommandFactory,
-  createProposalCommandFactory,
-  readProposalCommandFactory,
-  voteOnProposalCommandFactory,
-  tallyVotesCommandFactory,
-  executeProposalCommandFactory,
+  // stakingLedgerToVotingLedgerCommand,
+  // deployTreasuryOwnerCommand,
+  // generateKeypairsCommandFactory,
+  // lightnetAcquireKeyPairCommandFactory,
+  // transferCommandFactory,
+  // createProposalCommandFactory,
+  // readProposalCommandFactory,
+  // voteOnProposalCommandFactory,
+  // tallyVotesCommandFactory,
+  // executeProposalCommandFactory,
+  stakingLedgerCommandFactory,
 ].forEach((commandFactory) => commandFactory(program));
 
 program.parse(process.argv);

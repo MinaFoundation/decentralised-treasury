@@ -47,19 +47,19 @@ export class TaskQueue<Tasks extends Record<string, Task<unknown, unknown>>> {
   }
 
   public onTaskComplete<
-    Output extends Awaited<Tasks[keyof Tasks]["deserializers"]["output"]>,
+    Output extends Awaited<
+      ReturnType<Tasks[keyof Tasks]["deserializers"]["output"]>
+    >,
   >(
     taskName: keyof Tasks extends string ? keyof Tasks : never,
-    callback: (
-      job: Job,
-      output: Tasks[keyof Tasks]["deserializers"]["output"]
-    ) => void
+    callback: (job: Job, output: Output) => void
   ) {
     this.events.on("completed", async ({ jobId, returnvalue }) => {
       const job = await Job.fromId(this.queue, jobId);
 
       if (job.name == taskName) {
         try {
+          // TODO: find a way to adjust typing of the task queue to avoid this cast
           const output = (await this.tasks[taskName].deserializers.output(
             returnvalue
           )) as Output;

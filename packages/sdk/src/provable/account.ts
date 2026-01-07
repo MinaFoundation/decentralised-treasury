@@ -198,6 +198,7 @@ export class Account extends Struct({
   zkapp: Zkapp,
 }) {
   // TODO: this is a hack to bypass checks during fromJSON, it'll result in returning an empty account if the deserialization fails
+  // this case occurs if PublicKey.empty() is used for pk or delegate, or any other field that is not a valid PublicKey
   public static fromJSON(json: Record<string, any>): Account {
     let account: Account;
     try {

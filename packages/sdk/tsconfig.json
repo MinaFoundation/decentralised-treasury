@@ -5,6 +5,7 @@
     "lib": ["dom", "esnext"],
     "outDir": "./build",
     "rootDir": ".",
+    "jsx": "react-jsx",
     // "strict": true,
     "strictPropertyInitialization": false, // to enable generic constructors, e.g. on CircuitValue
     "skipLibCheck": true,

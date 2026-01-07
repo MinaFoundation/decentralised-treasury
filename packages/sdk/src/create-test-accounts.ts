@@ -1,6 +1,6 @@
 import { PrivateKey, Account, parseFetchedAccount } from "o1js";
 import fs from "fs";
-import { ocamlToGraphQL } from "./mappers/account-mapper.js";
+import { ocamlToGraphQL } from "./ledgers/staking-ledger/account-mapper.js";
 
 function getAccount() {
   return {

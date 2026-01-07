@@ -16,7 +16,7 @@ import {
   MerkleWitness256,
 } from "../../../services/merkle-tree-service.js";
 import { VotingAccountService } from "../../../services/voting-account-service.js";
-import { ContextProvider } from "../../../providers/context-provider.js";
+import { ContextProvider } from "../../../utils/context-provider.js";
 import { VoteNullifierService } from "../../../services/vote-nullifier-service.js";
 
 export const VOTE_ACTION_BATCH_SIZE = 5;

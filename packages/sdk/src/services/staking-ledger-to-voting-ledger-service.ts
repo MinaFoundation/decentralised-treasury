@@ -19,62 +19,98 @@ import {
   StakingLedgerToVotingLedgerProgramOutput,
 } from "../provable/staking-ledger-to-voting-ledger.js";
 import { Bool, Proof, Provable, UInt32, UInt64 } from "o1js";
+import {
+  StakingLedgerToVotingLedgerDigestTrace,
+  StakingLedgerToVotingLedgerDigestTracer,
+} from "../proving/tracing/staking-ledger-to-voting-ledger-digest-tracer.js";
+import {
+  StakingLedgerToVotingLedgerDigestTask,
+  StakingLedgerToVotingLedgerDigestTaskInput,
+} from "../proving/tasks/staking-ledger-to-voting-ledger-digest-task.js";
+import { TaskQueue } from "src/proving/task-queue.js";
+import { StakingLedgerToVotingLedgerMergeTask } from "../proving/tasks/staking-ledger-to-voting-ledger-merge-task.js";
 
+export type StakingLedgerToVotingLedgerTaskQueue = TaskQueue<{
+  stakingLedgerToVotingLedgerDigest: typeof StakingLedgerToVotingLedgerDigestTask;
+  stakingLedgerToVotingLedgerMerge: typeof StakingLedgerToVotingLedgerMergeTask;
+}>;
 export class StakingLedgerToVotingLedgerService {
-  public stakingLedgerTreeService = new PrefixedMerkleTree36InMemoryService();
-  public votingLedgerTreeService = new MerkleTree256InMemoryService();
-  public votingAccountService = new VotingAccountInMemoryService();
+  public constructor(public queue: StakingLedgerToVotingLedgerTaskQueue) {}
 
   public async readLedger(path: string): Promise<Account[]> {
     return readLedger(path);
   }
 
-  public async populateStakingLedgerTree(accounts: Account[]) {
-    console.time("populateStakingLedgerTree");
-    console.log(
-      "populating staking ledger tree with",
-      accounts.length,
-      "accounts"
-    );
-    for (const account of accounts) {
-      this.stakingLedgerTreeService.setLeaf(
-        BigInt(accounts.indexOf(account)),
-        hashWithPrefix(
-          accountHashPrefix,
-          packToFields(Account.toHashInput(account))
-        )
-      );
+  public async traceLedger(
+    stakingLedgerPath: string,
+    tracesPath: string,
+    options: { fromIndex?: number; toIndex?: number; forceTrace?: boolean } = {
+      forceTrace: false,
     }
-    console.timeEnd("populateStakingLedgerTree");
+  ): Promise<StakingLedgerToVotingLedgerDigestTrace[]> {
+    let accounts = await this.readLedger(stakingLedgerPath);
+
+    // mostly for testing or partially processing a large ledger
+    if (options.fromIndex !== undefined && options.toIndex !== undefined) {
+      accounts = accounts.slice(options.fromIndex, options.toIndex);
+    }
+
+    let traces: StakingLedgerToVotingLedgerDigestTrace[] = [];
+    if (!options.forceTrace) {
+      try {
+        traces =
+          await StakingLedgerToVotingLedgerDigestTracer.fromFile(tracesPath);
+      } catch (error) {
+        console.error("error reading traces from file", tracesPath, error);
+      }
+    }
+
+    const lastTraceToIndex =
+      (traces[traces.length - 1]?.publicInput.index.toBigint() ?? BigInt(0)) +
+      BigInt(ACCOUNT_BATCH_SIZE);
+
+    if (
+      traces.length === 0 ||
+      lastTraceToIndex !== BigInt(options.toIndex ?? 0)
+    ) {
+      console.log(
+        `no traces found for indexes ${options.fromIndex} - ${options.toIndex}, tracing ${accounts.length} accounts, highest index previously traeced: ${lastTraceToIndex}`
+      );
+      traces = await this.trace(accounts);
+      await StakingLedgerToVotingLedgerDigestTracer.toFile(tracesPath, traces);
+    } else {
+      console.log("traces found, using existing traces");
+    }
+
+    return traces;
   }
 
-  public async compile() {
-    console.time("compile StakingLedgerToVotingLedger");
-    console.log("compiling StakingLedgerToVotingLedger");
-    // TODO: should be empty services just in case?
-    stakingLedgerToVotingLedgerContext.set({
-      stakingLedgerTree: this.stakingLedgerTreeService,
-      votingLedgerTree: this.votingLedgerTreeService,
-      votingAccounts: this.votingAccountService,
-    });
-    await StakingLedgerToVotingLedger.compile({
-      proofsEnabled: process.env.PROOFS_ENABLED === "true",
-    });
-    console.timeEnd("compile StakingLedgerToVotingLedger");
-  }
-
-  // TODO: transition to using the task queue
-  public async digest(
-    accounts: Account[]
+  public async digestLedger(
+    stakingLedgerPath: string,
+    tracesPath: string,
+    options: { forceTrace?: boolean; fromIndex?: number; toIndex?: number } = {
+      forceTrace: false,
+    }
   ): Promise<
     Proof<
       StakingLedgerToVotingLedgerProgramInput,
       StakingLedgerToVotingLedgerProgramOutput
     >
   > {
-    console.time("digest");
-    console.log("digesting", accounts.length, "accounts");
-    const iterations = Math.ceil(accounts.length / ACCOUNT_BATCH_SIZE);
+    console.log("tracing ledger");
+    const traces = await this.traceLedger(
+      stakingLedgerPath,
+      tracesPath,
+      options
+    );
+    console.log("digesting traces", traces.length);
+    // this only awaits the creation of digest tasks, not the completion, as intended
+    // TODO: do all of digest & merge in paralel, since we know the total number of proofs is traces + traces - 1
+    const digestProofs = await this.digest(traces);
+    return await this.merge(digestProofs);
+  }
+
+  public async trace(accounts: Account[]) {
     const missingAccounts =
       ACCOUNT_BATCH_SIZE - (accounts.length % ACCOUNT_BATCH_SIZE);
 
@@ -87,72 +123,139 @@ export class StakingLedgerToVotingLedgerService {
       }
     }
 
-    let publicOutput: StakingLedgerToVotingLedgerProgramOutput;
+    const traces =
+      await StakingLedgerToVotingLedgerDigestTracer.trace(accounts);
+
+    console.log("traces", traces.length);
+    return traces;
+  }
+
+  public async findMergeableProofs(
+    proofs: Proof<
+      StakingLedgerToVotingLedgerProgramInput,
+      StakingLedgerToVotingLedgerProgramOutput
+    >[]
+  ) {
+    // if there are not at least 2 proofs, there is nothing to merge
+    if (proofs.length < 2) {
+      return { proof1: undefined, proof2: undefined, remainingProofs: proofs };
+    }
+
+    // sort proofs by index, so that we can find the first proof that should be merged
+    proofs = proofs.sort(
+      (a, b) =>
+        Number(a.publicInput.index.toBigint()) -
+        Number(b.publicInput.index.toBigint())
+    );
+
+    const proof1 = proofs[0];
+    const proof1OutputIndex = proof1.publicOutput.index.toBigint();
+    // TODO: find should return optionally undefined, this is not typed properly
+    // find the next proof that can be merged with the first proof
+    const proof2 = proofs.find((proof) => {
+      console.log("finding", proof.publicInput);
+      const proof2InputIndex = proof.publicInput.index.toBigint();
+      return proof2InputIndex === proof1OutputIndex + 1n;
+    });
+
+    // if we found a pair, remove it from the list of pending proofs
+    if (proof1 && proof2) {
+      proofs.splice(proofs.indexOf(proof1), 1);
+      proofs.splice(proofs.indexOf(proof2), 1);
+    }
+
+    return { proof1, proof2, remainingProofs: proofs };
+  }
+
+  public async merge(
+    proofs: Proof<
+      StakingLedgerToVotingLedgerProgramInput,
+      StakingLedgerToVotingLedgerProgramOutput
+    >[]
+  ) {
+    let mergesPending = proofs.length - 1;
+
+    const merge = async () => {
+      let { proof1, proof2, remainingProofs } =
+        await this.findMergeableProofs(proofs);
+
+      proofs = remainingProofs;
+
+      if (!proof1 || !proof2) {
+        return;
+      }
+
+      await this.queue.addTask("stakingLedgerToVotingLedgerMerge", {
+        proofs: { 1: proof1, 2: proof2 },
+      });
+
+      mergesPending--;
+
+      if (mergesPending) {
+        await merge();
+      }
+    };
+
+    return new Promise<
+      Proof<
+        StakingLedgerToVotingLedgerProgramInput,
+        StakingLedgerToVotingLedgerProgramOutput
+      >
+    >(async (resolve) => {
+      this.queue.onTaskComplete(
+        "stakingLedgerToVotingLedgerMerge",
+        async (task, { proof }) => {
+          if (mergesPending) {
+            proofs.push(proof);
+            await merge();
+          } else {
+            console.log(
+              "all merges complete, resolving with final proof",
+              proof
+            );
+            resolve(proof);
+          }
+        }
+      );
+
+      await merge();
+    });
+  }
+
+  public async digest(traces: StakingLedgerToVotingLedgerDigestTrace[]) {
+    console.time("digest");
+
     const proofs: Proof<
       StakingLedgerToVotingLedgerProgramInput,
       StakingLedgerToVotingLedgerProgramOutput
     >[] = [];
 
-    for (let i = 0; i < iterations; i++) {
-      console.time(`digest ${i}`);
-      const accountsSlice = accounts.slice(
-        i * ACCOUNT_BATCH_SIZE,
-        (i + 1) * ACCOUNT_BATCH_SIZE
-      );
-
-      const publicInput: StakingLedgerToVotingLedgerProgramInput = {
-        index: UInt32.from(i * ACCOUNT_BATCH_SIZE),
-        stakingLedgerRoot: this.stakingLedgerTreeService.tree.getRoot(),
-        votingLedgerRoot: this.votingLedgerTreeService.tree.getRoot(),
-        totalCurrency: publicOutput?.totalCurrency ?? UInt64.from(0),
-      };
-
-      console.log("digesting slice", i + 1, "of", iterations);
-
-      const { proof } = await StakingLedgerToVotingLedger.digest(
-        publicInput,
-        accountsSlice
-      );
-      publicOutput = proof.publicOutput;
-
-      proofs.push(proof);
-      console.timeEnd(`digest ${i}`);
-    }
-
-    // TODO: remove this mock merging logic
-    const firstProof = proofs.sort((a, b) =>
-      Number(a.publicInput.index.toBigint() - b.publicInput.index.toBigint())
-    )[0];
-
-    const lastProof = proofs.sort((a, b) =>
-      Number(b.publicInput.index.toBigint() - a.publicInput.index.toBigint())
-    )[0];
-
-    Provable.log("first and last proofs", {
-      firstProof: {
-        publicInput: firstProof.publicInput,
-        publicOutput: firstProof.publicOutput,
-      },
-      lastProof: {
-        publicInput: lastProof.publicInput,
-        publicOutput: lastProof.publicOutput,
-      },
-    });
-
-    console.timeEnd("digest");
-
-    console.time("merge");
-    const dummyMergeProof = await StakingLedgerToVotingLedger.Proof.dummy(
-      firstProof.publicInput,
-      {
-        ...firstProof.publicOutput,
-        exhausted: Bool(false),
-      },
-      0
+    this.queue.onTaskComplete(
+      "stakingLedgerToVotingLedgerDigest",
+      async (task, { proof }) => {
+        console.log(
+          "task completed",
+          task.id,
+          "index range:",
+          proof.publicInput.index.toBigint(),
+          "-",
+          proof.publicOutput.index.add(1).toBigint()
+        );
+        proofs.push(proof);
+      }
     );
 
-    console.timeEnd("merge");
+    for (const trace of traces) {
+      await this.queue.addTask("stakingLedgerToVotingLedgerDigest", trace);
+    }
 
-    return dummyMergeProof;
+    // TODO: is queue.waitUntilEmpty() enough?
+    while (proofs.length < traces.length) {
+      await new Promise((resolve) => setTimeout(resolve, 100));
+    }
+
+    await this.queue.waitUntilEmpty();
+
+    return proofs;
   }
 }

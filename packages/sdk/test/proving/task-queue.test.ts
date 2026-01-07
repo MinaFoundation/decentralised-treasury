@@ -9,37 +9,7 @@ import { randomUUID } from "node:crypto";
 import assert from "node:assert";
 import { testTaskQueue } from "./test-queue.js";
 
-interface TestTaskInput {
-  foo: string;
-}
-
-interface TestTaskOutput {
-  bar: string;
-}
-
-const TestTask: Task<TestTaskInput, TestTaskOutput> = class {
-  public static taskName = "test-task";
-
-  public static async prepare() {}
-
-  public static serializers = {
-    input: async (input: TestTaskInput) => JSON.stringify(input),
-    output: async (output: TestTaskOutput) => JSON.stringify(output),
-  };
-
-  public static deserializers = {
-    input: async (input: string) => JSON.parse(input) as TestTaskInput,
-    output: async (output: string) => JSON.parse(output) as TestTaskOutput,
-  };
-
-  public static async run(input: TestTaskInput): Promise<TestTaskOutput> {
-    return {
-      bar: input.foo,
-    };
-  }
-};
-
-const { queue, worker, redisServer } = await testTaskQueue({ test: TestTask });
+const { queue, killWorkers, redisServer } = await testTaskQueue();
 const taskCount = 5;
 
 it("should complete a task queue roundtrip", async () => {
@@ -52,6 +22,7 @@ it("should complete a task queue roundtrip", async () => {
 
   for (let i = 0; i < taskCount; i++) {
     const input = { foo: randomUUID() };
+    console.log("adding task", input.foo);
     inputs.push(input);
     await queue.addTask("test", input);
   }
@@ -72,7 +43,7 @@ it("should complete a task queue roundtrip", async () => {
     assert(results[i].bar === inputs[i].foo, "result does not match input");
   }
 
-  await worker.close();
+  killWorkers();
   await queue.close();
   await redisServer.stop();
 });

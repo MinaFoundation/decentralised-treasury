@@ -1,8 +1,3 @@
-export interface Capturable<CaptureValue> {
-  captured: CaptureValue;
-  startCapture(): void;
-}
-
 export class ContextProvider<Context> {
   public context: Context | undefined;
 
@@ -17,9 +12,9 @@ export class ContextProvider<Context> {
     this.context = context;
   }
 
-  public startCapture(): void {
-    Object.entries(this.context).forEach(([key, value]) => {
-      value?.startCapture();
-    });
-  }
+  // public startCapture(): void {
+  //   Object.entries(this.context).forEach(([key, value]) => {
+  //     value?.startCapture();
+  //   });
+  // }
 }

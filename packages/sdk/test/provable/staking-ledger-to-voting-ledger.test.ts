@@ -1,6 +1,6 @@
 import { it } from "node:test";
 import assert from "node:assert";
-import { ocamlToGraphQL } from "../../src/mappers/account-mapper.js";
+import { ocamlToGraphQL } from "../../src/ledgers/staking-ledger/account-mapper.js";
 import { createTestAccounts } from "../../src/create-test-accounts.js";
 import {
   // Account,

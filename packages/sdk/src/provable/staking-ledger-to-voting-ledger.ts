@@ -5,7 +5,6 @@ import {
   DynamicProof,
   Field,
   MerkleTree,
-  MerkleWitness,
   Poseidon,
   Provable,
   PublicKey,
@@ -16,22 +15,28 @@ import {
   UInt64,
   ZkProgram,
 } from "o1js";
-import {
-  MerkleTree256Service,
-  MerkleWitness256,
-  PrefixedMerkleWitness36,
-  PrefixedMerkleTree36Service,
-  accountLedgerHashPrefixes,
-} from "../services/merkle-tree-service.js";
-import { ContextProvider } from "../providers/context-provider.js";
-import { VotingAccountService } from "../services/voting-account-service.js";
+import { ContextProvider } from "../utils/context-provider.js";
 import { Account, accountHashPrefix, packToFields } from "./account.js";
 import { hashWithPrefix } from "./hashing-helpers.js";
+import {
+  accountLedgerHashPrefixes,
+  StakingLedger,
+} from "../ledgers/staking-ledger/staking-ledger.js";
+import {
+  emptyVotingAccountHash,
+  votingAccountHashPrefix,
+  votingAccountLedgerHashPrefixes,
+  VotingLedger,
+} from "../ledgers/voting-ledger/voting-ledger.js";
+import { VotingAccount } from "./voting-account.js";
+import {
+  PrefixedMerkleWitness256,
+  PrefixedMerkleWitness36,
+} from "./merkle-tree/prefixed-merkle-tree.js";
 
 export interface StakingLedgerToVotingLedgerContext {
-  stakingLedgerTree: PrefixedMerkleTree36Service;
-  votingLedgerTree: MerkleTree256Service;
-  votingAccounts: VotingAccountService;
+  stakingLedger: StakingLedger;
+  votingLedger: VotingLedger;
 }
 
 export const stakingLedgerToVotingLedgerContext =
@@ -42,22 +47,6 @@ export const VOTING_LEDGER_TREE_HEIGHT = 256;
 
 export const ACCOUNT_BATCH_SIZE = 5;
 export const AccountBatch = Provable.Array(Account, ACCOUNT_BATCH_SIZE);
-
-// TODO: could have just been UInt64, but maybe we'll need more information later in the implementation?
-export class VotingAccount extends Struct({
-  balance: UInt64,
-}) {
-  // TODO: its not sufficient to create dummies like this, what if the voting account simply has 0 balance?
-  public static dummy() {
-    return VotingAccount.empty();
-  }
-
-  public static isEmpty(votingAccount: VotingAccount) {
-    return Poseidon.hash(VotingAccount.toFields(votingAccount)).equals(
-      Poseidon.hash(VotingAccount.toFields(VotingAccount.empty()))
-    );
-  }
-}
 
 export class StakingLedgerToVotingLedgerProgramInput extends Struct({
   index: UInt32,
@@ -74,8 +63,6 @@ export class StakingLedgerToVotingLedgerProgramOutput extends Struct({
   exhausted: Bool,
   totalCurrency: UInt64,
 }) {}
-
-export const emptyVotingAccountLeaf = Field(0);
 
 export interface StakingLedgerToVotingLedgerTrace {
   publicInput: StakingLedgerToVotingLedgerProgramInput;
@@ -121,7 +108,7 @@ export const StakingLedgerToVotingLedger = ZkProgram({
         let witness = await Provable.witnessAsync(
           PrefixedMerkleWitness36,
           async () => {
-            return await context.stakingLedgerTree.getWitness(
+            return await context.stakingLedger.getWitness(
               BigInt(nextIndex.toBigint())
             );
           }
@@ -224,9 +211,7 @@ export const StakingLedgerToVotingLedger = ZkProgram({
           let accountWitness = await Provable.witnessAsync(
             PrefixedMerkleWitness36,
             async () => {
-              return await context.stakingLedgerTree.getWitness(
-                index.toBigint()
-              );
+              return await context.stakingLedger.getWitness(index.toBigint());
             }
           );
 
@@ -278,23 +263,25 @@ export const StakingLedgerToVotingLedger = ZkProgram({
           const votingAccount = await Provable.witnessAsync(
             VotingAccount,
             async () => {
-              return await stakingLedgerToVotingLedgerContext
+              const account = await stakingLedgerToVotingLedgerContext
                 .get()
-                .votingAccounts.getVotingAccount(delegateAddress.toBase58());
+                .votingLedger.getVotingAccount(delegateAddress.toBase58());
+              return account;
             }
           );
 
-          const votingAccountHash = Poseidon.hash(
-            VotingAccount.toFields(votingAccount)
+          const votingAccountHash = hashWithPrefix(
+            votingAccountHashPrefix,
+            VotingAccount.toHashInput(votingAccount)
           );
 
           // load delegate account and check its inclusion in the voting ledger
           const votingAccountWitness = await Provable.witnessAsync(
-            MerkleWitness256,
+            PrefixedMerkleWitness256,
             async () => {
               return await stakingLedgerToVotingLedgerContext
                 .get()
-                .votingLedgerTree.getWitness(
+                .votingLedger.getWitness(
                   Poseidon.hash(delegateAddress.toFields()).toBigInt()
                 );
             }
@@ -302,10 +289,17 @@ export const StakingLedgerToVotingLedger = ZkProgram({
 
           const calculatedVotingAccountIndex =
             votingAccountWitness.calculateIndex();
-          const calculatedVotingLedgerRoot =
-            votingAccountWitness.calculateRoot(votingAccountHash);
+          const calculatedVotingLedgerRoot = votingAccountWitness.calculateRoot(
+            votingAccountHash,
+            votingAccountLedgerHashPrefixes
+          );
           const calculatedEmptyVotingLedgerRoot =
-            votingAccountWitness.calculateRoot(emptyVotingAccountLeaf);
+            votingAccountWitness.calculateRoot(
+              emptyVotingAccountHash,
+              votingAccountLedgerHashPrefixes
+            );
+
+          Provable.log("voting address", delegateAddress);
 
           calculatedVotingAccountIndex.assertEquals(
             Poseidon.hash(delegateAddress.toFields()),
@@ -327,23 +321,30 @@ export const StakingLedgerToVotingLedger = ZkProgram({
           totalCurrency = totalCurrency.add(account.balance);
           // append updated delegate account to the new voting weight ledger
           votingAccount.balance = votingAccount.balance.add(account.balance);
-          const updatedVotingAccountHash = Poseidon.hash(
-            VotingAccount.toFields(votingAccount)
+          const updatedVotingAccountHash = hashWithPrefix(
+            votingAccountHashPrefix,
+            VotingAccount.toHashInput(votingAccount)
           );
 
           votingLedgerRoot = votingAccountWitness.calculateRoot(
-            updatedVotingAccountHash
+            updatedVotingAccountHash,
+            votingAccountLedgerHashPrefixes
           );
 
+          // TODO: if it crashes here, tracing will have a problem recovering
+          // since the voting ledger (also tree) state might become inconsistent
+          // e.g. current trace not being finished, and if restarting from the previous
+          // trace, the voting ledger state will be 1 step too forward
+          // in order to address this we'd have to make the storage operations transactional
           // update the voting account in the voting accounts record
           await Provable.witnessAsync(Field, async () => {
-            context.votingAccounts.setVotingAccount(
+            await context.votingLedger.setVotingAccount(
               delegateAddress.toBase58(),
               votingAccount
             );
-            context.votingLedgerTree.setLeaf(
+            await context.votingLedger.setLeaf(
               Poseidon.hash(delegateAddress.toFields()).toBigInt(),
-              Poseidon.hash(VotingAccount.toFields(votingAccount))
+              votingAccount
             );
             return Field(0);
           });

@@ -1,0 +1,342 @@
+import {
+  PrefixedMerkleTree,
+  PrefixedMerkleWitness256,
+} from "../../provable/merkle-tree/prefixed-merkle-tree.js";
+import { Field } from "o1js";
+import { MerkleTreeStorage } from "../../storage/merkle-tree-storage.js";
+import { VotingAccountStorage } from "../../storage/voting-account-storage.js";
+import { VotingAccount } from "../../provable/voting-account.js";
+import { hashWithPrefix } from "../../provable/hashing-helpers.js";
+
+export interface VotingLedger {
+  getVotingAccount(publicKey: string): Promise<VotingAccount>;
+  setVotingAccount(
+    publicKey: string,
+    votingAccount: VotingAccount
+  ): Promise<void>;
+  getWitness(index: bigint): Promise<PrefixedMerkleWitness256>;
+  setLeaf(index: bigint, leaf: VotingAccount): Promise<void>;
+  getRoot(): Promise<Field>;
+  close(): Promise<void>;
+}
+
+export const votingAccountLedgerHashPrefixes = [
+  "TreasuryMklTree000******",
+  "TreasuryMklTree001******",
+  "TreasuryMklTree002******",
+  "TreasuryMklTree003******",
+  "TreasuryMklTree004******",
+  "TreasuryMklTree005******",
+  "TreasuryMklTree006******",
+  "TreasuryMklTree007******",
+  "TreasuryMklTree008******",
+  "TreasuryMklTree009******",
+  "TreasuryMklTree010******",
+  "TreasuryMklTree011******",
+  "TreasuryMklTree012******",
+  "TreasuryMklTree013******",
+  "TreasuryMklTree014******",
+  "TreasuryMklTree015******",
+  "TreasuryMklTree016******",
+  "TreasuryMklTree017******",
+  "TreasuryMklTree018******",
+  "TreasuryMklTree019******",
+  "TreasuryMklTree020******",
+  "TreasuryMklTree021******",
+  "TreasuryMklTree022******",
+  "TreasuryMklTree023******",
+  "TreasuryMklTree024******",
+  "TreasuryMklTree025******",
+  "TreasuryMklTree026******",
+  "TreasuryMklTree027******",
+  "TreasuryMklTree028******",
+  "TreasuryMklTree029******",
+  "TreasuryMklTree030******",
+  "TreasuryMklTree031******",
+  "TreasuryMklTree032******",
+  "TreasuryMklTree033******",
+  "TreasuryMklTree034******",
+  "TreasuryMklTree035******",
+  "TreasuryMklTree036******",
+  "TreasuryMklTree037******",
+  "TreasuryMklTree038******",
+  "TreasuryMklTree039******",
+  "TreasuryMklTree040******",
+  "TreasuryMklTree041******",
+  "TreasuryMklTree042******",
+  "TreasuryMklTree043******",
+  "TreasuryMklTree044******",
+  "TreasuryMklTree045******",
+  "TreasuryMklTree046******",
+  "TreasuryMklTree047******",
+  "TreasuryMklTree048******",
+  "TreasuryMklTree049******",
+  "TreasuryMklTree050******",
+  "TreasuryMklTree051******",
+  "TreasuryMklTree052******",
+  "TreasuryMklTree053******",
+  "TreasuryMklTree054******",
+  "TreasuryMklTree055******",
+  "TreasuryMklTree056******",
+  "TreasuryMklTree057******",
+  "TreasuryMklTree058******",
+  "TreasuryMklTree059******",
+  "TreasuryMklTree060******",
+  "TreasuryMklTree061******",
+  "TreasuryMklTree062******",
+  "TreasuryMklTree063******",
+  "TreasuryMklTree064******",
+  "TreasuryMklTree065******",
+  "TreasuryMklTree066******",
+  "TreasuryMklTree067******",
+  "TreasuryMklTree068******",
+  "TreasuryMklTree069******",
+  "TreasuryMklTree070******",
+  "TreasuryMklTree071******",
+  "TreasuryMklTree072******",
+  "TreasuryMklTree073******",
+  "TreasuryMklTree074******",
+  "TreasuryMklTree075******",
+  "TreasuryMklTree076******",
+  "TreasuryMklTree077******",
+  "TreasuryMklTree078******",
+  "TreasuryMklTree079******",
+  "TreasuryMklTree080******",
+  "TreasuryMklTree081******",
+  "TreasuryMklTree082******",
+  "TreasuryMklTree083******",
+  "TreasuryMklTree084******",
+  "TreasuryMklTree085******",
+  "TreasuryMklTree086******",
+  "TreasuryMklTree087******",
+  "TreasuryMklTree088******",
+  "TreasuryMklTree089******",
+  "TreasuryMklTree090******",
+  "TreasuryMklTree091******",
+  "TreasuryMklTree092******",
+  "TreasuryMklTree093******",
+  "TreasuryMklTree094******",
+  "TreasuryMklTree095******",
+  "TreasuryMklTree096******",
+  "TreasuryMklTree097******",
+  "TreasuryMklTree098******",
+  "TreasuryMklTree099******",
+  "TreasuryMklTree100******",
+  "TreasuryMklTree101******",
+  "TreasuryMklTree102******",
+  "TreasuryMklTree103******",
+  "TreasuryMklTree104******",
+  "TreasuryMklTree105******",
+  "TreasuryMklTree106******",
+  "TreasuryMklTree107******",
+  "TreasuryMklTree108******",
+  "TreasuryMklTree109******",
+  "TreasuryMklTree110******",
+  "TreasuryMklTree111******",
+  "TreasuryMklTree112******",
+  "TreasuryMklTree113******",
+  "TreasuryMklTree114******",
+  "TreasuryMklTree115******",
+  "TreasuryMklTree116******",
+  "TreasuryMklTree117******",
+  "TreasuryMklTree118******",
+  "TreasuryMklTree119******",
+  "TreasuryMklTree120******",
+  "TreasuryMklTree121******",
+  "TreasuryMklTree122******",
+  "TreasuryMklTree123******",
+  "TreasuryMklTree124******",
+  "TreasuryMklTree125******",
+  "TreasuryMklTree126******",
+  "TreasuryMklTree127******",
+  "TreasuryMklTree128******",
+  "TreasuryMklTree129******",
+  "TreasuryMklTree130******",
+  "TreasuryMklTree131******",
+  "TreasuryMklTree132******",
+  "TreasuryMklTree133******",
+  "TreasuryMklTree134******",
+  "TreasuryMklTree135******",
+  "TreasuryMklTree136******",
+  "TreasuryMklTree137******",
+  "TreasuryMklTree138******",
+  "TreasuryMklTree139******",
+  "TreasuryMklTree140******",
+  "TreasuryMklTree141******",
+  "TreasuryMklTree142******",
+  "TreasuryMklTree143******",
+  "TreasuryMklTree144******",
+  "TreasuryMklTree145******",
+  "TreasuryMklTree146******",
+  "TreasuryMklTree147******",
+  "TreasuryMklTree148******",
+  "TreasuryMklTree149******",
+  "TreasuryMklTree150******",
+  "TreasuryMklTree151******",
+  "TreasuryMklTree152******",
+  "TreasuryMklTree153******",
+  "TreasuryMklTree154******",
+  "TreasuryMklTree155******",
+  "TreasuryMklTree156******",
+  "TreasuryMklTree157******",
+  "TreasuryMklTree158******",
+  "TreasuryMklTree159******",
+  "TreasuryMklTree160******",
+  "TreasuryMklTree161******",
+  "TreasuryMklTree162******",
+  "TreasuryMklTree163******",
+  "TreasuryMklTree164******",
+  "TreasuryMklTree165******",
+  "TreasuryMklTree166******",
+  "TreasuryMklTree167******",
+  "TreasuryMklTree168******",
+  "TreasuryMklTree169******",
+  "TreasuryMklTree170******",
+  "TreasuryMklTree171******",
+  "TreasuryMklTree172******",
+  "TreasuryMklTree173******",
+  "TreasuryMklTree174******",
+  "TreasuryMklTree175******",
+  "TreasuryMklTree176******",
+  "TreasuryMklTree177******",
+  "TreasuryMklTree178******",
+  "TreasuryMklTree179******",
+  "TreasuryMklTree180******",
+  "TreasuryMklTree181******",
+  "TreasuryMklTree182******",
+  "TreasuryMklTree183******",
+  "TreasuryMklTree184******",
+  "TreasuryMklTree185******",
+  "TreasuryMklTree186******",
+  "TreasuryMklTree187******",
+  "TreasuryMklTree188******",
+  "TreasuryMklTree189******",
+  "TreasuryMklTree190******",
+  "TreasuryMklTree191******",
+  "TreasuryMklTree192******",
+  "TreasuryMklTree193******",
+  "TreasuryMklTree194******",
+  "TreasuryMklTree195******",
+  "TreasuryMklTree196******",
+  "TreasuryMklTree197******",
+  "TreasuryMklTree198******",
+  "TreasuryMklTree199******",
+  "TreasuryMklTree200******",
+  "TreasuryMklTree201******",
+  "TreasuryMklTree202******",
+  "TreasuryMklTree203******",
+  "TreasuryMklTree204******",
+  "TreasuryMklTree205******",
+  "TreasuryMklTree206******",
+  "TreasuryMklTree207******",
+  "TreasuryMklTree208******",
+  "TreasuryMklTree209******",
+  "TreasuryMklTree210******",
+  "TreasuryMklTree211******",
+  "TreasuryMklTree212******",
+  "TreasuryMklTree213******",
+  "TreasuryMklTree214******",
+  "TreasuryMklTree215******",
+  "TreasuryMklTree216******",
+  "TreasuryMklTree217******",
+  "TreasuryMklTree218******",
+  "TreasuryMklTree219******",
+  "TreasuryMklTree220******",
+  "TreasuryMklTree221******",
+  "TreasuryMklTree222******",
+  "TreasuryMklTree223******",
+  "TreasuryMklTree224******",
+  "TreasuryMklTree225******",
+  "TreasuryMklTree226******",
+  "TreasuryMklTree227******",
+  "TreasuryMklTree228******",
+  "TreasuryMklTree229******",
+  "TreasuryMklTree230******",
+  "TreasuryMklTree231******",
+  "TreasuryMklTree232******",
+  "TreasuryMklTree233******",
+  "TreasuryMklTree234******",
+  "TreasuryMklTree235******",
+  "TreasuryMklTree236******",
+  "TreasuryMklTree237******",
+  "TreasuryMklTree238******",
+  "TreasuryMklTree239******",
+  "TreasuryMklTree240******",
+  "TreasuryMklTree241******",
+  "TreasuryMklTree242******",
+  "TreasuryMklTree243******",
+  "TreasuryMklTree244******",
+  "TreasuryMklTree245******",
+  "TreasuryMklTree246******",
+  "TreasuryMklTree247******",
+  "TreasuryMklTree248******",
+  "TreasuryMklTree249******",
+  "TreasuryMklTree250******",
+  "TreasuryMklTree251******",
+  "TreasuryMklTree252******",
+  "TreasuryMklTree253******",
+  "TreasuryMklTree254******",
+];
+
+export const votingAccountHashPrefix = "MinaVotingAccount*********";
+export const emptyVotingAccountHash = hashWithPrefix(
+  votingAccountHashPrefix,
+  VotingAccount.toHashInput(VotingAccount.empty())
+);
+
+export class BaseVotingLedger implements VotingLedger {
+  public merkleTree: PrefixedMerkleTree;
+  public constructor(
+    public votingAccountStorage: VotingAccountStorage,
+    public merkleTreeStorage: MerkleTreeStorage
+  ) {
+    this.merkleTree = new PrefixedMerkleTree(
+      256,
+      emptyVotingAccountHash,
+      votingAccountLedgerHashPrefixes,
+      this.merkleTreeStorage
+    );
+  }
+
+  public async getWitness(index: bigint): Promise<PrefixedMerkleWitness256> {
+    return new PrefixedMerkleWitness256(
+      await this.merkleTree.getWitness(index)
+    );
+  }
+
+  public async setLeaf(
+    index: bigint,
+    votingAccount: VotingAccount
+  ): Promise<void> {
+    await this.merkleTree.setLeaf(
+      index,
+      hashWithPrefix(
+        votingAccountHashPrefix,
+        VotingAccount.toHashInput(votingAccount)
+      )
+    );
+  }
+
+  public async getVotingAccount(publicKey: string): Promise<VotingAccount> {
+    return (
+      (await this.votingAccountStorage.getVotingAccount(publicKey)) ??
+      VotingAccount.empty()
+    );
+  }
+
+  public async setVotingAccount(
+    publicKey: string,
+    votingAccount: VotingAccount
+  ): Promise<void> {
+    await this.votingAccountStorage.setVotingAccount(publicKey, votingAccount);
+  }
+
+  public async getRoot(): Promise<Field> {
+    return await this.merkleTree.getRoot();
+  }
+
+  public async close(): Promise<void> {
+    await this.votingAccountStorage.close();
+    await this.merkleTreeStorage.close();
+  }
+}

@@ -1,4 +1,4 @@
-import { Capturable } from "../providers/context-provider.js";
+import { Capturable } from "../utils/context-provider.js";
 import { VotingAccount } from "../provable/staking-ledger-to-voting-ledger.js";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import {
@@ -37,13 +37,7 @@ export class PrefilledVotingAccountInMemoryService
   public async setVotingAccount(
     publicKey: string,
     votingAccount: VotingAccount
-  ): Promise<void> {
-    console.log(
-      "skipping set voting account on prefilled voting account service",
-      publicKey,
-      votingAccount
-    );
-  }
+  ): Promise<void> {}
 }
 
 export class VotingAccountInMemoryService
