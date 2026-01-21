@@ -10,22 +10,26 @@ import {
   ZkProgram,
 } from "o1js";
 import { appendActionToHashList } from "../../hashing-helpers.js";
-import { VotingAccount } from "../../staking-ledger-to-voting-ledger.js";
-import {
-  MerkleTree256Service,
-  MerkleWitness256,
-} from "../../../services/merkle-tree-service.js";
-import { VotingAccountService } from "../../../services/voting-account-service.js";
+import { hashWithPrefix } from "../../hashing-helpers.js";
 import { ContextProvider } from "../../../utils/context-provider.js";
-import { VoteNullifierService } from "../../../services/vote-nullifier-service.js";
+import {
+  votingAccountLedgerHashPrefixes,
+  votingAccountHashPrefix,
+  VotingLedger,
+} from "../../../ledgers/voting-ledger/voting-ledger.js";
+import { VotingAccount } from "../../voting-account.js";
+import { PrefixedMerkleWitness256 } from "../../merkle-tree/prefixed-merkle-tree.js";
+import {
+  nullifierLedgerHashPrefixes,
+  nullifierHashPrefix,
+  NullifierLedger,
+} from "../../../ledgers/nullifier-ledger/nullifier-ledger.js";
 
 export const VOTE_ACTION_BATCH_SIZE = 5;
 
 export interface VoteReducerContext {
-  votingAccountTree: MerkleTree256Service;
-  votingAccounts: VotingAccountService;
-  voteNullifiers: VoteNullifierService;
-  voteNullifierTree: MerkleTree256Service;
+  votingLedger: VotingLedger;
+  nullifierLedger: NullifierLedger;
 }
 
 export const voteReducerContext = new ContextProvider<VoteReducerContext>();
@@ -54,12 +58,10 @@ export class VoteAction extends Struct({
 }
 
 export class VoteReducerPublicInput extends Struct({
+  // TODO: rename to "actionsHash" for both input and output
   fromActionsHash: Field,
   votingLedgerRoot: Field,
   fromNullifierRoot: Field,
-  yay: UInt64,
-  nay: UInt64,
-  abstain: UInt64,
 }) {}
 
 export class VoteReducerPublicOutput extends Struct({
@@ -71,9 +73,6 @@ export class VoteReducerPublicOutput extends Struct({
 }) {}
 
 export const voteReducerErrors = {
-  YAY_START_AT_0: "yay should start at 0",
-  NAY_START_AT_0: "nay should start at 0",
-  ABSTRAIN_START_AT_0: "abstain should start at 0",
   VOTING_LEDGER_ROOT_DOES_NOT_MATCH: "Voting ledger root does not match",
   VOTE_HAS_ALREADY_BEEN_NULLIFIED: "Vote has already been nullified",
   INVALID_WITNESS_FOR_THE_VOTE_NULLIFIER:
@@ -100,20 +99,12 @@ export const VoteReducer = ZkProgram({
 
         // alias the input public variables to the output public variables
         // in case of 'rolling state' that changes within the circuit's loop
-        let {
-          fromActionsHash: toActionsHash,
-          yay,
-          nay,
-          abstain,
-          fromNullifierRoot: toNullifierRoot,
-        } = publicInput;
+        let toActionsHash = publicInput.fromActionsHash;
+        let toNullifierRoot = publicInput.fromNullifierRoot;
 
-        // each batch step should start at 0 for yay, nay, and abstain
-        yay.equals(UInt64.from(0)).assertTrue(voteReducerErrors.YAY_START_AT_0);
-        nay.equals(UInt64.from(0)).assertTrue(voteReducerErrors.NAY_START_AT_0);
-        abstain
-          .equals(UInt64.from(0))
-          .assertTrue(voteReducerErrors.ABSTRAIN_START_AT_0);
+        let yay = UInt64.from(0);
+        let nay = UInt64.from(0);
+        let abstain = UInt64.from(0);
 
         // iterate over the vote actions in the batch
         for (let i = 0; i < VOTE_ACTION_BATCH_SIZE; i++) {
@@ -127,26 +118,28 @@ export const VoteReducer = ZkProgram({
           const votingAccount = await Provable.witnessAsync(
             VotingAccount,
             async () => {
-              const votingAccount =
-                await context.votingAccounts.getVotingAccount(
-                  voteAction.publicKey.toBase58()
-                );
+              const votingAccount = await context.votingLedger.getVotingAccount(
+                voteAction.publicKey.toBase58()
+              );
               return votingAccount ?? VotingAccount.empty();
             }
           );
 
-          //Ensure the witnessed voting account is part of the voting account tree
+          // Ensure the witnessed voting account is part of the voting account tree
           const votingAccountWitness = await Provable.witnessAsync(
-            MerkleWitness256,
-            async () => {
-              return await context.votingAccountTree.getWitness(
-                Poseidon.hash(voteAction.publicKey.toFields()).toBigInt()
-              );
-            }
+            PrefixedMerkleWitness256,
+            async () =>
+              await context.votingLedger.getWitness(
+                voteAction.publicKey.toBase58()
+              )
           );
 
           const votingLedgerRoot = votingAccountWitness.calculateRoot(
-            Poseidon.hash(VotingAccount.toFields(votingAccount))
+            hashWithPrefix(
+              votingAccountHashPrefix,
+              VotingAccount.toHashInput(votingAccount)
+            ),
+            votingAccountLedgerHashPrefixes
           );
 
           const votingLederRootMatches = votingLedgerRoot.equals(
@@ -160,26 +153,26 @@ export const VoteReducer = ZkProgram({
             .assertTrue(voteReducerErrors.VOTING_LEDGER_ROOT_DOES_NOT_MATCH);
 
           // check that the public key has not yet voted by ensuring the vote nullifier is false
-          const voteNullifier = await Provable.witnessAsync(Bool, async () => {
-            return Bool(
-              await context.voteNullifiers.getNullifier(
+          const voteNullifier = await Provable.witnessAsync(
+            Bool,
+            async () =>
+              await context.nullifierLedger.getNullifier(
                 voteAction.publicKey.toBase58()
               )
-            );
-          });
+          );
 
           const voteNullifierWitness = await Provable.witnessAsync(
-            MerkleWitness256,
-            async () => {
-              return await context.voteNullifierTree.getWitness(
-                Poseidon.hash(voteAction.publicKey.toFields()).toBigInt()
-              );
-            }
+            PrefixedMerkleWitness256,
+            async () =>
+              await context.nullifierLedger.getWitness(
+                voteAction.publicKey.toBase58()
+              )
           );
 
           const voteNullifierRoot = voteNullifierWitness.calculateRoot(
             // nullifier is a boolean, so we can use its single field representation
-            voteNullifier.toFields()[0]
+            hashWithPrefix(nullifierHashPrefix, voteNullifier.toFields()),
+            nullifierLedgerHashPrefixes
           );
           const voteNullifierIndex = voteNullifierWitness.calculateIndex();
 
@@ -207,14 +200,18 @@ export const VoteReducer = ZkProgram({
           toNullifierRoot = Provable.if(
             isDummyVoteAction,
             toNullifierRoot,
-            voteNullifierWitness.calculateRoot(Bool(true).toFields()[0])
+            voteNullifierWitness.calculateRoot(
+              hashWithPrefix(nullifierHashPrefix, Bool(true).toFields()),
+              nullifierLedgerHashPrefixes
+            )
           );
 
           // TODO: is there a away to call an async external/out-of-circuit dependency without a return value?
           await Provable.witnessAsync(Field, async () => {
             !isDummyVoteAction.toBoolean() &&
-              (await context.voteNullifiers.nullify(
-                voteAction.publicKey.toBase58()
+              (await context.nullifierLedger.setNullifier(
+                voteAction.publicKey.toBase58(),
+                Bool(true)
               ));
             return Field(0);
           });
@@ -222,9 +219,9 @@ export const VoteReducer = ZkProgram({
           // update the nullifier tree entry for the vote action's public key
           await Provable.witnessAsync(Field, async () => {
             !isDummyVoteAction.toBoolean() &&
-              (await context.voteNullifierTree.setLeaf(
-                Poseidon.hash(voteAction.publicKey.toFields()).toBigInt(),
-                Bool(true).toFields()[0]
+              (await context.nullifierLedger.setLeaf(
+                voteAction.publicKey.toBase58(),
+                Bool(true)
               ));
             return Field(0);
           });

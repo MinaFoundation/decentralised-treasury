@@ -19,6 +19,10 @@ export class ReplayableStakingLedger implements StakingLedger {
     throw new Error("Not supported");
   }
 
+  public async accountCount(): Promise<number> {
+    throw new Error("Not supported");
+  }
+
   public async getRoot(): Promise<Field> {
     throw new Error("Not supported");
   }

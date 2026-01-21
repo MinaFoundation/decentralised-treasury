@@ -15,7 +15,7 @@ export async function getRootHash({
   Provable.log("rootHash", rootHash);
 }
 
-export async function hydrateAccountStorage({
+export async function hydrateAccounts({
   redisUrl,
   lifecycleId,
   stakingLedgerPath,
@@ -30,11 +30,11 @@ export async function hydrateAccountStorage({
 }): Promise<void> {
   const service = new RedisStakingLedgerService(redisUrl, lifecycleId);
   let accounts = await service.readStakingLedger(stakingLedgerPath);
-  await service.hydrateAccountStorage(accounts, startIndex, endIndex);
+  await service.hydrateAccounts(accounts, startIndex, endIndex);
   await service.close();
 }
 
-export async function hydrateMerkleTreeStorage({
+export async function hydrateMerkleTree({
   redisUrl,
   lifecycleId,
   startIndex,
@@ -47,7 +47,7 @@ export async function hydrateMerkleTreeStorage({
 }): Promise<void> {
   const service = new RedisStakingLedgerService(redisUrl, lifecycleId);
   const accounts = await service.accountStorage.getAllAccounts();
-  await service.hydrateMerkleTreeStorage(accounts, startIndex, endIndex);
+  await service.hydrateMerkleTree(accounts, startIndex, endIndex);
   await service.close();
 }
 
@@ -64,14 +64,14 @@ export async function fromFile({
   startIndex: number;
   endIndex: number;
 }): Promise<void> {
-  await hydrateAccountStorage({
+  await hydrateAccounts({
     redisUrl,
     lifecycleId,
     stakingLedgerPath,
     startIndex,
     endIndex,
   });
-  await hydrateMerkleTreeStorage({
+  await hydrateMerkleTree({
     redisUrl,
     lifecycleId,
     startIndex,
@@ -104,7 +104,7 @@ export default function stakingLedgerCommandFactory(program: Command) {
     .option("--redis-url <redis-url>", "Redis URL", process.env.REDIS_URL)
     .option("--start-index <start-index>", "Start index", parseInt)
     .option("--end-index <end-index>", "End index", parseInt)
-    .action(hydrateAccountStorage);
+    .action(hydrateAccounts);
 
   command
     .command("hydrate-merkle-tree")
@@ -112,7 +112,7 @@ export default function stakingLedgerCommandFactory(program: Command) {
     .option("--redis-url <redis-url>", "Redis URL", process.env.REDIS_URL)
     .option("--start-index <start-index>", "Start index", parseInt)
     .option("--end-index <end-index>", "End index", parseInt)
-    .action(hydrateMerkleTreeStorage);
+    .action(hydrateMerkleTree);
 
   command
     .command("get-root-hash")

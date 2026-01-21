@@ -20,8 +20,10 @@ it("should create a redis keyv storage", async () => {
 
   await storage.set(key, value);
   const storedValue = await storage.get(key);
+  const count = await storage.count();
 
   assert(storedValue === value, "value does not match");
+  assert(count === 1, "count does not match");
 
   await storage.close();
   await redisServer.stop();

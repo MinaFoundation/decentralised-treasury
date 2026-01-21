@@ -6,6 +6,7 @@ import {
 } from "../../../src/provable/account.js";
 import {
   ACCOUNT_BATCH_SIZE,
+  StakingLedgerToVotingLedger,
   StakingLedgerToVotingLedgerProgramInput,
 } from "../../../src/provable/staking-ledger-to-voting-ledger.js";
 import {

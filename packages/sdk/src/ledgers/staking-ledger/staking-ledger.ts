@@ -34,6 +34,7 @@ import { prettyPrintProgress } from "../../pretty-print-progress.js";
 
 export interface StakingLedger {
   getAllAccounts(): Promise<Account[]>;
+  accountCount(): Promise<number>;
   getAccount(index: bigint): Promise<Account>;
   setAccount(index: bigint, account: Account): Promise<void>;
   getWitness(index: bigint): Promise<PrefixedMerkleWitness36>;
@@ -92,8 +93,6 @@ export class BaseStakingLedger implements StakingLedger {
     public accountStorage: AccountStorage,
     public merkleTreeStorage: MerkleTreeStorage
   ) {
-    this.accountStorage = accountStorage;
-    this.merkleTreeStorage = merkleTreeStorage;
     this.merkleTree = new PrefixedMerkleTree(
       36,
       emptyAccountHash,
@@ -109,6 +108,10 @@ export class BaseStakingLedger implements StakingLedger {
 
   public async getAllAccounts(): Promise<Account[]> {
     return await this.accountStorage.getAllAccounts();
+  }
+
+  public async accountCount(): Promise<number> {
+    return await this.accountStorage.count();
   }
 
   public async getAccount(index: bigint): Promise<Account> {
@@ -134,6 +137,75 @@ export class BaseStakingLedger implements StakingLedger {
     return await this.merkleTree.getRoot();
   }
 
+  // TODO: should be typed to match the JSON schema
+  public parseAccount(value: any): Account {
+    return new Account({
+      pk: PublicKey.fromBase58(value.pk),
+      tokenId: TokenId.fromBase58(value.token),
+      tokenSymbol: TokenSymbol.from(value.token_symbol),
+      nonce: UInt32.from(value.nonce ?? 0),
+
+      receiptChainHash: ReceiptChainHashBase58.fromBase58(
+        value.receipt_chain_hash
+      ),
+
+      votingFor: StateHashBase58.fromBase58(value.voting_for),
+      timing: value.timing
+        ? new Timing({
+            isTimed: Bool(true),
+            initialMinimumBalance: UInt64.from(
+              value.timing.initial_minimum_balance
+            ).mul(1_000_000_000),
+            cliffTime: UInt32.from(value.timing.cliff_time),
+            cliffAmount: UInt64.from(value.timing.cliff_amount).mul(
+              1_000_000_000
+            ),
+            vestingPeriod: UInt32.from(value.timing.vesting_period),
+            vestingIncrement: UInt64.from(value.timing.vesting_increment).mul(
+              1_000_000_000
+            ),
+          })
+        : Timing.empty(),
+      permissions: new Permissions({
+        editState: Permission.fromString(value.permissions.edit_state),
+        send: Permission.fromString(value.permissions.send),
+        receive: Permission.fromString(value.permissions.receive),
+        access: Permission.fromString(value.permissions.access),
+        setDelegate: Permission.fromString(value.permissions.set_delegate),
+        setPermissions: Permission.fromString(
+          value.permissions.set_permissions
+        ),
+        setVerificationKey: [
+          Permission.fromString(value.permissions.set_verification_key.auth),
+          UInt32.from(value.permissions.set_verification_key.txn_version),
+        ],
+        setZkappUri: Permission.fromString(value.permissions.set_zkapp_uri),
+        editActionState: Permission.fromString(
+          value.permissions.edit_action_state
+        ),
+        setTokenSymbol: Permission.fromString(
+          value.permissions.set_token_symbol
+        ),
+        incrementNonce: Permission.fromString(
+          value.permissions.increment_nonce
+        ),
+        setVotingFor: Permission.fromString(value.permissions.set_voting_for),
+        setTiming: Permission.fromString(value.permissions.set_timing),
+      }),
+      // TODO: implement zk app support
+      zkapp: Zkapp.empty(),
+
+      balance: UInt64.from(value.balance).mul(1_000_000_000),
+      delegate: PublicKey.fromBase58(value.delegate),
+    });
+  }
+
+  /**
+   * Reads the staking ledger JSON file and returns an array of all the accounts in the file
+   * @param stakingLedgerPath - The path to the staking ledger JSON file
+   * @param onAccountReadComplete - A callback function that is called when an account is read, used to track progress
+   * @returns An array of all the accounts in the staking ledger JSON file
+   */
   async readStakingLedger(
     stakingLedgerPath: string,
     onAccountReadComplete?: (bytesRead: number, totalBytes: number) => void
@@ -154,79 +226,13 @@ export class BaseStakingLedger implements StakingLedger {
         .pipe(streamArray())
         .on("data", ({ value }) => {
           accountCount++;
-          const account = new Account({
-            pk: PublicKey.fromBase58(value.pk),
-            tokenId: TokenId.fromBase58(value.token),
-            tokenSymbol: TokenSymbol.from(value.token_symbol),
-            nonce: UInt32.from(value.nonce ?? 0),
-
-            receiptChainHash: ReceiptChainHashBase58.fromBase58(
-              value.receipt_chain_hash
-            ),
-
-            votingFor: StateHashBase58.fromBase58(value.voting_for),
-            timing: value.timing
-              ? new Timing({
-                  isTimed: Bool(true),
-                  initialMinimumBalance: UInt64.from(
-                    value.timing.initial_minimum_balance
-                  ).mul(1_000_000_000),
-                  cliffTime: UInt32.from(value.timing.cliff_time),
-                  cliffAmount: UInt64.from(value.timing.cliff_amount).mul(
-                    1_000_000_000
-                  ),
-                  vestingPeriod: UInt32.from(value.timing.vesting_period),
-                  vestingIncrement: UInt64.from(
-                    value.timing.vesting_increment
-                  ).mul(1_000_000_000),
-                })
-              : Timing.empty(),
-            permissions: new Permissions({
-              editState: Permission.fromString(value.permissions.edit_state),
-              send: Permission.fromString(value.permissions.send),
-              receive: Permission.fromString(value.permissions.receive),
-              access: Permission.fromString(value.permissions.access),
-              setDelegate: Permission.fromString(
-                value.permissions.set_delegate
-              ),
-              setPermissions: Permission.fromString(
-                value.permissions.set_permissions
-              ),
-              setVerificationKey: [
-                Permission.fromString(
-                  value.permissions.set_verification_key.auth
-                ),
-                UInt32.from(value.permissions.set_verification_key.txn_version),
-              ],
-              setZkappUri: Permission.fromString(
-                value.permissions.set_zkapp_uri
-              ),
-              editActionState: Permission.fromString(
-                value.permissions.edit_action_state
-              ),
-              setTokenSymbol: Permission.fromString(
-                value.permissions.set_token_symbol
-              ),
-              incrementNonce: Permission.fromString(
-                value.permissions.increment_nonce
-              ),
-              setVotingFor: Permission.fromString(
-                value.permissions.set_voting_for
-              ),
-              setTiming: Permission.fromString(value.permissions.set_timing),
-            }),
-            // TODO: implement zk app support
-            zkapp: Zkapp.empty(),
-
-            balance: UInt64.from(value.balance).mul(1_000_000_000),
-            delegate: PublicKey.fromBase58(value.delegate),
-          });
-
-          accounts.push(account);
+          accounts.push(this.parseAccount(value));
           onAccountReadComplete?.(readStream.bytesRead, totalSize);
         })
         .on("end", () => {
           resolve(accounts);
+          // TODO: is this last call necessary, as it's already called in the data event?
+          // if not, we can add `account` into the parameters too
           onAccountReadComplete?.(readStream.bytesRead, totalSize);
         })
         .on("error", (error) => {
@@ -236,44 +242,54 @@ export class BaseStakingLedger implements StakingLedger {
     });
   }
 
-  async hydrateAccountStorage(
+  /**
+   * Hydrates the accounts in the staking ledger into the account storage.
+   * Index ranges can be specified to hydrate a subset of the accounts,
+   * when resuming the hydrating process.
+   * @param accounts - The array of accounts to hydrate
+   * @param startIndex - The index to start hydrating at
+   * @param endIndex - The index to end hydrating at
+   * @param onHydrateAccountComplete - A callback function that is called when an account is hydrated, used to track progress
+   */
+  async hydrateAccounts(
     accounts: Account[],
     startIndex = 0,
     endIndex?: number,
     onHydrateAccountComplete?: (index: bigint, account: Account) => void
   ): Promise<void> {
-    endIndex = endIndex ? endIndex + 1 : accounts.length;
+    endIndex = endIndex ?? accounts.length;
 
     if (endIndex > accounts.length) {
       throw new Error("End index is greater than the number of accounts");
     }
 
-    const accountsToHydrate = accounts.slice(startIndex, endIndex);
+    const accountsToHydrate = accounts.slice(startIndex, endIndex + 1);
     if (accountsToHydrate.length === 0) {
       throw new Error("No accounts to hydrate");
     }
 
     for (let i = 0; i < accountsToHydrate.length; i++) {
       const account = accountsToHydrate[i];
+
       const index = BigInt(i + startIndex);
       await this.setAccount(index, account);
       onHydrateAccountComplete?.(index, account);
     }
   }
 
-  async hydrateMerkleTreeStorage(
+  async hydrateMerkleTree(
     accounts: Account[],
     startIndex = 0,
     endIndex?: number,
     onHydrateLeafComplete?: (index: bigint, leaf: Account) => void
   ): Promise<void> {
-    endIndex = endIndex ? endIndex + 1 : accounts.length;
+    endIndex = endIndex ?? accounts.length;
 
     if (endIndex > accounts.length) {
       throw new Error("End index is greater than the number of accounts");
     }
 
-    const accountsToHydrate = accounts.slice(startIndex, endIndex);
+    const accountsToHydrate = accounts.slice(startIndex, endIndex + 1);
 
     if (accountsToHydrate.length === 0) {
       throw new Error("No accounts to hydrate");

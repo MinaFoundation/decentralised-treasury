@@ -17,10 +17,11 @@ import {
   TreasuryOwnerSmartContract,
 } from "../provable/contracts/treasury-owner.js";
 import { TreasuryProposalSmartContract } from "../provable/contracts/treasury-proposal/treasury-proposal.js";
-import { PrefilledMerkleTree256InMemoryService } from "../services/merkle-tree-service.js";
-import { VotingAccountInMemoryService } from "../services/voting-account-service.js";
-import { VoteNullifierInMemoryService } from "../services/vote-nullifier-service.js";
-import { MerkleTree256InMemoryService } from "../services/merkle-tree-service.js";
+import { BaseVotingLedger } from "../ledgers/voting-ledger/voting-ledger.js";
+import { BaseNullifierLedger } from "../ledgers/nullifier-ledger/nullifier-ledger.js";
+import { MemoryVotingAccountStorage } from "../storage/memory-voting-account-storage.js";
+import { MemoryMerkleTreeStorage } from "../storage/memory-merkle-tree-storage.js";
+import { MemoryVoteNullifierStorage } from "../storage/memory-vote-nullifier-storage.js";
 import {
   VoteReducer,
   voteReducerContext,
@@ -30,16 +31,23 @@ import { StakingLedgerToVotingLedger } from "../provable/staking-ledger-to-votin
 export async function compileTreasuryContracts(
   lifecyclePeriodDuration: UInt32 = LIFECYCLE_PERIOD_DURATION
 ) {
-  const votingAccountTreeService = new PrefilledMerkleTree256InMemoryService();
-  const votingAccountService = new VotingAccountInMemoryService();
-  const voteNullifierService = new VoteNullifierInMemoryService();
-  const voteNullifierTreeService = new MerkleTree256InMemoryService();
+  const votingAccountStorage = new MemoryVotingAccountStorage();
+  const votingMerkleTreeStorage = new MemoryMerkleTreeStorage();
+  const nullifierStorage = new MemoryVoteNullifierStorage();
+  const nullifierMerkleTreeStorage = new MemoryMerkleTreeStorage();
+
+  const votingLedger = new BaseVotingLedger(
+    votingAccountStorage,
+    votingMerkleTreeStorage
+  );
+  const nullifierLedger = new BaseNullifierLedger(
+    nullifierStorage,
+    nullifierMerkleTreeStorage
+  );
 
   voteReducerContext.set({
-    votingAccountTree: votingAccountTreeService,
-    votingAccounts: votingAccountService,
-    voteNullifiers: voteNullifierService,
-    voteNullifierTree: voteNullifierTreeService,
+    votingLedger,
+    nullifierLedger,
   });
 
   // TODO: probably some context is missing here for either of these compile calls, migth fail with proofsEnabled: true

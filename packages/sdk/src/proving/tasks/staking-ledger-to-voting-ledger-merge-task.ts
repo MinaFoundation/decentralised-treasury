@@ -1,8 +1,5 @@
 import {
-  MerkleTree256InMemoryService,
-  PrefixedMerkleTree36InMemoryService,
-} from "../../services/merkle-tree-service.js";
-import {
+  SideLoadedStakingLedgerToVotingLedgerProof,
   StakingLedgerToVotingLedger,
   stakingLedgerToVotingLedgerContext,
   StakingLedgerToVotingLedgerProgramInput,
@@ -10,26 +7,18 @@ import {
 } from "../../provable/staking-ledger-to-voting-ledger.js";
 import { Task } from "../task-queue.js";
 import { Cache, JsonProof, Proof, Provable } from "o1js";
-import { VotingAccountInMemoryService } from "../../services/voting-account-service.js";
+import { ReplayableStakingLedger } from "../../ledgers/staking-ledger/replayable-staking-ledger.js";
+import { ReplayableVotingLedger } from "../../ledgers/voting-ledger/replayable-voting-ledger.js";
 
 export interface StakingLedgerToVotingLedgerMergeTaskInput {
   proofs: {
-    1: Proof<
-      StakingLedgerToVotingLedgerProgramInput,
-      StakingLedgerToVotingLedgerProgramOutput
-    >;
-    2: Proof<
-      StakingLedgerToVotingLedgerProgramInput,
-      StakingLedgerToVotingLedgerProgramOutput
-    >;
+    1: SideLoadedStakingLedgerToVotingLedgerProof;
+    2: SideLoadedStakingLedgerToVotingLedgerProof;
   };
 }
 
 export interface StakingLedgerToVotingLedgerMergeTaskOutput {
-  proof: Proof<
-    StakingLedgerToVotingLedgerProgramInput,
-    StakingLedgerToVotingLedgerProgramOutput
-  >;
+  proof: SideLoadedStakingLedgerToVotingLedgerProof;
 }
 
 const proofsEnabled = process.env.PROOFS_ENABLED === "true";
@@ -64,8 +53,12 @@ export const StakingLedgerToVotingLedgerMergeTask: Task<
       };
       return {
         proofs: {
-          1: await StakingLedgerToVotingLedger.Proof.fromJSON(proofs[1]),
-          2: await StakingLedgerToVotingLedger.Proof.fromJSON(proofs[2]),
+          1: await SideLoadedStakingLedgerToVotingLedgerProof.fromJSON(
+            proofs[1]
+          ),
+          2: await SideLoadedStakingLedgerToVotingLedgerProof.fromJSON(
+            proofs[2]
+          ),
         },
       };
     },
@@ -74,7 +67,7 @@ export const StakingLedgerToVotingLedgerMergeTask: Task<
         proof: JsonProof;
       };
       return {
-        proof: await StakingLedgerToVotingLedger.Proof.fromJSON(proof),
+        proof: await SideLoadedStakingLedgerToVotingLedgerProof.fromJSON(proof),
       };
     },
   };
@@ -83,14 +76,10 @@ export const StakingLedgerToVotingLedgerMergeTask: Task<
     console.log("compiling staking ledger to voting ledger", {
       proofsEnabled,
     });
-    const stakingLedgerTreeService = new PrefixedMerkleTree36InMemoryService();
-    const votingLedgerTreeService = new MerkleTree256InMemoryService();
-    const votingAccountService = new VotingAccountInMemoryService();
 
     stakingLedgerToVotingLedgerContext.set({
-      stakingLedgerTree: stakingLedgerTreeService,
-      votingLedgerTree: votingLedgerTreeService,
-      votingAccounts: votingAccountService,
+      stakingLedger: new ReplayableStakingLedger({}),
+      votingLedger: new ReplayableVotingLedger({}, {}),
     });
 
     console.time("compile");
@@ -122,6 +111,8 @@ export const StakingLedgerToVotingLedgerMergeTask: Task<
     );
     console.timeEnd("merge");
 
-    return result;
+    return {
+      proof: SideLoadedStakingLedgerToVotingLedgerProof.fromProof(result.proof),
+    };
   }
 };

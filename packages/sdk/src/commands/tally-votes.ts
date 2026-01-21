@@ -2,7 +2,6 @@ import { Command } from "commander";
 import {
   fetchAccount,
   Field,
-  MerkleTree,
   Mina,
   PrivateKey,
   Provable,
@@ -26,14 +25,13 @@ import {
   voteReducerContext,
 } from "../provable/contracts/treasury-proposal/vote-reducer.js";
 import { createDummyVoteActions } from "test/utils.js";
-import {
-  SideLoadedStakingLedgerToVotingLedgerProof,
-  VOTING_LEDGER_TREE_HEIGHT,
-} from "../provable/staking-ledger-to-voting-ledger.js";
-import { VotingAccountInMemoryService } from "../services/voting-account-service.js";
-import { VoteNullifierInMemoryService } from "../services/vote-nullifier-service.js";
-import { MerkleTree256InMemoryService } from "../services/merkle-tree-service.js";
-import { PrefilledMerkleTree256InMemoryService } from "../services/merkle-tree-service.js";
+import { SideLoadedStakingLedgerToVotingLedgerProof } from "../provable/staking-ledger-to-voting-ledger.js";
+import { VotingAccount } from "../provable/voting-account.js";
+import { BaseVotingLedger } from "../ledgers/voting-ledger/voting-ledger.js";
+import { BaseNullifierLedger } from "../ledgers/nullifier-ledger/nullifier-ledger.js";
+import { MemoryVotingAccountStorage } from "../storage/memory-voting-account-storage.js";
+import { MemoryMerkleTreeStorage } from "../storage/memory-merkle-tree-storage.js";
+import { MemoryVoteNullifierStorage } from "../storage/memory-vote-nullifier-storage.js";
 import { readFileSync, writeFileSync } from "fs";
 
 export default function tallyVotesCommandFactory(program: Command) {
@@ -197,32 +195,40 @@ export default function tallyVotesCommandFactory(program: Command) {
         }
 
         Provable.log("votingLedgerInputPath", votingLedgerInputPath);
-        const votingAccountService = VotingAccountInMemoryService.fromFile(
-          process.cwd() + "/" + votingLedgerInputPath
+        const votingAccountJson = JSON.parse(
+          readFileSync(process.cwd() + "/" + votingLedgerInputPath, "utf8")
+        ) as Record<string, ReturnType<typeof VotingAccount.fromJSON>>;
+
+        const votingAccountStorage = new MemoryVotingAccountStorage();
+        const votingMerkleTreeStorage = new MemoryMerkleTreeStorage();
+        const nullifierStorage = new MemoryVoteNullifierStorage();
+        const nullifierMerkleTreeStorage = new MemoryMerkleTreeStorage();
+
+        const votingLedger = new BaseVotingLedger(
+          votingAccountStorage,
+          votingMerkleTreeStorage
+        );
+        const nullifierLedger = new BaseNullifierLedger(
+          nullifierStorage,
+          nullifierMerkleTreeStorage
         );
 
-        Provable.log("creating merkle tree service");
-        const votingAccountTreeService =
-          await votingAccountService.toMerkleTreeService();
-        const voteNullifierService = new VoteNullifierInMemoryService();
-        const voteNullifierTreeService = new MerkleTree256InMemoryService();
+        for (const [publicKey, votingAccountEntry] of Object.entries(
+          votingAccountJson
+        )) {
+          const votingAccount = VotingAccount.fromJSON(votingAccountEntry);
+          await votingLedger.setVotingAccount(publicKey, votingAccount);
+          await votingLedger.setLeaf(publicKey, votingAccount);
+        }
 
-        voteReducerContext.set({
-          votingAccountTree: votingAccountTreeService,
-          votingAccounts: votingAccountService,
-          voteNullifiers: voteNullifierService,
-          voteNullifierTree: voteNullifierTreeService,
-        });
+        voteReducerContext.set({ votingLedger, nullifierLedger });
 
         Provable.log("tallying votes");
         const proof = await VoteReducer.reduceBatch(
           {
             fromActionsHash: Reducer.initialActionState,
-            votingLedgerRoot: votingAccountTreeService.tree.getRoot(),
-            fromNullifierRoot: voteNullifierTreeService.tree.getRoot(),
-            yay: UInt64.from(0),
-            nay: UInt64.from(0),
-            abstain: UInt64.from(0),
+            votingLedgerRoot: await votingLedger.getRoot(),
+            fromNullifierRoot: await nullifierLedger.getRoot(),
           },
           voteActions
         );

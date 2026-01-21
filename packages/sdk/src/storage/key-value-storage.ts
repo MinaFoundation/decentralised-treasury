@@ -3,4 +3,5 @@ export interface KeyValueStorage {
   set(key: string, value: string): Promise<void>;
   clear(): Promise<void>;
   close(): Promise<void>;
+  count(): Promise<number>;
 }

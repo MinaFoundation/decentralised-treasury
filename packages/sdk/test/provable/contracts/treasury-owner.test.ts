@@ -1,5 +1,6 @@
-import { it } from "node:test";
+import { it, after } from "node:test";
 import assert from "node:assert";
+import { RedisMemoryServer } from "redis-memory-server";
 import {
   LIFECYCLE_PERIOD_DURATION,
   LifecyclePeriod,
@@ -10,7 +11,6 @@ import {
   AccountUpdate,
   fetchAccount,
   Field,
-  MerkleTree,
   Mina,
   Poseidon,
   PrivateKey,
@@ -38,17 +38,11 @@ import {
   StakingLedgerToVotingLedger,
   StakingLedgerToVotingLedgerProgramInput,
   StakingLedgerToVotingLedgerProgramOutput,
-  VOTING_LEDGER_TREE_HEIGHT,
-  VotingAccount,
 } from "../../../src/provable/staking-ledger-to-voting-ledger.js";
-import { VotingAccountInMemoryService } from "../../../src/services/voting-account-service.js";
-import { VoteNullifierInMemoryService } from "../../../src/services/vote-nullifier-service.js";
-import {
-  MerkleTree256InMemoryService,
-  PrefilledMerkleTree256InMemoryService,
-  MerkleWitness256,
-} from "../../../src/services/merkle-tree-service.js";
+import { VotingAccount } from "../../../src/provable/voting-account.js";
 import { createDummyVoteActions } from "../../../test/utils.js";
+import { RedisVotingLedger } from "../../../src/ledgers/voting-ledger/redis-voting-ledger.js";
+import { RedisNullifierLedger } from "../../../src/ledgers/nullifier-ledger/redis-nullifier-ledger.js";
 
 const proofsEnabled = process.env.PROOFS_ENABLED === "true";
 
@@ -58,19 +52,24 @@ const Local = await Mina.LocalBlockchain({
 
 Mina.setActiveInstance(Local);
 
-const votingLedgerTree = new MerkleTree(VOTING_LEDGER_TREE_HEIGHT);
-const voteNullifierTree = new MerkleTree(VOTING_LEDGER_TREE_HEIGHT);
+const redisServer = new RedisMemoryServer();
+const redisHost = await redisServer.getHost();
+const redisPort = await redisServer.getPort();
+const redisUrl = `redis://${redisHost}:${redisPort}`;
+const lifecycleId = "treasury-owner-test";
 
-const votingAccountTreeService = new PrefilledMerkleTree256InMemoryService();
-const votingAccountService = new VotingAccountInMemoryService();
-const voteNullifierService = new VoteNullifierInMemoryService();
-const voteNullifierTreeService = new MerkleTree256InMemoryService();
+const votingLedger = new RedisVotingLedger(redisUrl, lifecycleId);
+const nullifierLedger = new RedisNullifierLedger(redisUrl, lifecycleId);
 
 voteReducerContext.set({
-  votingAccountTree: votingAccountTreeService,
-  votingAccounts: votingAccountService,
-  voteNullifiers: voteNullifierService,
-  voteNullifierTree: voteNullifierTreeService,
+  votingLedger,
+  nullifierLedger,
+});
+
+after(async () => {
+  await votingLedger.close();
+  await nullifierLedger.close();
+  await redisServer.stop();
 });
 
 const { verificationKey: voteReducerVerificationKey } =
@@ -136,43 +135,12 @@ const multiSigCommitment = Poseidon.hash([
   ),
 ]);
 
-votingAccountService.setVotingAccount(
-  voterPublicKey1.toBase58(),
-  votingAccount1
-);
+await votingLedger.setVotingAccount(voterPublicKey1.toBase58(), votingAccount1);
 
-votingAccountService.setVotingAccount(
-  voterPublicKey2.toBase58(),
-  votingAccount2
-);
+await votingLedger.setVotingAccount(voterPublicKey2.toBase58(), votingAccount2);
 
-votingLedgerTree.setLeaf(
-  Poseidon.hash(voterPublicKey1.toFields()).toBigInt(),
-  Poseidon.hash(VotingAccount.toFields(votingAccount1))
-);
-
-votingLedgerTree.setLeaf(
-  Poseidon.hash(voterPublicKey2.toFields()).toBigInt(),
-  Poseidon.hash(VotingAccount.toFields(votingAccount2))
-);
-
-votingAccountTreeService.setWitness(
-  Poseidon.hash(voterPublicKey1.toFields()).toBigInt(),
-  new MerkleWitness256(
-    votingLedgerTree.getWitness(
-      Poseidon.hash(voterPublicKey1.toFields()).toBigInt()
-    )
-  )
-);
-
-votingAccountTreeService.setWitness(
-  Poseidon.hash(voterPublicKey2.toFields()).toBigInt(),
-  new MerkleWitness256(
-    votingLedgerTree.getWitness(
-      Poseidon.hash(voterPublicKey2.toFields()).toBigInt()
-    )
-  )
-);
+await votingLedger.setLeaf(voterPublicKey1.toBase58(), votingAccount1);
+await votingLedger.setLeaf(voterPublicKey2.toBase58(), votingAccount2);
 
 // TODO
 it.todo("should pause the treasury", async () => {});
@@ -347,11 +315,8 @@ it("should tally votes", async () => {
   const proof = await VoteReducer.reduceBatch(
     {
       fromActionsHash: Reducer.initialActionState,
-      votingLedgerRoot: votingLedgerTree.getRoot(),
-      fromNullifierRoot: voteNullifierTree.getRoot(),
-      yay: UInt64.from(0),
-      nay: UInt64.from(0),
-      abstain: UInt64.from(0),
+      votingLedgerRoot: await votingLedger.getRoot(),
+      fromNullifierRoot: await nullifierLedger.getRoot(),
     },
     voteActions
   );

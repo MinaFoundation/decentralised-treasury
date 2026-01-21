@@ -8,31 +8,32 @@ import { uuid } from "zod";
 import { randomUUID } from "node:crypto";
 import assert from "node:assert";
 import { testTaskQueue } from "./test-queue.js";
+import { TestTaskOutput } from "./test-task.js";
 
-const { queue, killWorkers, redisServer } = await testTaskQueue();
+const redisServer = new RedisMemoryServer();
+const redisHost = await redisServer.getHost();
+const redisPort = await redisServer.getPort();
+const redisUrl = `redis://${redisHost}:${redisPort}`;
+
+const { queue, killWorkers } = await testTaskQueue(1, redisHost, redisPort);
 const taskCount = 5;
 
 it("should complete a task queue roundtrip", async () => {
-  const results = [];
+  const resultPromises = [];
   const inputs = [];
-
-  queue.onTaskComplete("test", (job, output) => {
-    results.push(output);
-  });
+  const results: TestTaskOutput[] = [];
 
   for (let i = 0; i < taskCount; i++) {
     const input = { foo: randomUUID() };
     console.log("adding task", input.foo);
     inputs.push(input);
-    await queue.addTask("test", input);
+    const resultPromise = queue.addTask("test", input, async (result) => {
+      results.push(result);
+    });
+    resultPromises.push(resultPromise);
   }
 
-  await new Promise<void>(async (resolve) => {
-    while (results.length < taskCount) {
-      await new Promise((resolve) => setTimeout(resolve, 500));
-    }
-    resolve();
-  });
+  await Promise.all(resultPromises);
 
   assert(
     results.length === taskCount && results.length === inputs.length,
@@ -42,6 +43,11 @@ it("should complete a task queue roundtrip", async () => {
   for (let i = 0; i < taskCount; i++) {
     assert(results[i].bar === inputs[i].foo, "result does not match input");
   }
+
+  assert(
+    queue.events.listenerCount("completed") === 0,
+    "completed listener not removed"
+  );
 
   killWorkers();
   await queue.close();

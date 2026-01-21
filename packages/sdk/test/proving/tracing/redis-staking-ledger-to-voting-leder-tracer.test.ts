@@ -1,11 +1,7 @@
 import { it } from "node:test";
 import { StakingLedgerToVotingLedgerDigestTrace } from "../../../src/proving/tracing/staking-ledger-to-voting-ledger-tracer.js";
-import { readLedger } from "../../../src/read-ledger.js";
-import {
-  ACCOUNT_BATCH_SIZE,
-  StakingLedgerToVotingLedgerProgramInput,
-} from "../../../src/provable/staking-ledger-to-voting-ledger.js";
-import { PrivateKey, Provable } from "o1js";
+import { StakingLedgerToVotingLedgerProgramInput } from "../../../src/provable/staking-ledger-to-voting-ledger.js";
+import { Provable } from "o1js";
 import {
   PrefixedMerkleWitness256,
   PrefixedMerkleWitness36,
@@ -16,9 +12,8 @@ import { RedisMemoryServer } from "redis-memory-server";
 import { RedisStakingLedger } from "../../../src/ledgers/staking-ledger/redis-staking-ledger.js";
 import { Account } from "../../../src/provable/account.js";
 import { RedisVotingLedger } from "../../../src/ledgers/voting-ledger/redis-voting-ledger.js";
-import { prettyPrintProgress } from "../../../src/pretty-print-progress.js";
-import { StakingLedgerToVotingLedgerTracer } from "../../../src/proving/tracing/staking-ledger-to-voting-ledger-tracer.js";
 import { RedisStakingLedgerToVotingLedgerTracer } from "../../../src/proving/tracing/redis-staking-ledger-to-voting-ledger-tracer.js";
+import { writeFileSync } from "node:fs";
 
 it("should serialize and deserialize a trace", async () => {
   const trace = new StakingLedgerToVotingLedgerDigestTrace({
@@ -58,8 +53,9 @@ it("should trace a staking ledger to a voting ledger", async () => {
     "test/provable/staking-epoch-ledger.json"
   );
 
-  await stakingLedger.hydrateAccountStorage(accounts, 0, 50);
-  await stakingLedger.hydrateMerkleTreeStorage(accounts, 0, 50);
+  console.log("hydrating staking ledger", accounts.length);
+  await stakingLedger.hydrateAccounts(accounts, 0, 50);
+  await stakingLedger.hydrateMerkleTree(accounts, 0, 50);
 
   const tracer = new RedisStakingLedgerToVotingLedgerTracer(
     stakingLedger,
@@ -80,18 +76,31 @@ it("should trace a staking ledger to a voting ledger", async () => {
       trace.publicInput.index.toBigint()
     );
   };
-  const endIndex = 10;
-  await tracer.digest(0, 1, onTraceComplete);
-  await tracer.digest(1, endIndex, onTraceComplete);
+  console.log("tracing");
+  await tracer.digest(0, 9, onTraceComplete);
 
   const traces = await tracer.traceStorage.getAllTraces();
 
-  console.log("traces completed", traces);
+  console.log("traces completed", traces.length);
 
   await votingLedger.close();
   await stakingLedger.close();
   await tracer.close();
   await redisServer.stop();
+
+  // TODO: use this to refresh the data set for the prover tests
+  // console.log("saving traces to file");
+
+  // const jsonTraces = JSON.stringify(
+  //   traces.map((trace) => StakingLedgerToVotingLedgerDigestTrace.toJSON(trace))
+  // );
+
+  // console.log("jsonntaces", jsonTraces);
+
+  // writeFileSync(
+  //   "test/proving/staking-ledger-to-voting-ledger-traces.json",
+  //   jsonTraces
+  // );
 
   assert.strictEqual(traces[0].publicInput.index.toBigint(), 0n);
   assert.strictEqual(traces[1].publicInput.index.toBigint(), 5n);

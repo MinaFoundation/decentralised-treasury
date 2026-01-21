@@ -62,7 +62,10 @@ export const StakingLedgerToVotingLedgerDigestTask: Task<
       });
     },
     output: async (output: StakingLedgerToVotingLedgerDigestTaskOutput) => {
-      return JSON.stringify(output.proof.toJSON());
+      return JSON.stringify({
+        proof: output.proof.toJSON(),
+        traceId: output.traceId,
+      });
     },
   };
 
@@ -102,31 +105,6 @@ export const StakingLedgerToVotingLedgerDigestTask: Task<
     } = input;
 
     Provable.log("running task with input", input);
-
-    // const stakingLedgerTreeService =
-    //   new PrefilledPrefixedMerkleTree36InMemoryService();
-    // const votingLedgerTreeService = new PrefilledMerkleTree256InMemoryService();
-    // const votingAccountService = new PrefilledVotingAccountInMemoryService();
-
-    // for (const [index, witness] of Object.entries(stakingLedgerWitnesses)) {
-    //   await stakingLedgerTreeService.setWitness(BigInt(index), witness);
-    // }
-
-    // for (const [key, accounts] of Object.entries(votingAccounts)) {
-    //   await votingAccountService.prefillVotingAccounts(key, accounts);
-    // }
-
-    // for (const [index, witnesses] of Object.entries(votingLedgerWitnesses)) {
-    //   for (const witness of witnesses) {
-    //     await votingLedgerTreeService.setWitness(BigInt(index), witness);
-    //   }
-    // }
-
-    // stakingLedgerToVotingLedgerContext.set({
-    //   stakingLedgerTree: stakingLedgerTreeService,
-    //   votingLedgerTree: votingLedgerTreeService,
-    //   votingAccounts: votingAccountService,
-    // });
 
     const stakingLedger = new ReplayableStakingLedger(stakingLedgerWitnesses);
     const votingLedger = new ReplayableVotingLedger(

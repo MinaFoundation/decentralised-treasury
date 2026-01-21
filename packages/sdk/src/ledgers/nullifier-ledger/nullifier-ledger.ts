@@ -2,26 +2,22 @@ import {
   PrefixedMerkleTree,
   PrefixedMerkleWitness256,
 } from "../../provable/merkle-tree/prefixed-merkle-tree.js";
-import { Field } from "o1js";
+import { Bool, Field } from "o1js";
 import { MerkleTreeStorage } from "../../storage/merkle-tree-storage.js";
-import { VotingAccountStorage } from "../../storage/voting-account-storage.js";
-import { VotingAccount } from "../../provable/voting-account.js";
+import { VoteNullifierStorage } from "../../storage/vote-nullifier-storage.js";
 import { hashWithPrefix } from "../../provable/hashing-helpers.js";
 import { publicKeyBase58ToBigInt } from "../../utils/public-key.js";
 
-export interface VotingLedger {
-  getVotingAccount(publicKey: string): Promise<VotingAccount>;
-  setVotingAccount(
-    publicKey: string,
-    votingAccount: VotingAccount
-  ): Promise<void>;
+export interface NullifierLedger {
+  getNullifier(publicKey: string): Promise<Bool>;
+  setNullifier(publicKey: string, nullifier: Bool): Promise<void>;
   getWitness(publicKey: string): Promise<PrefixedMerkleWitness256>;
-  setLeaf(publicKey: string, leaf: VotingAccount): Promise<void>;
+  setLeaf(publicKey: string, leaf: Bool): Promise<void>;
   getRoot(): Promise<Field>;
   close(): Promise<void>;
 }
 
-export const votingAccountLedgerHashPrefixes = [
+export const nullifierLedgerHashPrefixes = [
   "TreasuryMklTree000******",
   "TreasuryMklTree001******",
   "TreasuryMklTree002******",
@@ -279,24 +275,23 @@ export const votingAccountLedgerHashPrefixes = [
   "TreasuryMklTree254******",
 ];
 
-export const votingAccountHashPrefix = "MinaVotingAccount*********";
-export const emptyVotingAccountHash = hashWithPrefix(
-  votingAccountHashPrefix,
-  VotingAccount.toHashInput(VotingAccount.empty())
+export const nullifierHashPrefix = "MinaNullifier*************";
+export const emptyNullifierHash = hashWithPrefix(
+  nullifierHashPrefix,
+  Bool(false).toFields()
 );
 
-export class BaseVotingLedger implements VotingLedger {
+export class BaseNullifierLedger implements NullifierLedger {
   public merkleTree: PrefixedMerkleTree;
   public constructor(
-    public votingAccountStorage: VotingAccountStorage,
+    public nullifierStorage: VoteNullifierStorage,
     public merkleTreeStorage: MerkleTreeStorage
   ) {
-    // reason why we use a 256 height instead of mimicking the staking ledger tree height is because
-    // voting accounts might not exist in the staking ledger, as in the delegate address is not part of the staking ledger
+    // use a 256 height to match the nullifier tree requirements
     this.merkleTree = new PrefixedMerkleTree(
       256,
-      emptyVotingAccountHash,
-      votingAccountLedgerHashPrefixes,
+      emptyNullifierHash,
+      nullifierLedgerHashPrefixes,
       this.merkleTreeStorage
     );
   }
@@ -310,32 +305,21 @@ export class BaseVotingLedger implements VotingLedger {
     );
   }
 
-  public async setLeaf(
-    publicKey: string,
-    votingAccount: VotingAccount
-  ): Promise<void> {
+  public async setLeaf(publicKey: string, nullifier: Bool): Promise<void> {
     const index = publicKeyBase58ToBigInt(publicKey);
     await this.merkleTree.setLeaf(
       index,
-      hashWithPrefix(
-        votingAccountHashPrefix,
-        VotingAccount.toHashInput(votingAccount)
-      )
+      hashWithPrefix(nullifierHashPrefix, nullifier.toFields())
     );
   }
 
-  public async getVotingAccount(publicKey: string): Promise<VotingAccount> {
-    return (
-      (await this.votingAccountStorage.getVotingAccount(publicKey)) ??
-      VotingAccount.empty()
-    );
+  public async getNullifier(publicKey: string): Promise<Bool> {
+    const storedNullifier = await this.nullifierStorage.getNullifier(publicKey);
+    return storedNullifier === undefined ? Bool(false) : Bool(storedNullifier);
   }
 
-  public async setVotingAccount(
-    publicKey: string,
-    votingAccount: VotingAccount
-  ): Promise<void> {
-    await this.votingAccountStorage.setVotingAccount(publicKey, votingAccount);
+  public async setNullifier(publicKey: string, nullifier: Bool): Promise<void> {
+    await this.nullifierStorage.setNullifier(publicKey, nullifier.toBoolean());
   }
 
   public async getRoot(): Promise<Field> {
@@ -343,7 +327,7 @@ export class BaseVotingLedger implements VotingLedger {
   }
 
   public async close(): Promise<void> {
-    await this.votingAccountStorage.close();
+    await this.nullifierStorage.close();
     await this.merkleTreeStorage.close();
   }
 }

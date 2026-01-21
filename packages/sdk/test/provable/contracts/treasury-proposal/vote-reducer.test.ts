@@ -1,15 +1,13 @@
-import { it, before } from "node:test";
+import { it, before, after } from "node:test";
 import assert from "node:assert";
+import { RedisMemoryServer } from "redis-memory-server";
 
 import {
   Account,
+  Bool,
   Field,
-  MerkleTree,
-  Poseidon,
   Provable,
-  PublicKey,
   Reducer,
-  UInt32,
   UInt64,
 } from "o1js";
 import {
@@ -19,68 +17,47 @@ import {
   VOTE_ACTION_BATCH_SIZE,
   voteReducerContext,
 } from "../../../../src/provable/contracts/treasury-proposal/vote-reducer.js";
-import {
-  VOTING_LEDGER_TREE_HEIGHT,
-  VotingAccount,
-} from "../../../../src/provable/staking-ledger-to-voting-ledger.js";
+import { VotingAccount } from "../../../../src/provable/voting-account.js";
 import { createTestAccounts } from "../../../../src/create-test-accounts.js";
-import {
-  MerkleTree256InMemoryService,
-  MerkleWitness256,
-  PrefilledMerkleTree256InMemoryService,
-} from "../../../../src/services/merkle-tree-service.js";
-import { VotingAccountInMemoryService } from "../../../../src/services/voting-account-service.js";
-import { VoteNullifierInMemoryService } from "../../../../src/services/vote-nullifier-service.js";
 import { createDummyVoteActions } from "../../../utils.js";
+import { RedisVotingLedger } from "../../../../src/ledgers/voting-ledger/redis-voting-ledger.js";
+import { RedisNullifierLedger } from "../../../../src/ledgers/nullifier-ledger/redis-nullifier-ledger.js";
 
 export const proofsEnabled = process.env.PROOFS_ENABLED === "true";
 
-const votingAccountTreeService = new PrefilledMerkleTree256InMemoryService();
-const votingAccountService = new VotingAccountInMemoryService();
-const voteNullifierService = new VoteNullifierInMemoryService();
-const voteNullifierTreeService = new MerkleTree256InMemoryService();
+let redisServer: RedisMemoryServer;
+let votingLedger: RedisVotingLedger;
+let nullifierLedger: RedisNullifierLedger;
 
-voteReducerContext.set({
-  votingAccountTree: votingAccountTreeService,
-  votingAccounts: votingAccountService,
-  voteNullifiers: voteNullifierService,
-  voteNullifierTree: voteNullifierTreeService,
-});
-
-let votingLedgerTree: MerkleTree;
 let testAccounts: Account[];
-let voteNullifierTree: MerkleTree;
 
 before(async () => {
+  redisServer = new RedisMemoryServer();
+  const redisHost = await redisServer.getHost();
+  const redisPort = await redisServer.getPort();
+  const redisUrl = `redis://${redisHost}:${redisPort}`;
+  const lifecycleId = "vote-reducer-test";
+
+  votingLedger = new RedisVotingLedger(redisUrl, lifecycleId);
+  nullifierLedger = new RedisNullifierLedger(redisUrl, lifecycleId);
+  voteReducerContext.set({ votingLedger, nullifierLedger });
+
   testAccounts = await createTestAccounts(10);
-  votingLedgerTree = new MerkleTree(VOTING_LEDGER_TREE_HEIGHT);
-  voteNullifierTree = new MerkleTree(VOTING_LEDGER_TREE_HEIGHT);
 
   // fill the voting ledger tree with VotingAccounts
-  testAccounts.forEach((account, index) => {
+  for (const account of testAccounts) {
     const votingAccount = new VotingAccount({ balance: account.balance });
-    votingLedgerTree.setLeaf(
-      Poseidon.hash(account.publicKey.toFields()).toBigInt(),
-      Poseidon.hash(VotingAccount.toFields(votingAccount))
-    );
+    const publicKey = account.publicKey.toBase58();
+    await votingLedger.setVotingAccount(publicKey, votingAccount);
+    await votingLedger.setLeaf(publicKey, votingAccount);
+    await nullifierLedger.setLeaf(publicKey, Bool(false));
+  }
+});
 
-    votingAccountService.setVotingAccount(
-      account.publicKey.toBase58(),
-      votingAccount
-    );
-  });
-
-  // fill the witness provider with the voting ledger witnesses
-  testAccounts.forEach((account, index) => {
-    votingAccountTreeService.setWitness(
-      Poseidon.hash(account.publicKey.toFields()).toBigInt(),
-      new MerkleWitness256(
-        votingLedgerTree.getWitness(
-          Poseidon.hash(account.publicKey.toFields()).toBigInt()
-        )
-      )
-    );
-  });
+after(async () => {
+  await votingLedger.close();
+  await nullifierLedger.close();
+  await redisServer.stop();
 });
 
 it("should compile", async () => {
@@ -125,11 +102,8 @@ it("should tally votes actions batch", async () => {
   const proof = await VoteReducer.reduceBatch(
     {
       fromActionsHash: Reducer.initialActionState,
-      yay: UInt64.from(0),
-      nay: UInt64.from(0),
-      abstain: UInt64.from(0),
-      votingLedgerRoot: votingLedgerTree.getRoot(),
-      fromNullifierRoot: voteNullifierTree.getRoot(),
+      votingLedgerRoot: await votingLedger.getRoot(),
+      fromNullifierRoot: await nullifierLedger.getRoot(),
     },
     actions
   );

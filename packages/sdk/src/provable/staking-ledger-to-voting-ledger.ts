@@ -282,7 +282,7 @@ export const StakingLedgerToVotingLedger = ZkProgram({
               return await stakingLedgerToVotingLedgerContext
                 .get()
                 .votingLedger.getWitness(
-                  Poseidon.hash(delegateAddress.toFields()).toBigInt()
+                  delegateAddress.toBase58()
                 );
             }
           );
@@ -298,8 +298,6 @@ export const StakingLedgerToVotingLedger = ZkProgram({
               emptyVotingAccountHash,
               votingAccountLedgerHashPrefixes
             );
-
-          Provable.log("voting address", delegateAddress);
 
           calculatedVotingAccountIndex.assertEquals(
             Poseidon.hash(delegateAddress.toFields()),
@@ -343,7 +341,7 @@ export const StakingLedgerToVotingLedger = ZkProgram({
               votingAccount
             );
             await context.votingLedger.setLeaf(
-              Poseidon.hash(delegateAddress.toFields()).toBigInt(),
+              delegateAddress.toBase58(),
               votingAccount
             );
             return Field(0);

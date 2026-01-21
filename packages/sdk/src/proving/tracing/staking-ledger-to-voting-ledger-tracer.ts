@@ -6,7 +6,7 @@ import {
   StakingLedgerToVotingLedgerProgramOutput,
 } from "../../provable/staking-ledger-to-voting-ledger.js";
 import { Account } from "../../provable/account.js";
-import { Provable, UInt32, UInt64 } from "o1js";
+import { UInt32, UInt64 } from "o1js";
 import { RecordingStakingLedger } from "../../ledgers/staking-ledger/recording-staking-ledger.js";
 import { RecordingVotingLedger } from "../../ledgers/voting-ledger/recording-voting-ledger.js";
 import {
@@ -121,7 +121,9 @@ export class StakingLedgerToVotingLedgerDigestTrace {
         json.publicInput
       ),
       privateInput: {
-        accounts: json.privateInput.accounts.map(Account.fromJSON),
+        accounts: json.privateInput.accounts.map((account) =>
+          Account.fromJSON(account)
+        ),
       },
       stakingLedgerWitnesses: Object.entries(
         json.stakingLedgerWitnesses
@@ -172,9 +174,15 @@ export class StakingLedgerToVotingLedgerTracer {
     await this.traceStorage.close();
   }
 
+  /**
+   * Traces the execution of the `digest` method of the `StakingLedgerToVotingLedger` program.
+   * @param startIndex - The index of the first trace to start tracing at
+   * @param endIndex - The index of the last trace to end tracing at
+   * @param onTraceComplete - A callback function that is called when a trace is complete, used to track progress
+   */
   public async digest(
     startIndex: number = 0,
-    endIndex?: number,
+    endIndex: number = Infinity,
     onTraceComplete?: (
       index: number,
       trace: StakingLedgerToVotingLedgerDigestTrace
@@ -196,9 +204,11 @@ export class StakingLedgerToVotingLedgerTracer {
     const stakingLedgerRoot = await this.stakingLedger.getRoot();
     let votingLedgerRoot = await this.votingLedger.getRoot();
 
-    for (let i = startIndex; i < endIndex; i++) {
-      const accountsSlice = [];
+    console.time("trace");
+    for (let i = startIndex; i <= endIndex; i++) {
+      const accountsSlice: Account[] = [];
       const sliceStartIndex = i * ACCOUNT_BATCH_SIZE;
+
       for (let j = 0; j < ACCOUNT_BATCH_SIZE; j++) {
         const accountIndex = sliceStartIndex + j;
         const account = await this.stakingLedger.getAccount(
@@ -206,6 +216,11 @@ export class StakingLedgerToVotingLedgerTracer {
         );
 
         accountsSlice.push(account);
+      }
+
+      // we're out of accounts to digest, stop tracing
+      if (Account.isEmpty(accountsSlice[0]).toBoolean()) {
+        break;
       }
 
       const publicInput: StakingLedgerToVotingLedgerProgramInput = {
@@ -245,7 +260,6 @@ export class StakingLedgerToVotingLedgerTracer {
       await this.traceStorage.setTrace(i, trace);
       onTraceComplete?.(i, trace);
     }
-
     console.timeEnd("trace");
   }
 }

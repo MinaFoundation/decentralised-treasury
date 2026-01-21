@@ -1,6 +1,7 @@
 import { StakingLedgerToVotingLedgerDigestTrace } from "../../proving/tracing/staking-ledger-to-voting-ledger-tracer.js";
 import { StakingLedgerToVotingLedgerDigestTraceStorage } from "../staking-ledger-to-voting-ledger-digest-trace-storage.js";
 import { RedisKeyValueStorage } from "./redis-key-value-storage.js";
+import { Provable } from "o1js";
 
 export class RedisStakingLedgerToVotingLedgerDigestTraceStorage
   extends RedisKeyValueStorage
@@ -13,10 +14,11 @@ export class RedisStakingLedgerToVotingLedgerDigestTraceStorage
   async getTrace(
     index: number
   ): Promise<StakingLedgerToVotingLedgerDigestTrace | undefined> {
-    const trace = await this.get(index.toString());
-    return trace
-      ? StakingLedgerToVotingLedgerDigestTrace.fromJSON(JSON.parse(trace))
+    const traceJson = await this.get(index.toString());
+    const trace = traceJson
+      ? StakingLedgerToVotingLedgerDigestTrace.fromJSON(JSON.parse(traceJson))
       : undefined;
+    return trace;
   }
 
   async setTrace(

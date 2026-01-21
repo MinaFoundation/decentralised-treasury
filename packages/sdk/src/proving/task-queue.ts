@@ -37,37 +37,51 @@ export class TaskQueue<Tasks extends Record<string, Task<unknown, unknown>>> {
     }
   }
 
-  public async addTask(
-    taskName: keyof Tasks extends string ? keyof Tasks : never,
-    input: Parameters<Tasks[keyof Tasks]["serializers"]["input"]>[0]
+  public async addTask<
+    TaskName extends keyof Tasks extends string ? keyof Tasks : never,
+    Output extends Awaited<
+      ReturnType<Tasks[TaskName]["deserializers"]["output"]>
+    >,
+  >(
+    taskName: TaskName,
+    input: Parameters<Tasks[TaskName]["serializers"]["input"]>[0],
+    onTaskComplete?: (output: Output) => Promise<void>
   ) {
     const taskConstructor = this.tasks[taskName];
     const serializedInput = await taskConstructor.serializers.input(input);
-    return await this.queue.add(taskName, serializedInput);
+    const job = await this.queue.add(taskName, serializedInput);
+    const result = await this.onTaskComplete<TaskName, Output>(
+      taskName,
+      job.id
+    );
+    await onTaskComplete?.(result);
   }
 
   public onTaskComplete<
+    TaskName extends keyof Tasks extends string ? keyof Tasks : never,
     Output extends Awaited<
       ReturnType<Tasks[keyof Tasks]["deserializers"]["output"]>
     >,
-  >(
-    taskName: keyof Tasks extends string ? keyof Tasks : never,
-    callback: (job: Job, output: Output) => void
-  ) {
-    this.events.on("completed", async ({ jobId, returnvalue }) => {
-      const job = await Job.fromId(this.queue, jobId);
+  >(taskName: TaskName, jobId: string): Promise<Output> {
+    return new Promise<Output>((resolve, reject) => {
+      const listener = async ({ jobId: completedJobId, returnvalue }) => {
+        if (jobId !== completedJobId) {
+          return;
+        }
 
-      if (job.name == taskName) {
         try {
-          // TODO: find a way to adjust typing of the task queue to avoid this cast
           const output = (await this.tasks[taskName].deserializers.output(
             returnvalue
           )) as Output;
-          callback(job, output);
+          this.events.removeListener("completed", listener);
+          resolve(output);
         } catch (e) {
           console.error("error deserializing output", e);
+          reject(e);
         }
-      }
+      };
+
+      this.events.on("completed", listener);
     });
   }
 

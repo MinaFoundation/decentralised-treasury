@@ -1,21 +1,20 @@
-import { VotingAccount } from "../../provable/voting-account.js";
 import { PrefixedMerkleWitness256 } from "../../provable/merkle-tree/prefixed-merkle-tree.js";
-import { VotingLedger } from "./voting-ledger.js";
+import { NullifierLedger } from "./nullifier-ledger.js";
 import { Recorder } from "../../utils/recorder.js";
-import { Field } from "o1js";
+import { Bool, Field } from "o1js";
 
-export class ReplayableVotingLedger implements VotingLedger {
+export class ReplayableNullifierLedger implements NullifierLedger {
   public recorder = new Recorder<{
     witnesses: Record<string, PrefixedMerkleWitness256[]>;
-    votingAccounts: Record<string, VotingAccount[]>;
+    nullifiers: Record<string, Bool[]>;
   }>();
 
   public constructor(
     public witnesses: Record<string, PrefixedMerkleWitness256[]>,
-    public votingAccounts: Record<string, VotingAccount[]>
+    public nullifiers: Record<string, Bool[]>
   ) {
     this.recorder.recordings["witnesses"] = witnesses;
-    this.recorder.recordings["votingAccounts"] = votingAccounts;
+    this.recorder.recordings["nullifiers"] = nullifiers;
   }
 
   public async getWitness(
@@ -27,21 +26,20 @@ export class ReplayableVotingLedger implements VotingLedger {
     );
   }
 
-  public async getVotingAccount(publicKey: string): Promise<VotingAccount> {
+  public async getNullifier(publicKey: string): Promise<Bool> {
     return (
-      this.recorder.getRecorded("votingAccounts", publicKey) ??
-      VotingAccount.empty()
+      this.recorder.getRecorded("nullifiers", publicKey) ?? Bool(false)
     );
   }
 
-  public async setVotingAccount(
+  public async setNullifier(
     publicKey: string,
-    votingAccount: VotingAccount
+    nullifier: Bool
   ): Promise<void> {
     // noop, due to being called within circuits, even when in "replay mode"
   }
 
-  public async setLeaf(publicKey: string, leaf: VotingAccount): Promise<void> {
+  public async setLeaf(publicKey: string, leaf: Bool): Promise<void> {
     // noop, due to being called within circuits, even when in "replay mode"
   }
 

@@ -12,9 +12,11 @@ export class RecordingVotingLedger implements VotingLedger {
 
   public constructor(public votingLedger: VotingLedger) {}
 
-  public async getWitness(index: bigint): Promise<PrefixedMerkleWitness256> {
-    const witness = await this.votingLedger.getWitness(index);
-    this.recorder.record("witnesses", index.toString(), witness);
+  public async getWitness(
+    publicKey: string
+  ): Promise<PrefixedMerkleWitness256> {
+    const witness = await this.votingLedger.getWitness(publicKey);
+    this.recorder.record("witnesses", publicKey, witness);
     return witness;
   }
 
@@ -31,8 +33,8 @@ export class RecordingVotingLedger implements VotingLedger {
     await this.votingLedger.setVotingAccount(publicKey, votingAccount);
   }
 
-  public async setLeaf(index: bigint, leaf: VotingAccount): Promise<void> {
-    await this.votingLedger.setLeaf(index, leaf);
+  public async setLeaf(publicKey: string, leaf: VotingAccount): Promise<void> {
+    await this.votingLedger.setLeaf(publicKey, leaf);
   }
 
   public async getRoot(): Promise<Field> {

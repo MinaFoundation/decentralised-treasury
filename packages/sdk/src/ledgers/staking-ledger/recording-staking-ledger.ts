@@ -21,6 +21,10 @@ export class RecordingStakingLedger implements StakingLedger {
     throw new Error("Not supported");
   }
 
+  public async accountCount(): Promise<number> {
+    throw new Error("Not supported");
+  }
+
   public async getAccount(index: bigint): Promise<Account> {
     throw new Error("Not supported");
   }
