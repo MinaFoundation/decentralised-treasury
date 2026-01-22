@@ -11,10 +11,4 @@ export class ContextProvider<Context> {
   public set(context: Context): void {
     this.context = context;
   }
-
-  // public startCapture(): void {
-  //   Object.entries(this.context).forEach(([key, value]) => {
-  //     value?.startCapture();
-  //   });
-  // }
 }

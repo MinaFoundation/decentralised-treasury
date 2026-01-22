@@ -1,6 +1,11 @@
-import { Poseidon, PublicKey } from "o1js";
+import { Field, Poseidon, Provable, PublicKey } from "o1js";
 
 export function publicKeyBase58ToBigInt(publicKey: string): bigint {
-  const publicKeyObj = PublicKey.fromBase58(publicKey);
-  return Poseidon.hash(publicKeyObj.toFields()).toBigInt();
+  const emptyPublicKey = PublicKey.empty();
+  let publicKeyFields = emptyPublicKey.toFields();
+
+  if (publicKey !== emptyPublicKey.toBase58()) {
+    publicKeyFields = PublicKey.fromBase58(publicKey).toFields();
+  }
+  return Poseidon.hash(publicKeyFields).toBigInt();
 }

@@ -5,6 +5,7 @@ import {
   Poseidon,
   Provable,
   PublicKey,
+  SelfProof,
   Struct,
   UInt64,
   ZkProgram,
@@ -86,8 +87,43 @@ export const VoteReducer = ZkProgram({
   publicInput: VoteReducerPublicInput,
   publicOutput: VoteReducerPublicOutput,
   methods: {
-    // TODO: merge reduce proofs, sum up the results across proofs
-    // mergec
+    /**
+     * Merge two adjacent reduce proofs into a single proof
+     */
+    merge: {
+      privateInputs: [SelfProof, SelfProof],
+      method: async (
+        publicInput: VoteReducerPublicInput,
+        proof1: SelfProof<VoteReducerPublicInput, VoteReducerPublicOutput>,
+        proof2: SelfProof<VoteReducerPublicInput, VoteReducerPublicOutput>
+      ) => {
+        proof1.verify();
+        proof2.verify();
+
+        const input1 = proof1.publicInput;
+        const output1 = proof1.publicOutput;
+        const input2 = proof2.publicInput;
+        const output2 = proof2.publicOutput;
+
+        Poseidon.hash(
+          VoteReducerPublicInput.toFields(publicInput)
+        ).assertEquals(Poseidon.hash(VoteReducerPublicInput.toFields(input1)));
+
+        input1.votingLedgerRoot.assertEquals(input2.votingLedgerRoot);
+        output1.toActionsHash.assertEquals(input2.fromActionsHash);
+        output1.toNullifierRoot.assertEquals(input2.fromNullifierRoot);
+
+        return {
+          publicOutput: {
+            toActionsHash: output2.toActionsHash,
+            toNullifierRoot: output2.toNullifierRoot,
+            yay: output1.yay.add(output2.yay),
+            nay: output1.nay.add(output2.nay),
+            abstain: output1.abstain.add(output2.abstain),
+          },
+        };
+      },
+    },
 
     reduceBatch: {
       privateInputs: [Provable.Array(VoteAction, VOTE_ACTION_BATCH_SIZE)],
@@ -121,17 +157,18 @@ export const VoteReducer = ZkProgram({
               const votingAccount = await context.votingLedger.getVotingAccount(
                 voteAction.publicKey.toBase58()
               );
-              return votingAccount ?? VotingAccount.empty();
+              return votingAccount;
             }
           );
 
           // Ensure the witnessed voting account is part of the voting account tree
           const votingAccountWitness = await Provable.witnessAsync(
             PrefixedMerkleWitness256,
-            async () =>
-              await context.votingLedger.getWitness(
+            async () => {
+              return await context.votingLedger.getWitness(
                 voteAction.publicKey.toBase58()
-              )
+              );
+            }
           );
 
           const votingLedgerRoot = votingAccountWitness.calculateRoot(
@@ -176,23 +213,28 @@ export const VoteReducer = ZkProgram({
           );
           const voteNullifierIndex = voteNullifierWitness.calculateIndex();
 
-          voteNullifierIndex.assertEquals(
-            Poseidon.hash(voteAction.publicKey.toFields()),
-            voteReducerErrors.INVALID_WITNESS_FOR_THE_VOTE_NULLIFIER
-          );
+          voteNullifierIndex
+            .equals(Poseidon.hash(voteAction.publicKey.toFields()))
+            .or(isDummyVoteAction)
+            .assertTrue(
+              voteReducerErrors.INVALID_WITNESS_FOR_THE_VOTE_NULLIFIER
+            );
 
           // ensure the provided nullifier is indeed part of the nullifier tree
-          voteNullifierRoot.assertEquals(
-            toNullifierRoot,
-            voteReducerErrors.CALCULATED_NULLIFIER_ROOT_DOES_NOT_MATCH_TO_NULLIFIER_ROOT
-          );
+          voteNullifierRoot
+            .equals(toNullifierRoot)
+            .or(isDummyVoteAction)
+            .assertTrue(
+              voteReducerErrors.CALCULATED_NULLIFIER_ROOT_DOES_NOT_MATCH_TO_NULLIFIER_ROOT
+            );
 
           // TODO: make this a soft failure, dont count the vote if it has already been nullified
           // we have to make sure the checks here are sufficient given the amount/lack of validation in action dispatch
           // assert that the nullifier has not been used yet
-          voteNullifier.assertFalse(
-            voteReducerErrors.VOTE_HAS_ALREADY_BEEN_NULLIFIED
-          );
+          voteNullifier
+            .not()
+            .or(isDummyVoteAction)
+            .assertTrue(voteReducerErrors.VOTE_HAS_ALREADY_BEEN_NULLIFIED);
 
           // if the vote action is not a dummy, update the toNullifierRoot by setting the nullifier to true
           // we can't update the nullifier tree root for dummy vote actions, otherwise any further dummies

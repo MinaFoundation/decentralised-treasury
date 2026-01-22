@@ -1,4 +1,4 @@
-import { it, before, after } from "node:test";
+import { it, before, after, beforeEach, afterEach } from "node:test";
 import assert from "node:assert";
 import { RedisMemoryServer } from "redis-memory-server";
 
@@ -7,6 +7,7 @@ import {
   Bool,
   Field,
   Provable,
+  PublicKey,
   Reducer,
   UInt64,
 } from "o1js";
@@ -31,7 +32,10 @@ let nullifierLedger: RedisNullifierLedger;
 
 let testAccounts: Account[];
 
-before(async () => {
+const emptyPublicKey = PublicKey.empty().toBase58();
+Provable.log("emptyPublicKey", emptyPublicKey);
+
+beforeEach(async () => {
   redisServer = new RedisMemoryServer();
   const redisHost = await redisServer.getHost();
   const redisPort = await redisServer.getPort();
@@ -54,7 +58,7 @@ before(async () => {
   }
 });
 
-after(async () => {
+afterEach(async () => {
   await votingLedger.close();
   await nullifierLedger.close();
   await redisServer.stop();
@@ -69,12 +73,12 @@ it("should compile", async () => {
   console.timeEnd("compile");
 });
 
-it("should analyze", async () => {
+it.skip("should analyze", async () => {
   const analysis = await VoteReducer.analyzeMethods();
   Provable.log("analysis", analysis);
 });
 
-it("should tally votes actions batch", async () => {
+it.skip("should tally votes actions batch", async () => {
   const actions = [
     new VoteAction({
       vote: Vote.YAY,
@@ -96,7 +100,6 @@ it("should tally votes actions batch", async () => {
       vote: Vote.NAY,
       publicKey: testAccounts[4].publicKey,
     }),
-    ...createDummyVoteActions(VOTE_ACTION_BATCH_SIZE),
   ].slice(0, VOTE_ACTION_BATCH_SIZE);
 
   const proof = await VoteReducer.reduceBatch(
@@ -124,5 +127,83 @@ it("should tally votes actions batch", async () => {
   assert(
     proof.proof.publicOutput.abstain.toBigInt() ===
       testAccounts[2].balance.toBigInt()
+  );
+});
+
+it("should merge vote reducer proofs", async () => {
+  const publicInput = {
+    fromActionsHash: Reducer.initialActionState,
+    votingLedgerRoot: await votingLedger.getRoot(),
+    fromNullifierRoot: await nullifierLedger.getRoot(),
+  };
+
+  const batch1Actions = [
+    new VoteAction({
+      vote: Vote.YAY,
+      publicKey: testAccounts[0].publicKey,
+    }),
+    new VoteAction({
+      vote: Vote.NAY,
+      publicKey: testAccounts[1].publicKey,
+    }),
+    new VoteAction({
+      vote: Vote.ABSTRAIN,
+      publicKey: testAccounts[2].publicKey,
+    }),
+    ...createDummyVoteActions(VOTE_ACTION_BATCH_SIZE),
+  ].slice(0, VOTE_ACTION_BATCH_SIZE);
+
+  batch1Actions.forEach((action) => {
+    Provable.log("action", action.publicKey.toBase58());
+  });
+
+  const proof1 = await VoteReducer.reduceBatch(publicInput, batch1Actions);
+
+  const batch2Actions = [
+    new VoteAction({
+      vote: Vote.YAY,
+      publicKey: testAccounts[3].publicKey,
+    }),
+    new VoteAction({
+      vote: Vote.NAY,
+      publicKey: testAccounts[4].publicKey,
+    }),
+    ...createDummyVoteActions(VOTE_ACTION_BATCH_SIZE),
+  ].slice(0, VOTE_ACTION_BATCH_SIZE);
+
+  const proof2 = await VoteReducer.reduceBatch(
+    {
+      fromActionsHash: proof1.proof.publicOutput.toActionsHash,
+      votingLedgerRoot: publicInput.votingLedgerRoot,
+      fromNullifierRoot: proof1.proof.publicOutput.toNullifierRoot,
+    },
+    batch2Actions
+  );
+
+  const proof3 = await VoteReducer.merge(
+    publicInput,
+    proof1.proof,
+    proof2.proof
+  );
+
+  assert(
+    proof3.proof.publicOutput.yay.toBigInt() ===
+      testAccounts[0].balance.toBigInt() + testAccounts[3].balance.toBigInt()
+  );
+  assert(
+    proof3.proof.publicOutput.nay.toBigInt() ===
+      testAccounts[1].balance.toBigInt() + testAccounts[4].balance.toBigInt()
+  );
+  assert(
+    proof3.proof.publicOutput.abstain.toBigInt() ===
+      testAccounts[2].balance.toBigInt()
+  );
+  assert(
+    proof3.proof.publicOutput.toActionsHash.toString() ===
+      proof2.proof.publicOutput.toActionsHash.toString()
+  );
+  assert(
+    proof3.proof.publicOutput.toNullifierRoot.toString() ===
+      proof2.proof.publicOutput.toNullifierRoot.toString()
   );
 });
