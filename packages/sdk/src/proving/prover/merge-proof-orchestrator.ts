@@ -1,37 +1,50 @@
-import { Proof, Provable } from "o1js";
-import { StakingLedgerToVotingLedgerProofStorage } from "../../storage/staking-ledger-to-voting-ledger-proof-storage.js";
-import { SideLoadedStakingLedgerToVotingLedgerProof } from "src/provable/staking-ledger-to-voting-ledger.js";
-import { StakingLedgerToVotingLedgerTaskQueue } from "./staking-ledger-to-voting-ledger-prover.js";
+import { Provable } from "o1js";
+import { Task, TaskQueue } from "../task-queue.js";
+
+export interface MergeProofStorage<ProofType> {
+  getProof(id: string): Promise<ProofType | undefined>;
+  setProof(id: string, proof: ProofType): Promise<void>;
+  getMergeProof(id: string): Promise<ProofType | undefined>;
+  setMergeProof(id: string, proof: ProofType): Promise<void>;
+  markAsMerged(id: string): Promise<void>;
+  isMerged(id: string): Promise<boolean>;
+  mergeCount(): Promise<number>;
+  count(): Promise<number>;
+}
 
 // TODO: generalize to any proof type
-export abstract class MergeProofOrchestrator {
+export abstract class MergeProofOrchestrator<ProofType> {
+  private static asMergeTaskOutput<ProofType>(value: unknown) {
+    return value as { proof: ProofType };
+  }
   abstract findMergeableProofs(
     proofs: {
       index: string;
-      proof: SideLoadedStakingLedgerToVotingLedgerProof;
+      proof: ProofType;
     }[]
   ):
     | { proof1: undefined; proof2: undefined }
     | {
         proof1: {
           index: string;
-          proof: SideLoadedStakingLedgerToVotingLedgerProof;
+          proof: ProofType;
         };
         proof2: {
           index: string;
-          proof: SideLoadedStakingLedgerToVotingLedgerProof;
+          proof: ProofType;
         };
       };
 
   constructor(
-    public proofStorage: StakingLedgerToVotingLedgerProofStorage,
-    public taskQueue: StakingLedgerToVotingLedgerTaskQueue
+    public proofStorage: MergeProofStorage<ProofType>,
+    public taskQueue: TaskQueue<Record<string, Task<unknown, unknown>>>,
+    public mergeTaskName: string
   ) {}
 
   public async merge(
     onMergeComplete?: (
       index: number,
-      proof: SideLoadedStakingLedgerToVotingLedgerProof
+      proof: ProofType
     ) => void
   ) {
     // let availableWorkers = WORKER_COUNT;
@@ -47,7 +60,7 @@ export abstract class MergeProofOrchestrator {
 
     let proofs: {
       index: string;
-      proof: SideLoadedStakingLedgerToVotingLedgerProof;
+      proof: ProofType;
     }[] = [];
 
     let index = 0;
@@ -81,26 +94,26 @@ export abstract class MergeProofOrchestrator {
       Provable.log("adding merge task", proof1.index, proof2.index);
 
       this.taskQueue.addTask(
-        "stakingLedgerToVotingLedgerMerge",
+        this.mergeTaskName,
         {
           proofs: { 1: proof1.proof, 2: proof2.proof },
         },
         async (result) => {
+          const typedResult =
+            MergeProofOrchestrator.asMergeTaskOutput<ProofType>(result);
           //   availableWorkers++;
           mergeCount = await this.proofStorage.mergeCount();
 
-          Provable.log(
-            "setting merge proof",
-            mergeCount,
-            result.proof.publicInput,
-            result.proof.publicOutput
-          );
+          Provable.log("setting merge proof", mergeCount);
 
-          proofs.push({ proof: result.proof, index: mergeCount.toString() });
+          proofs.push({
+            proof: typedResult.proof,
+            index: mergeCount.toString(),
+          });
 
           await this.proofStorage.setMergeProof(
             mergeCount.toString(),
-            result.proof
+            typedResult.proof
           );
 
           await this.proofStorage.markAsMerged(proof1.index);
@@ -146,8 +159,7 @@ export abstract class MergeProofOrchestrator {
       await merge();
     }
 
-    return new Promise<SideLoadedStakingLedgerToVotingLedgerProof>(
-      async (resolve) => {
+    return new Promise<ProofType>(async (resolve) => {
         while (mergeCount < expectedMergeCount) {
           Provable.log(
             "waiting for merging to finish",

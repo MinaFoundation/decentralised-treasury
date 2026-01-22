@@ -158,7 +158,12 @@ export default function tallyVotesCommandFactory(program: Command) {
         const voteActions = (actions as { actions: string[][] }[])
           .flatMap((actions) => actions.actions)
           .map((action) => action.map((field) => Field(field)))
-          .map((action) => VoteAction.fromFields(action));
+          .map((action) => {
+            const isDummyAction = action.every((field) =>
+              field.equals(Field(0)).toBoolean()
+            );
+            return isDummyAction ? VoteAction.dummy() : VoteAction.fromFields(action);
+          });
 
         Provable.log(
           "votes",

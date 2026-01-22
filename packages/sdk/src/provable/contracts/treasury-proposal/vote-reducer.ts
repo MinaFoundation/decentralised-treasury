@@ -52,9 +52,24 @@ export class VoteAction extends Struct({
       .equals(Vote.DUMMY)
       .and(voteAction.publicKey.equals(PublicKey.empty()));
   }
-  // alias for empty to signal the intention of using empty as batch dummy
+
   public static dummy() {
-    return VoteAction.empty();
+    return new VoteAction({ vote: Vote.DUMMY, publicKey: PublicKey.empty() });
+  }
+
+  public static fromJSON(json: Record<string, any>): VoteAction {
+    let voteAction: VoteAction;
+    try {
+      voteAction = super.fromJSON(json as any);
+    } catch (error) {
+      Provable.log("error deserializing vote action", error);
+      voteAction = VoteAction.empty();
+    }
+    return voteAction;
+  }
+
+  public static empty() {
+    return new VoteAction({ vote: Vote.DUMMY, publicKey: PublicKey.empty() });
   }
 }
 

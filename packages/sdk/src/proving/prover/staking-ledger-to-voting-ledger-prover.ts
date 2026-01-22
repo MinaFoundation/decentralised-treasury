@@ -19,14 +19,14 @@ export type StakingLedgerToVotingLedgerTaskQueue = TaskQueue<{
 
 export const WORKER_COUNT = 1;
 
-export class StakingLedgerToVotingLedgerProver extends MergeProofOrchestrator {
+export class StakingLedgerToVotingLedgerProver extends MergeProofOrchestrator<SideLoadedStakingLedgerToVotingLedgerProof> {
   constructor(
     public stakingLedger: StakingLedger,
     public traceStorage: StakingLedgerToVotingLedgerDigestTraceStorage,
     public proofStorage: StakingLedgerToVotingLedgerProofStorage,
     public taskQueue: StakingLedgerToVotingLedgerTaskQueue
   ) {
-    super(proofStorage, taskQueue);
+    super(proofStorage, taskQueue, "stakingLedgerToVotingLedgerMerge");
     // TODO: add a queue drain on start, to avoid any unwanted behavior
   }
 

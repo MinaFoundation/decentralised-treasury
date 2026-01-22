@@ -4,6 +4,8 @@ import { spawn } from "node:child_process";
 import { StakingLedgerToVotingLedgerDigestTask } from "../../src/proving/tasks/staking-ledger-to-voting-ledger-digest-task.js";
 import { TestTask } from "./test-task.js";
 import { StakingLedgerToVotingLedgerMergeTask } from "../../src/proving/tasks/staking-ledger-to-voting-ledger-merge-task.js";
+import { VoteReducerRunBatchTask } from "../../src/proving/tasks/vote-reducer-run-batch-task.js";
+import { VoteReducerMergeTask } from "../../src/proving/tasks/vote-reducer-merge-task.js";
 
 export function testWorkerChildProcess(
   queueName: string,
@@ -31,6 +33,8 @@ export function testWorkerChildProcess(
 export const tasks = {
   stakingLedgerToVotingLedgerDigest: StakingLedgerToVotingLedgerDigestTask,
   stakingLedgerToVotingLedgerMerge: StakingLedgerToVotingLedgerMergeTask,
+  voteReducerRunBatch: VoteReducerRunBatchTask,
+  voteReducerMerge: VoteReducerMergeTask,
   test: TestTask,
 };
 

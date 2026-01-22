@@ -1,14 +1,13 @@
-import { readFileSync } from "node:fs";
 import { it } from "node:test";
 import { RedisMemoryServer } from "redis-memory-server";
 import { RedisStakingLedgerToVotingLedgerDigestTraceStorage } from "../../../src/storage/redis/redis-staking-ledger-to-voting-ledger-digest-trace-storage.js";
-import { StakingLedgerToVotingLedgerDigestTrace } from "../../../src/proving/tracing/staking-ledger-to-voting-ledger-tracer.js";
+import { StakingLedgerToVotingLedgerTracer } from "../../../src/proving/tracing/staking-ledger-to-voting-ledger-tracer.js";
 import { RedisStakingLedgerToVotingLedgerProofStorage } from "../../../src/storage/redis/redis-staking-ledger-to-voting-ledger-proof-storage.js";
 import { StakingLedgerToVotingLedgerProver } from "../../../src/proving/prover/staking-ledger-to-voting-ledger-prover.js";
 import { testTaskQueue } from "../test-queue.js";
 import assert from "node:assert";
 import { RedisStakingLedger } from "../../../src/ledgers/staking-ledger/redis-staking-ledger.js";
-import { Provable } from "o1js";
+import { RedisVotingLedger } from "../../../src/ledgers/voting-ledger/redis-voting-ledger.js";
 
 it("process traces into proofs", async () => {
   const redisServer = new RedisMemoryServer();
@@ -30,6 +29,7 @@ it("process traces into proofs", async () => {
   );
 
   const stakingLedger = new RedisStakingLedger(redisUrl, namespace);
+  const votingLedger = new RedisVotingLedger(redisUrl, namespace);
 
   const taskQueue = await testTaskQueue(1, redisHost, redisPort);
 
@@ -46,28 +46,24 @@ it("process traces into proofs", async () => {
 
   console.log("hydrating staking ledger", accounts.length);
   await stakingLedger.hydrateAccounts(accounts);
+  await stakingLedger.hydrateMerkleTree(accounts);
 
-  // TODO: find a way to generate the traces dynamically
-  const jsonTraces = readFileSync(
-    "test/proving/staking-ledger-to-voting-ledger-traces.json",
-    "utf8"
+  const tracer = new StakingLedgerToVotingLedgerTracer(
+    stakingLedger,
+    votingLedger,
+    traceStorage
   );
 
-  const traces: any[] = JSON.parse(jsonTraces);
-
-  for (const jsonTrace of traces) {
-    const trace = StakingLedgerToVotingLedgerDigestTrace.fromJSON(jsonTrace);
-    await traceStorage.setTrace(traces.indexOf(jsonTrace), trace);
-  }
-
-  await prover.digest(0, 4);
+  await tracer.digest(0, 9);
+  await prover.digest(0, 9);
 
   const mergeProof = await prover.merge();
 
   assert(mergeProof.publicInput.index.toBigint() === 0n);
-  assert(mergeProof.publicOutput.index.toBigint() === 24n);
+  assert(mergeProof.publicOutput.index.toBigint() === 49n);
 
   await stakingLedger.close();
+  await votingLedger.close();
   await traceStorage.close();
   await proofStorage.close();
   taskQueue.killWorkers();
