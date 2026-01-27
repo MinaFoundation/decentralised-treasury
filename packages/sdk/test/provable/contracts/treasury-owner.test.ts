@@ -2,10 +2,12 @@ import { it, after } from "node:test";
 import assert from "node:assert";
 import { RedisMemoryServer } from "redis-memory-server";
 import {
+  BOND_AMOUNT_DIVISOR,
   LIFECYCLE_PERIOD_DURATION,
   LifecyclePeriod,
+  MultisigSignature,
+  MultisigSignatures,
   TreasuryOwnerSmartContract,
-  VOTE_TALLY_HISTORICAL_PRECONDITION_DELAY,
 } from "../../../src/provable/contracts/treasury-owner.js";
 import {
   AccountUpdate,
@@ -15,6 +17,7 @@ import {
   Poseidon,
   PrivateKey,
   Provable,
+  PublicKey,
   Reducer,
   UInt32,
   UInt64,
@@ -72,6 +75,31 @@ after(async () => {
   await redisServer.stop();
 });
 
+const multisigPrivateKey1 = PrivateKey.random();
+const multisigPublicKey1 = multisigPrivateKey1.toPublicKey();
+const multisigPrivateKey2 = PrivateKey.random();
+const multisigPublicKey2 = multisigPrivateKey2.toPublicKey();
+const multisigPrivateKey3 = PrivateKey.random();
+const multisigPublicKey3 = multisigPrivateKey3.toPublicKey();
+const multisigPrivateKey4 = PrivateKey.random();
+const multisigPublicKey4 = multisigPrivateKey4.toPublicKey();
+const multisigPrivateKey5 = PrivateKey.random();
+const multisigPublicKey5 = multisigPrivateKey5.toPublicKey();
+
+const multisigSigners: [PrivateKey, PublicKey][] = [
+  [multisigPrivateKey1, multisigPublicKey1],
+  [multisigPrivateKey2, multisigPublicKey2],
+  [multisigPrivateKey3, multisigPublicKey3],
+  [multisigPrivateKey4, multisigPublicKey4],
+  [multisigPrivateKey5, multisigPublicKey5],
+]
+
+const multiSigCommitment = Poseidon.hash([
+  ...[multisigPublicKey1, multisigPublicKey2, multisigPublicKey3, multisigPublicKey4, multisigPublicKey5].flatMap(
+    (participant) => participant.toFields()
+  ),
+]);
+
 const { verificationKey: voteReducerVerificationKey } =
   await VoteReducer.compile({
     proofsEnabled,
@@ -90,6 +118,13 @@ TreasuryProposalSmartContract.stakingLedgerToVotingLedgerVerificationKey =
 await TreasuryProposalSmartContract.compile();
 TreasuryOwnerSmartContract.proposalContractVerificationKey =
   TreasuryProposalSmartContract._verificationKey;
+TreasuryOwnerSmartContract.multisigParticipants = [
+  multisigPublicKey1,
+  multisigPublicKey2,
+  multisigPublicKey3,
+  multisigPublicKey4,
+  multisigPublicKey5,
+];
 
 await TreasuryOwnerSmartContract.compile();
 
@@ -105,7 +140,7 @@ const treasuryOwnerPublicKey = treasuryOwnerPrivateKey.toPublicKey();
 const treasuryProposalPrivateKey = PrivateKey.random();
 const treasuryProposalPublicKey = treasuryProposalPrivateKey.toPublicKey();
 
-const amount = UInt64.from(100);
+const amount = UInt64.from(100000000000);
 
 const treasuryOwner = new TreasuryOwnerSmartContract(treasuryOwnerPublicKey);
 const treasuryProposal = new TreasuryProposalSmartContract(
@@ -122,19 +157,6 @@ const dummyZkAppUri = "https://example.com";
 const votingAccount1 = new VotingAccount({ balance: UInt64.from(300) });
 const votingAccount2 = new VotingAccount({ balance: UInt64.from(100) });
 
-const multisigPrivateKey1 = PrivateKey.random();
-const multisigPublicKey1 = multisigPrivateKey1.toPublicKey();
-const multisigPrivateKey2 = PrivateKey.random();
-const multisigPublicKey2 = multisigPrivateKey2.toPublicKey();
-const multisigPrivateKey3 = PrivateKey.random();
-const multisigPublicKey3 = multisigPrivateKey3.toPublicKey();
-
-const multiSigCommitment = Poseidon.hash([
-  ...[multisigPublicKey1, multisigPublicKey2, multisigPublicKey3].flatMap(
-    (participant) => participant.toFields()
-  ),
-]);
-
 await votingLedger.setVotingAccount(voterPublicKey1.toBase58(), votingAccount1);
 
 await votingLedger.setVotingAccount(voterPublicKey2.toBase58(), votingAccount2);
@@ -142,11 +164,19 @@ await votingLedger.setVotingAccount(voterPublicKey2.toBase58(), votingAccount2);
 await votingLedger.setLeaf(voterPublicKey1.toBase58(), votingAccount1);
 await votingLedger.setLeaf(voterPublicKey2.toBase58(), votingAccount2);
 
-// TODO
-it.todo("should pause the treasury", async () => {});
+async function printNonce(publicKey: PublicKey, memo: string) {
+  try {
+    const account = Local.getAccount(publicKey);
+    console.log(`Nonce for (${memo}) ${publicKey.toBase58()}: ${account.nonce.toBigint()}`);
+  } catch (error) {
+    console.error(`Error fetching nonce for (${memo}) ${publicKey.toBase58()}: ${error}`);
+  }
+}
 
 it("should create a proposal", async () => {
+
   await (async () => {
+    console.log("deploying treasury owner");
     const tx = await Mina.transaction(testAccount, async () => {
       AccountUpdate.fundNewAccount(testAccount, 1);
       await treasuryOwner.deploy();
@@ -157,9 +187,12 @@ it("should create a proposal", async () => {
 
     const pendingTx = await tx.send();
     await pendingTx.wait();
+
+    await printNonce(treasuryOwnerPublicKey, "treasury owner deployed");
   })();
 
   await (async () => {
+    console.log("initializing treasury owner");
     const tx = await Mina.transaction(testAccount, async () => {
       await treasuryOwner.initialize(UInt32.from(0), multiSigCommitment);
     });
@@ -169,9 +202,14 @@ it("should create a proposal", async () => {
 
     const pendingTx = await tx.send();
     await pendingTx.wait();
+
+    await printNonce(treasuryOwnerPublicKey, "treasury owner initialized");
+    const treasuryOwnerBalance = Local.getAccount(treasuryOwnerPublicKey).balance;
+    Provable.log('treasuryOwnerBalance post initialization', treasuryOwnerBalance);
   })();
 
   await (async () => {
+    console.log("setting network state");
     Local.setNetworkState({
       ...Local.getNetworkState(),
       stakingEpochData: {
@@ -185,8 +223,15 @@ it("should create a proposal", async () => {
       },
     });
 
+    const bondPayer = Local.testAccounts[0];
+
+    console.log("creating proposal")
     const tx = await Mina.transaction(testAccount, async () => {
       AccountUpdate.fundNewAccount(testAccount, 1);
+
+      const bondPayerAccountUpdate = AccountUpdate.createSigned(bondPayer);
+      bondPayerAccountUpdate.balance.subInPlace(amount.div(BOND_AMOUNT_DIVISOR));
+
       await treasuryOwner.createProposal(
         treasuryProposalPublicKey,
         {
@@ -198,15 +243,78 @@ it("should create a proposal", async () => {
       );
     });
 
-    tx.sign([testAccount.key, treasuryProposalPrivateKey]);
+    tx.sign([testAccount.key, treasuryProposalPrivateKey, bondPayer.key]);
     await tx.prove();
 
     const pendingTx = await tx.send();
     await pendingTx.wait();
+
+    await printNonce(treasuryOwnerPublicKey, "treasury owner proposal created");
+    await printNonce(treasuryProposalPublicKey, "treasury proposal created");
+    const treasuryOwnerBalance = Local.getAccount(treasuryOwnerPublicKey).balance;
+    Provable.log('treasuryOwnerBalance post creation', treasuryOwnerBalance);
   })();
 
   // const lifecycleStartedAt = await treasuryOwner.lifecycleStartedAt.fetch();
 });
+
+it("should pause the treasury", async () => {
+  const validUntilSlot = Local.currentSlot().add(5);
+  const signatures = new MultisigSignatures({
+    signatures: [
+      MultisigSignature.create(multisigSigners[0][0], MultisigSignature.dataPauseTreasury(validUntilSlot)),
+      MultisigSignature.create(multisigSigners[1][0], MultisigSignature.dataPauseTreasury(validUntilSlot)),
+      MultisigSignature.create(multisigSigners[2][0], MultisigSignature.dataPauseTreasury(validUntilSlot)),
+      MultisigSignature.empty(),
+      MultisigSignature.empty(),
+    ]
+  })
+  const tx = await Mina.transaction(testAccount, async () => {
+    await treasuryOwner.pauseTreasury(
+      signatures,
+      validUntilSlot
+    );
+  });
+
+  tx.sign([testAccount.key]);
+  await tx.prove();
+  const pendingTx = await tx.send();
+  await pendingTx.wait();
+
+  Provable.log("paused", tx.toPretty());
+
+  const paused = await treasuryOwner.paused.get();
+  assert(paused.toBoolean(), "Treasury is not paused");
+});
+
+it("should unpause the treasury", async () => {
+  const validUntilSlot = Local.currentSlot().add(5);
+  const signatures = new MultisigSignatures({
+    signatures: [
+      MultisigSignature.create(multisigSigners[0][0], MultisigSignature.dataUnpauseTreasury(validUntilSlot)),
+      MultisigSignature.create(multisigSigners[1][0], MultisigSignature.dataUnpauseTreasury(validUntilSlot)),
+      MultisigSignature.create(multisigSigners[2][0], MultisigSignature.dataUnpauseTreasury(validUntilSlot)),
+      MultisigSignature.empty(),
+      MultisigSignature.empty(),
+    ]
+  })
+  const tx = await Mina.transaction(testAccount, async () => {
+    await treasuryOwner.unpauseTreasury(
+      signatures,
+      validUntilSlot
+    );
+  });
+
+  tx.sign([testAccount.key]);
+  await tx.prove();
+  const pendingTx = await tx.send();
+  await pendingTx.wait();
+
+
+  const paused = await treasuryOwner.paused.get();
+  assert(!paused.toBoolean(), "Treasury is not unpaused");
+});
+
 
 it("should vote on a proposal", async () => {
   // jump ahead to the voting period
@@ -227,10 +335,14 @@ it("should vote on a proposal", async () => {
   await tx.prove();
   const pendingTx = await tx.send();
   await pendingTx.wait();
+
+  await printNonce(treasuryOwnerPublicKey, "treasury owner voted");
+  await printNonce(treasuryProposalPublicKey, "treasury proposal voted");
+
 });
 
 // TODO
-it.todo("should pause the proposal", async () => {});
+it.todo("should pause the proposal", async () => { });
 
 it("should vote on a proposal from a new account", async () => {
   const tx = await Mina.transaction(testAccount, async () => {
@@ -278,7 +390,7 @@ it("should fail while attempting to vote on the proposal contract directly", asy
 
 it("should tally votes", async () => {
   Local.incrementGlobalSlot(
-    LIFECYCLE_PERIOD_DURATION.add(VOTE_TALLY_HISTORICAL_PRECONDITION_DELAY)
+    LIFECYCLE_PERIOD_DURATION
   );
 
   const actions = await Mina.getActions(
@@ -343,6 +455,10 @@ it("should tally votes", async () => {
   const pendingTx = await tx.send();
   await pendingTx.wait();
 
+  await printNonce(treasuryOwnerPublicKey, "treasury owner tallied votes");
+  await printNonce(treasuryProposalPublicKey, "treasury proposal tallied");
+
+
   const voteApproved = await treasuryProposal.status.fetch();
   assert(
     voteApproved.equals(ProposalStatus.APPROVED).toBoolean(),
@@ -350,10 +466,20 @@ it("should tally votes", async () => {
   );
 });
 
-it.skip("should execute a proposal", async () => {
+it("should execute a proposal", async () => {
   Local.incrementGlobalSlot(LIFECYCLE_PERIOD_DURATION);
+  const amountWithBond = amount.add(amount.div(BOND_AMOUNT_DIVISOR));
 
+  const treasuryOwnerBalancePreExecution = Local.getAccount(treasuryOwnerPublicKey).balance;
+  const testAccountBalancePreExecution = Local.getAccount(testAccount).balance;
+  // const treasuryProposalRecipientBalancePreExecution = Local.getAccount(
+  //   treasuryProposalRecipientPublicKey
+  // ).balance;
+  Provable.log('testAccountBalancePreExecution', testAccountBalancePreExecution);
+  Provable.log('treasuryOwnerBalancePreExecution', treasuryOwnerBalancePreExecution);
+  // Provable.log('treasuryProposalRecipientBalancePreExecution', treasuryProposalRecipientBalancePreExecution);
   await (async () => {
+    console.log('funding treasury owner');
     const tx = await Mina.transaction(testAccount, async () => {
       const testAccountUpdate = AccountUpdate.createSigned(testAccount);
       // fund the treasury owner account
@@ -371,18 +497,27 @@ it.skip("should execute a proposal", async () => {
     await pendingTx.wait();
   })();
 
+  Provable.log('executing proposal', {
+    amountWithBond,
+    recipient: treasuryProposalRecipientPublicKey,
+  });
   const tx = await Mina.transaction(testAccount, async () => {
     // fund the recipient account creation
     AccountUpdate.fundNewAccount(testAccount, 1);
 
-    await treasuryOwner.executeProposal(treasuryProposalPublicKey);
+    await treasuryOwner.executeProposal(treasuryProposalPublicKey, amountWithBond);
   });
 
   tx.sign([testAccount.key, treasuryProposalRecipientPrivateKey]);
 
+  Provable.log("executing proposal", tx.toPretty());
+
   await tx.prove();
   const pendingTx = await tx.send();
   await pendingTx.wait();
+
+  await printNonce(treasuryProposalPublicKey, "treasury proposal executed");
+  await printNonce(treasuryOwnerPublicKey, "treasury owner executed proposal");
 
   const testAccountBalance = Local.getAccount(testAccount).balance;
 
@@ -398,4 +533,7 @@ it.skip("should execute a proposal", async () => {
     "treasuryProposalRecipientBalance",
     treasuryProposalRecipientBalance
   );
+
+  assert(treasuryOwnerBalance.toBigInt() === 0n, "Treasury owner balance is not 0");
+  assert(treasuryProposalRecipientBalance.toBigInt() === amountWithBond.toBigInt(), "Treasury proposal recipient balance is not the amount with bond");
 });

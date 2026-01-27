@@ -16,6 +16,7 @@ import {
 } from "o1js";
 import { SideLoadedVoteReducerProof, VoteAction } from "./vote-reducer.js";
 import { SideLoadedStakingLedgerToVotingLedgerProof } from "../../staking-ledger-to-voting-ledger.js";
+import { BOND_AMOUNT_DIVISOR } from "../treasury-owner.js";
 
 export class Proposal extends Struct({
   amount: UInt64,
@@ -166,30 +167,31 @@ export class TreasuryProposalSmartContract extends SmartContract {
     this.account.zkappUri.set(proposal.zkAppUri);
   }
 
-  // TODO: utilise @method.returns to send back AU-like instructions to the parent,
-  // this way we can let the parent know what things we want to happen as part of the execution
-  // such as updating the parant's balance
   @method
-  public async execute(treasuryOwnerAccountUpdate: AccountUpdate) {
+  public async execute(amountToPayOut: UInt64) {
     await this.requireNotPaused();
     const status = this.status.getAndRequireEquals();
     const recipient = this.recipient.getAndRequireEquals();
     const amount = this.amount.getAndRequireEquals();
-    // we keep track paidOutAmount in preparation for future treasury sharding for the delegation program
+    // we keep track of paidOutAmount to ensure partial payouts are possible if the treasury has insufficient funds
     const paidOutAmount = this.paidOutAmount.getAndRequireEquals();
 
-    status.equals(ProposalStatus.APPROVED).assertTrue("Proposal not approved");
-    paidOutAmount
-      .equals(UInt64.from(0))
-      .assertTrue("Proposal already paid out");
+    const amountWithBond = amount.add(amount.div(BOND_AMOUNT_DIVISOR));
+    const remainingAmount = amountWithBond.sub(paidOutAmount);
 
-    // TODO: find a way to do the balance sub from within the proposal itself to maintain proposal type decoupling from owner execution
-    // treasuryOwnerAccountUpdate.balance.subInPlace(amount);
+    status
+      .equals(ProposalStatus.APPROVED)
+      .assertTrue("Proposal not approved");
+    
+    remainingAmount
+      .greaterThanOrEqual(amountToPayOut)
+      .assertTrue("Amount to pay out is greater than the remaining amount to pay out");
 
+    // we create the recipient AU here to ensure only the intended recipient can receive the funds
     const recipientAccountUpdate = AccountUpdate.create(recipient);
-    recipientAccountUpdate.balance.addInPlace(amount);
+    recipientAccountUpdate.balance.addInPlace(amountToPayOut);
 
-    this.paidOutAmount.set(amount);
+    this.paidOutAmount.set(paidOutAmount.add(amountToPayOut));
 
     this.approve(recipientAccountUpdate);
   }

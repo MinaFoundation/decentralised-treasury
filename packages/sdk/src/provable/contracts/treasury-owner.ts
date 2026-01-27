@@ -27,12 +27,9 @@ import { Proposal } from "./treasury-proposal/treasury-proposal.js";
 
 // 7140 slots = ~2 weeks, this is the mainnet configuration
 export const LIFECYCLE_PERIOD_DURATION = UInt32.from(7140);
-export const SLOT_PRECONDITION_PADDING = UInt32.from(5);
-// historical preconditions can go 5 slots in the past, while we also
-// allow SLOT_PRECONDITION_PADDING slots in the future for globalSlotSinceGenesis
-export const VOTE_TALLY_HISTORICAL_PRECONDITION_DELAY =
-  SLOT_PRECONDITION_PADDING.add(5);
-export const MULTISIG_SIGNATURES_COUNT = 3;
+export const MULTISIG_PARTICIPANTS_COUNT = 5;
+export const MIN_VALID_MULTISIG_SIGNATURES_COUNT = 3;
+export const BOND_AMOUNT_DIVISOR = 10;
 
 export class LifecyclePeriod extends UInt32 {
   // doubles as execution period too
@@ -55,38 +52,38 @@ export class MultisigSignature extends Signature {
 
   public static prefixRotateMultisigKeys = `${multisigPrefix}rmk`;
 
-  public static dataPauseProposal(proposalPublicKey: PublicKey, nonce: UInt32) {
+  public static dataPauseProposal(proposalPublicKey: PublicKey, validUntilSlot: UInt32) {
     return [
       hashWithPrefix(this.prefixPauseProposal, [
         ...proposalPublicKey.toFields(),
-        ...nonce.toFields(),
+        ...validUntilSlot.toFields(),
       ]),
     ];
   }
 
   public static dataUnpauseProposal(
     proposalPublicKey: PublicKey,
-    nonce: UInt32
+    validUntilSlot: UInt32
   ) {
     return [
       hashWithPrefix(this.prefixUnpauseProposal, [
         ...proposalPublicKey.toFields(),
-        ...nonce.toFields(),
+        ...validUntilSlot.toFields(),
       ]),
     ];
   }
 
-  public static dataPauseTreasury(nonce: UInt32) {
-    return [hashWithPrefix(this.prefixPauseTreasury, [...nonce.toFields()])];
+  public static dataPauseTreasury(validUntilSlot: UInt32) {
+    return [hashWithPrefix(this.prefixPauseTreasury, [...validUntilSlot.toFields()])];
   }
 
-  public static dataUnpauseTreasury(nonce: UInt32) {
-    return [hashWithPrefix(this.prefixUnpauseTreasury, [...nonce.toFields()])];
+  public static dataUnpauseTreasury(validUntilSlot: UInt32) {
+    return [hashWithPrefix(this.prefixUnpauseTreasury, [...validUntilSlot.toFields()])];
   }
 }
 export class MultisigSignatures extends Struct({
-  signatures: Provable.Array(MultisigSignature, MULTISIG_SIGNATURES_COUNT),
-}) {}
+  signatures: Provable.Array(MultisigSignature, MULTISIG_PARTICIPANTS_COUNT),
+}) { }
 
 // TODO: set correct starting permissions
 export class TreasuryOwnerSmartContract extends TokenContract {
@@ -193,6 +190,7 @@ export class TreasuryOwnerSmartContract extends TokenContract {
     this.network.globalSlotSinceGenesis.requireBetween(fromSlot, toSlot);
   }
 
+  // TODO: do we really need this method? we could remove it do decrease the number of invariants and increase security
   @method
   public async updateProposal(
     proposalPublicKey: PublicKey,
@@ -231,6 +229,12 @@ export class TreasuryOwnerSmartContract extends TokenContract {
       await this.snapshotStakingEpochData();
     await this.requireLifecyclePeriod(LifecyclePeriod.PROPOSAL, lifecycleId);
     await this.requireNotPaused();
+
+    // treasury owner will hold the bond amount
+    // AU for deducting the bond amount from the proposal creator account needs to be created
+    // when forging the transaction itself
+    const bondAmount = proposal.amount.div(BOND_AMOUNT_DIVISOR);
+    this.self.balance.addInPlace(bondAmount);
 
     const proposalUpdate = AccountUpdate.createSigned(
       proposalPublicKey,
@@ -368,8 +372,7 @@ export class TreasuryOwnerSmartContract extends TokenContract {
       proposalLifecycleId
     );
 
-    // TODO: replace with chain of AUs proving action state coherence
-    // await this.ensureHistoricalPreconditionDelay();
+    // TODO: add logic to verify chain of AUs proving action state coherence
 
     await proposal.tallyVotes(
       voteReducerProof,
@@ -384,7 +387,7 @@ export class TreasuryOwnerSmartContract extends TokenContract {
   }
 
   @method
-  public async executeProposal(proposalPublicKey: PublicKey) {
+  public async executeProposal(proposalPublicKey: PublicKey, amountToPayOut: UInt64) {
     this.requireNotPaused();
     const proposal = new TreasuryProposalSmartContract(
       proposalPublicKey,
@@ -400,12 +403,9 @@ export class TreasuryOwnerSmartContract extends TokenContract {
       proposalLifecycleId.add(1)
     );
 
-    // TODO: figure out how to do this from the proposal itself to maintain
-    // proposal type decoupling from owner execution
-    this.self.balance.subInPlace(proposal.amount.getAndRequireEquals());
+    this.self.balance.subInPlace(amountToPayOut);
 
-    // TODO: is this.self.publicKey safe?
-    await proposal.execute(this.self);
+    await proposal.execute(amountToPayOut);
 
     if (TreasuryProposalSmartContract.permissionType == "signature") {
       proposal.self.requireSignature();
@@ -418,20 +418,30 @@ export class TreasuryOwnerSmartContract extends TokenContract {
     data: Field[],
     { signatures }: MultisigSignatures
   ) {
+    Provable.log("multisigParticipants", TreasuryOwnerSmartContract.multisigParticipants.length, '/', MULTISIG_PARTICIPANTS_COUNT);
+
     const multiSigCommitment = this.multisigCommitment.getAndRequireEquals();
     const multisigParticipants = Provable.witness(
-      Provable.Array(PublicKey, MULTISIG_SIGNATURES_COUNT),
+      Provable.Array(PublicKey, MULTISIG_PARTICIPANTS_COUNT),
       () => {
         return TreasuryOwnerSmartContract.multisigParticipants;
       }
     );
 
     // TODO: implement n/m multisig signatures verification
-    signatures.forEach((signature, i) => {
-      signature
+    const signaturesValid = signatures.map((signature, i) => {
+      return signature
         .verify(multisigParticipants[i], data)
-        .assertTrue("Invalid multisig signature");
     });
+
+    Provable.log("signaturesValid", signaturesValid);
+
+    const validSignaturesCount = signaturesValid.reduce((signaturesValid, isValid) =>
+      signaturesValid.add(Provable.if(isValid, UInt32.from(1), UInt32.from(0))),
+      UInt32.from(0)
+    );
+
+    validSignaturesCount.greaterThanOrEqual(UInt32.from(MIN_VALID_MULTISIG_SIGNATURES_COUNT)).assertTrue("Not enough valid signatures");
 
     const currentMultiSigCommitment = Poseidon.hash([
       ...multisigParticipants.flatMap((participant) => participant.toFields()),
@@ -449,18 +459,17 @@ export class TreasuryOwnerSmartContract extends TokenContract {
   @method
   public async pauseProposal(
     proposalPublicKey: PublicKey,
-    signatures: MultisigSignatures
+    signatures: MultisigSignatures,
+    validUntilSlot: UInt32,
   ) {
     const proposal = new TreasuryProposalSmartContract(
       proposalPublicKey,
       this.deriveTokenId()
     );
 
-    const nonce = proposal.account.nonce.getAndRequireEquals();
-    proposal.self.body.incrementNonce = Bool(true);
-
-    const data = MultisigSignature.dataPauseProposal(proposalPublicKey, nonce);
-    this.verifyMultisigSignatures(data, signatures);
+    const data = MultisigSignature.dataPauseProposal(proposalPublicKey, validUntilSlot);
+    await this.verifyMultisigSignatures(data, signatures);
+    this.requireGlobalSlotToBeBefore(validUntilSlot);
 
     await proposal.pause();
 
@@ -470,46 +479,48 @@ export class TreasuryOwnerSmartContract extends TokenContract {
   @method
   public async unpauseProposal(
     proposalPublicKey: PublicKey,
-    signatures: MultisigSignatures
+    signatures: MultisigSignatures,
+    validUntilSlot: UInt32,
   ) {
     const proposal = new TreasuryProposalSmartContract(
       proposalPublicKey,
       this.deriveTokenId()
     );
 
-    const proposalNonce = proposal.account.nonce.getAndRequireEquals();
-    proposal.self.body.incrementNonce = Bool(true);
-
     const data = MultisigSignature.dataUnpauseProposal(
       proposalPublicKey,
-      proposalNonce
+      validUntilSlot
     );
-    this.verifyMultisigSignatures(data, signatures);
+    await this.verifyMultisigSignatures(data, signatures);
+    this.requireGlobalSlotToBeBefore(validUntilSlot);
 
     await proposal.unpause();
 
     this.approve(proposal.self);
   }
 
-  // @method
-  // public async pauseTreasury(signatures: MultisigSignatures) {
-  //   const nonce = this.account.nonce.getAndRequireEquals();
-  //   this.self.body.incrementNonce = Bool(true);
-  //   const data = MultisigSignature.dataPauseTreasury(nonce);
+  public async requireGlobalSlotToBeBefore(to: UInt32) {
+    this.network.globalSlotSinceGenesis.requireBetween(UInt32.from(0), to);
+  }
 
-  //   this.verifyMultisigSignatures(data, signatures);
-  //   this.paused.set(Bool(true));
-  // }
+  // TODO: these pause methods may cause compilation issues due to the contract size limit
+  @method
+  public async pauseTreasury(signatures: MultisigSignatures, validUntilSlot: UInt32) {
+    const data = MultisigSignature.dataPauseTreasury(validUntilSlot);
+    await this.verifyMultisigSignatures(data, signatures);
 
-  // @method
-  // public async unpauseTreasury(signatures: MultisigSignatures) {
-  //   const nonce = this.account.nonce.getAndRequireEquals();
-  //   this.self.body.incrementNonce = Bool(true);
-  //   const data = MultisigSignature.dataUnpauseTreasury(nonce);
+    this.requireGlobalSlotToBeBefore(validUntilSlot);
+    this.paused.set(Bool(true));
+  }
 
-  //   this.verifyMultisigSignatures(data, signatures);
-  //   this.paused.set(Bool(false));
-  // }
+  @method
+  public async unpauseTreasury(signatures: MultisigSignatures, validUntilSlot: UInt32) {
+    const data = MultisigSignature.dataUnpauseTreasury(validUntilSlot);
+    await this.verifyMultisigSignatures(data, signatures);
+
+    this.requireGlobalSlotToBeBefore(validUntilSlot);
+    this.paused.set(Bool(false));
+  }
 
   public async requireNotPaused() {
     const paused = this.paused.getAndRequireEquals();
