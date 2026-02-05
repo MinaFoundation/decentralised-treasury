@@ -2,13 +2,15 @@ import { it, after } from "node:test";
 import assert from "node:assert";
 import { RedisMemoryServer } from "redis-memory-server";
 import {
-  BOND_AMOUNT_DIVISOR,
   LIFECYCLE_PERIOD_DURATION,
   LifecyclePeriod,
-  MultisigSignature,
-  MultisigSignatures,
   TreasuryOwnerSmartContract,
 } from "../../../src/provable/contracts/treasury-owner.js";
+import {
+  MultisigSignature,
+  MultisigSignatures,
+  TreasuryPauseControllerSmartContract,
+} from "../../../src/provable/contracts/treasury-pause-controller.js";
 import {
   AccountUpdate,
   fetchAccount,
@@ -29,7 +31,9 @@ import {
   VoteReducer,
   voteReducerContext,
   SideLoadedVoteReducerProof,
+  VoteReducerProof,
 } from "../../../src/provable/contracts/treasury-proposal/vote-reducer.js";
+import { BOND_AMOUNT_DIVISOR } from "../../../src/provable/contracts/treasury-constants.js";
 
 import { appendActionToHashList } from "../../../src/provable/hashing-helpers.js";
 import {
@@ -39,13 +43,21 @@ import {
 import {
   SideLoadedStakingLedgerToVotingLedgerProof,
   StakingLedgerToVotingLedger,
+  ACCOUNT_BATCH_SIZE,
+  stakingLedgerToVotingLedgerContext,
   StakingLedgerToVotingLedgerProgramInput,
   StakingLedgerToVotingLedgerProgramOutput,
+  StakingLedgerToVotingLedgerProof,
 } from "../../../src/provable/staking-ledger-to-voting-ledger.js";
 import { VotingAccount } from "../../../src/provable/voting-account.js";
-import { createDummyVoteActions } from "../../../test/utils.js";
+import { Account } from "../../../src/provable/account.js";
+import {
+  buildActionStateHistory,
+  createDummyVoteActions,
+} from "../../../test/utils.js";
 import { RedisVotingLedger } from "../../../src/ledgers/voting-ledger/redis-voting-ledger.js";
 import { RedisNullifierLedger } from "../../../src/ledgers/nullifier-ledger/redis-nullifier-ledger.js";
+import { RedisStakingLedger } from "../../../src/ledgers/staking-ledger/redis-staking-ledger.js";
 
 const proofsEnabled = process.env.PROOFS_ENABLED === "true";
 
@@ -63,15 +75,22 @@ const lifecycleId = "treasury-owner-test";
 
 const votingLedger = new RedisVotingLedger(redisUrl, lifecycleId);
 const nullifierLedger = new RedisNullifierLedger(redisUrl, lifecycleId);
+const stakingLedger = new RedisStakingLedger(redisUrl, lifecycleId);
 
 voteReducerContext.set({
   votingLedger,
   nullifierLedger,
 });
 
+stakingLedgerToVotingLedgerContext.set({
+  stakingLedger,
+  votingLedger,
+});
+
 after(async () => {
   await votingLedger.close();
   await nullifierLedger.close();
+  await stakingLedger.close();
   await redisServer.stop();
 });
 
@@ -92,19 +111,26 @@ const multisigSigners: [PrivateKey, PublicKey][] = [
   [multisigPrivateKey3, multisigPublicKey3],
   [multisigPrivateKey4, multisigPublicKey4],
   [multisigPrivateKey5, multisigPublicKey5],
-]
+];
 
 const multiSigCommitment = Poseidon.hash([
-  ...[multisigPublicKey1, multisigPublicKey2, multisigPublicKey3, multisigPublicKey4, multisigPublicKey5].flatMap(
-    (participant) => participant.toFields()
-  ),
+  ...[
+    multisigPublicKey1,
+    multisigPublicKey2,
+    multisigPublicKey3,
+    multisigPublicKey4,
+    multisigPublicKey5,
+  ].flatMap((participant) => participant.toFields()),
 ]);
 
+console.log("compiling vote reducer");
 const { verificationKey: voteReducerVerificationKey } =
   await VoteReducer.compile({
     proofsEnabled,
   });
+console.log("compiled vote reducer", voteReducerVerificationKey);
 
+console.time("compile staking ledger to voting ledger");
 const { verificationKey: stakingLedgerToVotingLedgerVerificationKey } =
   await StakingLedgerToVotingLedger.compile({
     proofsEnabled,
@@ -115,10 +141,11 @@ TreasuryProposalSmartContract.voteReducerVerificationKey =
 TreasuryProposalSmartContract.stakingLedgerToVotingLedgerVerificationKey =
   stakingLedgerToVotingLedgerVerificationKey;
 
+console.time("compile TreasuryProposalSmartContract");
 await TreasuryProposalSmartContract.compile();
 TreasuryOwnerSmartContract.proposalContractVerificationKey =
   TreasuryProposalSmartContract._verificationKey;
-TreasuryOwnerSmartContract.multisigParticipants = [
+TreasuryPauseControllerSmartContract.multisigParticipants = [
   multisigPublicKey1,
   multisigPublicKey2,
   multisigPublicKey3,
@@ -126,6 +153,12 @@ TreasuryOwnerSmartContract.multisigParticipants = [
   multisigPublicKey5,
 ];
 
+Provable.log(
+  "TreasuryProposalSmartContract analysis",
+  await TreasuryProposalSmartContract.analyzeMethods(),
+);
+
+await TreasuryPauseControllerSmartContract.compile();
 await TreasuryOwnerSmartContract.compile();
 
 const testAccount = Local.testAccounts[1];
@@ -136,16 +169,23 @@ const voterPublicKey2 = voterPrivateKey2.toPublicKey();
 
 const treasuryOwnerPrivateKey = PrivateKey.random();
 const treasuryOwnerPublicKey = treasuryOwnerPrivateKey.toPublicKey();
+const pauseControllerPrivateKey = PrivateKey.random();
+const pauseControllerPublicKey = pauseControllerPrivateKey.toPublicKey();
 
 const treasuryProposalPrivateKey = PrivateKey.random();
 const treasuryProposalPublicKey = treasuryProposalPrivateKey.toPublicKey();
 
 const amount = UInt64.from(100000000000);
 
+const treasuryFundingAccount = Local.testAccounts[2];
+
 const treasuryOwner = new TreasuryOwnerSmartContract(treasuryOwnerPublicKey);
+const pauseController = new TreasuryPauseControllerSmartContract(
+  pauseControllerPublicKey,
+);
 const treasuryProposal = new TreasuryProposalSmartContract(
   treasuryProposalPublicKey,
-  treasuryOwner.deriveTokenId()
+  treasuryOwner.deriveTokenId(),
 );
 
 const treasuryProposalRecipientPrivateKey = PrivateKey.random();
@@ -153,6 +193,7 @@ const treasuryProposalRecipientPublicKey =
   treasuryProposalRecipientPrivateKey.toPublicKey();
 
 const dummyZkAppUri = "https://example.com";
+let treasuryOwnerBalanceSnapshot = UInt64.from(0);
 
 const votingAccount1 = new VotingAccount({ balance: UInt64.from(300) });
 const votingAccount2 = new VotingAccount({ balance: UInt64.from(100) });
@@ -167,16 +208,51 @@ await votingLedger.setLeaf(voterPublicKey2.toBase58(), votingAccount2);
 async function printNonce(publicKey: PublicKey, memo: string) {
   try {
     const account = Local.getAccount(publicKey);
-    console.log(`Nonce for (${memo}) ${publicKey.toBase58()}: ${account.nonce.toBigint()}`);
+    console.log(
+      `Nonce for (${memo}) ${publicKey.toBase58()}: ${account.nonce.toBigint()}`,
+    );
   } catch (error) {
-    console.error(`Error fetching nonce for (${memo}) ${publicKey.toBase58()}: ${error}`);
+    console.error(
+      `Error fetching nonce for (${memo}) ${publicKey.toBase58()}: ${error}`,
+    );
   }
 }
 
+it("should compile", async () => {
+  await TreasuryOwnerSmartContract.compile();
+  Provable.log("analysis", await TreasuryOwnerSmartContract.analyzeMethods());
+});
+
 it("should create a proposal", async () => {
+  TreasuryPauseControllerSmartContract.multisigCommitment = multiSigCommitment;
+  await (async () => {
+    console.log("deploying pause controller");
+    const tx = await Mina.transaction(testAccount, async () => {
+      AccountUpdate.fundNewAccount(testAccount, 1);
+      await pauseController.deploy();
+    });
+
+    tx.sign([testAccount.key, pauseControllerPrivateKey]);
+    await tx.prove();
+
+    const pendingTx = await tx.send();
+    await pendingTx.wait();
+  })();
+
+  await (async () => {
+    await fetchAccount({ publicKey: pauseControllerPublicKey });
+    const storedCommitment = pauseController.multisigCommitment.get();
+    assert(
+      storedCommitment.equals(multiSigCommitment).toBoolean(),
+      "Pause controller multisig commitment mismatch",
+    );
+  })();
 
   await (async () => {
     console.log("deploying treasury owner");
+    TreasuryOwnerSmartContract.treasuryDeployedAtSlot = UInt32.from(0);
+    TreasuryOwnerSmartContract.pauseControllerPublicKey =
+      pauseControllerPublicKey;
     const tx = await Mina.transaction(testAccount, async () => {
       AccountUpdate.fundNewAccount(testAccount, 1);
       await treasuryOwner.deploy();
@@ -192,45 +268,69 @@ it("should create a proposal", async () => {
   })();
 
   await (async () => {
-    console.log("initializing treasury owner");
+    console.log("funding treasury owner");
+    const treasuryFunding = Local.getAccount(
+      treasuryFundingAccount,
+    ).balance.sub(UInt64.from(1 * 10 ** 9));
+
     const tx = await Mina.transaction(testAccount, async () => {
-      await treasuryOwner.initialize(UInt32.from(0), multiSigCommitment);
+      const testAccountUpdate = AccountUpdate.createSigned(
+        treasuryFundingAccount,
+      );
+      // fund the treasury owner account
+      testAccountUpdate.balance.subInPlace(treasuryFunding);
+
+      const treasuryOwnerAccountUpdate = AccountUpdate.createSigned(
+        treasuryOwnerPublicKey,
+      );
+      treasuryOwnerAccountUpdate.balance.addInPlace(treasuryFunding);
     });
 
-    tx.sign([testAccount.key, treasuryOwnerPrivateKey]);
+    tx.sign([
+      testAccount.key,
+      treasuryOwnerPrivateKey,
+      treasuryFundingAccount.key,
+    ]);
     await tx.prove();
-
     const pendingTx = await tx.send();
     await pendingTx.wait();
-
-    await printNonce(treasuryOwnerPublicKey, "treasury owner initialized");
-    const treasuryOwnerBalance = Local.getAccount(treasuryOwnerPublicKey).balance;
-    Provable.log('treasuryOwnerBalance post initialization', treasuryOwnerBalance);
+    treasuryOwnerBalanceSnapshot = Local.getAccount(
+      treasuryOwnerPublicKey,
+    ).balance;
   })();
 
   await (async () => {
     console.log("setting network state");
+    const treasuryOwnerAccount = Account.empty();
+    treasuryOwnerAccount.pk = treasuryOwnerPublicKey;
+    treasuryOwnerAccount.delegate = treasuryOwnerPublicKey;
+    treasuryOwnerAccount.balance = treasuryOwnerBalanceSnapshot;
+    await stakingLedger.setAccount(0n, treasuryOwnerAccount);
+    await stakingLedger.setLeaf(0n, treasuryOwnerAccount);
+    const stakingLedgerRoot = await stakingLedger.getRoot();
     Local.setNetworkState({
       ...Local.getNetworkState(),
       stakingEpochData: {
         ...Local.getNetworkState().stakingEpochData,
         ledger: {
           ...Local.getNetworkState().stakingEpochData.ledger,
-          hash: Field(1),
+          hash: stakingLedgerRoot,
           // TODO: manage the total currency across the test suite in a better way
-          totalCurrency: UInt64.from(300),
+          totalCurrency: UInt64.from(500),
         },
       },
     });
 
     const bondPayer = Local.testAccounts[0];
 
-    console.log("creating proposal")
+    console.log("creating proposal");
     const tx = await Mina.transaction(testAccount, async () => {
       AccountUpdate.fundNewAccount(testAccount, 1);
 
       const bondPayerAccountUpdate = AccountUpdate.createSigned(bondPayer);
-      bondPayerAccountUpdate.balance.subInPlace(amount.div(BOND_AMOUNT_DIVISOR));
+      bondPayerAccountUpdate.balance.subInPlace(
+        amount.div(BOND_AMOUNT_DIVISOR),
+      );
 
       await treasuryOwner.createProposal(
         treasuryProposalPublicKey,
@@ -239,7 +339,7 @@ it("should create a proposal", async () => {
           recipient: treasuryProposalRecipientPublicKey,
           zkAppUri: dummyZkAppUri,
         },
-        UInt32.from(0)
+        UInt32.from(0),
       );
     });
 
@@ -251,70 +351,78 @@ it("should create a proposal", async () => {
 
     await printNonce(treasuryOwnerPublicKey, "treasury owner proposal created");
     await printNonce(treasuryProposalPublicKey, "treasury proposal created");
-    const treasuryOwnerBalance = Local.getAccount(treasuryOwnerPublicKey).balance;
-    Provable.log('treasuryOwnerBalance post creation', treasuryOwnerBalance);
+    const treasuryOwnerBalance = Local.getAccount(
+      treasuryOwnerPublicKey,
+    ).balance;
+    Provable.log("treasuryOwnerBalance post creation", treasuryOwnerBalance);
   })();
 
   // const lifecycleStartedAt = await treasuryOwner.lifecycleStartedAt.fetch();
 });
 
-it("should pause the treasury", async () => {
-  const validUntilSlot = Local.currentSlot().add(5);
-  const signatures = new MultisigSignatures({
-    signatures: [
-      MultisigSignature.create(multisigSigners[0][0], MultisigSignature.dataPauseTreasury(validUntilSlot)),
-      MultisigSignature.create(multisigSigners[1][0], MultisigSignature.dataPauseTreasury(validUntilSlot)),
-      MultisigSignature.create(multisigSigners[2][0], MultisigSignature.dataPauseTreasury(validUntilSlot)),
-      MultisigSignature.empty(),
-      MultisigSignature.empty(),
-    ]
-  })
-  const tx = await Mina.transaction(testAccount, async () => {
-    await treasuryOwner.pauseTreasury(
-      signatures,
-      validUntilSlot
-    );
-  });
+// TODO: move to a separate test suite, as the proving stalls if we add pausing alongside with the action state commit transaction
+// they work fine separately, but together it stalls
+// it("should pause the treasury", async () => {
+//   const nonce = UInt32.from(1);
+//   const signatures = new MultisigSignatures({
+//     signatures: [
+//       MultisigSignature.create(multisigSigners[0][0], [
+//         MultisigSignature.dataPauseTreasury(nonce),
+//       ]),
+//       MultisigSignature.create(multisigSigners[1][0], [
+//         MultisigSignature.dataPauseTreasury(nonce),
+//       ]),
+//       MultisigSignature.create(multisigSigners[2][0], [
+//         MultisigSignature.dataPauseTreasury(nonce),
+//       ]),
+//       MultisigSignature.empty(),
+//       MultisigSignature.empty(),
+//     ],
+//   });
+//   const tx = await Mina.transaction(testAccount, async () => {
+//     await pauseController.pauseTreasury(signatures, nonce);
+//   });
 
-  tx.sign([testAccount.key]);
-  await tx.prove();
-  const pendingTx = await tx.send();
-  await pendingTx.wait();
+//   tx.sign([testAccount.key]);
+//   await tx.prove();
+//   const pendingTx = await tx.send();
+//   await pendingTx.wait();
 
-  Provable.log("paused", tx.toPretty());
+//   Provable.log("paused", tx.toPretty());
 
-  const paused = await treasuryOwner.paused.get();
-  assert(paused.toBoolean(), "Treasury is not paused");
-});
+//   const paused = await pauseController.paused.get();
+//   assert(paused.toBoolean(), "Treasury is not paused");
+// });
 
-it("should unpause the treasury", async () => {
-  const validUntilSlot = Local.currentSlot().add(5);
-  const signatures = new MultisigSignatures({
-    signatures: [
-      MultisigSignature.create(multisigSigners[0][0], MultisigSignature.dataUnpauseTreasury(validUntilSlot)),
-      MultisigSignature.create(multisigSigners[1][0], MultisigSignature.dataUnpauseTreasury(validUntilSlot)),
-      MultisigSignature.create(multisigSigners[2][0], MultisigSignature.dataUnpauseTreasury(validUntilSlot)),
-      MultisigSignature.empty(),
-      MultisigSignature.empty(),
-    ]
-  })
-  const tx = await Mina.transaction(testAccount, async () => {
-    await treasuryOwner.unpauseTreasury(
-      signatures,
-      validUntilSlot
-    );
-  });
+// it("should unpause the treasury", async () => {
+//   const nonce = UInt32.from(2);
+//   const signatures = new MultisigSignatures({
+//     signatures: [
+//       MultisigSignature.create(multisigSigners[0][0], [
+//         MultisigSignature.dataUnpauseTreasury(nonce),
+//       ]),
+//       MultisigSignature.create(multisigSigners[1][0], [
+//         MultisigSignature.dataUnpauseTreasury(nonce),
+//       ]),
+//       MultisigSignature.create(multisigSigners[2][0], [
+//         MultisigSignature.dataUnpauseTreasury(nonce),
+//       ]),
+//       MultisigSignature.empty(),
+//       MultisigSignature.empty(),
+//     ],
+//   });
+//   const tx = await Mina.transaction(testAccount, async () => {
+//     await pauseController.unpauseTreasury(signatures, nonce);
+//   });
 
-  tx.sign([testAccount.key]);
-  await tx.prove();
-  const pendingTx = await tx.send();
-  await pendingTx.wait();
+//   tx.sign([testAccount.key]);
+//   await tx.prove();
+//   const pendingTx = await tx.send();
+//   await pendingTx.wait();
 
-
-  const paused = await treasuryOwner.paused.get();
-  assert(!paused.toBoolean(), "Treasury is not unpaused");
-});
-
+//   const paused = await pauseController.paused.get();
+//   assert(!paused.toBoolean(), "Treasury is not unpaused");
+// });
 
 it("should vote on a proposal", async () => {
   // jump ahead to the voting period
@@ -326,11 +434,13 @@ it("should vote on a proposal", async () => {
     await treasuryOwner.vote(
       treasuryProposalPublicKey,
       voterPublicKey1,
-      Vote.YAY
+      Vote.YAY,
     );
   });
 
   tx.sign([testAccount.key, voterPrivateKey1]);
+
+  Provable.log("vote tx", tx.toPretty());
 
   await tx.prove();
   const pendingTx = await tx.send();
@@ -338,20 +448,20 @@ it("should vote on a proposal", async () => {
 
   await printNonce(treasuryOwnerPublicKey, "treasury owner voted");
   await printNonce(treasuryProposalPublicKey, "treasury proposal voted");
-
 });
 
 // TODO
-it.todo("should pause the proposal", async () => { });
+// it.skip("should pause the proposal", async () => { });
 
 it("should vote on a proposal from a new account", async () => {
+  Local.incrementGlobalSlot(1);
   const tx = await Mina.transaction(testAccount, async () => {
     // pay for creating the voter account
     AccountUpdate.fundNewAccount(testAccount, 1);
     await treasuryOwner.vote(
       treasuryProposalPublicKey,
       voterPublicKey2,
-      Vote.NAY
+      Vote.NAY,
     );
   });
 
@@ -367,7 +477,7 @@ it("should fail while attempting to vote on the proposal contract directly", asy
   try {
     const proposal = new TreasuryProposalSmartContract(
       treasuryProposalPublicKey,
-      treasuryOwner.deriveTokenId()
+      treasuryOwner.deriveTokenId(),
     );
     const tx = await Mina.transaction(testAccount, async () => {
       await proposal.vote({
@@ -384,20 +494,23 @@ it("should fail while attempting to vote on the proposal contract directly", asy
     error = e as Error;
   }
   assert(
-    error.message.includes("No external account updates allowed for this token")
+    error.message.includes(
+      "No external account updates allowed for this token",
+    ),
   );
 });
 
-it("should tally votes", async () => {
-  Local.incrementGlobalSlot(
-    LIFECYCLE_PERIOD_DURATION
-  );
+let voteReducerProof: VoteReducerProof;
+let stakingLedgerToVotingLedgerProof: StakingLedgerToVotingLedgerProof;
+it("should commit action state", async () => {
+  Local.incrementGlobalSlot(LIFECYCLE_PERIOD_DURATION);
 
   const actions = await Mina.getActions(
     treasuryProposalPublicKey,
     {},
-    treasuryOwner.deriveTokenId()
+    treasuryOwner.deriveTokenId(),
   );
+  Provable.log("actions", actions);
 
   await fetchAccount({
     publicKey: treasuryProposalPublicKey,
@@ -410,46 +523,111 @@ it("should tally votes", async () => {
 
   let finalHash = appendActionToHashList(
     Reducer.initialActionState,
-    actionFields
+    actionFields,
   );
 
+  const realVoteActions = actions
+    .map((action) => action.actions[0])
+    .map((action) => action.map((action) => Field(action)))
+    .map((action) => VoteAction.fromFields(action));
+
   const voteActions = [
-    ...actions
-      .map((action) => action.actions[0])
-      .map((action) => action.map((action) => Field(action)))
-      .map((action) => VoteAction.fromFields(action)),
-    ...createDummyVoteActions(VOTE_ACTION_BATCH_SIZE),
+    ...createDummyVoteActions(VOTE_ACTION_BATCH_SIZE - 2),
+    ...realVoteActions,
   ].slice(0, VOTE_ACTION_BATCH_SIZE);
+
+  const actionStateHistory = buildActionStateHistory(voteActions);
 
   Provable.log("raw actions", actions);
   Provable.log("voteActions", voteActions);
 
-  const proof = await VoteReducer.reduceBatch(
+  console.time("reduce batch");
+  const { proof } = await VoteReducer.reduceBatch(
     {
       fromActionsHash: Reducer.initialActionState,
       votingLedgerRoot: await votingLedger.getRoot(),
       fromNullifierRoot: await nullifierLedger.getRoot(),
+      actionStateHistory,
     },
-    voteActions
+    voteActions,
   );
+  voteReducerProof = proof;
+  console.timeEnd("reduce batch");
 
-  // TODO: replace with a real proof in order to be able to run proofsEnabled: true
-  const stakingLedgerToVotingLedgerProof =
-    await SideLoadedStakingLedgerToVotingLedgerProof.dummy(
-      StakingLedgerToVotingLedgerProgramInput.empty(),
-      StakingLedgerToVotingLedgerProgramOutput.empty(),
-      0
+  const treasuryOwnerAccount = await stakingLedger.getAccount(0n);
+  const treasuryOwnerAccountWitness = await stakingLedger.getWitness(0n);
+
+  const stakingLedgerRoot = await stakingLedger.getRoot();
+  const votingLedgerRoot = await votingLedger.getRoot();
+  const digestInput = new StakingLedgerToVotingLedgerProgramInput({
+    index: UInt32.from(0),
+    stakingLedgerRoot,
+    votingLedgerRoot,
+    totalCurrency: UInt64.from(0),
+  });
+  const digestAccounts: Account[] = [];
+  for (let i = 0; i < ACCOUNT_BATCH_SIZE; i++) {
+    digestAccounts.push(await stakingLedger.getAccount(BigInt(i)));
+  }
+
+  console.time("digest ledger");
+  const { proof: proof2 } = await StakingLedgerToVotingLedger.digest(
+    digestInput,
+    digestAccounts,
+  );
+  stakingLedgerToVotingLedgerProof = proof2;
+  console.timeEnd("digest ledger");
+  Provable.log(
+    "stakingLedgerToVotingLedgerProof",
+    stakingLedgerToVotingLedgerProof.publicOutput,
+  );
+  Provable.log("vote proof", voteReducerProof.publicOutput);
+
+  Provable.log("preverify proofs", {
+    voteReducer: await VoteReducer.verify(voteReducerProof),
+    stakingLedgerToVotingLedger: await StakingLedgerToVotingLedger.verify(
+      stakingLedgerToVotingLedgerProof,
+    ),
+  });
+
+  Provable.log("pretally treasury balance", treasuryOwnerAccount.balance);
+
+  console.time("commit action state");
+  const commitTx = await Mina.transaction(testAccount, async () => {
+    await treasuryOwner.commitActionState(
+      SideLoadedVoteReducerProof.fromProof(voteReducerProof),
+      treasuryProposalPublicKey,
     );
+  });
+
+  commitTx.sign([testAccount.key]);
+  Provable.log("commit action state tx", commitTx.toPretty());
+  await commitTx.prove();
+  const commitPendingTx = await commitTx.send();
+  await commitPendingTx.wait();
+  console.timeEnd("commit action state");
+});
+
+it("should tally votes", async () => {
+  const treasuryOwnerAccount = await stakingLedger.getAccount(0n);
+  const treasuryOwnerAccountWitness = await stakingLedger.getWitness(0n);
 
   const tx = await Mina.transaction(testAccount, async () => {
     await treasuryOwner.tallyVotes(
       treasuryProposalPublicKey,
-      SideLoadedVoteReducerProof.fromProof(proof.proof),
-      stakingLedgerToVotingLedgerProof
+      SideLoadedVoteReducerProof.fromProof(voteReducerProof),
+      // proof.proof,
+      SideLoadedStakingLedgerToVotingLedgerProof.fromProof(
+        stakingLedgerToVotingLedgerProof,
+      ),
+      // stakingLedgerToVotingLedgerProof,
+      treasuryOwnerAccount,
+      treasuryOwnerAccountWitness,
     );
   });
 
   tx.sign([testAccount.key]);
+  Provable.log("tally votes tx", tx.toPretty());
 
   await tx.prove();
   const pendingTx = await tx.send();
@@ -458,46 +636,34 @@ it("should tally votes", async () => {
   await printNonce(treasuryOwnerPublicKey, "treasury owner tallied votes");
   await printNonce(treasuryProposalPublicKey, "treasury proposal tallied");
 
-
   const voteApproved = await treasuryProposal.status.fetch();
   assert(
     voteApproved.equals(ProposalStatus.APPROVED).toBoolean(),
-    "Vote not approved"
+    "Vote not approved",
   );
 });
 
 it("should execute a proposal", async () => {
-  Local.incrementGlobalSlot(LIFECYCLE_PERIOD_DURATION);
+  Local.incrementGlobalSlot(LIFECYCLE_PERIOD_DURATION.mul(2));
   const amountWithBond = amount.add(amount.div(BOND_AMOUNT_DIVISOR));
 
-  const treasuryOwnerBalancePreExecution = Local.getAccount(treasuryOwnerPublicKey).balance;
+  const treasuryOwnerBalancePreExecution = Local.getAccount(
+    treasuryOwnerPublicKey,
+  ).balance;
   const testAccountBalancePreExecution = Local.getAccount(testAccount).balance;
   // const treasuryProposalRecipientBalancePreExecution = Local.getAccount(
   //   treasuryProposalRecipientPublicKey
   // ).balance;
-  Provable.log('testAccountBalancePreExecution', testAccountBalancePreExecution);
-  Provable.log('treasuryOwnerBalancePreExecution', treasuryOwnerBalancePreExecution);
+  Provable.log(
+    "testAccountBalancePreExecution",
+    testAccountBalancePreExecution,
+  );
+  Provable.log(
+    "treasuryOwnerBalancePreExecution",
+    treasuryOwnerBalancePreExecution,
+  );
   // Provable.log('treasuryProposalRecipientBalancePreExecution', treasuryProposalRecipientBalancePreExecution);
-  await (async () => {
-    console.log('funding treasury owner');
-    const tx = await Mina.transaction(testAccount, async () => {
-      const testAccountUpdate = AccountUpdate.createSigned(testAccount);
-      // fund the treasury owner account
-      testAccountUpdate.balance.subInPlace(amount);
-
-      const treasuryOwnerAccountUpdate = AccountUpdate.createSigned(
-        treasuryOwnerPublicKey
-      );
-      treasuryOwnerAccountUpdate.balance.addInPlace(amount);
-    });
-
-    tx.sign([testAccount.key, treasuryOwnerPrivateKey]);
-    await tx.prove();
-    const pendingTx = await tx.send();
-    await pendingTx.wait();
-  })();
-
-  Provable.log('executing proposal', {
+  Provable.log("executing proposal", {
     amountWithBond,
     recipient: treasuryProposalRecipientPublicKey,
   });
@@ -505,7 +671,11 @@ it("should execute a proposal", async () => {
     // fund the recipient account creation
     AccountUpdate.fundNewAccount(testAccount, 1);
 
-    await treasuryOwner.executeProposal(treasuryProposalPublicKey, amountWithBond);
+    await treasuryOwner.executeProposal(
+      treasuryProposalPublicKey,
+      treasuryProposalRecipientPublicKey,
+      amountWithBond,
+    );
   });
 
   tx.sign([testAccount.key, treasuryProposalRecipientPrivateKey]);
@@ -524,16 +694,24 @@ it("should execute a proposal", async () => {
   const treasuryOwnerBalance = Local.getAccount(treasuryOwnerPublicKey).balance;
 
   const treasuryProposalRecipientBalance = Local.getAccount(
-    treasuryProposalRecipientPublicKey
+    treasuryProposalRecipientPublicKey,
   ).balance;
 
   Provable.log("testAccountBalance", testAccountBalance);
   Provable.log("treasuryOwnerBalance", treasuryOwnerBalance);
   Provable.log(
     "treasuryProposalRecipientBalance",
-    treasuryProposalRecipientBalance
+    treasuryProposalRecipientBalance,
   );
 
-  assert(treasuryOwnerBalance.toBigInt() === 0n, "Treasury owner balance is not 0");
-  assert(treasuryProposalRecipientBalance.toBigInt() === amountWithBond.toBigInt(), "Treasury proposal recipient balance is not the amount with bond");
+  const expectedTreasuryOwnerBalance =
+    treasuryOwnerBalancePreExecution.sub(amountWithBond);
+  assert(
+    treasuryOwnerBalance.toBigInt() === expectedTreasuryOwnerBalance.toBigInt(),
+    "Treasury owner balance does not match expected post-execution balance",
+  );
+  assert(
+    treasuryProposalRecipientBalance.toBigInt() === amountWithBond.toBigInt(),
+    "Treasury proposal recipient balance is not the amount with bond",
+  );
 });

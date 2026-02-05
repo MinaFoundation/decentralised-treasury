@@ -4,6 +4,7 @@
   "scripts": {
     "lightnet": "zkapp-cli lightnet",
     "run": "tsx",
+    "chart:thresholds": "NODE_NO_WARNINGS=1 node --loader ts-node/esm scripts/generate-threshold-chart.ts",
     "cli:local": "NODE_NO_WARNINGS=1 dotenvx run -f .env.local -- node --loader ts-node/esm src/cli.ts",
     "docker:up": "docker compose -f docker/docker-compose.yml up",
     "docker:down": "docker compose -f docker/docker-compose.yml down",
@@ -50,6 +51,6 @@
     "tsx": "^4.20.4"
   },
   "peerDependencies": {
-    "o1js": "2.8.0"
+    "o1js": "file:/Users/maht0rz/Projects/mina-foundation/o1js"
   }
 }

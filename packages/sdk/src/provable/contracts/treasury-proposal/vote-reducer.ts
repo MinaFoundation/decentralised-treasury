@@ -72,13 +72,55 @@ export class VoteAction extends Struct({
     return new VoteAction({ vote: Vote.DUMMY, publicKey: PublicKey.empty() });
   }
 }
+export class ActionStateHistory extends Struct({
+  actionStateOne: {
+    hash: Field,
+    found: Bool,
+  },
+  actionStateTwo: {
+    hash: Field,
+    found: Bool,
+  },
+  actionStateThree: {
+    hash: Field,
+    found: Bool,
+  },
+  actionStateFour: {
+    hash: Field,
+    found: Bool,
+  },
+  actionStateFive: {
+    hash: Field,
+    found: Bool,
+  },
+}) {
+  public static clone(actionStateHistory: ActionStateHistory) {
+    return new ActionStateHistory({
+      actionStateOne: { hash: actionStateHistory.actionStateOne.hash, found: actionStateHistory.actionStateOne.found },
+      actionStateTwo: { hash: actionStateHistory.actionStateTwo.hash, found: actionStateHistory.actionStateTwo.found },
+      actionStateThree: { hash: actionStateHistory.actionStateThree.hash, found: actionStateHistory.actionStateThree.found },
+      actionStateFour: { hash: actionStateHistory.actionStateFour.hash, found: actionStateHistory.actionStateFour.found },
+      actionStateFive: { hash: actionStateHistory.actionStateFive.hash, found: actionStateHistory.actionStateFive.found },
+    });
+  }
+}
 
 export class VoteReducerPublicInput extends Struct({
   // TODO: rename to "actionsHash" for both input and output
   fromActionsHash: Field,
   votingLedgerRoot: Field,
   fromNullifierRoot: Field,
-}) {}
+  actionStateHistory: ActionStateHistory,
+}) {
+  public static clone(publicInput: VoteReducerPublicInput) {
+    return new VoteReducerPublicInput({
+      fromActionsHash: publicInput.fromActionsHash,
+      votingLedgerRoot: publicInput.votingLedgerRoot,
+      fromNullifierRoot: publicInput.fromNullifierRoot,
+      actionStateHistory: ActionStateHistory.clone(publicInput.actionStateHistory),
+    });
+  }
+}
 
 export class VoteReducerPublicOutput extends Struct({
   toActionsHash: Field,
@@ -86,7 +128,8 @@ export class VoteReducerPublicOutput extends Struct({
   yay: UInt64,
   nay: UInt64,
   abstain: UInt64,
-}) {}
+  actionStateHistory: ActionStateHistory,
+}) { }
 
 export const voteReducerErrors = {
   VOTING_LEDGER_ROOT_DOES_NOT_MATCH: "Voting ledger root does not match",
@@ -120,13 +163,45 @@ export const VoteReducer = ZkProgram({
         const input2 = proof2.publicInput;
         const output2 = proof2.publicOutput;
 
+        Provable.log('debug inputs', {
+          publicInput: publicInput.actionStateHistory,
+          input1: input1.actionStateHistory,
+        });
+
         Poseidon.hash(
           VoteReducerPublicInput.toFields(publicInput)
-        ).assertEquals(Poseidon.hash(VoteReducerPublicInput.toFields(input1)));
+        ).assertEquals(
+          Poseidon.hash(VoteReducerPublicInput.toFields(input1)),
+          "Vote reducer merge public input does not match first proof input"
+        );
 
-        input1.votingLedgerRoot.assertEquals(input2.votingLedgerRoot);
-        output1.toActionsHash.assertEquals(input2.fromActionsHash);
-        output1.toNullifierRoot.assertEquals(input2.fromNullifierRoot);
+        input1.votingLedgerRoot.assertEquals(
+          input2.votingLedgerRoot,
+          "Voting ledger root does not match between merged proofs"
+        );
+        output1.toActionsHash.assertEquals(
+          input2.fromActionsHash,
+          "Action hash chain is not contiguous between merged proofs"
+        );
+        output1.toNullifierRoot.assertEquals(
+          input2.fromNullifierRoot,
+          "Nullifier root does not match between merged proofs"
+        );
+
+        for (const actionStateKey of Object.keys(input1.actionStateHistory)) {
+          // TODO: this could be typed better
+          const output1ActionState: ActionStateHistory['actionStateOne'] = output1.actionStateHistory[actionStateKey];
+          const output2ActionState: ActionStateHistory['actionStateOne'] = output2.actionStateHistory[actionStateKey];
+
+          // if the older proof has already found the action state hash, use that
+          // otherwise, use the newer proof's found status, assuming the newer proof
+          // will find the latter action state hashes as it progresses through the batches
+          output1ActionState.found = Provable.if(
+            output1ActionState.found,
+            output1ActionState.found,
+            output2ActionState.found,
+          );
+        }
 
         return {
           publicOutput: {
@@ -135,6 +210,7 @@ export const VoteReducer = ZkProgram({
             yay: output1.yay.add(output2.yay),
             nay: output1.nay.add(output2.nay),
             abstain: output1.abstain.add(output2.abstain),
+            actionStateHistory: ActionStateHistory.empty(),
           },
         };
       },
@@ -152,6 +228,7 @@ export const VoteReducer = ZkProgram({
         // in case of 'rolling state' that changes within the circuit's loop
         let toActionsHash = publicInput.fromActionsHash;
         let toNullifierRoot = publicInput.fromNullifierRoot;
+        let actionStateHistory = ActionStateHistory.clone(publicInput.actionStateHistory);
 
         let yay = UInt64.from(0);
         let nay = UInt64.from(0);
@@ -289,7 +366,7 @@ export const VoteReducer = ZkProgram({
           yay = Provable.if(
             voteAction.vote
               .equals(Vote.YAY)
-              .and(VoteAction.isDummy(voteAction).not()),
+              .and(isDummyVoteAction.not()),
             yay.add(voteWeight),
             yay
           );
@@ -297,7 +374,7 @@ export const VoteReducer = ZkProgram({
           nay = Provable.if(
             voteAction.vote
               .equals(Vote.NAY)
-              .and(VoteAction.isDummy(voteAction).not()),
+              .and(isDummyVoteAction.not()),
             nay.add(voteWeight),
             nay
           );
@@ -305,20 +382,34 @@ export const VoteReducer = ZkProgram({
           abstain = Provable.if(
             voteAction.vote
               .equals(Vote.ABSTRAIN)
-              .and(VoteAction.isDummy(voteAction).not()),
+              .and(isDummyVoteAction.not()),
             abstain.add(voteWeight),
             abstain
           );
 
           // only append non-dummy actions to the hash list
           toActionsHash = Provable.if(
-            VoteAction.isDummy(voteAction).not(),
+            isDummyVoteAction.not(),
             appendActionToHashList(
               toActionsHash,
               VoteAction.toFields(voteAction)
             ),
             toActionsHash
           );
+
+          for (const actionStateKey of Object.keys(actionStateHistory)) {
+            // TODO: this could be typed better
+            const actionState: ActionStateHistory['actionStateOne'] = actionStateHistory[actionStateKey];
+            const found = toActionsHash.equals(actionState.hash);
+
+            // the hash that has already been found should not be found again,
+            actionState.found.and(found).and(isDummyVoteAction.not()).assertFalse("action state hash has been previously found, cannot be found again");
+            actionState.found = Provable.if(
+              found,
+              found,
+              actionState.found,
+            )
+          }
         }
 
         return {
@@ -328,9 +419,11 @@ export const VoteReducer = ZkProgram({
             yay,
             nay,
             abstain,
+            actionStateHistory
           },
         };
-      },
+
+      }
     },
   },
 });
@@ -341,5 +434,7 @@ export class SideLoadedVoteReducerProof extends DynamicProof<
 > {
   static publicInputType = VoteReducerPublicInput;
   static publicOutputType = VoteReducerPublicOutput;
-  static maxProofsVerified = 0 as const;
+  static maxProofsVerified = 2 as const;
 }
+
+export class VoteReducerProof extends VoteReducer.Proof { }

@@ -54,7 +54,7 @@ export class StakingLedgerToVotingLedgerProgramInput extends Struct({
   // TODO: use 2^32 tree and double check the voting account's witness index against the staking ledger witness index
   votingLedgerRoot: Field, // empty root
   totalCurrency: UInt64,
-}) {}
+}) { }
 
 export class StakingLedgerToVotingLedgerProgramOutput extends Struct({
   index: UInt32,
@@ -62,7 +62,7 @@ export class StakingLedgerToVotingLedgerProgramOutput extends Struct({
   // votingLedgerST  -> explore an idea of instructions --> aws lambda limits parelelization to 7k instances at a given time per region?
   exhausted: Bool,
   totalCurrency: UInt64,
-}) {}
+}) { }
 
 export interface StakingLedgerToVotingLedgerTrace {
   publicInput: StakingLedgerToVotingLedgerProgramInput;
@@ -374,5 +374,7 @@ export class SideLoadedStakingLedgerToVotingLedgerProof extends DynamicProof<
 > {
   static publicInputType = StakingLedgerToVotingLedgerProgramInput;
   static publicOutputType = StakingLedgerToVotingLedgerProgramOutput;
-  static maxProofsVerified = 0 as const;
+  static maxProofsVerified = 2 as const;
 }
+
+export class StakingLedgerToVotingLedgerProof extends StakingLedgerToVotingLedger.Proof { }

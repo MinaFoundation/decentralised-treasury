@@ -10,6 +10,7 @@ import {
   UInt32,
   UInt64,
 } from "o1js";
+import { Account } from "../provable/account.js";
 import {
   LIFECYCLE_PERIOD_DURATION,
   TreasuryOwnerSmartContract,
@@ -26,6 +27,7 @@ import {
 } from "../provable/contracts/treasury-proposal/vote-reducer.js";
 import { createDummyVoteActions } from "test/utils.js";
 import { SideLoadedStakingLedgerToVotingLedgerProof } from "../provable/staking-ledger-to-voting-ledger.js";
+import { PrefixedMerkleWitness36 } from "../provable/merkle-tree/prefixed-merkle-tree.js";
 import { VotingAccount } from "../provable/voting-account.js";
 import { BaseVotingLedger } from "../ledgers/voting-ledger/voting-ledger.js";
 import { BaseNullifierLedger } from "../ledgers/nullifier-ledger/nullifier-ledger.js";
@@ -79,6 +81,14 @@ export default function tallyVotesCommandFactory(program: Command) {
       "--staking-ledger-to-voting-ledger-proof-input-path <staking-ledger-to-voting-ledger-proof-input-path>",
       "Path to the staking ledger to voting ledger proof input file"
     )
+    .requiredOption(
+      "--treasury-owner-account-input-path <treasury-owner-account-input-path>",
+      "Path to the treasury owner account input file"
+    )
+    .requiredOption(
+      "--treasury-owner-account-witness-input-path <treasury-owner-account-witness-input-path>",
+      "Path to the treasury owner account witness input file"
+    )
     .option(
       "--permission-type <permission-type>",
       "Set of permissions for interacting with the proposal",
@@ -112,6 +122,8 @@ export default function tallyVotesCommandFactory(program: Command) {
         minaArchiveUrl,
         votingLedgerInputPath,
         stakingLedgerToVotingLedgerProofInputPath,
+        treasuryOwnerAccountInputPath,
+        treasuryOwnerAccountWitnessInputPath,
       }: {
         proposalPublicKey: PublicKey;
         treasuryOwnerPublicKey: PublicKey;
@@ -126,6 +138,8 @@ export default function tallyVotesCommandFactory(program: Command) {
         minaArchiveUrl: string;
         votingLedgerInputPath: string;
         stakingLedgerToVotingLedgerProofInputPath: string;
+        treasuryOwnerAccountInputPath: string;
+        treasuryOwnerAccountWitnessInputPath: string;
       }) => {
         TreasuryProposalSmartContract.permissionType = permissionType;
 
@@ -241,6 +255,12 @@ export default function tallyVotesCommandFactory(program: Command) {
         const stakingLedgerToVotingLedgerProofJSON = JSON.parse(
           readFileSync(stakingLedgerToVotingLedgerProofInputPath, "utf8")
         );
+        const treasuryOwnerAccountJSON = JSON.parse(
+          readFileSync(treasuryOwnerAccountInputPath, "utf8")
+        );
+        const treasuryOwnerAccountWitnessJSON = JSON.parse(
+          readFileSync(treasuryOwnerAccountWitnessInputPath, "utf8")
+        );
 
         await fetchAccount({
           publicKey: proposalPublicKey,
@@ -270,6 +290,14 @@ export default function tallyVotesCommandFactory(program: Command) {
               SideLoadedVoteReducerProof.fromProof(proof.proof),
               await SideLoadedStakingLedgerToVotingLedgerProof.fromJSON(
                 stakingLedgerToVotingLedgerProofJSON
+              ),
+              treasuryOwnerPublicKey,
+              Account.fromJSON(treasuryOwnerAccountJSON),
+              new PrefixedMerkleWitness36(
+                treasuryOwnerAccountWitnessJSON.map((item: any) => ({
+                  isLeft: item.isLeft,
+                  sibling: Field(item.sibling),
+                }))
               )
             );
 

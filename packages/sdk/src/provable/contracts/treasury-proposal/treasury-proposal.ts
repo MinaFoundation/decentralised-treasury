@@ -13,21 +13,38 @@ import {
   UInt64,
   AccountUpdate,
   UInt32,
+  Poseidon,
 } from "o1js";
-import { SideLoadedVoteReducerProof, VoteAction } from "./vote-reducer.js";
-import { SideLoadedStakingLedgerToVotingLedgerProof } from "../../staking-ledger-to-voting-ledger.js";
-import { BOND_AMOUNT_DIVISOR } from "../treasury-owner.js";
+import {
+  ActionStateHistory,
+  SideLoadedVoteReducerProof,
+  VoteAction,
+  VoteReducerProof,
+} from "./vote-reducer.js";
+import {
+  SideLoadedStakingLedgerToVotingLedgerProof,
+  StakingLedgerToVotingLedgerProof,
+} from "../../staking-ledger-to-voting-ledger.js";
+import {
+  BASIS_POINTS,
+  BOND_AMOUNT_DIVISOR,
+  CURVE_CONSTANT_APPROVAL_BP,
+  CURVE_CONSTANT_PARTICIPATION_BP,
+  MAX_APPROVAL_BP,
+  MAX_PARTICIPATION_BP,
+  MIN_APPROVAL_BP,
+  MIN_PARTICIPATION_BP,
+} from "../treasury-constants.js";
+import { Account, accountHashPrefix, packToFields } from "../../account.js";
+import { hashWithPrefix } from "../../hashing-helpers.js";
+import { accountLedgerHashPrefixes } from "../../../ledgers/staking-ledger/staking-ledger.js";
+import { PrefixedMerkleWitness36 } from "../../merkle-tree/prefixed-merkle-tree.js";
 
 export class Proposal extends Struct({
   amount: UInt64,
   recipient: PublicKey,
   zkAppUri: String,
 }) {}
-
-// TODO: need a better name for this, its a divider not a percentage, 2 = 50%
-export const REQUIRED_PARTICIPATION_PERCENTAGE = 2;
-// cannot be lower than 51% due to the math implementation in the contract
-export const REQUIRED_SUPERMAJORITY_PERCENTAGE = 75;
 
 export class ProposalStatus extends Field {
   public static UNKNOWN = Field(0);
@@ -45,7 +62,7 @@ export class TreasuryProposalSmartContract extends SmartContract {
 
   reducer = Reducer({ actionType: VoteAction });
 
-  @state(PublicKey) recipient = State<PublicKey>();
+  @state(Field) recipientHash = State<Field>();
   @state(UInt64) amount = State<UInt64>();
 
   @state(UInt32) lifecycleId = State<UInt32>();
@@ -55,10 +72,17 @@ export class TreasuryProposalSmartContract extends SmartContract {
 
   @state(ProposalStatus) status = State<ProposalStatus>();
   @state(UInt64) paidOutAmount = State<UInt64>();
+  @state(Field) toActionsHash = State<Field>();
 
   public async requireNotPaused() {
     const status = this.status.getAndRequireEquals();
-    status.equals(ProposalStatus.PAUSED).not().assertTrue("Proposal is paused");
+    status.equals(ProposalStatus.PAUSED).assertFalse("Proposal is paused");
+  }
+
+  // workaround since reading state from another contract resulted in proving errors
+  @method.returns(UInt32)
+  public async getLifecycleId() {
+    return this.lifecycleId.getAndRequireEquals();
   }
 
   @method
@@ -67,10 +91,70 @@ export class TreasuryProposalSmartContract extends SmartContract {
     this.reducer.dispatch(voteAction);
   }
 
+  minUInt64(a: UInt64, b: UInt64) {
+    return Provable.if(a.lessThan(b), a, b);
+  }
+
+  calculateAcceptanceCriteria(proposalAmount: UInt64, treasuryBalance: UInt64) {
+    // ratio in basis points, capped at 100%
+    const ratioBp = this.minUInt64(
+      proposalAmount.mul(BASIS_POINTS).div(treasuryBalance),
+      BASIS_POINTS,
+    );
+
+    // curve output in basis points:
+    // ratio / (ratio + c * (1 - ratio)), with c in basis points (e.g. 5000 = 0.5)
+    const participationCurveDenominator = ratioBp.add(
+      CURVE_CONSTANT_PARTICIPATION_BP.mul(BASIS_POINTS.sub(ratioBp)).div(
+        BASIS_POINTS,
+      ),
+    );
+    const participationCurveBp = ratioBp
+      .mul(BASIS_POINTS)
+      .div(participationCurveDenominator);
+
+    const approvalCurveDenominator = ratioBp.add(
+      CURVE_CONSTANT_APPROVAL_BP.mul(BASIS_POINTS.sub(ratioBp)).div(
+        BASIS_POINTS,
+      ),
+    );
+    const approvalCurveBp = ratioBp
+      .mul(BASIS_POINTS)
+      .div(approvalCurveDenominator);
+
+    // participation threshold
+    const requiredParticipationBp = MIN_PARTICIPATION_BP.add(
+      MAX_PARTICIPATION_BP.sub(MIN_PARTICIPATION_BP)
+        .mul(participationCurveBp)
+        .div(BASIS_POINTS),
+    );
+
+    // approval threshold
+    const requiredApprovalBp = MIN_APPROVAL_BP.add(
+      MAX_APPROVAL_BP.sub(MIN_APPROVAL_BP)
+        .mul(approvalCurveBp)
+        .div(BASIS_POINTS),
+    );
+
+    return {
+      requiredParticipationBp,
+      requiredApprovalBp,
+    };
+  }
+
+  @method
+  public async commitActionState(toActionsHash: Field) {
+    this.toActionsHash.set(toActionsHash);
+  }
+
   @method
   public async tallyVotes(
+    // TODO: why do sideloaded proofs appear to have different wrap domain size limits than regular proofs?
     voteReducerProof: SideLoadedVoteReducerProof,
-    stakingLedgerToVotingLedgerProof: SideLoadedStakingLedgerToVotingLedgerProof
+    stakingLedgerToVotingLedgerProof: SideLoadedStakingLedgerToVotingLedgerProof,
+    treasuryOwnerAddress: PublicKey,
+    treasuryOwnerAccount: Account,
+    treasuryOwnerAccountWitness: PrefixedMerkleWitness36,
   ) {
     await this.requireNotPaused();
     const status = this.status.getAndRequireEquals();
@@ -79,24 +163,11 @@ export class TreasuryProposalSmartContract extends SmartContract {
 
     // proofs need to be verified here, even though they're already verified at the top level in the treasury owner contract
     voteReducerProof.verify(
-      TreasuryProposalSmartContract.voteReducerVerificationKey
+      TreasuryProposalSmartContract.voteReducerVerificationKey,
     );
     stakingLedgerToVotingLedgerProof.verify(
-      TreasuryProposalSmartContract.stakingLedgerToVotingLedgerVerificationKey
+      TreasuryProposalSmartContract.stakingLedgerToVotingLedgerVerificationKey,
     );
-
-    // TODO: add logic such as if the current period allows for vote tallying
-    // const actionState = this.account.actionState.getAndRequireEquals();
-    // TODO: add logic to check for all 5 existing possible action states
-    this.account.actionState.requireEquals(
-      voteReducerProof.publicOutput.toActionsHash
-    );
-
-    // TODO: is this already the historical 5 "slot" action hash precondition?
-    // actionState.assertEquals(
-    //   voteReducerProof.publicOutput.toActionsHash,
-    //   "toActionsHash does not match on chain state"
-    // );
 
     const {
       publicInput: voteReducerPublicInput,
@@ -116,16 +187,42 @@ export class TreasuryProposalSmartContract extends SmartContract {
 
     // TODO: cross check proofs inputs/outputs
 
+    this.toActionsHash
+      .getAndRequireEquals()
+      .equals(voteReducerPublicOutput.toActionsHash)
+      .assertTrue("toActionsHash does not match on chain state");
+
     // TODO: calculate quorum
     const { yay, nay, abstain } = voteReducerPublicOutput;
+    const proposalAmount = this.amount.getAndRequireEquals();
+    const stakingEpochDataLedgerHash =
+      this.stakingEpochDataLedgerHash.getAndRequireEquals();
+
+    const treasuryOwnerAccountLeaf = hashWithPrefix(
+      accountHashPrefix,
+      packToFields(Account.toHashInput(treasuryOwnerAccount)),
+    );
+    const calculatedStakingLedgerRoot =
+      treasuryOwnerAccountWitness.calculateRoot(
+        treasuryOwnerAccountLeaf,
+        accountLedgerHashPrefixes,
+      );
+    calculatedStakingLedgerRoot.assertEquals(
+      stakingEpochDataLedgerHash,
+      "Treasury owner account witness does not match staking ledger hash",
+    );
     const stakingEpochDataLedgerTotalCurrency =
       this.stakingEpochDataLedgerTotalCurrency.getAndRequireEquals();
     const totalParticipatingVotes = yay.add(nay).add(abstain);
 
+    const treasuryOwnerBalance = treasuryOwnerAccount.balance;
+    const { requiredParticipationBp, requiredApprovalBp } =
+      this.calculateAcceptanceCriteria(proposalAmount, treasuryOwnerBalance);
+
     // TODO: what about the remainder and precision handling?
-    const requiredParticipation = stakingEpochDataLedgerTotalCurrency.div(
-      REQUIRED_PARTICIPATION_PERCENTAGE
-    );
+    const requiredParticipation = stakingEpochDataLedgerTotalCurrency
+      .mul(requiredParticipationBp)
+      .div(BASIS_POINTS);
 
     Provable.log("totalParticipatingVotes", {
       totalParticipatingVotes,
@@ -139,39 +236,35 @@ export class TreasuryProposalSmartContract extends SmartContract {
 
     // TODO: make sure there's sufficient precision handling?
     const totalVotes = yay.add(nay);
-    const totalVotesDivByYay = totalVotes.mul(100).divMod(yay.mul(100));
-    const participationPercentage = UInt64.from(100).sub(
-      totalVotesDivByYay.rest.div(totalVotes)
-    );
+    totalVotes.greaterThan(UInt64.from(0)).assertTrue("No approval votes cast");
+    const approvalBp = yay.mul(BASIS_POINTS).div(totalVotes);
 
-    // participation was already checked above, so we can just check if there's more yay votes
-    const approved = participationPercentage.greaterThanOrEqual(
-      UInt64.from(REQUIRED_SUPERMAJORITY_PERCENTAGE)
-    );
+    // // participation was already checked above, so we can just check approval threshold
+    const approved = approvalBp.greaterThanOrEqual(requiredApprovalBp);
 
-    // TODO: we could issue events here with details of the vote math
+    // // TODO: we could issue events here with details of the vote math
 
     const voteResult = Provable.if(
       approved,
       ProposalStatus.APPROVED,
-      ProposalStatus.REJECTED
+      ProposalStatus.REJECTED,
     );
 
     this.status.set(voteResult);
   }
 
-  @method
-  public async update(proposal: Proposal) {
-    this.recipient.set(proposal.recipient);
-    this.amount.set(proposal.amount);
-    this.account.zkappUri.set(proposal.zkAppUri);
-  }
+  // @method
+  // public async update(proposal: Proposal) {
+  //   this.recipient.set(proposal.recipient);
+  //   this.amount.set(proposal.amount);
+  //   this.account.zkappUri.set(proposal.zkAppUri);
+  // }
 
   @method
-  public async execute(amountToPayOut: UInt64) {
+  public async execute(amountToPayOut: UInt64, recipient: PublicKey) {
     await this.requireNotPaused();
     const status = this.status.getAndRequireEquals();
-    const recipient = this.recipient.getAndRequireEquals();
+    const recipientHash = this.recipientHash.getAndRequireEquals();
     const amount = this.amount.getAndRequireEquals();
     // we keep track of paidOutAmount to ensure partial payouts are possible if the treasury has insufficient funds
     const paidOutAmount = this.paidOutAmount.getAndRequireEquals();
@@ -179,13 +272,17 @@ export class TreasuryProposalSmartContract extends SmartContract {
     const amountWithBond = amount.add(amount.div(BOND_AMOUNT_DIVISOR));
     const remainingAmount = amountWithBond.sub(paidOutAmount);
 
-    status
-      .equals(ProposalStatus.APPROVED)
-      .assertTrue("Proposal not approved");
-    
+    status.equals(ProposalStatus.APPROVED).assertTrue("Proposal not approved");
+
     remainingAmount
       .greaterThanOrEqual(amountToPayOut)
-      .assertTrue("Amount to pay out is greater than the remaining amount to pay out");
+      .assertTrue(
+        "Amount to pay out is greater than the remaining amount to pay out",
+      );
+
+    recipientHash
+      .equals(Poseidon.hash(recipient.toFields()))
+      .assertTrue("Recipient hash does not match on chain state");
 
     // we create the recipient AU here to ensure only the intended recipient can receive the funds
     const recipientAccountUpdate = AccountUpdate.create(recipient);
@@ -197,15 +294,15 @@ export class TreasuryProposalSmartContract extends SmartContract {
   }
 
   @method
-  public async pause() {
-    this.status.set(ProposalStatus.PAUSED);
-  }
-
-  @method
-  public async unpause() {
+  public async togglePause() {
     const status = this.status.getAndRequireEquals();
-    status.equals(ProposalStatus.PAUSED).assertTrue("Proposal is not paused");
-    // TODO: make sure setting the status back to unknown makes sense
-    this.status.set(ProposalStatus.UNKNOWN);
+    // if paused, unpause it, if not paused, pause it
+    const newStatus = Provable.if(
+      status.equals(ProposalStatus.PAUSED),
+      ProposalStatus.UNKNOWN,
+      ProposalStatus.PAUSED,
+    );
+
+    this.status.set(newStatus);
   }
 }
