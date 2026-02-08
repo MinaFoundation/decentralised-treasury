@@ -59,6 +59,7 @@ export class TreasuryProposalSmartContract extends SmartContract {
   public static voteReducerVerificationKey: VerificationKey;
   public static stakingLedgerToVotingLedgerVerificationKey: VerificationKey;
   public static permissionType: "proof" | "signature" = "proof";
+  public static emptyVotingLedgerRoot: Field;
 
   reducer = Reducer({ actionType: VoteAction });
 
@@ -170,6 +171,9 @@ export class TreasuryProposalSmartContract extends SmartContract {
       TreasuryProposalSmartContract.stakingLedgerToVotingLedgerVerificationKey,
     );
 
+    const stakingEpochDataLedgerHash =
+      this.stakingEpochDataLedgerHash.getAndRequireEquals();
+
     const {
       publicInput: voteReducerPublicInput,
       publicOutput: voteReducerPublicOutput,
@@ -184,15 +188,31 @@ export class TreasuryProposalSmartContract extends SmartContract {
       .equals(Reducer.initialActionState)
       .assertTrue("fromActionsHash should be the initial action state");
 
-    // TODO: check if all required inputs started at zero values
-    voteReducerProof.publicInput.fromActionsHash
+    voteReducerPublicInput.fromNullifierRoot
+      .equals(TreasuryProposalSmartContract.emptyVotingLedgerRoot)
+      .assertTrue("fromNullifierRoot does not match");
+
+    // check that vote reducer proof started tallying actions from the initial action state
+    voteReducerPublicInput.fromActionsHash
       .equals(Reducer.initialActionState)
       .assertTrue("fromActionsHash should be the initial action state");
 
-    // TODO: cross check proofs inputs/outputs
+    // check that vote reducer proof used the right voting ledger
     voteReducerPublicInput.votingLedgerRoot
       .equals(stakingLedgerToVotingLedgerPublicInput.votingLedgerRoot)
       .assertTrue("voting ledger root does not match");
+
+    new ActionStateHistory(voteReducerPublicInput.actionStateHistory)
+      .equals(new ActionStateHistory(ActionStateHistory.empty()))
+      .assertTrue("action state history does not match");
+
+    stakingLedgerToVotingLedgerPublicInput.stakingLedgerRoot
+      .equals(stakingEpochDataLedgerHash)
+      .assertTrue("staking ledger root does not match");
+
+    stakingLedgerToVotingLedgerPublicOutput.exhausted.assertTrue(
+      "staking ledger to voting ledger proof did not exhaust",
+    );
 
     this.toActionsHash
       .getAndRequireEquals()
@@ -201,8 +221,6 @@ export class TreasuryProposalSmartContract extends SmartContract {
 
     const { yay, nay, abstain } = voteReducerPublicOutput;
     const proposalAmount = this.amount.getAndRequireEquals();
-    const stakingEpochDataLedgerHash =
-      this.stakingEpochDataLedgerHash.getAndRequireEquals();
 
     treasuryOwnerAccount.pk
       .equals(treasuryOwnerPublicKey)

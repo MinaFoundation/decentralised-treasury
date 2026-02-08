@@ -13,7 +13,7 @@ export interface VotingLedger {
   getVotingAccount(publicKey: string): Promise<VotingAccount>;
   setVotingAccount(
     publicKey: string,
-    votingAccount: VotingAccount
+    votingAccount: VotingAccount,
   ): Promise<void>;
   getWitness(publicKey: string): Promise<PrefixedMerkleWitness256>;
   setLeaf(publicKey: string, leaf: VotingAccount): Promise<void>;
@@ -282,14 +282,14 @@ export const votingAccountLedgerHashPrefixes = [
 export const votingAccountHashPrefix = "MinaVotingAccount*********";
 export const emptyVotingAccountHash = hashWithPrefix(
   votingAccountHashPrefix,
-  VotingAccount.toHashInput(VotingAccount.empty())
+  VotingAccount.toHashInput(VotingAccount.empty()),
 );
 
 export class BaseVotingLedger implements VotingLedger {
   public merkleTree: PrefixedMerkleTree;
   public constructor(
     public votingAccountStorage: VotingAccountStorage,
-    public merkleTreeStorage: MerkleTreeStorage
+    public merkleTreeStorage: MerkleTreeStorage,
   ) {
     // reason why we use a 256 height instead of mimicking the staking ledger tree height is because
     // voting accounts might not exist in the staking ledger, as in the delegate address is not part of the staking ledger
@@ -297,30 +297,30 @@ export class BaseVotingLedger implements VotingLedger {
       256,
       emptyVotingAccountHash,
       votingAccountLedgerHashPrefixes,
-      this.merkleTreeStorage
+      this.merkleTreeStorage,
     );
   }
 
   public async getWitness(
-    publicKey: string
+    publicKey: string,
   ): Promise<PrefixedMerkleWitness256> {
     const index = publicKeyBase58ToBigInt(publicKey);
     return new PrefixedMerkleWitness256(
-      await this.merkleTree.getWitness(index)
+      await this.merkleTree.getWitness(index),
     );
   }
 
   public async setLeaf(
     publicKey: string,
-    votingAccount: VotingAccount
+    votingAccount: VotingAccount,
   ): Promise<void> {
     const index = publicKeyBase58ToBigInt(publicKey);
     await this.merkleTree.setLeaf(
       index,
       hashWithPrefix(
         votingAccountHashPrefix,
-        VotingAccount.toHashInput(votingAccount)
-      )
+        VotingAccount.toHashInput(votingAccount),
+      ),
     );
   }
 
@@ -333,7 +333,7 @@ export class BaseVotingLedger implements VotingLedger {
 
   public async setVotingAccount(
     publicKey: string,
-    votingAccount: VotingAccount
+    votingAccount: VotingAccount,
   ): Promise<void> {
     await this.votingAccountStorage.setVotingAccount(publicKey, votingAccount);
   }

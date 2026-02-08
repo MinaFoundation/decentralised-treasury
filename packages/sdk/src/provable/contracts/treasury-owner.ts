@@ -284,14 +284,6 @@ export class TreasuryOwnerSmartContract extends TokenContract {
       this.deriveTokenId(),
     );
 
-    Provable.log("tally votes vks", {
-      voteReducerVerificationKey:
-        TreasuryProposalSmartContract.voteReducerVerificationKey.hash,
-      stakingLedgerToVotingLedgerVerificationKey:
-        TreasuryProposalSmartContract.stakingLedgerToVotingLedgerVerificationKey
-          .hash,
-    });
-
     // proofs need to be verified at the top level here, not only in the nested proposal.tallyVotes method
     voteReducerProof.verify(
       TreasuryProposalSmartContract.voteReducerVerificationKey,

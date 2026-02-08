@@ -136,6 +136,8 @@ TreasuryProposalSmartContract.voteReducerVerificationKey =
   voteReducerVerificationKey;
 TreasuryProposalSmartContract.stakingLedgerToVotingLedgerVerificationKey =
   stakingLedgerToVotingLedgerVerificationKey;
+TreasuryProposalSmartContract.emptyVotingLedgerRoot =
+  await votingLedger.merkleTree.getRoot();
 
 console.time("compile TreasuryProposalSmartContract");
 await TreasuryProposalSmartContract.compile();

@@ -166,6 +166,39 @@ export class ActionStateHistory extends Struct({
       },
     });
   }
+
+  public equals(actionStateHistory: ActionStateHistory) {
+    return this.actionStateOne.hash
+      .equals(actionStateHistory.actionStateOne.hash)
+      .and(
+        this.actionStateOne.found.equals(
+          actionStateHistory.actionStateOne.found,
+        ),
+      )
+      .and(
+        this.actionStateTwo.hash.equals(actionStateHistory.actionStateTwo.hash),
+      )
+      .and(
+        this.actionStateTwo.found.equals(
+          actionStateHistory.actionStateTwo.found,
+        ),
+      )
+      .and(
+        this.actionStateThree.hash.equals(
+          actionStateHistory.actionStateThree.hash,
+        ),
+      )
+      .and(
+        this.actionStateThree.found.equals(
+          actionStateHistory.actionStateThree.found,
+        ),
+      )
+      .and(
+        this.actionStateFour.hash.equals(
+          actionStateHistory.actionStateFour.hash,
+        ),
+      );
+  }
 }
 
 /**
