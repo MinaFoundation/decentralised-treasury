@@ -136,8 +136,13 @@ TreasuryProposalSmartContract.voteReducerVerificationKey =
   voteReducerVerificationKey;
 TreasuryProposalSmartContract.stakingLedgerToVotingLedgerVerificationKey =
   stakingLedgerToVotingLedgerVerificationKey;
-TreasuryProposalSmartContract.emptyVotingLedgerRoot =
-  await votingLedger.merkleTree.getRoot();
+TreasuryProposalSmartContract.emptyNullifierRoot =
+  await nullifierLedger.getRoot();
+
+Provable.log(
+  "empty nullifier root",
+  TreasuryProposalSmartContract.emptyNullifierRoot,
+);
 
 console.time("compile TreasuryProposalSmartContract");
 await TreasuryProposalSmartContract.compile();
@@ -192,16 +197,6 @@ const treasuryProposalRecipientPublicKey =
 
 const dummyZkAppUri = "https://example.com";
 let treasuryOwnerBalanceSnapshot = UInt64.from(0);
-
-const votingAccount1 = new VotingAccount({ balance: UInt64.from(300) });
-const votingAccount2 = new VotingAccount({ balance: UInt64.from(100) });
-
-await votingLedger.setVotingAccount(voterPublicKey1.toBase58(), votingAccount1);
-
-await votingLedger.setVotingAccount(voterPublicKey2.toBase58(), votingAccount2);
-
-await votingLedger.setLeaf(voterPublicKey1.toBase58(), votingAccount1);
-await votingLedger.setLeaf(voterPublicKey2.toBase58(), votingAccount2);
 
 async function printNonce(publicKey: PublicKey, memo: string) {
   try {
@@ -304,6 +299,26 @@ it("should create a proposal", async () => {
     treasuryOwnerAccount.balance = treasuryOwnerBalanceSnapshot;
     await stakingLedger.setAccount(0n, treasuryOwnerAccount);
     await stakingLedger.setLeaf(0n, treasuryOwnerAccount);
+
+    const stakingLedgerAccount1 = {
+      ...Account.empty(),
+      pk: voterPublicKey1,
+      delegate: voterPublicKey1,
+      balance: UInt64.from(300),
+    };
+
+    const stakingLedgerAccount2 = {
+      ...Account.empty(),
+      pk: voterPublicKey2,
+      delegate: voterPublicKey2,
+      balance: UInt64.from(100),
+    };
+
+    await stakingLedger.setAccount(1n, stakingLedgerAccount1);
+    await stakingLedger.setAccount(2n, stakingLedgerAccount2);
+    await stakingLedger.setLeaf(1n, stakingLedgerAccount1);
+    await stakingLedger.setLeaf(2n, stakingLedgerAccount2);
+
     const stakingLedgerRoot = await stakingLedger.getRoot();
     Local.setNetworkState({
       ...Local.getNetworkState(),
@@ -541,19 +556,6 @@ it("should commit action state", async () => {
   Provable.log("raw actions", actions);
   Provable.log("voteActions", voteActions);
 
-  console.time("reduce batch");
-  const { proof } = await VoteReducer.reduceBatch(
-    {
-      fromActionsHash: Reducer.initialActionState,
-      votingLedgerRoot: await votingLedger.getRoot(),
-      fromNullifierRoot: await nullifierLedger.getRoot(),
-      actionStateHistory,
-    },
-    voteActions,
-  );
-  voteReducerProof = proof;
-  console.timeEnd("reduce batch");
-
   const treasuryOwnerAccount = await stakingLedger.getAccount(0n);
   const treasuryOwnerAccountWitness = await stakingLedger.getWitness(0n);
 
@@ -569,17 +571,42 @@ it("should commit action state", async () => {
     digestAccounts.push(await stakingLedger.getAccount(BigInt(i)));
   }
 
+  Provable.log("digest accounts", digestAccounts);
+
   console.time("digest ledger");
   const { proof: proof2 } = await StakingLedgerToVotingLedger.digest(
     digestInput,
     digestAccounts,
   );
-  stakingLedgerToVotingLedgerProof = proof2;
+  const { proof: exhaustProof } = await StakingLedgerToVotingLedger.exhaust(
+    proof2.publicInput,
+    proof2,
+  );
+  stakingLedgerToVotingLedgerProof = exhaustProof;
   console.timeEnd("digest ledger");
   Provable.log(
     "stakingLedgerToVotingLedgerProof",
     stakingLedgerToVotingLedgerProof.publicOutput,
   );
+  Provable.log("pretally treasury balance", treasuryOwnerAccount.balance);
+
+  Provable.log(
+    "vote reducer reduce batch from",
+    await nullifierLedger.getRoot(),
+  );
+  console.time("reduce batch");
+  const { proof } = await VoteReducer.reduceBatch(
+    {
+      fromActionsHash: Reducer.initialActionState,
+      votingLedgerRoot: await votingLedger.getRoot(),
+      fromNullifierRoot: await nullifierLedger.getRoot(),
+      actionStateHistory,
+    },
+    voteActions,
+  );
+  voteReducerProof = proof;
+  console.timeEnd("reduce batch");
+
   Provable.log("vote proof", voteReducerProof.publicOutput);
 
   Provable.log("preverify proofs", {
@@ -588,8 +615,6 @@ it("should commit action state", async () => {
       stakingLedgerToVotingLedgerProof,
     ),
   });
-
-  Provable.log("pretally treasury balance", treasuryOwnerAccount.balance);
 
   console.time("commit action state");
   const commitTx = await Mina.transaction(testAccount, async () => {
@@ -610,6 +635,8 @@ it("should commit action state", async () => {
 it("should tally votes", async () => {
   const treasuryOwnerAccount = await stakingLedger.getAccount(0n);
   const treasuryOwnerAccountWitness = await stakingLedger.getWitness(0n);
+
+  Provable.log("vote reducer proof tally", voteReducerProof.publicOutput);
 
   const tx = await Mina.transaction(testAccount, async () => {
     await treasuryOwner.tallyVotes(

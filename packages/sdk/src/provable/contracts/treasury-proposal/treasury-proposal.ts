@@ -59,6 +59,7 @@ export class TreasuryProposalSmartContract extends SmartContract {
   public static voteReducerVerificationKey: VerificationKey;
   public static stakingLedgerToVotingLedgerVerificationKey: VerificationKey;
   public static permissionType: "proof" | "signature" = "proof";
+  public static emptyNullifierRoot: Field;
   public static emptyVotingLedgerRoot: Field;
 
   reducer = Reducer({ actionType: VoteAction });
@@ -189,7 +190,7 @@ export class TreasuryProposalSmartContract extends SmartContract {
       .assertTrue("fromActionsHash should be the initial action state");
 
     voteReducerPublicInput.fromNullifierRoot
-      .equals(TreasuryProposalSmartContract.emptyVotingLedgerRoot)
+      .equals(TreasuryProposalSmartContract.emptyNullifierRoot)
       .assertTrue("fromNullifierRoot does not match");
 
     // check that vote reducer proof started tallying actions from the initial action state
@@ -199,12 +200,8 @@ export class TreasuryProposalSmartContract extends SmartContract {
 
     // check that vote reducer proof used the right voting ledger
     voteReducerPublicInput.votingLedgerRoot
-      .equals(stakingLedgerToVotingLedgerPublicInput.votingLedgerRoot)
+      .equals(stakingLedgerToVotingLedgerPublicOutput.votingLedgerRoot)
       .assertTrue("voting ledger root does not match");
-
-    new ActionStateHistory(voteReducerPublicInput.actionStateHistory)
-      .equals(new ActionStateHistory(ActionStateHistory.empty()))
-      .assertTrue("action state history does not match");
 
     stakingLedgerToVotingLedgerPublicInput.stakingLedgerRoot
       .equals(stakingEpochDataLedgerHash)

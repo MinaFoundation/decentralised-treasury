@@ -167,35 +167,55 @@ export class ActionStateHistory extends Struct({
     });
   }
 
-  public equals(actionStateHistory: ActionStateHistory) {
-    return this.actionStateOne.hash
-      .equals(actionStateHistory.actionStateOne.hash)
+  public static equals(
+    actionStateHistory1: ActionStateHistory,
+    actionStateHistory2: ActionStateHistory,
+  ): Bool {
+    return actionStateHistory1.actionStateOne.hash
+      .equals(actionStateHistory2.actionStateOne.hash)
       .and(
-        this.actionStateOne.found.equals(
-          actionStateHistory.actionStateOne.found,
+        actionStateHistory1.actionStateOne.found.equals(
+          actionStateHistory2.actionStateOne.found,
         ),
       )
       .and(
-        this.actionStateTwo.hash.equals(actionStateHistory.actionStateTwo.hash),
-      )
-      .and(
-        this.actionStateTwo.found.equals(
-          actionStateHistory.actionStateTwo.found,
+        actionStateHistory1.actionStateTwo.hash.equals(
+          actionStateHistory2.actionStateTwo.hash,
         ),
       )
       .and(
-        this.actionStateThree.hash.equals(
-          actionStateHistory.actionStateThree.hash,
+        actionStateHistory1.actionStateTwo.found.equals(
+          actionStateHistory2.actionStateTwo.found,
         ),
       )
       .and(
-        this.actionStateThree.found.equals(
-          actionStateHistory.actionStateThree.found,
+        actionStateHistory1.actionStateThree.hash.equals(
+          actionStateHistory2.actionStateThree.hash,
         ),
       )
       .and(
-        this.actionStateFour.hash.equals(
-          actionStateHistory.actionStateFour.hash,
+        actionStateHistory1.actionStateThree.found.equals(
+          actionStateHistory2.actionStateThree.found,
+        ),
+      )
+      .and(
+        actionStateHistory1.actionStateFour.hash.equals(
+          actionStateHistory2.actionStateFour.hash,
+        ),
+      )
+      .and(
+        actionStateHistory1.actionStateFour.found.equals(
+          actionStateHistory2.actionStateFour.found,
+        ),
+      )
+      .and(
+        actionStateHistory1.actionStateFive.hash.equals(
+          actionStateHistory2.actionStateFive.hash,
+        ),
+      )
+      .and(
+        actionStateHistory1.actionStateFive.found.equals(
+          actionStateHistory2.actionStateFive.found,
         ),
       );
   }
