@@ -153,6 +153,7 @@ export class TreasuryProposalSmartContract extends SmartContract {
     // TODO: why do sideloaded proofs appear to have different wrap domain size limits than regular proofs?
     voteReducerProof: SideLoadedVoteReducerProof,
     stakingLedgerToVotingLedgerProof: SideLoadedStakingLedgerToVotingLedgerProof,
+    treasuryOwnerPublicKey: PublicKey,
     treasuryOwnerAccount: Account,
     treasuryOwnerAccountWitness: PrefixedMerkleWitness36,
   ) {
@@ -204,7 +205,7 @@ export class TreasuryProposalSmartContract extends SmartContract {
       this.stakingEpochDataLedgerHash.getAndRequireEquals();
 
     treasuryOwnerAccount.pk
-      .equals(this.self.publicKey)
+      .equals(treasuryOwnerPublicKey)
       .assertTrue("Treasury owner account public key does not match");
 
     const treasuryOwnerAccountLeaf = hashWithPrefix(
