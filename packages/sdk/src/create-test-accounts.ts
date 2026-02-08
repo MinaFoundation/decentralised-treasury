@@ -37,7 +37,6 @@ function getAccount() {
 }
 // TODO: we should NOT always use a new random account dataset for testing
 export async function createTestAccounts(numberOfAccounts: number) {
-  console.log(`Creating ${numberOfAccounts} accounts...`);
   const accounts: any[] = [];
 
   for (let i = 0; i < numberOfAccounts; i++) {

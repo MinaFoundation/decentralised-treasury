@@ -68,19 +68,19 @@ export class StakingLedgerToVotingLedgerDigestTrace {
   }
 
   public static toJSON(
-    trace: StakingLedgerToVotingLedgerDigestTrace
+    trace: StakingLedgerToVotingLedgerDigestTrace,
   ): StakingLedgerToVotingLedgerDigestTraceJSON {
     return {
       publicInput: StakingLedgerToVotingLedgerProgramInput.toJSON(
-        trace.publicInput
+        trace.publicInput,
       ),
       privateInput: {
         accounts: trace.privateInput.accounts.map((account) =>
-          Account.toJSON(account)
+          Account.toJSON(account),
         ),
       },
       stakingLedgerWitnesses: Object.entries(
-        trace.stakingLedgerWitnesses
+        trace.stakingLedgerWitnesses,
       ).reduce(
         (acc, [key, value]) => {
           acc[key] = value.map((witness) => witness.toJSON());
@@ -89,16 +89,16 @@ export class StakingLedgerToVotingLedgerDigestTrace {
         {} as Record<
           string,
           ReturnType<typeof PrefixedMerkleWitness36.toJSON>[]
-        >
+        >,
       ),
       votingAccounts: Object.entries(trace.votingAccounts).reduce(
         (acc, [key, value]) => {
           acc[key] = value.map((votingAccount) =>
-            VotingAccount.toJSON(votingAccount)
+            VotingAccount.toJSON(votingAccount),
           );
           return acc;
         },
-        {} as Record<string, ReturnType<typeof VotingAccount.toJSON>[]>
+        {} as Record<string, ReturnType<typeof VotingAccount.toJSON>[]>,
       ),
       votingLedgerWitnesses: Object.entries(trace.votingLedgerWitnesses).reduce(
         (acc, [key, value]) => {
@@ -108,54 +108,54 @@ export class StakingLedgerToVotingLedgerDigestTrace {
         {} as Record<
           string,
           ReturnType<typeof PrefixedMerkleWitness256.toJSON>[]
-        >
+        >,
       ),
     };
   }
 
   public static fromJSON(
-    json: StakingLedgerToVotingLedgerDigestTraceJSON
+    json: StakingLedgerToVotingLedgerDigestTraceJSON,
   ): StakingLedgerToVotingLedgerDigestTrace {
     return new StakingLedgerToVotingLedgerDigestTrace({
       publicInput: StakingLedgerToVotingLedgerProgramInput.fromJSON(
-        json.publicInput
+        json.publicInput,
       ),
       privateInput: {
         accounts: json.privateInput.accounts.map((account) =>
-          Account.fromJSON(account)
+          Account.fromJSON(account),
         ),
       },
       stakingLedgerWitnesses: Object.entries(
-        json.stakingLedgerWitnesses
+        json.stakingLedgerWitnesses,
       ).reduce(
         (acc, [key, value]) => {
           acc[key] = value.map((witness) =>
-            PrefixedMerkleWitness36.fromJSON(witness)
+            PrefixedMerkleWitness36.fromJSON(witness),
           );
           return acc;
         },
-        {} as Record<string, PrefixedMerkleWitness36[]>
+        {} as Record<string, PrefixedMerkleWitness36[]>,
       ),
       votingAccounts: Object.entries(json.votingAccounts).reduce(
         (acc, [key, value]) => {
           acc[key] = value.map((votingAccount) =>
-            VotingAccount.fromJSON(votingAccount)
+            VotingAccount.fromJSON(votingAccount),
           );
           return acc;
         },
-        {} as Record<string, ReturnType<typeof VotingAccount.fromJSON>[]>
+        {} as Record<string, ReturnType<typeof VotingAccount.fromJSON>[]>,
       ),
       votingLedgerWitnesses: Object.entries(json.votingLedgerWitnesses).reduce(
         (acc, [key, value]) => {
           acc[key] = value.map((witness) =>
-            PrefixedMerkleWitness256.fromJSON(witness)
+            PrefixedMerkleWitness256.fromJSON(witness),
           );
           return acc;
         },
         {} as Record<
           string,
           ReturnType<typeof PrefixedMerkleWitness256.fromJSON>[]
-        >
+        >,
       ),
     });
   }
@@ -165,7 +165,7 @@ export class StakingLedgerToVotingLedgerTracer {
   constructor(
     public stakingLedger: StakingLedger,
     public votingLedger: VotingLedger,
-    public traceStorage: StakingLedgerToVotingLedgerDigestTraceStorage
+    public traceStorage: StakingLedgerToVotingLedgerDigestTraceStorage,
   ) {}
 
   public async close(): Promise<void> {
@@ -185,11 +185,11 @@ export class StakingLedgerToVotingLedgerTracer {
     endIndex: number = Infinity,
     onTraceComplete?: (
       index: number,
-      trace: StakingLedgerToVotingLedgerDigestTrace
-    ) => void
+      trace: StakingLedgerToVotingLedgerDigestTrace,
+    ) => void,
   ) {
     const recordingStakingLedger = new RecordingStakingLedger(
-      this.stakingLedger
+      this.stakingLedger,
     );
 
     const recordingVotingLedger = new RecordingVotingLedger(this.votingLedger);
@@ -212,7 +212,7 @@ export class StakingLedgerToVotingLedgerTracer {
       for (let j = 0; j < ACCOUNT_BATCH_SIZE; j++) {
         const accountIndex = sliceStartIndex + j;
         const account = await this.stakingLedger.getAccount(
-          BigInt(accountIndex)
+          BigInt(accountIndex),
         );
 
         accountsSlice.push(account);
@@ -224,16 +224,15 @@ export class StakingLedgerToVotingLedgerTracer {
       }
 
       const publicInput: StakingLedgerToVotingLedgerProgramInput = {
-        index: UInt32.from(i * ACCOUNT_BATCH_SIZE),
+        index: UInt64.from(i * ACCOUNT_BATCH_SIZE),
         stakingLedgerRoot,
         votingLedgerRoot,
-        totalCurrency: publicOutput?.totalCurrency ?? UInt64.from(0),
       };
 
       let { publicOutput: currentPublicOutput } =
         await StakingLedgerToVotingLedger.rawMethods.digest(
           publicInput,
-          accountsSlice
+          accountsSlice,
         );
 
       publicOutput = currentPublicOutput;

@@ -18,7 +18,6 @@ import { RedisVotingLedger } from "../../../src/ledgers/voting-ledger/redis-voti
 import { RedisNullifierLedger } from "../../../src/ledgers/nullifier-ledger/redis-nullifier-ledger.js";
 import { RedisVoteReducerRunBatchTraceStorage } from "../../../src/storage/redis/redis-vote-reducer-run-batch-trace-storage.js";
 import { createTestAccounts } from "../../../src/create-test-accounts.js";
-import { createDummyVoteActions } from "../../utils.js";
 
 it("should serialize and deserialize a vote reducer trace", async () => {
   const [account] = await createTestAccounts(1);

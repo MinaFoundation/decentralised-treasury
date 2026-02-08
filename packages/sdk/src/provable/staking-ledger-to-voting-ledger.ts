@@ -1,6 +1,5 @@
 import _ from "lodash";
 import {
-  // Account,
   Bool,
   DynamicProof,
   Field,
@@ -11,7 +10,6 @@ import {
   SelfProof,
   Struct,
   // TODO: replace with UInt36 or larger, since the ledger is height 36
-  UInt32,
   UInt64,
   ZkProgram,
 } from "o1js";
@@ -48,21 +46,24 @@ export const VOTING_LEDGER_TREE_HEIGHT = 256;
 export const ACCOUNT_BATCH_SIZE = 5;
 export const AccountBatch = Provable.Array(Account, ACCOUNT_BATCH_SIZE);
 
+const StakingLedgerToVotingLedgerErrors = {
+  stakingLedgerIndexMismatch: "staking ledger tree account index not matching",
+  stakingLedgerRootMismatch: "staking ledger tree account root not matching",
+  votingLedgerIndexMismatch: "voting ledger witness index not matching",
+  votingLedgerRootMismatch: "voting ledger root does not match",
+} as const;
+
 export class StakingLedgerToVotingLedgerProgramInput extends Struct({
-  index: UInt32,
+  index: UInt64,
   stakingLedgerRoot: Field,
-  // TODO: use 2^32 tree and double check the voting account's witness index against the staking ledger witness index
-  votingLedgerRoot: Field, // empty root
-  totalCurrency: UInt64,
-}) { }
+  votingLedgerRoot: Field,
+}) {}
 
 export class StakingLedgerToVotingLedgerProgramOutput extends Struct({
-  index: UInt32,
-  votingLedgerRoot: Field, // final root
-  // votingLedgerST  -> explore an idea of instructions --> aws lambda limits parelelization to 7k instances at a given time per region?
+  index: UInt64,
+  votingLedgerRoot: Field,
   exhausted: Bool,
-  totalCurrency: UInt64,
-}) { }
+}) {}
 
 export interface StakingLedgerToVotingLedgerTrace {
   publicInput: StakingLedgerToVotingLedgerProgramInput;
@@ -71,6 +72,9 @@ export interface StakingLedgerToVotingLedgerTrace {
   };
 }
 
+/**
+ * Prove transformation of the staking ledger into a voting ledger
+ */
 export const StakingLedgerToVotingLedger = ZkProgram({
   name: "staking-ledger-to-voting-ledger",
   publicInput: StakingLedgerToVotingLedgerProgramInput,
@@ -86,7 +90,7 @@ export const StakingLedgerToVotingLedger = ZkProgram({
         proof: SelfProof<
           StakingLedgerToVotingLedgerProgramInput,
           StakingLedgerToVotingLedgerProgramOutput
-        >
+        >,
       ) => {
         const context = stakingLedgerToVotingLedgerContext.get();
         proof.verify();
@@ -96,9 +100,11 @@ export const StakingLedgerToVotingLedger = ZkProgram({
 
         // ensure current public input matches the public input of the proof
         Poseidon.hash(
-          StakingLedgerToVotingLedgerProgramInput.toFields(publicInput)
+          StakingLedgerToVotingLedgerProgramInput.toFields(publicInput),
         ).assertEquals(
-          Poseidon.hash(StakingLedgerToVotingLedgerProgramInput.toFields(input))
+          Poseidon.hash(
+            StakingLedgerToVotingLedgerProgramInput.toFields(input),
+          ),
         );
 
         // ensure the next index is empty in the staking ledger
@@ -109,22 +115,22 @@ export const StakingLedgerToVotingLedger = ZkProgram({
           PrefixedMerkleWitness36,
           async () => {
             return await context.stakingLedger.getWitness(
-              BigInt(nextIndex.toBigint())
+              BigInt(nextIndex.toBigInt()),
             );
-          }
+          },
         );
 
         const emptyAccount = Account.empty();
         const emptyAccountLeaf = hashWithPrefix(
           accountHashPrefix,
-          packToFields(Account.toHashInput(emptyAccount))
+          packToFields(Account.toHashInput(emptyAccount)),
         );
 
         const calculatedIndex = witness.calculateIndex();
         // TODO: use whatever the empty value is in the staking ledger tree
         const calculatedRoot = witness.calculateRoot(
           emptyAccountLeaf,
-          accountLedgerHashPrefixes
+          accountLedgerHashPrefixes,
         );
 
         // assert that the empty placeholder we're working with is indeed part of the staking ledger
@@ -153,10 +159,9 @@ export const StakingLedgerToVotingLedger = ZkProgram({
         proof2: SelfProof<
           StakingLedgerToVotingLedgerProgramInput,
           StakingLedgerToVotingLedgerProgramOutput
-        >
+        >,
       ) => {
-        let { index, stakingLedgerRoot, votingLedgerRoot, totalCurrency } =
-          publicInput;
+        let { index, stakingLedgerRoot, votingLedgerRoot } = publicInput;
 
         proof1.verify();
         proof2.verify();
@@ -167,23 +172,21 @@ export const StakingLedgerToVotingLedger = ZkProgram({
         const output2 = proof2.publicOutput;
 
         Poseidon.hash(
-          StakingLedgerToVotingLedgerProgramInput.toFields(publicInput)
+          StakingLedgerToVotingLedgerProgramInput.toFields(publicInput),
         ).assertEquals(
           Poseidon.hash(
-            StakingLedgerToVotingLedgerProgramInput.toFields(input1)
-          )
+            StakingLedgerToVotingLedgerProgramInput.toFields(input1),
+          ),
         );
 
-        input1.stakingLedgerRoot.assertEquals(input1.stakingLedgerRoot);
+        input1.stakingLedgerRoot.assertEquals(input2.stakingLedgerRoot);
         output1.index.add(1).assertEquals(input2.index);
         output1.votingLedgerRoot.assertEquals(input2.votingLedgerRoot);
-        output1.totalCurrency.assertEquals(input2.totalCurrency);
 
         return {
           publicOutput: {
             index: output2.index,
             votingLedgerRoot: output2.votingLedgerRoot,
-            totalCurrency: output2.totalCurrency,
             exhausted: Bool(false),
           },
         };
@@ -193,69 +196,52 @@ export const StakingLedgerToVotingLedger = ZkProgram({
      * Prove transformation of a subset of the staking ledger into a rolling version of the voting ledger
      */
     digest: {
-      // TODO: accounts could come served via a witness from a service / dependency
       privateInputs: [Provable.Array(Account, ACCOUNT_BATCH_SIZE)],
       method: async (
         publicInput: StakingLedgerToVotingLedgerProgramInput,
-        accounts: Account[]
+        accounts: Account[],
       ) => {
         const context = stakingLedgerToVotingLedgerContext.get();
-        let { index, stakingLedgerRoot, votingLedgerRoot, totalCurrency } =
-          publicInput;
+        let { index, stakingLedgerRoot, votingLedgerRoot } = publicInput;
 
         for (let i = 0; i < ACCOUNT_BATCH_SIZE; i++) {
           const account = accounts[i];
 
-          // TODO: handle cases where the index points to an empty account / dummy account
           // check if account is in the staking ledger
           let accountWitness = await Provable.witnessAsync(
             PrefixedMerkleWitness36,
             async () => {
-              return await context.stakingLedger.getWitness(index.toBigint());
-            }
-          );
-
-          const emptyAccount = Account.empty();
-          const emptyAccountLeaf = hashWithPrefix(
-            accountHashPrefix,
-            packToFields(Account.toHashInput(emptyAccount))
+              return await context.stakingLedger.getWitness(index.toBigInt());
+            },
           );
 
           const accountLeaf = hashWithPrefix(
             accountHashPrefix,
-            packToFields(Account.toHashInput(account))
+            packToFields(Account.toHashInput(account)),
           );
 
           const calculatedStakingLedgerIndex = accountWitness.calculateIndex();
           const calculatedStakingLedgerRoot = accountWitness.calculateRoot(
             accountLeaf,
-            accountLedgerHashPrefixes
-          );
-          const calculatedEmptyStakingLedgerRoot = accountWitness.calculateRoot(
-            emptyAccountLeaf,
-            accountLedgerHashPrefixes
+            accountLedgerHashPrefixes,
           );
 
           // assert that we're working with an account at the correct index
           calculatedStakingLedgerIndex.assertEquals(
             index.toFields()[0],
-            "staking ledger tree account index not matching"
+            StakingLedgerToVotingLedgerErrors.stakingLedgerIndexMismatch,
           );
 
           // assert that the account we're working with is indeed part of the staking ledger
           calculatedStakingLedgerRoot
             .equals(stakingLedgerRoot)
-            // TODO: don't think we need isEmpty checks anymore since real ledger empty entry is an actual empty account not Field(0)
-            // if the account is a dummy, we check the root against a root calculated with an empty account placeholder
-            .or(
-              Account.isEmpty(account).and(
-                calculatedEmptyStakingLedgerRoot.equals(stakingLedgerRoot)
-              )
-            )
-            .assertTrue("staking ledger tree account root not matching");
+            .assertTrue(
+              StakingLedgerToVotingLedgerErrors.stakingLedgerRootMismatch,
+            );
 
           // TODO: fix the logic for determining if its a token account, once we start using the real account struct
           // token accounts have empty delegates, other accounts have either self address or a real delegate address
+          // token accounts should have their delegates set to empty, but we need to confirm this with someone from o1labs
           const delegateAddress = account.delegate; // TODO: why is this optional in TS?
           // const isMinaAccount = delegateAddress.equals(PublicKey.empty()).not();
 
@@ -267,12 +253,12 @@ export const StakingLedgerToVotingLedger = ZkProgram({
                 .get()
                 .votingLedger.getVotingAccount(delegateAddress.toBase58());
               return account;
-            }
+            },
           );
 
           const votingAccountHash = hashWithPrefix(
             votingAccountHashPrefix,
-            VotingAccount.toHashInput(votingAccount)
+            VotingAccount.toHashInput(votingAccount),
           );
 
           // load delegate account and check its inclusion in the voting ledger
@@ -281,52 +267,41 @@ export const StakingLedgerToVotingLedger = ZkProgram({
             async () => {
               return await stakingLedgerToVotingLedgerContext
                 .get()
-                .votingLedger.getWitness(
-                  delegateAddress.toBase58()
-                );
-            }
+                .votingLedger.getWitness(delegateAddress.toBase58());
+            },
           );
 
           const calculatedVotingAccountIndex =
             votingAccountWitness.calculateIndex();
           const calculatedVotingLedgerRoot = votingAccountWitness.calculateRoot(
             votingAccountHash,
-            votingAccountLedgerHashPrefixes
+            votingAccountLedgerHashPrefixes,
           );
-          const calculatedEmptyVotingLedgerRoot =
-            votingAccountWitness.calculateRoot(
-              emptyVotingAccountHash,
-              votingAccountLedgerHashPrefixes
-            );
 
+          // assert that the witness index for the voting account matches the delegate address
           calculatedVotingAccountIndex.assertEquals(
             Poseidon.hash(delegateAddress.toFields()),
-            "voting ledger witness index not matching"
+            StakingLedgerToVotingLedgerErrors.votingLedgerIndexMismatch,
           );
 
           // assert that the account we're working with is indeed part of the voting ledger
           calculatedVotingLedgerRoot
             .equals(votingLedgerRoot)
-            // or if the voting ledger entry is empty, ensure that a dummy account is used
-            .or(
-              VotingAccount.isEmpty(votingAccount).and(
-                calculatedEmptyVotingLedgerRoot.equals(votingLedgerRoot)
-              )
-            )
-            .assertTrue("voting ledger root does not match");
+            .assertTrue(
+              StakingLedgerToVotingLedgerErrors.votingLedgerRootMismatch,
+            );
 
-          // !!! TODO: balance contains unvested tokens, need to subtract the vested amount
-          totalCurrency = totalCurrency.add(account.balance);
           // append updated delegate account to the new voting weight ledger
           votingAccount.balance = votingAccount.balance.add(account.balance);
+
           const updatedVotingAccountHash = hashWithPrefix(
             votingAccountHashPrefix,
-            VotingAccount.toHashInput(votingAccount)
+            VotingAccount.toHashInput(votingAccount),
           );
 
           votingLedgerRoot = votingAccountWitness.calculateRoot(
             updatedVotingAccountHash,
-            votingAccountLedgerHashPrefixes
+            votingAccountLedgerHashPrefixes,
           );
 
           // TODO: if it crashes here, tracing will have a problem recovering
@@ -338,11 +313,11 @@ export const StakingLedgerToVotingLedger = ZkProgram({
           await Provable.witnessAsync(Field, async () => {
             await context.votingLedger.setVotingAccount(
               delegateAddress.toBase58(),
-              votingAccount
+              votingAccount,
             );
             await context.votingLedger.setLeaf(
               delegateAddress.toBase58(),
-              votingAccount
+              votingAccount,
             );
             return Field(0);
           });
@@ -360,7 +335,6 @@ export const StakingLedgerToVotingLedger = ZkProgram({
             index: index.sub(1),
             exhausted: Bool(false),
             votingLedgerRoot,
-            totalCurrency,
           },
         };
       },
@@ -377,4 +351,4 @@ export class SideLoadedStakingLedgerToVotingLedgerProof extends DynamicProof<
   static maxProofsVerified = 2 as const;
 }
 
-export class StakingLedgerToVotingLedgerProof extends StakingLedgerToVotingLedger.Proof { }
+export class StakingLedgerToVotingLedgerProof extends StakingLedgerToVotingLedger.Proof {}

@@ -25,7 +25,6 @@ import {
   VoteReducer,
   voteReducerContext,
 } from "../provable/contracts/treasury-proposal/vote-reducer.js";
-import { createDummyVoteActions } from "test/utils.js";
 import { SideLoadedStakingLedgerToVotingLedgerProof } from "../provable/staking-ledger-to-voting-ledger.js";
 import { PrefixedMerkleWitness36 } from "../provable/merkle-tree/prefixed-merkle-tree.js";
 import { VotingAccount } from "../provable/voting-account.js";
@@ -35,6 +34,10 @@ import { MemoryVotingAccountStorage } from "../storage/memory-voting-account-sto
 import { MemoryMerkleTreeStorage } from "../storage/memory-merkle-tree-storage.js";
 import { MemoryVoteNullifierStorage } from "../storage/memory-vote-nullifier-storage.js";
 import { readFileSync, writeFileSync } from "fs";
+
+const createDummyVoteActions = (count: number) => {
+  return Array.from({ length: count }, () => VoteAction.dummy());
+};
 
 export default function tallyVotesCommandFactory(program: Command) {
   program

@@ -95,6 +95,7 @@ export class TreasuryProposalSmartContract extends SmartContract {
     return Provable.if(a.lessThan(b), a, b);
   }
 
+  // TODO: implement UInt128 to handle overflows of UInt64 multiplication
   calculateAcceptanceCriteria(proposalAmount: UInt64, treasuryBalance: UInt64) {
     // ratio in basis points, capped at 100%
     const ratioBp = this.minUInt64(
@@ -184,15 +185,20 @@ export class TreasuryProposalSmartContract extends SmartContract {
       .assertTrue("fromActionsHash should be the initial action state");
 
     // TODO: check if all required inputs started at zero values
+    voteReducerProof.publicInput.fromActionsHash
+      .equals(Reducer.initialActionState)
+      .assertTrue("fromActionsHash should be the initial action state");
 
     // TODO: cross check proofs inputs/outputs
+    voteReducerPublicInput.votingLedgerRoot
+      .equals(stakingLedgerToVotingLedgerPublicInput.votingLedgerRoot)
+      .assertTrue("voting ledger root does not match");
 
     this.toActionsHash
       .getAndRequireEquals()
       .equals(voteReducerPublicOutput.toActionsHash)
       .assertTrue("toActionsHash does not match on chain state");
 
-    // TODO: calculate quorum
     const { yay, nay, abstain } = voteReducerPublicOutput;
     const proposalAmount = this.amount.getAndRequireEquals();
     const stakingEpochDataLedgerHash =
@@ -252,13 +258,6 @@ export class TreasuryProposalSmartContract extends SmartContract {
 
     this.status.set(voteResult);
   }
-
-  // @method
-  // public async update(proposal: Proposal) {
-  //   this.recipient.set(proposal.recipient);
-  //   this.amount.set(proposal.amount);
-  //   this.account.zkappUri.set(proposal.zkAppUri);
-  // }
 
   @method
   public async execute(amountToPayOut: UInt64, recipient: PublicKey) {

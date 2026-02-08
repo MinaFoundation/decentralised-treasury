@@ -36,11 +36,11 @@ import { hashWithPrefix } from "../hashing-helpers.js";
 import { Proposal } from "./treasury-proposal/treasury-proposal.js";
 import { BOND_AMOUNT_DIVISOR } from "./treasury-constants.js";
 import { accountLedgerHashPrefixes } from "src/ledgers/staking-ledger/staking-ledger.js";
+import { TreasuryPauseControllerSmartContract } from "./treasury-pause-controller/treasury-pause-controller.js";
 import {
   MultisigSignature,
   MultisigSignatures,
-  TreasuryPauseControllerSmartContract,
-} from "./treasury-pause-controller.js";
+} from "./treasury-pause-controller/multisig-signatures.js";
 
 // 7140 slots = ~2 weeks, this is the mainnet configuration
 export const LIFECYCLE_PERIOD_DURATION = UInt32.from(7140);
@@ -65,6 +65,15 @@ export class TreasuryOwnerSmartContract extends TokenContract {
   public static lifecyclePeriodDuration = LIFECYCLE_PERIOD_DURATION;
   public static treasuryDeployedAtSlot: UInt32;
   public static pauseControllerPublicKey: PublicKey;
+
+  public static permissions = {
+    ...Permissions.allImpossible(),
+    editState: Permissions.proof(),
+    access: Permissions.proof(),
+    incrementNonce: Permissions.proof(),
+    setVerificationKey:
+      Permissions.VerificationKey.impossibleDuringCurrentVersion(),
+  };
 
   @state(UInt32) treasuryDeployedAtSlot = State<UInt32>();
   @state(PublicKey) pauseControllerPublicKey = State<PublicKey>();
@@ -93,6 +102,7 @@ export class TreasuryOwnerSmartContract extends TokenContract {
 
   public init() {
     super.init();
+    this.account.permissions.set(TreasuryOwnerSmartContract.permissions);
     this.treasuryDeployedAtSlot.set(
       TreasuryOwnerSmartContract.treasuryDeployedAtSlot,
     );
@@ -245,6 +255,8 @@ export class TreasuryOwnerSmartContract extends TokenContract {
       proposalLifecycleId,
     );
 
+    Vote.assertValid(vote);
+
     await proposal.vote({
       vote,
       publicKey,
@@ -299,14 +311,6 @@ export class TreasuryOwnerSmartContract extends TokenContract {
 
     // TODO: is this safe and correct?
     const treasuryOwnerPublicKey = this.self.publicKey;
-
-    // TODO: add logic to verify chain of AUs proving action state coherence
-
-    Provable.log(
-      "action history in tally votes",
-      voteReducerProof.publicOutput.toActionsHash,
-      voteReducerProof.publicOutput.actionStateHistory,
-    );
 
     voteReducerProof.publicOutput.toActionsHash
       .equals(

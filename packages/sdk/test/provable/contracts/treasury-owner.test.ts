@@ -6,17 +6,16 @@ import {
   LifecyclePeriod,
   TreasuryOwnerSmartContract,
 } from "../../../src/provable/contracts/treasury-owner.js";
+import { TreasuryPauseControllerSmartContract } from "../../../src/provable/contracts/treasury-pause-controller/treasury-pause-controller.js";
 import {
   MultisigSignature,
   MultisigSignatures,
-  TreasuryPauseControllerSmartContract,
-} from "../../../src/provable/contracts/treasury-pause-controller.js";
+} from "../../../src/provable/contracts/treasury-pause-controller/multisig-signatures.js";
 import {
   AccountUpdate,
   fetchAccount,
   Field,
   Mina,
-  Poseidon,
   PrivateKey,
   Provable,
   PublicKey,
@@ -51,10 +50,9 @@ import {
 } from "../../../src/provable/staking-ledger-to-voting-ledger.js";
 import { VotingAccount } from "../../../src/provable/voting-account.js";
 import { Account } from "../../../src/provable/account.js";
-import {
-  buildActionStateHistory,
-  createDummyVoteActions,
-} from "../../../test/utils.js";
+import { createVoteReducerTestContext } from "../context/contracts/vote-reducer-context.js";
+
+const voteReducerTestContext = createVoteReducerTestContext();
 import { RedisVotingLedger } from "../../../src/ledgers/voting-ledger/redis-voting-ledger.js";
 import { RedisNullifierLedger } from "../../../src/ledgers/nullifier-ledger/redis-nullifier-ledger.js";
 import { RedisStakingLedger } from "../../../src/ledgers/staking-ledger/redis-staking-ledger.js";
@@ -113,14 +111,12 @@ const multisigSigners: [PrivateKey, PublicKey][] = [
   [multisigPrivateKey5, multisigPublicKey5],
 ];
 
-const multiSigCommitment = Poseidon.hash([
-  ...[
-    multisigPublicKey1,
-    multisigPublicKey2,
-    multisigPublicKey3,
-    multisigPublicKey4,
-    multisigPublicKey5,
-  ].flatMap((participant) => participant.toFields()),
+const multiSigCommitment = MultisigSignatures.createCommitment([
+  multisigPublicKey1,
+  multisigPublicKey2,
+  multisigPublicKey3,
+  multisigPublicKey4,
+  multisigPublicKey5,
 ]);
 
 console.log("compiling vote reducer");
@@ -224,7 +220,6 @@ it("should compile", async () => {
 });
 
 it("should create a proposal", async () => {
-  TreasuryPauseControllerSmartContract.multisigCommitment = multiSigCommitment;
   await (async () => {
     console.log("deploying pause controller");
     const tx = await Mina.transaction(testAccount, async () => {
@@ -532,11 +527,14 @@ it("should commit action state", async () => {
     .map((action) => VoteAction.fromFields(action));
 
   const voteActions = [
-    ...createDummyVoteActions(VOTE_ACTION_BATCH_SIZE - 2),
+    ...voteReducerTestContext.createDummyVoteActions(
+      VOTE_ACTION_BATCH_SIZE - 2,
+    ),
     ...realVoteActions,
   ].slice(0, VOTE_ACTION_BATCH_SIZE);
 
-  const actionStateHistory = buildActionStateHistory(voteActions);
+  const actionStateHistory =
+    voteReducerTestContext.buildActionStateHistory(voteActions);
 
   Provable.log("raw actions", actions);
   Provable.log("voteActions", voteActions);
@@ -560,10 +558,9 @@ it("should commit action state", async () => {
   const stakingLedgerRoot = await stakingLedger.getRoot();
   const votingLedgerRoot = await votingLedger.getRoot();
   const digestInput = new StakingLedgerToVotingLedgerProgramInput({
-    index: UInt32.from(0),
+    index: UInt64.from(0),
     stakingLedgerRoot,
     votingLedgerRoot,
-    totalCurrency: UInt64.from(0),
   });
   const digestAccounts: Account[] = [];
   for (let i = 0; i < ACCOUNT_BATCH_SIZE; i++) {

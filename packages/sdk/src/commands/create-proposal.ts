@@ -23,77 +23,77 @@ export default function createProposalCommandFactory(program: Command) {
     .requiredOption(
       "--amount <amount>",
       "Amount of nano $MINA to transfer",
-      (value) => UInt64.from(value)
+      (value) => UInt64.from(value),
     )
     // TODO: add a read-proposal command that reads the proposal content from the host and prints it to the console
     .addOption(
       new Option(
         "--proposal-content-host-type <proposal-content-host-type>",
-        "Type of the proposal content host"
+        "Type of the proposal content host",
       )
         .choices(["github"])
-        .default("github")
+        .default("github"),
     )
     .requiredOption(
       "--proposal-content-identifier <proposal-content-identifier>",
-      "Identifier of the proposal content"
+      "Identifier of the proposal content",
     )
     .requiredOption(
       "--recipient-public-key <recipient-public-key>",
       "Recipient of the transfer",
-      (value) => PublicKey.fromBase58(value)
+      (value) => PublicKey.fromBase58(value),
     )
     .requiredOption(
       "--proposal-lifecycle-id <proposal-lifecycle-id>",
       "Lifecycle id of the proposal",
-      (value) => UInt32.from(value)
+      (value) => UInt32.from(value),
     )
     .requiredOption(
       "--treasury-owner-public-key <treasury-owner-public-key>",
       "Public key of the treasury owner contract",
-      (value) => PublicKey.fromBase58(value)
+      (value) => PublicKey.fromBase58(value),
     )
     .option(
       "--treasury-owner-private-key <treasury-owner-private-key>",
       "Private key of the treasury owner contract",
-      (value) => PrivateKey.fromBase58(value)
+      (value) => PrivateKey.fromBase58(value),
     )
     .requiredOption(
       "--proposal-private-key <proposal-private-key>",
       "Private key of the proposal",
-      (value) => PrivateKey.fromBase58(value)
+      (value) => PrivateKey.fromBase58(value),
     )
     .requiredOption(
       "--mina-node-url <mina-node-url>",
-      "URL of the Mina node to use"
+      "URL of the Mina node to use",
     )
     .option(
       "--sender-private-key <sender-private-key>",
       "Sender of the transaction",
       (value) => PrivateKey.fromBase58(value),
-      PrivateKey.random()
+      PrivateKey.random(),
     )
     .option(
       "--fee <fee>",
       "Fee to pay for the transaction",
       (value) => UInt64.from(value),
-      UInt64.from(1 * 10 ** 9) // 1 MINA TODO: figure out what is the default fee
+      UInt64.from(1 * 10 ** 9), // 1 MINA TODO: figure out what is the default fee
     )
     .option("--nonce <nonce>", "Nonce to use for the transaction", parseInt)
     .option("--memo <memo>", "Memo to use for the transaction")
     .addOption(
       new Option(
         "--permission-type <permission-type>",
-        "Set of permissions for interacting with the treasury owner"
+        "Set of permissions for interacting with the treasury owner",
       )
         .choices(["proof", "signature"])
-        .default("proof")
+        .default("proof"),
     )
     .option(
       "--lifecycle-period-duration <lifecycle-period-duration>",
       "Duration of the lifecycle period",
       (value) => UInt32.from(value),
-      LIFECYCLE_PERIOD_DURATION
+      LIFECYCLE_PERIOD_DURATION,
     )
     .action(
       async ({
@@ -133,7 +133,7 @@ export default function createProposalCommandFactory(program: Command) {
           "Creating proposal",
           amount,
           recipientPublicKey,
-          minaNodeUrl
+          minaNodeUrl,
         );
 
         TreasuryProposalSmartContract.permissionType = permissionType;
@@ -146,7 +146,7 @@ export default function createProposalCommandFactory(program: Command) {
         Mina.setActiveInstance(Network);
 
         const treasuryOwner = new TreasuryOwnerSmartContract(
-          treasuryOwnerPublicKey
+          treasuryOwnerPublicKey,
         );
 
         const zkAppUri = `${proposalContentHostType}://${proposalContentIdentifier}`;
@@ -177,20 +177,20 @@ export default function createProposalCommandFactory(program: Command) {
                   recipient: recipientPublicKey,
                   zkAppUri,
                 },
-                UInt32.from(0)
+                UInt32.from(0),
               );
 
               if (permissionType == "signature") {
                 treasuryOwner.self.requireSignature();
               }
-            }
+            },
           );
 
           tx.sign(
             // if we're using signature permissions, we need to sign with the treasury owner private key
             permissionType == "signature"
               ? [senderPrivateKey, proposalPrivateKey, treasuryOwnerPrivateKey]
-              : [senderPrivateKey, proposalPrivateKey]
+              : [senderPrivateKey, proposalPrivateKey],
           );
 
           if (permissionType == "proof") {
@@ -204,7 +204,7 @@ export default function createProposalCommandFactory(program: Command) {
           const pendingTx = await tx.send();
           Provable.log(
             "waiting for transaction to be included",
-            pendingTx.hash
+            pendingTx.hash,
           );
           const includedTx = await pendingTx.wait();
           Provable.log("Proposal creation successful", includedTx);
@@ -270,6 +270,6 @@ export default function createProposalCommandFactory(program: Command) {
         //   const includedTx = await pendingTx.wait();
         //   Provable.log("Proposal update successful", includedTx);
         // })();
-      }
+      },
     );
 }
