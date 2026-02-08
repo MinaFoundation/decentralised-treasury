@@ -10,8 +10,8 @@ test("calculate acceptance criteria", async (t) => {
       proposalAmount: 100,
       treasuryBalance: 10_000,
       expected: {
-        requiredParticipationBp: 1138,
-        requiredApprovalBp: 5006,
+        requiredParticipationBp: 2504,
+        requiredApprovalBp: 5274,
       },
     },
     {
@@ -19,8 +19,8 @@ test("calculate acceptance criteria", async (t) => {
       proposalAmount: 1000,
       treasuryBalance: 10_000,
       expected: {
-        requiredParticipationBp: 2272,
-        requiredApprovalBp: 5065,
+        requiredParticipationBp: 4068,
+        requiredApprovalBp: 6099,
       },
     },
     {
@@ -28,8 +28,8 @@ test("calculate acceptance criteria", async (t) => {
       proposalAmount: 2500,
       treasuryBalance: 10_000,
       expected: {
-        requiredParticipationBp: 3800,
-        requiredApprovalBp: 5187,
+        requiredParticipationBp: 4608,
+        requiredApprovalBp: 6561,
       },
     },
     {
@@ -37,8 +37,8 @@ test("calculate acceptance criteria", async (t) => {
       proposalAmount: 5000,
       treasuryBalance: 10_000,
       expected: {
-        requiredParticipationBp: 5666,
-        requiredApprovalBp: 5499,
+        requiredParticipationBp: 4856,
+        requiredApprovalBp: 6827,
       },
     },
     {
@@ -46,8 +46,8 @@ test("calculate acceptance criteria", async (t) => {
       proposalAmount: 9000,
       treasuryBalance: 10_000,
       expected: {
-        requiredParticipationBp: 7631,
-        requiredApprovalBp: 6928,
+        requiredParticipationBp: 4983,
+        requiredApprovalBp: 6979,
       },
     },
     {
@@ -55,8 +55,8 @@ test("calculate acceptance criteria", async (t) => {
       proposalAmount: 10_000,
       treasuryBalance: 10_000,
       expected: {
-        requiredParticipationBp: 8000,
-        requiredApprovalBp: 8000,
+        requiredParticipationBp: 5000,
+        requiredApprovalBp: 7000,
       },
     },
   ];

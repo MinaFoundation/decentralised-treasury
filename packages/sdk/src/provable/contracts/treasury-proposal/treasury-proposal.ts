@@ -240,7 +240,7 @@ export class TreasuryProposalSmartContract extends SmartContract {
       .greaterThanOrEqual(requiredParticipation)
       .assertTrue("Participation not met");
 
-    // TODO: make sure there's sufficient precision handling?
+    // TODO: make sure there's sufficient precision handling?, since we're adding so many UInt64s this will likely overflow?
     const totalVotes = yay.add(nay);
     totalVotes.greaterThan(UInt64.from(0)).assertTrue("No approval votes cast");
     const approvalBp = yay.mul(BASIS_POINTS).div(totalVotes);
