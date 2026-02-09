@@ -381,7 +381,7 @@ export class TreasuryOwnerSmartContract extends TokenContract {
     Provable.log("executeProposal", { proposalLifecycleId });
 
     await this.requireLifecyclePeriodGreaterThanOrEqual(
-      LifecyclePeriod.EXPLORATION,
+      LifecyclePeriod.PROPOSAL,
       // only allow execution of proposals from the previous lifecycle
       proposalLifecycleId.add(1),
     );
