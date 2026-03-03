@@ -215,8 +215,8 @@ importers:
         specifier: ^6.5.0
         version: 6.5.0
       zkapp-cli:
-        specifier: ^0.22.9
-        version: 0.22.9
+        specifier: ^0.23.0
+        version: 0.23.0
       zod:
         specifier: ^4.0.17
         version: 4.1.12
@@ -2731,14 +2731,14 @@ packages:
     resolution: {integrity: sha512-S48WzZW777zhNIrn7gxOlISNAqi9ZC/uQFnRdbeIHhZhCA6UqpkOT8T1G7BvfdgP4Er8gF4sUbaS0i7QvIfCWw==}
     engines: {node: '>=8'}
 
-  o1js@2.8.0:
-    resolution: {integrity: sha512-K9dKdx2Im8m3veFynH9J6jjvKUIXFswTrttVLmV3AITt5EvdMEKo/MiwRj5/3AGqiw5WxaqX40HfpxrPWyXcYg==}
+  o1js@2.11.0:
+    resolution: {integrity: sha512-aa49x4q/7RhoCjZDb3JmADm1tTfmo/lbg4/v3jHI6bY9fhKmkh8qtmvY3jkclxCAHNVQe32YDDPolEjR5eqVlQ==}
     engines: {node: '>=18.14.0'}
     hasBin: true
 
   o1js@file:../o1js:
     resolution: {directory: ../o1js, type: directory}
-    engines: {node: '>=18.14.0'}
+    engines: {node: '>=22.19.5'}
     hasBin: true
 
   object-assign@4.1.1:
@@ -3700,8 +3700,8 @@ packages:
     resolution: {integrity: sha512-vWOrt19lvcXTxu5tiHXfEGQuldSlU+qZn2TT+4EbRQzaciWGwNZ99QQTolQOmcwVgZLodv+1QfC6UZs2PX/6pQ==}
     engines: {node: '>= 12'}
 
-  zkapp-cli@0.22.9:
-    resolution: {integrity: sha512-L1Knv5MI9d3aPMgkI6GhLHZMV4Af0TUfp6wvk1jheS/zUf2qKwL/7KE+YStZzagOLG7z8p9y0Nf3Yl5YpnZ7dQ==}
+  zkapp-cli@0.23.0:
+    resolution: {integrity: sha512-B82LmyIQGOmGBacoVXfbU45ASgfTvT9hn6pfc05tx3cdDlr/cHlJBs6Jgbzk7frVWMPHdBTZHSE9o6q6x21sSg==}
     engines: {node: '>=18.14.0'}
     hasBin: true
 
@@ -6366,7 +6366,7 @@ snapshots:
     dependencies:
       path-key: 3.1.1
 
-  o1js@2.8.0:
+  o1js@2.11.0:
     dependencies:
       blakejs: 1.2.1
       cachedir: 2.4.0
@@ -7450,7 +7450,7 @@ snapshots:
       cmake-ts: 1.0.2
       node-addon-api: 8.5.0
 
-  zkapp-cli@0.22.9:
+  zkapp-cli@0.23.0:
     dependencies:
       acorn: 8.15.0
       acorn-walk: 8.3.4
@@ -7463,7 +7463,7 @@ snapshots:
       find-npm-prefix: 1.0.2
       fs-extra: 11.3.2
       mina-signer: 3.1.0
-      o1js: 2.8.0
+      o1js: 2.11.0
       opener: 1.5.2
       ora: 8.2.0
       semver: 7.7.3

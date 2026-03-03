@@ -2,7 +2,8 @@
   "name": "@repo/sdk",
   "type": "module",
   "scripts": {
-    "lightnet": "zkapp-cli lightnet",
+    "lightnet:start": "zkapp-cli lightnet start --mina-branch mesa",
+    "lightnet:explorer": "zkapp-cli lightnet explorer",
     "run": "tsx",
     "chart:thresholds": "NODE_NO_WARNINGS=1 node --loader ts-node/esm scripts/generate-threshold-chart.ts",
     "cli:local": "NODE_NO_WARNINGS=1 dotenvx run -f .env.local -- node --loader ts-node/esm src/cli.ts",
@@ -38,7 +39,7 @@
     "stream-json": "^1.9.1",
     "tsyringe": "^4.10.0",
     "zeromq": "^6.5.0",
-    "zkapp-cli": "^0.22.9",
+    "zkapp-cli": "^0.23.0",
     "zod": "^4.0.17"
   },
   "devDependencies": {

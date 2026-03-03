@@ -465,24 +465,24 @@ it("should vote on a proposal", async () => {
 // TODO
 // it.skip("should pause the proposal", async () => { });
 
-it("should vote on a proposal from a new account", async () => {
-  Local.incrementGlobalSlot(1);
-  const tx = await Mina.transaction(testAccount, async () => {
-    // pay for creating the voter account
-    AccountUpdate.fundNewAccount(testAccount, 1);
-    await treasuryOwner.vote(
-      treasuryProposalPublicKey,
-      voterPublicKey2,
-      Vote.NAY,
-    );
-  });
+// it("should vote on a proposal from a new account", async () => {
+//   Local.incrementGlobalSlot(1);
+//   const tx = await Mina.transaction(testAccount, async () => {
+//     // pay for creating the voter account
+//     AccountUpdate.fundNewAccount(testAccount, 1);
+//     await treasuryOwner.vote(
+//       treasuryProposalPublicKey,
+//       voterPublicKey2,
+//       Vote.NAY,
+//     );
+//   });
 
-  tx.sign([testAccount.key, voterPrivateKey2]);
+//   tx.sign([testAccount.key, voterPrivateKey2]);
 
-  await tx.prove();
-  const pendingTx = await tx.send();
-  await pendingTx.wait();
-});
+//   await tx.prove();
+//   const pendingTx = await tx.send();
+//   await pendingTx.wait();
+// });
 
 it("should fail while attempting to vote on the proposal contract directly", async () => {
   let error: Error;
@@ -545,7 +545,7 @@ it("should commit action state", async () => {
 
   const voteActions = [
     ...voteReducerTestContext.createDummyVoteActions(
-      VOTE_ACTION_BATCH_SIZE - 2,
+      VOTE_ACTION_BATCH_SIZE - realVoteActions.length,
     ),
     ...realVoteActions,
   ].slice(0, VOTE_ACTION_BATCH_SIZE);

@@ -15,7 +15,7 @@
 2. Export the staking ledger as JSON
 
    ```zsh
-   ./mina.exe ledger export staking-epoch-ledger > staking-epoch-ledger.json
+   mina ledger export staking-epoch-ledger --daemon-port 3100 > staking-epoch-ledger.json
    ```
 
 3. Copy the ledger from the docker container
@@ -53,7 +53,7 @@ docker cp mina-local-lightnet:/root/.mina-network/mina-local-network-2-1-1/daemo
 Do the following from within the lightnet docker container. Password is: `naughty blue worm`.
 
 ```zsh
-./mina.exe advanced dump-keypair \
+mina advanced dump-keypair \
    --privkey-path ~/.mina-network/mina-local-network-2-1-1/offline_whale_keys/offline_whale_account_1
 ```
 

@@ -9,11 +9,12 @@ import {
 } from "../../../src/provable/account.js";
 import { hashWithPrefix } from "../../../src/provable/hashing-helpers.js";
 import { RedisStakingLedger } from "../../../src/ledgers/staking-ledger/redis-staking-ledger.js";
-import { Provable } from "o1js";
+import { LedgerHashBase58, Provable } from "o1js";
 
 // staking ledger root extracted from lightnet's network state
-const expectedRoot =
-  "16109365279801864533165423656011004731547087268642046792845053553332802250911";
+const expectedRoot = LedgerHashBase58.fromBase58(
+  "jxmhCFQdZbE22Xik8bHqcWP9e5wsMRhNhf4ttQ8hZUdVqMn1j7T", // 12034099690484263947933237198482912306287086365215556860993847175760583881948
+).toString();
 
 it("should create a redis staking ledger", async () => {
   const redisServer = new RedisMemoryServer();
@@ -24,7 +25,7 @@ it("should create a redis staking ledger", async () => {
   const stakingLedger = new RedisStakingLedger(redisUrl, lifecycleId);
 
   const accounts = await stakingLedger.readStakingLedger(
-    "test/provable/staking-epoch-ledger.json"
+    "test/test-ledger.json",
   );
 
   await stakingLedger.hydrateAccounts(accounts, 0, 199);
@@ -44,9 +45,9 @@ it("should create a redis staking ledger", async () => {
   const calculatedRoot = witness.calculateRoot(
     hashWithPrefix(
       accountHashPrefix,
-      packToFields(Account.toHashInput(account))
+      packToFields(Account.toHashInput(account)),
     ),
-    accountLedgerHashPrefixes
+    accountLedgerHashPrefixes,
   );
   const root = await stakingLedger2.merkleTree.getRoot();
   assert(account?.pk.toBase58() === pkBase58, "account does not match");

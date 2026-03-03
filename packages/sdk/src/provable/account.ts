@@ -14,9 +14,14 @@ import {
   Poseidon,
   Provable,
   PrivateKey,
+  ZkappUri,
+  Reducer,
 } from "o1js";
+import { hashWithPrefix } from "./hashing-helpers.js";
+import { EMPTY_ZKAPP_URI_HASH } from "../ledgers/staking-ledger/staking-ledger.js";
 
 export const accountHashPrefix = "MinaAccount*********";
+export const zkapp2HashPrefix = "MinaZkappAccount****";
 
 export class Timing extends Struct({
   isTimed: Bool,
@@ -164,23 +169,41 @@ export class Permissions extends Struct({
     );
   }
 }
-
-// TODO: implement zkapp support
-// export class Zkapp extends Struct({
-//   appState: Field,
-//   verificationKey: VerificationKey,
-//   zkappVersion: Field,
-//   actionState: Field,
-//   lastActionSlot: Field,
-//   provedState: Bool,
-//   zkappUri: Field,
-// }) {}
-
-export class Zkapp extends Field {
+export class Zkapp extends Struct({
+  appState: Provable.Array(Field, 32),
+  verificationKey: VerificationKey,
+  zkappVersion: Field,
+  actionState: Provable.Array(Field, 5),
+  lastActionSlot: Field,
+  provedState: Bool,
+  zkappUri: Field,
+}) {
   public static empty() {
-    return new Zkapp(
-      "17496579307054293919236546471315760436947051349021271414215926440979771046144"
-    );
+    return new Zkapp({
+      zkappUri: Field(EMPTY_ZKAPP_URI_HASH),
+      provedState: Bool.empty(),
+      lastActionSlot: Field.empty(),
+      actionState: Array.from({ length: 5 }, () => Reducer.initialActionState),
+      zkappVersion: Field.empty(),
+      verificationKey: VerificationKey.dummySync(),
+      appState: Array.from({ length: 32 }, () => Field.empty()),
+    });
+  }
+
+  public static toHashInput(zkapp: Zkapp) {
+    const hashInput = [
+      field(zkapp.zkappUri),
+      packed(zkapp.provedState.toField(), 1),
+      packed(zkapp.lastActionSlot.toFields()[0], 32),
+      ...zkapp.actionState.map((action) => field(action)),
+      packed(zkapp.zkappVersion.toFields()[0], 32),
+      field(zkapp.verificationKey.hash),
+      ...zkapp.appState.map((state) => field(state)),
+    ].reduce(append, { fieldElements: [], packeds: [] });
+
+    const fields = packToFields(hashInput);
+    const hash = hashWithPrefix(zkapp2HashPrefix, fields);
+    return hash;
   }
 }
 
@@ -214,17 +237,17 @@ export class Account extends Struct({
     return new Account({
       pk: PublicKey.empty(),
       tokenId: TokenId.fromBase58(
-        "wSHV2S4qX9jFsLjQo8r1BsMLH2ZRKsZx6EJd1sbozGPieEC4Jf"
+        "wSHV2S4qX9jFsLjQo8r1BsMLH2ZRKsZx6EJd1sbozGPieEC4Jf",
       ),
       tokenSymbol: TokenSymbol.empty(),
       balance: UInt64.from(0),
       nonce: UInt32.from(0),
       receiptChainHash: ReceiptChainHashBase58.fromBase58(
-        "2mzbV7WevxLuchs2dAMY4vQBS6XttnCUF8Hvks4XNBQ5qiSGGBQe"
+        "2mzbV7WevxLuchs2dAMY4vQBS6XttnCUF8Hvks4XNBQ5qiSGGBQe",
       ),
       delegate: PublicKey.empty(),
       votingFor: StateHashBase58.fromBase58(
-        "3NK2tkzqqK5spR2sZ7tujjqPksL45M3UUrcA4WhCkeiPtnugyE2x"
+        "3NK2tkzqqK5spR2sZ7tujjqPksL45M3UUrcA4WhCkeiPtnugyE2x",
       ),
       timing: Timing.empty(),
       permissions: new Permissions({
@@ -234,7 +257,7 @@ export class Account extends Struct({
         receive: Permission.none(),
         setDelegate: Permission.signature(),
         setPermissions: Permission.signature(),
-        setVerificationKey: [Permission.signature(), UInt32.from(3)],
+        setVerificationKey: [Permission.signature(), UInt32.from(4)],
         setZkappUri: Permission.signature(),
         editActionState: Permission.signature(),
         setTokenSymbol: Permission.signature(),
@@ -248,7 +271,7 @@ export class Account extends Struct({
 
   public static isEmpty(account: Account) {
     return Poseidon.hash(Account.toFields(account)).equals(
-      Poseidon.hash(Account.toFields(Account.empty()))
+      Poseidon.hash(Account.toFields(Account.empty())),
     );
   }
 
@@ -262,12 +285,12 @@ export class Account extends Struct({
       field(account.receiptChainHash.toFields()[0]),
       append(
         field(account.delegate.x),
-        packed(account.delegate.isOdd.toField(), 1)
+        packed(account.delegate.isOdd.toField(), 1),
       ),
       field(account.votingFor.toFields()[0]),
       Timing.toHashInput(account.timing),
       Permissions.toHashInput(account.permissions),
-      field(account.zkapp.toFields()[0]),
+      field(Zkapp.toHashInput(account.zkapp)),
     ]
       .reverse()
       .reduce(append, { fieldElements: [], packeds: [] });
@@ -289,7 +312,7 @@ export type RandomOracleInput<Field> = {
 
 export function append<Field>(
   t1: RandomOracleInput<Field>,
-  t2: RandomOracleInput<Field>
+  t2: RandomOracleInput<Field>,
 ): RandomOracleInput<Field> {
   return {
     fieldElements: t1.fieldElements.concat(t2.fieldElements),
@@ -306,7 +329,7 @@ export function field<Field>(x: Field): RandomOracleInput<Field> {
 }
 
 export function packeds<Field>(
-  a: Array<[Field, number]>
+  a: Array<[Field, number]>,
 ): RandomOracleInput<Field> {
   return { fieldElements: [], packeds: a };
 }
@@ -314,7 +337,7 @@ export function packeds<Field>(
 /** packed x = packeds [ x ] */
 export function packed<Field>(
   x: Field,
-  width: number
+  width: number,
 ): RandomOracleInput<Field> {
   return packeds([[x, width]]);
 }

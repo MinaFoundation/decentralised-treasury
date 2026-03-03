@@ -22,6 +22,10 @@ import {
   UInt32,
   Bool,
   Provable,
+  ZkappUri,
+  VerificationKey,
+  Pickles,
+  inCircuitVkHash,
 } from "o1js";
 import {
   PrefixedMerkleTree,
@@ -42,6 +46,9 @@ export interface StakingLedger {
   getRoot(): Promise<Field>;
   close(): Promise<void>;
 }
+
+export const EMPTY_ZKAPP_URI_HASH =
+  "20639848968581348850513072699760590695338607317404146322838943866773129280073";
 
 export const accountLedgerHashPrefixes = [
   "MinaMklTree000******",
@@ -91,13 +98,13 @@ export class BaseStakingLedger implements StakingLedger {
 
   public constructor(
     public accountStorage: AccountStorage,
-    public merkleTreeStorage: MerkleTreeStorage
+    public merkleTreeStorage: MerkleTreeStorage,
   ) {
     this.merkleTree = new PrefixedMerkleTree(
       36,
       emptyAccountHash,
       accountLedgerHashPrefixes,
-      this.merkleTreeStorage
+      this.merkleTreeStorage,
     );
   }
 
@@ -129,7 +136,10 @@ export class BaseStakingLedger implements StakingLedger {
   public async setLeaf(index: bigint, leaf: Account): Promise<void> {
     await this.merkleTree.setLeaf(
       index,
-      hashWithPrefix(accountHashPrefix, packToFields(Account.toHashInput(leaf)))
+      hashWithPrefix(
+        accountHashPrefix,
+        packToFields(Account.toHashInput(leaf)),
+      ),
     );
   }
 
@@ -138,7 +148,7 @@ export class BaseStakingLedger implements StakingLedger {
   }
 
   // TODO: should be typed to match the JSON schema
-  public parseAccount(value: any): Account {
+  public async parseAccount(value: any): Promise<Account> {
     return new Account({
       pk: PublicKey.fromBase58(value.pk),
       tokenId: TokenId.fromBase58(value.token),
@@ -146,7 +156,7 @@ export class BaseStakingLedger implements StakingLedger {
       nonce: UInt32.from(value.nonce ?? 0),
 
       receiptChainHash: ReceiptChainHashBase58.fromBase58(
-        value.receipt_chain_hash
+        value.receipt_chain_hash,
       ),
 
       votingFor: StateHashBase58.fromBase58(value.voting_for),
@@ -154,15 +164,15 @@ export class BaseStakingLedger implements StakingLedger {
         ? new Timing({
             isTimed: Bool(true),
             initialMinimumBalance: UInt64.from(
-              value.timing.initial_minimum_balance
+              value.timing.initial_minimum_balance,
             ).mul(1_000_000_000),
             cliffTime: UInt32.from(value.timing.cliff_time),
             cliffAmount: UInt64.from(value.timing.cliff_amount).mul(
-              1_000_000_000
+              1_000_000_000,
             ),
             vestingPeriod: UInt32.from(value.timing.vesting_period),
             vestingIncrement: UInt64.from(value.timing.vesting_increment).mul(
-              1_000_000_000
+              1_000_000_000,
             ),
           })
         : Timing.empty(),
@@ -173,7 +183,7 @@ export class BaseStakingLedger implements StakingLedger {
         access: Permission.fromString(value.permissions.access),
         setDelegate: Permission.fromString(value.permissions.set_delegate),
         setPermissions: Permission.fromString(
-          value.permissions.set_permissions
+          value.permissions.set_permissions,
         ),
         setVerificationKey: [
           Permission.fromString(value.permissions.set_verification_key.auth),
@@ -181,22 +191,40 @@ export class BaseStakingLedger implements StakingLedger {
         ],
         setZkappUri: Permission.fromString(value.permissions.set_zkapp_uri),
         editActionState: Permission.fromString(
-          value.permissions.edit_action_state
+          value.permissions.edit_action_state,
         ),
         setTokenSymbol: Permission.fromString(
-          value.permissions.set_token_symbol
+          value.permissions.set_token_symbol,
         ),
         incrementNonce: Permission.fromString(
-          value.permissions.increment_nonce
+          value.permissions.increment_nonce,
         ),
         setVotingFor: Permission.fromString(value.permissions.set_voting_for),
         setTiming: Permission.fromString(value.permissions.set_timing),
       }),
-      // TODO: implement zk app support
-      zkapp: Zkapp.empty(),
+      zkapp: value.zkapp
+        ? new Zkapp({
+            appState: value.zkapp.app_state.map((state) => Field(state)),
+            verificationKey: await VerificationKey.fromData(
+              value.zkapp.verification_key,
+            ),
+            zkappVersion: Field(value.zkapp.zkapp_version),
+            actionState: value.zkapp.action_state.map((action) =>
+              Field(action),
+            ),
+            lastActionSlot: Field(value.zkapp.last_action_slot),
+            provedState: Bool(value.zkapp.proved_state),
+            zkappUri:
+              value.zkapp.zkapp_uri === ""
+                ? Field(EMPTY_ZKAPP_URI_HASH)
+                : ZkappUri.from(value.zkapp.zkapp_uri).hash,
+          })
+        : Zkapp.empty(),
 
       balance: UInt64.from(value.balance).mul(1_000_000_000),
-      delegate: PublicKey.fromBase58(value.delegate),
+      delegate: value.delegate
+        ? PublicKey.fromBase58(value.delegate)
+        : PublicKey.empty(),
     });
   }
 
@@ -208,32 +236,47 @@ export class BaseStakingLedger implements StakingLedger {
    */
   async readStakingLedger(
     stakingLedgerPath: string,
-    onAccountReadComplete?: (bytesRead: number, totalBytes: number) => void
+    onAccountReadComplete?: (bytesRead: number, totalBytes: number) => void,
   ): Promise<Account[]> {
     const { parser } = streamJson;
     const { streamArray } = StreamArray;
 
     let accountCount = 0;
-    let accounts: Account[] = [];
+    let accounts: Record<number, Account> = {};
 
     return new Promise(async (resolve, reject) => {
       const { size: totalSize } = statSync(stakingLedgerPath);
 
       const readStream = createReadStream(stakingLedgerPath);
 
+      let parseQueue = Promise.resolve();
+
       readStream
         .pipe(parser())
         .pipe(streamArray())
         .on("data", ({ value }) => {
           accountCount++;
-          accounts.push(this.parseAccount(value));
-          onAccountReadComplete?.(readStream.bytesRead, totalSize);
+          const index = accountCount;
+
+          parseQueue = parseQueue.then(async () => {
+            const account = await this.parseAccount(value);
+            accounts[index] = account;
+            onAccountReadComplete?.(readStream.bytesRead, totalSize);
+          });
         })
-        .on("end", () => {
-          resolve(accounts);
-          // TODO: is this last call necessary, as it's already called in the data event?
-          // if not, we can add `account` into the parameters too
-          onAccountReadComplete?.(readStream.bytesRead, totalSize);
+        .on("end", async () => {
+          try {
+            await parseQueue;
+            const accountsArray = Object.entries(accounts)
+              .sort(([a], [b]) => Number(a) - Number(b))
+              .map(([, account]) => account);
+            resolve(accountsArray);
+            // TODO: is this last call necessary, as it's already called in the data event?
+            // if not, we can add `account` into the parameters too
+            onAccountReadComplete?.(readStream.bytesRead, totalSize);
+          } catch (error) {
+            reject(error);
+          }
         })
         .on("error", (error) => {
           console.error("Error reading staking ledger", error);
@@ -255,7 +298,7 @@ export class BaseStakingLedger implements StakingLedger {
     accounts: Account[],
     startIndex = 0,
     endIndex?: number,
-    onHydrateAccountComplete?: (index: bigint, account: Account) => void
+    onHydrateAccountComplete?: (index: bigint, account: Account) => void,
   ): Promise<void> {
     endIndex = endIndex ?? accounts.length;
 
@@ -281,7 +324,7 @@ export class BaseStakingLedger implements StakingLedger {
     accounts: Account[],
     startIndex = 0,
     endIndex?: number,
-    onHydrateLeafComplete?: (index: bigint, leaf: Account) => void
+    onHydrateLeafComplete?: (index: bigint, leaf: Account) => void,
   ): Promise<void> {
     endIndex = endIndex ?? accounts.length;
 
