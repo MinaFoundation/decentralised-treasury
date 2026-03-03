@@ -1,3 +1,9 @@
+## o1js fork
+
+This package relies on a fork of o1js that adds certain exports or features that were missing in the original o1js code base. Please clone
+`https://github.com/maht0rz/o1js` into `../o1js` at branch `feature/mesa-support` to ensure compatibility with this package. Additionally ensure to
+build o1js using `npm run build`.
+
 ## Scripts
 
 `lightnet start` - Start a local Mina Lightnet network
