@@ -14,6 +14,7 @@ import {
   AccountUpdate,
   UInt32,
   Poseidon,
+  TokenId,
 } from "o1js";
 import {
   ActionStateHistory,
@@ -224,6 +225,10 @@ export class TreasuryProposalSmartContract extends SmartContract {
     treasuryOwnerAccount.pk
       .equals(treasuryOwnerPublicKey)
       .assertTrue("Treasury owner account public key does not match");
+
+    treasuryOwnerAccount.tokenId
+      .equals(TokenId.default)
+      .assertTrue("Treasury owner account token id does not match");
 
     const treasuryOwnerAccountLeaf = hashWithPrefix(
       accountHashPrefix,
