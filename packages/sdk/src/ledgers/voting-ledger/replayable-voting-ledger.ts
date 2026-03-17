@@ -1,29 +1,29 @@
 import { VotingAccount } from "../../provable/voting-account.js";
-import { PrefixedMerkleWitness256 } from "../../provable/merkle-tree/prefixed-merkle-tree.js";
+import { PrefixedMerkleWitness255 } from "../../provable/merkle-tree/prefixed-merkle-tree.js";
 import { VotingLedger } from "./voting-ledger.js";
 import { Recorder } from "../../utils/recorder.js";
 import { Field } from "o1js";
 
 export class ReplayableVotingLedger implements VotingLedger {
   public recorder = new Recorder<{
-    witnesses: Record<string, PrefixedMerkleWitness256[]>;
+    witnesses: Record<string, PrefixedMerkleWitness255[]>;
     votingAccounts: Record<string, VotingAccount[]>;
   }>();
 
   public constructor(
-    public witnesses: Record<string, PrefixedMerkleWitness256[]>,
-    public votingAccounts: Record<string, VotingAccount[]>
+    public witnesses: Record<string, PrefixedMerkleWitness255[]>,
+    public votingAccounts: Record<string, VotingAccount[]>,
   ) {
     this.recorder.recordings["witnesses"] = witnesses;
     this.recorder.recordings["votingAccounts"] = votingAccounts;
   }
 
   public async getWitness(
-    publicKey: string
-  ): Promise<PrefixedMerkleWitness256> {
+    publicKey: string,
+  ): Promise<PrefixedMerkleWitness255> {
     return (
       this.recorder.getRecorded("witnesses", publicKey) ??
-      PrefixedMerkleWitness256.empty()
+      PrefixedMerkleWitness255.empty()
     );
   }
 
@@ -36,7 +36,7 @@ export class ReplayableVotingLedger implements VotingLedger {
 
   public async setVotingAccount(
     publicKey: string,
-    votingAccount: VotingAccount
+    votingAccount: VotingAccount,
   ): Promise<void> {
     // noop, due to being called within circuits, even when in "replay mode"
   }

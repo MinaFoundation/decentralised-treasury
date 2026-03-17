@@ -12,7 +12,7 @@ import {
 import { RecordingVotingLedger } from "../../ledgers/voting-ledger/recording-voting-ledger.js";
 import { RecordingNullifierLedger } from "../../ledgers/nullifier-ledger/recording-nullifier-ledger.js";
 import { VotingAccount } from "../../provable/voting-account.js";
-import { PrefixedMerkleWitness256 } from "../../provable/merkle-tree/prefixed-merkle-tree.js";
+import { PrefixedMerkleWitness255 } from "../../provable/merkle-tree/prefixed-merkle-tree.js";
 import { VoteReducerRunBatchTraceStorage } from "../../storage/vote-reducer-run-batch-trace-storage.js";
 import { KeyValueBatchStorage } from "../../storage/batch-key-value-storage.js";
 import { InMemoryVotingLedger } from "../../ledgers/voting-ledger/in-memory-voting-ledger.js";
@@ -25,12 +25,12 @@ export interface VoteReducerRunBatchTraceJSON {
   };
   votingLedgerWitnesses: Record<
     string,
-    ReturnType<typeof PrefixedMerkleWitness256.toJSON>[]
+    ReturnType<typeof PrefixedMerkleWitness255.toJSON>[]
   >;
   votingAccounts: Record<string, ReturnType<typeof VotingAccount.toJSON>[]>;
   nullifierLedgerWitnesses: Record<
     string,
-    ReturnType<typeof PrefixedMerkleWitness256.toJSON>[]
+    ReturnType<typeof PrefixedMerkleWitness255.toJSON>[]
   >;
   nullifiers: Record<string, boolean[]>;
 }
@@ -40,9 +40,9 @@ export class VoteReducerRunBatchTrace {
   public privateInput: {
     voteActions: VoteAction[];
   };
-  public votingLedgerWitnesses: Record<string, PrefixedMerkleWitness256[]>;
+  public votingLedgerWitnesses: Record<string, PrefixedMerkleWitness255[]>;
   public votingAccounts: Record<string, VotingAccount[]>;
-  public nullifierLedgerWitnesses: Record<string, PrefixedMerkleWitness256[]>;
+  public nullifierLedgerWitnesses: Record<string, PrefixedMerkleWitness255[]>;
   public nullifiers: Record<string, Bool[]>;
 
   public constructor({
@@ -57,9 +57,9 @@ export class VoteReducerRunBatchTrace {
     privateInput: {
       voteActions: VoteAction[];
     };
-    votingLedgerWitnesses: Record<string, PrefixedMerkleWitness256[]>;
+    votingLedgerWitnesses: Record<string, PrefixedMerkleWitness255[]>;
     votingAccounts: Record<string, VotingAccount[]>;
-    nullifierLedgerWitnesses: Record<string, PrefixedMerkleWitness256[]>;
+    nullifierLedgerWitnesses: Record<string, PrefixedMerkleWitness255[]>;
     nullifiers: Record<string, Bool[]>;
   }) {
     this.publicInput = publicInput;
@@ -87,7 +87,7 @@ export class VoteReducerRunBatchTrace {
         },
         {} as Record<
           string,
-          ReturnType<typeof PrefixedMerkleWitness256.toJSON>[]
+          ReturnType<typeof PrefixedMerkleWitness255.toJSON>[]
         >,
       ),
       votingAccounts: Object.entries(trace.votingAccounts).reduce(
@@ -108,7 +108,7 @@ export class VoteReducerRunBatchTrace {
         },
         {} as Record<
           string,
-          ReturnType<typeof PrefixedMerkleWitness256.toJSON>[]
+          ReturnType<typeof PrefixedMerkleWitness255.toJSON>[]
         >,
       ),
       nullifiers: Object.entries(trace.nullifiers).reduce(
@@ -134,11 +134,11 @@ export class VoteReducerRunBatchTrace {
       votingLedgerWitnesses: Object.entries(json.votingLedgerWitnesses).reduce(
         (acc, [key, value]) => {
           acc[key] = value.map((witness) =>
-            PrefixedMerkleWitness256.fromJSON(witness),
+            PrefixedMerkleWitness255.fromJSON(witness),
           );
           return acc;
         },
-        {} as Record<string, PrefixedMerkleWitness256[]>,
+        {} as Record<string, PrefixedMerkleWitness255[]>,
       ),
       votingAccounts: Object.entries(json.votingAccounts).reduce(
         (acc, [key, value]) => {
@@ -154,11 +154,11 @@ export class VoteReducerRunBatchTrace {
       ).reduce(
         (acc, [key, value]) => {
           acc[key] = value.map((witness) =>
-            PrefixedMerkleWitness256.fromJSON(witness),
+            PrefixedMerkleWitness255.fromJSON(witness),
           );
           return acc;
         },
-        {} as Record<string, PrefixedMerkleWitness256[]>,
+        {} as Record<string, PrefixedMerkleWitness255[]>,
       ),
       nullifiers: Object.entries(json.nullifiers).reduce(
         (acc, [key, value]) => {

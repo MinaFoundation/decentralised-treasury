@@ -6,7 +6,7 @@ import {
 } from "../../../src/provable/staking-ledger-to-voting-ledger.js";
 import { Provable } from "o1js";
 import {
-  PrefixedMerkleWitness256,
+  PrefixedMerkleWitness255,
   PrefixedMerkleWitness36,
 } from "../../../src/provable/merkle-tree/prefixed-merkle-tree.js";
 import assert from "node:assert";
@@ -95,7 +95,7 @@ it("should serialize and deserialize a trace", async () => {
       "1": [VotingAccount.empty()],
     },
     votingLedgerWitnesses: {
-      "1": [PrefixedMerkleWitness256.empty()],
+      "1": [PrefixedMerkleWitness255.empty()],
     },
   });
 

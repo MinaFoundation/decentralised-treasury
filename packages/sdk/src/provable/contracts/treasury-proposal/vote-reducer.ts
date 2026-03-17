@@ -19,7 +19,7 @@ import {
   VotingLedger,
 } from "../../../ledgers/voting-ledger/voting-ledger.js";
 import { VotingAccount } from "../../voting-account.js";
-import { PrefixedMerkleWitness256 } from "../../merkle-tree/prefixed-merkle-tree.js";
+import { PrefixedMerkleWitness255 } from "../../merkle-tree/prefixed-merkle-tree.js";
 import {
   nullifierLedgerHashPrefixes,
   nullifierHashPrefix,
@@ -458,7 +458,7 @@ export const VoteReducer = ZkProgram({
 
           // ensure the witnessed voting account is part of the voting account tree.
           const votingAccountWitness = await Provable.witnessAsync(
-            PrefixedMerkleWitness256,
+            PrefixedMerkleWitness255,
             async () => {
               return await context.votingLedger.getWitness(
                 voteAction.publicKey.toBase58(),
@@ -503,7 +503,7 @@ export const VoteReducer = ZkProgram({
           );
 
           const voteNullifierWitness = await Provable.witnessAsync(
-            PrefixedMerkleWitness256,
+            PrefixedMerkleWitness255,
             async () =>
               await context.nullifierLedger.getWitness(
                 voteAction.publicKey.toBase58(),

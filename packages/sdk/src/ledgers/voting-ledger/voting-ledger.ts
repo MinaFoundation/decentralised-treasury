@@ -1,6 +1,6 @@
 import {
   PrefixedMerkleTree,
-  PrefixedMerkleWitness256,
+  PrefixedMerkleWitness255,
 } from "../../provable/merkle-tree/prefixed-merkle-tree.js";
 import { Field } from "o1js";
 import { VotingAccount } from "../../provable/voting-account.js";
@@ -14,7 +14,7 @@ export interface VotingLedger {
     publicKey: string,
     votingAccount: VotingAccount,
   ): Promise<void>;
-  getWitness(publicKey: string): Promise<PrefixedMerkleWitness256>;
+  getWitness(publicKey: string): Promise<PrefixedMerkleWitness255>;
   setLeaf(publicKey: string, leaf: VotingAccount): Promise<void>;
   getRoot(): Promise<Field>;
   close(): Promise<void>;
@@ -292,7 +292,7 @@ export abstract class BaseVotingLedger implements VotingLedger {
     // reason why we use a 256 height instead of mimicking the staking ledger tree height is because
     // voting accounts might not exist in the staking ledger, as in the delegate address is not part of the staking ledger
     this.merkleTree = new PrefixedMerkleTree(
-      256,
+      255,
       emptyVotingAccountHash,
       votingAccountLedgerHashPrefixes,
       this.merkleTreeStorage,
@@ -308,9 +308,9 @@ export abstract class BaseVotingLedger implements VotingLedger {
 
   public async getWitness(
     publicKey: string,
-  ): Promise<PrefixedMerkleWitness256> {
+  ): Promise<PrefixedMerkleWitness255> {
     const index = publicKeyBase58ToBigInt(publicKey);
-    return new PrefixedMerkleWitness256(
+    return new PrefixedMerkleWitness255(
       await this.merkleTree.getWitness(index),
     );
   }

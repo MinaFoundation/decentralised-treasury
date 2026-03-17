@@ -7,7 +7,7 @@ import {
   VoteReducerPublicInput,
   VOTE_ACTION_BATCH_SIZE,
 } from "../../../src/provable/contracts/treasury-proposal/vote-reducer.js";
-import { PrefixedMerkleWitness256 } from "../../../src/provable/merkle-tree/prefixed-merkle-tree.js";
+import { PrefixedMerkleWitness255 } from "../../../src/provable/merkle-tree/prefixed-merkle-tree.js";
 import { VotingAccount } from "../../../src/provable/voting-account.js";
 import {
   VoteReducerRunBatchTrace,
@@ -32,13 +32,13 @@ it("should serialize and deserialize a vote reducer trace", async () => {
       voteActions: [new VoteAction({ vote: Vote.YAY, publicKey: account.pk })],
     },
     votingLedgerWitnesses: {
-      "1": [PrefixedMerkleWitness256.empty()],
+      "1": [PrefixedMerkleWitness255.empty()],
     },
     votingAccounts: {
       "1": [VotingAccount.empty()],
     },
     nullifierLedgerWitnesses: {
-      "1": [PrefixedMerkleWitness256.empty()],
+      "1": [PrefixedMerkleWitness255.empty()],
     },
     nullifiers: {
       "1": [Bool(true)],

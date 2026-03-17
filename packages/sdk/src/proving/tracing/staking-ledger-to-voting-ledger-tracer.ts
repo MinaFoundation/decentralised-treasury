@@ -10,7 +10,7 @@ import { Provable, UInt32, UInt64 } from "o1js";
 import { RecordingStakingLedger } from "../../ledgers/staking-ledger/recording-staking-ledger.js";
 import { RecordingVotingLedger } from "../../ledgers/voting-ledger/recording-voting-ledger.js";
 import {
-  PrefixedMerkleWitness256,
+  PrefixedMerkleWitness255,
   PrefixedMerkleWitness36,
 } from "../../provable/merkle-tree/prefixed-merkle-tree.js";
 import { VotingAccount } from "../../provable/voting-account.js";
@@ -37,7 +37,7 @@ export interface StakingLedgerToVotingLedgerDigestTraceJSON {
   votingAccounts: Record<string, ReturnType<typeof VotingAccount.toJSON>[]>;
   votingLedgerWitnesses: Record<
     string,
-    ReturnType<typeof PrefixedMerkleWitness256.toJSON>[]
+    ReturnType<typeof PrefixedMerkleWitness255.toJSON>[]
   >;
 }
 
@@ -48,7 +48,7 @@ export class StakingLedgerToVotingLedgerDigestTrace {
   };
   public stakingLedgerWitnesses: Record<string, PrefixedMerkleWitness36[]>;
   public votingAccounts: Record<string, VotingAccount[]>;
-  public votingLedgerWitnesses: Record<string, PrefixedMerkleWitness256[]>;
+  public votingLedgerWitnesses: Record<string, PrefixedMerkleWitness255[]>;
 
   public constructor({
     publicInput,
@@ -63,7 +63,7 @@ export class StakingLedgerToVotingLedgerDigestTrace {
     };
     stakingLedgerWitnesses: Record<string, PrefixedMerkleWitness36[]>;
     votingAccounts: Record<string, VotingAccount[]>;
-    votingLedgerWitnesses: Record<string, PrefixedMerkleWitness256[]>;
+    votingLedgerWitnesses: Record<string, PrefixedMerkleWitness255[]>;
   }) {
     this.publicInput = publicInput;
     this.privateInput = privateInput;
@@ -112,7 +112,7 @@ export class StakingLedgerToVotingLedgerDigestTrace {
         },
         {} as Record<
           string,
-          ReturnType<typeof PrefixedMerkleWitness256.toJSON>[]
+          ReturnType<typeof PrefixedMerkleWitness255.toJSON>[]
         >,
       ),
     };
@@ -153,13 +153,13 @@ export class StakingLedgerToVotingLedgerDigestTrace {
       votingLedgerWitnesses: Object.entries(json.votingLedgerWitnesses).reduce(
         (acc, [key, value]) => {
           acc[key] = value.map((witness) =>
-            PrefixedMerkleWitness256.fromJSON(witness),
+            PrefixedMerkleWitness255.fromJSON(witness),
           );
           return acc;
         },
         {} as Record<
           string,
-          ReturnType<typeof PrefixedMerkleWitness256.fromJSON>[]
+          ReturnType<typeof PrefixedMerkleWitness255.fromJSON>[]
         >,
       ),
     });
@@ -266,10 +266,7 @@ export class StakingLedgerToVotingLedgerTracer {
 
       await this.traceStorage.setTrace(i, trace);
 
-      const batchStorages = [
-        this.traceStorage,
-        this.votingLedger,
-      ];
+      const batchStorages = [this.traceStorage, this.votingLedger];
 
       const entries = batchStorages.flatMap((storage) =>
         storage.collectEntries(),

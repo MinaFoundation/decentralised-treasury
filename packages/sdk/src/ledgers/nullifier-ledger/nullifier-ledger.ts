@@ -1,6 +1,6 @@
 import {
   PrefixedMerkleTree,
-  PrefixedMerkleWitness256,
+  PrefixedMerkleWitness255,
 } from "../../provable/merkle-tree/prefixed-merkle-tree.js";
 import { Bool, Field } from "o1js";
 import { MerkleTreeStorage } from "../../storage/merkle-tree-storage.js";
@@ -10,7 +10,7 @@ import { publicKeyBase58ToBigInt } from "../../utils/public-key.js";
 export interface NullifierLedger {
   getNullifier(publicKey: string): Promise<Bool>;
   setNullifier(publicKey: string, nullifier: Bool): Promise<void>;
-  getWitness(publicKey: string): Promise<PrefixedMerkleWitness256>;
+  getWitness(publicKey: string): Promise<PrefixedMerkleWitness255>;
   setLeaf(publicKey: string, leaf: Bool): Promise<void>;
   getRoot(): Promise<Field>;
   close(): Promise<void>;
@@ -286,7 +286,7 @@ export abstract class BaseNullifierLedger implements NullifierLedger {
 
     // use a 256 height to match the nullifier tree requirements
     this.merkleTree = new PrefixedMerkleTree(
-      256,
+      255,
       emptyNullifierHash,
       nullifierLedgerHashPrefixes,
       this.merkleTreeStorage,
@@ -295,9 +295,9 @@ export abstract class BaseNullifierLedger implements NullifierLedger {
 
   public async getWitness(
     publicKey: string,
-  ): Promise<PrefixedMerkleWitness256> {
+  ): Promise<PrefixedMerkleWitness255> {
     const index = publicKeyBase58ToBigInt(publicKey);
-    return new PrefixedMerkleWitness256(
+    return new PrefixedMerkleWitness255(
       await this.merkleTree.getWitness(index),
     );
   }

@@ -258,12 +258,12 @@ async function printNonce(publicKey: PublicKey, memo: string) {
   }
 }
 
-it("should compile", async () => {
+it.only("should compile", async () => {
   await TreasuryOwnerSmartContract.compile();
   Provable.log("analysis", await TreasuryOwnerSmartContract.analyzeMethods());
 });
 
-it("should create a proposal", async () => {
+it.only("should create a proposal", async () => {
   await (async () => {
     console.log("deploying pause controller");
     const tx = await Mina.transaction(testAccount, async () => {
@@ -289,6 +289,7 @@ it("should create a proposal", async () => {
 
   await (async () => {
     console.log("deploying treasury owner");
+    Provable.log("default perrmissions", Permissions.default());
     TreasuryOwnerSmartContract.treasuryDeployedAtSlot = UInt32.from(0);
     TreasuryOwnerSmartContract.pauseControllerPublicKey =
       pauseControllerPublicKey;
@@ -319,15 +320,16 @@ it("should create a proposal", async () => {
       // fund the treasury owner account
       testAccountUpdate.balance.subInPlace(treasuryFunding);
 
-      const treasuryOwnerAccountUpdate = AccountUpdate.createSigned(
-        treasuryOwnerPublicKey,
-      );
-      treasuryOwnerAccountUpdate.balance.addInPlace(treasuryFunding);
+      // const treasuryOwnerAccountUpdate = AccountUpdate.createSigned(
+      //   treasuryOwnerPublicKey,
+      // );
+      // treasuryOwnerAccountUpdate.balance.addInPlace(treasuryFunding);
+      await treasuryOwner.receive(treasuryFunding);
     });
 
     tx.sign([
       testAccount.key,
-      treasuryOwnerPrivateKey,
+      // treasuryOwnerPrivateKey,
       treasuryFundingAccount.key,
     ]);
     await tx.prove();

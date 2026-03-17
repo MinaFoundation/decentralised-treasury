@@ -56,11 +56,11 @@ export class TreasuryOwnerSmartContract extends TokenContract {
   public static treasuryDeployedAtSlot: UInt32;
   public static pauseControllerPublicKey: PublicKey;
 
-  public static permissions = {
+  public static permissions: Permissions = {
     ...Permissions.allImpossible(),
     editState: Permissions.proof(),
     access: Permissions.proof(),
-    incrementNonce: Permissions.proof(),
+    incrementNonce: Permissions.proofOrSignature(),
     setVerificationKey:
       Permissions.VerificationKey.impossibleDuringCurrentVersion(),
     send: Permissions.proof(),
@@ -70,20 +70,11 @@ export class TreasuryOwnerSmartContract extends TokenContract {
   @state(UInt32) treasuryDeployedAtSlot = State<UInt32>();
   @state(PublicKey) pauseControllerPublicKey = State<PublicKey>();
 
-  // TODO: we dont need these state variables anymore
-  @state(Field) stakingEpochDataLedgerHash = State<Field>();
-  @state(UInt64) stakingEpochDataLedgerTotalCurrency = State<UInt64>();
-
   public async snapshotStakingEpochData() {
     const networkStakingEpochDataLedgerHash =
       this.network.stakingEpochData.ledger.hash.getAndRequireEquals();
     const networkStakingEpochDataLedgerTotalCurrency =
       this.network.stakingEpochData.ledger.totalCurrency.getAndRequireEquals();
-
-    this.stakingEpochDataLedgerHash.set(networkStakingEpochDataLedgerHash);
-    this.stakingEpochDataLedgerTotalCurrency.set(
-      networkStakingEpochDataLedgerTotalCurrency,
-    );
 
     return {
       stakingEpochDataLedgerHash: networkStakingEpochDataLedgerHash,
@@ -150,6 +141,11 @@ export class TreasuryOwnerSmartContract extends TokenContract {
     );
 
     this.network.globalSlotSinceGenesis.requireBetween(fromSlot, toSlot);
+  }
+
+  @method
+  public async receive(amount: UInt64) {
+    this.self.balance.addInPlace(amount);
   }
 
   @method

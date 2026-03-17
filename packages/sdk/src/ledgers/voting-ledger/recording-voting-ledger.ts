@@ -1,12 +1,12 @@
 import { VotingAccount } from "../../provable/voting-account.js";
-import { PrefixedMerkleWitness256 } from "../../provable/merkle-tree/prefixed-merkle-tree.js";
+import { PrefixedMerkleWitness255 } from "../../provable/merkle-tree/prefixed-merkle-tree.js";
 import { Recorder } from "../../utils/recorder.js";
 import { VotingLedger } from "./voting-ledger.js";
 import { Field } from "o1js";
 
 export class RecordingVotingLedger implements VotingLedger {
   public recorder = new Recorder<{
-    witnesses: Record<string, PrefixedMerkleWitness256[]>;
+    witnesses: Record<string, PrefixedMerkleWitness255[]>;
     votingAccounts: Record<string, VotingAccount[]>;
   }>();
 
@@ -14,7 +14,7 @@ export class RecordingVotingLedger implements VotingLedger {
 
   public async getWitness(
     publicKey: string,
-  ): Promise<PrefixedMerkleWitness256> {
+  ): Promise<PrefixedMerkleWitness255> {
     const witness = await this.votingLedger.getWitness(publicKey);
     this.recorder.record("witnesses", publicKey, witness);
     return witness;

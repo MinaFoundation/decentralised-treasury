@@ -1,11 +1,11 @@
-import { PrefixedMerkleWitness256 } from "../../provable/merkle-tree/prefixed-merkle-tree.js";
+import { PrefixedMerkleWitness255 } from "../../provable/merkle-tree/prefixed-merkle-tree.js";
 import { Recorder } from "../../utils/recorder.js";
 import { NullifierLedger } from "./nullifier-ledger.js";
 import { Bool, Field } from "o1js";
 
 export class RecordingNullifierLedger implements NullifierLedger {
   public recorder = new Recorder<{
-    witnesses: Record<string, PrefixedMerkleWitness256[]>;
+    witnesses: Record<string, PrefixedMerkleWitness255[]>;
     nullifiers: Record<string, Bool[]>;
   }>();
 
@@ -13,7 +13,7 @@ export class RecordingNullifierLedger implements NullifierLedger {
 
   public async getWitness(
     publicKey: string,
-  ): Promise<PrefixedMerkleWitness256> {
+  ): Promise<PrefixedMerkleWitness255> {
     const witness = await this.nullifierLedger.getWitness(publicKey);
     this.recorder.record("witnesses", publicKey, witness);
     return witness;

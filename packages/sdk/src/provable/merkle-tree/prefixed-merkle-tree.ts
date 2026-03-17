@@ -41,7 +41,7 @@ class PrefixedMerkleTree {
     public readonly height: number,
     public readonly emptyLeafHash: Field,
     public readonly hashPrefixes: string[],
-    public storage: MerkleTreeStorage
+    public storage: MerkleTreeStorage,
   ) {
     this.zeroes = new Array(height);
     this.zeroes[0] = emptyLeafHash;
@@ -110,7 +110,7 @@ class PrefixedMerkleTree {
   async setLeaf(index: bigint, leaf: Field) {
     if (index >= this.leafCount) {
       throw new Error(
-        `index ${index} is out of range for ${this.leafCount} leaves.`
+        `index ${index} is out of range for ${this.leafCount} leaves.`,
       );
     }
     await this.setNode(0, index, leaf);
@@ -124,7 +124,7 @@ class PrefixedMerkleTree {
       await this.setNode(
         level,
         currIndex,
-        Poseidon.hashWithPrefix(this.hashPrefixes[level - 1], [left, right])
+        Poseidon.hashWithPrefix(this.hashPrefixes[level - 1], [left, right]),
       );
     }
   }
@@ -137,7 +137,7 @@ class PrefixedMerkleTree {
   async getWitness(index: bigint): Promise<Witness> {
     if (index >= this.leafCount) {
       throw new Error(
-        `index ${index} is out of range for ${this.leafCount} leaves.`
+        `index ${index} is out of range for ${this.leafCount} leaves.`,
       );
     }
     const witness: Witness = [];
@@ -145,7 +145,7 @@ class PrefixedMerkleTree {
       const isLeft = index % 2n === 0n;
       const sibling = await this.getNode(
         level,
-        isLeft ? index + 1n : index - 1n
+        isLeft ? index + 1n : index - 1n,
       );
       witness.push({ isLeft, sibling });
       index /= 2n;
@@ -194,7 +194,7 @@ class BasePrefixedMerkleWitness extends CircuitValue {
     let height = witness.length + 1;
     if (height !== this.height()) {
       throw Error(
-        `Length of witness ${height}-1 doesn't match static tree height ${this.height()}.`
+        `Length of witness ${height}-1 doesn't match static tree height ${this.height()}.`,
       );
     }
     this.path = witness.map((item) => item.sibling);
@@ -243,7 +243,7 @@ class BasePrefixedMerkleWitness extends CircuitValue {
  * @returns A circuit-compatible Merkle Witness.
  */
 function PrefixedMerkleWitness(
-  height: number
+  height: number,
 ): typeof BasePrefixedMerkleWitness {
   class PrefixedMerkleWitness_ extends BasePrefixedMerkleWitness {
     static height = height;
@@ -263,4 +263,4 @@ function conditionalSwap(b: Bool, x: Field, y: Field): [Field, Field] {
 }
 
 export class PrefixedMerkleWitness36 extends PrefixedMerkleWitness(36) {}
-export class PrefixedMerkleWitness256 extends PrefixedMerkleWitness(256) {}
+export class PrefixedMerkleWitness255 extends PrefixedMerkleWitness(256) {}

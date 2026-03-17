@@ -28,7 +28,7 @@ import {
 } from "../ledgers/voting-ledger/voting-ledger.js";
 import { VotingAccount } from "./voting-account.js";
 import {
-  PrefixedMerkleWitness256,
+  PrefixedMerkleWitness255,
   PrefixedMerkleWitness36,
 } from "./merkle-tree/prefixed-merkle-tree.js";
 
@@ -39,9 +39,6 @@ export interface StakingLedgerToVotingLedgerContext {
 
 export const stakingLedgerToVotingLedgerContext =
   new ContextProvider<StakingLedgerToVotingLedgerContext>();
-
-export const STAKING_LEDGER_TREE_HEIGHT = 36;
-export const VOTING_LEDGER_TREE_HEIGHT = 256;
 
 export const ACCOUNT_BATCH_SIZE = 5;
 export const AccountBatch = Provable.Array(Account, ACCOUNT_BATCH_SIZE);
@@ -263,7 +260,7 @@ export const StakingLedgerToVotingLedger = ZkProgram({
 
           // load delegate account and check its inclusion in the voting ledger
           const votingAccountWitness = await Provable.witnessAsync(
-            PrefixedMerkleWitness256,
+            PrefixedMerkleWitness255,
             async () => {
               return await stakingLedgerToVotingLedgerContext
                 .get()
