@@ -7,6 +7,7 @@ import {
   Poseidon,
   Provable,
   PublicKey,
+  Reducer,
   State,
   TokenContract,
   UInt32,
@@ -62,6 +63,8 @@ export class TreasuryOwnerSmartContract extends TokenContract {
     incrementNonce: Permissions.proof(),
     setVerificationKey:
       Permissions.VerificationKey.impossibleDuringCurrentVersion(),
+    send: Permissions.proof(),
+    receive: Permissions.proof(),
   };
 
   @state(UInt32) treasuryDeployedAtSlot = State<UInt32>();
@@ -89,8 +92,8 @@ export class TreasuryOwnerSmartContract extends TokenContract {
     };
   }
 
-  public init() {
-    super.init();
+  public async deploy() {
+    await super.deploy();
     this.account.permissions.set(TreasuryOwnerSmartContract.permissions);
     this.treasuryDeployedAtSlot.set(
       TreasuryOwnerSmartContract.treasuryDeployedAtSlot,
@@ -201,14 +204,8 @@ export class TreasuryOwnerSmartContract extends TokenContract {
         isSome: Bool(true),
         value: Field(0),
       },
-      {
-        isSome: Bool(false),
-        value: Field(0),
-      },
-      {
-        isSome: Bool(false),
-        value: Field(0),
-      },
+      // remainder of the 32 app state fields
+      ...Array(26).fill({ isSome: Bool(false), value: Field(0) }),
     ];
 
     proposalUpdate.account.verificationKey.set(
@@ -283,7 +280,6 @@ export class TreasuryOwnerSmartContract extends TokenContract {
     );
 
     const proposalLifecycleId = await proposal.getLifecycleId();
-    Provable.log("tallyVotes", { proposalLifecycleId });
 
     await this.requireLifecyclePeriodGreaterThanOrEqual(
       LifecyclePeriod.COOLDOWN,
@@ -293,45 +289,7 @@ export class TreasuryOwnerSmartContract extends TokenContract {
     // TODO: is this safe and correct?
     const treasuryOwnerPublicKey = this.self.publicKey;
 
-    voteReducerProof.publicOutput.toActionsHash
-      .equals(
-        voteReducerProof.publicOutput.actionStateHistory.actionStateOne.hash,
-      )
-      .assertTrue("toActionsHash does not match action state one hash");
-
-    await proposal.tallyVotes(
-      voteReducerProof,
-      stakingLedgerToVotingLedgerProof,
-      treasuryOwnerPublicKey,
-      treasuryOwnerAccount,
-      treasuryOwnerAccountWitness,
-    );
-
-    this.approve(proposal.self);
-  }
-
-  @method
-  public async commitActionState(
-    voteReducerProof: SideLoadedVoteReducerProof,
-    proposalPublicKey: PublicKey,
-  ) {
-    voteReducerProof.verify(
-      TreasuryProposalSmartContract.voteReducerVerificationKey,
-    );
-
-    const proposal = new TreasuryProposalSmartContract(
-      proposalPublicKey,
-      this.deriveTokenId(),
-    );
-    const proposalLifecycleId = await proposal.getLifecycleId();
-    Provable.log("tallyVotes", { proposalLifecycleId });
-
-    await this.requireLifecyclePeriodGreaterThanOrEqual(
-      LifecyclePeriod.COOLDOWN,
-      proposalLifecycleId,
-    );
-
-    // must be done here in order to approve the "child" account updates directly
+    let previousActionState = Field(0);
     for (const actionStateKey of Object.keys(
       voteReducerProof.publicOutput.actionStateHistory,
     )) {
@@ -345,12 +303,28 @@ export class TreasuryOwnerSmartContract extends TokenContract {
       actionStateUpdate.account.actionState.requireEquals(actionState.hash);
       actionState.found.assertTrue("Action state not found in the merkle list");
 
+      // ensure all 5 action states are unique
+      actionState.hash
+        .equals(previousActionState)
+        .not()
+        .or(actionState.hash.equals(Reducer.initialActionState))
+        .assertTrue(
+          "Action state hash must be unique, or the initial action state",
+        );
+
+      previousActionState = actionState.hash;
+
       this.approve(actionStateUpdate);
     }
 
-    await proposal.commitActionState(
-      voteReducerProof.publicOutput.toActionsHash,
+    await proposal.tallyVotes(
+      voteReducerProof,
+      stakingLedgerToVotingLedgerProof,
+      treasuryOwnerPublicKey,
+      treasuryOwnerAccount,
+      treasuryOwnerAccountWitness,
     );
+
     this.approve(proposal.self);
   }
 

@@ -4,12 +4,12 @@ import {
   LIFECYCLE_PERIOD_DURATION,
   LifecyclePeriod,
   TreasuryOwnerSmartContract,
-} from "../../../src/provable/contracts/treasury-owner.js";
-import { TreasuryPauseControllerSmartContract } from "../../../src/provable/contracts/treasury-pause-controller/treasury-pause-controller.js";
+} from "../../src/provable/contracts/treasury-owner.js";
+import { TreasuryPauseControllerSmartContract } from "../../src/provable/contracts/treasury-pause-controller/treasury-pause-controller.js";
 import {
   MultisigSignature,
   MultisigSignatures,
-} from "../../../src/provable/contracts/treasury-pause-controller/multisig-signatures.js";
+} from "../../src/provable/contracts/treasury-pause-controller/multisig-signatures.js";
 import {
   AccountUpdate,
   fetchAccount,
@@ -35,14 +35,14 @@ import {
   voteReducerContext,
   SideLoadedVoteReducerProof,
   VoteReducerProof,
-} from "../../../src/provable/contracts/treasury-proposal/vote-reducer.js";
-import { BOND_AMOUNT_DIVISOR } from "../../../src/provable/contracts/treasury-constants.js";
+} from "../../src/provable/contracts/treasury-proposal/vote-reducer.js";
+import { BOND_AMOUNT_DIVISOR } from "../../src/provable/contracts/treasury-constants.js";
 
-import { appendActionToHashList } from "../../../src/provable/hashing-helpers.js";
+import { appendActionToHashList } from "../../src/provable/hashing-helpers.js";
 import {
   TreasuryProposalSmartContract,
   ProposalStatus,
-} from "../../../src/provable/contracts/treasury-proposal/treasury-proposal.js";
+} from "../../src/provable/contracts/treasury-proposal/treasury-proposal.js";
 import {
   SideLoadedStakingLedgerToVotingLedgerProof,
   StakingLedgerToVotingLedger,
@@ -51,22 +51,22 @@ import {
   StakingLedgerToVotingLedgerProgramInput,
   StakingLedgerToVotingLedgerProgramOutput,
   StakingLedgerToVotingLedgerProof,
-} from "../../../src/provable/staking-ledger-to-voting-ledger.js";
-import { VotingAccount } from "../../../src/provable/voting-account.js";
-import { Account } from "../../../src/provable/account.js";
-import { createVoteReducerTestContext } from "../context/contracts/vote-reducer-context.js";
+} from "../../src/provable/staking-ledger-to-voting-ledger.js";
+import { VotingAccount } from "../../src/provable/voting-account.js";
+import { Account } from "../../src/provable/account.js";
+import { createVoteReducerTestContext } from "../provable/context/contracts/vote-reducer-context.js";
 
 const voteReducerTestContext = await createVoteReducerTestContext();
-import { PersistentNullifierLedger } from "../../../src/ledgers/nullifier-ledger/persistent-nullifier-ledger.js";
-import { PersistentVotingLedger } from "../../../src/ledgers/voting-ledger/persistent-voting-ledger.js";
-import { PersistentStakingLedger } from "../../../src/ledgers/staking-ledger/persistent-staking-ledger.js";
-import { createSqliteNullifierLedgerStorage } from "../../../src/storage/sqlite/factory/sqlite-nullifier-ledger-storage.js";
-import { createSqliteStakingLedgerStorage } from "../../../src/storage/sqlite/factory/sqlite-staking-ledger-storage.js";
-import { createSqliteVotingLedgerStorage } from "../../../src/storage/sqlite/factory/sqlite-voting-ledger-storage.js";
+import { PersistentNullifierLedger } from "../../src/ledgers/nullifier-ledger/persistent-nullifier-ledger.js";
+import { PersistentVotingLedger } from "../../src/ledgers/voting-ledger/persistent-voting-ledger.js";
+import { PersistentStakingLedger } from "../../src/ledgers/staking-ledger/persistent-staking-ledger.js";
+import { createSqliteNullifierLedgerStorage } from "../../src/storage/sqlite/factory/sqlite-nullifier-ledger-storage.js";
+import { createSqliteStakingLedgerStorage } from "../../src/storage/sqlite/factory/sqlite-staking-ledger-storage.js";
+import { createSqliteVotingLedgerStorage } from "../../src/storage/sqlite/factory/sqlite-voting-ledger-storage.js";
 import { KeyvSqlite } from "@keyv/sqlite";
 import { mkdirSync } from "node:fs";
 import { dirname } from "node:path";
-import { getSqliteDbPath } from "../../../src/storage/sqlite/sqlite-db-path.js";
+import { getSqliteDbPath } from "../../src/storage/sqlite/sqlite-db-path.js";
 
 const proofsEnabled = process.env.PROOFS_ENABLED === "true";
 
@@ -509,27 +509,24 @@ it("should vote on a proposal", async () => {
   await printNonce(treasuryProposalPublicKey, "treasury proposal voted");
 });
 
-// TODO
-// it.skip("should pause the proposal", async () => { });
+it("should vote on a proposal from a new account", async () => {
+  Local.incrementGlobalSlot(1);
+  const tx = await Mina.transaction(testAccount, async () => {
+    // pay for creating the voter account
+    AccountUpdate.fundNewAccount(testAccount, 1);
+    await treasuryOwner.vote(
+      treasuryProposalPublicKey,
+      voterPublicKey2,
+      Vote.NAY,
+    );
+  });
 
-// it("should vote on a proposal from a new account", async () => {
-//   Local.incrementGlobalSlot(1);
-//   const tx = await Mina.transaction(testAccount, async () => {
-//     // pay for creating the voter account
-//     AccountUpdate.fundNewAccount(testAccount, 1);
-//     await treasuryOwner.vote(
-//       treasuryProposalPublicKey,
-//       voterPublicKey2,
-//       Vote.NAY,
-//     );
-//   });
+  tx.sign([testAccount.key, voterPrivateKey2]);
 
-//   tx.sign([testAccount.key, voterPrivateKey2]);
-
-//   await tx.prove();
-//   const pendingTx = await tx.send();
-//   await pendingTx.wait();
-// });
+  await tx.prove();
+  const pendingTx = await tx.send();
+  await pendingTx.wait();
+});
 
 it("should fail while attempting to vote on the proposal contract directly", async () => {
   let error: Error;
@@ -662,21 +659,6 @@ it("should commit action state", async () => {
       stakingLedgerToVotingLedgerProof,
     ),
   });
-
-  console.time("commit action state");
-  const commitTx = await Mina.transaction(testAccount, async () => {
-    await treasuryOwner.commitActionState(
-      SideLoadedVoteReducerProof.fromProof(voteReducerProof),
-      treasuryProposalPublicKey,
-    );
-  });
-
-  commitTx.sign([testAccount.key]);
-  Provable.log("commit action state tx", commitTx.toPretty());
-  await commitTx.prove();
-  const commitPendingTx = await commitTx.send();
-  await commitPendingTx.wait();
-  console.timeEnd("commit action state");
 });
 
 it("should tally votes", async () => {

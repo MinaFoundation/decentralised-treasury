@@ -15,7 +15,11 @@ import {
   UInt32,
   Poseidon,
 } from "o1js";
-import { SideLoadedVoteReducerProof, VoteAction } from "./vote-reducer.js";
+import {
+  ActionStateHistory,
+  SideLoadedVoteReducerProof,
+  VoteAction,
+} from "./vote-reducer.js";
 import { SideLoadedStakingLedgerToVotingLedgerProof } from "../../staking-ledger-to-voting-ledger.js";
 import {
   BASIS_POINTS,
@@ -69,7 +73,6 @@ export class TreasuryProposalSmartContract extends SmartContract {
 
   @state(ProposalStatus) status = State<ProposalStatus>();
   @state(UInt64) paidOutAmount = State<UInt64>();
-  @state(Field) toActionsHash = State<Field>();
 
   public async requireNotPaused() {
     const status = this.status.getAndRequireEquals();
@@ -141,11 +144,6 @@ export class TreasuryProposalSmartContract extends SmartContract {
   }
 
   @method
-  public async commitActionState(toActionsHash: Field) {
-    this.toActionsHash.set(toActionsHash);
-  }
-
-  @method
   public async tallyVotes(
     // TODO: why do sideloaded proofs appear to have different wrap domain size limits than regular proofs?
     voteReducerProof: SideLoadedVoteReducerProof,
@@ -206,10 +204,11 @@ export class TreasuryProposalSmartContract extends SmartContract {
       "staking ledger to voting ledger proof did not exhaust",
     );
 
-    this.toActionsHash
-      .getAndRequireEquals()
-      .equals(voteReducerPublicOutput.toActionsHash)
-      .assertTrue("toActionsHash does not match on chain state");
+    voteReducerProof.publicOutput.toActionsHash
+      .equals(
+        voteReducerProof.publicOutput.actionStateHistory.actionStateOne.hash,
+      )
+      .assertTrue("toActionsHash does not match action state one hash");
 
     const { yay, nay, abstain } = voteReducerPublicOutput;
     const proposalAmount = this.amount.getAndRequireEquals();
