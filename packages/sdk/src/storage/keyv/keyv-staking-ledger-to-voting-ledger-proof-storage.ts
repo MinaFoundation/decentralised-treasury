@@ -1,6 +1,9 @@
 import { SideLoadedStakingLedgerToVotingLedgerProof } from "../../provable/staking-ledger-to-voting-ledger.js";
 import { StakingLedgerToVotingLedgerProofStorage } from "../staking-ledger-to-voting-ledger-proof-storage.js";
-import { KeyvCounter, KeyvKeyValueStorage } from "./keyv-key-value-storage.js";
+import {
+  KeyvKeyValueStorage,
+  type KeyvNamespaceCounter,
+} from "./keyv-key-value-storage.js";
 import { Keyv } from "keyv";
 import { KeyValueEntry } from "../key-value-storage.js";
 
@@ -14,21 +17,25 @@ export class KeyvStakingLedgerToVotingLedgerProofStorage
   public mergeStorage: KeyvKeyValueStorage;
   public entries: Array<KeyValueEntry> = [];
 
-  constructor(keyvFactory: KeyvFactory, namespace: string, keyvCounter: KeyvCounter) {
+  constructor(
+    keyvFactory: KeyvFactory,
+    namespace: string,
+    counter: KeyvNamespaceCounter,
+  ) {
     this.storage = new KeyvKeyValueStorage(
       keyvFactory(),
-      keyvCounter,
       `${namespace}`,
+      counter,
     );
     this.mergedStorage = new KeyvKeyValueStorage(
       keyvFactory(),
-      keyvCounter,
       `${namespace}-merged`,
+      counter,
     );
     this.mergeStorage = new KeyvKeyValueStorage(
       keyvFactory(),
-      keyvCounter,
       `${namespace}-merge`,
+      counter,
     );
   }
 

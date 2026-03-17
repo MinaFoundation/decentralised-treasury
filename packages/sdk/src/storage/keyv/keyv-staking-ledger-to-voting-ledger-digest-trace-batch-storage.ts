@@ -1,7 +1,10 @@
 import { StakingLedgerToVotingLedgerDigestTrace } from "../../proving/tracing/staking-ledger-to-voting-ledger-tracer.js";
 import { KeyValueEntry } from "../key-value-storage.js";
 import { StakingLedgerToVotingLedgerDigestTraceBatchStorage } from "../staking-ledger-to-voting-ledger-digest-trace-batch-storage.js";
-import { KeyvCounter, KeyvKeyValueStorage } from "./keyv-key-value-storage.js";
+import {
+  KeyvKeyValueStorage,
+  type KeyvNamespaceCounter,
+} from "./keyv-key-value-storage.js";
 import { Keyv } from "keyv";
 
 export class KeyvStakingLedgerToVotingLedgerDigestTraceBatchStorage
@@ -10,8 +13,8 @@ export class KeyvStakingLedgerToVotingLedgerDigestTraceBatchStorage
 {
   public entries: Array<KeyValueEntry> = [];
 
-  constructor(keyv: Keyv, namespace: string, keyvCounter: KeyvCounter) {
-    super(keyv, keyvCounter, `${namespace}-traces`);
+  constructor(keyv: Keyv, namespace: string, counter: KeyvNamespaceCounter) {
+    super(keyv, `${namespace}-traces`, counter);
   }
 
   async getTrace(

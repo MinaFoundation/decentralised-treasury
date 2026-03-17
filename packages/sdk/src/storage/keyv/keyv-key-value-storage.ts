@@ -1,7 +1,7 @@
 import { Keyv } from "keyv";
 import { KeyValueStorage } from "../key-value-storage.js";
 
-export interface KeyvCounter {
+export interface KeyvNamespaceCounter {
   count(namespace: string): Promise<number>;
 }
 
@@ -10,8 +10,8 @@ export class KeyvKeyValueStorage implements KeyValueStorage {
 
   constructor(
     public keyv: Keyv,
-    private readonly keyvCounter: KeyvCounter,
     namespace: string,
+    private readonly counter: KeyvNamespaceCounter,
   ) {
     this.namespace = namespace;
     this.keyv.namespace = namespace;
@@ -21,7 +21,7 @@ export class KeyvKeyValueStorage implements KeyValueStorage {
   }
 
   public async count(): Promise<number> {
-    return await this.keyvCounter.count(this.namespace);
+    return await this.counter.count(this.namespace);
   }
 
   async get(key: string): Promise<string | undefined> {

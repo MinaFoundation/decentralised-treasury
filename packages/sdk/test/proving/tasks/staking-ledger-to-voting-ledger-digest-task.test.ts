@@ -15,18 +15,26 @@ import { PersistentStakingLedger } from "../../../src/ledgers/staking-ledger/per
 import { PersistentVotingLedger } from "../../../src/ledgers/voting-ledger/persistent-voting-ledger.js";
 import { createSqliteStakingLedgerStorage } from "../../../src/storage/sqlite/factory/sqlite-staking-ledger-storage.js";
 import { createSqliteVotingLedgerStorage } from "../../../src/storage/sqlite/factory/sqlite-voting-ledger-storage.js";
+import { KeyvSqlite } from "@keyv/sqlite";
 
 import { RecordingStakingLedger } from "../../../src/ledgers/staking-ledger/recording-staking-ledger.js";
 import { RecordingVotingLedger } from "../../../src/ledgers/voting-ledger/recording-voting-ledger.js";
 import assert from "node:assert";
 
 it("should run the digest task", async () => {
-  const stakingLedgerStorage = createSqliteStakingLedgerStorage("test-namespace");
+  const sqlite = new KeyvSqlite({ uri: "sqlite://:memory:" });
+  const stakingLedgerStorage = createSqliteStakingLedgerStorage(
+    "test-namespace",
+    sqlite,
+  );
   const stakingLedger = new PersistentStakingLedger(
     stakingLedgerStorage.accountStorage,
     stakingLedgerStorage.merkleTreeStorage,
   );
-  const votingLedgerStorage = createSqliteVotingLedgerStorage("test-namespace");
+  const votingLedgerStorage = createSqliteVotingLedgerStorage(
+    "test-namespace",
+    sqlite,
+  );
   const votingLedger = new PersistentVotingLedger(
     votingLedgerStorage.votingAccountStorage,
     votingLedgerStorage.merkleTreeStorage,
@@ -85,4 +93,7 @@ it("should run the digest task", async () => {
       trace.publicInput.stakingLedgerRoot.toString(),
     "staking ledger root does not match",
   );
+  await votingLedger.close();
+  await stakingLedger.close();
+  await sqlite.disconnect();
 });

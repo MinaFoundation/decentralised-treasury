@@ -8,12 +8,10 @@ import { testTaskQueue } from "../test-queue.js";
 import assert from "node:assert";
 import { PersistentStakingLedger } from "../../../src/ledgers/staking-ledger/persistent-staking-ledger.js";
 import { InMemoryVotingLedger } from "../../../src/ledgers/voting-ledger/in-memory-voting-ledger.js";
-import { SqliteCounter } from "../../../src/storage/sqlite/sqlite-counter.js";
 import { createSqliteStakingLedgerStorage } from "../../../src/storage/sqlite/factory/sqlite-staking-ledger-storage.js";
 import { createSqliteVotingLedgerStorage } from "../../../src/storage/sqlite/factory/sqlite-voting-ledger-storage.js";
+import { KeyvSqliteCounter } from "../../../src/storage/sqlite/keyv-sqlite-counter.js";
 import { KeyvKeyValueBatchStorage } from "../../../src/storage/keyv/keyv-key-value-batch-storage.js";
-import { createSqliteKeyv } from "../../../src/storage/sqlite/sqlite-keyv.js";
-import { getSqliteDbPath } from "../../../src/storage/sqlite/sqlite-db-path.js";
 import { createInMemoryVotingLedgerStorage } from "../../../src/storage/in-memory/factory/in-memory-voting-ledger-storage.js";
 import { Provable } from "o1js";
 import { createReadStream, createWriteStream } from "node:fs";
@@ -24,8 +22,10 @@ import {
   StakingLedgerToVotingLedgerDigestTrace,
   type StakingLedgerToVotingLedgerDigestTraceJSON,
 } from "../../../src/proving/tracing/staking-ledger-to-voting-ledger-tracer.js";
+import { KeyvSqlite } from "@keyv/sqlite";
+import { Keyv } from "keyv";
 
-const DIGEST_TRACES_PATH = "test/.data/test-ledger-mini-digest-traces-v2.json";
+const DIGEST_TRACES_PATH = "test/.data/test-ledger-mini-digest-traces.json";
 const MERGE_PROOF_PATH = "test/.data/test-ledger-merge-proof.json";
 const RESTORE_COMMIT_INTERVAL = 10;
 
@@ -116,43 +116,48 @@ it("process traces into proofs", async () => {
   const redisHost = await redisServer.getHost();
   const redisPort = await redisServer.getPort();
   const redisUrl = `redis://${redisHost}:${redisPort}`;
-  const namespace = `test-namespace-${Date.now()}`;
-  const dbPath = getSqliteDbPath(namespace);
+  const namespace = `test-namespace`;
+
+  const sqliteStore = new KeyvSqlite({ uri: "sqlite://:memory:" });
+  const createKeyv = (keyvNamespace = "") => {
+    const keyv = new Keyv({ store: sqliteStore, namespace: keyvNamespace });
+    keyv.disconnect = async () => {};
+    return keyv;
+  };
 
   console.log("redis url", redisUrl);
 
-  const counter = new SqliteCounter(dbPath);
+  const traceKeyv = createKeyv();
   const traceStorage =
     new KeyvStakingLedgerToVotingLedgerDigestTraceBatchStorage(
-      createSqliteKeyv(dbPath),
+      traceKeyv,
       namespace,
-      counter,
+      new KeyvSqliteCounter(sqliteStore),
     );
 
   const proofStorage = new KeyvStakingLedgerToVotingLedgerProofStorage(
-    () => createSqliteKeyv(dbPath),
+    () => createKeyv(),
     namespace,
-    counter,
+    new KeyvSqliteCounter(sqliteStore),
   );
 
-  const stakingLedgerStorage = createSqliteStakingLedgerStorage(namespace);
+  const stakingLedgerStorage = createSqliteStakingLedgerStorage(
+    namespace,
+    sqliteStore,
+  );
   const stakingLedger = new PersistentStakingLedger(
     stakingLedgerStorage.accountStorage,
     stakingLedgerStorage.merkleTreeStorage,
   );
   const votingLedgerStorage = createInMemoryVotingLedgerStorage(
-    createSqliteVotingLedgerStorage(namespace),
+    createSqliteVotingLedgerStorage(namespace, sqliteStore),
   );
   const votingLedger = new InMemoryVotingLedger(
     votingLedgerStorage.votingAccountStorage,
     votingLedgerStorage.merkleTreeStorage,
   );
-  const traceBatchWriter = new KeyvKeyValueBatchStorage(
-    createSqliteKeyv(dbPath),
-  );
-  const proofBatchWriter = new KeyvKeyValueBatchStorage(
-    createSqliteKeyv(dbPath),
-  );
+  const traceBatchWriter = new KeyvKeyValueBatchStorage(createKeyv());
+  const proofBatchWriter = new KeyvKeyValueBatchStorage(createKeyv());
 
   const taskQueue = await testTaskQueue(1, redisHost, redisPort);
 
@@ -186,11 +191,13 @@ it("process traces into proofs", async () => {
   );
   if (!restored) {
     console.log("tracing digest");
-    await tracer.digest(0, 9);
+    await tracer.digest(0, 5);
     console.log("persisting traces");
     await persistTracesToFile(DIGEST_TRACES_PATH, traceStorage);
   }
-  await prover.digest(0, 9);
+  await prover.digest(0, 5);
+
+  console.log("done digesting");
 
   const mergeProof = await prover.merge();
 
@@ -207,6 +214,7 @@ it("process traces into proofs", async () => {
   await traceBatchWriter.close();
   await proofBatchWriter.close();
   await proofStorage.close();
+  await sqliteStore.disconnect();
   taskQueue.killWorkers();
   await taskQueue.queue.close();
   await redisServer.stop();

@@ -1,26 +1,35 @@
 import { KeyvMerkleTreeStorage } from "../../keyv/keyv-merkle-tree-storage.js";
 import { KeyvVoteNullifierStorage } from "../../keyv/keyv-vote-nullifier-storage.js";
 import { NullifierLedgerStorage } from "../../nullifier-ledger-storage.js";
-import { SqliteCounter } from "../sqlite-counter.js";
-import { getSqliteDbPath } from "../sqlite-db-path.js";
-import { createSqliteKeyv } from "../sqlite-keyv.js";
+import { Keyv } from "keyv";
+import type { KeyvSqlite } from "@keyv/sqlite";
+import { KeyvSqliteCounter } from "../keyv-sqlite-counter.js";
 
 export function createSqliteNullifierLedgerStorage(
   lifecycleId: string,
+  sqliteStore: KeyvSqlite,
 ): NullifierLedgerStorage<KeyvVoteNullifierStorage, KeyvMerkleTreeStorage> {
   const namespace = `nullifier-ledger-${lifecycleId}`;
-  const dbPath = getSqliteDbPath(lifecycleId);
-  const keyv = createSqliteKeyv(dbPath);
-  const keyvCounter = new SqliteCounter(dbPath);
+  const counter = new KeyvSqliteCounter(sqliteStore);
+  const nullifierKeyv = new Keyv({
+    store: sqliteStore,
+    namespace: `${namespace}-nullifiers`,
+  });
+  nullifierKeyv.disconnect = async () => {};
+  const merkleTreeKeyv = new Keyv({
+    store: sqliteStore,
+    namespace: `${namespace}-merkle-tree`,
+  });
+  merkleTreeKeyv.disconnect = async () => {};
   const nullifierStorage = new KeyvVoteNullifierStorage(
-    keyv,
+    nullifierKeyv,
     `${namespace}-nullifiers`,
-    keyvCounter,
+    counter,
   );
   const merkleTreeStorage = new KeyvMerkleTreeStorage(
-    keyv,
+    merkleTreeKeyv,
     `${namespace}-merkle-tree`,
-    keyvCounter,
+    counter,
   );
 
   return { nullifierStorage, merkleTreeStorage };

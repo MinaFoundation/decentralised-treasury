@@ -1,13 +1,16 @@
 import { VoteNullifierStorage } from "../vote-nullifier-storage.js";
-import { KeyvCounter, KeyvKeyValueStorage } from "./keyv-key-value-storage.js";
+import {
+  KeyvKeyValueStorage,
+  type KeyvNamespaceCounter,
+} from "./keyv-key-value-storage.js";
 import { Keyv } from "keyv";
 
 export class KeyvVoteNullifierStorage
   extends KeyvKeyValueStorage
   implements VoteNullifierStorage
 {
-  constructor(keyv: Keyv, namespace: string, keyvCounter: KeyvCounter) {
-    super(keyv, keyvCounter, namespace);
+  constructor(keyv: Keyv, namespace: string, counter: KeyvNamespaceCounter) {
+    super(keyv, namespace, counter);
   }
 
   async getNullifier(publicKey: string): Promise<boolean | undefined> {

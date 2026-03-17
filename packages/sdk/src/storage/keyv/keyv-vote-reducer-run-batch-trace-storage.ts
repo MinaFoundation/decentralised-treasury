@@ -1,7 +1,10 @@
 import { VoteReducerRunBatchTrace } from "../../proving/tracing/vote-reducer-tracer.js";
 import { KeyValueEntry } from "../key-value-storage.js";
 import { VoteReducerRunBatchTraceStorage } from "../vote-reducer-run-batch-trace-storage.js";
-import { KeyvCounter, KeyvKeyValueStorage } from "./keyv-key-value-storage.js";
+import {
+  KeyvKeyValueStorage,
+  type KeyvNamespaceCounter,
+} from "./keyv-key-value-storage.js";
 import { Keyv } from "keyv";
 
 export class KeyvVoteReducerRunBatchTraceStorage
@@ -10,8 +13,8 @@ export class KeyvVoteReducerRunBatchTraceStorage
 {
   public entries: Array<KeyValueEntry> = [];
 
-  constructor(keyv: Keyv, namespace: string, keyvCounter: KeyvCounter) {
-    super(keyv, keyvCounter, `${namespace}-vote-reducer-traces`);
+  constructor(keyv: Keyv, namespace: string, counter: KeyvNamespaceCounter) {
+    super(keyv, `${namespace}-vote-reducer-traces`, counter);
   }
 
   async getTrace(index: number): Promise<VoteReducerRunBatchTrace | undefined> {

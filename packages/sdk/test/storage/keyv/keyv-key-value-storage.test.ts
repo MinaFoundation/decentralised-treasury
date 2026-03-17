@@ -1,26 +1,22 @@
 import { it } from "node:test";
 import { KeyvKeyValueStorage } from "../../../src/storage/keyv/keyv-key-value-storage.js";
+import { KeyvSqliteCounter } from "../../../src/storage/sqlite/keyv-sqlite-counter.js";
 import assert from "node:assert";
-import { SqliteCounter } from "../../../src/storage/sqlite/sqlite-counter.js";
-import { createSqliteKeyv } from "../../../src/storage/sqlite/sqlite-keyv.js";
-import { getSqliteDbPath } from "../../../src/storage/sqlite/sqlite-db-path.js";
+import { Keyv } from "keyv";
+import { KeyvSqlite } from "@keyv/sqlite";
 
 const key = "foo";
 const value = "bar";
 const namespace = "test-namespace";
 
-const createKeyvClient = (lifecycleId: string) => {
-  return createSqliteKeyv(getSqliteDbPath(lifecycleId));
-};
-
 it("should create a keyv key value storage", async () => {
-  const lifecycleId = `test-namespace-${Date.now()}`;
-  const keyv = createKeyvClient(lifecycleId);
-  const counter = new SqliteCounter(getSqliteDbPath(lifecycleId));
+  const store = new KeyvSqlite({ uri: "sqlite://:memory:" });
+  const keyv = new Keyv({ store });
+  keyv.disconnect = async () => {};
   const storage = new KeyvKeyValueStorage(
     keyv,
-    counter,
     namespace,
+    new KeyvSqliteCounter(store),
   );
 
   await storage.set(key, value);
@@ -31,16 +27,17 @@ it("should create a keyv key value storage", async () => {
   assert(count === 1, "count does not match");
 
   await storage.close();
+  await store.disconnect();
 });
 
 it("should batch write keys in one transaction", async () => {
-  const lifecycleId = `test-namespace-${Date.now()}`;
-  const keyv = createKeyvClient(lifecycleId);
-  const counter = new SqliteCounter(getSqliteDbPath(lifecycleId));
+  const store = new KeyvSqlite({ uri: "sqlite://:memory:" });
+  const keyv = new Keyv({ store });
+  keyv.disconnect = async () => {};
   const storage = new KeyvKeyValueStorage(
     keyv,
-    counter,
     namespace,
+    new KeyvSqliteCounter(store),
   );
 
   await storage.setMany([
@@ -62,16 +59,17 @@ it("should batch write keys in one transaction", async () => {
   assert(count === 3, "count does not match batch entries");
 
   await storage.close();
+  await store.disconnect();
 });
 
 it("should count stored keys", async () => {
-  const lifecycleId = `test-namespace-${Date.now()}`;
-  const keyv = createKeyvClient(lifecycleId);
-  const counter = new SqliteCounter(getSqliteDbPath(lifecycleId));
+  const store = new KeyvSqlite({ uri: "sqlite://:memory:" });
+  const keyv = new Keyv({ store });
+  keyv.disconnect = async () => {};
   const storage = new KeyvKeyValueStorage(
     keyv,
-    counter,
     namespace,
+    new KeyvSqliteCounter(store),
   );
 
   await storage.set("count-1", "value-1");
@@ -83,6 +81,7 @@ it("should count stored keys", async () => {
   assert(count === 3, "count does not match stored keys");
 
   await storage.close();
+  await store.disconnect();
 });
 
 

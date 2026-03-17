@@ -22,6 +22,7 @@ import { createSqliteStakingLedgerToVotingLedgerDigestTraceStorage } from "../..
 import { createSqliteBatchWriter } from "../../../src/storage/sqlite/factory/sqlite-batch-writer.js";
 import { createInMemoryVotingLedgerStorage } from "../../../src/storage/in-memory/factory/in-memory-voting-ledger-storage.js";
 import { InMemoryVotingLedger } from "../../../src/ledgers/voting-ledger/in-memory-voting-ledger.js";
+import { KeyvSqlite } from "@keyv/sqlite";
 
 const lifecycleId = `test-lifecycle-${Date.now()}`;
 
@@ -29,6 +30,7 @@ let stakingLedger: PersistentStakingLedger;
 let votingLedger: InMemoryVotingLedger;
 let traceStorage: KeyvStakingLedgerToVotingLedgerDigestTraceBatchStorage;
 let batchWriter: KeyvKeyValueBatchStorage;
+let sqlite: KeyvSqlite;
 
 const onTraceComplete = (
   index: number,
@@ -47,14 +49,18 @@ const onTraceComplete = (
 };
 
 before(async () => {
-  const stakingLedgerStorage = createSqliteStakingLedgerStorage(lifecycleId);
+  sqlite = new KeyvSqlite({ uri: "sqlite://:memory:" });
+  const stakingLedgerStorage = createSqliteStakingLedgerStorage(
+    lifecycleId,
+    sqlite,
+  );
   stakingLedger = new PersistentStakingLedger(
     stakingLedgerStorage.accountStorage,
     stakingLedgerStorage.merkleTreeStorage,
   );
 
   const votingLedgerStorage = createInMemoryVotingLedgerStorage(
-    createSqliteVotingLedgerStorage(lifecycleId),
+    createSqliteVotingLedgerStorage(lifecycleId, sqlite),
   );
   votingLedger = new InMemoryVotingLedger(
     votingLedgerStorage.votingAccountStorage,
@@ -63,8 +69,9 @@ before(async () => {
 
   traceStorage = createSqliteStakingLedgerToVotingLedgerDigestTraceStorage(
     lifecycleId,
+    sqlite,
   );
-  batchWriter = createSqliteBatchWriter(lifecycleId);
+  batchWriter = createSqliteBatchWriter(sqlite);
 });
 
 after(async () => {
@@ -72,6 +79,7 @@ after(async () => {
   await votingLedger.close();
   await traceStorage.close();
   await batchWriter.close();
+  await sqlite.disconnect();
 });
 
 it("should serialize and deserialize a trace", async () => {

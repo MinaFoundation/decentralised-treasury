@@ -1,25 +1,18 @@
 import { it } from "node:test";
 import { Account } from "../../../src/provable/account.js";
 import { KeyvAccountStorage } from "../../../src/storage/keyv/keyv-account-storage.js";
+import { KeyvSqliteCounter } from "../../../src/storage/sqlite/keyv-sqlite-counter.js";
 import assert from "node:assert";
 import { PrivateKey } from "o1js";
-import { SqliteCounter } from "../../../src/storage/sqlite/sqlite-counter.js";
-import { createSqliteKeyv } from "../../../src/storage/sqlite/sqlite-keyv.js";
-import { getSqliteDbPath } from "../../../src/storage/sqlite/sqlite-db-path.js";
-
-const createKeyvClient = (lifecycleId: string) => {
-  return createSqliteKeyv(getSqliteDbPath(lifecycleId));
-};
+import { Keyv } from "keyv";
+import { KeyvSqlite } from "@keyv/sqlite";
 
 it("should create a keyv account storage", async () => {
-  const lifecycleId = `test-namespace-${Date.now()}`;
-  const keyv = createKeyvClient(lifecycleId);
-  const counter = new SqliteCounter(getSqliteDbPath(lifecycleId));
-  const accountStorage = new KeyvAccountStorage(
-    keyv,
-    "test-namespace",
-    counter,
-  );
+  const store = new KeyvSqlite({ uri: "sqlite://:memory:" });
+  const keyv = new Keyv({ store });
+  keyv.disconnect = async () => {};
+  const counter = new KeyvSqliteCounter(store);
+  const accountStorage = new KeyvAccountStorage(keyv, "test-namespace", counter);
 
   const account = Account.empty();
   account.pk = PrivateKey.random().toPublicKey();
@@ -34,4 +27,5 @@ it("should create a keyv account storage", async () => {
   );
 
   await accountStorage.close();
+  await store.disconnect();
 });

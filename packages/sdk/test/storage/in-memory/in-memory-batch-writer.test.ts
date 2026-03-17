@@ -9,9 +9,9 @@ import { KeyvKeyValueBatchStorage } from "../../../src/storage/keyv/keyv-key-val
 import { KeyvMerkleTreeStorage } from "../../../src/storage/keyv/keyv-merkle-tree-storage.js";
 import { KeyvVoteNullifierStorage } from "../../../src/storage/keyv/keyv-vote-nullifier-storage.js";
 import { KeyvVotingAccountStorage } from "../../../src/storage/keyv/keyv-voting-account-storage.js";
-import { SqliteCounter } from "../../../src/storage/sqlite/sqlite-counter.js";
-import { createSqliteKeyv } from "../../../src/storage/sqlite/sqlite-keyv.js";
-import { getSqliteDbPath } from "../../../src/storage/sqlite/sqlite-db-path.js";
+import { KeyvSqliteCounter } from "../../../src/storage/sqlite/keyv-sqlite-counter.js";
+import { KeyvSqlite } from "@keyv/sqlite";
+import { Keyv } from "keyv";
 
 let batchWriter: KeyvKeyValueBatchStorage;
 let parentVotingStorage: KeyvVotingAccountStorage;
@@ -20,18 +20,19 @@ let parentNullifierStorage: KeyvVoteNullifierStorage;
 let inMemoryVotingStorage: InMemoryVotingAccountStorage;
 let inMemoryMerkleStorage: InMemoryMerkleTreeStorage;
 let inMemoryNullifierStorage: InMemoryVoteNullifierStorage;
-let counter: SqliteCounter;
+let store: KeyvSqlite;
 
 before(async () => {
-  const lifecycleId = `test-batch-writer-${Date.now()}`;
-  const dbPath = getSqliteDbPath(lifecycleId);
-  counter = new SqliteCounter(dbPath);
+  store = new KeyvSqlite({ uri: "sqlite://:memory:" });
 
   function createTestKeyv() {
-    return createSqliteKeyv(dbPath);
+    const keyv = new Keyv({ store });
+    keyv.disconnect = async () => {};
+    return keyv;
   }
 
   const namespace = "test-batch-writer";
+  const counter = new KeyvSqliteCounter(store);
   batchWriter = new KeyvKeyValueBatchStorage(createTestKeyv());
   parentVotingStorage = new KeyvVotingAccountStorage(
     createTestKeyv(),
@@ -61,6 +62,7 @@ after(async () => {
   await inMemoryVotingStorage.close();
   await inMemoryMerkleStorage.close();
   await inMemoryNullifierStorage.close();
+  await store.disconnect();
 });
 
 it("should batch write collected entries from all in-memory storages", async () => {

@@ -1,15 +1,18 @@
 import { KeyvStakingLedgerToVotingLedgerDigestTraceBatchStorage } from "../../keyv/keyv-staking-ledger-to-voting-ledger-digest-trace-batch-storage.js";
-import { SqliteCounter } from "../sqlite-counter.js";
-import { getSqliteDbPath } from "../sqlite-db-path.js";
-import { createSqliteKeyv } from "../sqlite-keyv.js";
+import { Keyv } from "keyv";
+import type { KeyvSqlite } from "@keyv/sqlite";
+import { KeyvSqliteCounter } from "../keyv-sqlite-counter.js";
 
 export function createSqliteStakingLedgerToVotingLedgerDigestTraceStorage(
   lifecycleId: string,
+  sqliteStore: KeyvSqlite,
 ): KeyvStakingLedgerToVotingLedgerDigestTraceBatchStorage {
-  const dbPath = getSqliteDbPath(lifecycleId);
+  const keyv = new Keyv({ store: sqliteStore, namespace: lifecycleId });
+  keyv.disconnect = async () => {};
+  const counter = new KeyvSqliteCounter(sqliteStore);
   return new KeyvStakingLedgerToVotingLedgerDigestTraceBatchStorage(
-    createSqliteKeyv(dbPath),
+    keyv,
     lifecycleId,
-    new SqliteCounter(dbPath),
+    counter,
   );
 }

@@ -2,7 +2,11 @@ import { Keyv } from "keyv";
 import { KeyValueBatchStorage } from "../batch-key-value-storage.js";
 
 export class KeyvKeyValueBatchStorage implements KeyValueBatchStorage {
-  public constructor(public keyv: Keyv) {}
+  public constructor(public keyv: Keyv) {
+    // Batch entries are already fully qualified keys (namespace:key).
+    // Disable Keyv's automatic key prefixing to avoid writing keyv:<namespace>:<key>.
+    this.keyv.useKeyPrefix = false;
+  }
 
   public async setMany(
     entries: Array<{ key: string; value: string }>,

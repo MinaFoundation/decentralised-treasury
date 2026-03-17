@@ -1,20 +1,52 @@
 import { Command } from "commander";
 import { Provable } from "o1js";
+import { KeyvSqlite } from "@keyv/sqlite";
+import { mkdirSync } from "node:fs";
+import { dirname } from "node:path";
 import { PersistentStakingLedger } from "../ledgers/staking-ledger/persistent-staking-ledger.js";
 import { createSqliteStakingLedgerStorage } from "../storage/sqlite/factory/sqlite-staking-ledger-storage.js";
+import { getSqliteDbPath } from "../storage/sqlite/sqlite-db-path.js";
+
+function createSqliteStoreForLifecycle(lifecycleId: string): KeyvSqlite {
+  const path = getSqliteDbPath(lifecycleId);
+  mkdirSync(dirname(path), { recursive: true });
+  const store = new KeyvSqlite({ uri: path });
+  const disconnect = store.disconnect.bind(store);
+  store.disconnect = async () => {
+    try {
+      await disconnect();
+    } catch (error) {
+      if (
+        typeof error === "object" &&
+        error !== null &&
+        "code" in error &&
+        (error as { code?: string }).code === "SQLITE_MISUSE"
+      ) {
+        return;
+      }
+      throw error;
+    }
+  };
+  return store;
+}
 
 export async function getRootHash({
   lifecycleId,
 }: {
   lifecycleId: string;
 }) {
-  const stakingLedgerStorage = createSqliteStakingLedgerStorage(lifecycleId);
+  const sqliteStore = createSqliteStoreForLifecycle(lifecycleId);
+  const stakingLedgerStorage = createSqliteStakingLedgerStorage(
+    lifecycleId,
+    sqliteStore,
+  );
   const stakingLedger = new PersistentStakingLedger(
     stakingLedgerStorage.accountStorage,
     stakingLedgerStorage.merkleTreeStorage,
   );
   const rootHash = await stakingLedger.getRoot();
   await stakingLedger.close();
+  await sqliteStore.disconnect();
   Provable.log("rootHash", rootHash);
 }
 
@@ -29,7 +61,11 @@ export async function hydrateAccounts({
   startIndex: number;
   endIndex: number;
 }): Promise<void> {
-  const stakingLedgerStorage = createSqliteStakingLedgerStorage(lifecycleId);
+  const sqliteStore = createSqliteStoreForLifecycle(lifecycleId);
+  const stakingLedgerStorage = createSqliteStakingLedgerStorage(
+    lifecycleId,
+    sqliteStore,
+  );
   const stakingLedger = new PersistentStakingLedger(
     stakingLedgerStorage.accountStorage,
     stakingLedgerStorage.merkleTreeStorage,
@@ -37,6 +73,7 @@ export async function hydrateAccounts({
   let accounts = await stakingLedger.readStakingLedger(stakingLedgerPath);
   await stakingLedger.hydrateAccounts(accounts, startIndex, endIndex);
   await stakingLedger.close();
+  await sqliteStore.disconnect();
 }
 
 export async function hydrateMerkleTree({
@@ -48,7 +85,11 @@ export async function hydrateMerkleTree({
   startIndex: number;
   endIndex: number;
 }): Promise<void> {
-  const stakingLedgerStorage = createSqliteStakingLedgerStorage(lifecycleId);
+  const sqliteStore = createSqliteStoreForLifecycle(lifecycleId);
+  const stakingLedgerStorage = createSqliteStakingLedgerStorage(
+    lifecycleId,
+    sqliteStore,
+  );
   const stakingLedger = new PersistentStakingLedger(
     stakingLedgerStorage.accountStorage,
     stakingLedgerStorage.merkleTreeStorage,
@@ -56,6 +97,7 @@ export async function hydrateMerkleTree({
   const accounts = await stakingLedger.getAllAccounts();
   await stakingLedger.hydrateMerkleTree(accounts, startIndex, endIndex);
   await stakingLedger.close();
+  await sqliteStore.disconnect();
 }
 
 export async function fromFile({

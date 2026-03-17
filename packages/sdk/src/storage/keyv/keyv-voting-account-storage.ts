@@ -1,14 +1,17 @@
 import { VotingAccount } from "../../provable/voting-account.js";
 import { VotingAccountStorage } from "../voting-account-storage.js";
-import { KeyvCounter, KeyvKeyValueStorage } from "./keyv-key-value-storage.js";
+import {
+  KeyvKeyValueStorage,
+  type KeyvNamespaceCounter,
+} from "./keyv-key-value-storage.js";
 import { Keyv } from "keyv";
 
 export class KeyvVotingAccountStorage
   extends KeyvKeyValueStorage
   implements VotingAccountStorage
 {
-  constructor(keyv: Keyv, namespace: string, keyvCounter: KeyvCounter) {
-    super(keyv, keyvCounter, `${namespace}-voting-accounts`);
+  constructor(keyv: Keyv, namespace: string, counter: KeyvNamespaceCounter) {
+    super(keyv, `${namespace}-voting-accounts`, counter);
   }
 
   async getVotingAccount(

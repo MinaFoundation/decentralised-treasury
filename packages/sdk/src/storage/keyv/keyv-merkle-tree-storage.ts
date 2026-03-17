@@ -1,14 +1,17 @@
 import { Field } from "o1js";
 import { MerkleTreeStorage } from "../merkle-tree-storage.js";
-import { KeyvCounter, KeyvKeyValueStorage } from "./keyv-key-value-storage.js";
+import {
+  KeyvKeyValueStorage,
+  type KeyvNamespaceCounter,
+} from "./keyv-key-value-storage.js";
 import { Keyv } from "keyv";
 
 export class KeyvMerkleTreeStorage
   extends KeyvKeyValueStorage
   implements MerkleTreeStorage
 {
-  constructor(keyv: Keyv, namespace: string, keyvCounter: KeyvCounter) {
-    super(keyv, keyvCounter, `${namespace}-merkle-tree`);
+  constructor(keyv: Keyv, namespace: string, counter: KeyvNamespaceCounter) {
+    super(keyv, `${namespace}-merkle-tree`, counter);
   }
 
   async getNode(level: number, index: bigint): Promise<Field | undefined> {

@@ -1,14 +1,17 @@
 import { Account } from "../../provable/account.js";
 import { AccountStorage } from "../account-storage.js";
-import { KeyvCounter, KeyvKeyValueStorage } from "./keyv-key-value-storage.js";
+import {
+  KeyvKeyValueStorage,
+  type KeyvNamespaceCounter,
+} from "./keyv-key-value-storage.js";
 import { Keyv } from "keyv";
 
 export class KeyvAccountStorage
   extends KeyvKeyValueStorage
   implements AccountStorage
 {
-  constructor(keyv: Keyv, namespace: string, keyvCounter: KeyvCounter) {
-    super(keyv, keyvCounter, `${namespace}-accounts`);
+  constructor(keyv: Keyv, namespace: string, counter: KeyvNamespaceCounter) {
+    super(keyv, `${namespace}-accounts`, counter);
   }
 
   async getAllAccounts(): Promise<Account[]> {

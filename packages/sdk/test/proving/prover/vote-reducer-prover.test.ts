@@ -2,8 +2,6 @@ import { it } from "node:test";
 import assert from "node:assert";
 import { RedisMemoryServer } from "redis-memory-server";
 import { Bool, Provable } from "o1js";
-import { KeyvVoteReducerRunBatchTraceStorage } from "../../../src/storage/keyv/keyv-vote-reducer-run-batch-trace-storage.js";
-import { KeyvVoteReducerProofStorage } from "../../../src/storage/keyv/keyv-vote-reducer-proof-storage.js";
 import { VoteReducerTracer } from "../../../src/proving/tracing/vote-reducer-tracer.js";
 import { VoteReducerProver } from "../../../src/proving/prover/vote-reducer-prover.js";
 import { testTaskQueue } from "../test-queue.js";
@@ -14,46 +12,41 @@ import {
   VoteAction,
   VOTE_ACTION_BATCH_SIZE,
 } from "../../../src/provable/contracts/treasury-proposal/vote-reducer.js";
-import { SqliteCounter } from "../../../src/storage/sqlite/sqlite-counter.js";
 import { createSqliteNullifierLedgerStorage } from "../../../src/storage/sqlite/factory/sqlite-nullifier-ledger-storage.js";
 import { createSqliteVotingLedgerStorage } from "../../../src/storage/sqlite/factory/sqlite-voting-ledger-storage.js";
 import { createSqliteBatchWriter } from "../../../src/storage/sqlite/factory/sqlite-batch-writer.js";
+import { createSqliteVoteReducerRunBatchTraceStorage } from "../../../src/storage/sqlite/factory/sqlite-vote-reducer-run-batch-trace-storage.js";
+import { createSqliteVoteReducerProofStorage } from "../../../src/storage/sqlite/factory/sqlite-vote-reducer-proof-storage.js";
 import { createInMemoryVotingLedgerStorage } from "../../../src/storage/in-memory/factory/in-memory-voting-ledger-storage.js";
 import { createInMemoryNullifierLedgerStorage } from "../../../src/storage/in-memory/factory/in-memory-nullifier-ledger-storage.js";
 import { InMemoryVotingLedger } from "../../../src/ledgers/voting-ledger/in-memory-voting-ledger.js";
 import { InMemoryNullifierLedger } from "../../../src/ledgers/nullifier-ledger/in-memory-nullifier-ledger.js";
-import { createSqliteKeyv } from "../../../src/storage/sqlite/sqlite-keyv.js";
-import { getSqliteDbPath } from "../../../src/storage/sqlite/sqlite-db-path.js";
+import { KeyvSqlite } from "@keyv/sqlite";
 
 it("process vote reducer traces into proofs", async () => {
   const redisServer = new RedisMemoryServer();
   const redisHost = await redisServer.getHost();
   const redisPort = await redisServer.getPort();
   const namespace = `vote-reducer-prover-test-${Date.now()}`;
-  const dbPath = getSqliteDbPath(namespace);
-
-  const keyv = createSqliteKeyv(dbPath);
-  const counter = new SqliteCounter(dbPath);
-  const traceStorage = new KeyvVoteReducerRunBatchTraceStorage(
-    keyv,
+  const sqliteStore = new KeyvSqlite({ uri: "sqlite://:memory:" });
+  const traceStorage = createSqliteVoteReducerRunBatchTraceStorage(
     namespace,
-    counter,
+    sqliteStore,
   );
-  const proofStorage = new KeyvVoteReducerProofStorage(
-    () => createSqliteKeyv(dbPath),
+  const proofStorage = createSqliteVoteReducerProofStorage(
     namespace,
-    counter,
+    sqliteStore,
   );
 
   const votingLedgerStorage = createInMemoryVotingLedgerStorage(
-    createSqliteVotingLedgerStorage(namespace),
+    createSqliteVotingLedgerStorage(namespace, sqliteStore),
   );
   const votingLedger = new InMemoryVotingLedger(
     votingLedgerStorage.votingAccountStorage,
     votingLedgerStorage.merkleTreeStorage,
   );
   const nullifierLedgerStorage = createInMemoryNullifierLedgerStorage(
-    createSqliteNullifierLedgerStorage(namespace),
+    createSqliteNullifierLedgerStorage(namespace, sqliteStore),
   );
   const nullifierLedger = new InMemoryNullifierLedger(
     nullifierLedgerStorage.nullifierStorage,
@@ -64,7 +57,7 @@ it("process vote reducer traces into proofs", async () => {
     votingLedger,
     nullifierLedger,
     traceStorage,
-    createSqliteBatchWriter(namespace),
+    createSqliteBatchWriter(sqliteStore),
   );
 
   const accounts = await createTestAccounts(VOTE_ACTION_BATCH_SIZE * 10);
@@ -86,7 +79,7 @@ it("process vote reducer traces into proofs", async () => {
   const prover = new VoteReducerProver(
     traceStorage,
     proofStorage,
-    createSqliteBatchWriter(namespace),
+    createSqliteBatchWriter(sqliteStore),
     taskQueue.queue,
   );
 
@@ -119,4 +112,5 @@ it("process vote reducer traces into proofs", async () => {
   taskQueue.killWorkers();
   await taskQueue.queue.close();
   await redisServer.stop();
+  await sqliteStore.disconnect();
 });

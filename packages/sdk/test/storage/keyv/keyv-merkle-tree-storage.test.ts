@@ -1,23 +1,19 @@
 import { it } from "node:test";
 import { KeyvMerkleTreeStorage } from "../../../src/storage/keyv/keyv-merkle-tree-storage.js";
+import { KeyvSqliteCounter } from "../../../src/storage/sqlite/keyv-sqlite-counter.js";
 import { Field } from "o1js";
 import assert from "node:assert";
-import { SqliteCounter } from "../../../src/storage/sqlite/sqlite-counter.js";
-import { createSqliteKeyv } from "../../../src/storage/sqlite/sqlite-keyv.js";
-import { getSqliteDbPath } from "../../../src/storage/sqlite/sqlite-db-path.js";
-
-const createKeyvClient = (lifecycleId: string) => {
-  return createSqliteKeyv(getSqliteDbPath(lifecycleId));
-};
+import { Keyv } from "keyv";
+import { KeyvSqlite } from "@keyv/sqlite";
 
 it("should create a key value merkle tree storage", async () => {
-  const lifecycleId = `test-namespace-${Date.now()}`;
-  const keyv = createKeyvClient(lifecycleId);
-  const counter = new SqliteCounter(getSqliteDbPath(lifecycleId));
+  const store = new KeyvSqlite({ uri: "sqlite://:memory:" });
+  const keyv = new Keyv({ store });
+  keyv.disconnect = async () => {};
   const merkleTreeStorage = new KeyvMerkleTreeStorage(
     keyv,
     "test-namespace",
-    counter,
+    new KeyvSqliteCounter(store),
   );
 
   await merkleTreeStorage.setNode(0, 0n, Field(1));
@@ -25,16 +21,17 @@ it("should create a key value merkle tree storage", async () => {
   assert(node?.toString() === "1", "node does not match");
 
   await merkleTreeStorage.close();
+  await store.disconnect();
 });
 
 it("should write multiple merkle nodes", async () => {
-  const lifecycleId = `test-namespace-${Date.now()}`;
-  const keyv = createKeyvClient(lifecycleId);
-  const counter = new SqliteCounter(getSqliteDbPath(lifecycleId));
+  const store = new KeyvSqlite({ uri: "sqlite://:memory:" });
+  const keyv = new Keyv({ store });
+  keyv.disconnect = async () => {};
   const merkleTreeStorage = new KeyvMerkleTreeStorage(
     keyv,
     "test-namespace",
-    counter,
+    new KeyvSqliteCounter(store),
   );
 
   await merkleTreeStorage.setNode(0, 0n, Field(11));
@@ -52,4 +49,5 @@ it("should write multiple merkle nodes", async () => {
   assert(node3?.toString() === "33", "node 2-3 does not match");
 
   await merkleTreeStorage.close();
+  await store.disconnect();
 });

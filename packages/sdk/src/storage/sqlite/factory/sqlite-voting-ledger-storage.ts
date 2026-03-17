@@ -1,27 +1,30 @@
 import { KeyvMerkleTreeStorage } from "../../keyv/keyv-merkle-tree-storage.js";
 import { KeyvVotingAccountStorage } from "../../keyv/keyv-voting-account-storage.js";
 import { VotingLedgerStorage } from "../../voting-ledger-storage.js";
-import { SqliteCounter } from "../sqlite-counter.js";
-import { getSqliteDbPath } from "../sqlite-db-path.js";
-import { createSqliteKeyv } from "../sqlite-keyv.js";
+import { Keyv } from "keyv";
+import type { KeyvSqlite } from "@keyv/sqlite";
+import { KeyvSqliteCounter } from "../keyv-sqlite-counter.js";
 
 export function createSqliteVotingLedgerStorage(
   lifecycleId: string,
+  sqliteStore: KeyvSqlite,
 ): VotingLedgerStorage<KeyvVotingAccountStorage, KeyvMerkleTreeStorage> {
   const namespace = `voting-ledger-${lifecycleId}`;
-  const dbPath = getSqliteDbPath(lifecycleId);
-  const keyv = createSqliteKeyv(dbPath);
-  const keyvCounter = new SqliteCounter(dbPath);
+  const counter = new KeyvSqliteCounter(sqliteStore);
+  const votingAccountKeyv = new Keyv({ store: sqliteStore, namespace });
+  votingAccountKeyv.disconnect = async () => {};
+  const merkleTreeKeyv = new Keyv({ store: sqliteStore, namespace });
+  merkleTreeKeyv.disconnect = async () => {};
 
   const votingAccountStorage = new KeyvVotingAccountStorage(
-    keyv,
+    votingAccountKeyv,
     namespace,
-    keyvCounter,
+    counter,
   );
   const merkleTreeStorage = new KeyvMerkleTreeStorage(
-    keyv,
+    merkleTreeKeyv,
     namespace,
-    keyvCounter,
+    counter,
   );
 
   return { votingAccountStorage, merkleTreeStorage };

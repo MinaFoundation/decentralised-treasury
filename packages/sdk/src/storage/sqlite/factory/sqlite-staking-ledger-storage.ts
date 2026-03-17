@@ -1,22 +1,29 @@
 import { KeyvAccountStorage } from "../../keyv/keyv-account-storage.js";
 import { KeyvMerkleTreeStorage } from "../../keyv/keyv-merkle-tree-storage.js";
 import { StakingLedgerStorage } from "../../staking-ledger-storage.js";
-import { SqliteCounter } from "../sqlite-counter.js";
-import { getSqliteDbPath } from "../sqlite-db-path.js";
-import { createSqliteKeyv } from "../sqlite-keyv.js";
+import { Keyv } from "keyv";
+import type { KeyvSqlite } from "@keyv/sqlite";
+import { KeyvSqliteCounter } from "../keyv-sqlite-counter.js";
 
 export function createSqliteStakingLedgerStorage(
   lifecycleId: string,
+  sqliteStore: KeyvSqlite,
 ): StakingLedgerStorage<KeyvAccountStorage, KeyvMerkleTreeStorage> {
   const namespace = `staking-ledger-${lifecycleId}`;
-  const dbPath = getSqliteDbPath(lifecycleId);
-  const keyv = createSqliteKeyv(dbPath);
-  const keyvCounter = new SqliteCounter(dbPath);
-  const accountStorage = new KeyvAccountStorage(keyv, namespace, keyvCounter);
-  const merkleTreeStorage = new KeyvMerkleTreeStorage(
-    keyv,
+  const counter = new KeyvSqliteCounter(sqliteStore);
+  const accountKeyv = new Keyv({ store: sqliteStore, namespace });
+  accountKeyv.disconnect = async () => {};
+  const merkleTreeKeyv = new Keyv({ store: sqliteStore, namespace });
+  merkleTreeKeyv.disconnect = async () => {};
+  const accountStorage = new KeyvAccountStorage(
+    accountKeyv,
     namespace,
-    keyvCounter,
+    counter,
+  );
+  const merkleTreeStorage = new KeyvMerkleTreeStorage(
+    merkleTreeKeyv,
+    namespace,
+    counter,
   );
 
   return { accountStorage, merkleTreeStorage };

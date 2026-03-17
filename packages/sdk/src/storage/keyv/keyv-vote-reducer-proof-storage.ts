@@ -1,5 +1,8 @@
 import { SideLoadedVoteReducerProof } from "../../provable/contracts/treasury-proposal/vote-reducer.js";
-import { KeyvCounter, KeyvKeyValueStorage } from "./keyv-key-value-storage.js";
+import {
+  KeyvKeyValueStorage,
+  type KeyvNamespaceCounter,
+} from "./keyv-key-value-storage.js";
 import { VoteReducerProofStorage } from "../vote-reducer-proof-storage.js";
 import { Keyv } from "keyv";
 import { KeyValueEntry } from "../key-value-storage.js";
@@ -12,21 +15,25 @@ export class KeyvVoteReducerProofStorage implements VoteReducerProofStorage {
   public mergeStorage: KeyvKeyValueStorage;
   public entries: Array<KeyValueEntry> = [];
 
-  constructor(keyvFactory: KeyvFactory, namespace: string, keyvCounter: KeyvCounter) {
+  constructor(
+    keyvFactory: KeyvFactory,
+    namespace: string,
+    counter: KeyvNamespaceCounter,
+  ) {
     this.storage = new KeyvKeyValueStorage(
       keyvFactory(),
-      keyvCounter,
       `${namespace}`,
+      counter,
     );
     this.mergedStorage = new KeyvKeyValueStorage(
       keyvFactory(),
-      keyvCounter,
       `${namespace}-merged`,
+      counter,
     );
     this.mergeStorage = new KeyvKeyValueStorage(
       keyvFactory(),
-      keyvCounter,
       `${namespace}-merge`,
+      counter,
     );
   }
 

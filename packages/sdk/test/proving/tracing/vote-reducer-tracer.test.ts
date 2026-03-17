@@ -22,6 +22,7 @@ import { createInMemoryVotingLedgerStorage } from "../../../src/storage/in-memor
 import { createInMemoryNullifierLedgerStorage } from "../../../src/storage/in-memory/factory/in-memory-nullifier-ledger-storage.js";
 import { InMemoryVotingLedger } from "../../../src/ledgers/voting-ledger/in-memory-voting-ledger.js";
 import { InMemoryNullifierLedger } from "../../../src/ledgers/nullifier-ledger/in-memory-nullifier-ledger.js";
+import { KeyvSqlite } from "@keyv/sqlite";
 
 it("should serialize and deserialize a vote reducer trace", async () => {
   const [account] = await createTestAccounts(1);
@@ -52,9 +53,10 @@ it("should serialize and deserialize a vote reducer trace", async () => {
 
 it("should trace vote reducer batches", async () => {
   const lifecycleId = `vote-reducer-trace-test-${Date.now()}`;
+  const sqlite = new KeyvSqlite({ uri: "sqlite://:memory:" });
 
   const votingLedgerStorage = createInMemoryVotingLedgerStorage(
-    createSqliteVotingLedgerStorage(lifecycleId),
+    createSqliteVotingLedgerStorage(lifecycleId, sqlite),
   );
   const votingLedger = new InMemoryVotingLedger(
     votingLedgerStorage.votingAccountStorage,
@@ -62,14 +64,17 @@ it("should trace vote reducer batches", async () => {
   );
 
   const nullifierLedgerStorage = createInMemoryNullifierLedgerStorage(
-    createSqliteNullifierLedgerStorage(lifecycleId),
+    createSqliteNullifierLedgerStorage(lifecycleId, sqlite),
   );
   const nullifierLedger = new InMemoryNullifierLedger(
     nullifierLedgerStorage.nullifierStorage,
     nullifierLedgerStorage.merkleTreeStorage,
   );
-  const traceStorage = createSqliteVoteReducerRunBatchTraceStorage(lifecycleId);
-  const batchWriter = createSqliteBatchWriter(lifecycleId);
+  const traceStorage = createSqliteVoteReducerRunBatchTraceStorage(
+    lifecycleId,
+    sqlite,
+  );
+  const batchWriter = createSqliteBatchWriter(sqlite);
 
   const accounts = await createTestAccounts(7);
 
@@ -114,4 +119,5 @@ it("should trace vote reducer batches", async () => {
 
   await tracer.close();
   await batchWriter.close();
+  await sqlite.disconnect();
 });

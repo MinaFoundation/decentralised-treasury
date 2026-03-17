@@ -1,11 +1,13 @@
 import { KeyvKeyValueBatchStorage } from "../../keyv/keyv-key-value-batch-storage.js";
-import { getSqliteDbPath } from "../sqlite-db-path.js";
-import { createSqliteKeyv } from "../sqlite-keyv.js";
+import { Keyv } from "keyv";
+import type { KeyvSqlite } from "@keyv/sqlite";
 
 export function createSqliteBatchWriter(
-  lifecycleId = "shared",
+  sqliteStore: KeyvSqlite,
 ): KeyvKeyValueBatchStorage {
-  return new KeyvKeyValueBatchStorage(
-    createSqliteKeyv(getSqliteDbPath(lifecycleId)),
-  );
+  const keyv = new Keyv({
+    store: sqliteStore,
+  });
+  keyv.disconnect = async () => {};
+  return new KeyvKeyValueBatchStorage(keyv);
 }

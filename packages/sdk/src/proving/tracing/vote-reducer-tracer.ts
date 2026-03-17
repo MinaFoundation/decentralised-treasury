@@ -1,6 +1,7 @@
 import { Bool, Reducer } from "o1js";
 import {
   ActionStateHistory,
+  ActionStateHistoryTarget,
   VOTE_ACTION_BATCH_SIZE,
   VoteAction,
   VoteReducer,
@@ -208,7 +209,7 @@ export class VoteReducerTracer {
       fromActionsHash: Reducer.initialActionState,
       votingLedgerRoot: await this.votingLedger.getRoot(),
       fromNullifierRoot: await this.nullifierLedger.getRoot(),
-      actionStateHistory: ActionStateHistory.empty(),
+      actionStateHistoryTarget: ActionStateHistoryTarget.empty(),
     };
     let publicOutput: VoteReducerPublicOutput | undefined;
 
@@ -258,15 +259,12 @@ export class VoteReducerTracer {
         fromActionsHash: publicOutput.toActionsHash,
         votingLedgerRoot: currentPublicInput.votingLedgerRoot,
         fromNullifierRoot: publicOutput.toNullifierRoot,
-        actionStateHistory: publicOutput.actionStateHistory,
+        actionStateHistoryTarget: ActionStateHistoryTarget.empty(),
       };
 
       await this.traceStorage.setTrace(i, trace);
 
-      const batchStorages = [
-        this.traceStorage,
-        this.nullifierLedger,
-      ];
+      const batchStorages = [this.traceStorage, this.nullifierLedger];
 
       const entries = batchStorages.flatMap((storage) =>
         storage.collectEntries(),
