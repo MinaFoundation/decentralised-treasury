@@ -263,4 +263,4 @@ function conditionalSwap(b: Bool, x: Field, y: Field): [Field, Field] {
 }
 
 export class PrefixedMerkleWitness36 extends PrefixedMerkleWitness(36) {}
-export class PrefixedMerkleWitness255 extends PrefixedMerkleWitness(256) {}
+export class PrefixedMerkleWitness255 extends PrefixedMerkleWitness(255) {}

@@ -185,6 +185,8 @@ TreasuryProposalSmartContract.stakingLedgerToVotingLedgerVerificationKey =
   stakingLedgerToVotingLedgerVerificationKey;
 TreasuryProposalSmartContract.emptyNullifierRoot =
   await nullifierLedger.getRoot();
+TreasuryProposalSmartContract.emptyVotingLedgerRoot =
+  await votingLedger.getRoot();
 
 Provable.log(
   "empty nullifier root",
@@ -258,12 +260,12 @@ async function printNonce(publicKey: PublicKey, memo: string) {
   }
 }
 
-it.only("should compile", async () => {
+it("should compile", async () => {
   await TreasuryOwnerSmartContract.compile();
   Provable.log("analysis", await TreasuryOwnerSmartContract.analyzeMethods());
 });
 
-it.only("should create a proposal", async () => {
+it("should create a proposal", async () => {
   await (async () => {
     console.log("deploying pause controller");
     const tx = await Mina.transaction(testAccount, async () => {

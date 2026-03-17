@@ -196,6 +196,14 @@ export class TreasuryProposalSmartContract extends SmartContract {
       .equals(stakingLedgerToVotingLedgerPublicOutput.votingLedgerRoot)
       .assertTrue("voting ledger root does not match");
 
+    stakingLedgerToVotingLedgerProof.publicInput.index
+      .equals(UInt64.from(0))
+      .assertTrue("staking ledger transformation must start at index 0");
+
+    stakingLedgerToVotingLedgerPublicInput.votingLedgerRoot
+      .equals(TreasuryProposalSmartContract.emptyVotingLedgerRoot)
+      .assertTrue("initial voting ledger root must be empty");
+
     stakingLedgerToVotingLedgerPublicInput.stakingLedgerRoot
       .equals(stakingEpochDataLedgerHash)
       .assertTrue("staking ledger root does not match");

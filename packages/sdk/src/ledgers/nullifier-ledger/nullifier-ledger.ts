@@ -284,7 +284,7 @@ export abstract class BaseNullifierLedger implements NullifierLedger {
       Bool(false).toFields(),
     );
 
-    // use a 256 height to match the nullifier tree requirements
+    // use a 255 height to match the nullifier tree requirements
     this.merkleTree = new PrefixedMerkleTree(
       255,
       emptyNullifierHash,
