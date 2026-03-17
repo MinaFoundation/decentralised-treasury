@@ -7,35 +7,24 @@ import {
   Poseidon,
   Provable,
   PublicKey,
-  Signature,
   State,
-  Struct,
   TokenContract,
   UInt32,
   UInt64,
   method,
   state,
-  // ZkappUri,
 } from "o1js";
-import { Account, accountHashPrefix, packToFields } from "../account.js";
+import { Account } from "../account.js";
 import { PrefixedMerkleWitness36 } from "../merkle-tree/prefixed-merkle-tree.js";
 import {
   ActionStateHistory,
   SideLoadedVoteReducerProof,
   Vote,
-  VoteReducerProof,
-  VoteReducerPublicInput,
-  VoteReducerPublicOutput,
 } from "./treasury-proposal/vote-reducer.js";
 import { TreasuryProposalSmartContract } from "./treasury-proposal/treasury-proposal.js";
-import {
-  SideLoadedStakingLedgerToVotingLedgerProof,
-  StakingLedgerToVotingLedgerProof,
-} from "../staking-ledger-to-voting-ledger.js";
-import { hashWithPrefix } from "../hashing-helpers.js";
+import { SideLoadedStakingLedgerToVotingLedgerProof } from "../staking-ledger-to-voting-ledger.js";
 import { Proposal } from "./treasury-proposal/treasury-proposal.js";
 import { BOND_AMOUNT_DIVISOR } from "./treasury-constants.js";
-import { accountLedgerHashPrefixes } from "src/ledgers/staking-ledger/staking-ledger.js";
 import { TreasuryPauseControllerSmartContract } from "./treasury-pause-controller/treasury-pause-controller.js";
 import {
   MultisigSignature,

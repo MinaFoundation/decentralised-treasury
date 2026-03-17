@@ -1,24 +1,23 @@
 import { it } from "node:test";
 import { KeyvMerkleTreeStorage } from "../../../src/storage/keyv/keyv-merkle-tree-storage.js";
+import { KeyvSqliteCounter } from "../../../src/storage/sqlite/keyv-sqlite-counter.js";
 import { Field, Provable } from "o1js";
 import assert from "node:assert";
 import { PrefixedMerkleTree } from "../../../src/provable/merkle-tree/prefixed-merkle-tree.js";
-import { SqliteCounter } from "../../../src/storage/sqlite/sqlite-counter.js";
-import { createSqliteKeyv } from "../../../src/storage/sqlite/sqlite-keyv.js";
-import { getSqliteDbPath } from "../../../src/storage/sqlite/sqlite-db-path.js";
+import { Keyv } from "keyv";
+import { KeyvSqlite } from "@keyv/sqlite";
 
 const expectedRoot =
   "16454815573389775030357115923683611722287847789162266602163105950268208151468";
 
 it("should create a prefixed merkle tree", async () => {
-  const lifecycleId = `test-namespace-${Date.now()}`;
-  const dbPath = getSqliteDbPath(lifecycleId);
-  const keyv = createSqliteKeyv(dbPath);
-  const counter = new SqliteCounter(dbPath);
+  const store = new KeyvSqlite({ uri: "sqlite://:memory:" });
+  const keyv = new Keyv({ store });
+  keyv.disconnect = async () => {};
   const merkleTreeStorage = new KeyvMerkleTreeStorage(
     keyv,
     "test-namespace",
-    counter,
+    new KeyvSqliteCounter(store),
   );
 
   const height = 2;
@@ -39,4 +38,5 @@ it("should create a prefixed merkle tree", async () => {
   const root = await tree.getRoot();
   assert(root?.toString() === expectedRoot, "root does not match");
   await merkleTreeStorage.close();
+  await store.disconnect();
 });

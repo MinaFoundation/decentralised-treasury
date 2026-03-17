@@ -11,6 +11,7 @@ import { PersistentStakingLedger } from "../../../src/ledgers/staking-ledger/per
 import { createSqliteStakingLedgerStorage } from "../../../src/storage/sqlite/factory/sqlite-staking-ledger-storage.js";
 import { PersistentVotingLedger } from "../../../src/ledgers/voting-ledger/persistent-voting-ledger.js";
 import { createSqliteVotingLedgerStorage } from "../../../src/storage/sqlite/factory/sqlite-voting-ledger-storage.js";
+import { KeyvSqlite } from "@keyv/sqlite";
 import { getProofsEnabled } from "./proofs-enabled.js";
 
 const createVotingLedgerId = (lifecycleId: string) => {
@@ -27,7 +28,11 @@ export async function createStakingLedgerToVotingLedgerTestContext(
 ) {
   const lifecycleId =
     options.lifecycleId ?? "staking-ledger-to-voting-ledger-test";
-  const stakingLedgerStorage = createSqliteStakingLedgerStorage(lifecycleId);
+  const sqlite = new KeyvSqlite({ uri: "sqlite://:memory:" });
+  const stakingLedgerStorage = createSqliteStakingLedgerStorage(
+    lifecycleId,
+    sqlite,
+  );
   const stakingLedger = new PersistentStakingLedger(
     stakingLedgerStorage.accountStorage,
     stakingLedgerStorage.merkleTreeStorage,
@@ -44,7 +49,10 @@ export async function createStakingLedgerToVotingLedgerTestContext(
   await stakingLedger.hydrateMerkleTree(testAccounts);
 
   const votingLedgerId = createVotingLedgerId(lifecycleId);
-  const votingLedgerStorage = createSqliteVotingLedgerStorage(votingLedgerId);
+  const votingLedgerStorage = createSqliteVotingLedgerStorage(
+    votingLedgerId,
+    sqlite,
+  );
   const votingLedger = new PersistentVotingLedger(
     votingLedgerStorage.votingAccountStorage,
     votingLedgerStorage.merkleTreeStorage,
@@ -94,6 +102,7 @@ export async function createStakingLedgerToVotingLedgerTestContext(
   const cleanup = async () => {
     await votingLedger.close();
     await stakingLedger.close();
+    await sqlite.disconnect();
   };
 
   return {

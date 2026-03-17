@@ -15,16 +15,8 @@ import {
   UInt32,
   Poseidon,
 } from "o1js";
-import {
-  ActionStateHistory,
-  SideLoadedVoteReducerProof,
-  VoteAction,
-  VoteReducerProof,
-} from "./vote-reducer.js";
-import {
-  SideLoadedStakingLedgerToVotingLedgerProof,
-  StakingLedgerToVotingLedgerProof,
-} from "../../staking-ledger-to-voting-ledger.js";
+import { SideLoadedVoteReducerProof, VoteAction } from "./vote-reducer.js";
+import { SideLoadedStakingLedgerToVotingLedgerProof } from "../../staking-ledger-to-voting-ledger.js";
 import {
   BASIS_POINTS,
   BOND_AMOUNT_DIVISOR,
@@ -35,9 +27,12 @@ import {
   MIN_APPROVAL_BP,
   MIN_PARTICIPATION_BP,
 } from "../treasury-constants.js";
-import { Account, accountHashPrefix, packToFields } from "../../account.js";
+import { Account, packToFields } from "../../account.js";
 import { hashWithPrefix } from "../../hashing-helpers.js";
-import { accountLedgerHashPrefixes } from "../../../ledgers/staking-ledger/staking-ledger.js";
+import {
+  accountHashPrefix,
+  accountLedgerHashPrefixes,
+} from "../../../ledgers/staking-ledger/staking-ledger.js";
 import { PrefixedMerkleWitness36 } from "../../merkle-tree/prefixed-merkle-tree.js";
 
 export class Proposal extends Struct({

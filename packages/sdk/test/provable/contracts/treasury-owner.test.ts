@@ -56,13 +56,17 @@ import { VotingAccount } from "../../../src/provable/voting-account.js";
 import { Account } from "../../../src/provable/account.js";
 import { createVoteReducerTestContext } from "../context/contracts/vote-reducer-context.js";
 
-const voteReducerTestContext = createVoteReducerTestContext();
+const voteReducerTestContext = await createVoteReducerTestContext();
 import { PersistentNullifierLedger } from "../../../src/ledgers/nullifier-ledger/persistent-nullifier-ledger.js";
 import { PersistentVotingLedger } from "../../../src/ledgers/voting-ledger/persistent-voting-ledger.js";
 import { PersistentStakingLedger } from "../../../src/ledgers/staking-ledger/persistent-staking-ledger.js";
 import { createSqliteNullifierLedgerStorage } from "../../../src/storage/sqlite/factory/sqlite-nullifier-ledger-storage.js";
 import { createSqliteStakingLedgerStorage } from "../../../src/storage/sqlite/factory/sqlite-staking-ledger-storage.js";
 import { createSqliteVotingLedgerStorage } from "../../../src/storage/sqlite/factory/sqlite-voting-ledger-storage.js";
+import { KeyvSqlite } from "@keyv/sqlite";
+import { mkdirSync } from "node:fs";
+import { dirname } from "node:path";
+import { getSqliteDbPath } from "../../../src/storage/sqlite/sqlite-db-path.js";
 
 const proofsEnabled = process.env.PROOFS_ENABLED === "true";
 
@@ -73,18 +77,46 @@ const Local = await Mina.LocalBlockchain({
 Mina.setActiveInstance(Local);
 
 const lifecycleId = "treasury-owner-test";
+const sqlitePath = getSqliteDbPath(lifecycleId);
+mkdirSync(dirname(sqlitePath), { recursive: true });
+const sqlite = new KeyvSqlite({ uri: sqlitePath });
+const sqliteDisconnect = sqlite.disconnect.bind(sqlite);
+sqlite.disconnect = async () => {
+  try {
+    await sqliteDisconnect();
+  } catch (error) {
+    if (
+      typeof error === "object" &&
+      error !== null &&
+      "code" in error &&
+      (error as { code?: string }).code === "SQLITE_MISUSE"
+    ) {
+      return;
+    }
+    throw error;
+  }
+};
 
-const votingLedgerStorage = createSqliteVotingLedgerStorage(lifecycleId);
+const votingLedgerStorage = createSqliteVotingLedgerStorage(
+  lifecycleId,
+  sqlite,
+);
 const votingLedger = new PersistentVotingLedger(
   votingLedgerStorage.votingAccountStorage,
   votingLedgerStorage.merkleTreeStorage,
 );
-const nullifierLedgerStorage = createSqliteNullifierLedgerStorage(lifecycleId);
+const nullifierLedgerStorage = createSqliteNullifierLedgerStorage(
+  lifecycleId,
+  sqlite,
+);
 const nullifierLedger = new PersistentNullifierLedger(
   nullifierLedgerStorage.nullifierStorage,
   nullifierLedgerStorage.merkleTreeStorage,
 );
-const stakingLedgerStorage = createSqliteStakingLedgerStorage(lifecycleId);
+const stakingLedgerStorage = createSqliteStakingLedgerStorage(
+  lifecycleId,
+  sqlite,
+);
 const stakingLedger = new PersistentStakingLedger(
   stakingLedgerStorage.accountStorage,
   stakingLedgerStorage.merkleTreeStorage,
@@ -104,6 +136,7 @@ after(async () => {
   await votingLedger.close();
   await nullifierLedger.close();
   await stakingLedger.close();
+  await sqlite.disconnect();
 });
 
 const multisigPrivateKey1 = PrivateKey.random();
@@ -564,8 +597,8 @@ it("should commit action state", async () => {
     ...realVoteActions,
   ].slice(0, VOTE_ACTION_BATCH_SIZE);
 
-  const actionStateHistory =
-    voteReducerTestContext.buildActionStateHistory(voteActions);
+  const actionStateHistoryTarget =
+    voteReducerTestContext.buildActionStateHistoryTarget(voteActions);
 
   Provable.log("raw actions", actions);
   Provable.log("voteActions", voteActions);
@@ -614,7 +647,7 @@ it("should commit action state", async () => {
       fromActionsHash: Reducer.initialActionState,
       votingLedgerRoot: await votingLedger.getRoot(),
       fromNullifierRoot: await nullifierLedger.getRoot(),
-      actionStateHistory,
+      actionStateHistoryTarget,
     },
     voteActions,
   );
