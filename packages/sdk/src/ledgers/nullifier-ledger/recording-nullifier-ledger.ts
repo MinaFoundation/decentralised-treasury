@@ -12,7 +12,7 @@ export class RecordingNullifierLedger implements NullifierLedger {
   public constructor(public nullifierLedger: NullifierLedger) {}
 
   public async getWitness(
-    publicKey: string
+    publicKey: string,
   ): Promise<PrefixedMerkleWitness256> {
     const witness = await this.nullifierLedger.getWitness(publicKey);
     this.recorder.record("witnesses", publicKey, witness);
@@ -25,10 +25,7 @@ export class RecordingNullifierLedger implements NullifierLedger {
     return nullifier;
   }
 
-  public async setNullifier(
-    publicKey: string,
-    nullifier: Bool
-  ): Promise<void> {
+  public async setNullifier(publicKey: string, nullifier: Bool): Promise<void> {
     await this.nullifierLedger.setNullifier(publicKey, nullifier);
   }
 
@@ -42,5 +39,9 @@ export class RecordingNullifierLedger implements NullifierLedger {
 
   public async close(): Promise<void> {
     await this.nullifierLedger.close();
+  }
+
+  public async clear(): Promise<void> {
+    this.recorder.clear();
   }
 }

@@ -1,6 +1,7 @@
 import { Bool, Field, Reducer } from "o1js";
-import { RedisVotingLedger } from "../../../../src/ledgers/voting-ledger/redis-voting-ledger.js";
-import { RedisNullifierLedger } from "../../../../src/ledgers/nullifier-ledger/redis-nullifier-ledger.js";
+import { PersistentNullifierLedger } from "../../../../src/ledgers/nullifier-ledger/persistent-nullifier-ledger.js";
+import { PersistentVotingLedger } from "../../../../src/ledgers/voting-ledger/persistent-voting-ledger.js";
+import { VotingLedger } from "../../../../src/ledgers/voting-ledger/voting-ledger.js";
 import {
   ActionStateHistory,
   VoteReducer,
@@ -8,27 +9,36 @@ import {
   voteReducerContext,
 } from "../../../../src/provable/contracts/treasury-proposal/vote-reducer.js";
 import { VotingAccount } from "../../../../src/provable/voting-account.js";
-import { createTestAccounts } from "../../../../src/create-test-accounts.js";
+import { createTestAccounts } from "../../../create-test-accounts.js";
 import { appendActionToHashList } from "../../../../src/provable/hashing-helpers.js";
-import { createRedisServer } from "../redis-test-server.js";
 import { getProofsEnabled } from "../proofs-enabled.js";
+import { createSqliteNullifierLedgerStorage } from "../../../../src/storage/sqlite/factory/sqlite-nullifier-ledger-storage.js";
+import { createSqliteVotingLedgerStorage } from "../../../../src/storage/sqlite/factory/sqlite-voting-ledger-storage.js";
 
-function createLedgers(redisUrl: string, lifecycleId: string) {
-  const votingLedger = new RedisVotingLedger(redisUrl, lifecycleId);
-  const nullifierLedger = new RedisNullifierLedger(redisUrl, lifecycleId);
+function createLedgers(lifecycleId: string) {
+  const votingLedgerStorage = createSqliteVotingLedgerStorage(lifecycleId);
+  const votingLedger = new PersistentVotingLedger(
+    votingLedgerStorage.votingAccountStorage,
+    votingLedgerStorage.merkleTreeStorage,
+  );
+  const nullifierLedgerStorage = createSqliteNullifierLedgerStorage(lifecycleId);
+  const nullifierLedger = new PersistentNullifierLedger(
+    nullifierLedgerStorage.nullifierStorage,
+    nullifierLedgerStorage.merkleTreeStorage,
+  );
   return { votingLedger, nullifierLedger };
 }
 
 async function seedLedgers(
-  votingLedger: RedisVotingLedger,
-  nullifierLedger: RedisNullifierLedger,
+  votingLedger: VotingLedger,
+  nullifierLedger: PersistentNullifierLedger,
   accountCount: number,
 ) {
   const testAccounts = await createTestAccounts(accountCount);
 
   for (const account of testAccounts) {
     const votingAccount = new VotingAccount({ balance: account.balance });
-    const publicKey = account.publicKey.toBase58();
+    const publicKey = account.pk.toBase58();
     await votingLedger.setVotingAccount(publicKey, votingAccount);
     await votingLedger.setLeaf(publicKey, votingAccount);
     await nullifierLedger.setLeaf(publicKey, Bool(false));
@@ -86,13 +96,9 @@ export function createVoteReducerTestContext() {
   const createContext = async (
     options: { lifecycleId?: string; accountCount?: number } = {},
   ) => {
-    const { redisServer, redisUrl } = await createRedisServer();
     const lifecycleId = options.lifecycleId ?? "vote-reducer-test";
 
-    const { votingLedger, nullifierLedger } = createLedgers(
-      redisUrl,
-      lifecycleId,
-    );
+    const { votingLedger, nullifierLedger } = createLedgers(lifecycleId);
 
     voteReducerContext.set({ votingLedger, nullifierLedger });
 
@@ -103,12 +109,15 @@ export function createVoteReducerTestContext() {
     );
 
     const createExpectedNullifierLedger = async (suffix = "expected") => {
-      const expectedLedger = new RedisNullifierLedger(
-        redisUrl,
+      const expectedLedgerStorage = createSqliteNullifierLedgerStorage(
         `${lifecycleId}-${suffix}`,
       );
+      const expectedLedger = new PersistentNullifierLedger(
+        expectedLedgerStorage.nullifierStorage,
+        expectedLedgerStorage.merkleTreeStorage,
+      );
       for (const account of testAccounts) {
-        await expectedLedger.setLeaf(account.publicKey.toBase58(), Bool(false));
+        await expectedLedger.setLeaf(account.pk.toBase58(), Bool(false));
       }
       return expectedLedger;
     };
@@ -116,11 +125,9 @@ export function createVoteReducerTestContext() {
     const cleanup = async () => {
       await votingLedger.close();
       await nullifierLedger.close();
-      await redisServer.stop();
     };
 
     return {
-      redisServer,
       votingLedger,
       nullifierLedger,
       testAccounts,

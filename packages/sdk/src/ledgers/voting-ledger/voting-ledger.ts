@@ -3,10 +3,9 @@ import {
   PrefixedMerkleWitness256,
 } from "../../provable/merkle-tree/prefixed-merkle-tree.js";
 import { Field } from "o1js";
-import { MerkleTreeStorage } from "../../storage/merkle-tree-storage.js";
-import { VotingAccountStorage } from "../../storage/voting-account-storage.js";
 import { VotingAccount } from "../../provable/voting-account.js";
 import { hashWithPrefix } from "../../provable/hashing-helpers.js";
+import { MerkleTreeStorage } from "../../storage/merkle-tree-storage.js";
 import { publicKeyBase58ToBigInt } from "../../utils/public-key.js";
 
 export interface VotingLedger {
@@ -280,17 +279,16 @@ export const votingAccountLedgerHashPrefixes = [
 ];
 
 export const votingAccountHashPrefix = "MinaVotingAccount*********";
-export const emptyVotingAccountHash = hashWithPrefix(
-  votingAccountHashPrefix,
-  VotingAccount.toHashInput(VotingAccount.empty()),
-);
 
-export class BaseVotingLedger implements VotingLedger {
+export abstract class BaseVotingLedger implements VotingLedger {
   public merkleTree: PrefixedMerkleTree;
-  public constructor(
-    public votingAccountStorage: VotingAccountStorage,
-    public merkleTreeStorage: MerkleTreeStorage,
-  ) {
+
+  public constructor(public merkleTreeStorage: MerkleTreeStorage) {
+    const emptyVotingAccountHash = hashWithPrefix(
+      votingAccountHashPrefix,
+      VotingAccount.toHashInput(VotingAccount.empty()),
+    );
+
     // reason why we use a 256 height instead of mimicking the staking ledger tree height is because
     // voting accounts might not exist in the staking ledger, as in the delegate address is not part of the staking ledger
     this.merkleTree = new PrefixedMerkleTree(
@@ -300,6 +298,13 @@ export class BaseVotingLedger implements VotingLedger {
       this.merkleTreeStorage,
     );
   }
+
+  public abstract getVotingAccount(publicKey: string): Promise<VotingAccount>;
+  public abstract setVotingAccount(
+    publicKey: string,
+    votingAccount: VotingAccount,
+  ): Promise<void>;
+  public abstract close(): Promise<void>;
 
   public async getWitness(
     publicKey: string,
@@ -324,26 +329,7 @@ export class BaseVotingLedger implements VotingLedger {
     );
   }
 
-  public async getVotingAccount(publicKey: string): Promise<VotingAccount> {
-    return (
-      (await this.votingAccountStorage.getVotingAccount(publicKey)) ??
-      VotingAccount.empty()
-    );
-  }
-
-  public async setVotingAccount(
-    publicKey: string,
-    votingAccount: VotingAccount,
-  ): Promise<void> {
-    await this.votingAccountStorage.setVotingAccount(publicKey, votingAccount);
-  }
-
   public async getRoot(): Promise<Field> {
     return await this.merkleTree.getRoot();
-  }
-
-  public async close(): Promise<void> {
-    await this.votingAccountStorage.close();
-    await this.merkleTreeStorage.close();
   }
 }

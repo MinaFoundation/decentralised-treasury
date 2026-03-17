@@ -1,78 +1,81 @@
 import { Command } from "commander";
-import { RedisStakingLedgerService } from "../services/redis/redis-staking-ledger-service.js";
 import { Provable } from "o1js";
+import { PersistentStakingLedger } from "../ledgers/staking-ledger/persistent-staking-ledger.js";
+import { createSqliteStakingLedgerStorage } from "../storage/sqlite/factory/sqlite-staking-ledger-storage.js";
 
 export async function getRootHash({
-  redisUrl,
   lifecycleId,
 }: {
-  redisUrl: string;
   lifecycleId: string;
 }) {
-  const service = new RedisStakingLedgerService(redisUrl, lifecycleId);
-  const rootHash = await service.merkleTree.getRoot();
-  await service.close();
+  const stakingLedgerStorage = createSqliteStakingLedgerStorage(lifecycleId);
+  const stakingLedger = new PersistentStakingLedger(
+    stakingLedgerStorage.accountStorage,
+    stakingLedgerStorage.merkleTreeStorage,
+  );
+  const rootHash = await stakingLedger.getRoot();
+  await stakingLedger.close();
   Provable.log("rootHash", rootHash);
 }
 
 export async function hydrateAccounts({
-  redisUrl,
   lifecycleId,
   stakingLedgerPath,
   startIndex,
   endIndex,
 }: {
-  redisUrl: string;
   lifecycleId: string;
   stakingLedgerPath: string;
   startIndex: number;
   endIndex: number;
 }): Promise<void> {
-  const service = new RedisStakingLedgerService(redisUrl, lifecycleId);
-  let accounts = await service.readStakingLedger(stakingLedgerPath);
-  await service.hydrateAccounts(accounts, startIndex, endIndex);
-  await service.close();
+  const stakingLedgerStorage = createSqliteStakingLedgerStorage(lifecycleId);
+  const stakingLedger = new PersistentStakingLedger(
+    stakingLedgerStorage.accountStorage,
+    stakingLedgerStorage.merkleTreeStorage,
+  );
+  let accounts = await stakingLedger.readStakingLedger(stakingLedgerPath);
+  await stakingLedger.hydrateAccounts(accounts, startIndex, endIndex);
+  await stakingLedger.close();
 }
 
 export async function hydrateMerkleTree({
-  redisUrl,
   lifecycleId,
   startIndex,
   endIndex,
 }: {
-  redisUrl: string;
   lifecycleId: string;
   startIndex: number;
   endIndex: number;
 }): Promise<void> {
-  const service = new RedisStakingLedgerService(redisUrl, lifecycleId);
-  const accounts = await service.accountStorage.getAllAccounts();
-  await service.hydrateMerkleTree(accounts, startIndex, endIndex);
-  await service.close();
+  const stakingLedgerStorage = createSqliteStakingLedgerStorage(lifecycleId);
+  const stakingLedger = new PersistentStakingLedger(
+    stakingLedgerStorage.accountStorage,
+    stakingLedgerStorage.merkleTreeStorage,
+  );
+  const accounts = await stakingLedger.getAllAccounts();
+  await stakingLedger.hydrateMerkleTree(accounts, startIndex, endIndex);
+  await stakingLedger.close();
 }
 
 export async function fromFile({
-  redisUrl,
   lifecycleId,
   stakingLedgerPath,
   startIndex,
   endIndex,
 }: {
-  redisUrl: string;
   lifecycleId: string;
   stakingLedgerPath: string;
   startIndex: number;
   endIndex: number;
 }): Promise<void> {
   await hydrateAccounts({
-    redisUrl,
     lifecycleId,
     stakingLedgerPath,
     startIndex,
     endIndex,
   });
   await hydrateMerkleTree({
-    redisUrl,
     lifecycleId,
     startIndex,
     endIndex,
@@ -89,7 +92,6 @@ export default function stakingLedgerCommandFactory(program: Command) {
       "--staking-ledger-path <staking-ledger-path>",
       "Staking ledger path"
     )
-    .option("--redis-url <redis-url>", "Redis URL", process.env.REDIS_URL)
     .option("--start-index <start-index>", "Start index", parseInt)
     .option("--end-index <end-index>", "End index", parseInt)
     .action(fromFile);
@@ -101,7 +103,6 @@ export default function stakingLedgerCommandFactory(program: Command) {
       "--staking-ledger-path <staking-ledger-path>",
       "Staking ledger path"
     )
-    .option("--redis-url <redis-url>", "Redis URL", process.env.REDIS_URL)
     .option("--start-index <start-index>", "Start index", parseInt)
     .option("--end-index <end-index>", "End index", parseInt)
     .action(hydrateAccounts);
@@ -109,7 +110,6 @@ export default function stakingLedgerCommandFactory(program: Command) {
   command
     .command("hydrate-merkle-tree")
     .requiredOption("--lifecycle-id <lifecycle-id>", "Lifecycle ID")
-    .option("--redis-url <redis-url>", "Redis URL", process.env.REDIS_URL)
     .option("--start-index <start-index>", "Start index", parseInt)
     .option("--end-index <end-index>", "End index", parseInt)
     .action(hydrateMerkleTree);
@@ -117,6 +117,5 @@ export default function stakingLedgerCommandFactory(program: Command) {
   command
     .command("get-root-hash")
     .requiredOption("--lifecycle-id <lifecycle-id>", "Lifecycle ID")
-    .option("--redis-url <redis-url>", "Redis URL", process.env.REDIS_URL)
     .action(getRootHash);
 }

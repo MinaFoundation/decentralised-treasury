@@ -10,6 +10,7 @@ import { TaskQueue } from "../task-queue.js";
 import { VoteReducerRunBatchTask } from "../tasks/vote-reducer-run-batch-task.js";
 import { VoteReducerMergeTask } from "../tasks/vote-reducer-merge-task.js";
 import { MergeProofOrchestrator } from "./merge-proof-orchestrator.js";
+import { KeyValueBatchStorage } from "../../storage/batch-key-value-storage.js";
 
 export type VoteReducerTaskQueue = TaskQueue<{
   voteReducerRunBatch: typeof VoteReducerRunBatchTask;
@@ -20,9 +21,10 @@ export class VoteReducerProver extends MergeProofOrchestrator<SideLoadedVoteRedu
   constructor(
     public traceStorage: VoteReducerRunBatchTraceStorage,
     public proofStorage: VoteReducerProofStorage,
-    public taskQueue: VoteReducerTaskQueue
+    public batchWriter: KeyValueBatchStorage,
+    public taskQueue: VoteReducerTaskQueue,
   ) {
-    super(proofStorage, taskQueue, "voteReducerMerge");
+    super(proofStorage, batchWriter, taskQueue, "voteReducerMerge");
   }
 
   public async runBatch(
@@ -30,10 +32,15 @@ export class VoteReducerProver extends MergeProofOrchestrator<SideLoadedVoteRedu
     endIndex: number = Infinity,
     onRunBatchComplete?: (
       index: number,
-      proof: Proof<VoteReducerPublicInput, VoteReducerPublicOutput>
-    ) => void
+      proof: Proof<VoteReducerPublicInput, VoteReducerPublicOutput>,
+    ) => void,
   ) {
     const taskPromises: Promise<void>[] = [];
+    let callbackQueue: Promise<void> = Promise.resolve();
+    let callbackError: Error | undefined;
+
+    await this.taskQueue.obliterate();
+
     for (let i = startIndex; i <= endIndex; i++) {
       const trace = await this.traceStorage.getTrace(i);
       if (!trace) break;
@@ -45,12 +52,27 @@ export class VoteReducerProver extends MergeProofOrchestrator<SideLoadedVoteRedu
           traceId: i,
         },
         async (result) => {
-          const sideLoadedProof = await SideLoadedVoteReducerProof.fromJSON(
-            result.proof.toJSON()
-          );
-          await this.proofStorage.setProof(i.toString(), sideLoadedProof);
-          onRunBatchComplete?.(i, result.proof);
-        }
+          callbackQueue = callbackQueue
+            .then(async () => {
+              const sideLoadedProof = await SideLoadedVoteReducerProof.fromJSON(
+                result.proof.toJSON(),
+              );
+              await this.proofStorage.setProof(
+                result.traceId.toString(),
+                sideLoadedProof,
+              );
+
+              const entries = this.proofStorage.collectEntries();
+              await this.batchWriter.setMany(entries);
+              this.proofStorage.clearEntries();
+
+              onRunBatchComplete?.(result.traceId, result.proof);
+            })
+            .catch((error: unknown) => {
+              callbackError =
+                error instanceof Error ? error : new Error(String(error));
+            });
+        },
       );
 
       taskPromises.push(taskPromise);
@@ -58,28 +80,28 @@ export class VoteReducerProver extends MergeProofOrchestrator<SideLoadedVoteRedu
 
     await this.taskQueue.waitUntilEmpty();
     await Promise.all(taskPromises);
+    await callbackQueue;
+    if (callbackError) {
+      throw callbackError;
+    }
   }
 
   public findMergeableProofs(
     proofs: {
       index: string;
       proof: SideLoadedVoteReducerProof;
-    }[]
+    }[],
   ) {
     if (proofs.length < 2) {
       return { proof1: undefined, proof2: undefined };
     }
-
-    proofs = proofs.sort(
-      ({ index: indexA }, { index: indexB }) => Number(indexA) - Number(indexB)
-    );
 
     for (const proof1 of proofs) {
       const proof1ActionsHash =
         proof1.proof.publicOutput.toActionsHash.toString();
       const proof2 = proofs.find(
         ({ proof }) =>
-          proof.publicInput.fromActionsHash.toString() === proof1ActionsHash
+          proof.publicInput.fromActionsHash.toString() === proof1ActionsHash,
       );
 
       if (proof2) {

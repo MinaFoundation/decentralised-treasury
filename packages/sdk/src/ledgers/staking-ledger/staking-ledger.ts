@@ -3,7 +3,6 @@ import streamJson from "stream-json";
 import StreamArray from "stream-json/streamers/StreamArray.js";
 import {
   Account,
-  accountHashPrefix,
   packToFields,
   Permission,
   Permissions,
@@ -17,24 +16,18 @@ import {
   TokenSymbol,
   UInt64,
   StateHashBase58,
-  TokenIdBase58,
   ReceiptChainHashBase58,
   UInt32,
   Bool,
-  Provable,
   ZkappUri,
   VerificationKey,
-  Pickles,
-  inCircuitVkHash,
 } from "o1js";
 import {
   PrefixedMerkleTree,
   PrefixedMerkleWitness36,
 } from "../../provable/merkle-tree/prefixed-merkle-tree.js";
-import { MerkleTreeStorage } from "../../storage/merkle-tree-storage.js";
-import { AccountStorage } from "../../storage/account-storage.js";
 import { hashWithPrefix } from "../../provable/hashing-helpers.js";
-import { prettyPrintProgress } from "../../pretty-print-progress.js";
+import { MerkleTreeStorage } from "../../storage/merkle-tree-storage.js";
 
 export interface StakingLedger {
   getAllAccounts(): Promise<Account[]>;
@@ -47,8 +40,7 @@ export interface StakingLedger {
   close(): Promise<void>;
 }
 
-export const EMPTY_ZKAPP_URI_HASH =
-  "20639848968581348850513072699760590695338607317404146322838943866773129280073";
+export const accountHashPrefix = "MinaAccount*********";
 
 export const accountLedgerHashPrefixes = [
   "MinaMklTree000******",
@@ -88,18 +80,15 @@ export const accountLedgerHashPrefixes = [
   "MinaMklTree034******",
 ];
 
-const emptyAccount = Account.empty();
-const hashInput = Account.toHashInput(emptyAccount);
-const fields = packToFields(hashInput);
-const emptyAccountHash = hashWithPrefix(accountHashPrefix, fields);
-
-export class BaseStakingLedger implements StakingLedger {
+export abstract class BaseStakingLedger implements StakingLedger {
   public merkleTree: PrefixedMerkleTree;
 
-  public constructor(
-    public accountStorage: AccountStorage,
-    public merkleTreeStorage: MerkleTreeStorage,
-  ) {
+  public constructor(public merkleTreeStorage: MerkleTreeStorage) {
+    const emptyAccount = Account.empty();
+    const hashInput = Account.toHashInput(emptyAccount);
+    const fields = packToFields(hashInput);
+    const emptyAccountHash = hashWithPrefix(accountHashPrefix, fields);
+
     this.merkleTree = new PrefixedMerkleTree(
       36,
       emptyAccountHash,
@@ -108,26 +97,11 @@ export class BaseStakingLedger implements StakingLedger {
     );
   }
 
-  public async close(): Promise<void> {
-    await this.accountStorage.close();
-    await this.merkleTreeStorage.close();
-  }
-
-  public async getAllAccounts(): Promise<Account[]> {
-    return await this.accountStorage.getAllAccounts();
-  }
-
-  public async accountCount(): Promise<number> {
-    return await this.accountStorage.count();
-  }
-
-  public async getAccount(index: bigint): Promise<Account> {
-    return (await this.accountStorage.getAccount(index)) ?? Account.empty();
-  }
-
-  public async setAccount(index: bigint, account: Account): Promise<void> {
-    await this.accountStorage.setAccount(index, account);
-  }
+  public abstract getAllAccounts(): Promise<Account[]>;
+  public abstract accountCount(): Promise<number>;
+  public abstract getAccount(index: bigint): Promise<Account>;
+  public abstract setAccount(index: bigint, account: Account): Promise<void>;
+  public abstract close(): Promise<void>;
 
   public async getWitness(index: bigint): Promise<PrefixedMerkleWitness36> {
     return new PrefixedMerkleWitness36(await this.merkleTree.getWitness(index));
@@ -147,8 +121,106 @@ export class BaseStakingLedger implements StakingLedger {
     return await this.merkleTree.getRoot();
   }
 
+  public async hydrateAccounts(
+    accounts: Account[],
+    startIndex = 0,
+    endIndex?: number,
+    onHydrateAccountComplete?: (index: bigint, account: Account) => void,
+  ): Promise<void> {
+    endIndex = endIndex ?? accounts.length;
+    console.log("hydrating accounts", startIndex, endIndex, accounts.length);
+
+    if (endIndex > accounts.length) {
+      throw new Error("End index is greater than the number of accounts");
+    }
+
+    const accountsToHydrate = accounts.slice(startIndex, endIndex + 1);
+    if (accountsToHydrate.length === 0) {
+      throw new Error("No accounts to hydrate");
+    }
+
+    for (let i = 0; i < accountsToHydrate.length; i++) {
+      const account = accountsToHydrate[i];
+      const index = BigInt(i + startIndex);
+      await this.setAccount(index, account);
+      onHydrateAccountComplete?.(index, account);
+    }
+  }
+
+  public async hydrateMerkleTree(
+    accounts: Account[],
+    startIndex = 0,
+    endIndex?: number,
+    onHydrateLeafComplete?: (index: bigint, leaf: Account) => void,
+  ): Promise<void> {
+    endIndex = endIndex ?? accounts.length - 1;
+
+    if (endIndex > accounts.length) {
+      throw new Error("End index is greater than the number of accounts");
+    }
+
+    const accountsToHydrate = accounts.slice(startIndex, endIndex + 1);
+    if (accountsToHydrate.length === 0) {
+      throw new Error("No accounts to hydrate");
+    }
+
+    for (let i = 0; i < accountsToHydrate.length; i++) {
+      const account = accountsToHydrate[i];
+      const treeIndex = BigInt(i + startIndex);
+      await this.setLeaf(treeIndex, account);
+      onHydrateLeafComplete?.(treeIndex, account);
+    }
+  }
+
+  public async readStakingLedger(
+    stakingLedgerPath: string,
+    onAccountReadComplete?: (bytesRead: number, totalBytes: number) => void,
+  ): Promise<Account[]> {
+    const { parser } = streamJson;
+    const { streamArray } = StreamArray;
+
+    let accountCount = 0;
+    const accounts: Record<number, Account> = {};
+
+    return new Promise(async (resolve, reject) => {
+      const { size: totalSize } = statSync(stakingLedgerPath);
+      const readStream = createReadStream(stakingLedgerPath);
+      let parseQueue = Promise.resolve();
+
+      readStream
+        .pipe(parser())
+        .pipe(streamArray())
+        .on("data", ({ value }) => {
+          accountCount++;
+          const index = accountCount;
+
+          parseQueue = parseQueue.then(async () => {
+            const account = await this.parseStakingLedgerAccount(value);
+            accounts[index] = account;
+            onAccountReadComplete?.(readStream.bytesRead, totalSize);
+          });
+        })
+        .on("end", async () => {
+          try {
+            await parseQueue;
+            const accountsArray = Object.entries(accounts)
+              .sort(([a], [b]) => Number(a) - Number(b))
+              .map(([, account]) => account);
+            resolve(accountsArray);
+            onAccountReadComplete?.(readStream.bytesRead, totalSize);
+          } catch (error) {
+            reject(error);
+          }
+        })
+        .on("error", (error) => {
+          console.error("Error reading staking ledger", error);
+          reject(error);
+        });
+    });
+  }
+
   // TODO: should be typed to match the JSON schema
-  public async parseAccount(value: any): Promise<Account> {
+  private async parseStakingLedgerAccount(value: any): Promise<Account> {
     return new Account({
       pk: PublicKey.fromBase58(value.pk),
       tokenId: TokenId.fromBase58(value.token),
@@ -216,7 +288,7 @@ export class BaseStakingLedger implements StakingLedger {
             provedState: Bool(value.zkapp.proved_state),
             zkappUri:
               value.zkapp.zkapp_uri === ""
-                ? Field(EMPTY_ZKAPP_URI_HASH)
+                ? Zkapp.empty().zkappUri
                 : ZkappUri.from(value.zkapp.zkapp_uri).hash,
           })
         : Zkapp.empty(),
@@ -226,123 +298,5 @@ export class BaseStakingLedger implements StakingLedger {
         ? PublicKey.fromBase58(value.delegate)
         : PublicKey.empty(),
     });
-  }
-
-  /**
-   * Reads the staking ledger JSON file and returns an array of all the accounts in the file
-   * @param stakingLedgerPath - The path to the staking ledger JSON file
-   * @param onAccountReadComplete - A callback function that is called when an account is read, used to track progress
-   * @returns An array of all the accounts in the staking ledger JSON file
-   */
-  async readStakingLedger(
-    stakingLedgerPath: string,
-    onAccountReadComplete?: (bytesRead: number, totalBytes: number) => void,
-  ): Promise<Account[]> {
-    const { parser } = streamJson;
-    const { streamArray } = StreamArray;
-
-    let accountCount = 0;
-    let accounts: Record<number, Account> = {};
-
-    return new Promise(async (resolve, reject) => {
-      const { size: totalSize } = statSync(stakingLedgerPath);
-
-      const readStream = createReadStream(stakingLedgerPath);
-
-      let parseQueue = Promise.resolve();
-
-      readStream
-        .pipe(parser())
-        .pipe(streamArray())
-        .on("data", ({ value }) => {
-          accountCount++;
-          const index = accountCount;
-
-          parseQueue = parseQueue.then(async () => {
-            const account = await this.parseAccount(value);
-            accounts[index] = account;
-            onAccountReadComplete?.(readStream.bytesRead, totalSize);
-          });
-        })
-        .on("end", async () => {
-          try {
-            await parseQueue;
-            const accountsArray = Object.entries(accounts)
-              .sort(([a], [b]) => Number(a) - Number(b))
-              .map(([, account]) => account);
-            resolve(accountsArray);
-            // TODO: is this last call necessary, as it's already called in the data event?
-            // if not, we can add `account` into the parameters too
-            onAccountReadComplete?.(readStream.bytesRead, totalSize);
-          } catch (error) {
-            reject(error);
-          }
-        })
-        .on("error", (error) => {
-          console.error("Error reading staking ledger", error);
-          reject(error);
-        });
-    });
-  }
-
-  /**
-   * Hydrates the accounts in the staking ledger into the account storage.
-   * Index ranges can be specified to hydrate a subset of the accounts,
-   * when resuming the hydrating process.
-   * @param accounts - The array of accounts to hydrate
-   * @param startIndex - The index to start hydrating at
-   * @param endIndex - The index to end hydrating at
-   * @param onHydrateAccountComplete - A callback function that is called when an account is hydrated, used to track progress
-   */
-  async hydrateAccounts(
-    accounts: Account[],
-    startIndex = 0,
-    endIndex?: number,
-    onHydrateAccountComplete?: (index: bigint, account: Account) => void,
-  ): Promise<void> {
-    endIndex = endIndex ?? accounts.length;
-
-    if (endIndex > accounts.length) {
-      throw new Error("End index is greater than the number of accounts");
-    }
-
-    const accountsToHydrate = accounts.slice(startIndex, endIndex + 1);
-    if (accountsToHydrate.length === 0) {
-      throw new Error("No accounts to hydrate");
-    }
-
-    for (let i = 0; i < accountsToHydrate.length; i++) {
-      const account = accountsToHydrate[i];
-
-      const index = BigInt(i + startIndex);
-      await this.setAccount(index, account);
-      onHydrateAccountComplete?.(index, account);
-    }
-  }
-
-  async hydrateMerkleTree(
-    accounts: Account[],
-    startIndex = 0,
-    endIndex?: number,
-    onHydrateLeafComplete?: (index: bigint, leaf: Account) => void,
-  ): Promise<void> {
-    endIndex = endIndex ?? accounts.length;
-
-    if (endIndex > accounts.length) {
-      throw new Error("End index is greater than the number of accounts");
-    }
-
-    const accountsToHydrate = accounts.slice(startIndex, endIndex + 1);
-
-    if (accountsToHydrate.length === 0) {
-      throw new Error("No accounts to hydrate");
-    }
-
-    for (let i = 0; i < accountsToHydrate.length; i++) {
-      const account = accountsToHydrate[i];
-      const treeIndex = BigInt(i + startIndex);
-      await this.setLeaf(treeIndex, account);
-      onHydrateLeafComplete?.(treeIndex, account);
-    }
   }
 }

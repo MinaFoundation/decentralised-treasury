@@ -4,7 +4,6 @@ import {
 } from "../../provable/merkle-tree/prefixed-merkle-tree.js";
 import { Bool, Field } from "o1js";
 import { MerkleTreeStorage } from "../../storage/merkle-tree-storage.js";
-import { VoteNullifierStorage } from "../../storage/vote-nullifier-storage.js";
 import { hashWithPrefix } from "../../provable/hashing-helpers.js";
 import { publicKeyBase58ToBigInt } from "../../utils/public-key.js";
 
@@ -276,32 +275,30 @@ export const nullifierLedgerHashPrefixes = [
 ];
 
 export const nullifierHashPrefix = "MinaNullifier*************";
-export const emptyNullifierHash = hashWithPrefix(
-  nullifierHashPrefix,
-  Bool(false).toFields()
-);
 
-export class BaseNullifierLedger implements NullifierLedger {
+export abstract class BaseNullifierLedger implements NullifierLedger {
   public merkleTree: PrefixedMerkleTree;
-  public constructor(
-    public nullifierStorage: VoteNullifierStorage,
-    public merkleTreeStorage: MerkleTreeStorage
-  ) {
+  public constructor(public merkleTreeStorage: MerkleTreeStorage) {
+    const emptyNullifierHash = hashWithPrefix(
+      nullifierHashPrefix,
+      Bool(false).toFields(),
+    );
+
     // use a 256 height to match the nullifier tree requirements
     this.merkleTree = new PrefixedMerkleTree(
       256,
       emptyNullifierHash,
       nullifierLedgerHashPrefixes,
-      this.merkleTreeStorage
+      this.merkleTreeStorage,
     );
   }
 
   public async getWitness(
-    publicKey: string
+    publicKey: string,
   ): Promise<PrefixedMerkleWitness256> {
     const index = publicKeyBase58ToBigInt(publicKey);
     return new PrefixedMerkleWitness256(
-      await this.merkleTree.getWitness(index)
+      await this.merkleTree.getWitness(index),
     );
   }
 
@@ -309,25 +306,19 @@ export class BaseNullifierLedger implements NullifierLedger {
     const index = publicKeyBase58ToBigInt(publicKey);
     await this.merkleTree.setLeaf(
       index,
-      hashWithPrefix(nullifierHashPrefix, nullifier.toFields())
+      hashWithPrefix(nullifierHashPrefix, nullifier.toFields()),
     );
   }
 
-  public async getNullifier(publicKey: string): Promise<Bool> {
-    const storedNullifier = await this.nullifierStorage.getNullifier(publicKey);
-    return storedNullifier === undefined ? Bool(false) : Bool(storedNullifier);
-  }
-
-  public async setNullifier(publicKey: string, nullifier: Bool): Promise<void> {
-    await this.nullifierStorage.setNullifier(publicKey, nullifier.toBoolean());
-  }
+  public abstract getNullifier(publicKey: string): Promise<Bool>;
+  public abstract setNullifier(
+    publicKey: string,
+    nullifier: Bool,
+  ): Promise<void>;
 
   public async getRoot(): Promise<Field> {
     return await this.merkleTree.getRoot();
   }
 
-  public async close(): Promise<void> {
-    await this.nullifierStorage.close();
-    await this.merkleTreeStorage.close();
-  }
+  public abstract close(): Promise<void>;
 }

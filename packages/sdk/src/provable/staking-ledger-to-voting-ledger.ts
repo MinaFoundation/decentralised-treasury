@@ -14,14 +14,14 @@ import {
   ZkProgram,
 } from "o1js";
 import { ContextProvider } from "../utils/context-provider.js";
-import { Account, accountHashPrefix, packToFields } from "./account.js";
+import { Account, packToFields } from "./account.js";
 import { hashWithPrefix } from "./hashing-helpers.js";
 import {
+  accountHashPrefix,
   accountLedgerHashPrefixes,
   StakingLedger,
 } from "../ledgers/staking-ledger/staking-ledger.js";
 import {
-  emptyVotingAccountHash,
   votingAccountHashPrefix,
   votingAccountLedgerHashPrefixes,
   VotingLedger,

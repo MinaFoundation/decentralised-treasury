@@ -13,7 +13,7 @@ export class RecordingVotingLedger implements VotingLedger {
   public constructor(public votingLedger: VotingLedger) {}
 
   public async getWitness(
-    publicKey: string
+    publicKey: string,
   ): Promise<PrefixedMerkleWitness256> {
     const witness = await this.votingLedger.getWitness(publicKey);
     this.recorder.record("witnesses", publicKey, witness);
@@ -28,7 +28,7 @@ export class RecordingVotingLedger implements VotingLedger {
 
   public async setVotingAccount(
     publicKey: string,
-    votingAccount: VotingAccount
+    votingAccount: VotingAccount,
   ): Promise<void> {
     await this.votingLedger.setVotingAccount(publicKey, votingAccount);
   }
@@ -43,5 +43,9 @@ export class RecordingVotingLedger implements VotingLedger {
 
   public async close(): Promise<void> {
     await this.votingLedger.close();
+  }
+
+  public async clear(): Promise<void> {
+    this.recorder.clear();
   }
 }

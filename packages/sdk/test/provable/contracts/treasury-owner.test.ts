@@ -1,6 +1,5 @@
 import { it, after } from "node:test";
 import assert from "node:assert";
-import { RedisMemoryServer } from "redis-memory-server";
 import {
   LIFECYCLE_PERIOD_DURATION,
   LifecyclePeriod,
@@ -15,11 +14,16 @@ import {
   AccountUpdate,
   fetchAccount,
   Field,
+  method,
   Mina,
+  Permissions,
   PrivateKey,
   Provable,
   PublicKey,
   Reducer,
+  SmartContract,
+  State,
+  state,
   UInt32,
   UInt64,
 } from "o1js";
@@ -53,9 +57,12 @@ import { Account } from "../../../src/provable/account.js";
 import { createVoteReducerTestContext } from "../context/contracts/vote-reducer-context.js";
 
 const voteReducerTestContext = createVoteReducerTestContext();
-import { RedisVotingLedger } from "../../../src/ledgers/voting-ledger/redis-voting-ledger.js";
-import { RedisNullifierLedger } from "../../../src/ledgers/nullifier-ledger/redis-nullifier-ledger.js";
-import { RedisStakingLedger } from "../../../src/ledgers/staking-ledger/redis-staking-ledger.js";
+import { PersistentNullifierLedger } from "../../../src/ledgers/nullifier-ledger/persistent-nullifier-ledger.js";
+import { PersistentVotingLedger } from "../../../src/ledgers/voting-ledger/persistent-voting-ledger.js";
+import { PersistentStakingLedger } from "../../../src/ledgers/staking-ledger/persistent-staking-ledger.js";
+import { createSqliteNullifierLedgerStorage } from "../../../src/storage/sqlite/factory/sqlite-nullifier-ledger-storage.js";
+import { createSqliteStakingLedgerStorage } from "../../../src/storage/sqlite/factory/sqlite-staking-ledger-storage.js";
+import { createSqliteVotingLedgerStorage } from "../../../src/storage/sqlite/factory/sqlite-voting-ledger-storage.js";
 
 const proofsEnabled = process.env.PROOFS_ENABLED === "true";
 
@@ -65,15 +72,23 @@ const Local = await Mina.LocalBlockchain({
 
 Mina.setActiveInstance(Local);
 
-const redisServer = new RedisMemoryServer();
-const redisHost = await redisServer.getHost();
-const redisPort = await redisServer.getPort();
-const redisUrl = `redis://${redisHost}:${redisPort}`;
 const lifecycleId = "treasury-owner-test";
 
-const votingLedger = new RedisVotingLedger(redisUrl, lifecycleId);
-const nullifierLedger = new RedisNullifierLedger(redisUrl, lifecycleId);
-const stakingLedger = new RedisStakingLedger(redisUrl, lifecycleId);
+const votingLedgerStorage = createSqliteVotingLedgerStorage(lifecycleId);
+const votingLedger = new PersistentVotingLedger(
+  votingLedgerStorage.votingAccountStorage,
+  votingLedgerStorage.merkleTreeStorage,
+);
+const nullifierLedgerStorage = createSqliteNullifierLedgerStorage(lifecycleId);
+const nullifierLedger = new PersistentNullifierLedger(
+  nullifierLedgerStorage.nullifierStorage,
+  nullifierLedgerStorage.merkleTreeStorage,
+);
+const stakingLedgerStorage = createSqliteStakingLedgerStorage(lifecycleId);
+const stakingLedger = new PersistentStakingLedger(
+  stakingLedgerStorage.accountStorage,
+  stakingLedgerStorage.merkleTreeStorage,
+);
 
 voteReducerContext.set({
   votingLedger,
@@ -89,7 +104,6 @@ after(async () => {
   await votingLedger.close();
   await nullifierLedger.close();
   await stakingLedger.close();
-  await redisServer.stop();
 });
 
 const multisigPrivateKey1 = PrivateKey.random();

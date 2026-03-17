@@ -44,4 +44,8 @@ export class RecordingStakingLedger implements StakingLedger {
   public async close(): Promise<void> {
     await this.stakingLedger.close();
   }
+
+  public async clear(): Promise<void> {
+    this.recorder.clear();
+  }
 }

@@ -1,11 +1,12 @@
-import { PublicKey } from "o1js";
-import { VotingAccount } from "../provable/staking-ledger-to-voting-ledger.js";
+import { VotingAccount } from "../provable/voting-account.js";
+import { KeyValueEntry } from "./key-value-storage.js";
 
 export interface VotingAccountStorage {
+  namespace: string;
   getVotingAccount(publicKey: string): Promise<VotingAccount | undefined>;
   setVotingAccount(
     publicKey: string,
-    votingAccount: VotingAccount
+    votingAccount: VotingAccount,
   ): Promise<void>;
   close(): Promise<void>;
 }

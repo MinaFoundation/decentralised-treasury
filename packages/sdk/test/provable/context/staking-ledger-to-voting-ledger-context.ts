@@ -6,11 +6,11 @@ import {
   StakingLedgerToVotingLedgerProgramOutput,
   stakingLedgerToVotingLedgerContext,
 } from "../../../src/provable/staking-ledger-to-voting-ledger.js";
-import { readLedger } from "../../../src/read-ledger.js";
 import { Account } from "../../../src/provable/account.js";
-import { RedisStakingLedger } from "../../../src/ledgers/staking-ledger/redis-staking-ledger.js";
-import { RedisVotingLedger } from "../../../src/ledgers/voting-ledger/redis-voting-ledger.js";
-import { createRedisServer } from "./redis-test-server.js";
+import { PersistentStakingLedger } from "../../../src/ledgers/staking-ledger/persistent-staking-ledger.js";
+import { createSqliteStakingLedgerStorage } from "../../../src/storage/sqlite/factory/sqlite-staking-ledger-storage.js";
+import { PersistentVotingLedger } from "../../../src/ledgers/voting-ledger/persistent-voting-ledger.js";
+import { createSqliteVotingLedgerStorage } from "../../../src/storage/sqlite/factory/sqlite-voting-ledger-storage.js";
 import { getProofsEnabled } from "./proofs-enabled.js";
 
 const createVotingLedgerId = (lifecycleId: string) => {
@@ -27,28 +27,27 @@ export async function createStakingLedgerToVotingLedgerTestContext(
 ) {
   const lifecycleId =
     options.lifecycleId ?? "staking-ledger-to-voting-ledger-test";
-  const redisSetup = await createRedisServer();
-  const stakingLedger = new RedisStakingLedger(
-    redisSetup.redisUrl,
-    lifecycleId,
+  const stakingLedgerStorage = createSqliteStakingLedgerStorage(lifecycleId);
+  const stakingLedger = new PersistentStakingLedger(
+    stakingLedgerStorage.accountStorage,
+    stakingLedgerStorage.merkleTreeStorage,
   );
 
   const ledgerPath =
     options.ledgerPath ?? "test/provable/staking-epoch-ledger.json";
-  let testAccounts = await readLedger(ledgerPath);
+  let testAccounts = await stakingLedger.readStakingLedger(ledgerPath);
   if (options.maxAccounts !== undefined) {
     testAccounts = testAccounts.slice(0, options.maxAccounts);
   }
 
-  for (const [index, account] of testAccounts.entries()) {
-    if (!Account.isEmpty(account).toBoolean()) {
-      await stakingLedger.setLeaf(BigInt(index), account);
-    }
-  }
+  await stakingLedger.hydrateAccounts(testAccounts);
+  await stakingLedger.hydrateMerkleTree(testAccounts);
+
   const votingLedgerId = createVotingLedgerId(lifecycleId);
-  const votingLedger = new RedisVotingLedger(
-    redisSetup.redisUrl,
-    votingLedgerId,
+  const votingLedgerStorage = createSqliteVotingLedgerStorage(votingLedgerId);
+  const votingLedger = new PersistentVotingLedger(
+    votingLedgerStorage.votingAccountStorage,
+    votingLedgerStorage.merkleTreeStorage,
   );
 
   stakingLedgerToVotingLedgerContext.set({
@@ -95,7 +94,6 @@ export async function createStakingLedgerToVotingLedgerTestContext(
   const cleanup = async () => {
     await votingLedger.close();
     await stakingLedger.close();
-    await redisSetup.redisServer.stop();
   };
 
   return {

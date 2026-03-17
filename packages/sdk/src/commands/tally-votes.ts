@@ -28,8 +28,8 @@ import {
 import { SideLoadedStakingLedgerToVotingLedgerProof } from "../provable/staking-ledger-to-voting-ledger.js";
 import { PrefixedMerkleWitness36 } from "../provable/merkle-tree/prefixed-merkle-tree.js";
 import { VotingAccount } from "../provable/voting-account.js";
-import { BaseVotingLedger } from "../ledgers/voting-ledger/voting-ledger.js";
-import { BaseNullifierLedger } from "../ledgers/nullifier-ledger/nullifier-ledger.js";
+import { PersistentVotingLedger } from "../ledgers/voting-ledger/persistent-voting-ledger.js";
+import { PersistentNullifierLedger } from "../ledgers/nullifier-ledger/persistent-nullifier-ledger.js";
 import { MemoryVotingAccountStorage } from "../storage/memory-voting-account-storage.js";
 import { MemoryMerkleTreeStorage } from "../storage/memory-merkle-tree-storage.js";
 import { MemoryVoteNullifierStorage } from "../storage/memory-vote-nullifier-storage.js";
@@ -226,11 +226,11 @@ export default function tallyVotesCommandFactory(program: Command) {
         const nullifierStorage = new MemoryVoteNullifierStorage();
         const nullifierMerkleTreeStorage = new MemoryMerkleTreeStorage();
 
-        const votingLedger = new BaseVotingLedger(
+        const votingLedger = new PersistentVotingLedger(
           votingAccountStorage,
           votingMerkleTreeStorage
         );
-        const nullifierLedger = new BaseNullifierLedger(
+        const nullifierLedger = new PersistentNullifierLedger(
           nullifierStorage,
           nullifierMerkleTreeStorage
         );

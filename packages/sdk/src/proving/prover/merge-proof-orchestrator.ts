@@ -1,7 +1,9 @@
 import { Provable } from "o1js";
 import { Task, TaskQueue } from "../task-queue.js";
+import { BatchStorage } from "../../storage/batch-storage.js";
+import { KeyValueBatchStorage } from "../../storage/batch-key-value-storage.js";
 
-export interface MergeProofStorage<ProofType> {
+export interface MergeProofStorage<ProofType> extends BatchStorage {
   getProof(id: string): Promise<ProofType | undefined>;
   setProof(id: string, proof: ProofType): Promise<void>;
   getMergeProof(id: string): Promise<ProofType | undefined>;
@@ -12,7 +14,6 @@ export interface MergeProofStorage<ProofType> {
   count(): Promise<number>;
 }
 
-// TODO: generalize to any proof type
 export abstract class MergeProofOrchestrator<ProofType> {
   private static asMergeTaskOutput<ProofType>(value: unknown) {
     return value as { proof: ProofType };
@@ -21,7 +22,7 @@ export abstract class MergeProofOrchestrator<ProofType> {
     proofs: {
       index: string;
       proof: ProofType;
-    }[]
+    }[],
   ):
     | { proof1: undefined; proof2: undefined }
     | {
@@ -37,15 +38,13 @@ export abstract class MergeProofOrchestrator<ProofType> {
 
   constructor(
     public proofStorage: MergeProofStorage<ProofType>,
+    public batchWriter: KeyValueBatchStorage,
     public taskQueue: TaskQueue<Record<string, Task<unknown, unknown>>>,
-    public mergeTaskName: string
+    public mergeTaskName: string,
   ) {}
 
   public async merge(
-    onMergeComplete?: (
-      index: number,
-      proof: ProofType
-    ) => void
+    onMergeComplete?: (index: number, proof: ProofType) => void,
   ) {
     // let availableWorkers = WORKER_COUNT;
     let mergeCount = await this.proofStorage.mergeCount();
@@ -62,16 +61,17 @@ export abstract class MergeProofOrchestrator<ProofType> {
       index: string;
       proof: ProofType;
     }[] = [];
+    let callbackQueue: Promise<void> = Promise.resolve();
+    let callbackError: Error | undefined;
+    const mergeTaskPromises: Promise<void>[] = [];
 
-    let index = 0;
+    await this.taskQueue.obliterate();
 
-    // wait until at least 1 worker is available
-    // TODO: use queue pending/active jobs instead
-    // const waitForWorkers = async () => {
-    //   while (availableWorkers === 0) {
-    //     await new Promise((resolve) => setTimeout(resolve, 100));
-    //   }
-    // };
+    const addPendingProof = (proof: { index: string; proof: ProofType }) => {
+      if (!proofs.some((pending) => pending.index === proof.index)) {
+        proofs.push(proof);
+      }
+    };
 
     const merge = async () => {
       const { proof1, proof2 } = this.findMergeableProofs(proofs);
@@ -93,38 +93,61 @@ export abstract class MergeProofOrchestrator<ProofType> {
       //   availableWorkers--;
       Provable.log("adding merge task", proof1.index, proof2.index);
 
-      this.taskQueue.addTask(
-        this.mergeTaskName,
-        {
-          proofs: { 1: proof1.proof, 2: proof2.proof },
-        },
-        async (result) => {
-          const typedResult =
-            MergeProofOrchestrator.asMergeTaskOutput<ProofType>(result);
-          //   availableWorkers++;
-          mergeCount = await this.proofStorage.mergeCount();
+      const taskPromise = this.taskQueue
+        .addTask(
+          this.mergeTaskName,
+          {
+            proofs: { 1: proof1.proof, 2: proof2.proof },
+          },
+          async (result) => {
+            callbackQueue = callbackQueue
+              .then(async () => {
+                const typedResult =
+                  MergeProofOrchestrator.asMergeTaskOutput<ProofType>(result);
+                //   availableWorkers++;
+                mergeCount = await this.proofStorage.mergeCount();
 
-          Provable.log("setting merge proof", mergeCount);
+                Provable.log("setting merge proof", mergeCount);
 
-          proofs.push({
-            proof: typedResult.proof,
-            index: mergeCount.toString(),
-          });
+                proofs.push({
+                  proof: typedResult.proof,
+                  index: `merge-${mergeCount.toString()}`,
+                });
 
-          await this.proofStorage.setMergeProof(
-            mergeCount.toString(),
-            typedResult.proof
-          );
+                await this.proofStorage.setMergeProof(
+                  `merge-${mergeCount.toString()}`,
+                  typedResult.proof,
+                );
 
-          await this.proofStorage.markAsMerged(proof1.index);
-          await this.proofStorage.markAsMerged(proof2.index);
-          mergeCount = await this.proofStorage.mergeCount();
+                await this.proofStorage.markAsMerged(proof1.index);
+                await this.proofStorage.markAsMerged(proof2.index);
 
-          if (mergeCount < expectedMergeCount) {
-            merge();
-          }
-        }
-      );
+                const entries = this.proofStorage.collectEntries();
+                await this.batchWriter.setMany(entries);
+                this.proofStorage.clearEntries();
+
+                mergeCount = await this.proofStorage.mergeCount();
+
+                onMergeComplete?.(mergeCount, typedResult.proof);
+
+                if (mergeCount < expectedMergeCount) {
+                  merge();
+                }
+              })
+              .catch((error: unknown) => {
+                callbackError =
+                  error instanceof Error ? error : new Error(String(error));
+              });
+          },
+        )
+        .catch((error: unknown) => {
+          // // Reinsert proofs so failed merge jobs do not permanently drop inputs.
+          // addPendingProof(proof1);
+          // addPendingProof(proof2);
+          callbackError =
+            error instanceof Error ? error : new Error(String(error));
+        });
+      mergeTaskPromises.push(taskPromise);
     };
 
     // read all base proofs and add them to the proofs list for merging
@@ -160,27 +183,57 @@ export abstract class MergeProofOrchestrator<ProofType> {
     }
 
     return new Promise<ProofType>(async (resolve) => {
-        while (mergeCount < expectedMergeCount) {
-          Provable.log(
-            "waiting for merging to finish",
-            mergeCount,
-            "/",
-            expectedMergeCount
-          );
-          await this.taskQueue.waitUntilEmpty();
-          await new Promise((resolve) => setTimeout(resolve, 500));
+      let lastMergeCount = mergeCount;
+      let isStalledCount = 0;
+      while (mergeCount < expectedMergeCount) {
+        if (callbackError) {
+          throw callbackError;
         }
+        if (lastMergeCount === mergeCount) {
+          isStalledCount++;
+        }
+        lastMergeCount = mergeCount;
 
-        const proof = await this.proofStorage.getMergeProof(
-          (expectedMergeCount - 1).toString()
+        Provable.log(
+          "waiting for merging to finish",
+          mergeCount,
+          "/",
+          expectedMergeCount,
+          "isStalledCount",
+          isStalledCount,
         );
-
-        if (!proof) {
-          throw new Error("No merge proof found");
+        if (isStalledCount > 5) {
+          Provable.log("merge is stalled", {
+            jobCounts: await this.taskQueue.queue.getJobCounts(),
+            pendingProofs: proofs.length,
+            proofs: proofs.map((p) => ({
+              index: p.index,
+              input: (p.proof as any).publicInput.index.toBigInt(),
+              output: (p.proof as any).publicOutput.index.toBigInt(),
+            })),
+          });
+          throw new Error("Merge is stalled");
         }
 
-        resolve(proof);
+        await this.taskQueue.waitUntilEmpty();
+        await new Promise((resolve) => setTimeout(resolve, 1000));
       }
-    );
+
+      await callbackQueue;
+      await Promise.allSettled(mergeTaskPromises);
+      if (callbackError) {
+        throw callbackError;
+      }
+
+      const proof = await this.proofStorage.getMergeProof(
+        "merge-" + (expectedMergeCount - 1).toString(),
+      );
+
+      if (!proof) {
+        throw new Error("No merge proof found");
+      }
+
+      resolve(proof);
+    });
   }
 }

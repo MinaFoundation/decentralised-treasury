@@ -10,7 +10,7 @@ export class Recorder<
   >(
     bucket: Bucket,
     key: Key,
-    value: ArrayValue<Recordings[Bucket][Key]>
+    value: ArrayValue<Recordings[Bucket][Key]>,
   ): void {
     this.recordings[bucket] ??= {} as Recordings[Bucket];
     this.recordings[bucket][key] ??= [] as Recordings[Bucket][Key];
@@ -25,5 +25,9 @@ export class Recorder<
     const value = values.shift() as ArrayValue<Recordings[Bucket][Key]>;
     this.recordings[bucket][key] = values as Recordings[Bucket][Key];
     return value;
+  }
+
+  public clear(): void {
+    this.recordings = {} as Recordings;
   }
 }

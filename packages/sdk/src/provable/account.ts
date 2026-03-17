@@ -18,10 +18,11 @@ import {
   Reducer,
 } from "o1js";
 import { hashWithPrefix } from "./hashing-helpers.js";
-import { EMPTY_ZKAPP_URI_HASH } from "../ledgers/staking-ledger/staking-ledger.js";
 
-export const accountHashPrefix = "MinaAccount*********";
-export const zkapp2HashPrefix = "MinaZkappAccount****";
+const EMPTY_ZKAPP_URI_HASH =
+  "20639848968581348850513072699760590695338607317404146322838943866773129280073";
+
+export const zkappAccountHashPrefix = "MinaZkappAccount****";
 
 export class Timing extends Struct({
   isTimed: Bool,
@@ -202,7 +203,7 @@ export class Zkapp extends Struct({
     ].reduce(append, { fieldElements: [], packeds: [] });
 
     const fields = packToFields(hashInput);
-    const hash = hashWithPrefix(zkapp2HashPrefix, fields);
+    const hash = hashWithPrefix(zkappAccountHashPrefix, fields);
     return hash;
   }
 }
@@ -224,10 +225,20 @@ export class Account extends Struct({
   // this case occurs if PublicKey.empty() is used for pk or delegate, or any other field that is not a valid PublicKey
   public static fromJSON(json: Record<string, any>): Account {
     let account: Account;
+    let emptyDelegate = false;
+
+    // TODO: delegate should be physically empty for custom token accounts, why does it come back as PublicKey.empty()?
+    if (!json.delegate || json.delegate === PublicKey.empty().toBase58()) {
+      emptyDelegate = true;
+      json.delegate = json.pk;
+    }
+
     try {
       account = super.fromJSON(json as any);
+      if (emptyDelegate) {
+        account.delegate = PublicKey.empty();
+      }
     } catch (error) {
-      Provable.log("error deserializing account", error);
       account = Account.empty();
     }
     return account;

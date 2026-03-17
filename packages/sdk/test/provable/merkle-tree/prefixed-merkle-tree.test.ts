@@ -1,23 +1,24 @@
 import { it } from "node:test";
-import { RedisMerkleTreeStorage } from "../../../src/storage/redis/redis-merkle-tree-storage.js";
-import { RedisMemoryServer } from "redis-memory-server";
+import { KeyvMerkleTreeStorage } from "../../../src/storage/keyv/keyv-merkle-tree-storage.js";
 import { Field, Provable } from "o1js";
 import assert from "node:assert";
 import { PrefixedMerkleTree } from "../../../src/provable/merkle-tree/prefixed-merkle-tree.js";
+import { SqliteCounter } from "../../../src/storage/sqlite/sqlite-counter.js";
+import { createSqliteKeyv } from "../../../src/storage/sqlite/sqlite-keyv.js";
+import { getSqliteDbPath } from "../../../src/storage/sqlite/sqlite-db-path.js";
 
 const expectedRoot =
   "16454815573389775030357115923683611722287847789162266602163105950268208151468";
 
 it("should create a prefixed merkle tree", async () => {
-  const redisServer = new RedisMemoryServer();
-
-  const redisHost = await redisServer.getHost();
-  const redisPort = await redisServer.getPort();
-
-  const redisUrl = `redis://${redisHost}:${redisPort}`;
-  const merkleTreeStorage = new RedisMerkleTreeStorage(
-    redisUrl,
-    "test-namespace"
+  const lifecycleId = `test-namespace-${Date.now()}`;
+  const dbPath = getSqliteDbPath(lifecycleId);
+  const keyv = createSqliteKeyv(dbPath);
+  const counter = new SqliteCounter(dbPath);
+  const merkleTreeStorage = new KeyvMerkleTreeStorage(
+    keyv,
+    "test-namespace",
+    counter,
   );
 
   const height = 2;
@@ -38,5 +39,4 @@ it("should create a prefixed merkle tree", async () => {
   const root = await tree.getRoot();
   assert(root?.toString() === expectedRoot, "root does not match");
   await merkleTreeStorage.close();
-  await redisServer.stop();
 });

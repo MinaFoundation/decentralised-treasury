@@ -1,5 +1,5 @@
 import { Worker } from "../../src/proving/worker.js";
-import { tasks } from "./test-queue.js";
+import { fileURLToPath } from "node:url";
 
 const queueName = process.argv[2];
 const redisHost = process.argv[3];
@@ -10,6 +10,10 @@ const connection = {
   maxRetriesPerRequest: null,
 };
 
-const worker = new Worker(queueName, tasks, connection);
+const worker = new Worker(
+  queueName,
+  connection,
+  fileURLToPath(new URL("./test-queue.js", import.meta.url)),
+);
 console.log("starting worker", queueName, connection);
 await worker.start();

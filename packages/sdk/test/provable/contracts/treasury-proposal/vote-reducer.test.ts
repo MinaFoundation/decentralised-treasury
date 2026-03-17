@@ -39,11 +39,11 @@ test("vote reducer", async (t) => {
       async () => {
         const action1 = new VoteAction({
           vote: Vote.YAY,
-          publicKey: testContext.testAccounts[0].publicKey,
+          publicKey: testContext.testAccounts[0].pk,
         });
         const action2 = new VoteAction({
           vote: Vote.NAY,
-          publicKey: testContext.testAccounts[1].publicKey,
+          publicKey: testContext.testAccounts[1].pk,
         });
 
         const paddedActions = [
@@ -95,23 +95,23 @@ test("vote reducer", async (t) => {
         const actions = [
           new VoteAction({
             vote: Vote.YAY,
-            publicKey: testContext.testAccounts[0].publicKey,
+            publicKey: testContext.testAccounts[0].pk,
           }),
           new VoteAction({
             vote: Vote.NAY,
-            publicKey: testContext.testAccounts[1].publicKey,
+            publicKey: testContext.testAccounts[1].pk,
           }),
           new VoteAction({
             vote: Vote.ABSTRAIN,
-            publicKey: testContext.testAccounts[2].publicKey,
+            publicKey: testContext.testAccounts[2].pk,
           }),
           new VoteAction({
             vote: Vote.YAY,
-            publicKey: testContext.testAccounts[3].publicKey,
+            publicKey: testContext.testAccounts[3].pk,
           }),
           new VoteAction({
             vote: Vote.NAY,
-            publicKey: testContext.testAccounts[4].publicKey,
+            publicKey: testContext.testAccounts[4].pk,
           }),
         ];
 
@@ -151,15 +151,15 @@ test("vote reducer", async (t) => {
         const actions = [
           new VoteAction({
             vote: Vote.YAY,
-            publicKey: testContext.testAccounts[0].publicKey,
+            publicKey: testContext.testAccounts[0].pk,
           }),
           new VoteAction({
             vote: Vote.NAY,
-            publicKey: testContext.testAccounts[1].publicKey,
+            publicKey: testContext.testAccounts[1].pk,
           }),
           new VoteAction({
             vote: Vote.ABSTRAIN,
-            publicKey: testContext.testAccounts[2].publicKey,
+            publicKey: testContext.testAccounts[2].pk,
           }),
           ...context.createDummyVoteActions(VOTE_ACTION_BATCH_SIZE),
         ].slice(0, VOTE_ACTION_BATCH_SIZE);
@@ -220,23 +220,23 @@ test("vote reducer", async (t) => {
         const actions = [
           new VoteAction({
             vote: Vote.YAY,
-            publicKey: testContext.testAccounts[0].publicKey,
+            publicKey: testContext.testAccounts[0].pk,
           }),
           new VoteAction({
             vote: Vote.NAY,
-            publicKey: testContext.testAccounts[1].publicKey,
+            publicKey: testContext.testAccounts[1].pk,
           }),
           new VoteAction({
             vote: Vote.ABSTRAIN,
-            publicKey: testContext.testAccounts[2].publicKey,
+            publicKey: testContext.testAccounts[2].pk,
           }),
           new VoteAction({
             vote: Vote.YAY,
-            publicKey: testContext.testAccounts[3].publicKey,
+            publicKey: testContext.testAccounts[3].pk,
           }),
           new VoteAction({
             vote: Vote.NAY,
-            publicKey: testContext.testAccounts[4].publicKey,
+            publicKey: testContext.testAccounts[4].pk,
           }),
           ...context.createDummyVoteActions(VOTE_ACTION_BATCH_SIZE),
         ].slice(0, VOTE_ACTION_BATCH_SIZE);
@@ -276,23 +276,23 @@ test("vote reducer", async (t) => {
       const actions = [
         new VoteAction({
           vote: Vote.YAY,
-          publicKey: testContext.testAccounts[0].publicKey,
+          publicKey: testContext.testAccounts[0].pk,
         }),
         new VoteAction({
           vote: Vote.NAY,
-          publicKey: testContext.testAccounts[1].publicKey,
+          publicKey: testContext.testAccounts[1].pk,
         }),
         new VoteAction({
           vote: Vote.ABSTRAIN,
-          publicKey: testContext.testAccounts[2].publicKey,
+          publicKey: testContext.testAccounts[2].pk,
         }),
         new VoteAction({
           vote: Vote.YAY,
-          publicKey: testContext.testAccounts[3].publicKey,
+          publicKey: testContext.testAccounts[3].pk,
         }),
         new VoteAction({
           vote: Vote.NAY,
-          publicKey: testContext.testAccounts[4].publicKey,
+          publicKey: testContext.testAccounts[4].pk,
         }),
         ...context.createDummyVoteActions(VOTE_ACTION_BATCH_SIZE),
       ].slice(0, VOTE_ACTION_BATCH_SIZE);
@@ -367,15 +367,15 @@ test("vote reducer", async (t) => {
       const actions = [
         new VoteAction({
           vote: Vote.YAY,
-          publicKey: testContext.testAccounts[0].publicKey,
+          publicKey: testContext.testAccounts[0].pk,
         }),
         new VoteAction({
           vote: Vote.NAY,
-          publicKey: testContext.testAccounts[1].publicKey,
+          publicKey: testContext.testAccounts[1].pk,
         }),
         new VoteAction({
           vote: Vote.ABSTRAIN,
-          publicKey: testContext.testAccounts[2].publicKey,
+          publicKey: testContext.testAccounts[2].pk,
         }),
         ...context.createDummyVoteActions(VOTE_ACTION_BATCH_SIZE),
       ].slice(0, VOTE_ACTION_BATCH_SIZE);
@@ -482,15 +482,15 @@ test("vote reducer", async (t) => {
         const actions = [
           new VoteAction({
             vote: Vote.YAY,
-            publicKey: duplicateAccount.publicKey,
+            publicKey: duplicateAccount.pk,
           }),
           new VoteAction({
             vote: Vote.YAY,
-            publicKey: duplicateAccount.publicKey,
+            publicKey: duplicateAccount.pk,
           }),
           new VoteAction({
             vote: Vote.NAY,
-            publicKey: testContext.testAccounts[1].publicKey,
+            publicKey: testContext.testAccounts[1].pk,
           }),
           ...context.createDummyVoteActions(VOTE_ACTION_BATCH_SIZE),
         ].slice(0, VOTE_ACTION_BATCH_SIZE);
@@ -546,22 +546,22 @@ test("vote reducer", async (t) => {
     await t.test("should ignore already nullified voter", async () => {
       const alreadyNullified = testContext.testAccounts[0];
       await testContext.nullifierLedger.setNullifier(
-        alreadyNullified.publicKey.toBase58(),
+        alreadyNullified.pk.toBase58(),
         Bool(true),
       );
       await testContext.nullifierLedger.setLeaf(
-        alreadyNullified.publicKey.toBase58(),
+        alreadyNullified.pk.toBase58(),
         Bool(true),
       );
 
       const actions = [
         new VoteAction({
           vote: Vote.YAY,
-          publicKey: alreadyNullified.publicKey,
+          publicKey: alreadyNullified.pk,
         }),
         new VoteAction({
           vote: Vote.NAY,
-          publicKey: testContext.testAccounts[1].publicKey,
+          publicKey: testContext.testAccounts[1].pk,
         }),
         ...context.createDummyVoteActions(VOTE_ACTION_BATCH_SIZE),
       ].slice(0, VOTE_ACTION_BATCH_SIZE);
@@ -597,11 +597,11 @@ test("vote reducer", async (t) => {
       const expectedNullifierLedger =
         await testContext.createExpectedNullifierLedger("already-nullified");
       await expectedNullifierLedger.setLeaf(
-        alreadyNullified.publicKey.toBase58(),
+        alreadyNullified.pk.toBase58(),
         Bool(true),
       );
       await expectedNullifierLedger.setLeaf(
-        testContext.testAccounts[1].publicKey.toBase58(),
+        testContext.testAccounts[1].pk.toBase58(),
         Bool(true),
       );
       const expectedNullifierRoot = await expectedNullifierLedger.getRoot();
@@ -619,7 +619,7 @@ test("vote reducer", async (t) => {
       async () => {
         const action = new VoteAction({
           vote: Vote.DUMMY,
-          publicKey: testContext.testAccounts[0].publicKey,
+          publicKey: testContext.testAccounts[0].pk,
         });
         const actions = [
           action,
@@ -692,7 +692,7 @@ test("vote reducer", async (t) => {
       async () => {
         const action = new VoteAction({
           vote: Field(99) as Vote,
-          publicKey: testContext.testAccounts[1].publicKey,
+          publicKey: testContext.testAccounts[1].pk,
         });
         const actions = [
           action,
@@ -767,11 +767,11 @@ test("vote reducer", async (t) => {
         const batch1Actions = [
           new VoteAction({
             vote: Vote.YAY,
-            publicKey: testContext.testAccounts[0].publicKey,
+            publicKey: testContext.testAccounts[0].pk,
           }),
           new VoteAction({
             vote: Vote.NAY,
-            publicKey: testContext.testAccounts[1].publicKey,
+            publicKey: testContext.testAccounts[1].pk,
           }),
           ...context.createDummyVoteActions(VOTE_ACTION_BATCH_SIZE),
         ].slice(0, VOTE_ACTION_BATCH_SIZE);
@@ -779,11 +779,11 @@ test("vote reducer", async (t) => {
         const batch2Actions = [
           new VoteAction({
             vote: Vote.YAY,
-            publicKey: testContext.testAccounts[0].publicKey,
+            publicKey: testContext.testAccounts[0].pk,
           }),
           new VoteAction({
             vote: Vote.ABSTRAIN,
-            publicKey: testContext.testAccounts[2].publicKey,
+            publicKey: testContext.testAccounts[2].pk,
           }),
           ...context.createDummyVoteActions(VOTE_ACTION_BATCH_SIZE),
         ].slice(0, VOTE_ACTION_BATCH_SIZE);
@@ -855,11 +855,11 @@ test("vote reducer", async (t) => {
       const batch1Actions = [
         new VoteAction({
           vote: Vote.YAY,
-          publicKey: testContext.testAccounts[0].publicKey,
+          publicKey: testContext.testAccounts[0].pk,
         }),
         new VoteAction({
           vote: Vote.NAY,
-          publicKey: testContext.testAccounts[1].publicKey,
+          publicKey: testContext.testAccounts[1].pk,
         }),
         ...context.createDummyVoteActions(VOTE_ACTION_BATCH_SIZE),
       ].slice(0, VOTE_ACTION_BATCH_SIZE);
@@ -867,7 +867,7 @@ test("vote reducer", async (t) => {
       const batch2Actions = [
         new VoteAction({
           vote: Vote.ABSTRAIN,
-          publicKey: testContext.testAccounts[2].publicKey,
+          publicKey: testContext.testAccounts[2].pk,
         }),
         ...context.createDummyVoteActions(VOTE_ACTION_BATCH_SIZE),
       ].slice(0, VOTE_ACTION_BATCH_SIZE);
@@ -923,11 +923,11 @@ test("vote reducer", async (t) => {
         const batch1Actions = [
           new VoteAction({
             vote: Vote.YAY,
-            publicKey: testContext.testAccounts[0].publicKey,
+            publicKey: testContext.testAccounts[0].pk,
           }),
           new VoteAction({
             vote: Vote.NAY,
-            publicKey: testContext.testAccounts[1].publicKey,
+            publicKey: testContext.testAccounts[1].pk,
           }),
           ...context.createDummyVoteActions(VOTE_ACTION_BATCH_SIZE),
         ].slice(0, VOTE_ACTION_BATCH_SIZE);
@@ -935,7 +935,7 @@ test("vote reducer", async (t) => {
         const batch2Actions = [
           new VoteAction({
             vote: Vote.ABSTRAIN,
-            publicKey: testContext.testAccounts[2].publicKey,
+            publicKey: testContext.testAccounts[2].pk,
           }),
           ...context.createDummyVoteActions(VOTE_ACTION_BATCH_SIZE),
         ].slice(0, VOTE_ACTION_BATCH_SIZE);
@@ -988,7 +988,7 @@ test("vote reducer", async (t) => {
       const actions = [
         new VoteAction({
           vote: Vote.YAY,
-          publicKey: testContext.testAccounts[0].publicKey,
+          publicKey: testContext.testAccounts[0].pk,
         }),
       ];
       const actionStateHistory = context.buildActionStateHistory(actions);
@@ -1010,27 +1010,27 @@ test("vote reducer", async (t) => {
       const actions = [
         new VoteAction({
           vote: Vote.YAY,
-          publicKey: testContext.testAccounts[0].publicKey,
+          publicKey: testContext.testAccounts[0].pk,
         }),
         new VoteAction({
           vote: Vote.NAY,
-          publicKey: testContext.testAccounts[1].publicKey,
+          publicKey: testContext.testAccounts[1].pk,
         }),
         new VoteAction({
           vote: Vote.ABSTRAIN,
-          publicKey: testContext.testAccounts[2].publicKey,
+          publicKey: testContext.testAccounts[2].pk,
         }),
         new VoteAction({
           vote: Vote.YAY,
-          publicKey: testContext.testAccounts[3].publicKey,
+          publicKey: testContext.testAccounts[3].pk,
         }),
         new VoteAction({
           vote: Vote.NAY,
-          publicKey: testContext.testAccounts[4].publicKey,
+          publicKey: testContext.testAccounts[4].pk,
         }),
         new VoteAction({
           vote: Vote.YAY,
-          publicKey: testContext.testAccounts[5].publicKey,
+          publicKey: testContext.testAccounts[5].pk,
         }),
       ];
 
@@ -1070,7 +1070,7 @@ test("vote reducer", async (t) => {
         const actions = [
           new VoteAction({
             vote: Vote.YAY,
-            publicKey: testContext.testAccounts[0].publicKey,
+            publicKey: testContext.testAccounts[0].pk,
           }),
           ...context.createDummyVoteActions(VOTE_ACTION_BATCH_SIZE),
         ].slice(0, VOTE_ACTION_BATCH_SIZE);
@@ -1108,7 +1108,7 @@ test("vote reducer", async (t) => {
       async () => {
         const action = new VoteAction({
           vote: Vote.YAY,
-          publicKey: testContext.testAccounts[0].publicKey,
+          publicKey: testContext.testAccounts[0].pk,
         });
         const actions = [
           action,
@@ -1116,7 +1116,7 @@ test("vote reducer", async (t) => {
         ].slice(0, VOTE_ACTION_BATCH_SIZE);
 
         const actionStateHistory = context.buildActionStateHistory(actions);
-        const otherPublicKey = testContext.testAccounts[1].publicKey.toBase58();
+        const otherPublicKey = testContext.testAccounts[1].pk.toBase58();
         const votingLedger = testContext.votingLedger;
         const nullifierLedger = testContext.nullifierLedger;
         const mismatchedVotingLedger = {
@@ -1163,7 +1163,7 @@ test("vote reducer", async (t) => {
       async () => {
         const action = new VoteAction({
           vote: Vote.YAY,
-          publicKey: testContext.testAccounts[0].publicKey,
+          publicKey: testContext.testAccounts[0].pk,
         });
         const actions = [
           action,
@@ -1171,7 +1171,7 @@ test("vote reducer", async (t) => {
         ].slice(0, VOTE_ACTION_BATCH_SIZE);
 
         const actionStateHistory = context.buildActionStateHistory(actions);
-        const otherPublicKey = testContext.testAccounts[1].publicKey.toBase58();
+        const otherPublicKey = testContext.testAccounts[1].pk.toBase58();
         const votingLedger = testContext.votingLedger;
         const nullifierLedger = testContext.nullifierLedger;
         const mismatchedNullifierLedger = {
@@ -1221,11 +1221,11 @@ test("vote reducer", async (t) => {
         const actions = [
           new VoteAction({
             vote: Vote.YAY,
-            publicKey: testContext.testAccounts[0].publicKey,
+            publicKey: testContext.testAccounts[0].pk,
           }),
           new VoteAction({
             vote: Vote.NAY,
-            publicKey: testContext.testAccounts[1].publicKey,
+            publicKey: testContext.testAccounts[1].pk,
           }),
           ...context.createDummyVoteActions(VOTE_ACTION_BATCH_SIZE),
         ].slice(0, VOTE_ACTION_BATCH_SIZE);
@@ -1252,11 +1252,11 @@ test("vote reducer", async (t) => {
       const actions = [
         new VoteAction({
           vote: Vote.YAY,
-          publicKey: testContext.testAccounts[0].publicKey,
+          publicKey: testContext.testAccounts[0].pk,
         }),
         new VoteAction({
           vote: Vote.NAY,
-          publicKey: testContext.testAccounts[1].publicKey,
+          publicKey: testContext.testAccounts[1].pk,
         }),
         ...context.createDummyVoteActions(VOTE_ACTION_BATCH_SIZE),
       ].slice(0, VOTE_ACTION_BATCH_SIZE);
@@ -1288,15 +1288,15 @@ test("vote reducer", async (t) => {
         const actions = [
           new VoteAction({
             vote: Vote.YAY,
-            publicKey: testContext.testAccounts[0].publicKey,
+            publicKey: testContext.testAccounts[0].pk,
           }),
           new VoteAction({
             vote: Vote.NAY,
-            publicKey: testContext.testAccounts[1].publicKey,
+            publicKey: testContext.testAccounts[1].pk,
           }),
           new VoteAction({
             vote: Vote.ABSTRAIN,
-            publicKey: testContext.testAccounts[2].publicKey,
+            publicKey: testContext.testAccounts[2].pk,
           }),
           ...context.createDummyVoteActions(VOTE_ACTION_BATCH_SIZE),
         ].slice(0, VOTE_ACTION_BATCH_SIZE);
@@ -1327,7 +1327,7 @@ test("vote reducer", async (t) => {
             const votingAccount = new VotingAccount({
               balance: account.balance,
             });
-            const publicKey = account.publicKey.toBase58();
+            const publicKey = account.pk.toBase58();
             await secondContext.votingLedger.setVotingAccount(
               publicKey,
               votingAccount,
@@ -1394,23 +1394,23 @@ test("vote reducer", async (t) => {
       const actionStateHistory = context.buildActionStateHistory([
         new VoteAction({
           vote: Vote.YAY,
-          publicKey: testContext.testAccounts[0].publicKey,
+          publicKey: testContext.testAccounts[0].pk,
         }),
         new VoteAction({
           vote: Vote.NAY,
-          publicKey: testContext.testAccounts[1].publicKey,
+          publicKey: testContext.testAccounts[1].pk,
         }),
         new VoteAction({
           vote: Vote.ABSTRAIN,
-          publicKey: testContext.testAccounts[2].publicKey,
+          publicKey: testContext.testAccounts[2].pk,
         }),
         new VoteAction({
           vote: Vote.YAY,
-          publicKey: testContext.testAccounts[3].publicKey,
+          publicKey: testContext.testAccounts[3].pk,
         }),
         new VoteAction({
           vote: Vote.NAY,
-          publicKey: testContext.testAccounts[4].publicKey,
+          publicKey: testContext.testAccounts[4].pk,
         }),
       ]);
 
@@ -1424,15 +1424,15 @@ test("vote reducer", async (t) => {
       const batch1Actions = [
         new VoteAction({
           vote: Vote.YAY,
-          publicKey: testContext.testAccounts[0].publicKey,
+          publicKey: testContext.testAccounts[0].pk,
         }),
         new VoteAction({
           vote: Vote.NAY,
-          publicKey: testContext.testAccounts[1].publicKey,
+          publicKey: testContext.testAccounts[1].pk,
         }),
         new VoteAction({
           vote: Vote.ABSTRAIN,
-          publicKey: testContext.testAccounts[2].publicKey,
+          publicKey: testContext.testAccounts[2].pk,
         }),
         ...context.createDummyVoteActions(VOTE_ACTION_BATCH_SIZE),
       ].slice(0, VOTE_ACTION_BATCH_SIZE);
@@ -1445,11 +1445,11 @@ test("vote reducer", async (t) => {
       const batch2Actions = [
         new VoteAction({
           vote: Vote.YAY,
-          publicKey: testContext.testAccounts[3].publicKey,
+          publicKey: testContext.testAccounts[3].pk,
         }),
         new VoteAction({
           vote: Vote.NAY,
-          publicKey: testContext.testAccounts[4].publicKey,
+          publicKey: testContext.testAccounts[4].pk,
         }),
         ...context.createDummyVoteActions(VOTE_ACTION_BATCH_SIZE),
       ].slice(0, VOTE_ACTION_BATCH_SIZE);
@@ -1521,11 +1521,11 @@ test("vote reducer", async (t) => {
         const actionStateHistory = context.buildActionStateHistory([
           new VoteAction({
             vote: Vote.YAY,
-            publicKey: testContext.testAccounts[0].publicKey,
+            publicKey: testContext.testAccounts[0].pk,
           }),
           new VoteAction({
             vote: Vote.NAY,
-            publicKey: testContext.testAccounts[1].publicKey,
+            publicKey: testContext.testAccounts[1].pk,
           }),
         ]);
 
@@ -1539,7 +1539,7 @@ test("vote reducer", async (t) => {
         const batch1Actions = [
           new VoteAction({
             vote: Vote.YAY,
-            publicKey: testContext.testAccounts[0].publicKey,
+            publicKey: testContext.testAccounts[0].pk,
           }),
           ...context.createDummyVoteActions(VOTE_ACTION_BATCH_SIZE),
         ].slice(0, VOTE_ACTION_BATCH_SIZE);
@@ -1547,7 +1547,7 @@ test("vote reducer", async (t) => {
         const batch2Actions = [
           new VoteAction({
             vote: Vote.NAY,
-            publicKey: testContext.testAccounts[1].publicKey,
+            publicKey: testContext.testAccounts[1].pk,
           }),
           ...context.createDummyVoteActions(VOTE_ACTION_BATCH_SIZE),
         ].slice(0, VOTE_ACTION_BATCH_SIZE);
@@ -1558,7 +1558,7 @@ test("vote reducer", async (t) => {
         );
 
         await testContext.nullifierLedger.setLeaf(
-          testContext.testAccounts[2].publicKey.toBase58(),
+          testContext.testAccounts[2].pk.toBase58(),
           Bool(true),
         );
 
@@ -1586,11 +1586,11 @@ test("vote reducer", async (t) => {
         const actionStateHistory = context.buildActionStateHistory([
           new VoteAction({
             vote: Vote.YAY,
-            publicKey: testContext.testAccounts[0].publicKey,
+            publicKey: testContext.testAccounts[0].pk,
           }),
           new VoteAction({
             vote: Vote.NAY,
-            publicKey: testContext.testAccounts[1].publicKey,
+            publicKey: testContext.testAccounts[1].pk,
           }),
         ]);
 
@@ -1604,7 +1604,7 @@ test("vote reducer", async (t) => {
         const batch1Actions = [
           new VoteAction({
             vote: Vote.YAY,
-            publicKey: testContext.testAccounts[0].publicKey,
+            publicKey: testContext.testAccounts[0].pk,
           }),
           ...context.createDummyVoteActions(VOTE_ACTION_BATCH_SIZE),
         ].slice(0, VOTE_ACTION_BATCH_SIZE);
@@ -1612,7 +1612,7 @@ test("vote reducer", async (t) => {
         const batch2Actions = [
           new VoteAction({
             vote: Vote.NAY,
-            publicKey: testContext.testAccounts[1].publicKey,
+            publicKey: testContext.testAccounts[1].pk,
           }),
           ...context.createDummyVoteActions(VOTE_ACTION_BATCH_SIZE),
         ].slice(0, VOTE_ACTION_BATCH_SIZE);
@@ -1627,11 +1627,11 @@ test("vote reducer", async (t) => {
         });
 
         await testContext.votingLedger.setVotingAccount(
-          testContext.testAccounts[2].publicKey.toBase58(),
+          testContext.testAccounts[2].pk.toBase58(),
           updatedVotingAccount,
         );
         await testContext.votingLedger.setLeaf(
-          testContext.testAccounts[2].publicKey.toBase58(),
+          testContext.testAccounts[2].pk.toBase58(),
           updatedVotingAccount,
         );
 
@@ -1658,11 +1658,11 @@ test("vote reducer", async (t) => {
       async () => {
         const action1 = new VoteAction({
           vote: Vote.YAY,
-          publicKey: testContext.testAccounts[0].publicKey,
+          publicKey: testContext.testAccounts[0].pk,
         });
         const action2 = new VoteAction({
           vote: Vote.NAY,
-          publicKey: testContext.testAccounts[1].publicKey,
+          publicKey: testContext.testAccounts[1].pk,
         });
 
         const actionStateHistory = context.buildActionStateHistory([
@@ -1724,11 +1724,11 @@ test("vote reducer", async (t) => {
         const actionStateHistory = context.buildActionStateHistory([
           new VoteAction({
             vote: Vote.YAY,
-            publicKey: testContext.testAccounts[0].publicKey,
+            publicKey: testContext.testAccounts[0].pk,
           }),
           new VoteAction({
             vote: Vote.NAY,
-            publicKey: testContext.testAccounts[1].publicKey,
+            publicKey: testContext.testAccounts[1].pk,
           }),
         ]);
 
@@ -1742,7 +1742,7 @@ test("vote reducer", async (t) => {
         const batch1Actions = [
           new VoteAction({
             vote: Vote.YAY,
-            publicKey: testContext.testAccounts[0].publicKey,
+            publicKey: testContext.testAccounts[0].pk,
           }),
           ...context.createDummyVoteActions(VOTE_ACTION_BATCH_SIZE),
         ].slice(0, VOTE_ACTION_BATCH_SIZE);
@@ -1750,7 +1750,7 @@ test("vote reducer", async (t) => {
         const batch2Actions = [
           new VoteAction({
             vote: Vote.NAY,
-            publicKey: testContext.testAccounts[1].publicKey,
+            publicKey: testContext.testAccounts[1].pk,
           }),
           ...context.createDummyVoteActions(VOTE_ACTION_BATCH_SIZE),
         ].slice(0, VOTE_ACTION_BATCH_SIZE);
@@ -1790,11 +1790,11 @@ test("vote reducer", async (t) => {
         const actionStateHistory = context.buildActionStateHistory([
           new VoteAction({
             vote: Vote.YAY,
-            publicKey: testContext.testAccounts[0].publicKey,
+            publicKey: testContext.testAccounts[0].pk,
           }),
           new VoteAction({
             vote: Vote.NAY,
-            publicKey: testContext.testAccounts[1].publicKey,
+            publicKey: testContext.testAccounts[1].pk,
           }),
         ]);
 
@@ -1808,7 +1808,7 @@ test("vote reducer", async (t) => {
         const batch1Actions = [
           new VoteAction({
             vote: Vote.YAY,
-            publicKey: testContext.testAccounts[0].publicKey,
+            publicKey: testContext.testAccounts[0].pk,
           }),
           ...context.createDummyVoteActions(VOTE_ACTION_BATCH_SIZE),
         ].slice(0, VOTE_ACTION_BATCH_SIZE);
@@ -1816,7 +1816,7 @@ test("vote reducer", async (t) => {
         const batch2Actions = [
           new VoteAction({
             vote: Vote.NAY,
-            publicKey: testContext.testAccounts[1].publicKey,
+            publicKey: testContext.testAccounts[1].pk,
           }),
           ...context.createDummyVoteActions(VOTE_ACTION_BATCH_SIZE),
         ].slice(0, VOTE_ACTION_BATCH_SIZE);
@@ -1850,11 +1850,11 @@ test("vote reducer", async (t) => {
         const actionStateHistory = context.buildActionStateHistory([
           new VoteAction({
             vote: Vote.YAY,
-            publicKey: testContext.testAccounts[0].publicKey,
+            publicKey: testContext.testAccounts[0].pk,
           }),
           new VoteAction({
             vote: Vote.NAY,
-            publicKey: testContext.testAccounts[1].publicKey,
+            publicKey: testContext.testAccounts[1].pk,
           }),
         ]);
 
@@ -1868,11 +1868,11 @@ test("vote reducer", async (t) => {
         const batch1Actions = [
           new VoteAction({
             vote: Vote.YAY,
-            publicKey: testContext.testAccounts[0].publicKey,
+            publicKey: testContext.testAccounts[0].pk,
           }),
           new VoteAction({
             vote: Vote.NAY,
-            publicKey: testContext.testAccounts[1].publicKey,
+            publicKey: testContext.testAccounts[1].pk,
           }),
           ...context.createDummyVoteActions(VOTE_ACTION_BATCH_SIZE),
         ].slice(0, VOTE_ACTION_BATCH_SIZE);
@@ -1880,7 +1880,7 @@ test("vote reducer", async (t) => {
         const batch2Actions = [
           new VoteAction({
             vote: Vote.ABSTRAIN,
-            publicKey: testContext.testAccounts[2].publicKey,
+            publicKey: testContext.testAccounts[2].pk,
           }),
           ...context.createDummyVoteActions(VOTE_ACTION_BATCH_SIZE),
         ].slice(0, VOTE_ACTION_BATCH_SIZE);

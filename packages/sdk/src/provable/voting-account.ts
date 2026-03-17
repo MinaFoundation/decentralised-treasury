@@ -7,7 +7,7 @@ export class VotingAccount extends Struct({
 }) {
   public static isEmpty(votingAccount: VotingAccount) {
     return Poseidon.hash(VotingAccount.toFields(votingAccount)).equals(
-      Poseidon.hash(VotingAccount.toFields(VotingAccount.empty()))
+      Poseidon.hash(VotingAccount.toFields(VotingAccount.empty())),
     );
   }
 

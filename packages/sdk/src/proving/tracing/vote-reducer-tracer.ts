@@ -1,5 +1,6 @@
 import { Bool, Reducer } from "o1js";
 import {
+  ActionStateHistory,
   VOTE_ACTION_BATCH_SIZE,
   VoteAction,
   VoteReducer,
@@ -7,13 +8,14 @@ import {
   VoteReducerPublicOutput,
   voteReducerContext,
 } from "../../provable/contracts/treasury-proposal/vote-reducer.js";
-import { VotingLedger } from "../../ledgers/voting-ledger/voting-ledger.js";
-import { NullifierLedger } from "../../ledgers/nullifier-ledger/nullifier-ledger.js";
 import { RecordingVotingLedger } from "../../ledgers/voting-ledger/recording-voting-ledger.js";
 import { RecordingNullifierLedger } from "../../ledgers/nullifier-ledger/recording-nullifier-ledger.js";
 import { VotingAccount } from "../../provable/voting-account.js";
 import { PrefixedMerkleWitness256 } from "../../provable/merkle-tree/prefixed-merkle-tree.js";
 import { VoteReducerRunBatchTraceStorage } from "../../storage/vote-reducer-run-batch-trace-storage.js";
+import { KeyValueBatchStorage } from "../../storage/batch-key-value-storage.js";
+import { InMemoryVotingLedger } from "../../ledgers/voting-ledger/in-memory-voting-ledger.js";
+import { InMemoryNullifierLedger } from "../../ledgers/nullifier-ledger/in-memory-nullifier-ledger.js";
 
 export interface VoteReducerRunBatchTraceJSON {
   publicInput: ReturnType<typeof VoteReducerPublicInput.toJSON>;
@@ -68,13 +70,13 @@ export class VoteReducerRunBatchTrace {
   }
 
   public static toJSON(
-    trace: VoteReducerRunBatchTrace
+    trace: VoteReducerRunBatchTrace,
   ): VoteReducerRunBatchTraceJSON {
     return {
       publicInput: VoteReducerPublicInput.toJSON(trace.publicInput),
       privateInput: {
         voteActions: trace.privateInput.voteActions.map((voteAction) =>
-          VoteAction.toJSON(voteAction)
+          VoteAction.toJSON(voteAction),
         ),
       },
       votingLedgerWitnesses: Object.entries(trace.votingLedgerWitnesses).reduce(
@@ -85,19 +87,19 @@ export class VoteReducerRunBatchTrace {
         {} as Record<
           string,
           ReturnType<typeof PrefixedMerkleWitness256.toJSON>[]
-        >
+        >,
       ),
       votingAccounts: Object.entries(trace.votingAccounts).reduce(
         (acc, [key, value]) => {
           acc[key] = value.map((votingAccount) =>
-            VotingAccount.toJSON(votingAccount)
+            VotingAccount.toJSON(votingAccount),
           );
           return acc;
         },
-        {} as Record<string, ReturnType<typeof VotingAccount.toJSON>[]>
+        {} as Record<string, ReturnType<typeof VotingAccount.toJSON>[]>,
       ),
       nullifierLedgerWitnesses: Object.entries(
-        trace.nullifierLedgerWitnesses
+        trace.nullifierLedgerWitnesses,
       ).reduce(
         (acc, [key, value]) => {
           acc[key] = value.map((witness) => witness.toJSON());
@@ -106,63 +108,63 @@ export class VoteReducerRunBatchTrace {
         {} as Record<
           string,
           ReturnType<typeof PrefixedMerkleWitness256.toJSON>[]
-        >
+        >,
       ),
       nullifiers: Object.entries(trace.nullifiers).reduce(
         (acc, [key, value]) => {
           acc[key] = value.map((nullifier) => nullifier.toBoolean());
           return acc;
         },
-        {} as Record<string, boolean[]>
+        {} as Record<string, boolean[]>,
       ),
     };
   }
 
   public static fromJSON(
-    json: VoteReducerRunBatchTraceJSON
+    json: VoteReducerRunBatchTraceJSON,
   ): VoteReducerRunBatchTrace {
     return new VoteReducerRunBatchTrace({
       publicInput: VoteReducerPublicInput.fromJSON(json.publicInput),
       privateInput: {
         voteActions: json.privateInput.voteActions.map((voteAction) =>
-          VoteAction.fromJSON(voteAction)
+          VoteAction.fromJSON(voteAction),
         ),
       },
       votingLedgerWitnesses: Object.entries(json.votingLedgerWitnesses).reduce(
         (acc, [key, value]) => {
           acc[key] = value.map((witness) =>
-            PrefixedMerkleWitness256.fromJSON(witness)
+            PrefixedMerkleWitness256.fromJSON(witness),
           );
           return acc;
         },
-        {} as Record<string, PrefixedMerkleWitness256[]>
+        {} as Record<string, PrefixedMerkleWitness256[]>,
       ),
       votingAccounts: Object.entries(json.votingAccounts).reduce(
         (acc, [key, value]) => {
           acc[key] = value.map((votingAccount) =>
-            VotingAccount.fromJSON(votingAccount)
+            VotingAccount.fromJSON(votingAccount),
           );
           return acc;
         },
-        {} as Record<string, ReturnType<typeof VotingAccount.fromJSON>[]>
+        {} as Record<string, ReturnType<typeof VotingAccount.fromJSON>[]>,
       ),
       nullifierLedgerWitnesses: Object.entries(
-        json.nullifierLedgerWitnesses
+        json.nullifierLedgerWitnesses,
       ).reduce(
         (acc, [key, value]) => {
           acc[key] = value.map((witness) =>
-            PrefixedMerkleWitness256.fromJSON(witness)
+            PrefixedMerkleWitness256.fromJSON(witness),
           );
           return acc;
         },
-        {} as Record<string, PrefixedMerkleWitness256[]>
+        {} as Record<string, PrefixedMerkleWitness256[]>,
       ),
       nullifiers: Object.entries(json.nullifiers).reduce(
         (acc, [key, value]) => {
           acc[key] = value.map((nullifier) => Bool(nullifier));
           return acc;
         },
-        {} as Record<string, Bool[]>
+        {} as Record<string, Bool[]>,
       ),
     });
   }
@@ -170,33 +172,31 @@ export class VoteReducerRunBatchTrace {
 
 export class VoteReducerTracer {
   constructor(
-    public votingLedger: VotingLedger,
-    public nullifierLedger: NullifierLedger,
-    public traceStorage: VoteReducerRunBatchTraceStorage
+    public votingLedger: InMemoryVotingLedger,
+    public nullifierLedger: InMemoryNullifierLedger,
+    public traceStorage: VoteReducerRunBatchTraceStorage,
+    public batchWriter: KeyValueBatchStorage,
   ) {}
 
   public async close(): Promise<void> {
     await this.votingLedger.close();
     await this.nullifierLedger.close();
     await this.traceStorage.close();
+    await this.batchWriter.close();
   }
 
   /**
    * Traces the execution of the `reduceBatch` method of the `VoteReducer` program.
    * @param voteActions - The vote actions to reduce (will be chunked into batches)
-   * @param startIndex - The index of the first trace to start tracing at
-   * @param endIndex - The index of the last trace to end tracing at
    * @param onTraceComplete - A callback function that is called when a trace is complete, used to track progress
    */
   public async runBatch(
     voteActions: VoteAction[],
-    startIndex: number = 0,
-    endIndex: number = Infinity,
-    onTraceComplete?: (index: number, trace: VoteReducerRunBatchTrace) => void
+    onTraceComplete?: (index: number, trace: VoteReducerRunBatchTrace) => void,
   ) {
     const recordingVotingLedger = new RecordingVotingLedger(this.votingLedger);
     const recordingNullifierLedger = new RecordingNullifierLedger(
-      this.nullifierLedger
+      this.nullifierLedger,
     );
 
     voteReducerContext.set({
@@ -204,25 +204,21 @@ export class VoteReducerTracer {
       nullifierLedger: recordingNullifierLedger,
     });
 
-    const totalBatches = Math.ceil(voteActions.length / VOTE_ACTION_BATCH_SIZE);
-    if (totalBatches === 0) {
-      return;
-    }
-
-    const lastIndex = Math.min(endIndex, totalBatches - 1);
     let currentPublicInput: VoteReducerPublicInput = {
       fromActionsHash: Reducer.initialActionState,
       votingLedgerRoot: await this.votingLedger.getRoot(),
       fromNullifierRoot: await this.nullifierLedger.getRoot(),
+      actionStateHistory: ActionStateHistory.empty(),
     };
     let publicOutput: VoteReducerPublicOutput | undefined;
 
-    console.time("trace");
-    for (let i = startIndex; i <= lastIndex; i++) {
+    console.time("trace-runBatch-complete");
+    for (let i = 0; i <= Infinity; i++) {
+      console.time("trace-runBatch");
       const batchStart = i * VOTE_ACTION_BATCH_SIZE;
       const batch = voteActions.slice(
         batchStart,
-        batchStart + VOTE_ACTION_BATCH_SIZE
+        batchStart + VOTE_ACTION_BATCH_SIZE,
       );
 
       if (batch.length === 0) {
@@ -258,15 +254,35 @@ export class VoteReducerTracer {
         nullifiers,
       });
 
-      await this.traceStorage.setTrace(i, trace);
-      onTraceComplete?.(i, trace);
-
       currentPublicInput = {
         fromActionsHash: publicOutput.toActionsHash,
         votingLedgerRoot: currentPublicInput.votingLedgerRoot,
         fromNullifierRoot: publicOutput.toNullifierRoot,
+        actionStateHistory: publicOutput.actionStateHistory,
       };
+
+      await this.traceStorage.setTrace(i, trace);
+
+      const batchStorages = [
+        this.traceStorage,
+        this.nullifierLedger,
+      ];
+
+      const entries = batchStorages.flatMap((storage) =>
+        storage.collectEntries(),
+      );
+
+      await this.batchWriter.setMany(entries);
+
+      batchStorages.forEach((storage) => storage.clearEntries());
+
+      const recorders = [recordingVotingLedger, recordingNullifierLedger];
+      recorders.forEach((recorder) => recorder.clear());
+
+      onTraceComplete?.(i, trace);
+
+      console.timeEnd("trace-runBatch");
     }
-    console.timeEnd("trace");
+    console.timeEnd("trace-runBatch-complete");
   }
 }
