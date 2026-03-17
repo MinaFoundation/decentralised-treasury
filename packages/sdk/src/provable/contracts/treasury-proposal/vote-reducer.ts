@@ -111,6 +111,25 @@ export class VoteAction extends Struct({
     return voteAction;
   }
 }
+
+export class ActionStateHistoryTarget extends Struct({
+  actionStateOne: Field,
+  actionStateTwo: Field,
+  actionStateThree: Field,
+  actionStateFour: Field,
+  actionStateFive: Field,
+}) {
+  public static clone(actionStateHistoryTarget: ActionStateHistoryTarget) {
+    return new ActionStateHistoryTarget({
+      actionStateOne: actionStateHistoryTarget.actionStateOne,
+      actionStateTwo: actionStateHistoryTarget.actionStateTwo,
+      actionStateThree: actionStateHistoryTarget.actionStateThree,
+      actionStateFour: actionStateHistoryTarget.actionStateFour,
+      actionStateFive: actionStateHistoryTarget.actionStateFive,
+    });
+  }
+}
+
 /**
  * Tracks up to five action state hashes and whether each has been seen.
  */
@@ -219,6 +238,31 @@ export class ActionStateHistory extends Struct({
         ),
       );
   }
+
+  public static fromTarget(actionStateHistoryTarget: ActionStateHistoryTarget) {
+    return new ActionStateHistory({
+      actionStateOne: {
+        hash: actionStateHistoryTarget.actionStateOne,
+        found: Bool(false),
+      },
+      actionStateTwo: {
+        hash: actionStateHistoryTarget.actionStateTwo,
+        found: Bool(false),
+      },
+      actionStateThree: {
+        hash: actionStateHistoryTarget.actionStateThree,
+        found: Bool(false),
+      },
+      actionStateFour: {
+        hash: actionStateHistoryTarget.actionStateFour,
+        found: Bool(false),
+      },
+      actionStateFive: {
+        hash: actionStateHistoryTarget.actionStateFive,
+        found: Bool(false),
+      },
+    });
+  }
 }
 
 /**
@@ -228,7 +272,7 @@ export class VoteReducerPublicInput extends Struct({
   fromActionsHash: Field,
   votingLedgerRoot: Field,
   fromNullifierRoot: Field,
-  actionStateHistory: ActionStateHistory,
+  actionStateHistoryTarget: ActionStateHistoryTarget,
 }) {
   /**
    * Clone the input so rolling state mutations don't affect the caller.
@@ -241,9 +285,7 @@ export class VoteReducerPublicInput extends Struct({
       fromActionsHash: publicInput.fromActionsHash,
       votingLedgerRoot: publicInput.votingLedgerRoot,
       fromNullifierRoot: publicInput.fromNullifierRoot,
-      actionStateHistory: ActionStateHistory.clone(
-        publicInput.actionStateHistory,
-      ),
+      actionStateHistoryTarget: publicInput.actionStateHistoryTarget,
     });
   }
 }
@@ -303,6 +345,7 @@ export const VoteReducer = ZkProgram({
         const input2 = proof2.publicInput;
         const output2 = proof2.publicOutput;
 
+        // TODO: compare individual entries of both inputs instead
         Poseidon.hash(
           VoteReducerPublicInput.toFields(publicInput),
         ).assertEquals(
@@ -326,9 +369,9 @@ export const VoteReducer = ZkProgram({
 
         // merge action state history by preferring the older proof's found flags.
         const actionStateHistory = ActionStateHistory.clone(
-          input1.actionStateHistory,
+          output1.actionStateHistory,
         );
-        for (const actionStateKey of Object.keys(input1.actionStateHistory)) {
+        for (const actionStateKey of Object.keys(output1.actionStateHistory)) {
           const output1ActionState: ActionStateHistory[keyof ActionStateHistory] =
             output1.actionStateHistory[
               actionStateKey as keyof ActionStateHistory
@@ -381,11 +424,14 @@ export const VoteReducer = ZkProgram({
         // in case of 'rolling state' that changes within the circuit's loop.
         let toActionsHash = publicInput.fromActionsHash;
         let toNullifierRoot = publicInput.fromNullifierRoot;
-        let actionStateHistory = ActionStateHistory.clone(
-          publicInput.actionStateHistory,
+        let actionStateHistoryTarget = publicInput.actionStateHistoryTarget;
+
+        // start every batch with action state history derived from the target
+        const actionStateHistory = ActionStateHistory.fromTarget(
+          actionStateHistoryTarget,
         );
 
-        // start every batch with a zeroed tally.
+        // start every batch with a zeroed tally
         let yay = UInt64.from(0);
         let nay = UInt64.from(0);
         let abstain = UInt64.from(0);
@@ -552,21 +598,20 @@ export const VoteReducer = ZkProgram({
           );
 
           for (const actionStateKey of Object.keys(actionStateHistory)) {
-            // TODO: this could be typed better
-            const actionState: ActionStateHistory["actionStateOne"] =
-              actionStateHistory[actionStateKey];
-            const found = toActionsHash.equals(actionState.hash);
+            const actionStateTargetHash: ActionStateHistoryTarget[keyof ActionStateHistoryTarget] =
+              actionStateHistoryTarget[
+                actionStateKey as keyof ActionStateHistoryTarget
+              ];
 
-            // the hash that has already been found should not be found again.
-            actionState.found
-              .and(found)
-              .and(isDummyVoteAction.not())
-              .assertFalse(
-                "action state hash has been previously found, cannot be found again",
-              );
+            const foundPreviously =
+              actionStateHistory[actionStateKey as keyof ActionStateHistory]
+                .found;
+
+            const found = toActionsHash.equals(actionStateTargetHash);
+
             actionStateHistory[
               actionStateKey as keyof ActionStateHistory
-            ].found = Provable.if(found, found, actionState.found);
+            ].found = Provable.if(foundPreviously, foundPreviously, found);
           }
         }
 
