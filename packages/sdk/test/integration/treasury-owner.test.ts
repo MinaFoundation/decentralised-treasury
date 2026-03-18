@@ -24,8 +24,10 @@ import {
   SmartContract,
   State,
   state,
+  Transaction,
   UInt32,
   UInt64,
+  ZkappUri,
 } from "o1js";
 import {
   Vote,
@@ -400,13 +402,15 @@ it("should create a proposal", async () => {
         {
           amount,
           recipient: treasuryProposalRecipientPublicKey,
-          zkAppUri: dummyZkAppUri,
+          zkAppUri: ZkappUri.from(dummyZkAppUri),
         },
         UInt32.from(0),
       );
     });
 
     tx.sign([testAccount.key, treasuryProposalPrivateKey, bondPayer.key]);
+    tx.toJSON();
+
     await tx.prove();
 
     const pendingTx = await tx.send();

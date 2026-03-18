@@ -56,6 +56,7 @@ test("deploy", async (t) => {
 
   t.beforeEach(() => {
     context = createPauseControllerTestContext();
+    TreasuryPauseControllerSmartContract.multisigParticipants = [];
   });
 
   await t.test(

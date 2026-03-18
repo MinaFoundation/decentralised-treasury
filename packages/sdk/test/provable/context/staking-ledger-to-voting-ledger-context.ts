@@ -38,8 +38,7 @@ export async function createStakingLedgerToVotingLedgerTestContext(
     stakingLedgerStorage.merkleTreeStorage,
   );
 
-  const ledgerPath =
-    options.ledgerPath ?? "test/provable/staking-epoch-ledger.json";
+  const ledgerPath = options.ledgerPath ?? "test/test-ledger-mini.json";
   let testAccounts = await stakingLedger.readStakingLedger(ledgerPath);
   if (options.maxAccounts !== undefined) {
     testAccounts = testAccounts.slice(0, options.maxAccounts);
@@ -47,7 +46,6 @@ export async function createStakingLedgerToVotingLedgerTestContext(
 
   await stakingLedger.hydrateAccounts(testAccounts);
   await stakingLedger.hydrateMerkleTree(testAccounts);
-
   const votingLedgerId = createVotingLedgerId(lifecycleId);
   const votingLedgerStorage = createSqliteVotingLedgerStorage(
     votingLedgerId,
@@ -57,7 +55,6 @@ export async function createStakingLedgerToVotingLedgerTestContext(
     votingLedgerStorage.votingAccountStorage,
     votingLedgerStorage.merkleTreeStorage,
   );
-
   stakingLedgerToVotingLedgerContext.set({
     stakingLedger,
     votingLedger,

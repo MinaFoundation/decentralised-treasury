@@ -8,7 +8,7 @@ import { Account } from "../../src/provable/account.js";
 import { createStakingLedgerToVotingLedgerTestContext } from "./context/staking-ledger-to-voting-ledger-context.js";
 import { Provable } from "o1js";
 
-test("staking ledger to voting ledger", { concurrency: 1 }, async (t) => {
+test("staking ledger to voting ledger", async (t) => {
   let context: Awaited<
     ReturnType<typeof createStakingLedgerToVotingLedgerTestContext>
   >;
@@ -27,31 +27,29 @@ test("staking ledger to voting ledger", { concurrency: 1 }, async (t) => {
     await context.compile();
   });
 
-  await t.test("digest", async (t) => {
-    await t.test("digest a batch of accounts", async () => {
-      const { testAccounts, digest, votingLedger } = context;
-      const localAccounts = testAccounts.slice(0, 5);
+  await t.test("digest", async () => {
+    const { testAccounts, digest, votingLedger } = context;
+    const localAccounts = testAccounts.slice(0, 5);
 
-      const proof = await digest(localAccounts);
+    const proof = await digest(localAccounts);
 
-      assert(
-        (await votingLedger.getRoot()).toString() ===
-          proof.publicOutput.votingLedgerRoot.toString(),
-        "final voting ledger root should match proof output",
-      );
-      assert(
-        proof.publicInput.index.toBigInt() === 0n,
-        "proof input index does not match expected batch index",
-      );
-      assert(
-        proof.publicOutput.index.toBigInt() === BigInt(ACCOUNT_BATCH_SIZE - 1),
-        "proof output index does not match expected batch end index",
-      );
-      assert(
-        proof.publicOutput.exhausted.toBoolean() === false,
-        "digest proof should not be exhausted",
-      );
-    });
+    assert(
+      (await votingLedger.getRoot()).toString() ===
+        proof.publicOutput.votingLedgerRoot.toString(),
+      "final voting ledger root should match proof output",
+    );
+    assert(
+      proof.publicInput.index.toBigInt() === 0n,
+      "proof input index does not match expected batch index",
+    );
+    assert(
+      proof.publicOutput.index.toBigInt() === BigInt(ACCOUNT_BATCH_SIZE - 1),
+      "proof output index does not match expected batch end index",
+    );
+    assert(
+      proof.publicOutput.exhausted.toBoolean() === false,
+      "digest proof should not be exhausted",
+    );
   });
 
   await t.test("merge", async () => {

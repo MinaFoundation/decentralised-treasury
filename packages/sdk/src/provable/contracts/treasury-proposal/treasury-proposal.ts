@@ -15,6 +15,7 @@ import {
   UInt32,
   Poseidon,
   TokenId,
+  Types,
 } from "o1js";
 import {
   ActionStateHistory,
@@ -43,7 +44,7 @@ import { PrefixedMerkleWitness36 } from "../../merkle-tree/prefixed-merkle-tree.
 export class Proposal extends Struct({
   amount: UInt64,
   recipient: PublicKey,
-  zkAppUri: String,
+  zkAppUri: Types.ZkappUri,
 }) {}
 
 export class ProposalStatus extends Field {

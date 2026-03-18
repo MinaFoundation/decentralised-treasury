@@ -209,10 +209,9 @@ export class TreasuryOwnerSmartContract extends TokenContract {
     );
 
     proposalUpdate.account.permissions.set(Permissions.default());
-    // }
 
-    // proposalUpdate.update.zkappUri.isSome = Bool(true);
-    // proposalUpdate.update.zkappUri.value = ZkappUri.from(proposal.zkAppUri);
+    proposalUpdate.update.zkappUri.isSome = Bool(true);
+    proposalUpdate.update.zkappUri.value = proposal.zkAppUri;
 
     this.approve(proposalUpdate);
   }
