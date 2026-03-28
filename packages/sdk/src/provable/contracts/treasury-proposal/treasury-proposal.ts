@@ -16,7 +16,9 @@ import {
   Poseidon,
   TokenId,
   Types,
+  UInt128,
 } from "o1js";
+import { provableLog } from "../../../logging/logger.js";
 import {
   ActionStateHistory,
   SideLoadedVoteReducerProof,
@@ -93,14 +95,16 @@ export class TreasuryProposalSmartContract extends SmartContract {
     this.reducer.dispatch(voteAction);
   }
 
-  minUInt64(a: UInt64, b: UInt64) {
-    return Provable.if(a.lessThan(b), a, b);
+  minUInt128(a: UInt128, b: UInt128) {
+    return Provable.if<UInt128>(a.lessThan(b), a, b);
   }
 
-  // TODO: implement UInt128 to handle overflows of UInt64 multiplication
-  calculateAcceptanceCriteria(proposalAmount: UInt64, treasuryBalance: UInt64) {
+  calculateAcceptanceCriteria(
+    proposalAmount: UInt128,
+    treasuryBalance: UInt128,
+  ) {
     // ratio in basis points, capped at 100%
-    const ratioBp = this.minUInt64(
+    const ratioBp = this.minUInt128(
       proposalAmount.mul(BASIS_POINTS).div(treasuryBalance),
       BASIS_POINTS,
     );
@@ -206,6 +210,8 @@ export class TreasuryProposalSmartContract extends SmartContract {
       .equals(TreasuryProposalSmartContract.emptyVotingLedgerRoot)
       .assertTrue("initial voting ledger root must be empty");
 
+    Provable.log("stakingEpochDataLedgerHash", stakingEpochDataLedgerHash);
+
     stakingLedgerToVotingLedgerPublicInput.stakingLedgerRoot
       .equals(stakingEpochDataLedgerHash)
       .assertTrue("staking ledger root does not match");
@@ -220,7 +226,14 @@ export class TreasuryProposalSmartContract extends SmartContract {
       )
       .assertTrue("toActionsHash does not match action state one hash");
 
-    const { yay, nay, abstain } = voteReducerPublicOutput;
+    const {
+      yay: yayUInt64,
+      nay: nayUInt64,
+      abstain: abstainUInt64,
+    } = voteReducerPublicOutput;
+    const yay = UInt128.from(yayUInt64);
+    const nay = UInt128.from(nayUInt64);
+    const abstain = UInt128.from(abstainUInt64);
     const proposalAmount = this.amount.getAndRequireEquals();
 
     treasuryOwnerAccount.pk
@@ -250,27 +263,37 @@ export class TreasuryProposalSmartContract extends SmartContract {
 
     const treasuryOwnerBalance = treasuryOwnerAccount.balance;
     const { requiredParticipationBp, requiredApprovalBp } =
-      this.calculateAcceptanceCriteria(proposalAmount, treasuryOwnerBalance);
+      this.calculateAcceptanceCriteria(
+        UInt128.from(proposalAmount),
+        UInt128.from(treasuryOwnerBalance),
+      );
 
     // TODO: what about the remainder and precision handling?
-    const requiredParticipation = stakingEpochDataLedgerTotalCurrency
+    const requiredParticipation = UInt128.from(
+      stakingEpochDataLedgerTotalCurrency,
+    )
       .mul(requiredParticipationBp)
       .div(BASIS_POINTS);
 
-    Provable.log("totalParticipatingVotes", {
+    provableLog("totalParticipatingVotes", {
       totalParticipatingVotes,
       requiredParticipation,
       totalCurrency: stakingEpochDataLedgerTotalCurrency,
     });
 
-    totalParticipatingVotes
+    UInt128.from(totalParticipatingVotes)
       .greaterThanOrEqual(requiredParticipation)
       .assertTrue("Participation not met");
 
     // TODO: make sure there's sufficient precision handling?, since we're adding so many UInt64s this will likely overflow?
     const totalVotes = yay.add(nay);
-    totalVotes.greaterThan(UInt64.from(0)).assertTrue("No approval votes cast");
-    const approvalBp = yay.mul(BASIS_POINTS).div(totalVotes);
+    totalVotes
+      .greaterThan(UInt128.from(0))
+      .assertTrue("No approval votes cast");
+
+    const approvalBp = UInt128.from(yay)
+      .mul(BASIS_POINTS)
+      .div(UInt128.from(totalVotes));
 
     // // participation was already checked above, so we can just check approval threshold
     const approved = approvalBp.greaterThanOrEqual(requiredApprovalBp);
