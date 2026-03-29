@@ -43,5 +43,8 @@ test-ledger.json
 packages/sdk/cache
 packages/sdk/daemon.json
 packages/sdk/.data
+packages/sdk/test/.data/cache
 packages/sdk/thresholds-chart.svg
+apps/cli/cache
+apps/cli/test/fixtures/cache
 .cursor/

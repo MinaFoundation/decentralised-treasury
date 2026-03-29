@@ -398,7 +398,9 @@ export class SqlitePauseControllerService implements PauseControllerService {
       return Mina.getAccount(pauseControllerPublicKey).nonce;
     } catch (cause) {
       const reason =
-        cause instanceof Error ? cause.message : `Unknown cause: ${String(cause)}`;
+        cause instanceof Error
+          ? cause.message
+          : `Unknown cause: ${String(cause)}`;
       throw new Error(
         `Unable to resolve nonce for pause controller account ${pauseControllerPublicKey.toBase58()}: ${reason}`,
       );
@@ -418,4 +420,3 @@ export class SqlitePauseControllerService implements PauseControllerService {
     return pendingTx;
   }
 }
-
