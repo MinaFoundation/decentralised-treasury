@@ -11,6 +11,7 @@ import { TreasuryOwnerSmartContract } from "@repo/sdk/src/provable/contracts/tre
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname } from "node:path";
 import { configureMinaNetwork } from "./mina-instance.js";
+import { resolveProposalZkappUri } from "./proposal-content-hash.js";
 
 function parsePrivateKey(value: string): PrivateKey {
   return PrivateKey.fromBase58(value);
@@ -28,7 +29,7 @@ interface CreateProposalCommandOptions {
   proposalLifecycleId: UInt32;
   recipientPublicKey: PublicKey;
   amount: UInt64;
-  proposalZkappUri: string;
+  contentFile: string;
   fee?: UInt64;
   nonce?: number;
   memo?: string;
@@ -95,6 +96,9 @@ interface ReadProposalStateCommandOptions {
 export async function createProposal(
   options: CreateProposalCommandOptions,
 ): Promise<void> {
+  const proposalZkappUri = await resolveProposalZkappUri({
+    contentFile: options.contentFile,
+  });
   const { SqliteTreasuryOwnerService } = await import(
     "@repo/sdk/src/services/sqlite/sqlite-treasury-owner-service.js"
   );
@@ -113,7 +117,7 @@ export async function createProposal(
     proposalLifecycleId: options.proposalLifecycleId,
     recipientPublicKey: options.recipientPublicKey,
     amount: options.amount,
-    proposalZkappUri: options.proposalZkappUri,
+    proposalZkappUri,
     fee: options.fee,
     nonce: options.nonce,
     memo: options.memo,
@@ -344,8 +348,11 @@ export default function proposalCommandFactory(program: Command) {
         .makeOptionMandatory(),
     )
     .addOption(
-      new Option("--proposal-zkapp-uri <proposal-zkapp-uri>", "Proposal content URI")
-        .env("PROPOSAL_ZKAPP_URI")
+      new Option(
+        "--content-file <content-file>",
+        "Path to markdown proposal content file (hashed to derive zkappUri)",
+      )
+        .env("PROPOSAL_CONTENT_FILE")
         .makeOptionMandatory(),
     )
     .addOption(

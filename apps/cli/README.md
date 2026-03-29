@@ -183,13 +183,28 @@ PROPOSAL_CREATION_END =
 
 Run `proposal create` only when current slot is in that window. If you are outside it, the transaction fails the on-chain lifecycle period check.
 
+Input is a markdown file via `--content-file`. The CLI hashes the
+entire file contents using browser-compatible `SHA-256` and derives:
+
+`zkAppUri = urn:proposal-content:markdown:sha256:<hex-digest>`
+
+Prefix meaning:
+
+- `urn`: this is a stable identifier string, not a fetchable URL.
+- `proposal-content`: domain separator saying this hash commits to proposal body content.
+- `markdown`: content format that was hashed.
+- `sha256`: hash algorithm used.
+- `<hex-digest>`: lowercase hex-encoded SHA-256 digest of the raw markdown file bytes.
+
+This fixed prefix prevents ambiguity and leaves room to add other content formats or algorithms later (for example `...:json:sha256:...`) without collisions.
+
 ```bash
 pnpm run cli -- proposal create \
   --proposal-private-key <PROPOSAL_PRIVATE_KEY> \
   --proposal-lifecycle-id 0 \
   --recipient-public-key <RECIPIENT_PUBLIC_KEY> \
   --amount 1000000000 \
-  --proposal-zkapp-uri "https://example.com/proposals/demo"
+  --content-file ./proposals/demo.md
 ```
 
 ### 3) Read proposal state

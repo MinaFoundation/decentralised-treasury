@@ -3,7 +3,7 @@ import { after, before, describe, it } from "node:test";
 import { type ChildProcess } from "node:child_process";
 import { createServer } from "node:http";
 import type { AddressInfo } from "node:net";
-import { readFile, rm } from "node:fs/promises";
+import { readFile, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { Mina, PrivateKey, Reducer, TokenId } from "o1js";
@@ -35,7 +35,10 @@ const PROPOSAL_TEST_NAME = "proposal.test";
 
 const PROPOSAL_LIFECYCLE_ID = "0";
 const PROPOSAL_AMOUNT = "1000000000";
-const PROPOSAL_ZKAPP_URI = "https://example.com/proposals/cli-e2e-test";
+const PROPOSAL_MARKDOWN_CONTENT = `# CLI E2E Proposal
+
+This proposal is created from markdown content.
+`;
 const LIFECYCLE_PERIOD_DURATION = 60;
 
 const PROPOSAL_VOTE = "yay";
@@ -151,6 +154,16 @@ it("exposes proposal fetch-actions command in help", async () => {
   assert(
     proposalHelp.includes("read-state"),
     "expected proposal help to list read-state subcommand",
+  );
+
+  const proposalCreateHelp = await runCli(["proposal", "create", "--help"]);
+  assert(
+    proposalCreateHelp.includes("--content-file"),
+    "expected proposal create help to list --content-file option",
+  );
+  assert(
+    !proposalCreateHelp.includes("--proposal-zkapp-uri"),
+    "expected proposal create help to not list --proposal-zkapp-uri option",
   );
 });
 
@@ -314,6 +327,11 @@ describe("proposal create e2e", { concurrency: 1 }, () => {
       lifecyclePeriodDuration: LIFECYCLE_PERIOD_DURATION,
       treasuryDeployedAtSlot,
     });
+    const proposalContentPath = join(
+      FIXTURES_DIRECTORY,
+      "proposal-create-e2e-content.md",
+    );
+    await writeFile(proposalContentPath, PROPOSAL_MARKDOWN_CONTENT, "utf8");
     const createOutput = await runCli(["proposal", "create"], {
       timeoutMs: 600_000,
       streamOutput: true,
@@ -324,10 +342,12 @@ describe("proposal create e2e", { concurrency: 1 }, () => {
         PROPOSAL_LIFECYCLE_ID: String(proposalLifecycleId),
         RECIPIENT_PUBLIC_KEY: recipientPublicKey,
         PROPOSAL_AMOUNT,
-        PROPOSAL_ZKAPP_URI,
+        PROPOSAL_CONTENT_FILE: proposalContentPath,
         LIFECYCLE_PERIOD_DURATION: String(LIFECYCLE_PERIOD_DURATION),
         PROOFS_ENABLED,
       },
+    }).finally(async () => {
+      await rm(proposalContentPath, { force: true });
     });
 
     const createResult = parseTreasuryProposalResult(createOutput);
