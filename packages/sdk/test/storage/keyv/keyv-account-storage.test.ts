@@ -12,7 +12,7 @@ it("should create a keyv account storage", async () => {
   const keyv = new Keyv({ store });
   keyv.disconnect = async () => {};
   const counter = new KeyvSqliteCounter(store);
-  const accountStorage = new KeyvAccountStorage(keyv, "test-namespace", counter);
+  const accountStorage = new KeyvAccountStorage(keyv, "test", counter);
 
   const account = Account.empty();
   account.pk = PrivateKey.random().toPublicKey();

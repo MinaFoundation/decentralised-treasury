@@ -9,20 +9,20 @@ export function createSqliteStakingLedgerStorage(
   lifecycleId: string,
   sqliteStore: KeyvSqlite,
 ): StakingLedgerStorage<KeyvAccountStorage, KeyvMerkleTreeStorage> {
-  const namespace = `staking-ledger-${lifecycleId}`;
   const counter = new KeyvSqliteCounter(sqliteStore);
-  const accountKeyv = new Keyv({ store: sqliteStore, namespace });
+  const accountKeyv = new Keyv({ store: sqliteStore });
   accountKeyv.disconnect = async () => {};
-  const merkleTreeKeyv = new Keyv({ store: sqliteStore, namespace });
+  const merkleTreeKeyv = new Keyv({ store: sqliteStore });
   merkleTreeKeyv.disconnect = async () => {};
   const accountStorage = new KeyvAccountStorage(
     accountKeyv,
-    namespace,
+    lifecycleId,
     counter,
   );
   const merkleTreeStorage = new KeyvMerkleTreeStorage(
     merkleTreeKeyv,
-    namespace,
+    lifecycleId,
+    "staking-ledger",
     counter,
   );
 

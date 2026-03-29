@@ -24,7 +24,7 @@ import assert from "node:assert";
 it("should run the digest task", async () => {
   const sqlite = new KeyvSqlite({ uri: "sqlite://:memory:" });
   const stakingLedgerStorage = createSqliteStakingLedgerStorage(
-    "test-namespace",
+    "0",
     sqlite,
   );
   const stakingLedger = new PersistentStakingLedger(
@@ -32,7 +32,7 @@ it("should run the digest task", async () => {
     stakingLedgerStorage.merkleTreeStorage,
   );
   const votingLedgerStorage = createSqliteVotingLedgerStorage(
-    "test-namespace",
+    "0",
     sqlite,
   );
   const votingLedger = new PersistentVotingLedger(

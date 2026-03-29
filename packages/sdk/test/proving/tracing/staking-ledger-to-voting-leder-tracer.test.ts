@@ -14,7 +14,7 @@ import { VotingAccount } from "../../../src/provable/voting-account.js";
 import { PersistentStakingLedger } from "../../../src/ledgers/staking-ledger/persistent-staking-ledger.js";
 import { Account } from "../../../src/provable/account.js";
 import { StakingLedgerToVotingLedgerTracer } from "../../../src/proving/tracing/staking-ledger-to-voting-ledger-tracer.js";
-import { KeyvStakingLedgerToVotingLedgerDigestTraceBatchStorage } from "../../../src/storage/keyv/keyv-staking-ledger-to-voting-ledger-digest-trace-batch-storage.js";
+import { KeyvStakingLedgerToVotingLedgerDigestTraceStorage } from "../../../src/storage/keyv/keyv-staking-ledger-to-voting-ledger-digest-trace-storage.js";
 import { createSqliteStakingLedgerStorage } from "../../../src/storage/sqlite/factory/sqlite-staking-ledger-storage.js";
 import { createSqliteVotingLedgerStorage } from "../../../src/storage/sqlite/factory/sqlite-voting-ledger-storage.js";
 import { KeyvKeyValueBatchStorage } from "../../../src/storage/keyv/keyv-key-value-batch-storage.js";
@@ -24,11 +24,11 @@ import { createInMemoryVotingLedgerStorage } from "../../../src/storage/in-memor
 import { InMemoryVotingLedger } from "../../../src/ledgers/voting-ledger/in-memory-voting-ledger.js";
 import { KeyvSqlite } from "@keyv/sqlite";
 
-const lifecycleId = `test-lifecycle-${Date.now()}`;
+const lifecycleId = "0";
 
 let stakingLedger: PersistentStakingLedger;
 let votingLedger: InMemoryVotingLedger;
-let traceStorage: KeyvStakingLedgerToVotingLedgerDigestTraceBatchStorage;
+let traceStorage: KeyvStakingLedgerToVotingLedgerDigestTraceStorage;
 let batchWriter: KeyvKeyValueBatchStorage;
 let sqlite: KeyvSqlite;
 

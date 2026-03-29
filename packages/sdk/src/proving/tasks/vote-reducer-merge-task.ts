@@ -4,9 +4,10 @@ import {
   voteReducerContext,
 } from "../../provable/contracts/treasury-proposal/vote-reducer.js";
 import { Task } from "../task-queue.js";
-import { Cache, JsonProof, Provable } from "o1js";
+import { Cache, JsonProof } from "o1js";
 import { ReplayableVotingLedger } from "../../ledgers/voting-ledger/replayable-voting-ledger.js";
 import { ReplayableNullifierLedger } from "../../ledgers/nullifier-ledger/replayable-nullifier-ledger.js";
+import { logger, provableLog, time, timeEnd } from "../../logging/logger.js";
 
 export interface VoteReducerMergeTaskInput {
   proofs: {
@@ -65,27 +66,27 @@ export const VoteReducerMergeTask: Task<
   };
 
   public static async prepare() {
-    console.log("compiling vote reducer", { proofsEnabled });
+    logger.info("compiling vote reducer", { proofsEnabled });
 
     voteReducerContext.set({
       votingLedger: new ReplayableVotingLedger({}, {}),
       nullifierLedger: new ReplayableNullifierLedger({}, {}),
     });
 
-    console.time("compile");
+    time("compile", "info");
     await VoteReducer.compile({
       proofsEnabled,
       cache: Cache.FileSystem(`${process.cwd()}/cache`),
     });
-    console.timeEnd("compile");
+    timeEnd("compile", "info");
   }
 
   public static async run(input: VoteReducerMergeTaskInput) {
     const {
       proofs: { 1: proof1, 2: proof2 },
     } = input;
-    console.log("running vote reducer merge");
-    Provable.log(
+    logger.info("running vote reducer merge");
+    provableLog(
       "merging vote reducer proofs",
       proof1?.publicInput,
       proof1?.publicOutput,
@@ -93,13 +94,13 @@ export const VoteReducerMergeTask: Task<
       proof2?.publicOutput
     );
 
-    console.time("merge");
+    time("merge", "info");
     const result = await VoteReducer.merge(
       proof1.publicInput,
       proof1,
       proof2
     );
-    console.timeEnd("merge");
+    timeEnd("merge", "info");
 
     return {
       proof: SideLoadedVoteReducerProof.fromProof(result.proof),

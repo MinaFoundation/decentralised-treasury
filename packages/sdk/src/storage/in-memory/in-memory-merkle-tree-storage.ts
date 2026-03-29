@@ -40,6 +40,10 @@ export class InMemoryMerkleTreeStorage
     this.nodes.set(`${level}-${index}`, value);
   }
 
+  public async clear(): Promise<void> {
+    this.nodes.clear();
+  }
+
   public collectEntries(): Array<KeyValueEntry> {
     return Array.from(this.nodes, ([nodeKey, value]) => ({
       key: `${this.parentStorage.namespace}:${nodeKey}`,

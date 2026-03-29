@@ -10,6 +10,7 @@ import {
   State,
   UInt32,
 } from "o1js";
+import { provableLog } from "../../../logging/logger.js";
 import {
   MULTISIG_PARTICIPANTS_COUNT,
   MultisigSignature,
@@ -73,7 +74,7 @@ export class TreasuryPauseControllerSmartContract extends SmartContract {
       TreasuryPauseControllerSmartContract.multisigParticipants,
     );
 
-    Provable.log("Treasury pause controller initializing with", {
+    provableLog("Treasury pause controller initializing with", {
       multisigCommitment,
       multisigParticipants:
         TreasuryPauseControllerSmartContract.multisigParticipants,

@@ -28,6 +28,7 @@ import {
 } from "../../provable/merkle-tree/prefixed-merkle-tree.js";
 import { hashWithPrefix } from "../../provable/hashing-helpers.js";
 import { MerkleTreeStorage } from "../../storage/merkle-tree-storage.js";
+import { logger } from "../../logging/logger.js";
 
 export interface StakingLedger {
   getAllAccounts(): Promise<Account[]>;
@@ -128,7 +129,7 @@ export abstract class BaseStakingLedger implements StakingLedger {
     onHydrateAccountComplete?: (index: bigint, account: Account) => void,
   ): Promise<void> {
     endIndex = endIndex ?? accounts.length;
-    console.log("hydrating accounts", startIndex, endIndex, accounts.length);
+    logger.info("hydrating accounts", startIndex, endIndex, accounts.length);
 
     if (endIndex > accounts.length) {
       throw new Error("End index is greater than the number of accounts");
@@ -213,7 +214,7 @@ export abstract class BaseStakingLedger implements StakingLedger {
           }
         })
         .on("error", (error) => {
-          console.error("Error reading staking ledger", error);
+          logger.error("Error reading staking ledger", error);
           reject(error);
         });
     });

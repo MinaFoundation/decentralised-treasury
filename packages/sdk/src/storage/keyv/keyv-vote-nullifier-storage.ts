@@ -9,8 +9,12 @@ export class KeyvVoteNullifierStorage
   extends KeyvKeyValueStorage
   implements VoteNullifierStorage
 {
-  constructor(keyv: Keyv, namespace: string, counter: KeyvNamespaceCounter) {
-    super(keyv, namespace, counter);
+  static namespaceFrom(lifecycleId: string): string {
+    return `nullifier-ledger-${lifecycleId}-nullifiers`;
+  }
+
+  constructor(keyv: Keyv, lifecycleId: string, counter: KeyvNamespaceCounter) {
+    super(keyv, KeyvVoteNullifierStorage.namespaceFrom(lifecycleId), counter);
   }
 
   async getNullifier(publicKey: string): Promise<boolean | undefined> {

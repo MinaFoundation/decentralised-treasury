@@ -15,24 +15,36 @@ export class KeyvVoteReducerProofStorage implements VoteReducerProofStorage {
   public mergeStorage: KeyvKeyValueStorage;
   public entries: Array<KeyValueEntry> = [];
 
+  static proofNamespaceFrom(lifecycleId: string): string {
+    return `vote-reducer-proof-${lifecycleId}`;
+  }
+
+  static mergeProofNamespaceFrom(lifecycleId: string): string {
+    return `${KeyvVoteReducerProofStorage.proofNamespaceFrom(lifecycleId)}-merge`;
+  }
+
+  static mergedFlagNamespaceFrom(lifecycleId: string): string {
+    return `${KeyvVoteReducerProofStorage.proofNamespaceFrom(lifecycleId)}-merged`;
+  }
+
   constructor(
     keyvFactory: KeyvFactory,
-    namespace: string,
+    lifecycleId: string,
     counter: KeyvNamespaceCounter,
   ) {
     this.storage = new KeyvKeyValueStorage(
       keyvFactory(),
-      `${namespace}`,
+      KeyvVoteReducerProofStorage.proofNamespaceFrom(lifecycleId),
       counter,
     );
     this.mergedStorage = new KeyvKeyValueStorage(
       keyvFactory(),
-      `${namespace}-merged`,
+      KeyvVoteReducerProofStorage.mergedFlagNamespaceFrom(lifecycleId),
       counter,
     );
     this.mergeStorage = new KeyvKeyValueStorage(
       keyvFactory(),
-      `${namespace}-merge`,
+      KeyvVoteReducerProofStorage.mergeProofNamespaceFrom(lifecycleId),
       counter,
     );
   }
@@ -96,6 +108,13 @@ export class KeyvVoteReducerProofStorage implements VoteReducerProofStorage {
 
   clearEntries(): void {
     this.entries = [];
+  }
+
+  async clear(): Promise<void> {
+    this.entries = [];
+    await this.storage.clear();
+    await this.mergeStorage.clear();
+    await this.mergedStorage.clear();
   }
 
   async close(): Promise<void> {

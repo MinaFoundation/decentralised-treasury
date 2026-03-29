@@ -1,6 +1,6 @@
 import { it } from "node:test";
 import { RedisMemoryServer } from "redis-memory-server";
-import { KeyvStakingLedgerToVotingLedgerDigestTraceBatchStorage } from "../../../src/storage/keyv/keyv-staking-ledger-to-voting-ledger-digest-trace-batch-storage.js";
+import { KeyvStakingLedgerToVotingLedgerDigestTraceStorage } from "../../../src/storage/keyv/keyv-staking-ledger-to-voting-ledger-digest-trace-storage.js";
 import { StakingLedgerToVotingLedgerTracer } from "../../../src/proving/tracing/staking-ledger-to-voting-ledger-tracer.js";
 import { KeyvStakingLedgerToVotingLedgerProofStorage } from "../../../src/storage/keyv/keyv-staking-ledger-to-voting-ledger-proof-storage.js";
 import { StakingLedgerToVotingLedgerProver } from "../../../src/proving/prover/staking-ledger-to-voting-ledger-prover.js";
@@ -22,6 +22,7 @@ import {
   StakingLedgerToVotingLedgerDigestTrace,
   type StakingLedgerToVotingLedgerDigestTraceJSON,
 } from "../../../src/proving/tracing/staking-ledger-to-voting-ledger-tracer.js";
+import { ACCOUNT_BATCH_SIZE } from "../../../src/provable/staking-ledger-to-voting-ledger.js";
 import { KeyvSqlite } from "@keyv/sqlite";
 import { Keyv } from "keyv";
 
@@ -31,7 +32,7 @@ const RESTORE_COMMIT_INTERVAL = 10;
 
 async function persistTracesToFile(
   filePath: string,
-  traceStorage: KeyvStakingLedgerToVotingLedgerDigestTraceBatchStorage,
+  traceStorage: KeyvStakingLedgerToVotingLedgerDigestTraceStorage,
 ) {
   await mkdir("test/.data", { recursive: true });
 
@@ -61,7 +62,7 @@ async function persistTracesToFile(
 
 async function restoreTracesFromFile(
   filePath: string,
-  traceStorage: KeyvStakingLedgerToVotingLedgerDigestTraceBatchStorage,
+  traceStorage: KeyvStakingLedgerToVotingLedgerDigestTraceStorage,
   traceBatchWriter: KeyvKeyValueBatchStorage,
 ): Promise<boolean> {
   const { parser } = streamJson;
@@ -116,7 +117,7 @@ it("process traces into proofs", async () => {
   const redisHost = await redisServer.getHost();
   const redisPort = await redisServer.getPort();
   const redisUrl = `redis://${redisHost}:${redisPort}`;
-  const namespace = `test-namespace`;
+  const lifecycleId = "0";
 
   const sqliteStore = new KeyvSqlite({ uri: "sqlite://:memory:" });
   const createKeyv = (keyvNamespace = "") => {
@@ -128,21 +129,20 @@ it("process traces into proofs", async () => {
   console.log("redis url", redisUrl);
 
   const traceKeyv = createKeyv();
-  const traceStorage =
-    new KeyvStakingLedgerToVotingLedgerDigestTraceBatchStorage(
-      traceKeyv,
-      namespace,
-      new KeyvSqliteCounter(sqliteStore),
-    );
+  const traceStorage = new KeyvStakingLedgerToVotingLedgerDigestTraceStorage(
+    traceKeyv,
+    lifecycleId,
+    new KeyvSqliteCounter(sqliteStore),
+  );
 
   const proofStorage = new KeyvStakingLedgerToVotingLedgerProofStorage(
     () => createKeyv(),
-    namespace,
+    lifecycleId,
     new KeyvSqliteCounter(sqliteStore),
   );
 
   const stakingLedgerStorage = createSqliteStakingLedgerStorage(
-    namespace,
+    lifecycleId,
     sqliteStore,
   );
   const stakingLedger = new PersistentStakingLedger(
@@ -150,7 +150,7 @@ it("process traces into proofs", async () => {
     stakingLedgerStorage.merkleTreeStorage,
   );
   const votingLedgerStorage = createInMemoryVotingLedgerStorage(
-    createSqliteVotingLedgerStorage(namespace, sqliteStore),
+    createSqliteVotingLedgerStorage(lifecycleId, sqliteStore),
   );
   const votingLedger = new InMemoryVotingLedger(
     votingLedgerStorage.votingAccountStorage,
@@ -191,11 +191,11 @@ it("process traces into proofs", async () => {
   );
   if (!restored) {
     console.log("tracing digest");
-    await tracer.digest(0, 5);
+    await tracer.digest();
     console.log("persisting traces");
     await persistTracesToFile(DIGEST_TRACES_PATH, traceStorage);
   }
-  await prover.digest(0, 5);
+  await prover.digest();
 
   console.log("done digesting");
 
@@ -205,8 +205,12 @@ it("process traces into proofs", async () => {
   await mkdir("test/.data", { recursive: true });
   await writeFile(MERGE_PROOF_PATH, JSON.stringify(mergeProof.toJSON()));
 
-  // assert(mergeProof.publicInput.index.toBigInt() === 0n);
-  // assert(mergeProof.publicOutput.index.toBigInt() === 49n);
+  const expectedOutputIndex =
+    BigInt(
+      Math.ceil(accounts.length / ACCOUNT_BATCH_SIZE) * ACCOUNT_BATCH_SIZE,
+    ) - 1n;
+  assert(mergeProof.publicInput.index.toBigInt() === 0n);
+  assert(mergeProof.publicOutput.index.toBigInt() === expectedOutputIndex);
 
   await stakingLedger.close();
   await votingLedger.close();

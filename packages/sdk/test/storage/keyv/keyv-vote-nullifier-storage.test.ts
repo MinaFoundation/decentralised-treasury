@@ -11,7 +11,7 @@ it("should create a keyv vote nullifier storage", async () => {
   keyv.disconnect = async () => {};
   const storage = new KeyvVoteNullifierStorage(
     keyv,
-    "test-nullifier-namespace",
+    "test",
     new KeyvSqliteCounter(store),
   );
 
@@ -29,7 +29,7 @@ it("should write multiple vote nullifiers", async () => {
   keyv.disconnect = async () => {};
   const storage = new KeyvVoteNullifierStorage(
     keyv,
-    "test-nullifier-namespace",
+    "test",
     new KeyvSqliteCounter(store),
   );
 

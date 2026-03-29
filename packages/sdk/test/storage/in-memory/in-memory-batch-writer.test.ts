@@ -31,22 +31,23 @@ before(async () => {
     return keyv;
   }
 
-  const namespace = "test-batch-writer";
+  const lifecycleId = "0";
   const counter = new KeyvSqliteCounter(store);
   batchWriter = new KeyvKeyValueBatchStorage(createTestKeyv());
   parentVotingStorage = new KeyvVotingAccountStorage(
     createTestKeyv(),
-    namespace,
+    lifecycleId,
     counter,
   );
   parentMerkleStorage = new KeyvMerkleTreeStorage(
     createTestKeyv(),
-    namespace,
+    lifecycleId,
+    "voting-ledger",
     counter,
   );
   parentNullifierStorage = new KeyvVoteNullifierStorage(
     createTestKeyv(),
-    namespace,
+    lifecycleId,
     counter,
   );
 

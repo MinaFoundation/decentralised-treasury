@@ -15,6 +15,7 @@ import {
   method,
   state,
 } from "o1js";
+import { provableLog } from "../../logging/logger.js";
 import { Account } from "../account.js";
 import { PrefixedMerkleWitness36 } from "../merkle-tree/prefixed-merkle-tree.js";
 import {
@@ -101,7 +102,7 @@ export class TreasuryOwnerSmartContract extends TokenContract {
     await this.requireLifecyclePeriod(period, lifecycleId, Bool(true));
   }
 
-  public async requireLifecyclePeriod(
+  public async getLifecyclePeriodSlotRange(
     period: LifecyclePeriod,
     lifecycleId: UInt32,
     // used if a lifecycle period has no upper bound, e.g. to allow
@@ -111,7 +112,7 @@ export class TreasuryOwnerSmartContract extends TokenContract {
     const treasuryDeployedAtSlot =
       this.treasuryDeployedAtSlot.getAndRequireEquals();
 
-    Provable.log(
+    provableLog(
       "requireLifecyclePeriod",
       TreasuryOwnerSmartContract.lifecyclePeriodDuration,
     );
@@ -132,7 +133,23 @@ export class TreasuryOwnerSmartContract extends TokenContract {
       fromSlot.add(TreasuryOwnerSmartContract.lifecyclePeriodDuration),
     );
 
-    Provable.log(
+    return { fromSlot, toSlot };
+  }
+
+  public async requireLifecyclePeriod(
+    period: LifecyclePeriod,
+    lifecycleId: UInt32,
+    // used if a lifecycle period has no upper bound, e.g. to allow
+    // tallying votes / execution anytime after the cooldown period
+    noUpperBoundToSlot: Bool = Bool(false),
+  ) {
+    const { fromSlot, toSlot } = await this.getLifecyclePeriodSlotRange(
+      period,
+      lifecycleId,
+      noUpperBoundToSlot,
+    );
+
+    provableLog(
       "requireLifecyclePeriod",
       period,
       lifecycleId,
@@ -154,7 +171,7 @@ export class TreasuryOwnerSmartContract extends TokenContract {
     proposal: Proposal,
     lifecycleId: UInt32,
   ) {
-    Provable.log("createProposal", { lifecycleId });
+    provableLog("createProposal", { lifecycleId });
 
     const { stakingEpochDataLedgerHash, stakingEpochDataLedgerTotalCurrency } =
       await this.snapshotStakingEpochData();
@@ -336,7 +353,7 @@ export class TreasuryOwnerSmartContract extends TokenContract {
     );
 
     const proposalLifecycleId = await proposal.getLifecycleId();
-    Provable.log("executeProposal", { proposalLifecycleId });
+    provableLog("executeProposal", { proposalLifecycleId });
 
     await this.requireLifecyclePeriodGreaterThanOrEqual(
       LifecyclePeriod.PROPOSAL,

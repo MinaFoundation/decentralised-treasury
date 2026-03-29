@@ -17,24 +17,40 @@ export class KeyvStakingLedgerToVotingLedgerProofStorage
   public mergeStorage: KeyvKeyValueStorage;
   public entries: Array<KeyValueEntry> = [];
 
+  static proofNamespaceFrom(lifecycleId: string): string {
+    return `staking-ledger-to-voting-ledger-proof-${lifecycleId}`;
+  }
+
+  static mergeProofNamespaceFrom(lifecycleId: string): string {
+    return `${KeyvStakingLedgerToVotingLedgerProofStorage.proofNamespaceFrom(lifecycleId)}-merge`;
+  }
+
+  static mergedFlagNamespaceFrom(lifecycleId: string): string {
+    return `${KeyvStakingLedgerToVotingLedgerProofStorage.proofNamespaceFrom(lifecycleId)}-merged`;
+  }
+
   constructor(
     keyvFactory: KeyvFactory,
-    namespace: string,
+    lifecycleId: string,
     counter: KeyvNamespaceCounter,
   ) {
     this.storage = new KeyvKeyValueStorage(
       keyvFactory(),
-      `${namespace}`,
+      KeyvStakingLedgerToVotingLedgerProofStorage.proofNamespaceFrom(lifecycleId),
       counter,
     );
     this.mergedStorage = new KeyvKeyValueStorage(
       keyvFactory(),
-      `${namespace}-merged`,
+      KeyvStakingLedgerToVotingLedgerProofStorage.mergedFlagNamespaceFrom(
+        lifecycleId,
+      ),
       counter,
     );
     this.mergeStorage = new KeyvKeyValueStorage(
       keyvFactory(),
-      `${namespace}-merge`,
+      KeyvStakingLedgerToVotingLedgerProofStorage.mergeProofNamespaceFrom(
+        lifecycleId,
+      ),
       counter,
     );
   }

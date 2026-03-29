@@ -6,7 +6,7 @@ import {
   StakingLedgerToVotingLedgerProgramOutput,
 } from "../../provable/staking-ledger-to-voting-ledger.js";
 import { Account } from "../../provable/account.js";
-import { Provable, UInt32, UInt64 } from "o1js";
+import { UInt32, UInt64 } from "o1js";
 import { RecordingStakingLedger } from "../../ledgers/staking-ledger/recording-staking-ledger.js";
 import { RecordingVotingLedger } from "../../ledgers/voting-ledger/recording-voting-ledger.js";
 import {
@@ -16,12 +16,13 @@ import {
 import { VotingAccount } from "../../provable/voting-account.js";
 import { StakingLedger } from "../../ledgers/staking-ledger/staking-ledger.js";
 import { VotingLedger } from "../../ledgers/voting-ledger/voting-ledger.js";
-import { StakingLedgerToVotingLedgerDigestTraceBatchStorage } from "../../storage/staking-ledger-to-voting-ledger-digest-trace-batch-storage.js";
+import { StakingLedgerToVotingLedgerDigestTraceStorage } from "../../storage/staking-ledger-to-voting-ledger-digest-trace-storage.js";
 import { PersistentStakingLedger } from "../../ledgers/staking-ledger/persistent-staking-ledger.js";
 import { PersistentVotingLedger } from "../../ledgers/voting-ledger/persistent-voting-ledger.js";
 import { InMemoryVotingAccountStorage } from "../../storage/in-memory/in-memory-voting-account-storage.js";
 import { InMemoryVotingLedger } from "../../ledgers/voting-ledger/in-memory-voting-ledger.js";
 import { KeyValueBatchStorage } from "../../storage/batch-key-value-storage.js";
+import { time, timeEnd } from "../../logging/logger.js";
 
 export interface StakingLedgerToVotingLedgerDigestTraceJSON {
   publicInput: ReturnType<
@@ -170,7 +171,7 @@ export class StakingLedgerToVotingLedgerTracer {
   constructor(
     public stakingLedger: StakingLedger,
     public votingLedger: InMemoryVotingLedger,
-    public traceStorage: StakingLedgerToVotingLedgerDigestTraceBatchStorage,
+    public traceStorage: StakingLedgerToVotingLedgerDigestTraceStorage,
     public batchWriter: KeyValueBatchStorage,
   ) {}
 
@@ -212,9 +213,9 @@ export class StakingLedgerToVotingLedgerTracer {
     const stakingLedgerRoot = await this.stakingLedger.getRoot();
     let votingLedgerRoot = await this.votingLedger.getRoot();
 
-    console.time("trace-digest-complete");
+    time("trace-digest-complete", "debug");
     for (let i = startIndex; i <= endIndex; i++) {
-      console.time("trace-digest");
+      time("trace-digest", "debug");
       const accountsSlice: Account[] = [];
       const sliceStartIndex = i * ACCOUNT_BATCH_SIZE;
 
@@ -279,8 +280,8 @@ export class StakingLedgerToVotingLedgerTracer {
       recorders.forEach((recorder) => recorder.clear());
 
       onTraceComplete?.(i, trace, publicOutput);
-      console.timeEnd("trace-digest");
+      timeEnd("trace-digest", "debug");
     }
-    console.timeEnd("trace-digest-complete");
+    timeEnd("trace-digest-complete", "debug");
   }
 }

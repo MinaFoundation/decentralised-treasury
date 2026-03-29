@@ -26,7 +26,7 @@ export function getActionHash(actionFields: Field[]) {
 
 export function appendActionToHashList(
   initialActionsHash: Field,
-  actionFields: Field[]
+  actionFields: Field[],
 ) {
   const actionHash = getActionHash(actionFields);
   return hashWithPrefix(sequenceEventsPrefix, [

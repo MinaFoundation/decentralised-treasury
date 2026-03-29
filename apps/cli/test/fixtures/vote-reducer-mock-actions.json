@@ -1,0 +1,29 @@
+{
+  "proposalPublicKey": "B62qkbdUqpvd5FD5nEJD1oDKGkBkGpoX2zo3ZuLNjWGkbzpd1jMUpBf",
+  "proposalTokenId": "1",
+  "actionStateHistoryTarget": {
+    "actionStateOne": "22878682993701062381825437886811420553477764062170719978807411221817395816456",
+    "actionStateTwo": "23792396200539850649114060981309548351296042851256504783780345803645998444614",
+    "actionStateThree": "120428552594839559767638020163551315448670054828476732699459965362228627205",
+    "actionStateFour": "25079927036070901246064867767436987657692091363973573142121686150614948079097",
+    "actionStateFive": "25079927036070901246064867767436987657692091363973573142121686150614948079097"
+  },
+  "voteActions": [
+    {
+      "vote": "1",
+      "publicKey": "B62qjxBBGy3JZ7ByRcJaWFFS9R36UE5V3mSy9TeDoWHkzMKNZb2jsxL"
+    },
+    {
+      "vote": "2",
+      "publicKey": "B62qqbnVctW6ntsscYC6AhFxb3qRyEnRCrRN1Xoj7kBFSSf3tefRDy5"
+    },
+    {
+      "vote": "3",
+      "publicKey": "B62qjQJPbzt5VwjA5eMqR3Ynm9JC5dBuHTBPrSvkgVSQ8RWtUhJZHK9"
+    },
+    {
+      "vote": "0",
+      "publicKey": "B62qiTKpEPjGTSHZrtM8uXiKgn8So916pLmNJKDhKeyBQL9TDb3nvBG"
+    }
+  ]
+}

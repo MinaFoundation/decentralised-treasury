@@ -4,5 +4,6 @@ export interface MerkleTreeStorage {
   namespace: string;
   getNode: (level: number, index: bigint) => Promise<Field | undefined>;
   setNode: (level: number, index: bigint, value: Field) => Promise<void>;
+  clear: () => Promise<void>;
   close: () => Promise<void>;
 }

@@ -44,6 +44,7 @@ build o1js using `npm run build`.
 | online_whale_account_1  | 0.000000000        | B62qkU7JVGqvYgsYyEJKo7dKjoMtaPxVHmCh9Q5N135MD1a4mQYgQUG | EKERqTxjB7N9x2FzrQyaEJf8XAgm6ShsW4viGdgt6KDjFSfdeHAE |
 | offline_whale_account_0 | 11550000.000000000 | B62qmhjWGhqLzA8aei9DTitL7S2kYNPtN7LWXBK9hsGk8o8F9zMXw6t | -                                                    |
 | online_whale_account_0  | 1100.000000000     | B62qikT41XWwfMuoRC1SBvQxBfvHPnYfY7Hm9TUWNQXMLka5eP4xowB | EKFGQcsWmQR9Jj1W2XoGNQzF43T1PNqRhaQrm1vDS948GVbyemrj |
+| account 0               | 1550.000000000     | B62qqkYCLaFDmn5ptdPVqQRAY4kdkyxRmAqeh3nn9vJzbF5gGjsSgDZ | EKDpoov2DNs2aBLmm2yZNwLKHDvG42EdwPGaeCTrhm1kaFHc5f1g |
 | additional accounts     | ...                | ...                                                     | ...                                                  |
 
 > online_whale_account_0 and online_whale_account_1 hold combined voting power of 23101100000000000 nanoMINA out of total currency of 24782600000000000 nanoMINA, which constitutes ~93% of the voting power

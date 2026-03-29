@@ -1,6 +1,5 @@
-import { Bool, Reducer } from "o1js";
+import { Bool, Field, Reducer, TokenId } from "o1js";
 import {
-  ActionStateHistory,
   ActionStateHistoryTarget,
   VOTE_ACTION_BATCH_SIZE,
   VoteAction,
@@ -17,6 +16,8 @@ import { VoteReducerRunBatchTraceStorage } from "../../storage/vote-reducer-run-
 import { KeyValueBatchStorage } from "../../storage/batch-key-value-storage.js";
 import { InMemoryVotingLedger } from "../../ledgers/voting-ledger/in-memory-voting-ledger.js";
 import { InMemoryNullifierLedger } from "../../ledgers/nullifier-ledger/in-memory-nullifier-ledger.js";
+import { time, timeEnd } from "../../logging/logger.js";
+import type { VoteReducerActionStateHistoryTargetSnapshot } from "../../services/vote-reducer-types.js";
 
 export interface VoteReducerRunBatchTraceJSON {
   publicInput: ReturnType<typeof VoteReducerPublicInput.toJSON>;
@@ -177,6 +178,12 @@ export class VoteReducerTracer {
     public nullifierLedger: InMemoryNullifierLedger,
     public traceStorage: VoteReducerRunBatchTraceStorage,
     public batchWriter: KeyValueBatchStorage,
+    public options: {
+      archiveNodeUrl?: string;
+      proposalPublicKey?: string;
+      proposalTokenId?: string;
+      actionStateHistoryTarget?: VoteReducerActionStateHistoryTargetSnapshot;
+    } = {},
   ) {}
 
   public async close(): Promise<void> {
@@ -205,17 +212,18 @@ export class VoteReducerTracer {
       nullifierLedger: recordingNullifierLedger,
     });
 
+    const actionStateHistoryTarget = await this.resolveActionStateHistoryTarget();
     let currentPublicInput: VoteReducerPublicInput = {
       fromActionsHash: Reducer.initialActionState,
       votingLedgerRoot: await this.votingLedger.getRoot(),
       fromNullifierRoot: await this.nullifierLedger.getRoot(),
-      actionStateHistoryTarget: ActionStateHistoryTarget.empty(),
+      actionStateHistoryTarget,
     };
     let publicOutput: VoteReducerPublicOutput | undefined;
 
-    console.time("trace-runBatch-complete");
+    time("trace-runBatch-complete", "debug");
     for (let i = 0; i <= Infinity; i++) {
-      console.time("trace-runBatch");
+      time("trace-runBatch", "debug");
       const batchStart = i * VOTE_ACTION_BATCH_SIZE;
       const batch = voteActions.slice(
         batchStart,
@@ -259,7 +267,7 @@ export class VoteReducerTracer {
         fromActionsHash: publicOutput.toActionsHash,
         votingLedgerRoot: currentPublicInput.votingLedgerRoot,
         fromNullifierRoot: publicOutput.toNullifierRoot,
-        actionStateHistoryTarget: ActionStateHistoryTarget.empty(),
+        actionStateHistoryTarget,
       };
 
       await this.traceStorage.setTrace(i, trace);
@@ -279,8 +287,109 @@ export class VoteReducerTracer {
 
       onTraceComplete?.(i, trace);
 
-      console.timeEnd("trace-runBatch");
+      timeEnd("trace-runBatch", "debug");
     }
-    console.timeEnd("trace-runBatch-complete");
+    timeEnd("trace-runBatch-complete", "debug");
+  }
+
+  private async resolveActionStateHistoryTarget() {
+    if (this.options.actionStateHistoryTarget) {
+      return VoteReducerTracer.buildActionStateHistoryTargetFromSnapshot(
+        this.options.actionStateHistoryTarget,
+      );
+    }
+    return await this.fetchActionStateHistoryTargetFromArchive();
+  }
+
+  private async fetchActionStateHistoryTargetFromArchive(): Promise<ActionStateHistoryTarget> {
+    const { archiveNodeUrl, proposalPublicKey, proposalTokenId } = this.options;
+    if (!archiveNodeUrl || !proposalPublicKey || !proposalTokenId) {
+      throw new Error(
+        "VoteReducerTracer requires archiveNodeUrl, proposalPublicKey, and proposalTokenId to fetch action states from the archive node",
+      );
+    }
+
+    const archiveTokenId = normalizeArchiveTokenId(proposalTokenId);
+    const response = await fetch(archiveNodeUrl, {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({
+        operationName: null,
+        query: `{
+  actions(input: { address: "${proposalPublicKey}", tokenId: "${archiveTokenId}" }) {
+    actionState {
+      actionStateOne
+      actionStateTwo
+      actionStateThree
+      actionStateFour
+      actionStateFive
+    }
+  }
+}`,
+        variables: {},
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error(
+        `Failed to fetch action states from archive node: ${response.status} ${response.statusText}`,
+      );
+    }
+
+    const payload = (await response.json()) as {
+      data?: {
+        actions?: {
+          actionState?: {
+            actionStateOne?: string | null;
+            actionStateTwo?: string | null;
+            actionStateThree?: string | null;
+            actionStateFour?: string | null;
+            actionStateFive?: string | null;
+          } | null;
+        }[];
+      };
+      errors?: { message?: string }[];
+    };
+
+    if (payload.errors?.length) {
+      throw new Error(
+        payload.errors
+          .map((error) => error.message)
+          .filter((message): message is string => Boolean(message))
+          .join("; ") || "Failed to fetch action states from archive node",
+      );
+    }
+
+    const latestActionState = payload.data?.actions?.at(-1)?.actionState;
+    const fallback = Reducer.initialActionState.toString();
+    return new ActionStateHistoryTarget({
+      actionStateOne: Field(latestActionState?.actionStateOne ?? fallback),
+      actionStateTwo: Field(latestActionState?.actionStateTwo ?? fallback),
+      actionStateThree: Field(latestActionState?.actionStateThree ?? fallback),
+      actionStateFour: Field(latestActionState?.actionStateFour ?? fallback),
+      actionStateFive: Field(latestActionState?.actionStateFive ?? fallback),
+    });
+  }
+
+  private static buildActionStateHistoryTargetFromSnapshot(
+    actionStateHistoryTarget: VoteReducerActionStateHistoryTargetSnapshot,
+  ) {
+    return new ActionStateHistoryTarget({
+      actionStateOne: Field(actionStateHistoryTarget.actionStateOne),
+      actionStateTwo: Field(actionStateHistoryTarget.actionStateTwo),
+      actionStateThree: Field(actionStateHistoryTarget.actionStateThree),
+      actionStateFour: Field(actionStateHistoryTarget.actionStateFour),
+      actionStateFive: Field(actionStateHistoryTarget.actionStateFive),
+    });
+  }
+}
+
+function normalizeArchiveTokenId(tokenId: string): string {
+  try {
+    return TokenId.toBase58(Field(tokenId));
+  } catch {
+    return tokenId;
   }
 }

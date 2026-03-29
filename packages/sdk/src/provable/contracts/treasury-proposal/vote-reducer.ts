@@ -10,6 +10,7 @@ import {
   UInt64,
   ZkProgram,
 } from "o1js";
+import { provableLog } from "../../../logging/logger.js";
 import { appendActionToHashList } from "../../hashing-helpers.js";
 import { hashWithPrefix } from "../../hashing-helpers.js";
 import { ContextProvider } from "../../../utils/context-provider.js";
@@ -105,7 +106,7 @@ export class VoteAction extends Struct({
     try {
       voteAction = super.fromJSON(json as any);
     } catch (error) {
-      Provable.log("error deserializing vote action", error);
+      provableLog("error deserializing vote action", error);
       voteAction = VoteAction.empty();
     }
     return voteAction;

@@ -44,3 +44,4 @@ packages/sdk/cache
 packages/sdk/daemon.json
 packages/sdk/.data
 packages/sdk/thresholds-chart.svg
+.cursor/

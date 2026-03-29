@@ -1,4 +1,5 @@
 import { Queue, QueueEvents, RedisOptions } from "bullmq";
+import { logger } from "../logging/logger.js";
 
 export interface Task<Input, Output> {
   serializers: {
@@ -41,6 +42,8 @@ export class TaskQueue<Tasks extends Record<string, Task<unknown, unknown>>> {
     this.events = new QueueEvents(queueName, {
       connection,
     });
+    // Multiple jobs can be awaited concurrently; avoid listener limit warnings.
+    this.events.setMaxListeners(0);
   }
 
   public async obliterate() {
@@ -108,7 +111,7 @@ export class TaskQueue<Tasks extends Record<string, Task<unknown, unknown>>> {
           cleanup();
           resolve(output);
         } catch (e) {
-          console.error("error deserializing output", e);
+          logger.error("error deserializing output", e);
           cleanup();
           reject(e);
         }

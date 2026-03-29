@@ -5,5 +5,6 @@ import { BatchStorage } from "./batch-storage.js";
 export interface VoteReducerProofStorage
   extends MergeProofStorage<SideLoadedVoteReducerProof>,
     BatchStorage {
+  clear(): Promise<void>;
   close(): Promise<void>;
 }

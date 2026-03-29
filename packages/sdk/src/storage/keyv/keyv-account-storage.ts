@@ -10,8 +10,12 @@ export class KeyvAccountStorage
   extends KeyvKeyValueStorage
   implements AccountStorage
 {
-  constructor(keyv: Keyv, namespace: string, counter: KeyvNamespaceCounter) {
-    super(keyv, `${namespace}-accounts`, counter);
+  static namespaceFrom(lifecycleId: string): string {
+    return `staking-ledger-${lifecycleId}-accounts`;
+  }
+
+  constructor(keyv: Keyv, lifecycleId: string, counter: KeyvNamespaceCounter) {
+    super(keyv, KeyvAccountStorage.namespaceFrom(lifecycleId), counter);
   }
 
   async getAllAccounts(): Promise<Account[]> {

@@ -16,7 +16,8 @@ it("should create a prefixed merkle tree", async () => {
   keyv.disconnect = async () => {};
   const merkleTreeStorage = new KeyvMerkleTreeStorage(
     keyv,
-    "test-namespace",
+    "test",
+    "test",
     new KeyvSqliteCounter(store),
   );
 

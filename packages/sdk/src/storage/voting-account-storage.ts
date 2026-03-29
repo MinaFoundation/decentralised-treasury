@@ -8,5 +8,6 @@ export interface VotingAccountStorage {
     publicKey: string,
     votingAccount: VotingAccount,
   ): Promise<void>;
+  clear(): Promise<void>;
   close(): Promise<void>;
 }

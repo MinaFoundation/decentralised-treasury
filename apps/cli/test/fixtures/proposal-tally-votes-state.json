@@ -1,0 +1,51 @@
+{
+  "treasuryOwnerPublicKey": "B62qqkYCLaFDmn5ptdPVqQRAY4kdkyxRmAqeh3nn9vJzbF5gGjsSgDZ",
+  "proposalPublicKey": "B62qqp56S6QYT2dG3GZ2rWcxmFdDJuv21frLCUMo3zaqLzf4oXhLSjd",
+  "recipientPublicKey": "B62qmkLy8hL2DV4iHyHmpGp4w8qx9LK3ZgYQUZjFAGXibzE6kuCB36e",
+  "proposalLifecycleId": "0",
+  "proofLifecycleId": "0",
+  "lifecyclePeriodDuration": 240,
+  "expectedVoteActions": 5,
+  "fetchedVoteActionsPath": "/Users/maht0rz/Projects/mina-foundation/decentralized-treasury/apps/cli/test/fixtures/proposal-tally-votes-actions.json",
+  "voteReducerMergedProofPath": "/Users/maht0rz/Projects/mina-foundation/decentralized-treasury/apps/cli/test/fixtures/proposal-tally-votes-vote-reducer-merge.json",
+  "stakingLedgerToVotingLedgerProofPath": "/Users/maht0rz/Projects/mina-foundation/decentralized-treasury/apps/cli/artifacts/exhausted-proof.json",
+  "voteActionsFixturePath": "/Users/maht0rz/Projects/mina-foundation/decentralized-treasury/apps/cli/test/fixtures/vote-reducer-lightnet-actions.json",
+  "sentVoteActions": [
+    {
+      "index": 1,
+      "vote": "yay",
+      "voterPublicKey": "B62qikT41XWwfMuoRC1SBvQxBfvHPnYfY7Hm9TUWNQXMLka5eP4xowB",
+      "voteTxHash": "5JtaTfLXDhvPh9cQxeq9wezXuvD38bXWkVXngpA5erj9qwRSMhhb"
+    },
+    {
+      "index": 2,
+      "vote": "yay",
+      "voterPublicKey": "B62qq1miZzh8QMumJ2dhJSvPxdeShGQ2G2cH4YXwxNLpPSvKdRVTb3q",
+      "voteTxHash": "5JuL6a8DyvXauf3JvCRpurAtaXR5pnKDee5wiKnbHuVcNdnfZNQV"
+    },
+    {
+      "index": 3,
+      "vote": "yay",
+      "voterPublicKey": "B62qq6f3enRpmGsWBaJMstwQjQiRdAnyAZ6CbKrcJFgFidRnWZyJkje",
+      "voteTxHash": "5Juy52PNzuJk7aW9MFc8BhWUnnX8nMRh9hjrAqzQDShLfHbw2LvR"
+    },
+    {
+      "index": 4,
+      "vote": "yay",
+      "voterPublicKey": "B62qkBw74e5D3yZLAFTCK3yktG4TZtq4wSfjPrxKr9Psxu29oEZWpvw",
+      "voteTxHash": "5Ju5SgCbXzjTQJXwdWsWb7NaR9YzW3HVAdwczUyGHEE2W1pWZfSR"
+    },
+    {
+      "index": 5,
+      "vote": "yay",
+      "voterPublicKey": "B62qrDMuC4Vu3x6Kcr6YpBYsFsrshpyyH6MWX4cs5UNN2b9syT3rHNX",
+      "voteTxHash": "5JtX6bPTb9kNfmqgpqPPRYBSoDQAkMp6o8QoQpNEDTx2L3kcyqu6"
+    }
+  ],
+  "tallyTxHash": "5JtsWdo9fhBaAMRqSHP9xuuJcfykVsaL5U6KapVgH82CcDbuR9um",
+  "executeTxHash": "5Jv6mWBVtu29bKtQVCrXzdCvxSzYA9HKgouhUptCSyFL2Twiy1ar",
+  "amountToPayOut": "1100000000",
+  "recipientBalanceBeforeExecute": "0",
+  "recipientBalanceAfterExecute": "1100000000",
+  "recipientBalanceDelta": "1100000000"
+}

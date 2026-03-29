@@ -6,9 +6,10 @@ import {
   StakingLedgerToVotingLedgerProgramOutput,
 } from "../../provable/staking-ledger-to-voting-ledger.js";
 import { Task } from "../task-queue.js";
-import { Cache, JsonProof, Proof, Provable } from "o1js";
+import { Cache, JsonProof, Proof } from "o1js";
 import { ReplayableStakingLedger } from "../../ledgers/staking-ledger/replayable-staking-ledger.js";
 import { ReplayableVotingLedger } from "../../ledgers/voting-ledger/replayable-voting-ledger.js";
+import { logger, provableLog, time, timeEnd } from "../../logging/logger.js";
 
 export interface StakingLedgerToVotingLedgerMergeTaskInput {
   proofs: {
@@ -73,7 +74,7 @@ export const StakingLedgerToVotingLedgerMergeTask: Task<
   };
 
   public static async prepare() {
-    console.log("compiling staking ledger to voting ledger", {
+    logger.info("compiling staking ledger to voting ledger", {
       proofsEnabled,
     });
 
@@ -82,20 +83,20 @@ export const StakingLedgerToVotingLedgerMergeTask: Task<
       votingLedger: new ReplayableVotingLedger({}, {}),
     });
 
-    console.time("compile");
+    time("compile", "info");
     await StakingLedgerToVotingLedger.compile({
       proofsEnabled,
       cache: Cache.FileSystem(`${process.cwd()}/cache`),
     });
-    console.timeEnd("compile");
+    timeEnd("compile", "info");
   }
 
   public static async run(input: StakingLedgerToVotingLedgerMergeTaskInput) {
     const {
       proofs: { 1: proof1, 2: proof2 },
     } = input;
-    console.log("running staking ledger to voting ledger merge");
-    Provable.log(
+    logger.info("running staking ledger to voting ledger merge");
+    provableLog(
       "merging proofs in task",
       proof1?.publicInput,
       proof1?.publicOutput,
@@ -103,13 +104,13 @@ export const StakingLedgerToVotingLedgerMergeTask: Task<
       proof2?.publicOutput
     );
 
-    console.time("merge");
+    time("merge", "info");
     const result = await StakingLedgerToVotingLedger.merge(
       proof1.publicInput,
       proof1,
       proof2
     );
-    console.timeEnd("merge");
+    timeEnd("merge", "info");
 
     return {
       proof: SideLoadedStakingLedgerToVotingLedgerProof.fromProof(result.proof),

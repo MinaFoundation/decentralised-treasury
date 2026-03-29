@@ -5,11 +5,12 @@ import {
   VoteReducerPublicOutput,
 } from "../../provable/contracts/treasury-proposal/vote-reducer.js";
 import { Task } from "../task-queue.js";
-import { Cache, JsonProof, Proof, Provable } from "o1js";
+import { Cache, JsonProof, Proof } from "o1js";
 import { VoteReducerRunBatchTrace } from "../tracing/vote-reducer-tracer.js";
 import { readdirSync } from "node:fs";
 import { ReplayableVotingLedger } from "../../ledgers/voting-ledger/replayable-voting-ledger.js";
 import { ReplayableNullifierLedger } from "../../ledgers/nullifier-ledger/replayable-nullifier-ledger.js";
+import { logger, provableLog, time, timeEnd } from "../../logging/logger.js";
 
 export interface VoteReducerRunBatchTaskInput {
   trace: VoteReducerRunBatchTrace;
@@ -30,7 +31,7 @@ export const VoteReducerRunBatchTask: Task<
   public static taskName = "vote-reducer-run-batch";
 
   public static async prepare() {
-    console.log("compiling vote reducer", { proofsEnabled });
+    logger.info("compiling vote reducer", { proofsEnabled });
 
     voteReducerContext.set({
       votingLedger: new ReplayableVotingLedger({}, {}),
@@ -38,14 +39,14 @@ export const VoteReducerRunBatchTask: Task<
     });
 
     const files = readdirSync(`${process.cwd()}/cache`);
-    console.log("cache files", `${process.cwd()}/cache`, files);
+    logger.info("cache files", `${process.cwd()}/cache`, files);
 
-    console.time("compile");
+    time("compile", "info");
     await VoteReducer.compile({
       proofsEnabled,
       cache: Cache.FileSystem(`${process.cwd()}/cache`),
     });
-    console.timeEnd("compile");
+    timeEnd("compile", "info");
   }
 
   public static serializers = {
@@ -99,7 +100,7 @@ export const VoteReducerRunBatchTask: Task<
       traceId,
     } = input;
 
-    Provable.log("running vote reducer task with input", input);
+    provableLog("running vote reducer task with input", input);
 
     const votingLedger = new ReplayableVotingLedger(
       votingLedgerWitnesses,
@@ -115,9 +116,9 @@ export const VoteReducerRunBatchTask: Task<
       nullifierLedger,
     });
 
-    console.time("reduceBatch");
+    time("reduceBatch", "info");
     const result = await VoteReducer.reduceBatch(publicInput, voteActions);
-    console.timeEnd("reduceBatch");
+    timeEnd("reduceBatch", "info");
 
     return {
       proof: result.proof,

@@ -6,12 +6,30 @@ import {
 } from "./keyv-key-value-storage.js";
 import { Keyv } from "keyv";
 
+export type MerkleTreeNamespaceModifier =
+  | "staking-ledger"
+  | "voting-ledger"
+  | "nullifier-ledger"
+  | "test";
+
 export class KeyvMerkleTreeStorage
   extends KeyvKeyValueStorage
   implements MerkleTreeStorage
 {
-  constructor(keyv: Keyv, namespace: string, counter: KeyvNamespaceCounter) {
-    super(keyv, `${namespace}-merkle-tree`, counter);
+  static namespaceFrom(
+    lifecycleId: string,
+    modifier: MerkleTreeNamespaceModifier,
+  ): string {
+    return `${modifier}-${lifecycleId}-merkle-tree`;
+  }
+
+  constructor(
+    keyv: Keyv,
+    lifecycleId: string,
+    modifier: MerkleTreeNamespaceModifier,
+    counter: KeyvNamespaceCounter,
+  ) {
+    super(keyv, KeyvMerkleTreeStorage.namespaceFrom(lifecycleId, modifier), counter);
   }
 
   async getNode(level: number, index: bigint): Promise<Field | undefined> {

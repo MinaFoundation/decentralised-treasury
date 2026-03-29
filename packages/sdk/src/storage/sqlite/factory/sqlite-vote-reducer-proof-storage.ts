@@ -7,8 +7,8 @@ export function createSqliteVoteReducerProofStorage(
   lifecycleId: string,
   sqliteStore: KeyvSqlite,
 ): KeyvVoteReducerProofStorage {
-  const createKeyv = (namespace = "") => {
-    const keyv = new Keyv({ store: sqliteStore, namespace });
+  const createKeyv = () => {
+    const keyv = new Keyv({ store: sqliteStore });
     keyv.disconnect = async () => {};
     return keyv;
   };

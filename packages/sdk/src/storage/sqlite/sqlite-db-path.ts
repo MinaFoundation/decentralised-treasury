@@ -1,7 +1,9 @@
 import { join } from "node:path";
 
 export function getSqliteDbPath(lifecycleId: string): string {
-  return join(process.cwd(), ".data", "sqlite", `${lifecycleId}.sqlite`);
+  const sqliteDataDirectory =
+    process.env.SQLITE_DATA_DIRECTORY ?? join(process.cwd(), ".data", "sqlite");
+  return join(sqliteDataDirectory, `${lifecycleId}.sqlite`);
 }
 
 export function getSqliteInMemoryDbPath(lifecycleId: string): string {

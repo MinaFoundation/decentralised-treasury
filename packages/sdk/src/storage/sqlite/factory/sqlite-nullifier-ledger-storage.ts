@@ -9,26 +9,20 @@ export function createSqliteNullifierLedgerStorage(
   lifecycleId: string,
   sqliteStore: KeyvSqlite,
 ): NullifierLedgerStorage<KeyvVoteNullifierStorage, KeyvMerkleTreeStorage> {
-  const namespace = `nullifier-ledger-${lifecycleId}`;
   const counter = new KeyvSqliteCounter(sqliteStore);
-  const nullifierKeyv = new Keyv({
-    store: sqliteStore,
-    namespace: `${namespace}-nullifiers`,
-  });
+  const nullifierKeyv = new Keyv({ store: sqliteStore });
   nullifierKeyv.disconnect = async () => {};
-  const merkleTreeKeyv = new Keyv({
-    store: sqliteStore,
-    namespace: `${namespace}-merkle-tree`,
-  });
+  const merkleTreeKeyv = new Keyv({ store: sqliteStore });
   merkleTreeKeyv.disconnect = async () => {};
   const nullifierStorage = new KeyvVoteNullifierStorage(
     nullifierKeyv,
-    `${namespace}-nullifiers`,
+    lifecycleId,
     counter,
   );
   const merkleTreeStorage = new KeyvMerkleTreeStorage(
     merkleTreeKeyv,
-    `${namespace}-merkle-tree`,
+    lifecycleId,
+    "nullifier-ledger",
     counter,
   );
 

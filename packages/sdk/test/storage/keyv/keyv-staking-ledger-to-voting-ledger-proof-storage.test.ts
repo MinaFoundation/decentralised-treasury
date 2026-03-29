@@ -20,7 +20,7 @@ it("should store a proof", async () => {
   };
   const proofStorage = new KeyvStakingLedgerToVotingLedgerProofStorage(
     createKeyvClient,
-    "test-namespace",
+    "test",
     new KeyvSqliteCounter(store),
   );
   const batchWriter = new KeyvKeyValueBatchStorage(createKeyvClient());

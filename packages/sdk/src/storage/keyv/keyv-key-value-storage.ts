@@ -41,6 +41,9 @@ export class KeyvKeyValueStorage implements KeyValueStorage {
   }
 
   async clear(): Promise<void> {
+    // Keyv adapters can share a single underlying store instance; re-apply this
+    // storage namespace before clear() so only this namespace is removed.
+    this.keyv.namespace = this.namespace;
     await this.keyv.clear();
   }
 

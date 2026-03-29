@@ -1,14 +1,17 @@
 import {
   SideLoadedStakingLedgerToVotingLedgerProof,
+  StakingLedgerToVotingLedger,
   StakingLedgerToVotingLedgerProgramInput,
   StakingLedgerToVotingLedgerProgramOutput,
+  stakingLedgerToVotingLedgerContext,
 } from "../../provable/staking-ledger-to-voting-ledger.js";
 import { Proof, Provable } from "o1js";
-import { StakingLedgerToVotingLedgerDigestTraceBatchStorage } from "../../storage/staking-ledger-to-voting-ledger-digest-trace-batch-storage.js";
+import { StakingLedgerToVotingLedgerDigestTraceStorage } from "../../storage/staking-ledger-to-voting-ledger-digest-trace-storage.js";
 import { StakingLedgerToVotingLedgerDigestTask } from "../tasks/staking-ledger-to-voting-ledger-digest-task.js";
 import { TaskQueue } from "../task-queue.js";
 import { StakingLedgerToVotingLedgerProofStorage } from "../../storage/staking-ledger-to-voting-ledger-proof-storage.js";
 import { StakingLedger } from "../../ledgers/staking-ledger/staking-ledger.js";
+import { ReplayableVotingLedger } from "../../ledgers/voting-ledger/replayable-voting-ledger.js";
 import { StakingLedgerToVotingLedgerMergeTask } from "../tasks/staking-ledger-to-voting-ledger-merge-task.js";
 import { MergeProofOrchestrator } from "./merge-proof-orchestrator.js";
 import { KeyValueBatchStorage } from "../../storage/batch-key-value-storage.js";
@@ -21,9 +24,45 @@ export type StakingLedgerToVotingLedgerTaskQueue = TaskQueue<{
 export const WORKER_COUNT = 1;
 
 export class StakingLedgerToVotingLedgerProver extends MergeProofOrchestrator<SideLoadedStakingLedgerToVotingLedgerProof> {
+  public static async proveExhaust(params: {
+    stakingLedger: StakingLedger;
+    proofStorage: StakingLedgerToVotingLedgerProofStorage;
+  }): Promise<SideLoadedStakingLedgerToVotingLedgerProof> {
+    const { stakingLedger, proofStorage } = params;
+    const mergeCount = await proofStorage.mergeCount();
+    if (mergeCount <= 0) {
+      throw new Error(
+        "No merged proof found. Run proveMerge() before proveExhaust().",
+      );
+    }
+
+    const mergedProofId = `merge-${(mergeCount - 1).toString()}`;
+    const mergedProof = await proofStorage.getMergeProof(mergedProofId);
+    if (!mergedProof) {
+      throw new Error(`Missing merged proof with id ${mergedProofId}`);
+    }
+
+    stakingLedgerToVotingLedgerContext.set({
+      stakingLedger,
+      votingLedger: new ReplayableVotingLedger({}, {}),
+    });
+
+    // Exhaust may execute in a fresh process (e.g. standalone CLI command),
+    // so compile with proofs enabled to ensure a prover exists.
+    await StakingLedgerToVotingLedger.compile({ proofsEnabled: true });
+    const exhaustedProof = await StakingLedgerToVotingLedger.exhaust(
+      mergedProof.publicInput,
+      mergedProof,
+    );
+
+    return SideLoadedStakingLedgerToVotingLedgerProof.fromProof(
+      exhaustedProof.proof,
+    );
+  }
+
   constructor(
     public stakingLedger: StakingLedger,
-    public traceStorage: StakingLedgerToVotingLedgerDigestTraceBatchStorage,
+    public traceStorage: StakingLedgerToVotingLedgerDigestTraceStorage,
     public proofStorage: StakingLedgerToVotingLedgerProofStorage,
     public batchWriter: KeyValueBatchStorage,
     public taskQueue: StakingLedgerToVotingLedgerTaskQueue,
@@ -133,5 +172,12 @@ export class StakingLedgerToVotingLedgerProver extends MergeProofOrchestrator<Si
     }
 
     return { proof1: undefined, proof2: undefined };
+  }
+
+  public async exhaust(): Promise<SideLoadedStakingLedgerToVotingLedgerProof> {
+    return await StakingLedgerToVotingLedgerProver.proveExhaust({
+      stakingLedger: this.stakingLedger,
+      proofStorage: this.proofStorage,
+    });
   }
 }

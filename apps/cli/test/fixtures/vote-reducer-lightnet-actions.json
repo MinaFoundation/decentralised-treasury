@@ -1,0 +1,33 @@
+{
+  "proposalPublicKey": "B62qjkgE5S1eKtFYWEZJR9h3TCU7Dcj89aE6GrcYtojjUhMLWEmxUse",
+  "proposalTokenId": "xXgSXB7tMgaA8Ru6g6kQTcLoXhitZU2PyGKpxG37X6iNvwAsY6",
+  "actionStateHistoryTarget": {
+    "actionStateOne": "4816566969481579125289044040417736763276913117952419615283466425497565944616",
+    "actionStateTwo": "13534633563925313593911415807548397076980146720867377490213877440990260638656",
+    "actionStateThree": "28710116156466298685794778262117599154668819834190876085509594712822921208795",
+    "actionStateFour": "5934360532001333263387874321644556467196339714705332447592349246923857564323",
+    "actionStateFive": "19549271206964491255576154198143187717279344037743838043640410919834175978248"
+  },
+  "voteActions": [
+    {
+      "vote": "1",
+      "publicKey": "B62qikT41XWwfMuoRC1SBvQxBfvHPnYfY7Hm9TUWNQXMLka5eP4xowB"
+    },
+    {
+      "vote": "1",
+      "publicKey": "B62qq1miZzh8QMumJ2dhJSvPxdeShGQ2G2cH4YXwxNLpPSvKdRVTb3q"
+    },
+    {
+      "vote": "1",
+      "publicKey": "B62qq6f3enRpmGsWBaJMstwQjQiRdAnyAZ6CbKrcJFgFidRnWZyJkje"
+    },
+    {
+      "vote": "1",
+      "publicKey": "B62qkBw74e5D3yZLAFTCK3yktG4TZtq4wSfjPrxKr9Psxu29oEZWpvw"
+    },
+    {
+      "vote": "1",
+      "publicKey": "B62qrDMuC4Vu3x6Kcr6YpBYsFsrshpyyH6MWX4cs5UNN2b9syT3rHNX"
+    }
+  ]
+}

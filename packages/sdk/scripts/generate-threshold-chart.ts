@@ -1,7 +1,7 @@
 /// <reference types="node" />
 import fs from "node:fs";
 import path from "node:path";
-import { PrivateKey, UInt64 } from "o1js";
+import { PrivateKey, UInt128 } from "o1js";
 import { TreasuryProposalSmartContract } from "../src/provable/contracts/treasury-proposal/treasury-proposal.js";
 import { BASIS_POINTS } from "../src/provable/contracts/treasury-constants.js";
 
@@ -110,7 +110,7 @@ function main() {
     const config = parseArgs();
     const proposalPublicKey = PrivateKey.random().toPublicKey();
     const proposal = new TreasuryProposalSmartContract(proposalPublicKey);
-    const treasuryBalance = UInt64.from(10_000);
+    const treasuryBalance = UInt128.from(10_000);
 
     const dataPoints: Array<{
         ratioBp: number;
@@ -120,8 +120,8 @@ function main() {
 
     for (let i = 0; i <= config.steps; i += 1) {
         const proposalAmount = treasuryBalance
-            .mul(UInt64.from(i))
-            .div(UInt64.from(config.steps));
+            .mul(UInt128.from(i))
+            .div(UInt128.from(config.steps));
         const acceptanceCriteria = proposal.calculateAcceptanceCriteria(
             proposalAmount,
             treasuryBalance

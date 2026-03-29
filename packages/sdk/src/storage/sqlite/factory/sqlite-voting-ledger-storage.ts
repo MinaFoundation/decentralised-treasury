@@ -9,21 +9,21 @@ export function createSqliteVotingLedgerStorage(
   lifecycleId: string,
   sqliteStore: KeyvSqlite,
 ): VotingLedgerStorage<KeyvVotingAccountStorage, KeyvMerkleTreeStorage> {
-  const namespace = `voting-ledger-${lifecycleId}`;
   const counter = new KeyvSqliteCounter(sqliteStore);
-  const votingAccountKeyv = new Keyv({ store: sqliteStore, namespace });
+  const votingAccountKeyv = new Keyv({ store: sqliteStore });
   votingAccountKeyv.disconnect = async () => {};
-  const merkleTreeKeyv = new Keyv({ store: sqliteStore, namespace });
+  const merkleTreeKeyv = new Keyv({ store: sqliteStore });
   merkleTreeKeyv.disconnect = async () => {};
 
   const votingAccountStorage = new KeyvVotingAccountStorage(
     votingAccountKeyv,
-    namespace,
+    lifecycleId,
     counter,
   );
   const merkleTreeStorage = new KeyvMerkleTreeStorage(
     merkleTreeKeyv,
-    namespace,
+    lifecycleId,
+    "voting-ledger",
     counter,
   );
 

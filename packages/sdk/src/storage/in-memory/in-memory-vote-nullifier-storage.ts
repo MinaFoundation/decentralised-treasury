@@ -34,6 +34,10 @@ export class InMemoryVoteNullifierStorage
     this.nullifiers.set(publicKey, nullifier);
   }
 
+  public async clear(): Promise<void> {
+    this.nullifiers.clear();
+  }
+
   public collectEntries(): KeyValueEntry[] {
     return Array.from(this.nullifiers, ([publicKey, nullifier]) => ({
       key: `${this.parentStorage.namespace}:${publicKey}`,

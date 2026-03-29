@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { TreasuryProposalSmartContract } from "../../../../src/provable/contracts/treasury-proposal/treasury-proposal.js";
-import { PrivateKey, Provable, PublicKey, UInt64 } from "o1js";
+import { PrivateKey, Provable, UInt128 } from "o1js";
 
 test("calculate acceptance criteria", async (t) => {
   const testCases = [
@@ -67,8 +67,8 @@ test("calculate acceptance criteria", async (t) => {
   for (const testCase of testCases) {
     await t.test(testCase.label, () => {
       const acceptanceCriteria = proposal.calculateAcceptanceCriteria(
-        UInt64.from(testCase.proposalAmount),
-        UInt64.from(testCase.treasuryBalance)
+        UInt128.from(testCase.proposalAmount),
+        UInt128.from(testCase.treasuryBalance)
       );
       Provable.log(testCase.label, acceptanceCriteria);
       assert.equal(

@@ -69,6 +69,7 @@ import { KeyvSqlite } from "@keyv/sqlite";
 import { mkdirSync } from "node:fs";
 import { dirname } from "node:path";
 import { getSqliteDbPath } from "../../src/storage/sqlite/sqlite-db-path.js";
+import { SqliteTreasuryOwnerService } from "../../src/services/sqlite/sqlite-treasury-owner-service.js";
 
 const proofsEnabled = process.env.PROOFS_ENABLED === "true";
 
@@ -242,9 +243,7 @@ const treasuryProposal = new TreasuryProposalSmartContract(
   treasuryOwner.deriveTokenId(),
 );
 
-const treasuryProposalRecipientPrivateKey = PrivateKey.random();
-const treasuryProposalRecipientPublicKey =
-  treasuryProposalRecipientPrivateKey.toPublicKey();
+const treasuryProposalRecipientPublicKey = PrivateKey.random().toPublicKey();
 
 const dummyZkAppUri = "https://example.com";
 let treasuryOwnerBalanceSnapshot = UInt64.from(0);
@@ -670,31 +669,27 @@ it("should commit action state", async () => {
 });
 
 it("should tally votes", async () => {
+  const service = new SqliteTreasuryOwnerService();
   const treasuryOwnerAccount = await stakingLedger.getAccount(0n);
   const treasuryOwnerAccountWitness = await stakingLedger.getWitness(0n);
 
   Provable.log("vote reducer proof tally", voteReducerProof.publicOutput);
-
-  const tx = await Mina.transaction(testAccount, async () => {
-    await treasuryOwner.tallyVotes(
-      treasuryProposalPublicKey,
-      SideLoadedVoteReducerProof.fromProof(voteReducerProof),
-      // proof.proof,
+  const result = await service.tallyVotes({
+    minaNodeUrl: "http://127.0.0.1:8080/graphql",
+    senderPrivateKey: testAccount.key,
+    treasuryOwnerPublicKey,
+    proposalPublicKey: treasuryProposalPublicKey,
+    voteReducerProof: SideLoadedVoteReducerProof.fromProof(voteReducerProof),
+    stakingLedgerToVotingLedgerProof:
       SideLoadedStakingLedgerToVotingLedgerProof.fromProof(
         stakingLedgerToVotingLedgerProof,
       ),
-      // stakingLedgerToVotingLedgerProof,
-      treasuryOwnerAccount,
-      treasuryOwnerAccountWitness,
-    );
+    treasuryOwnerAccount,
+    treasuryOwnerAccountWitness,
+    fee: UInt64.from(1 * 10 ** 9),
+    nonce: Number(Local.getAccount(testAccount).nonce.toBigint()),
   });
-
-  tx.sign([testAccount.key]);
-  Provable.log("tally votes tx", tx.toPretty());
-
-  await tx.prove();
-  const pendingTx = await tx.send();
-  await pendingTx.wait();
+  assert(result.tallyTxHash, "expected tally transaction hash");
 
   await printNonce(treasuryOwnerPublicKey, "treasury owner tallied votes");
   await printNonce(treasuryProposalPublicKey, "treasury proposal tallied");
@@ -714,40 +709,29 @@ it("should execute a proposal", async () => {
     treasuryOwnerPublicKey,
   ).balance;
   const testAccountBalancePreExecution = Local.getAccount(testAccount).balance;
-  // const treasuryProposalRecipientBalancePreExecution = Local.getAccount(
-  //   treasuryProposalRecipientPublicKey
-  // ).balance;
-  Provable.log(
-    "testAccountBalancePreExecution",
-    testAccountBalancePreExecution,
-  );
+  Provable.log("testAccountBalancePreExecution", testAccountBalancePreExecution);
   Provable.log(
     "treasuryOwnerBalancePreExecution",
     treasuryOwnerBalancePreExecution,
   );
-  // Provable.log('treasuryProposalRecipientBalancePreExecution', treasuryProposalRecipientBalancePreExecution);
+
   Provable.log("executing proposal", {
     amountWithBond,
     recipient: treasuryProposalRecipientPublicKey,
   });
-  const tx = await Mina.transaction(testAccount, async () => {
-    // fund the recipient account creation
-    AccountUpdate.fundNewAccount(testAccount, 1);
 
-    await treasuryOwner.executeProposal(
-      treasuryProposalPublicKey,
-      treasuryProposalRecipientPublicKey,
-      amountWithBond,
-    );
+  const service = new SqliteTreasuryOwnerService();
+  const result = await service.executeProposal({
+    minaNodeUrl: "http://127.0.0.1:8080/graphql",
+    senderPrivateKey: testAccount.key,
+    treasuryOwnerPublicKey,
+    proposalPublicKey: treasuryProposalPublicKey,
+    recipientPublicKey: treasuryProposalRecipientPublicKey,
+    amountToPayOut: amountWithBond,
+    fee: UInt64.from(1 * 10 ** 9),
+    nonce: Number(Local.getAccount(testAccount).nonce.toBigint()),
   });
-
-  tx.sign([testAccount.key, treasuryProposalRecipientPrivateKey]);
-
-  Provable.log("executing proposal", tx.toPretty());
-
-  await tx.prove();
-  const pendingTx = await tx.send();
-  await pendingTx.wait();
+  assert(result.executeTxHash, "expected execute transaction hash");
 
   await printNonce(treasuryProposalPublicKey, "treasury proposal executed");
   await printNonce(treasuryOwnerPublicKey, "treasury owner executed proposal");

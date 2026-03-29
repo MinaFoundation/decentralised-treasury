@@ -13,8 +13,16 @@ export class KeyvVoteReducerRunBatchTraceStorage
 {
   public entries: Array<KeyValueEntry> = [];
 
-  constructor(keyv: Keyv, namespace: string, counter: KeyvNamespaceCounter) {
-    super(keyv, `${namespace}-vote-reducer-traces`, counter);
+  static namespaceFrom(lifecycleId: string): string {
+    return `vote-reducer-run-batch-trace-${lifecycleId}`;
+  }
+
+  constructor(keyv: Keyv, lifecycleId: string, counter: KeyvNamespaceCounter) {
+    super(
+      keyv,
+      KeyvVoteReducerRunBatchTraceStorage.namespaceFrom(lifecycleId),
+      counter,
+    );
   }
 
   async getTrace(index: number): Promise<VoteReducerRunBatchTrace | undefined> {
@@ -41,6 +49,11 @@ export class KeyvVoteReducerRunBatchTraceStorage
 
   clearEntries(): void {
     this.entries = [];
+  }
+
+  async clear(): Promise<void> {
+    this.entries = [];
+    await super.clear();
   }
 
   async getAllTraces(): Promise<VoteReducerRunBatchTrace[]> {

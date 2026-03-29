@@ -12,7 +12,8 @@ it("should create a key value merkle tree storage", async () => {
   keyv.disconnect = async () => {};
   const merkleTreeStorage = new KeyvMerkleTreeStorage(
     keyv,
-    "test-namespace",
+    "test",
+    "test",
     new KeyvSqliteCounter(store),
   );
 
@@ -30,7 +31,8 @@ it("should write multiple merkle nodes", async () => {
   keyv.disconnect = async () => {};
   const merkleTreeStorage = new KeyvMerkleTreeStorage(
     keyv,
-    "test-namespace",
+    "test",
+    "test",
     new KeyvSqliteCounter(store),
   );
 

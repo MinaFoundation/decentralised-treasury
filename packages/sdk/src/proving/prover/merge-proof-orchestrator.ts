@@ -1,7 +1,7 @@
-import { Provable } from "o1js";
 import { Task, TaskQueue } from "../task-queue.js";
 import { BatchStorage } from "../../storage/batch-storage.js";
 import { KeyValueBatchStorage } from "../../storage/batch-key-value-storage.js";
+import { provableLog } from "../../logging/logger.js";
 
 export interface MergeProofStorage<ProofType> extends BatchStorage {
   getProof(id: string): Promise<ProofType | undefined>;
@@ -51,11 +51,23 @@ export abstract class MergeProofOrchestrator<ProofType> {
     const baseProofCount = await this.proofStorage.count();
     const expectedMergeCount = baseProofCount - 1;
 
-    Provable.log("merge", {
+    provableLog("merge", {
       mergeCount,
       baseProofCount,
       expectedMergeCount,
     });
+
+    if (baseProofCount === 0) {
+      throw new Error("No base proofs found. Run proving before merge().");
+    }
+
+    if (expectedMergeCount === 0) {
+      const baseProof = await this.proofStorage.getProof("0");
+      if (!baseProof) {
+        throw new Error("Missing base proof with id 0");
+      }
+      return baseProof;
+    }
 
     let proofs: {
       index: string;
@@ -83,15 +95,15 @@ export abstract class MergeProofOrchestrator<ProofType> {
       }
 
       if (!proof1 || !proof2) {
-        Provable.log("no mergeable proofs found, skipping");
+        provableLog("no mergeable proofs found, skipping");
         return;
       } else {
-        Provable.log("found mergeable proofs", proof1?.index, proof2?.index);
+        provableLog("found mergeable proofs", proof1?.index, proof2?.index);
       }
 
       // await waitForWorkers();
       //   availableWorkers--;
-      Provable.log("adding merge task", proof1.index, proof2.index);
+      provableLog("adding merge task", proof1.index, proof2.index);
 
       const taskPromise = this.taskQueue
         .addTask(
@@ -107,7 +119,7 @@ export abstract class MergeProofOrchestrator<ProofType> {
                 //   availableWorkers++;
                 mergeCount = await this.proofStorage.mergeCount();
 
-                Provable.log("setting merge proof", mergeCount);
+                provableLog("setting merge proof", mergeCount);
 
                 proofs.push({
                   proof: typedResult.proof,
@@ -194,7 +206,7 @@ export abstract class MergeProofOrchestrator<ProofType> {
         }
         lastMergeCount = mergeCount;
 
-        Provable.log(
+        provableLog(
           "waiting for merging to finish",
           mergeCount,
           "/",
@@ -203,7 +215,7 @@ export abstract class MergeProofOrchestrator<ProofType> {
           isStalledCount,
         );
         if (isStalledCount > 5) {
-          Provable.log("merge is stalled", {
+          provableLog("merge is stalled", {
             jobCounts: await this.taskQueue.queue.getJobCounts(),
             pendingProofs: proofs.length,
             proofs: proofs.map((p) => ({

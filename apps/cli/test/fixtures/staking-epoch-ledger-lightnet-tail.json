@@ -1,0 +1,272 @@
+[
+  {
+    "pk": "B62qrZRZY1GuqR6gfGEN1reEvCTi1MXJ6HNUkHg9XohWMWUNJzwksdd",
+    "balance": "1550",
+    "delegate": "B62qrZRZY1GuqR6gfGEN1reEvCTi1MXJ6HNUkHg9XohWMWUNJzwksdd",
+    "token": "wSHV2S4qX9jFsLjQo8r1BsMLH2ZRKsZx6EJd1sbozGPieEC4Jf",
+    "receipt_chain_hash": "2mzbV7WevxLuchs2dAMY4vQBS6XttnCUF8Hvks4XNBQ5qiSGGBQe",
+    "voting_for": "3NK2tkzqqK5spR2sZ7tujjqPksL45M3UUrcA4WhCkeiPtnugyE2x",
+    "permissions": {
+      "edit_state": "signature",
+      "send": "signature",
+      "receive": "none",
+      "access": "none",
+      "set_delegate": "signature",
+      "set_permissions": "signature",
+      "set_verification_key": {
+        "auth": "signature",
+        "txn_version": "4"
+      },
+      "set_zkapp_uri": "signature",
+      "edit_action_state": "signature",
+      "set_token_symbol": "signature",
+      "increment_nonce": "signature",
+      "set_voting_for": "signature",
+      "set_timing": "signature"
+    },
+    "token_symbol": ""
+  },
+  {
+    "pk": "B62qrRpfNf81YPH8WHjWQTdM2wzzbwtGpq8AE9bcumUeKtQHMgS8nnY",
+    "balance": "1550",
+    "delegate": "B62qrRpfNf81YPH8WHjWQTdM2wzzbwtGpq8AE9bcumUeKtQHMgS8nnY",
+    "token": "wSHV2S4qX9jFsLjQo8r1BsMLH2ZRKsZx6EJd1sbozGPieEC4Jf",
+    "receipt_chain_hash": "2mzbV7WevxLuchs2dAMY4vQBS6XttnCUF8Hvks4XNBQ5qiSGGBQe",
+    "voting_for": "3NK2tkzqqK5spR2sZ7tujjqPksL45M3UUrcA4WhCkeiPtnugyE2x",
+    "permissions": {
+      "edit_state": "signature",
+      "send": "signature",
+      "receive": "none",
+      "access": "none",
+      "set_delegate": "signature",
+      "set_permissions": "signature",
+      "set_verification_key": {
+        "auth": "signature",
+        "txn_version": "4"
+      },
+      "set_zkapp_uri": "signature",
+      "edit_action_state": "signature",
+      "set_token_symbol": "signature",
+      "increment_nonce": "signature",
+      "set_voting_for": "signature",
+      "set_timing": "signature"
+    },
+    "token_symbol": ""
+  },
+  {
+    "pk": "B62qp8wv51ncEYuZQEgq8qk3LwoubtNXPFQHV4rjBijYcyGAJ6w8JHi",
+    "balance": "1550",
+    "delegate": "B62qp8wv51ncEYuZQEgq8qk3LwoubtNXPFQHV4rjBijYcyGAJ6w8JHi",
+    "token": "wSHV2S4qX9jFsLjQo8r1BsMLH2ZRKsZx6EJd1sbozGPieEC4Jf",
+    "receipt_chain_hash": "2mzbV7WevxLuchs2dAMY4vQBS6XttnCUF8Hvks4XNBQ5qiSGGBQe",
+    "voting_for": "3NK2tkzqqK5spR2sZ7tujjqPksL45M3UUrcA4WhCkeiPtnugyE2x",
+    "permissions": {
+      "edit_state": "signature",
+      "send": "signature",
+      "receive": "none",
+      "access": "none",
+      "set_delegate": "signature",
+      "set_permissions": "signature",
+      "set_verification_key": {
+        "auth": "signature",
+        "txn_version": "4"
+      },
+      "set_zkapp_uri": "signature",
+      "edit_action_state": "signature",
+      "set_token_symbol": "signature",
+      "increment_nonce": "signature",
+      "set_voting_for": "signature",
+      "set_timing": "signature"
+    },
+    "token_symbol": ""
+  },
+  {
+    "pk": "B62qpHWrCVEsyjaZL8GEDqrPjvHyMmcrz7198f2gShxYM1rwoBga8Q5",
+    "balance": "1550",
+    "delegate": "B62qpHWrCVEsyjaZL8GEDqrPjvHyMmcrz7198f2gShxYM1rwoBga8Q5",
+    "token": "wSHV2S4qX9jFsLjQo8r1BsMLH2ZRKsZx6EJd1sbozGPieEC4Jf",
+    "receipt_chain_hash": "2mzbV7WevxLuchs2dAMY4vQBS6XttnCUF8Hvks4XNBQ5qiSGGBQe",
+    "voting_for": "3NK2tkzqqK5spR2sZ7tujjqPksL45M3UUrcA4WhCkeiPtnugyE2x",
+    "permissions": {
+      "edit_state": "signature",
+      "send": "signature",
+      "receive": "none",
+      "access": "none",
+      "set_delegate": "signature",
+      "set_permissions": "signature",
+      "set_verification_key": {
+        "auth": "signature",
+        "txn_version": "4"
+      },
+      "set_zkapp_uri": "signature",
+      "edit_action_state": "signature",
+      "set_token_symbol": "signature",
+      "increment_nonce": "signature",
+      "set_voting_for": "signature",
+      "set_timing": "signature"
+    },
+    "token_symbol": ""
+  },
+  {
+    "pk": "B62qpG4Miaz9bfVMx1Nr1Qs5S3k7xeUdErMV4YkPxE5rSrLmarmuNyW",
+    "balance": "1550",
+    "delegate": "B62qpG4Miaz9bfVMx1Nr1Qs5S3k7xeUdErMV4YkPxE5rSrLmarmuNyW",
+    "token": "wSHV2S4qX9jFsLjQo8r1BsMLH2ZRKsZx6EJd1sbozGPieEC4Jf",
+    "receipt_chain_hash": "2mzbV7WevxLuchs2dAMY4vQBS6XttnCUF8Hvks4XNBQ5qiSGGBQe",
+    "voting_for": "3NK2tkzqqK5spR2sZ7tujjqPksL45M3UUrcA4WhCkeiPtnugyE2x",
+    "permissions": {
+      "edit_state": "signature",
+      "send": "signature",
+      "receive": "none",
+      "access": "none",
+      "set_delegate": "signature",
+      "set_permissions": "signature",
+      "set_verification_key": {
+        "auth": "signature",
+        "txn_version": "4"
+      },
+      "set_zkapp_uri": "signature",
+      "edit_action_state": "signature",
+      "set_token_symbol": "signature",
+      "increment_nonce": "signature",
+      "set_voting_for": "signature",
+      "set_timing": "signature"
+    },
+    "token_symbol": ""
+  },
+  {
+    "pk": "B62qkRvHt6M2TqdLD1NKpdFZAVjAhATCMSqzEZu9jy7yTF4bQfqKdrQ",
+    "balance": "1550",
+    "delegate": "B62qkRvHt6M2TqdLD1NKpdFZAVjAhATCMSqzEZu9jy7yTF4bQfqKdrQ",
+    "token": "wSHV2S4qX9jFsLjQo8r1BsMLH2ZRKsZx6EJd1sbozGPieEC4Jf",
+    "receipt_chain_hash": "2mzbV7WevxLuchs2dAMY4vQBS6XttnCUF8Hvks4XNBQ5qiSGGBQe",
+    "voting_for": "3NK2tkzqqK5spR2sZ7tujjqPksL45M3UUrcA4WhCkeiPtnugyE2x",
+    "permissions": {
+      "edit_state": "signature",
+      "send": "signature",
+      "receive": "none",
+      "access": "none",
+      "set_delegate": "signature",
+      "set_permissions": "signature",
+      "set_verification_key": {
+        "auth": "signature",
+        "txn_version": "4"
+      },
+      "set_zkapp_uri": "signature",
+      "edit_action_state": "signature",
+      "set_token_symbol": "signature",
+      "increment_nonce": "signature",
+      "set_voting_for": "signature",
+      "set_timing": "signature"
+    },
+    "token_symbol": ""
+  },
+  {
+    "pk": "B62qjE15suCEjnZLjfFc8XDnF5zEBmPFw6dKB4CBEzMM8gbFzXks9Dk",
+    "balance": "1550",
+    "delegate": "B62qjE15suCEjnZLjfFc8XDnF5zEBmPFw6dKB4CBEzMM8gbFzXks9Dk",
+    "token": "wSHV2S4qX9jFsLjQo8r1BsMLH2ZRKsZx6EJd1sbozGPieEC4Jf",
+    "receipt_chain_hash": "2mzbV7WevxLuchs2dAMY4vQBS6XttnCUF8Hvks4XNBQ5qiSGGBQe",
+    "voting_for": "3NK2tkzqqK5spR2sZ7tujjqPksL45M3UUrcA4WhCkeiPtnugyE2x",
+    "permissions": {
+      "edit_state": "signature",
+      "send": "signature",
+      "receive": "none",
+      "access": "none",
+      "set_delegate": "signature",
+      "set_permissions": "signature",
+      "set_verification_key": {
+        "auth": "signature",
+        "txn_version": "4"
+      },
+      "set_zkapp_uri": "signature",
+      "edit_action_state": "signature",
+      "set_token_symbol": "signature",
+      "increment_nonce": "signature",
+      "set_voting_for": "signature",
+      "set_timing": "signature"
+    },
+    "token_symbol": ""
+  },
+  {
+    "pk": "B62qr4SrAdsCCSUEWPq9bbJdJxYBjLfhEqqCDSH65gzPLvX6LK8W5i6",
+    "balance": "1550",
+    "delegate": "B62qr4SrAdsCCSUEWPq9bbJdJxYBjLfhEqqCDSH65gzPLvX6LK8W5i6",
+    "token": "wSHV2S4qX9jFsLjQo8r1BsMLH2ZRKsZx6EJd1sbozGPieEC4Jf",
+    "receipt_chain_hash": "2mzbV7WevxLuchs2dAMY4vQBS6XttnCUF8Hvks4XNBQ5qiSGGBQe",
+    "voting_for": "3NK2tkzqqK5spR2sZ7tujjqPksL45M3UUrcA4WhCkeiPtnugyE2x",
+    "permissions": {
+      "edit_state": "signature",
+      "send": "signature",
+      "receive": "none",
+      "access": "none",
+      "set_delegate": "signature",
+      "set_permissions": "signature",
+      "set_verification_key": {
+        "auth": "signature",
+        "txn_version": "4"
+      },
+      "set_zkapp_uri": "signature",
+      "edit_action_state": "signature",
+      "set_token_symbol": "signature",
+      "increment_nonce": "signature",
+      "set_voting_for": "signature",
+      "set_timing": "signature"
+    },
+    "token_symbol": ""
+  },
+  {
+    "pk": "B62qijLkr3cE3zBVCf3KSXS885rgx1zVbEHTeeguUzFb1b2DAzESrkB",
+    "balance": "1550",
+    "delegate": "B62qijLkr3cE3zBVCf3KSXS885rgx1zVbEHTeeguUzFb1b2DAzESrkB",
+    "token": "wSHV2S4qX9jFsLjQo8r1BsMLH2ZRKsZx6EJd1sbozGPieEC4Jf",
+    "receipt_chain_hash": "2mzbV7WevxLuchs2dAMY4vQBS6XttnCUF8Hvks4XNBQ5qiSGGBQe",
+    "voting_for": "3NK2tkzqqK5spR2sZ7tujjqPksL45M3UUrcA4WhCkeiPtnugyE2x",
+    "permissions": {
+      "edit_state": "signature",
+      "send": "signature",
+      "receive": "none",
+      "access": "none",
+      "set_delegate": "signature",
+      "set_permissions": "signature",
+      "set_verification_key": {
+        "auth": "signature",
+        "txn_version": "4"
+      },
+      "set_zkapp_uri": "signature",
+      "edit_action_state": "signature",
+      "set_token_symbol": "signature",
+      "increment_nonce": "signature",
+      "set_voting_for": "signature",
+      "set_timing": "signature"
+    },
+    "token_symbol": ""
+  },
+  {
+    "pk": "B62qpoJeu3GMUoPZHeeJ4LCvZfag3NxJpuHu9pvX4eGdsQNrLzkywux",
+    "balance": "1550",
+    "delegate": "B62qpoJeu3GMUoPZHeeJ4LCvZfag3NxJpuHu9pvX4eGdsQNrLzkywux",
+    "token": "wSHV2S4qX9jFsLjQo8r1BsMLH2ZRKsZx6EJd1sbozGPieEC4Jf",
+    "receipt_chain_hash": "2mzbV7WevxLuchs2dAMY4vQBS6XttnCUF8Hvks4XNBQ5qiSGGBQe",
+    "voting_for": "3NK2tkzqqK5spR2sZ7tujjqPksL45M3UUrcA4WhCkeiPtnugyE2x",
+    "permissions": {
+      "edit_state": "signature",
+      "send": "signature",
+      "receive": "none",
+      "access": "none",
+      "set_delegate": "signature",
+      "set_permissions": "signature",
+      "set_verification_key": {
+        "auth": "signature",
+        "txn_version": "4"
+      },
+      "set_zkapp_uri": "signature",
+      "edit_action_state": "signature",
+      "set_token_symbol": "signature",
+      "increment_nonce": "signature",
+      "set_voting_for": "signature",
+      "set_timing": "signature"
+    },
+    "token_symbol": ""
+  }
+]

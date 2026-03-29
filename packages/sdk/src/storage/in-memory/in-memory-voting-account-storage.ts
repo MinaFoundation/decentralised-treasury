@@ -38,6 +38,10 @@ export class InMemoryVotingAccountStorage
     this.accounts.set(publicKey, votingAccount);
   }
 
+  public async clear(): Promise<void> {
+    this.accounts.clear();
+  }
+
   public collectEntries(): KeyValueEntry[] {
     return Array.from(this.accounts, ([publicKey, votingAccount]) => ({
       key: `${this.parentStorage.namespace}:${publicKey}`,

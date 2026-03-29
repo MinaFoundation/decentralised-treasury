@@ -10,8 +10,12 @@ export class KeyvVotingAccountStorage
   extends KeyvKeyValueStorage
   implements VotingAccountStorage
 {
-  constructor(keyv: Keyv, namespace: string, counter: KeyvNamespaceCounter) {
-    super(keyv, `${namespace}-voting-accounts`, counter);
+  static namespaceFrom(lifecycleId: string): string {
+    return `voting-ledger-${lifecycleId}-voting-accounts`;
+  }
+
+  constructor(keyv: Keyv, lifecycleId: string, counter: KeyvNamespaceCounter) {
+    super(keyv, KeyvVotingAccountStorage.namespaceFrom(lifecycleId), counter);
   }
 
   async getVotingAccount(

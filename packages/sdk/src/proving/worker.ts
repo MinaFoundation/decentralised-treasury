@@ -1,6 +1,7 @@
 import { RedisOptions, Worker as BullMQWorker, Job } from "bullmq";
 import { fork, ChildProcess } from "node:child_process";
 import { fileURLToPath } from "node:url";
+import { logger } from "../logging/logger.js";
 
 interface WorkerJobProcessReadyMessage {
   type: "ready";
@@ -37,8 +38,9 @@ export class Worker {
   public worker: BullMQWorker;
   private subprocess?: ChildProcess;
   private subprocessReadyPromise?: Promise<void>;
-  public static readonly DEFAULT_MAX_TASK_DURATION =
-    Number(process.env.MAX_TASK_DURATION_MS ?? 5 * 60 * 1000);
+  public static readonly DEFAULT_MAX_TASK_DURATION = Number(
+    process.env.MAX_TASK_DURATION_MS ?? 1 * 60 * 1000,
+  );
 
   public constructor(
     public queueName: string,
@@ -61,7 +63,7 @@ export class Worker {
   }
 
   public async start() {
-    console.log("starting worker", this.queueName);
+    logger.info("starting worker", this.queueName);
     await this.ensureSubprocess();
 
     await this.createWorker();
@@ -74,7 +76,7 @@ export class Worker {
       await this.ensureSubprocess();
       return await this.runSubprocessJobWithTimeout(job.name, job.data);
     } catch (error) {
-      console.error("error working job", job.id, job.name, error);
+      logger.error("error working job", job.id, job.name, error);
       throw error;
     }
   }

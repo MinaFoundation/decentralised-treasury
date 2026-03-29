@@ -7,7 +7,7 @@ export function createSqliteVoteReducerRunBatchTraceStorage(
   lifecycleId: string,
   sqliteStore: KeyvSqlite,
 ): KeyvVoteReducerRunBatchTraceStorage {
-  const keyv = new Keyv({ store: sqliteStore, namespace: lifecycleId });
+  const keyv = new Keyv({ store: sqliteStore });
   keyv.disconnect = async () => {};
   const counter = new KeyvSqliteCounter(sqliteStore);
   return new KeyvVoteReducerRunBatchTraceStorage(
