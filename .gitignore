@@ -47,4 +47,6 @@ packages/sdk/test/.data/cache
 packages/sdk/thresholds-chart.svg
 apps/cli/cache
 apps/cli/test/fixtures/cache
+apps/indexer/test/fixtures/archive/
 .cursor/
+.pnpm-store/

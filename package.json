@@ -1,6 +1,9 @@
 {
   "name": "decentralized-treasury",
   "private": true,
+  "bin": {
+    "mina-treasury": "./apps/cli/bin/mina-treasury.cjs"
+  },
   "scripts": {
     "build": "turbo run build",
     "dev": "turbo run dev",

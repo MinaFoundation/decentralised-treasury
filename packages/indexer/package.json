@@ -1,0 +1,26 @@
+{
+  "name": "@repo/indexer",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./*": "./src/*"
+  },
+  "scripts": {
+    "check-types": "tsc --noEmit",
+    "test": "node --loader ts-node/esm --test \"test/**/*.test.ts\""
+  },
+  "dependencies": {
+    "express": "^5.1.0",
+    "typeorm": "^0.3.26"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.3",
+    "@types/node": "^22.18.12",
+    "pg-mem": "^3.0.14",
+    "reflect-metadata": "^0.2.2",
+    "ts-node": "^10.9.2",
+    "typescript": "5.9.2"
+  }
+}

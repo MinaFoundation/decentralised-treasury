@@ -16,7 +16,7 @@
     "@keyv/sqlite": "^4.0.8",
     "@repo/sdk": "workspace:*",
     "commander": "^14.0.0",
-    "o1js": "file:/Users/maht0rz/Projects/mina-foundation/o1js"
+    "o1js": "git+https://github.com/maht0rz/o1js.git#feature/mesa-support"
   },
   "devDependencies": {
     "@types/node": "^22.15.3",

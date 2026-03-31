@@ -1,0 +1,40 @@
+{
+  "name": "@repo/api",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node --loader ts-node/esm src/indexer.ts",
+    "dev:indexer": "node --loader ts-node/esm src/indexer.ts",
+    "dev:processor": "node --loader ts-node/esm src/processor.ts",
+    "dev:api": "node --loader ts-node/esm src/api-main.ts",
+    "start": "node --loader ts-node/esm src/indexer.ts",
+    "start:indexer": "node --loader ts-node/esm src/indexer.ts",
+    "start:processor": "node --loader ts-node/esm src/processor.ts",
+    "start:api": "node --loader ts-node/esm src/api-main.ts",
+    "typeorm": "typeorm-ts-node-esm -d src/db/typeorm-cli-data-source.ts",
+    "schema:sync": "pnpm typeorm schema:sync",
+    "schema:log": "pnpm typeorm schema:log",
+    "migration:run": "pnpm typeorm migration:run",
+    "migration:revert": "pnpm typeorm migration:revert",
+    "check-types": "tsc --noEmit",
+    "test": "node --loader ts-node/esm --test \"test/**/*.test.ts\"",
+    "test:e2e:lightnet": "RUN_LIGHTNET_E2E=true NODE_NO_WARNINGS=1 node --loader ts-node/esm --test \"test/e2e/**/*.e2e.ts\"",
+    "fixtures:proposal-created:lightnet": "NODE_NO_WARNINGS=1 node --loader ts-node/esm scripts/lightnet/generate-proposal-created-fixtures.ts"
+  },
+  "dependencies": {
+    "@repo/indexer": "workspace:*",
+    "@repo/processor": "workspace:*",
+    "@repo/sdk": "workspace:*",
+    "o1js": "git+https://github.com/maht0rz/o1js.git#feature/mesa-support",
+    "pg": "^8.16.3",
+    "reflect-metadata": "^0.2.2",
+    "typeorm": "^0.3.26",
+    "zod": "^4.1.11"
+  },
+  "devDependencies": {
+    "@types/node": "^22.18.12",
+    "pg-mem": "^3.0.14",
+    "ts-node": "^10.9.2",
+    "typescript": "5.9.2"
+  }
+}

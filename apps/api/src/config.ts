@@ -1,0 +1,230 @@
+import { PublicKey } from "o1js";
+
+const DEFAULT_DATABASE_SCHEMA = "public";
+const DEFAULT_INDEXER_API_PORT = 4_000;
+const DEFAULT_POLL_PENDING_INTERVAL_MS = 5_000;
+const DEFAULT_POLL_CANONICAL_INTERVAL_MS = 15_000;
+const DEFAULT_EVENTS_BLOCK_BATCH_SIZE = 10;
+const DEFAULT_CANONICAL_OVERLAP_BLOCKS = 100;
+const DEFAULT_ORPHAN_DEPTH_BLOCKS = 30;
+const DEFAULT_API_PAGE_LIMIT_DEFAULT = 50;
+const DEFAULT_API_PAGE_LIMIT_MAX = 200;
+const DEFAULT_PROCESSOR_NAME = "proposal-processor";
+const DEFAULT_PROCESSOR_POLL_INTERVAL_MS = 2_000;
+const DEFAULT_PROCESSOR_BATCH_SIZE = 200;
+const DEFAULT_PROCESSOR_API_PORT = 4_100;
+const DEFAULT_PROCESSOR_API_PREFIX = "v1/processor";
+const DEFAULT_ARCHIVE_REQUEST_TIMEOUT_MS = 15_000;
+
+export interface IndexerConfig {
+  archiveNodeUrl: string;
+  treasuryOwnerContractAddress: string;
+  treasuryOwnerTokenId: string;
+  knownEventTypes: string[];
+  databaseUrl: string;
+  databaseSchema: string;
+  indexerApiPort: number;
+  indexerApiUrl: string;
+  apiPageLimitDefault: number;
+  apiPageLimitMax: number;
+  pollPendingIntervalMs: number;
+  pollCanonicalIntervalMs: number;
+  eventsBlockBatchSize: number;
+  canonicalOverlapBlocks: number;
+  orphanDepthBlocks: number;
+  processorName: string;
+  processorPollIntervalMs: number;
+  processorBatchSize: number;
+  processorApiPort: number;
+  processorApiPrefix: string;
+  archiveRequestTimeoutMs: number;
+}
+
+interface ContractInstanceWithEventsMap {
+  events?: Record<string, unknown>;
+}
+
+type ContractClassWithEventsMap = new (...args: unknown[]) => ContractInstanceWithEventsMap;
+
+interface LoadIndexerConfigOptions {
+  treasuryOwnerContractClass: ContractClassWithEventsMap;
+}
+
+function readRequiredEnv(name: string, env: NodeJS.ProcessEnv): string {
+  const value = env[name];
+  if (!value) {
+    throw new Error(`Missing required environment variable: ${name}`);
+  }
+  return value;
+}
+
+function readPositiveIntEnv(
+  names: string[],
+  env: NodeJS.ProcessEnv,
+  fallback: number,
+): number {
+  for (const name of names) {
+    const raw = env[name];
+    if (!raw) {
+      continue;
+    }
+    const parsed = Number.parseInt(raw, 10);
+    if (!Number.isFinite(parsed) || parsed <= 0) {
+      throw new Error(`${name} must be a positive integer`);
+    }
+    return parsed;
+  }
+  return fallback;
+}
+
+function readNonNegativeIntEnv(
+  names: string[],
+  env: NodeJS.ProcessEnv,
+  fallback: number,
+): number {
+  for (const name of names) {
+    const raw = env[name];
+    if (!raw) {
+      continue;
+    }
+    const parsed = Number.parseInt(raw, 10);
+    if (!Number.isFinite(parsed) || parsed < 0) {
+      throw new Error(`${name} must be a non-negative integer`);
+    }
+    return parsed;
+  }
+  return fallback;
+}
+
+function readOptionalEnv(
+  name: string,
+  env: NodeJS.ProcessEnv,
+  fallback: string,
+): string {
+  return env[name] || fallback;
+}
+
+function readEventTypesFromContractClass(
+  contractClass: ContractClassWithEventsMap,
+  contractAddress: string,
+): string[] {
+  const contractPublicKey = PublicKey.fromBase58(contractAddress);
+  const contract = new contractClass(contractPublicKey);
+  const eventEntries = contract.events;
+  if (!eventEntries || typeof eventEntries !== "object") {
+    throw new Error("Configured treasury owner contract class does not expose an events map");
+  }
+
+  const eventTypes = Object.keys(eventEntries)
+    .map((eventType) => eventType.trim())
+    .filter((eventType) => eventType.length > 0);
+  if (!eventTypes.length) {
+    throw new Error("Configured treasury owner contract class exposes an empty events map");
+  }
+  return Array.from(new Set(eventTypes));
+}
+
+export function loadIndexerConfig(
+  options: LoadIndexerConfigOptions,
+  env: NodeJS.ProcessEnv = process.env,
+): IndexerConfig {
+  const treasuryOwnerContractAddress = readRequiredEnv(
+    "TREASURY_OWNER_CONTRACT_ADDRESS",
+    env,
+  );
+
+  const knownEventTypes = readEventTypesFromContractClass(
+    options.treasuryOwnerContractClass,
+    treasuryOwnerContractAddress,
+  );
+  const indexerApiPort = readPositiveIntEnv(
+    ["INDEXER_API_PORT", "INDEXER_PORT"],
+    env,
+    DEFAULT_INDEXER_API_PORT,
+  );
+  const apiPageLimitDefault = readPositiveIntEnv(
+    ["API_PAGE_LIMIT_DEFAULT"],
+    env,
+    DEFAULT_API_PAGE_LIMIT_DEFAULT,
+  );
+  const apiPageLimitMax = readPositiveIntEnv(
+    ["API_PAGE_LIMIT_MAX"],
+    env,
+    DEFAULT_API_PAGE_LIMIT_MAX,
+  );
+  if (apiPageLimitDefault > apiPageLimitMax) {
+    throw new Error("API_PAGE_LIMIT_DEFAULT cannot be greater than API_PAGE_LIMIT_MAX");
+  }
+
+  return {
+    archiveNodeUrl: readRequiredEnv("ARCHIVE_NODE_URL", env),
+    treasuryOwnerContractAddress,
+    treasuryOwnerTokenId: readRequiredEnv("TREASURY_OWNER_TOKEN_ID", env),
+    knownEventTypes,
+    databaseUrl: readRequiredEnv("DATABASE_URL", env),
+    databaseSchema: readOptionalEnv("DATABASE_SCHEMA", env, DEFAULT_DATABASE_SCHEMA),
+    indexerApiPort,
+    indexerApiUrl: readOptionalEnv(
+      "INDEXER_API_URL",
+      env,
+      `http://127.0.0.1:${indexerApiPort}`,
+    ),
+    apiPageLimitDefault,
+    apiPageLimitMax,
+    pollPendingIntervalMs: readPositiveIntEnv(
+      ["POLL_PENDING_INTERVAL_MS", "POLL_EVENTS_INTERVAL_MS"],
+      env,
+      DEFAULT_POLL_PENDING_INTERVAL_MS,
+    ),
+    pollCanonicalIntervalMs: readPositiveIntEnv(
+      ["POLL_CANONICAL_INTERVAL_MS", "POLL_EVENTS_INTERVAL_MS"],
+      env,
+      DEFAULT_POLL_CANONICAL_INTERVAL_MS,
+    ),
+    eventsBlockBatchSize: readPositiveIntEnv(
+      ["EVENTS_BLOCK_BATCH_SIZE"],
+      env,
+      DEFAULT_EVENTS_BLOCK_BATCH_SIZE,
+    ),
+    canonicalOverlapBlocks: readNonNegativeIntEnv(
+      ["CANONICAL_OVERLAP_BLOCKS"],
+      env,
+      DEFAULT_CANONICAL_OVERLAP_BLOCKS,
+    ),
+    orphanDepthBlocks: readPositiveIntEnv(
+      ["ORPHAN_DEPTH_BLOCKS"],
+      env,
+      DEFAULT_ORPHAN_DEPTH_BLOCKS,
+    ),
+    processorName: readOptionalEnv(
+      "PROCESSOR_NAME",
+      env,
+      DEFAULT_PROCESSOR_NAME,
+    ),
+    processorPollIntervalMs: readPositiveIntEnv(
+      ["PROCESSOR_POLL_INTERVAL_MS"],
+      env,
+      DEFAULT_PROCESSOR_POLL_INTERVAL_MS,
+    ),
+    processorBatchSize: readPositiveIntEnv(
+      ["PROCESSOR_BATCH_SIZE"],
+      env,
+      DEFAULT_PROCESSOR_BATCH_SIZE,
+    ),
+    processorApiPort: readPositiveIntEnv(
+      ["PROCESSOR_API_PORT"],
+      env,
+      DEFAULT_PROCESSOR_API_PORT,
+    ),
+    processorApiPrefix: readOptionalEnv(
+      "PROCESSOR_API_PREFIX",
+      env,
+      DEFAULT_PROCESSOR_API_PREFIX,
+    ),
+    archiveRequestTimeoutMs: readPositiveIntEnv(
+      ["ARCHIVE_REQUEST_TIMEOUT_MS"],
+      env,
+      DEFAULT_ARCHIVE_REQUEST_TIMEOUT_MS,
+    ),
+  };
+}

@@ -32,6 +32,12 @@ import {
   MultisigSignature,
   MultisigSignatures,
 } from "./treasury-pause-controller/multisig-signatures.js";
+import {
+  ProposalCreatedEvent,
+  PROPOSAL_CREATED_EVENT_NAME,
+  ProposalVoteDispatchedEvent,
+  PROPOSAL_VOTE_DISPATCHED_EVENT_NAME,
+} from "../events/treasury-proposal-events.js";
 
 // 7140 slots = ~2 weeks, this is the mainnet configuration
 export const LIFECYCLE_PERIOD_DURATION = UInt32.from(7140);
@@ -70,6 +76,11 @@ export class TreasuryOwnerSmartContract extends TokenContract {
 
   @state(UInt32) treasuryDeployedAtSlot = State<UInt32>();
   @state(PublicKey) pauseControllerPublicKey = State<PublicKey>();
+
+  events = {
+    [PROPOSAL_CREATED_EVENT_NAME]: ProposalCreatedEvent,
+    [PROPOSAL_VOTE_DISPATCHED_EVENT_NAME]: ProposalVoteDispatchedEvent,
+  };
 
   public async snapshotStakingEpochData() {
     const networkStakingEpochDataLedgerHash =
@@ -231,6 +242,16 @@ export class TreasuryOwnerSmartContract extends TokenContract {
     proposalUpdate.update.zkappUri.value = proposal.zkAppUri;
 
     this.approve(proposalUpdate);
+    this.emitEvent(
+      PROPOSAL_CREATED_EVENT_NAME,
+      new ProposalCreatedEvent({
+        proposalPublicKey,
+        lifecycleId,
+        amount: proposal.amount,
+        recipient: proposal.recipient,
+        zkAppUriHash: proposal.zkAppUri.hash,
+      }),
+    );
   }
 
   // TODO: implement some form of a spam prevention, e.g.: requiring the voter to:
@@ -259,6 +280,15 @@ export class TreasuryOwnerSmartContract extends TokenContract {
       vote,
       publicKey,
     });
+
+    this.emitEvent(
+      PROPOSAL_VOTE_DISPATCHED_EVENT_NAME,
+      new ProposalVoteDispatchedEvent({
+        proposalPublicKey,
+        voterPublicKey: publicKey,
+        vote,
+      }),
+    );
 
     // this creates a new account if it doesnt exist, it'll cost 1 MINA
     // it could be free if we just check a hand crafted signature instead
