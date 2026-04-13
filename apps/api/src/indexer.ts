@@ -1,10 +1,10 @@
 import "reflect-metadata";
 import { EventsIndexer } from "@repo/indexer";
 import { TreasuryOwnerSmartContract } from "@repo/sdk/src/provable/contracts/treasury-owner.js";
-import { loadIndexerConfig } from "./config.js";
+import { loadApiConfig } from "./config.js";
 
 async function main(): Promise<void> {
-  const config = loadIndexerConfig({
+  const config = loadApiConfig({
     treasuryOwnerContractClass: TreasuryOwnerSmartContract,
   });
   const indexer = EventsIndexer.fromConfig(config);

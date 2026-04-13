@@ -71,6 +71,7 @@ describe("EventsIndexer", () => {
       pollPendingIntervalMs: 60_000,
       pollCanonicalIntervalMs: 60_000,
       blockBatchSize: 10,
+      pendingOverlapBlocks: 20,
       canonicalOverlapBlocks: 5,
       orphanDepthBlocks: 30,
     });
@@ -94,7 +95,11 @@ describe("EventsIndexer", () => {
 
     assert.deepEqual(
       archive.fetchCalls.map(({ status, from, to }) => [status, from, to]),
-      [["PENDING", 25, 27]],
+      [
+        ["PENDING", 5, 14],
+        ["PENDING", 15, 24],
+        ["PENDING", 25, 27],
+      ],
     );
     assert.equal(await repository.getCursor(EventsIndexer.PENDING_CURSOR), 27);
   });
@@ -104,6 +109,7 @@ describe("EventsIndexer", () => {
       pollPendingIntervalMs: 60_000,
       pollCanonicalIntervalMs: 60_000,
       blockBatchSize: 10,
+      pendingOverlapBlocks: 20,
       canonicalOverlapBlocks: 5,
       orphanDepthBlocks: 30,
     });
@@ -120,6 +126,7 @@ describe("EventsIndexer", () => {
       pollPendingIntervalMs: 60_000,
       pollCanonicalIntervalMs: 60_000,
       blockBatchSize: 10,
+      pendingOverlapBlocks: 20,
       canonicalOverlapBlocks: 5,
       orphanDepthBlocks: 30,
     });
@@ -144,6 +151,7 @@ describe("EventsIndexer", () => {
       pollPendingIntervalMs: 60_000,
       pollCanonicalIntervalMs: 60_000,
       blockBatchSize: 10,
+      pendingOverlapBlocks: 20,
       canonicalOverlapBlocks: 5,
       orphanDepthBlocks: 30,
     });

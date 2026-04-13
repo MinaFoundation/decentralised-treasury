@@ -93,7 +93,7 @@ describe("EventsRepository", () => {
   it("infers event type from encoded payload for multi-type contracts", async () => {
     const customDataSource = createInMemoryDataSource();
     const customRepository = new EventsRepository(customDataSource, "public", {
-      knownEventTypes: ["proposalVoteDispatched", "proposalCreated"],
+      knownEventTypes: ["proposalCreated", "proposalVoteDispatched"],
     });
     await customRepository.initialize();
     await customDataSource.synchronize();
@@ -108,8 +108,16 @@ describe("EventsRepository", () => {
                 accountUpdateId: "7",
                 data: ["0", "111", "222"],
                 transactionInfo: {
-                  hash: "tx-multi-typed",
+                  hash: "tx-multi-typed-created",
                   zkappAccountUpdateIds: [7],
+                },
+              },
+              {
+                accountUpdateId: "8",
+                data: ["1", "333", "444"],
+                transactionInfo: {
+                  hash: "tx-multi-typed-vote",
+                  zkappAccountUpdateIds: [8],
                 },
               },
             ],
@@ -118,13 +126,23 @@ describe("EventsRepository", () => {
         "pending",
       );
 
-      const row = await customDataSource
+      const createdRow = await customDataSource
         .getRepository(ArchiveEventEntity)
         .findOneByOrFail({
-          txHash: "tx-multi-typed",
+          txHash: "tx-multi-typed-created",
           accountUpdateId: "7",
         });
-      assert.equal(row.eventType, "proposalCreated");
+      assert.equal(createdRow.eventType, "proposalCreated");
+      assert.deepEqual(createdRow.rawEventData.data, ["111", "222"]);
+
+      const voteRow = await customDataSource
+        .getRepository(ArchiveEventEntity)
+        .findOneByOrFail({
+          txHash: "tx-multi-typed-vote",
+          accountUpdateId: "8",
+        });
+      assert.equal(voteRow.eventType, "proposalVoteDispatched");
+      assert.deepEqual(voteRow.rawEventData.data, ["333", "444"]);
     } finally {
       await customRepository.close();
     }

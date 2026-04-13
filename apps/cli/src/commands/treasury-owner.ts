@@ -5,6 +5,7 @@ import {
   PublicKey,
   UInt32,
   UInt64,
+  VerificationKey,
 } from "o1js";
 import { logger } from "@repo/sdk/src/index.js";
 import { MULTISIG_PARTICIPANTS_COUNT } from "@repo/sdk/src/provable/contracts/treasury-pause-controller/multisig-signatures.js";
@@ -93,6 +94,35 @@ export async function compileTreasuryOwner(
     `[treasury-owner:compile] compile completed (elapsedMs=${Date.now() - compileStartedAt})`,
   );
 
+  const browserCompileConfig = {
+    lifecyclePeriodDuration: options.lifecyclePeriodDuration.toString(),
+    voteReducerVerificationKeyJson: VerificationKey.toJSON(
+      result.voteReducerVerificationKey,
+    ),
+    stakingLedgerToVotingLedgerVerificationKeyJson: VerificationKey.toJSON(
+      result.stakingLedgerToVotingLedgerVerificationKey,
+    ),
+    treasuryProposalVerificationKeyJson: VerificationKey.toJSON(
+      result.treasuryProposalVerificationKey,
+    ),
+    emptyVotingLedgerRoot: result.emptyVotingLedgerRoot.toString(),
+    emptyNullifierRoot: result.emptyNullifierRoot.toString(),
+  };
+
+  const browserEnv = {
+    NEXT_PUBLIC_LIFECYCLE_PERIOD_DURATION: browserCompileConfig.lifecyclePeriodDuration,
+    NEXT_PUBLIC_VOTE_REDUCER_VERIFICATION_KEY_JSON: JSON.stringify(
+      browserCompileConfig.voteReducerVerificationKeyJson,
+    ),
+    NEXT_PUBLIC_STAKING_LEDGER_TO_VOTING_LEDGER_VERIFICATION_KEY_JSON:
+      JSON.stringify(browserCompileConfig.stakingLedgerToVotingLedgerVerificationKeyJson),
+    NEXT_PUBLIC_TREASURY_PROPOSAL_VERIFICATION_KEY_JSON: JSON.stringify(
+      browserCompileConfig.treasuryProposalVerificationKeyJson,
+    ),
+    NEXT_PUBLIC_EMPTY_VOTING_LEDGER_ROOT: browserCompileConfig.emptyVotingLedgerRoot,
+    NEXT_PUBLIC_EMPTY_NULLIFIER_ROOT: browserCompileConfig.emptyNullifierRoot,
+  };
+
   console.log(
     JSON.stringify({
       lifecyclePeriodDuration: options.lifecyclePeriodDuration.toString(),
@@ -109,6 +139,8 @@ export async function compileTreasuryOwner(
         ),
         treasuryOwnerVerificationKey: Boolean(result.treasuryOwnerVerificationKey),
       },
+      browserCompileConfig,
+      browserEnv,
     }),
   );
 

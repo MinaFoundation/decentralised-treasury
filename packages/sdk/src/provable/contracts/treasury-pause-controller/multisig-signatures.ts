@@ -120,6 +120,13 @@ export class MultisigSignatures extends Struct({
     multisigCommitment: Field,
     multisigParticipants: PublicKey[],
   ) {
+    const currentMultiSigCommitment =
+      MultisigSignatures.createCommitment(multisigParticipants);
+
+    currentMultiSigCommitment
+      .equals(multisigCommitment)
+      .assertTrue(MultisigSignaturesErrors.INVALID_MULTISIG_COMMITMENT);
+
     const signaturesValid = this.signatures.map((signature, i) => {
       return signature.verify(multisigParticipants[i], [data]);
     });
@@ -135,12 +142,5 @@ export class MultisigSignatures extends Struct({
     validSignaturesCount
       .greaterThanOrEqual(UInt32.from(MIN_VALID_MULTISIG_SIGNATURES_COUNT))
       .assertTrue(MultisigSignaturesErrors.NOT_ENOUGH_VALID_SIGNATURES);
-
-    const currentMultiSigCommitment =
-      MultisigSignatures.createCommitment(multisigParticipants);
-
-    currentMultiSigCommitment
-      .equals(multisigCommitment)
-      .assertTrue(MultisigSignaturesErrors.INVALID_MULTISIG_COMMITMENT);
   }
 }

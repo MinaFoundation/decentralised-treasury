@@ -1,4 +1,5 @@
 import {
+  type Field,
   type VerificationKey,
   type PrivateKey,
   type PublicKey,
@@ -20,6 +21,8 @@ export interface CompileTreasuryOwnerResult {
   voteReducerVerificationKey: VerificationKey;
   stakingLedgerToVotingLedgerVerificationKey: VerificationKey;
   treasuryProposalVerificationKey: VerificationKey;
+  emptyVotingLedgerRoot: Field;
+  emptyNullifierRoot: Field;
   treasuryPauseControllerVerificationKey: VerificationKey;
   treasuryOwnerVerificationKey: VerificationKey;
 }

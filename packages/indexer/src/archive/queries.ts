@@ -14,6 +14,25 @@ query Events($input: EventFilterOptionsInput!) {
   events(input: $input) {
     blockInfo {
       height
+      timestamp
+    }
+    eventData {
+      accountUpdateId
+      data
+      transactionInfo {
+        hash
+        zkappAccountUpdateIds
+      }
+    }
+  }
+}
+`;
+
+export const EVENTS_QUERY_FALLBACK = `
+query Events($input: EventFilterOptionsInput!) {
+  events(input: $input) {
+    blockInfo {
+      height
     }
     eventData {
       accountUpdateId

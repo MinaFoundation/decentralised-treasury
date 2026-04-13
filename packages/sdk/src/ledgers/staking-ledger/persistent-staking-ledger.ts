@@ -1,6 +1,9 @@
 import { Account } from "../../provable/account.js";
 import { MerkleTreeStorage } from "../../storage/merkle-tree-storage.js";
-import { AccountStorage } from "../../storage/account-storage.js";
+import {
+  type AccountLookupResult,
+  AccountStorage,
+} from "../../storage/account-storage.js";
 import { BaseStakingLedger } from "./staking-ledger.js";
 
 export class PersistentStakingLedger extends BaseStakingLedger {
@@ -26,6 +29,12 @@ export class PersistentStakingLedger extends BaseStakingLedger {
 
   public async getAccount(index: bigint): Promise<Account> {
     return (await this.accountStorage.getAccount(index)) ?? Account.empty();
+  }
+
+  public async getAccountByPublicKey(
+    publicKey: string,
+  ): Promise<AccountLookupResult | null> {
+    return await this.accountStorage.getAccountByPublicKey(publicKey);
   }
 
   public async setAccount(index: bigint, account: Account): Promise<void> {

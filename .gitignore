@@ -50,3 +50,9 @@ apps/cli/test/fixtures/cache
 apps/indexer/test/fixtures/archive/
 .cursor/
 .pnpm-store/
+.local/
+apps/api/cache/
+apps/cli/cache-*/
+packages/local-blockchain/cache/
+apps/api/.data/
+apps/cli/.data/

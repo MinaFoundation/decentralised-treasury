@@ -12,12 +12,15 @@ export function createSqliteStakingLedgerStorage(
   const counter = new KeyvSqliteCounter(sqliteStore);
   const accountKeyv = new Keyv({ store: sqliteStore });
   accountKeyv.disconnect = async () => {};
+  const accountPublicKeyIndexKeyv = new Keyv({ store: sqliteStore });
+  accountPublicKeyIndexKeyv.disconnect = async () => {};
   const merkleTreeKeyv = new Keyv({ store: sqliteStore });
   merkleTreeKeyv.disconnect = async () => {};
   const accountStorage = new KeyvAccountStorage(
     accountKeyv,
     lifecycleId,
     counter,
+    accountPublicKeyIndexKeyv,
   );
   const merkleTreeStorage = new KeyvMerkleTreeStorage(
     merkleTreeKeyv,

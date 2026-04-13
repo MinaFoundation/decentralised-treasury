@@ -1,11 +1,18 @@
 import type { Server } from "node:http";
-import express from "express";
+import express, { type Express } from "express";
 import type { EventsRepository } from "./events-repository.js";
 
 export interface EventsApiServerOptions {
   port: number;
   pageLimitDefault: number;
   pageLimitMax: number;
+  indexerPrefix?: string;
+  registerTopLevelRoutes?: (app: Express) => void | Promise<void>;
+  /**
+   * @deprecated Use registerTopLevelRoutes instead.
+   */
+  registerRoutes?: (app: Express) => void | Promise<void>;
+  onStop?: () => void | Promise<void>;
 }
 
 class QueryValidationError extends Error {}
@@ -70,6 +77,11 @@ function parseEventTypes(value: unknown): string[] {
   );
 }
 
+function normalizePrefix(value: string | undefined): string {
+  const normalized = (value ?? "").trim().replace(/^\/+|\/+$/g, "");
+  return normalized.length > 0 ? `/${normalized}` : "";
+}
+
 export class EventsApiServer {
   private server: Server | null = null;
   private signalHandlersBound = false;
@@ -96,13 +108,24 @@ export class EventsApiServer {
     await this.repository.initialize();
 
     const app = express();
+    app.use((_request, response, next) => {
+      response.setHeader("access-control-allow-origin", "*");
+      response.setHeader("access-control-allow-methods", "GET, POST, OPTIONS");
+      response.setHeader("access-control-allow-headers", "content-type");
+      if (_request.method === "OPTIONS") {
+        response.status(204).end();
+        return;
+      }
+      next();
+    });
     app.use(express.json());
+    const indexerPrefix = normalizePrefix(this.options.indexerPrefix);
 
-    app.get("/healthz", (_request, response) => {
+    app.get(`${indexerPrefix}/healthz`, (_request, response) => {
       response.json({ ok: true });
     });
 
-    app.get("/v1/indexer/events", async (request, response) => {
+    app.get(`${indexerPrefix}/events`, async (request, response) => {
       let limit: number;
       let eventTypes: string[];
       let includeUnknown: boolean;
@@ -148,6 +171,10 @@ export class EventsApiServer {
             id: event.id,
             status: event.status,
             pendingSeenAtHeight: event.pendingSeenAtHeight,
+            blockHeight: event.blockHeight,
+            blockTimestamp: event.blockTimestamp
+              ? event.blockTimestamp.toISOString()
+              : null,
             eventType: event.eventType,
             txHash: event.txHash,
             accountUpdateId: event.accountUpdateId,
@@ -172,10 +199,16 @@ export class EventsApiServer {
       }
     });
 
+    const registerTopLevelRoutes =
+      this.options.registerTopLevelRoutes ?? this.options.registerRoutes;
+    if (registerTopLevelRoutes) {
+      await registerTopLevelRoutes(app);
+    }
+
     await new Promise<void>((resolve) => {
       this.server = app.listen(this.options.port, () => {
         console.log(
-          `[indexer-api] listening on :${this.options.port}`,
+          `[indexer-api] listening on :${this.options.port}${indexerPrefix}`,
         );
         resolve();
       });
@@ -198,7 +231,13 @@ export class EventsApiServer {
       });
     }
     this.unbindSignalHandlers();
-    await this.repository.close();
+    try {
+      await this.repository.close();
+    } finally {
+      if (this.options.onStop) {
+        await this.options.onStop();
+      }
+    }
   }
 
   private bindSignalHandlers(): void {

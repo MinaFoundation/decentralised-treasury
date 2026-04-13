@@ -95,16 +95,21 @@ export class TreasuryProposalSmartContract extends SmartContract {
     this.reducer.dispatch(voteAction);
   }
 
-  minUInt128(a: UInt128, b: UInt128) {
+  public static minUInt128(a: UInt128, b: UInt128): UInt128 {
     return Provable.if<UInt128>(a.lessThan(b), a, b);
   }
 
-  calculateAcceptanceCriteria(
+  public static calculateAcceptanceCriteria(
     proposalAmount: UInt128,
     treasuryBalance: UInt128,
-  ) {
+    stakingEpochDataLedgerTotalCurrency: UInt64,
+  ): {
+    requiredParticipationBp: UInt128;
+    requiredApprovalBp: UInt128;
+    requiredParticipation: UInt128;
+  } {
     // ratio in basis points, capped at 100%
-    const ratioBp = this.minUInt128(
+    const ratioBp = TreasuryProposalSmartContract.minUInt128(
       proposalAmount.mul(BASIS_POINTS).div(treasuryBalance),
       BASIS_POINTS,
     );
@@ -143,13 +148,69 @@ export class TreasuryProposalSmartContract extends SmartContract {
         .div(BASIS_POINTS),
     );
 
+    const requiredParticipation = UInt128.from(
+      stakingEpochDataLedgerTotalCurrency,
+    )
+      .mul(requiredParticipationBp)
+      .div(BASIS_POINTS);
+
     return {
       requiredParticipationBp,
       requiredApprovalBp,
+      requiredParticipation,
     };
   }
 
-  @method
+  public static calculateApprovalStatus(input: {
+    yay: UInt128;
+    nay: UInt128;
+    abstain: UInt128;
+    requiredParticipation: UInt128;
+    requiredApprovalBp: UInt128;
+  }): {
+    totalParticipatingVotes: UInt128;
+    requiredParticipation: UInt128;
+    participationMet: Bool;
+    totalVotes: UInt128;
+    hasApprovalVotes: Bool;
+    approvalBp: UInt128;
+    approved: Bool;
+    voteResult: ProposalStatus;
+  } {
+    const totalParticipatingVotes = input.yay.add(input.nay).add(input.abstain);
+    const participationMet =
+      totalParticipatingVotes.greaterThanOrEqual(input.requiredParticipation);
+
+    const totalVotes = input.yay.add(input.nay);
+    const hasApprovalVotes = totalVotes.greaterThan(UInt128.from(0));
+    const safeTotalVotes = Provable.if(
+      hasApprovalVotes,
+      totalVotes,
+      UInt128.from(1),
+    );
+    const approvalBp = input.yay.mul(BASIS_POINTS).div(safeTotalVotes);
+    const approved = participationMet
+      .and(hasApprovalVotes)
+      .and(approvalBp.greaterThanOrEqual(input.requiredApprovalBp));
+    const voteResult = Provable.if(
+      approved,
+      ProposalStatus.APPROVED,
+      ProposalStatus.REJECTED,
+    );
+
+    return {
+      totalParticipatingVotes,
+      requiredParticipation: input.requiredParticipation,
+      participationMet,
+      totalVotes,
+      hasApprovalVotes,
+      approvalBp,
+      approved,
+      voteResult,
+    };
+  }
+
+  @method.returns(Field)
   public async tallyVotes(
     // TODO: why do sideloaded proofs appear to have different wrap domain size limits than regular proofs?
     voteReducerProof: SideLoadedVoteReducerProof,
@@ -157,7 +218,7 @@ export class TreasuryProposalSmartContract extends SmartContract {
     treasuryOwnerPublicKey: PublicKey,
     treasuryOwnerAccount: Account,
     treasuryOwnerAccountWitness: PrefixedMerkleWitness36,
-  ) {
+  ): Promise<Field> {
     await this.requireNotPaused();
     const status = this.status.getAndRequireEquals();
 
@@ -259,54 +320,34 @@ export class TreasuryProposalSmartContract extends SmartContract {
     );
     const stakingEpochDataLedgerTotalCurrency =
       this.stakingEpochDataLedgerTotalCurrency.getAndRequireEquals();
-    const totalParticipatingVotes = yay.add(nay).add(abstain);
 
     const treasuryOwnerBalance = treasuryOwnerAccount.balance;
-    const { requiredParticipationBp, requiredApprovalBp } =
-      this.calculateAcceptanceCriteria(
+    const { requiredApprovalBp, requiredParticipation } =
+      TreasuryProposalSmartContract.calculateAcceptanceCriteria(
         UInt128.from(proposalAmount),
         UInt128.from(treasuryOwnerBalance),
+        stakingEpochDataLedgerTotalCurrency,
       );
-
-    // TODO: what about the remainder and precision handling?
-    const requiredParticipation = UInt128.from(
-      stakingEpochDataLedgerTotalCurrency,
-    )
-      .mul(requiredParticipationBp)
-      .div(BASIS_POINTS);
+    const approvalStatus = TreasuryProposalSmartContract.calculateApprovalStatus({
+      yay,
+      nay,
+      abstain,
+      requiredParticipation,
+      requiredApprovalBp,
+    });
 
     provableLog("totalParticipatingVotes", {
-      totalParticipatingVotes,
-      requiredParticipation,
+      totalParticipatingVotes: approvalStatus.totalParticipatingVotes,
+      requiredParticipation: approvalStatus.requiredParticipation,
       totalCurrency: stakingEpochDataLedgerTotalCurrency,
     });
 
-    UInt128.from(totalParticipatingVotes)
-      .greaterThanOrEqual(requiredParticipation)
-      .assertTrue("Participation not met");
+    approvalStatus.participationMet.assertTrue("Participation not met");
+    approvalStatus.hasApprovalVotes.assertTrue("No approval votes cast");
 
-    // TODO: make sure there's sufficient precision handling?, since we're adding so many UInt64s this will likely overflow?
-    const totalVotes = yay.add(nay);
-    totalVotes
-      .greaterThan(UInt128.from(0))
-      .assertTrue("No approval votes cast");
-
-    const approvalBp = UInt128.from(yay)
-      .mul(BASIS_POINTS)
-      .div(UInt128.from(totalVotes));
-
-    // // participation was already checked above, so we can just check approval threshold
-    const approved = approvalBp.greaterThanOrEqual(requiredApprovalBp);
-
-    // // TODO: we could issue events here with details of the vote math
-
-    const voteResult = Provable.if(
-      approved,
-      ProposalStatus.APPROVED,
-      ProposalStatus.REJECTED,
-    );
-
-    this.status.set(voteResult);
+    // TODO: we could issue events here with details of the vote math
+    this.status.set(approvalStatus.voteResult);
+    return approvalStatus.voteResult;
   }
 
   @method

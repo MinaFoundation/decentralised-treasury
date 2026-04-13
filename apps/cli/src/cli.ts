@@ -10,6 +10,7 @@ import generateKeypairsCommandFactory from "./commands/generate-keypairs.js";
 import proposalCommandFactory from "./commands/proposal.js";
 import voteReducerCommandFactory from "./commands/vote-reducer.js";
 import multisigSignCommandFactory from "./commands/multisig-sign.js";
+import transferCommandFactory from "./commands/transfer.js";
 
 export function createProgram(): Command {
   const program = new Command();
@@ -25,6 +26,7 @@ export function createProgram(): Command {
     multisigSignCommandFactory,
     lightnetCommandFactory,
     generateKeypairsCommandFactory,
+    transferCommandFactory,
   ].forEach((commandFactory) => commandFactory(program));
 
   return program;

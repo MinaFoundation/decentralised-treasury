@@ -12,6 +12,7 @@ interface EventsIndexerOptions {
   pollPendingIntervalMs: number;
   pollCanonicalIntervalMs: number;
   blockBatchSize: number;
+  pendingOverlapBlocks: number;
   canonicalOverlapBlocks: number;
   orphanDepthBlocks: number;
 }
@@ -32,6 +33,7 @@ export interface EventsIndexerConfig {
   pollPendingIntervalMs: number;
   pollCanonicalIntervalMs: number;
   eventsBlockBatchSize: number;
+  pendingOverlapBlocks: number;
   canonicalOverlapBlocks: number;
   orphanDepthBlocks: number;
 }
@@ -64,6 +66,7 @@ export class EventsIndexer {
       pollPendingIntervalMs: config.pollPendingIntervalMs,
       pollCanonicalIntervalMs: config.pollCanonicalIntervalMs,
       blockBatchSize: config.eventsBlockBatchSize,
+      pendingOverlapBlocks: config.pendingOverlapBlocks,
       canonicalOverlapBlocks: config.canonicalOverlapBlocks,
       orphanDepthBlocks: config.orphanDepthBlocks,
     });
@@ -96,7 +99,7 @@ export class EventsIndexer {
     }, this.options.pollCanonicalIntervalMs);
     this.bindSignalHandlers();
     console.log(
-      `[events-indexer] started (pendingInterval=${this.options.pollPendingIntervalMs}ms, canonicalInterval=${this.options.pollCanonicalIntervalMs}ms, blockBatchSize=${this.options.blockBatchSize}, canonicalOverlap=${this.options.canonicalOverlapBlocks}, orphanDepth=${this.options.orphanDepthBlocks})`,
+      `[events-indexer] started (pendingInterval=${this.options.pollPendingIntervalMs}ms, canonicalInterval=${this.options.pollCanonicalIntervalMs}ms, blockBatchSize=${this.options.blockBatchSize}, pendingOverlap=${this.options.pendingOverlapBlocks}, canonicalOverlap=${this.options.canonicalOverlapBlocks}, orphanDepth=${this.options.orphanDepthBlocks})`,
     );
   }
 
@@ -128,7 +131,7 @@ export class EventsIndexer {
         archiveStatus: "PENDING",
         storedStatus: "pending",
         cursorName: EventsIndexer.PENDING_CURSOR,
-        overlapBlocks: 0,
+        overlapBlocks: this.options.pendingOverlapBlocks,
       });
     } catch (error) {
       console.error("[events-indexer] pending sync failed", error);

@@ -15,6 +15,8 @@ interface IndexerApiEvent {
   id: string;
   status: string;
   pendingSeenAtHeight: number | null;
+  blockHeight: number | null;
+  blockTimestamp: string | null;
   eventType: string;
   txHash: string;
   accountUpdateId: string;
@@ -39,7 +41,7 @@ export class IndexerEventsApiClient {
   public async fetchEventsPage(
     input: FetchIndexerEventsPageInput,
   ): Promise<ArchiveEventEntity[]> {
-    const url = new URL("/v1/indexer/events", this.config.indexerApiUrl);
+    const url = new URL("/events", this.config.indexerApiUrl);
     url.searchParams.set("limit", String(input.limit));
     url.searchParams.set("updatedAfter", input.updatedAfter.toISOString());
     url.searchParams.set("eventIdAfter", input.eventIdAfter);
@@ -70,6 +72,10 @@ export class IndexerEventsApiClient {
     event.id = String(item.id);
     event.status = item.status;
     event.pendingSeenAtHeight = item.pendingSeenAtHeight;
+    event.blockHeight = item.blockHeight;
+    event.blockTimestamp = item.blockTimestamp
+      ? new Date(item.blockTimestamp)
+      : null;
     event.eventType = item.eventType;
     event.txHash = item.txHash;
     event.accountUpdateId = item.accountUpdateId;

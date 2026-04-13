@@ -5,7 +5,7 @@ import {
   fetchLastBlock,
   Mina,
   type PrivateKey,
-  type PublicKey,
+  PublicKey,
   UInt32,
   UInt64,
   ZkappUri,
@@ -69,8 +69,22 @@ import { Account } from "../../provable/account.js";
 import { PrefixedMerkleWitness36 } from "../../provable/merkle-tree/prefixed-merkle-tree.js";
 import { Vote } from "../../provable/contracts/treasury-proposal/vote-reducer.js";
 import { logger } from "../../index.js";
+import { MULTISIG_PARTICIPANTS_COUNT } from "../../provable/contracts/treasury-pause-controller/multisig-signatures.js";
 
 export class SqliteTreasuryOwnerService implements TreasuryOwnerService {
+  private seedPauseControllerParticipantsForCompile() {
+    if (
+      TreasuryPauseControllerSmartContract.multisigParticipants.length ===
+      MULTISIG_PARTICIPANTS_COUNT
+    ) {
+      return;
+    }
+    TreasuryPauseControllerSmartContract.multisigParticipants = Array.from(
+      { length: MULTISIG_PARTICIPANTS_COUNT },
+      () => PublicKey.empty(),
+    );
+  }
+
   public async compile(
     options: CompileTreasuryOwnerOptions = {},
   ): Promise<CompileTreasuryOwnerResult> {
@@ -158,6 +172,7 @@ export class SqliteTreasuryOwnerService implements TreasuryOwnerService {
       treasuryProposalVerificationKey;
     TreasuryOwnerSmartContract.lifecyclePeriodDuration =
       lifecyclePeriodDuration;
+    this.seedPauseControllerParticipantsForCompile();
 
     const treasuryPauseControllerStartedAt = Date.now();
     logger.info(
@@ -191,6 +206,8 @@ export class SqliteTreasuryOwnerService implements TreasuryOwnerService {
       voteReducerVerificationKey,
       stakingLedgerToVotingLedgerVerificationKey,
       treasuryProposalVerificationKey,
+      emptyVotingLedgerRoot,
+      emptyNullifierRoot,
       treasuryPauseControllerVerificationKey,
       treasuryOwnerVerificationKey,
     };

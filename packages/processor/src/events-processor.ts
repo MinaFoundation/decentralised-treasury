@@ -118,15 +118,12 @@ export class EventsProcessor {
         return 0;
       }
 
-      const processedRows = await this.processOnceFromIndexerApi(
+      const { fetchedRows, processedRows } = await this.processOnceFromIndexerApi(
         handledEventTypes,
       );
-
-      if (processedRows > 0) {
-        console.log(
-          `[events-processor] name=${this.options.processorName}, processedRows=${processedRows}`,
-        );
-      }
+      console.log(
+        `[events-processor] name=${this.options.processorName}, fetchedRows=${fetchedRows}, processedRows=${processedRows}`,
+      );
       return processedRows;
     } catch (error) {
       console.error("[events-processor] processing failed", error);
@@ -163,7 +160,7 @@ export class EventsProcessor {
 
   private async processOnceFromIndexerApi(
     handledEventTypes: string[],
-  ): Promise<number> {
+  ): Promise<{ fetchedRows: number; processedRows: number }> {
     const offsets = this.dataSource.getRepository(ProcessorOffsetEntity);
     const offset =
       (await offsets.findOne({
@@ -179,14 +176,22 @@ export class EventsProcessor {
       limit: this.options.batchSize,
     });
     if (!events.length) {
-      return 0;
+      return {
+        fetchedRows: 0,
+        processedRows: 0,
+      };
     }
 
     await this.dataSource.transaction(async (manager) => {
       const transactionalOffsets = manager.getRepository(ProcessorOffsetEntity);
 
       for (const event of events) {
-        await this.router.dispatch(event, manager);
+        const dispatchResult = await this.router.dispatch(event, manager);
+        if (!dispatchResult.handled) {
+          throw new Error(
+            `[events-processor] failed to handle event id=${event.id} eventType=${event.eventType} status=${event.status}`,
+          );
+        }
       }
 
       const lastEvent = events[events.length - 1];
@@ -200,6 +205,9 @@ export class EventsProcessor {
       );
     });
 
-    return events.length;
+    return {
+      fetchedRows: events.length,
+      processedRows: events.length,
+    };
   }
 }

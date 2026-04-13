@@ -41,7 +41,7 @@ function resolveRedisConfig({
     (process.env.REDIS_PORT
       ? Number.parseInt(process.env.REDIS_PORT, 10)
       : undefined);
-  const resolvedQueueName = queueName ?? process.env.VOTE_REDUCER_QUEUE_NAME;
+  const resolvedQueueName = queueName ?? process.env.QUEUE_NAME;
 
   if (!resolvedRedisHost) {
     throw new Error(

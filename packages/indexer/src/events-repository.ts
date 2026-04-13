@@ -5,6 +5,8 @@ import { ArchiveEventEntity, IndexerCursorEntity } from "./entities.js";
 interface ArchiveEventInsertInput {
   status: string;
   pendingSeenAtHeight: number | null;
+  blockHeight: number | null;
+  blockTimestamp: Date | null;
   eventType: string;
   txHash: string;
   accountUpdateId: string;
@@ -103,6 +105,12 @@ export class EventsRepository {
                 END,
                 -1
               )
+              OR COALESCE("archive_events"."block_height", -1) <> COALESCE(EXCLUDED."block_height", -1)
+              OR (
+                ("archive_events"."block_timestamp" IS NULL AND EXCLUDED."block_timestamp" IS NOT NULL)
+                OR ("archive_events"."block_timestamp" IS NOT NULL AND EXCLUDED."block_timestamp" IS NULL)
+                OR ("archive_events"."block_timestamp" <> EXCLUDED."block_timestamp")
+              )
               THEN NOW()
               ELSE "archive_events"."updated_at"
             END,
@@ -128,7 +136,9 @@ export class EventsRepository {
                   EXCLUDED."pending_seen_at_height"
                 )
               ELSE "archive_events"."pending_seen_at_height"
-            END
+            END,
+            "block_height" = EXCLUDED."block_height",
+            "block_timestamp" = EXCLUDED."block_timestamp"
         `)
         .returning("id")
         .execute(),
@@ -254,21 +264,35 @@ export class EventsRepository {
         const eventIndex = eventIndexByAccountUpdate.get(eventIndexKey) ?? 0;
         eventIndexByAccountUpdate.set(eventIndexKey, eventIndex + 1);
 
+        const resolvedEvent = this.resolveEventTypeInfo(eventData);
         rows.push({
           status,
           pendingSeenAtHeight:
             status === "pending" ? eventOutput.blockInfo.height : null,
-          eventType: this.resolveEventType(eventData),
+          blockHeight: eventOutput.blockInfo.height,
+          blockTimestamp: this.resolveBlockTimestamp(eventOutput.blockInfo.timestamp),
+          eventType: resolvedEvent.eventType,
           txHash,
           accountUpdateId,
           accountUpdateIndex,
           eventIndex,
-          rawEventData: eventData,
+          rawEventData: this.normalizeRawEventData(eventData, resolvedEvent),
         });
       }
     }
 
     return rows;
+  }
+
+  private resolveBlockTimestamp(value: unknown): Date | null {
+    if (typeof value !== "string" || value.trim().length === 0) {
+      return null;
+    }
+    const parsed = new Date(value);
+    if (Number.isNaN(parsed.getTime())) {
+      return null;
+    }
+    return parsed;
   }
 
   private getAccountUpdateIndex(eventData: ArchiveEventData): number {
@@ -286,13 +310,19 @@ export class EventsRepository {
     return zkappAccountUpdateIds.indexOf(numericAccountUpdateId);
   }
 
-  private resolveEventType(eventData: ArchiveEventData): string {
+  private resolveEventTypeInfo(eventData: ArchiveEventData): {
+    eventType: string;
+    stripEncodedTypeField: boolean;
+  } {
     const archiveReportedType = this.resolveArchiveReportedEventType(eventData);
     if (archiveReportedType) {
-      return archiveReportedType;
+      return {
+        eventType: archiveReportedType,
+        stripEncodedTypeField: false,
+      };
     }
 
-    const encodedType = this.resolveEncodedEventType(eventData);
+    const encodedType = this.resolveEncodedEventTypeInfo(eventData);
     if (encodedType) {
       return encodedType;
     }
@@ -320,12 +350,18 @@ export class EventsRepository {
     return null;
   }
 
-  private resolveEncodedEventType(eventData: ArchiveEventData): string | null {
+  private resolveEncodedEventTypeInfo(eventData: ArchiveEventData): {
+    eventType: string;
+    stripEncodedTypeField: boolean;
+  } | null {
     if (this.knownEventTypes.length === 0) {
       return null;
     }
     if (this.knownEventTypes.length === 1) {
-      return this.knownEventTypes[0];
+      return {
+        eventType: this.knownEventTypes[0],
+        stripEncodedTypeField: false,
+      };
     }
 
     const typeIndex = this.getEncodedEventTypeIndex(eventData.data);
@@ -336,7 +372,29 @@ export class EventsRepository {
     ) {
       return null;
     }
-    return this.knownEventTypes[typeIndex] ?? null;
+    // The first event field encodes the event type index in the contract's
+    // event declaration order, so this list must preserve that insertion order.
+    const eventType = this.knownEventTypes[typeIndex] ?? null;
+    if (!eventType) {
+      return null;
+    }
+    return {
+      eventType,
+      stripEncodedTypeField: true,
+    };
+  }
+
+  private normalizeRawEventData(
+    eventData: ArchiveEventData,
+    resolvedEvent: { stripEncodedTypeField: boolean },
+  ): ArchiveEventData {
+    if (!resolvedEvent.stripEncodedTypeField || !Array.isArray(eventData.data)) {
+      return eventData;
+    }
+    return {
+      ...eventData,
+      data: eventData.data.slice(1),
+    };
   }
 
   private getEncodedEventTypeIndex(data: string[] | null | undefined): number | null {
@@ -374,6 +432,6 @@ export class EventsRepository {
         normalized.add(trimmed);
       }
     }
-    return Array.from(normalized).sort();
+    return Array.from(normalized);
   }
 }

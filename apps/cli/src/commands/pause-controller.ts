@@ -1,6 +1,7 @@
 import { Command, Option } from "commander";
-import { PrivateKey, PublicKey, UInt64 } from "o1js";
+import { PrivateKey, PublicKey, UInt32, UInt64 } from "o1js";
 import {
+  MIN_VALID_MULTISIG_SIGNATURES_COUNT,
   MULTISIG_PARTICIPANTS_COUNT,
   MultisigSignature,
   MultisigSignatures,
@@ -46,9 +47,11 @@ interface UnpauseTreasuryCommandOptions extends BasePauseControllerCommandOption
 
 interface TogglePauseProposalCommandOptions
   extends BasePauseControllerCommandOptions {
+  treasuryOwnerPublicKey: PublicKey;
   proposalPublicKey: PublicKey;
   multisigParticipantsPublicKeys: PublicKey[];
   multisigSignatures: MultisigSignatures;
+  lifecyclePeriodDuration: UInt32;
 }
 
 interface RotateMultisigKeysCommandOptions
@@ -71,20 +74,36 @@ function parsePublicKey(value: string): PublicKey {
   return PublicKey.fromBase58(value);
 }
 
-function parseMultisigSignatures(value: string): MultisigSignatures {
-  const signatures = value
-    .split(",")
-    .map((signature) => signature.trim())
-    .filter((signature) => signature.length > 0)
-    .map(
-      (signature) =>
-        MultisigSignature.fromBase58(signature) as unknown as MultisigSignature,
-    );
-  if (signatures.length !== MULTISIG_PARTICIPANTS_COUNT) {
+export function parseMultisigSignatures(value: string): MultisigSignatures {
+  const signatureSlots = value.split(",").map((signature) => signature.trim());
+  if (signatureSlots.length > MULTISIG_PARTICIPANTS_COUNT) {
     throw new Error(
-      `Expected ${MULTISIG_PARTICIPANTS_COUNT} multisig signatures, got ${signatures.length}`,
+      `Expected at most ${MULTISIG_PARTICIPANTS_COUNT} multisig signature slots, got ${signatureSlots.length}`,
     );
   }
+
+  const signatures = signatureSlots.map((signature, index) => {
+    if (signature.length === 0) {
+      return MultisigSignature.empty() as unknown as MultisigSignature;
+    }
+    try {
+      return MultisigSignature.fromBase58(signature) as unknown as MultisigSignature;
+    } catch {
+      throw new Error(`Invalid multisig signature at slot ${index + 1}`);
+    }
+  });
+
+  const validSignaturesCount = signatureSlots.filter((signature) => signature.length > 0).length;
+  if (validSignaturesCount < MIN_VALID_MULTISIG_SIGNATURES_COUNT) {
+    throw new Error(
+      `Expected at least ${MIN_VALID_MULTISIG_SIGNATURES_COUNT} multisig signatures, got ${validSignaturesCount}`,
+    );
+  }
+
+  while (signatures.length < MULTISIG_PARTICIPANTS_COUNT) {
+    signatures.push(MultisigSignature.empty() as unknown as MultisigSignature);
+  }
+
   return new MultisigSignatures({ signatures });
 }
 
@@ -219,15 +238,21 @@ export async function unpauseTreasury(
 export async function togglePauseProposal(
   options: TogglePauseProposalCommandOptions,
 ): Promise<void> {
-  const { SqlitePauseControllerService } = await import(
-    "@repo/sdk/src/services/sqlite/sqlite-pause-controller-service.js"
-  );
+  const [{ SqlitePauseControllerService }, { SqliteTreasuryOwnerService }] =
+    await Promise.all([
+      import("@repo/sdk/src/services/sqlite/sqlite-pause-controller-service.js"),
+      import("@repo/sdk/src/services/sqlite/sqlite-treasury-owner-service.js"),
+    ]);
   const service = new SqlitePauseControllerService();
-  await service.compile();
+  const treasuryOwnerService = new SqliteTreasuryOwnerService();
+  await treasuryOwnerService.compile({
+    lifecyclePeriodDuration: options.lifecyclePeriodDuration,
+  });
   configureMinaNetwork(options.minaNodeUrl);
   const result = await service.togglePauseProposal({
     minaNodeUrl: options.minaNodeUrl,
     senderPrivateKey: options.senderPrivateKey,
+    treasuryOwnerPublicKey: options.treasuryOwnerPublicKey,
     pauseControllerPublicKey: options.pauseControllerPublicKey,
     proposalPublicKey: options.proposalPublicKey,
     multisigParticipantsPublicKeys: options.multisigParticipantsPublicKeys,
@@ -388,7 +413,7 @@ export default function pauseControllerCommandFactory(program: Command) {
     .addOption(
       new Option(
         "--multisig-signatures <multisig-signatures>",
-        `Comma separated list of ${MULTISIG_PARTICIPANTS_COUNT} multisig signatures (base58) aligned with participant order`,
+        `Comma separated list of ${MIN_VALID_MULTISIG_SIGNATURES_COUNT}-${MULTISIG_PARTICIPANTS_COUNT} multisig signatures (base58) aligned with participant order; empty entries preserve missing slots (e.g. sig1,,sig3), and unspecified trailing slots are padded with empty signatures`,
       )
         .env("MULTISIG_SIGNATURES")
         .argParser(parseMultisigSignatures)
@@ -451,7 +476,7 @@ export default function pauseControllerCommandFactory(program: Command) {
     .addOption(
       new Option(
         "--multisig-signatures <multisig-signatures>",
-        `Comma separated list of ${MULTISIG_PARTICIPANTS_COUNT} multisig signatures (base58) aligned with participant order`,
+        `Comma separated list of ${MIN_VALID_MULTISIG_SIGNATURES_COUNT}-${MULTISIG_PARTICIPANTS_COUNT} multisig signatures (base58) aligned with participant order; empty entries preserve missing slots (e.g. sig1,,sig3), and unspecified trailing slots are padded with empty signatures`,
       )
         .env("MULTISIG_SIGNATURES")
         .argParser(parseMultisigSignatures)
@@ -481,7 +506,9 @@ export default function pauseControllerCommandFactory(program: Command) {
 
   command
     .command("toggle-pause-proposal")
-    .description("Authorize pause toggle for a proposal via multisig")
+    .description(
+      "Toggle proposal pause via treasury-owner with multisig authorization",
+    )
     .addOption(
       new Option("--mina-node-url <mina-node-url>", "Mina GraphQL URL")
         .env("MINA_NODE_URL")
@@ -496,9 +523,18 @@ export default function pauseControllerCommandFactory(program: Command) {
     .addOption(
       new Option(
         "--pause-controller-public-key <pause-controller-public-key>",
-        "Pause controller public key",
+        "Pause controller public key (must match treasury owner state)",
       )
         .env("PAUSE_CONTROLLER_PUBLIC_KEY")
+        .argParser(parsePublicKey)
+        .makeOptionMandatory(),
+    )
+    .addOption(
+      new Option(
+        "--treasury-owner-public-key <treasury-owner-public-key>",
+        "Treasury owner public key",
+      )
+        .env("TREASURY_OWNER_PUBLIC_KEY")
         .argParser(parsePublicKey)
         .makeOptionMandatory(),
     )
@@ -520,7 +556,7 @@ export default function pauseControllerCommandFactory(program: Command) {
     .addOption(
       new Option(
         "--multisig-signatures <multisig-signatures>",
-        `Comma separated list of ${MULTISIG_PARTICIPANTS_COUNT} multisig signatures (base58) aligned with participant order`,
+        `Comma separated list of ${MIN_VALID_MULTISIG_SIGNATURES_COUNT}-${MULTISIG_PARTICIPANTS_COUNT} multisig signatures (base58) aligned with participant order; empty entries preserve missing slots (e.g. sig1,,sig3), and unspecified trailing slots are padded with empty signatures`,
       )
         .env("MULTISIG_SIGNATURES")
         .argParser(parseMultisigSignatures)
@@ -545,6 +581,15 @@ export default function pauseControllerCommandFactory(program: Command) {
         .env("TX_WAIT")
         .argParser(parseBooleanOption)
         .default(true),
+    )
+    .addOption(
+      new Option(
+        "--lifecycle-period-duration <lifecycle-period-duration>",
+        "Duration of lifecycle period in slots (must match treasury owner compile config)",
+      )
+        .env("LIFECYCLE_PERIOD_DURATION")
+        .argParser((value) => UInt32.from(value))
+        .default(UInt32.from(7140)),
     )
     .action(togglePauseProposal);
 
@@ -583,7 +628,7 @@ export default function pauseControllerCommandFactory(program: Command) {
     .addOption(
       new Option(
         "--multisig-signatures <multisig-signatures>",
-        `Comma separated list of ${MULTISIG_PARTICIPANTS_COUNT} multisig signatures (base58) aligned with current participant order`,
+        `Comma separated list of ${MIN_VALID_MULTISIG_SIGNATURES_COUNT}-${MULTISIG_PARTICIPANTS_COUNT} multisig signatures (base58) aligned with current participant order; empty entries preserve missing slots (e.g. sig1,,sig3), and unspecified trailing slots are padded with empty signatures`,
       )
         .env("MULTISIG_SIGNATURES")
         .argParser(parseMultisigSignatures)

@@ -43,7 +43,7 @@ post-processing patch of `event_type`.
 ## HTTP API (`EventsApiServer`)
 
 - `GET /healthz`
-- `GET /v1/indexer/events`
+- `GET /events`
 
 Query params:
 

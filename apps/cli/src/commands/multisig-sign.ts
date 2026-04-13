@@ -68,12 +68,14 @@ function buildSignaturesResult(
   dataHash: Field,
   extra: Partial<MultisigSignCommandResult> = {},
 ): MultisigSignCommandResult {
-  const participantPublicKeyStrings = options.multisigParticipantsPublicKeys.map((pk) =>
-    pk.toBase58(),
-  );
+  const participantPublicKeyStrings =
+    options.multisigParticipantsPublicKeys.map((pk) => pk.toBase58());
 
-  const signerPublicKey = options.multisigSignerPrivateKey.toPublicKey().toBase58();
-  const signerParticipantIndex = participantPublicKeyStrings.indexOf(signerPublicKey);
+  const signerPublicKey = options.multisigSignerPrivateKey
+    .toPublicKey()
+    .toBase58();
+  const signerParticipantIndex =
+    participantPublicKeyStrings.indexOf(signerPublicKey);
   if (signerParticipantIndex < 0) {
     throw new Error(
       `Signer public key ${signerPublicKey} is not part of --multisig-participants-public-keys`,
@@ -118,7 +120,9 @@ export async function signUnpauseTreasury(
   const nonce = UInt32.from(options.nonce);
   const dataHash = MultisigSignature.dataUnpauseTreasury(nonce);
   console.log(
-    JSON.stringify(buildSignaturesResult("unpause-treasury", options, dataHash)),
+    JSON.stringify(
+      buildSignaturesResult("unpause-treasury", options, dataHash),
+    ),
   );
 }
 
@@ -213,7 +217,10 @@ export default function multisigSignCommandFactory(program: Command) {
       .command("toggle-pause-proposal")
       .description("Sign multisig payload for toggle-pause-proposal")
       .addOption(
-        new Option("--proposal-public-key <proposal-public-key>", "Proposal public key")
+        new Option(
+          "--proposal-public-key <proposal-public-key>",
+          "Proposal public key",
+        )
           .env("PROPOSAL_PUBLIC_KEY")
           .argParser(parsePublicKey)
           .makeOptionMandatory(),
@@ -235,4 +242,3 @@ export default function multisigSignCommandFactory(program: Command) {
       ),
   ).action(signRotateMultisigKeys);
 }
-

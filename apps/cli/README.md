@@ -35,6 +35,15 @@ cd apps/cli
 pnpm run mina-treasury -- <command> <subcommand> [options]
 ```
 
+For the local-blockchain stack env:
+
+```bash
+set -a
+source apps/cli/.env.local-blockchain
+set +a
+pnpm --dir apps/cli run dev -- --help
+```
+
 ## Baseline Configuration For Deployment
 
 Generate required keypairs first (run once per role and save output):
@@ -44,10 +53,10 @@ pnpm run cli -- generate-keypair --json # treasury-owner
 pnpm run cli -- generate-keypair --json # pause-controller
 ```
 
-Create a local env file:
+Create or edit the manual env file:
 
 ```bash
-cat > apps/cli/.env.local <<'EOF'
+cat > apps/cli/.env.local-blockchain <<'EOF'
 MINA_NODE_URL=https://<your-mina-node>/graphql
 ARCHIVE_NODE_URL=https://<your-mina-archive-node>
 PROOFS_ENABLED=true
@@ -69,7 +78,7 @@ Load it in your shell:
 
 ```bash
 set -a
-source apps/cli/.env.local
+source apps/cli/.env.local-blockchain
 set +a
 ```
 
@@ -116,7 +125,7 @@ Choose start strategy:
 Persist it:
 
 ```bash
-echo "TREASURY_DEPLOYED_AT_SLOT=$TREASURY_DEPLOYED_AT_SLOT" >> apps/cli/.env.local
+echo "TREASURY_DEPLOYED_AT_SLOT=$TREASURY_DEPLOYED_AT_SLOT" >> apps/cli/.env.local-blockchain
 export TREASURY_DEPLOYED_AT_SLOT
 ```
 
@@ -157,6 +166,20 @@ pnpm run cli -- treasury-owner fund-treasury \
   --funding-private-key <FUNDING_ACCOUNT_PRIVATE_KEY> \
   --amount 10000000000
 ```
+
+### 5) (Optional) Transfer MINA between accounts
+
+Use the top-level `transfer` command for a plain payment transaction:
+
+```bash
+pnpm run cli -- transfer \
+  --sender-private-key <FEE_PAYER_PRIVATE_KEY> \
+  --funding-private-key <FUNDING_ACCOUNT_PRIVATE_KEY> \
+  --recipient-public-key <RECIPIENT_PUBLIC_KEY> \
+  --amount 1000000000
+```
+
+If `--funding-private-key` is omitted, the funding account defaults to the sender.
 
 ## Flow 2: Create Proposal And Cast Vote
 
@@ -438,6 +461,9 @@ Share these values with other signers/coordinators:
 
 Then compose one final `--multisig-signatures` list by participant index and submit it to pause-controller commands.
 You need at least 3 valid signatures in the final list.
+The CLI accepts `3..5` valid signatures and pads trailing entries with empty signatures automatically.
+You can preserve positional gaps with empty comma entries, for example:
+`<SIG_0>,,<SIG_2>,<SIG_3>` (slot `1` is filled with a dummy signature).
 
 ### 4) Submit signed action
 
@@ -455,6 +481,10 @@ Other supported actions:
 - `pause-controller unpause-treasury`
 - `pause-controller toggle-pause-proposal`
 - `pause-controller rotate-multisig-keys`
+
+`toggle-pause-proposal` is executed through the treasury-owner contract and requires
+`--treasury-owner-public-key` (or `TREASURY_OWNER_PUBLIC_KEY` in env) so proposal pause
+events are emitted and indexed correctly.
 
 For every action, use matching `multisig-sign <action>` first.
 
@@ -490,4 +520,5 @@ pnpm run cli -- vote-reducer --help
 pnpm run cli -- staking-ledger --help
 pnpm run cli -- staking-ledger-to-voting-ledger --help
 pnpm run cli -- worker --help
+pnpm run cli -- transfer --help
 ```

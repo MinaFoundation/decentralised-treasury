@@ -1,10 +1,11 @@
 import {
   AccountUpdate,
+  Bool,
   Cache,
   fetchAccount,
   Mina,
   type PrivateKey,
-  type PublicKey,
+  PublicKey,
   UInt32,
 } from "o1js";
 import {
@@ -12,6 +13,11 @@ import {
   MultisigSignatures,
 } from "../../provable/contracts/treasury-pause-controller/multisig-signatures.js";
 import { TreasuryPauseControllerSmartContract } from "../../provable/contracts/treasury-pause-controller/treasury-pause-controller.js";
+import { TreasuryOwnerSmartContract } from "../../provable/contracts/treasury-owner.js";
+import {
+  ProposalStatus,
+  TreasuryProposalSmartContract,
+} from "../../provable/contracts/treasury-proposal/treasury-proposal.js";
 import {
   type CompilePauseControllerOptions,
   type CompilePauseControllerResult,
@@ -32,11 +38,25 @@ import {
 import { logger } from "../../index.js";
 
 export class SqlitePauseControllerService implements PauseControllerService {
+  private seedParticipantsForCompile() {
+    if (
+      TreasuryPauseControllerSmartContract.multisigParticipants.length ===
+      MULTISIG_PARTICIPANTS_COUNT
+    ) {
+      return;
+    }
+    TreasuryPauseControllerSmartContract.multisigParticipants = Array.from(
+      { length: MULTISIG_PARTICIPANTS_COUNT },
+      () => PublicKey.empty(),
+    );
+  }
+
   public async compile(
     options: CompilePauseControllerOptions = {},
   ): Promise<CompilePauseControllerResult> {
     const cachePath = options.cachePath ?? `${process.cwd()}/cache`;
     const cache = Cache.FileSystem(cachePath);
+    this.seedParticipantsForCompile();
     const { verificationKey: pauseControllerVerificationKey } =
       await TreasuryPauseControllerSmartContract.compile({
         cache,
@@ -203,6 +223,7 @@ export class SqlitePauseControllerService implements PauseControllerService {
   ): Promise<TogglePauseProposalResult> {
     const {
       senderPrivateKey,
+      treasuryOwnerPublicKey,
       pauseControllerPublicKey,
       proposalPublicKey,
       multisigParticipantsPublicKeys,
@@ -219,13 +240,91 @@ export class SqlitePauseControllerService implements PauseControllerService {
     TreasuryPauseControllerSmartContract.multisigParticipants =
       multisigParticipantsPublicKeys;
 
-    const pauseController = new TreasuryPauseControllerSmartContract(
-      pauseControllerPublicKey,
+    const treasuryOwner = new TreasuryOwnerSmartContract(
+      treasuryOwnerPublicKey,
     );
+    const { error: treasuryOwnerFetchError } = await fetchAccount({
+      publicKey: treasuryOwnerPublicKey,
+    });
+    if (treasuryOwnerFetchError) {
+      logger.info(
+        `[pause-controller-service] continuing despite treasury owner prefetch error while toggling proposal pause: ${String(treasuryOwnerFetchError)}`,
+      );
+    }
+
+    const configuredPauseControllerPublicKey =
+      await treasuryOwner.pauseControllerPublicKey.fetch();
+    if (!configuredPauseControllerPublicKey) {
+      throw new Error(
+        `Treasury owner pauseControllerPublicKey is not set for ${treasuryOwnerPublicKey.toBase58()}`,
+      );
+    }
+    if (
+      !configuredPauseControllerPublicKey
+        .equals(pauseControllerPublicKey)
+        .toBoolean()
+    ) {
+      throw new Error(
+        `Pause controller public key mismatch: provided ${pauseControllerPublicKey.toBase58()} but treasury owner ${treasuryOwnerPublicKey.toBase58()} is configured with ${configuredPauseControllerPublicKey.toBase58()}`,
+      );
+    }
+
+    const pauseController = new TreasuryPauseControllerSmartContract(
+      configuredPauseControllerPublicKey,
+    );
+    const proposalTokenId = treasuryOwner.deriveTokenId();
+    const proposal = new TreasuryProposalSmartContract(
+      proposalPublicKey,
+      proposalTokenId,
+    );
+    const [
+      { error: pauseControllerFetchError },
+      { error: proposalFetchError },
+    ] = await Promise.all([
+      fetchAccount({
+        publicKey: configuredPauseControllerPublicKey,
+      }),
+      fetchAccount({
+        publicKey: proposalPublicKey,
+        tokenId: proposalTokenId,
+      }),
+    ]);
+    if (pauseControllerFetchError || proposalFetchError) {
+      logger.info(
+        `[pause-controller-service] continuing despite prefetch errors while toggling proposal pause (pauseController=${String(pauseControllerFetchError)}, proposal=${String(proposalFetchError)})`,
+      );
+    }
+    const onChainMultisigCommitment =
+      await pauseController.multisigCommitment.fetch();
+    if (!onChainMultisigCommitment) {
+      throw new Error(
+        `Pause controller multisig commitment is not set for ${configuredPauseControllerPublicKey.toBase58()}`,
+      );
+    }
+    const providedMultisigCommitment = MultisigSignatures.createCommitment(
+      multisigParticipantsPublicKeys,
+    );
+    if (
+      !providedMultisigCommitment.equals(onChainMultisigCommitment).toBoolean()
+    ) {
+      throw new Error(
+        `Provided multisig participants commitment ${providedMultisigCommitment.toString()} does not match on-chain commitment ${onChainMultisigCommitment.toString()} for ${configuredPauseControllerPublicKey.toBase58()}`,
+      );
+    }
+
     const resolvedNonce = await this.resolvePauseControllerNonce(
-      pauseControllerPublicKey,
+      configuredPauseControllerPublicKey,
       nonce,
     );
+    // const currentProposalStatus = await proposal.status.fetch();
+    // if (!currentProposalStatus) {
+    //   throw new Error(
+    //     `Proposal status is not set for ${proposalPublicKey.toBase58()}`,
+    //   );
+    // }
+    // const pausedAfterToggle = !currentProposalStatus
+    //   .equals(ProposalStatus.PAUSED)
+    //   .toBoolean();
     const senderPublicKey = senderPrivateKey.toPublicKey();
 
     const togglePauseProposalTx = await Mina.transaction(
@@ -236,10 +335,11 @@ export class SqlitePauseControllerService implements PauseControllerService {
         memo,
       },
       async () => {
-        await pauseController.togglePauseProposal(
+        await treasuryOwner.togglePauseProposal(
           proposalPublicKey,
           signatures,
           resolvedNonce,
+          Bool(true),
         );
       },
     );
@@ -250,7 +350,8 @@ export class SqlitePauseControllerService implements PauseControllerService {
     });
 
     return {
-      pauseControllerAddress: pauseControllerPublicKey.toBase58(),
+      treasuryOwnerAddress: treasuryOwnerPublicKey.toBase58(),
+      pauseControllerAddress: configuredPauseControllerPublicKey.toBase58(),
       proposalPublicKey: proposalPublicKey.toBase58(),
       nonce: resolvedNonce.toString(),
       togglePauseProposalTxHash: togglePendingTx.hash,

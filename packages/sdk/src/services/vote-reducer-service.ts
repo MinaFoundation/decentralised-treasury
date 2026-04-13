@@ -28,6 +28,7 @@ export interface VoteReducerServiceOptions {
 
 export interface VoteReducerService {
   start(): Promise<void>;
+  getVoteWeight(voterPublicKey: string): Promise<bigint>;
   clearPersistentState(): Promise<void>;
   compile(options?: CompileVoteReducerOptions): Promise<void>;
   fetchProposalActions(): Promise<FetchProposalActionsResult>;

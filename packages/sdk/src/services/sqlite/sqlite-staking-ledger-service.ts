@@ -4,6 +4,8 @@ import { dirname } from "node:path";
 import { Field } from "o1js";
 import { PersistentStakingLedger } from "../../ledgers/staking-ledger/persistent-staking-ledger.js";
 import { createSqliteStakingLedgerStorage } from "../../storage/sqlite/factory/sqlite-staking-ledger-storage.js";
+import type { Account } from "../../provable/account.js";
+import type { PrefixedMerkleWitness36 } from "../../provable/merkle-tree/prefixed-merkle-tree.js";
 import {
   getSqliteDbPath,
   getSqliteInMemoryDbPath,
@@ -73,6 +75,28 @@ export class SqliteStakingLedgerService implements StakingLedgerService {
     const stakingLedger = this.getStartedLedger();
     const accounts = await stakingLedger.getAllAccounts();
     await stakingLedger.hydrateMerkleTree(accounts, startIndex, endIndex);
+  }
+
+  public async getAllAccounts(): Promise<Account[]> {
+    const stakingLedger = this.getStartedLedger();
+    return await stakingLedger.getAllAccounts();
+  }
+
+  public async getAccount(index: bigint): Promise<Account> {
+    const stakingLedger = this.getStartedLedger();
+    return await stakingLedger.getAccount(index);
+  }
+
+  public async getAccountByPublicKey(
+    publicKey: string,
+  ): Promise<{ index: bigint; account: Account } | null> {
+    const stakingLedger = this.getStartedLedger();
+    return await stakingLedger.getAccountByPublicKey(publicKey);
+  }
+
+  public async getWitness(index: bigint): Promise<PrefixedMerkleWitness36> {
+    const stakingLedger = this.getStartedLedger();
+    return await stakingLedger.getWitness(index);
   }
 
   public async getRootHash(): Promise<Field> {

@@ -72,6 +72,7 @@ export interface UnpauseTreasuryResult {
 export interface TogglePauseProposalOptions {
   minaNodeUrl: string;
   senderPrivateKey: PrivateKey;
+  treasuryOwnerPublicKey: PublicKey;
   pauseControllerPublicKey: PublicKey;
   proposalPublicKey: PublicKey;
   multisigParticipantsPublicKeys: PublicKey[];
@@ -83,6 +84,7 @@ export interface TogglePauseProposalOptions {
 }
 
 export interface TogglePauseProposalResult {
+  treasuryOwnerAddress: string;
   pauseControllerAddress: string;
   proposalPublicKey: string;
   nonce: string;

@@ -138,6 +138,16 @@ export class SqliteVoteReducerService implements VoteReducerService {
     }
   }
 
+  public async getVoteWeight(voterPublicKey: string): Promise<bigint> {
+    if (!this.votingLedger) {
+      throw new Error(
+        "SqliteVoteReducerService.start() must be called before getVoteWeight()",
+      );
+    }
+    const votingAccount = await this.votingLedger.getVotingAccount(voterPublicKey);
+    return votingAccount.balance.toBigInt();
+  }
+
   public async compile(options: CompileVoteReducerOptions = {}): Promise<void> {
     const proofsEnabled =
       options.proofsEnabled ?? process.env.PROOFS_ENABLED === "true";

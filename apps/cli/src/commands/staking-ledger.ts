@@ -1,5 +1,4 @@
 import { Command, Option } from "commander";
-import { provableLog } from "@repo/sdk/src/index.js";
 import { SqliteStakingLedgerService } from "@repo/sdk/src/services/sqlite/sqlite-staking-ledger-service.js";
 import { parseIntOption } from "./option-parsers.js";
 
@@ -12,7 +11,7 @@ export async function getRootHash({
   await service.start();
   const rootHash = await service.getRootHash();
   await service.close();
-  provableLog("rootHash", rootHash);
+  console.log(rootHash);
 }
 
 export async function hydrateAccounts({

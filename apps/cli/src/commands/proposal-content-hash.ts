@@ -17,7 +17,7 @@ export interface ResolveProposalZkappUriOptions {
   contentFile: string;
 }
 
-export async function resolveProposalZkappUri({
+export async function readProposalMarkdownContent({
   contentFile,
 }: ResolveProposalZkappUriOptions): Promise<string> {
   const extension = extname(contentFile).toLowerCase();
@@ -39,8 +39,18 @@ export async function resolveProposalZkappUri({
     );
   }
 
+  return markdownContent.toString("utf8");
+}
+
+export async function resolveProposalZkappUri({
+  contentFile,
+}: ResolveProposalZkappUriOptions): Promise<string> {
+  const markdownContent = await readProposalMarkdownContent({
+    contentFile,
+  });
+
   const hashedProposalZkappUri = await hashMarkdownContentToZkappUri(
-    markdownContent,
+    new TextEncoder().encode(markdownContent),
   );
   assertZkappUriWithinByteLimit(hashedProposalZkappUri);
   return hashedProposalZkappUri;

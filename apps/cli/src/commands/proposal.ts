@@ -11,7 +11,11 @@ import { TreasuryOwnerSmartContract } from "@repo/sdk/src/provable/contracts/tre
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname } from "node:path";
 import { configureMinaNetwork } from "./mina-instance.js";
-import { resolveProposalZkappUri } from "./proposal-content-hash.js";
+import { submitProposalContents } from "./proposal-content-api.js";
+import {
+  readProposalMarkdownContent,
+  resolveProposalZkappUri,
+} from "./proposal-content-hash.js";
 
 function parsePrivateKey(value: string): PrivateKey {
   return PrivateKey.fromBase58(value);
@@ -22,6 +26,7 @@ function parsePublicKey(value: string): PublicKey {
 }
 
 interface CreateProposalCommandOptions {
+  apiUrl: string;
   minaNodeUrl: string;
   senderPrivateKey: PrivateKey;
   treasuryOwnerPublicKey: PublicKey;
@@ -96,9 +101,14 @@ interface ReadProposalStateCommandOptions {
 export async function createProposal(
   options: CreateProposalCommandOptions,
 ): Promise<void> {
-  const proposalZkappUri = await resolveProposalZkappUri({
-    contentFile: options.contentFile,
-  });
+  const [proposalContents, proposalZkappUri] = await Promise.all([
+    readProposalMarkdownContent({
+      contentFile: options.contentFile,
+    }),
+    resolveProposalZkappUri({
+      contentFile: options.contentFile,
+    }),
+  ]);
   const { SqliteTreasuryOwnerService } = await import(
     "@repo/sdk/src/services/sqlite/sqlite-treasury-owner-service.js"
   );
@@ -124,7 +134,18 @@ export async function createProposal(
     wait: options.wait,
   });
 
-  console.log(JSON.stringify(result));
+  const contentSubmission = await submitProposalContents({
+    apiUrl: options.apiUrl,
+    proposalPublicKey: result.proposalAddress,
+    contents: proposalContents,
+  });
+
+  console.log(
+    JSON.stringify({
+      ...result,
+      contentSubmission,
+    }),
+  );
 }
 
 export async function voteProposal(options: VoteProposalCommandOptions): Promise<void> {
@@ -302,6 +323,11 @@ export default function proposalCommandFactory(program: Command) {
     .command("create")
     .description(
       "Create a proposal (must be submitted during the proposal creation period)",
+    )
+    .addOption(
+      new Option("--api-url <api-url>", "Treasury API base URL")
+        .env("TREASURY_API_URL")
+        .default("http://127.0.0.1:4000"),
     )
     .addOption(
       new Option("--mina-node-url <mina-node-url>", "Mina GraphQL URL")

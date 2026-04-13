@@ -48,8 +48,13 @@ export class StakingLedgerToVotingLedgerProver extends MergeProofOrchestrator<Si
     });
 
     // Exhaust may execute in a fresh process (e.g. standalone CLI command),
-    // so compile with proofs enabled to ensure a prover exists.
-    await StakingLedgerToVotingLedger.compile({ proofsEnabled: true });
+    // so compile here too, while honoring the configured proofs mode.
+    await StakingLedgerToVotingLedger.compile({
+      proofsEnabled: process.env.PROOFS_ENABLED === "true",
+    });
+    Provable.log("proving exhaust", {
+      mergedProof
+    });
     const exhaustedProof = await StakingLedgerToVotingLedger.exhaust(
       mergedProof.publicInput,
       mergedProof,

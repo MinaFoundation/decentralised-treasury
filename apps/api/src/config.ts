@@ -1,10 +1,12 @@
 import { PublicKey } from "o1js";
 
 const DEFAULT_DATABASE_SCHEMA = "public";
-const DEFAULT_INDEXER_API_PORT = 4_000;
+const DEFAULT_API_PORT = 4_000;
+const DEFAULT_INDEXER_API_PORT = 4_001;
 const DEFAULT_POLL_PENDING_INTERVAL_MS = 5_000;
 const DEFAULT_POLL_CANONICAL_INTERVAL_MS = 15_000;
 const DEFAULT_EVENTS_BLOCK_BATCH_SIZE = 10;
+const DEFAULT_PENDING_OVERLAP_BLOCKS = 20;
 const DEFAULT_CANONICAL_OVERLAP_BLOCKS = 100;
 const DEFAULT_ORPHAN_DEPTH_BLOCKS = 30;
 const DEFAULT_API_PAGE_LIMIT_DEFAULT = 50;
@@ -12,17 +14,19 @@ const DEFAULT_API_PAGE_LIMIT_MAX = 200;
 const DEFAULT_PROCESSOR_NAME = "proposal-processor";
 const DEFAULT_PROCESSOR_POLL_INTERVAL_MS = 2_000;
 const DEFAULT_PROCESSOR_BATCH_SIZE = 200;
-const DEFAULT_PROCESSOR_API_PORT = 4_100;
-const DEFAULT_PROCESSOR_API_PREFIX = "v1/processor";
+const DEFAULT_PROCESSOR_API_PORT = 4_002;
 const DEFAULT_ARCHIVE_REQUEST_TIMEOUT_MS = 15_000;
+const DEFAULT_PROPOSAL_CONTENT_MAX_CHARS = 32 * 1024;
 
-export interface IndexerConfig {
+export interface ApiConfig {
   archiveNodeUrl: string;
   treasuryOwnerContractAddress: string;
   treasuryOwnerTokenId: string;
   knownEventTypes: string[];
   databaseUrl: string;
   databaseSchema: string;
+  apiPort: number;
+  apiUrl: string;
   indexerApiPort: number;
   indexerApiUrl: string;
   apiPageLimitDefault: number;
@@ -30,14 +34,16 @@ export interface IndexerConfig {
   pollPendingIntervalMs: number;
   pollCanonicalIntervalMs: number;
   eventsBlockBatchSize: number;
+  pendingOverlapBlocks: number;
   canonicalOverlapBlocks: number;
   orphanDepthBlocks: number;
   processorName: string;
   processorPollIntervalMs: number;
   processorBatchSize: number;
   processorApiPort: number;
-  processorApiPrefix: string;
+  processorApiUrl: string;
   archiveRequestTimeoutMs: number;
+  proposalContentMaxChars: number;
 }
 
 interface ContractInstanceWithEventsMap {
@@ -117,17 +123,19 @@ function readEventTypesFromContractClass(
 
   const eventTypes = Object.keys(eventEntries)
     .map((eventType) => eventType.trim())
-    .filter((eventType) => eventType.length > 0);
+    .filter((eventType) => eventType.length > 0)
+    // Archive event discriminators are encoded using a stable lexical ordering.
+    .sort((left, right) => left.localeCompare(right));
   if (!eventTypes.length) {
     throw new Error("Configured treasury owner contract class exposes an empty events map");
   }
   return Array.from(new Set(eventTypes));
 }
 
-export function loadIndexerConfig(
+export function loadApiConfig(
   options: LoadIndexerConfigOptions,
   env: NodeJS.ProcessEnv = process.env,
-): IndexerConfig {
+): ApiConfig {
   const treasuryOwnerContractAddress = readRequiredEnv(
     "TREASURY_OWNER_CONTRACT_ADDRESS",
     env,
@@ -137,10 +145,16 @@ export function loadIndexerConfig(
     options.treasuryOwnerContractClass,
     treasuryOwnerContractAddress,
   );
+  const apiPort = readPositiveIntEnv(["API_PORT"], env, DEFAULT_API_PORT);
   const indexerApiPort = readPositiveIntEnv(
-    ["INDEXER_API_PORT", "INDEXER_PORT"],
+    ["INDEXER_API_PORT"],
     env,
     DEFAULT_INDEXER_API_PORT,
+  );
+  const processorApiPort = readPositiveIntEnv(
+    ["PROCESSOR_API_PORT"],
+    env,
+    DEFAULT_PROCESSOR_API_PORT,
   );
   const apiPageLimitDefault = readPositiveIntEnv(
     ["API_PAGE_LIMIT_DEFAULT"],
@@ -163,6 +177,8 @@ export function loadIndexerConfig(
     knownEventTypes,
     databaseUrl: readRequiredEnv("DATABASE_URL", env),
     databaseSchema: readOptionalEnv("DATABASE_SCHEMA", env, DEFAULT_DATABASE_SCHEMA),
+    apiPort,
+    apiUrl: readOptionalEnv("API_URL", env, `http://127.0.0.1:${apiPort}`),
     indexerApiPort,
     indexerApiUrl: readOptionalEnv(
       "INDEXER_API_URL",
@@ -185,6 +201,11 @@ export function loadIndexerConfig(
       ["EVENTS_BLOCK_BATCH_SIZE"],
       env,
       DEFAULT_EVENTS_BLOCK_BATCH_SIZE,
+    ),
+    pendingOverlapBlocks: readNonNegativeIntEnv(
+      ["PENDING_OVERLAP_BLOCKS"],
+      env,
+      DEFAULT_PENDING_OVERLAP_BLOCKS,
     ),
     canonicalOverlapBlocks: readNonNegativeIntEnv(
       ["CANONICAL_OVERLAP_BLOCKS"],
@@ -211,20 +232,23 @@ export function loadIndexerConfig(
       env,
       DEFAULT_PROCESSOR_BATCH_SIZE,
     ),
-    processorApiPort: readPositiveIntEnv(
-      ["PROCESSOR_API_PORT"],
+    processorApiPort,
+    processorApiUrl: readOptionalEnv(
+      "PROCESSOR_API_URL",
       env,
-      DEFAULT_PROCESSOR_API_PORT,
-    ),
-    processorApiPrefix: readOptionalEnv(
-      "PROCESSOR_API_PREFIX",
-      env,
-      DEFAULT_PROCESSOR_API_PREFIX,
+      `http://127.0.0.1:${processorApiPort}`,
     ),
     archiveRequestTimeoutMs: readPositiveIntEnv(
       ["ARCHIVE_REQUEST_TIMEOUT_MS"],
       env,
       DEFAULT_ARCHIVE_REQUEST_TIMEOUT_MS,
     ),
+    proposalContentMaxChars: readPositiveIntEnv(
+      ["PROPOSAL_CONTENT_MAX_CHARS", "PROPOSAL_CONTENT_MAX_BYTES"],
+      env,
+      DEFAULT_PROPOSAL_CONTENT_MAX_CHARS,
+    ),
   };
 }
+
+export const loadIndexerConfig = loadApiConfig;

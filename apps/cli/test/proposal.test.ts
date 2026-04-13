@@ -137,6 +137,48 @@ async function startMockArchiveNode(voteActions: VoteAction[]) {
   };
 }
 
+async function startMockProposalContentApi() {
+  const requests: Array<{
+    method?: string;
+    url?: string;
+    body: string;
+  }> = [];
+  const server = createServer(async (request, response) => {
+    const chunks: Buffer[] = [];
+    for await (const chunk of request) {
+      chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+    }
+    const body = Buffer.concat(chunks).toString("utf8");
+    requests.push({
+      method: request.method,
+      url: request.url,
+      body,
+    });
+    response.writeHead(200, { "content-type": "application/json" });
+    response.end(
+      JSON.stringify({
+        ok: true,
+        contentChars: body.length,
+        proposalPublicKey: request.url?.split("/")[2] ?? "unknown",
+        zkAppUri: "urn:proposal-content:markdown:sha256:test-digest",
+        zkAppUriHash: "123456789",
+      }),
+    );
+  });
+  await new Promise<void>((resolve) => {
+    server.listen(0, "127.0.0.1", () => resolve());
+  });
+  const { port } = server.address() as AddressInfo;
+  return {
+    url: `http://127.0.0.1:${port}`,
+    requests,
+    close: () =>
+      new Promise<void>((resolve, reject) => {
+        server.close((error) => (error ? reject(error) : resolve()));
+      }),
+  };
+}
+
 it("exposes proposal fetch-actions command in help", async () => {
   const proposalHelp = await runCli(["proposal", "--help"]);
   assert(
@@ -160,6 +202,10 @@ it("exposes proposal fetch-actions command in help", async () => {
   assert(
     proposalCreateHelp.includes("--content-file"),
     "expected proposal create help to list --content-file option",
+  );
+  assert(
+    proposalCreateHelp.includes("--api-url"),
+    "expected proposal create help to list --api-url option",
   );
   assert(
     !proposalCreateHelp.includes("--proposal-zkapp-uri"),
@@ -331,12 +377,14 @@ describe("proposal create e2e", { concurrency: 1 }, () => {
       FIXTURES_DIRECTORY,
       "proposal-create-e2e-content.md",
     );
+    const contentApi = await startMockProposalContentApi();
     await writeFile(proposalContentPath, PROPOSAL_MARKDOWN_CONTENT, "utf8");
     const createOutput = await runCli(["proposal", "create"], {
       timeoutMs: 600_000,
       streamOutput: true,
       streamLabel: "proposal create e2e",
       envOverrides: {
+        TREASURY_API_URL: contentApi.url,
         TREASURY_OWNER_PUBLIC_KEY: treasuryOwnerPublicKey,
         PROPOSAL_PRIVATE_KEY: proposalPrivateKey.toBase58(),
         PROPOSAL_LIFECYCLE_ID: String(proposalLifecycleId),
@@ -347,6 +395,7 @@ describe("proposal create e2e", { concurrency: 1 }, () => {
         PROOFS_ENABLED,
       },
     }).finally(async () => {
+      await contentApi.close();
       await rm(proposalContentPath, { force: true });
     });
 
@@ -355,6 +404,14 @@ describe("proposal create e2e", { concurrency: 1 }, () => {
     assert.strictEqual(createResult.proposalAddress, proposalPublicKey);
     assert(createResult.proposalTokenId, "expected proposal token id");
     assert(createResult.proposalTxHash, "expected proposal transaction hash");
+    assert.strictEqual(contentApi.requests.length, 1);
+    assert.strictEqual(
+      contentApi.requests[0]?.url,
+      `/proposals/${encodeURIComponent(proposalPublicKey)}/content`,
+    );
+    assert.deepStrictEqual(JSON.parse(contentApi.requests[0]?.body ?? "{}"), {
+      contents: PROPOSAL_MARKDOWN_CONTENT,
+    });
     createdProposalPublicKey = createResult.proposalAddress;
 
     const proposalStateOutput = await runCli(["proposal", "read-state"], {

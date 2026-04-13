@@ -1,4 +1,10 @@
-import { EVENTS_QUERY, NETWORK_STATE_QUERY } from "./queries.js";
+import {
+  EVENTS_QUERY,
+  EVENTS_QUERY_FALLBACK,
+  NETWORK_STATE_QUERY,
+} from "./queries.js";
+
+const ARCHIVE_DEFAULT_TOKEN_ID = "wSHV2S4qX9jFsLjQo8r1BsMLH2ZRKsZx6EJd1sbozGPieEC4Jf";
 
 export type ArchiveBlockStatus = "PENDING" | "CANONICAL";
 
@@ -26,6 +32,7 @@ export interface ArchiveEventData {
 
 export interface ArchiveBlockInfo {
   height: number;
+  timestamp?: string | null;
 }
 
 export interface ArchiveEventOutput {
@@ -64,10 +71,17 @@ export interface ArchiveClientConfig {
 }
 
 export class ArchiveClient {
+  private supportsBlockTimestamp: boolean | null = null;
+  private readonly normalizedTreasuryOwnerTokenId: string;
+
   public constructor(
     private readonly archiveNodeUrl: string,
     private readonly config: ArchiveClientConfig,
-  ) {}
+  ) {
+    this.normalizedTreasuryOwnerTokenId = normalizeArchiveTokenId(
+      config.treasuryOwnerTokenId,
+    );
+  }
 
   private async post<TData>(
     query: string,
@@ -140,15 +154,46 @@ export class ArchiveClient {
   }
 
   public async fetchEvents(options: FetchEventsOptions): Promise<ArchiveEventOutput[]> {
-    const data = await this.post<EventsResponse>(EVENTS_QUERY, {
+    const variables = {
       input: {
         address: this.config.treasuryOwnerContractAddress,
-        tokenId: this.config.treasuryOwnerTokenId,
+        tokenId: this.normalizedTreasuryOwnerTokenId,
         status: options.status,
         from: options.from,
         to: options.to,
       },
-    });
+    };
+
+    let data: EventsResponse;
+    if (this.supportsBlockTimestamp === false) {
+      data = await this.post<EventsResponse>(EVENTS_QUERY_FALLBACK, variables);
+    } else {
+      try {
+        data = await this.post<EventsResponse>(EVENTS_QUERY, variables);
+        this.supportsBlockTimestamp = true;
+      } catch (error) {
+        if (
+          this.supportsBlockTimestamp !== true &&
+          this.isMissingBlockTimestampFieldError(error)
+        ) {
+          this.supportsBlockTimestamp = false;
+          data = await this.post<EventsResponse>(EVENTS_QUERY_FALLBACK, variables);
+        } else {
+          throw error;
+        }
+      }
+    }
     return data.events ?? [];
   }
+
+  private isMissingBlockTimestampFieldError(error: unknown): boolean {
+    if (!(error instanceof Error)) {
+      return false;
+    }
+    return /Cannot query field ["']timestamp["']/i.test(error.message);
+  }
+}
+
+function normalizeArchiveTokenId(tokenId: string): string {
+  return tokenId === "1" ? ARCHIVE_DEFAULT_TOKEN_ID : tokenId;
 }

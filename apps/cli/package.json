@@ -6,22 +6,23 @@
     "mina-treasury": "./bin/mina-treasury.cjs"
   },
   "scripts": {
-    "cli:local": "NODE_NO_WARNINGS=1 dotenvx run -f .env.local -- node --loader ts-node/esm src/cli.ts",
+    "dev": "NODE_NO_WARNINGS=1 node --loader ts-node/esm src/cli.ts",
     "mina-treasury": "node ./bin/mina-treasury.cjs",
     "check-types": "tsc --noEmit",
-    "test": "dotenvx run -f .env.test -- node --loader ts-node/esm --test"
+    "test": "node --loader ts-node/esm --test"
   },
   "dependencies": {
-    "@dotenvx/dotenvx": "^1.51.1",
     "@keyv/sqlite": "^4.0.8",
     "@repo/sdk": "workspace:*",
-    "commander": "^14.0.0",
-    "o1js": "git+https://github.com/maht0rz/o1js.git#feature/mesa-support"
+    "commander": "^14.0.0"
   },
   "devDependencies": {
     "@types/node": "^22.15.3",
     "redis-memory-server": "^0.16.0",
     "ts-node": "^10.9.2",
     "typescript": "5.9.2"
+  },
+  "peerDependencies": {
+    "o1js": "github:maht0rz/o1js#feature/mesa-support"
   }
 }

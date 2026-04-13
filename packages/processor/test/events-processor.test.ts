@@ -147,6 +147,34 @@ describe("EventsProcessor", () => {
     assert.equal(offset?.lastSeenEventId !== "0", true);
   });
 
+  it("does not advance offset when an event cannot be handled", async () => {
+    const invalidEvent: ArchiveEventOutput = {
+      blockInfo: {
+        height: 11,
+      },
+      eventData: [
+        {
+          accountUpdateId: "11",
+          // The test handler expects exactly [eventKey, payload].
+          data: ["invalid"],
+          transactionInfo: {
+            hash: "tx-invalid-11",
+            zkappAccountUpdateIds: [11],
+          },
+        },
+      ],
+    };
+    await repository.insertRawEvents([invalidEvent], "pending");
+
+    assert.equal(await processor.processOnce(), 0);
+    assert.equal(await dataSource.getRepository(TestProjectionEntity).count(), 0);
+
+    const offset = await dataSource.getRepository(ProcessorOffsetEntity).findOne({
+      where: { processorName: "test-projection-processor" },
+    });
+    assert.equal(offset, null);
+  });
+
   it("processes live updates and reacts to orphaning", async () => {
     const fixture = buildProjectionFixture(12);
     await repository.insertRawEvents([fixture.archiveEvent], "pending");

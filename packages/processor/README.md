@@ -39,7 +39,7 @@ projection entity classes.
 
 Default behavior from `fromConfig(...)`:
 
-- route prefix: `v1/processor`
+- route prefix: `processor`
 - read-only CRUD routes (mutating CRUD endpoints excluded)
 - `GET /<prefix>/healthz`
 - generated entity routes, e.g. `ProposalEntity` -> `GET /<prefix>/proposals`

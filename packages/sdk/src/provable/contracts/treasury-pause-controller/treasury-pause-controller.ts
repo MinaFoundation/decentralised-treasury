@@ -104,7 +104,16 @@ export class TreasuryPauseControllerSmartContract extends SmartContract {
     const currentCommitment = this.multisigCommitment.getAndRequireEquals();
     const multisigParticipants = Provable.witness(
       Provable.Array(PublicKey, MULTISIG_PARTICIPANTS_COUNT),
-      () => TreasuryPauseControllerSmartContract.multisigParticipants,
+      () => {
+        const multisigParticipants =
+          TreasuryPauseControllerSmartContract.multisigParticipants;
+        if (multisigParticipants.length !== MULTISIG_PARTICIPANTS_COUNT) {
+          throw new Error(
+            `${TreasuryPauseControllerErrors.NOT_ENOUGH_PARTICIPANTS}: expected ${MULTISIG_PARTICIPANTS_COUNT}, got ${multisigParticipants.length}`,
+          );
+        }
+        return multisigParticipants;
+      },
     );
     await signatures.verify(data, currentCommitment, multisigParticipants);
   }

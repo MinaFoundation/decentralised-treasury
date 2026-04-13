@@ -15,6 +15,9 @@ import type { ArchiveEventData } from "./archive/client.js";
   ["txHash", "accountUpdateId", "accountUpdateIndex", "eventIndex"],
   { unique: true },
 )
+@Index("ix_archive_events_updated_at_id", ["updatedAt", "id"])
+@Index("ix_archive_events_event_type_updated_at_id", ["eventType", "updatedAt", "id"])
+@Index("ix_archive_events_status_pending_seen_at_height", ["status", "pendingSeenAtHeight"])
 export class ArchiveEventEntity {
   @PrimaryGeneratedColumn({
     type: "bigint",
@@ -34,6 +37,20 @@ export class ArchiveEventEntity {
     nullable: true,
   })
   pendingSeenAtHeight!: number | null;
+
+  @Column({
+    type: "integer",
+    name: "block_height",
+    nullable: true,
+  })
+  blockHeight!: number | null;
+
+  @Column({
+    type: "timestamptz",
+    name: "block_timestamp",
+    nullable: true,
+  })
+  blockTimestamp!: Date | null;
 
   @Column({
     type: "text",

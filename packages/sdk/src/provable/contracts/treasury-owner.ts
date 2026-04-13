@@ -23,7 +23,10 @@ import {
   SideLoadedVoteReducerProof,
   Vote,
 } from "./treasury-proposal/vote-reducer.js";
-import { TreasuryProposalSmartContract } from "./treasury-proposal/treasury-proposal.js";
+import {
+  ProposalStatus,
+  TreasuryProposalSmartContract,
+} from "./treasury-proposal/treasury-proposal.js";
 import { SideLoadedStakingLedgerToVotingLedgerProof } from "../staking-ledger-to-voting-ledger.js";
 import { Proposal } from "./treasury-proposal/treasury-proposal.js";
 import { BOND_AMOUNT_DIVISOR } from "./treasury-constants.js";
@@ -35,8 +38,14 @@ import {
 import {
   ProposalCreatedEvent,
   PROPOSAL_CREATED_EVENT_NAME,
+  ProposalExecutedEvent,
+  PROPOSAL_EXECUTED_EVENT_NAME,
+  ProposalPauseToggledEvent,
+  PROPOSAL_PAUSE_TOGGLED_EVENT_NAME,
   ProposalVoteDispatchedEvent,
   PROPOSAL_VOTE_DISPATCHED_EVENT_NAME,
+  ProposalVotesTalliedEvent,
+  PROPOSAL_VOTES_TALLIED_EVENT_NAME,
 } from "../events/treasury-proposal-events.js";
 
 // 7140 slots = ~2 weeks, this is the mainnet configuration
@@ -80,6 +89,9 @@ export class TreasuryOwnerSmartContract extends TokenContract {
   events = {
     [PROPOSAL_CREATED_EVENT_NAME]: ProposalCreatedEvent,
     [PROPOSAL_VOTE_DISPATCHED_EVENT_NAME]: ProposalVoteDispatchedEvent,
+    [PROPOSAL_VOTES_TALLIED_EVENT_NAME]: ProposalVotesTalliedEvent,
+    [PROPOSAL_EXECUTED_EVENT_NAME]: ProposalExecutedEvent,
+    [PROPOSAL_PAUSE_TOGGLED_EVENT_NAME]: ProposalPauseToggledEvent,
   };
 
   public async snapshotStakingEpochData() {
@@ -241,6 +253,7 @@ export class TreasuryOwnerSmartContract extends TokenContract {
     proposalUpdate.update.zkappUri.isSome = Bool(true);
     proposalUpdate.update.zkappUri.value = proposal.zkAppUri;
 
+    const senderPublicKey = this.sender.getAndRequireSignature();
     this.approve(proposalUpdate);
     this.emitEvent(
       PROPOSAL_CREATED_EVENT_NAME,
@@ -249,7 +262,11 @@ export class TreasuryOwnerSmartContract extends TokenContract {
         lifecycleId,
         amount: proposal.amount,
         recipient: proposal.recipient,
+        proposerPublicKey: senderPublicKey,
+        senderPublicKey,
         zkAppUriHash: proposal.zkAppUri.hash,
+        stakingEpochDataLedgerHash,
+        stakingEpochDataLedgerTotalCurrency,
       }),
     );
   }
@@ -262,6 +279,7 @@ export class TreasuryOwnerSmartContract extends TokenContract {
     publicKey: PublicKey,
     vote: Vote,
   ) {
+    const senderPublicKey = this.sender.getAndRequireSignature();
     await this.requireNotPaused();
     const proposal = new TreasuryProposalSmartContract(
       proposalPublicKey,
@@ -287,6 +305,7 @@ export class TreasuryOwnerSmartContract extends TokenContract {
         proposalPublicKey,
         voterPublicKey: publicKey,
         vote,
+        senderPublicKey,
       }),
     );
 
@@ -306,6 +325,7 @@ export class TreasuryOwnerSmartContract extends TokenContract {
     treasuryOwnerAccount: Account,
     treasuryOwnerAccountWitness: PrefixedMerkleWitness36,
   ) {
+    const senderPublicKey = this.sender.getAndRequireSignature();
     await this.requireNotPaused();
     const proposal = new TreasuryProposalSmartContract(
       proposalPublicKey,
@@ -331,40 +351,68 @@ export class TreasuryOwnerSmartContract extends TokenContract {
     // TODO: is this safe and correct?
     const treasuryOwnerPublicKey = this.self.publicKey;
 
-    let previousActionState = Field(0);
-    for (const actionStateKey of Object.keys(
-      voteReducerProof.publicOutput.actionStateHistory,
-    )) {
+    const actionStateHistory = voteReducerProof.publicOutput.actionStateHistory;
+    const actionStates: ActionStateHistory["actionStateOne"][] = [
+      actionStateHistory.actionStateOne,
+      actionStateHistory.actionStateTwo,
+      actionStateHistory.actionStateThree,
+      actionStateHistory.actionStateFour,
+      actionStateHistory.actionStateFive,
+    ];
+
+    for (let actionStateIndex = 0; actionStateIndex < actionStates.length; actionStateIndex++) {
       const actionStateUpdate = AccountUpdate.create(
         proposalPublicKey,
         this.deriveTokenId(),
       );
-      const actionState: ActionStateHistory["actionStateOne"] =
-        voteReducerProof.publicOutput.actionStateHistory[actionStateKey];
+      const actionState = actionStates[actionStateIndex];
 
       actionStateUpdate.account.actionState.requireEquals(actionState.hash);
       actionState.found.assertTrue("Action state not found in the merkle list");
 
-      // ensure all 5 action states are unique
       actionState.hash
-        .equals(previousActionState)
+        .equals(Reducer.initialActionState)
         .not()
-        .or(actionState.hash.equals(Reducer.initialActionState))
         .assertTrue(
-          "Action state hash must be unique, or the initial action state",
+          "Action state hash must not be the initial action state",
         );
 
-      previousActionState = actionState.hash;
+      for (
+        let compareIndex = actionStateIndex + 1;
+        compareIndex < actionStates.length;
+        compareIndex++
+      ) {
+        actionState.hash
+          .equals(actionStates[compareIndex].hash)
+          .not()
+          .assertTrue("Action state hashes must be unique");
+      }
 
       this.approve(actionStateUpdate);
     }
 
-    await proposal.tallyVotes(
+    const voteResult = await proposal.tallyVotes(
       voteReducerProof,
       stakingLedgerToVotingLedgerProof,
       treasuryOwnerPublicKey,
       treasuryOwnerAccount,
       treasuryOwnerAccountWitness,
+    );
+
+    const yayWeight = voteReducerProof.publicOutput.yay;
+    const nayWeight = voteReducerProof.publicOutput.nay;
+    const abstainWeight = voteReducerProof.publicOutput.abstain;
+    this.emitEvent(
+      PROPOSAL_VOTES_TALLIED_EVENT_NAME,
+      new ProposalVotesTalliedEvent({
+        proposalPublicKey,
+        lifecycleId: proposalLifecycleId,
+        yayWeight,
+        nayWeight,
+        abstainWeight,
+        voteResult,
+        senderPublicKey,
+      }),
     );
 
     this.approve(proposal.self);
@@ -391,6 +439,8 @@ export class TreasuryOwnerSmartContract extends TokenContract {
       proposalLifecycleId.add(1),
     );
 
+    const senderPublicKey = this.sender.getAndRequireSignature();
+
     this.self.balance.subInPlace(amountToPayOut);
 
     await proposal.execute(amountToPayOut, recipient);
@@ -398,6 +448,15 @@ export class TreasuryOwnerSmartContract extends TokenContract {
     if (TreasuryProposalSmartContract.permissionType == "signature") {
       proposal.self.requireSignature();
     }
+
+    this.emitEvent(
+      PROPOSAL_EXECUTED_EVENT_NAME,
+      new ProposalExecutedEvent({
+        proposalPublicKey,
+        amountToPayOut,
+        senderPublicKey,
+      }),
+    );
 
     this.approve(proposal.self);
   }
@@ -407,12 +466,13 @@ export class TreasuryOwnerSmartContract extends TokenContract {
     proposalPublicKey: PublicKey,
     signatures: MultisigSignatures,
     nonce: UInt32,
+    paused: Bool,
   ) {
+    const senderPublicKey = this.sender.getAndRequireSignature();
     const proposal = new TreasuryProposalSmartContract(
       proposalPublicKey,
       this.deriveTokenId(),
     );
-
     const pauseController = new TreasuryPauseControllerSmartContract(
       this.pauseControllerPublicKey.getAndRequireEquals(),
     );
@@ -424,7 +484,14 @@ export class TreasuryOwnerSmartContract extends TokenContract {
     );
 
     await proposal.togglePause();
-
+    this.emitEvent(
+      PROPOSAL_PAUSE_TOGGLED_EVENT_NAME,
+      new ProposalPauseToggledEvent({
+        proposalPublicKey,
+        paused,
+        senderPublicKey,
+      }),
+    );
     this.approve(proposal.self);
   }
 

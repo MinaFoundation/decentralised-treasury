@@ -1,4 +1,10 @@
-import { Crud, type BaseRouteName, type CrudController } from "@dataui/crud";
+import {
+  Crud,
+  type BaseRouteName,
+  type CrudController,
+  type JoinOptions,
+  type QueryOptions,
+} from "@dataui/crud";
 import { TypeOrmCrudService } from "@dataui/crud-typeorm";
 import {
   Controller,
@@ -12,7 +18,7 @@ import {
 } from "@nestjs/common";
 import { NestFactory } from "@nestjs/core";
 import { InjectRepository, TypeOrmModule } from "@nestjs/typeorm";
-import { DataSource, type Repository } from "typeorm";
+import { DataSource, getMetadataArgsStorage, type Repository } from "typeorm";
 import type {
   ProcessorDatabaseConfig,
   ProcessorEntitySchema,
@@ -26,12 +32,22 @@ const MUTATING_CRUD_ROUTES: BaseRouteName[] = [
   "deleteOneBase",
   "recoverOneBase",
 ];
-const DEFAULT_ROUTE_PREFIX = "v1/processor";
+const DEFAULT_ROUTE_PREFIX = "processor";
 const PROCESSOR_CRUD_DATA_SOURCE = Symbol("PROCESSOR_CRUD_DATA_SOURCE");
 
 interface ExposedEntity {
   entity: Type<object>;
   routePath: string;
+}
+
+interface RelationDescriptor {
+  propertyName: string;
+  targetEntity: Type<object> | null;
+}
+
+interface CrudQueryDescriptor {
+  allow: string[];
+  sort: NonNullable<QueryOptions["sort"]>;
 }
 
 export interface ProcessorCrudApiServerConfig extends ProcessorDatabaseConfig {
@@ -76,7 +92,13 @@ function defaultRoutePathForEntity(entity: Type<object>): string {
   const rawName = entity.name.trim();
   const withoutSuffix = rawName.replace(/Entity$/, "");
   const routeBase = toKebabCase(withoutSuffix || rawName || "entity");
-  return routeBase.endsWith("s") ? routeBase : `${routeBase}s`;
+  if (routeBase.endsWith("s")) {
+    return routeBase;
+  }
+  if (/[bcdfghjklmnpqrstvwxyz]y$/i.test(routeBase)) {
+    return `${routeBase.slice(0, -1)}ies`;
+  }
+  return `${routeBase}s`;
 }
 
 function resolveExposedEntities(
@@ -105,6 +127,159 @@ function resolveExposedEntities(
     seenRoutePaths.add(routePath);
     return { entity, routePath };
   });
+}
+
+function resolveEntityClass(target: unknown): Type<object> | null {
+  if (typeof target === "function") {
+    return target as Type<object>;
+  }
+  return null;
+}
+
+function resolveRelationTarget(typeFactory: unknown): Type<object> | null {
+  if (typeof typeFactory === "function") {
+    try {
+      return resolveEntityClass(typeFactory());
+    } catch {
+      return null;
+    }
+  }
+
+  return resolveEntityClass(typeFactory);
+}
+
+function buildEntityRelationGraph(
+  entityClasses: Type<object>[],
+): Map<Type<object>, RelationDescriptor[]> {
+  const storage = getMetadataArgsStorage();
+  const entitySet = new Set(entityClasses);
+  const relationGraph = new Map<Type<object>, RelationDescriptor[]>();
+
+  for (const relation of storage.relations) {
+    const sourceEntity = resolveEntityClass(relation.target);
+    if (!sourceEntity || !entitySet.has(sourceEntity)) {
+      continue;
+    }
+
+    const relationDescriptors = relationGraph.get(sourceEntity) ?? [];
+    relationDescriptors.push({
+      propertyName: relation.propertyName,
+      targetEntity: resolveRelationTarget(relation.type),
+    });
+    relationGraph.set(sourceEntity, relationDescriptors);
+  }
+
+  return relationGraph;
+}
+
+function buildJoinOptionsForEntity(
+  rootEntity: Type<object>,
+  relationGraph: Map<Type<object>, RelationDescriptor[]>,
+): JoinOptions {
+  const joinOptions: JoinOptions = {};
+  const visitedPaths = new Set<string>();
+
+  const walk = (currentEntity: Type<object>, prefix: string, seen: Set<Type<object>>): void => {
+    const relations = relationGraph.get(currentEntity) ?? [];
+    for (const relation of relations) {
+      const path = prefix
+        ? `${prefix}.${relation.propertyName}`
+        : relation.propertyName;
+      if (!visitedPaths.has(path)) {
+        joinOptions[path] = {};
+        visitedPaths.add(path);
+      }
+
+      if (!relation.targetEntity || seen.has(relation.targetEntity)) {
+        continue;
+      }
+
+      const nextSeen = new Set(seen);
+      nextSeen.add(relation.targetEntity);
+      walk(relation.targetEntity, path, nextSeen);
+    }
+  };
+
+  walk(rootEntity, "", new Set([rootEntity]));
+  return joinOptions;
+}
+
+function buildJoinOptionsByEntity(
+  entityClasses: Type<object>[],
+): Map<Type<object>, JoinOptions> {
+  const relationGraph = buildEntityRelationGraph(entityClasses);
+  const joinOptionsByEntity = new Map<Type<object>, JoinOptions>();
+
+  for (const entityClass of entityClasses) {
+    joinOptionsByEntity.set(
+      entityClass,
+      buildJoinOptionsForEntity(entityClass, relationGraph),
+    );
+  }
+
+  return joinOptionsByEntity;
+}
+
+function buildEntityColumnMap(
+  entityClasses: Type<object>[],
+): Map<Type<object>, string[]> {
+  const storage = getMetadataArgsStorage();
+  const entitySet = new Set(entityClasses);
+  const columnsByEntity = new Map<Type<object>, Set<string>>();
+
+  for (const column of storage.columns) {
+    const entityClass = resolveEntityClass(column.target);
+    if (!entityClass || !entitySet.has(entityClass)) {
+      continue;
+    }
+
+    const fieldSet = columnsByEntity.get(entityClass) ?? new Set<string>();
+    fieldSet.add(column.propertyName);
+    columnsByEntity.set(entityClass, fieldSet);
+  }
+
+  const normalized = new Map<Type<object>, string[]>();
+  for (const [entityClass, fieldSet] of columnsByEntity.entries()) {
+    normalized.set(entityClass, Array.from(fieldSet).sort());
+  }
+
+  return normalized;
+}
+
+function buildDefaultSort(fields: string[]): NonNullable<QueryOptions["sort"]> {
+  const fieldSet = new Set(fields);
+  const sort: NonNullable<QueryOptions["sort"]> = [];
+
+  if (fieldSet.has("updatedAt")) {
+    sort.push({ field: "updatedAt", order: "DESC" });
+  } else if (fieldSet.has("createdAt")) {
+    sort.push({ field: "createdAt", order: "DESC" });
+  } else if (fieldSet.has("id")) {
+    sort.push({ field: "id", order: "DESC" });
+  }
+
+  if (fieldSet.has("id") && !sort.some(({ field }) => field === "id")) {
+    sort.push({ field: "id", order: "DESC" });
+  }
+
+  return sort;
+}
+
+function buildCrudQueryDescriptorsByEntity(
+  entityClasses: Type<object>[],
+): Map<Type<object>, CrudQueryDescriptor> {
+  const columnsByEntity = buildEntityColumnMap(entityClasses);
+  const descriptors = new Map<Type<object>, CrudQueryDescriptor>();
+
+  for (const entityClass of entityClasses) {
+    const allow = columnsByEntity.get(entityClass) ?? [];
+    descriptors.set(entityClass, {
+      allow,
+      sort: buildDefaultSort(allow),
+    });
+  }
+
+  return descriptors;
 }
 
 function createCrudService(
@@ -142,6 +317,8 @@ function createCrudController(
   entity: Type<object>,
   serviceType: Type<TypeOrmCrudService<object>>,
   routePath: string,
+  joinOptions: JoinOptions,
+  crudQueryDescriptor: CrudQueryDescriptor,
   pageLimitDefault: number,
   pageLimitMax: number,
   readOnly: boolean,
@@ -159,8 +336,11 @@ function createCrudController(
     },
     query: {
       alwaysPaginate: true,
+      allow: crudQueryDescriptor.allow,
+      join: joinOptions,
       limit: pageLimitDefault,
       maxLimit: pageLimitMax,
+      sort: crudQueryDescriptor.sort,
     },
     routes: routeOptions,
   })
@@ -185,6 +365,9 @@ class ProcessorCrudHealthController {
 function createCrudApiModule(options: ProcessorCrudApiServerOptions): Type<object> {
   const exposedEntities = resolveExposedEntities(options.outputEntitySchemas);
   const entityClasses = exposedEntities.map(({ entity }) => entity);
+  const joinOptionsByEntity = buildJoinOptionsByEntity(entityClasses);
+  const crudQueryDescriptorsByEntity =
+    buildCrudQueryDescriptorsByEntity(entityClasses);
   const useExternalDataSource = !!options.dataSource;
   const dataSourceToken = useExternalDataSource
     ? PROCESSOR_CRUD_DATA_SOURCE
@@ -218,6 +401,8 @@ function createCrudApiModule(options: ProcessorCrudApiServerOptions): Type<objec
       entity,
       serviceTypes[index],
       routePath,
+      joinOptionsByEntity.get(entity) ?? {},
+      crudQueryDescriptorsByEntity.get(entity) ?? { allow: [], sort: [] },
       options.pageLimitDefault,
       options.pageLimitMax,
       options.readOnly,
@@ -286,15 +471,20 @@ export class ProcessorCrudApiServer {
     const app = await NestFactory.create(module, {
       logger: ["error", "warn", "log"],
     });
-    const routePrefix = normalizeRoutePrefix(this.options.routePrefix);
-    if (routePrefix.length > 0) {
-      app.setGlobalPrefix(routePrefix);
+    app.enableCors({
+      origin: true,
+      methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+      allowedHeaders: ["content-type"],
+    });
+    const normalizedRoutePrefix = normalizeRoutePrefix(this.options.routePrefix);
+    if (normalizedRoutePrefix.length > 0) {
+      app.setGlobalPrefix(normalizedRoutePrefix);
     }
     await app.listen(this.options.port);
     this.app = app;
     this.bindSignalHandlers();
     console.log(
-      `[processor-api] listening on :${this.options.port}${routePrefix ? `/${routePrefix}` : ""}`,
+      `[processor-api] listening on :${this.options.port}${normalizedRoutePrefix ? `/${normalizedRoutePrefix}` : ""}`,
     );
   }
 

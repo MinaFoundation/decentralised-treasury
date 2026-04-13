@@ -8,19 +8,55 @@
   "scripts": {
     "lint": "eslint . --max-warnings 0",
     "generate:component": "turbo gen react-component",
-    "check-types": "tsc --noEmit"
+    "check-types": "tsc --noEmit",
+    "storybook": "HOME=$PWD/.storybook-home storybook dev -p 6006",
+    "prestorybook:build": "pnpm run check-types",
+    "storybook:build": "HOME=$PWD/.storybook-home storybook build",
+    "test": "pnpm run check-types && vitest run",
+    "test:watch": "vitest"
   },
   "devDependencies": {
     "@repo/eslint-config": "workspace:*",
     "@repo/typescript-config": "workspace:*",
+    "@storybook/addon-essentials": "^8.6.14",
+    "@storybook/react-webpack5": "^8.6.14",
+    "@storybook/test": "8.6.14",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.2",
     "@types/node": "^22.15.3",
     "@types/react": "19.1.0",
     "@types/react-dom": "19.1.1",
+    "autoprefixer": "^10.4.27",
     "eslint": "^9.33.0",
-    "typescript": "5.9.2"
+    "jsdom": "^29.0.1",
+    "postcss": "^8.5.8",
+    "postcss-loader": "^8.2.1",
+    "storybook": "^8.6.14",
+    "tailwindcss": "^3.4.19",
+    "tailwindcss-animate": "^1.0.7",
+    "ts-loader": "^9.5.7",
+    "typescript": "5.9.2",
+    "vitest": "^4.1.2"
   },
   "dependencies": {
+    "@radix-ui/react-dialog": "^1.1.15",
+    "@radix-ui/react-popover": "^1.1.15",
+    "@radix-ui/react-progress": "^1.1.8",
+    "@radix-ui/react-tabs": "^1.1.13",
+    "@radix-ui/react-tooltip": "^1.1.15",
+    "@repo/sdk": "workspace:*",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "lucide-react": "^1.7.0",
     "react": "^19.1.0",
-    "react-dom": "^19.1.0"
+    "react-dom": "^19.1.0",
+    "react-intl": "^10.1.1",
+    "react-markdown": "^10.1.0",
+    "recharts": "^3.8.1",
+    "remark-gfm": "^4.0.1",
+    "tailwind-merge": "^3.5.0"
+  },
+  "peerDependencies": {
+    "o1js": "github:maht0rz/o1js#feature/mesa-support"
   }
 }

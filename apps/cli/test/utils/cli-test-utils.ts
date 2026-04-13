@@ -39,6 +39,7 @@ interface SpawnCliWorkerOptions {
   redisHost: string;
   redisPort: number;
   stdio?: "pipe" | "inherit";
+  envOverrides?: Record<string, string>;
 }
 
 export function logTestStep(
@@ -159,6 +160,7 @@ export function spawnCliWorker(
   const cwd = options.cwd ?? CLI_PACKAGE_DIRECTORY;
   const { redisHost, redisPort } = options;
   const stdio = options.stdio ?? "pipe";
+  const envOverrides = options.envOverrides ?? {};
 
   return spawn(
     "node",
@@ -180,6 +182,7 @@ export function spawnCliWorker(
       env: {
         ...process.env,
         NODE_NO_WARNINGS: "1",
+        ...envOverrides,
       },
       stdio,
     },
@@ -672,6 +675,30 @@ export function parseTreasuryFundTreasuryResult(
     }
   | undefined {
   return parseMarkerJson(output, "TREASURY_FUND_TREASURY_JSON:") as
+    | {
+        sender?: string;
+        fundingAccount?: string;
+        from: string;
+        to: string;
+        amount: string;
+        transferTxHash?: string;
+      }
+    | undefined;
+}
+
+export function parseTransferResult(
+  output: string,
+):
+  | {
+      sender?: string;
+      fundingAccount?: string;
+      from: string;
+      to: string;
+      amount: string;
+      transferTxHash?: string;
+    }
+  | undefined {
+  return parseMarkerJson(output, "MINA_TRANSFER_JSON:") as
     | {
         sender?: string;
         fundingAccount?: string;

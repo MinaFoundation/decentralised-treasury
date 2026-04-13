@@ -1,7 +1,7 @@
 /// <reference types="node" />
 import fs from "node:fs";
 import path from "node:path";
-import { PrivateKey, UInt128 } from "o1js";
+import { UInt128, UInt64 } from "o1js";
 import { TreasuryProposalSmartContract } from "../src/provable/contracts/treasury-proposal/treasury-proposal.js";
 import { BASIS_POINTS } from "../src/provable/contracts/treasury-constants.js";
 
@@ -108,9 +108,8 @@ function formatSvg(
 
 function main() {
     const config = parseArgs();
-    const proposalPublicKey = PrivateKey.random().toPublicKey();
-    const proposal = new TreasuryProposalSmartContract(proposalPublicKey);
     const treasuryBalance = UInt128.from(10_000);
+    const stakingEpochDataLedgerTotalCurrency = UInt64.from(10_000);
 
     const dataPoints: Array<{
         ratioBp: number;
@@ -122,9 +121,11 @@ function main() {
         const proposalAmount = treasuryBalance
             .mul(UInt128.from(i))
             .div(UInt128.from(config.steps));
-        const acceptanceCriteria = proposal.calculateAcceptanceCriteria(
+        const acceptanceCriteria =
+            TreasuryProposalSmartContract.calculateAcceptanceCriteria(
             proposalAmount,
-            treasuryBalance
+            treasuryBalance,
+            stakingEpochDataLedgerTotalCurrency
         );
         const ratioBp = Math.floor((i * 10_000) / config.steps);
 

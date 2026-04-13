@@ -68,7 +68,7 @@ describe("EventsApiServer", () => {
     await server.start();
 
     const response = await fetch(
-      `http://127.0.0.1:${port}/v1/indexer/events?updatedAfter=not-a-date`,
+      `http://127.0.0.1:${port}/events?updatedAfter=not-a-date`,
     );
     const payload = (await response.json()) as { error?: string };
 
@@ -90,7 +90,7 @@ describe("EventsApiServer", () => {
     );
     await server.start();
 
-    const response = await fetch(`http://127.0.0.1:${port}/v1/indexer/events`);
+    const response = await fetch(`http://127.0.0.1:${port}/events`);
     const payload = (await response.json()) as { error?: string };
 
     assert.equal(response.status, 500);
