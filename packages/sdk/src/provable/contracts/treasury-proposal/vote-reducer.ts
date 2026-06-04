@@ -368,11 +368,21 @@ export const VoteReducer = ZkProgram({
           "Nullifier root does not match between merged proofs",
         );
 
+
         // merge action state history by preferring the older proof's found flags.
         const actionStateHistory = ActionStateHistory.clone(
           output1.actionStateHistory,
         );
         for (const actionStateKey of Object.keys(output1.actionStateHistory)) {
+
+          // since output hashes are downstream of input hashes,
+          //  we don't need to check input hashes separately
+          output1.actionStateHistory[actionStateKey as keyof ActionStateHistory].hash
+          .assertEquals(
+            output2.actionStateHistory[actionStateKey as keyof ActionStateHistory].hash,
+            "Action state hash does not match between merged proofs",
+          );
+
           const output1ActionState: ActionStateHistory[keyof ActionStateHistory] =
             output1.actionStateHistory[
               actionStateKey as keyof ActionStateHistory
