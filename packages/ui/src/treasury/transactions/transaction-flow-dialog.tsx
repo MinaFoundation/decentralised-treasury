@@ -271,7 +271,6 @@ export function TreasuryTransactionFlowDialog({
       ? terminalStepId
       : stepOrder.find((stepId) => stepStatuses[stepId] === "error") ??
         (stepStatuses.waitForInclusion === "completed" ? terminalStepId : "review"));
-  const displayedStep = steps.find((step) => step.id === displayedStepId) ?? steps[0]!;
   const headerDescription =
     displayedStepId === "review"
       ? resolvedDescription
@@ -1018,6 +1017,82 @@ function TransactionFlowCenteredProgress({
     }
   }, [completion, currentStage]);
 
+  const progressBody = isError
+    ? currentStage === "compiling"
+      ? intl.formatMessage({
+          id: "ui.transactionFlow.compilingFailedBody",
+          defaultMessage:
+            "Contract compilation failed before the wallet request could be prepared.",
+        })
+      : currentStage === "proving"
+        ? intl.formatMessage({
+            id: "ui.transactionFlow.provingFailedBody",
+            defaultMessage:
+              "The transaction proof generation step failed before the wallet signature step.",
+          })
+        : currentStage === "awaitingSignature"
+          ? intl.formatMessage({
+              id: "ui.transactionFlow.signAndSendFailedBody",
+              defaultMessage:
+                "The wallet signature or broadcast step failed before inclusion monitoring could begin.",
+            })
+          : currentStage === "postingContent"
+            ? intl.formatMessage({
+                id: "ui.transactionFlow.postContentFailedBody",
+                defaultMessage:
+                  "The transaction was included, but proposal content could not be attached successfully.",
+              })
+            : intl.formatMessage({
+                id: "ui.transactionFlow.inclusionFailedBody",
+                defaultMessage:
+                  "The transaction was sent, but inclusion monitoring failed before completion could be confirmed.",
+              })
+    : completion
+      ? completion.blockHeight != null
+        ? intl.formatMessage(
+            {
+              id: "ui.transactionFlow.completedBodyWithBlock",
+              defaultMessage: "Included at block #{blockHeight}.",
+            },
+            { blockHeight: String(completion.blockHeight) },
+          )
+        : intl.formatMessage({
+            id: "ui.transactionFlow.completedBody",
+            defaultMessage: "The transaction was included successfully.",
+          })
+      : currentStage === "compiling"
+        ? intl.formatMessage({
+            id: "ui.transactionFlow.compilingBody",
+            defaultMessage: "Preparing local contract artifacts before the transaction can be proved.",
+          })
+        : currentStage === "proving"
+          ? intl.formatMessage({
+              id: "ui.transactionFlow.provingBody",
+              defaultMessage: "Building the Mina transaction and generating transaction proofs locally.",
+            })
+          : currentStage === "awaitingSignature"
+            ? intl.formatMessage({
+                id: "ui.transactionFlow.awaitingSignatureBody",
+                defaultMessage: "Auro should now be open. Approve the transaction there to continue.",
+              })
+            : currentStage === "postingContent"
+              ? intl.formatMessage({
+                  id: "ui.transactionFlow.postContentBody",
+                  defaultMessage:
+                    "Waiting for the processor to index the proposal, then retrying content attachment until it succeeds.",
+                })
+              : currentStage === "awaitingInclusion"
+                ? intl.formatMessage({
+                    id: "ui.transactionFlow.awaitingInclusionBody",
+                    defaultMessage:
+                      "The transaction was broadcast successfully and is now being monitored for inclusion.",
+                  })
+                : intl.formatMessage({
+                    id: "ui.transactionFlow.completedBody",
+                    defaultMessage: "The transaction was included successfully.",
+                  });
+  const shouldShowTransactionHash = Boolean(transactionHash && !isError);
+
   return (
     <section className="flex min-h-[22rem] flex-col items-center justify-center px-2 py-6 text-center">
       <LoaderCircle
@@ -1095,105 +1170,18 @@ function TransactionFlowCenteredProgress({
                     })}
         </h4>
         <p className="max-w-lg text-sm leading-6 text-muted-foreground">
-          {isError
-            ? currentStage === "compiling"
-              ? intl.formatMessage({
-                  id: "ui.transactionFlow.compilingFailedBody",
-                  defaultMessage:
-                    "Contract compilation failed before the wallet request could be prepared.",
-                })
-              : currentStage === "proving"
-                ? intl.formatMessage({
-                    id: "ui.transactionFlow.provingFailedBody",
-                    defaultMessage:
-                      "The transaction proof generation step failed before the wallet signature step.",
-                  })
-                : currentStage === "awaitingSignature"
-                  ? intl.formatMessage({
-                      id: "ui.transactionFlow.signAndSendFailedBody",
-                      defaultMessage:
-                        "The wallet signature or broadcast step failed before inclusion monitoring could begin.",
-                    })
-                  : currentStage === "postingContent"
-                    ? intl.formatMessage({
-                        id: "ui.transactionFlow.postContentFailedBody",
-                        defaultMessage:
-                          "The transaction was included, but proposal content could not be attached successfully.",
-                      })
-                  : intl.formatMessage({
-                      id: "ui.transactionFlow.inclusionFailedBody",
-                      defaultMessage:
-                        "The transaction was sent, but inclusion monitoring failed before completion could be confirmed.",
-                    })
-            : completion
-            ? completion?.blockHeight != null
-              ? transactionHash
-                ? intl.formatMessage(
-                    {
-                      id: "ui.transactionFlow.completedBodyWithBlockAndHash",
-                      defaultMessage: "Included at block #{blockHeight}. Transaction hash: {hash}",
-                    },
-                    { blockHeight: String(completion.blockHeight), hash: transactionHash },
-                  )
-                : intl.formatMessage(
-                    {
-                      id: "ui.transactionFlow.completedBodyWithBlock",
-                      defaultMessage: "Included at block #{blockHeight}.",
-                    },
-                    { blockHeight: String(completion.blockHeight) },
-                  )
-              : transactionHash
-                ? intl.formatMessage(
-                    {
-                      id: "ui.transactionFlow.completedBodyWithHash",
-                      defaultMessage: "The transaction was included successfully. Transaction hash: {hash}",
-                    },
-                    { hash: transactionHash },
-                  )
-                : intl.formatMessage({
-                    id: "ui.transactionFlow.completedBody",
-                    defaultMessage: "The transaction was included successfully.",
-                  })
-            : currentStage === "compiling"
-            ? intl.formatMessage({
-                id: "ui.transactionFlow.compilingBody",
-                defaultMessage: "Preparing local contract artifacts before the transaction can be proved.",
-              })
-            : currentStage === "proving"
-              ? intl.formatMessage({
-                  id: "ui.transactionFlow.provingBody",
-                  defaultMessage: "Building the Mina transaction and generating transaction proofs locally.",
-                })
-              : currentStage === "awaitingSignature"
-                ? intl.formatMessage({
-                    id: "ui.transactionFlow.awaitingSignatureBody",
-                    defaultMessage: "Auro should now be open. Approve the transaction there to continue.",
-                  })
-                : currentStage === "postingContent"
-                  ? intl.formatMessage({
-                      id: "ui.transactionFlow.postContentBody",
-                      defaultMessage:
-                        "Waiting for the processor to index the proposal, then retrying content attachment until it succeeds.",
-                    })
-                : currentStage === "awaitingInclusion"
-                  ? transactionHash
-                    ? intl.formatMessage(
-                        {
-                          id: "ui.transactionFlow.awaitingInclusionBodyWithHash",
-                          defaultMessage:
-                            "The transaction was broadcast successfully and is now being monitored for inclusion. Transaction hash: {hash}",
-                        },
-                        { hash: transactionHash },
-                      )
-                    : intl.formatMessage({
-                        id: "ui.transactionFlow.awaitingInclusionBody",
-                        defaultMessage:
-                          "The transaction was broadcast successfully and is now being monitored for inclusion.",
-                      })
-                  : intl.formatMessage({
-                      id: "ui.transactionFlow.completedBody",
-                      defaultMessage: "The transaction was included successfully.",
-                    })}
+          {progressBody}
+          {shouldShowTransactionHash ? (
+            <span className="mt-1 block text-xs leading-5">
+              {intl.formatMessage({
+                id: "ui.transactionFlow.transactionHashLabel",
+                defaultMessage: "Transaction hash:",
+              })}{" "}
+              <strong className="break-all font-mono font-semibold text-muted-foreground">
+                {transactionHash}
+              </strong>
+            </span>
+          ) : null}
         </p>
         {isWaitingForInclusion ? (
           <p className="max-w-lg text-sm leading-6 text-muted-foreground">
@@ -1219,8 +1207,14 @@ function TransactionFlowCenteredProgress({
           </p>
         ) : null}
       </div>
-      <div className="mt-6 flex w-full justify-center overflow-x-auto pb-1">
-        <div className="flex min-w-max items-start gap-0 px-1">
+      <div
+        className="mt-6 flex w-full justify-center overflow-x-auto pb-1"
+        data-component="transaction-flow-progress-row"
+      >
+        <div
+          className="flex min-w-max items-start gap-0 px-1"
+          data-component="transaction-flow-progress-track"
+        >
           {progressItems.map((item, index) => {
             const status = resolveProgressItemStatus(
               item.id,
@@ -1263,8 +1257,13 @@ function TransactionFlowCenteredProgress({
                   ? now - activeStageStartedAtRef.current
                   : null;
             return (
-              <div key={item.id} className="flex items-start">
-                <div className="flex w-28 flex-col items-center text-center">
+                <div key={item.id} className="flex items-start">
+                <div
+                  className="flex w-28 flex-col items-center text-center"
+                  data-component="transaction-flow-progress-step"
+                  data-step-id={item.id}
+                  data-step-status={status}
+                >
                   <div
                     className={cn(
                       "flex h-8 w-8 shrink-0 items-center justify-center rounded-full border bg-background text-xs font-semibold",
@@ -1273,6 +1272,9 @@ function TransactionFlowCenteredProgress({
                       status === "error" && "border-rose-300/70 text-rose-600",
                       status === "idle" && "border-border/70 text-muted-foreground",
                     )}
+                    data-component="transaction-flow-progress-icon"
+                    data-step-id={item.id}
+                    data-step-status={status}
                   >
                     {status === "completed" ? (
                       <CircleCheck className="h-4 w-4" aria-hidden="true" />
@@ -1422,28 +1424,6 @@ function getDefaultDescription(
     id: "ui.transactionFlow.voteDescription",
     defaultMessage:
       "Review the vote summary and confirm the transaction details before continuing.",
-  });
-}
-
-function resolveKindLabel(
-  intl: ReturnType<typeof useTreasuryIntl>,
-  kind: TreasuryTransactionFlowKind,
-): string {
-  if (kind === "createProposal") {
-    return intl.formatMessage({
-      id: "ui.transactionFlow.kindCreate",
-      defaultMessage: "Create proposal",
-    });
-  }
-  if (kind === "executeProposal") {
-    return intl.formatMessage({
-      id: "ui.transactionFlow.kindExecute",
-      defaultMessage: "Execute",
-    });
-  }
-  return intl.formatMessage({
-    id: "ui.transactionFlow.kindVote",
-    defaultMessage: "Vote",
   });
 }
 

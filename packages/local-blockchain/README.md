@@ -2,8 +2,6 @@
 
 Lightnet-style local runtime for this repo's treasury workflows.
 
-## Purpose
-
 This package is intended to act as a drop-in replacement for the Lightnet surfaces that this repository actually uses, while also adding manual slot control for deterministic tests and demos.
 
 Current goals:

@@ -8,7 +8,7 @@ the Mina decentralized treasury project.
 ### Apps
 
 - `apps/cli`: operational CLI (`mina-treasury`)
-- `apps/api`: indexer + processor runtimt wiring and e2e tests
+- `apps/api`: indexer + processor runtime wiring and e2e tests
 - `apps/web`: web app
 - `apps/docs`: docs app
 

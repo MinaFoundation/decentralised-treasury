@@ -1,4 +1,5 @@
 import { type JSX, type ReactNode, useEffect, useMemo, useRef, useState } from "react";
+import automatedDemoCursorPngUrl from "./automated-demo-cursor.png";
 import { Button } from "../../components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../../components/ui/card";
 import { TreasuryStatusFooter } from "../footer/treasury-status-footer";
@@ -293,6 +294,7 @@ const connectedWalletAccountInfo = {
   delegatedTo: "B62qoY1SU63CQR2kyU3ra38s9AD66hyLsxRx91gkpEm3Y9sUcer5x5k",
   votingWeight: "264,800 MINA",
 } satisfies NonNullable<TreasuryWalletHeaderProps["walletAccountInfo"]>;
+const AUTOMATED_DEMO_CONNECTED_VOTE_WEIGHT = "54,000 MINA";
 
 const richEducationProposalContents = `# Zero-knowledge education grants for emerging regions
 
@@ -716,6 +718,29 @@ export const Demo = {
   render: (args: MockTreasuryAppProps): JSX.Element => <MockTreasuryApp {...args} />,
 };
 
+export const AutomatedProposalCreationDemo = {
+  args: {
+    dashboardPeriod: "proposal",
+    scenario: "automatedProposalDemo",
+    createProposalLabel: "Create proposal",
+    treasuryBalance: "24000000",
+    headerTreasuryBalance: "24000000000000000",
+    ...defaultMockAppArgs,
+  } satisfies MockTreasuryAppProps,
+  parameters: {
+    layout: "fullscreen",
+    docs: {
+      description: {
+        story:
+          "Automated recording story that waits five seconds, creates a zkApp lending proposal, casts a Yay vote, executes payout, and ends on the paid-out proposal detail.",
+      },
+    },
+  },
+  render: (args: MockTreasuryAppProps): JSX.Element => (
+    <AutomatedProposalCreationDemoStory args={args} />
+  ),
+};
+
 export const ProposalPeriodApp = {
   args: {
     dashboardPeriod: "proposal",
@@ -825,6 +850,7 @@ type MockActionFlowState =
   | "waitForInclusion";
 
 type MockStoryScenario = "default" | "happyPath";
+type MockAutomatedStoryScenario = MockStoryScenario | "automatedProposalDemo";
 type PrototypeJourneyPhase =
   | "proposal"
   | "exploration"
@@ -842,13 +868,40 @@ const PROTOTYPE_DASHBOARD_PREVIEW_PHASES: PrototypeDashboardPreviewPhase[] = [
   "postCooldown",
 ];
 
-function resolveMockTransactionStepDelayMs(scenario: MockStoryScenario): number {
-  return scenario === "happyPath" ? 1200 : 20;
+type MockTransactionStageDelayMs = {
+  compile: number;
+  prove: number;
+  signAndSend: number;
+  waitForInclusion: number;
+  postContent: number;
+};
+
+function resolveMockTransactionStageDelayMs(
+  scenario: MockAutomatedStoryScenario,
+): MockTransactionStageDelayMs {
+  if (scenario === "automatedProposalDemo") {
+    return {
+      compile: 10800,
+      prove: 11900,
+      signAndSend: 3200,
+      waitForInclusion: 10600,
+      postContent: 5200,
+    };
+  }
+
+  const delayMs = scenario === "happyPath" ? 1200 : 20;
+  return {
+    compile: delayMs,
+    prove: delayMs,
+    signAndSend: delayMs,
+    waitForInclusion: delayMs,
+    postContent: delayMs,
+  };
 }
 
 interface MockTreasuryAppProps {
   dashboardPeriod?: MockDashboardPeriod;
-  scenario?: MockStoryScenario;
+  scenario?: MockAutomatedStoryScenario;
   createProposalFlowState?: MockCreateProposalFlowState;
   voteFlowState?: MockActionFlowState;
   executeFlowState?: MockActionFlowState;
@@ -857,6 +910,9 @@ interface MockTreasuryAppProps {
   walletAccountInfo?: TreasuryWalletHeaderProps["walletAccountInfo"];
   walletAccountInfoLoading?: boolean;
   isAuroInstalled?: boolean;
+  createProposalLabel?: string;
+  treasuryBalance?: string;
+  headerTreasuryBalance?: string;
 }
 
 const DASHBOARD_LIFECYCLE_ID_BY_PERIOD: Record<MockDashboardPeriod, number> = {
@@ -891,6 +947,1175 @@ type SavedProposalDraft = {
   draft: TreasuryProposalCreationDraft;
 };
 
+type DemoCursorState = {
+  x: number;
+  y: number;
+  clicking: boolean;
+  moving: boolean;
+  visible: boolean;
+  clickKind: DemoClickKind;
+};
+
+type DemoPoint = {
+  x: number;
+  y: number;
+};
+
+type DemoClickKind = "button" | "input";
+
+type DemoCursorPointRef = {
+  current: DemoPoint;
+};
+
+type DemoClickOptions = {
+  scrollIntoView?: boolean;
+  hideCursorAfterClick?: boolean;
+  clickKind?: DemoClickKind;
+  onActivated?: (point: DemoPoint) => void | Promise<void>;
+};
+
+type DemoMoveOptions = {
+  scrollIntoView?: boolean;
+};
+
+const AUTOMATED_DEMO_CURSOR_MIN_TRAVEL_MS = 360;
+const AUTOMATED_DEMO_CURSOR_MAX_TRAVEL_MS = 980;
+const AUTOMATED_DEMO_PRE_CLICK_PAUSE_MS = 520;
+const AUTOMATED_DEMO_CLICK_HOLD_MS = 360;
+const AUTOMATED_DEMO_INPUT_POST_CLICK_VISIBLE_MS = 170;
+const AUTOMATED_DEMO_BUTTON_POST_CLICK_VISIBLE_MS = 680;
+const AUTOMATED_DEMO_POST_CLICK_SETTLE_MS = 520;
+const AUTOMATED_DEMO_CLICK_TOLERANCE_PX = 3;
+const AUTOMATED_DEMO_VIEWPORT_FOLLOW_MARGIN_X = 160;
+const AUTOMATED_DEMO_VIEWPORT_FOLLOW_MARGIN_Y = 120;
+const AUTOMATED_DEMO_SCROLL_SETTLE_PAUSE_MS = 320;
+const AUTOMATED_DEMO_STORY_BEAT_PAUSE_MS = 1200;
+const AUTOMATED_DEMO_FINAL_HOLD_MS = 3600;
+
+const AUTOMATED_DEMO_CURSOR_PNG_URL = automatedDemoCursorPngUrl;
+
+const AUTOMATED_ZKAPP_LENDING_PROPOSAL_CONTENT = `## Summary
+
+This proposal requests treasury funding to build a Mina-native zkApp for collateralized lending and borrowing. The application will let users deposit supported assets as collateral, open transparent credit positions, and repay loans through account updates whose risk checks are enforced by o1js circuits instead of a centralized backend.
+
+The first version will focus on a conservative lending market for MINA-backed borrowing. It will include provable collateral accounting, position health checks, liquidation eligibility proofs, borrower and lender dashboards, and processor-backed indexing for proposal-grade auditability.
+
+## Motivation
+
+Lending is one of the core primitives that made Ethereum DeFi useful: it gives builders access to working capital, lets long-term holders put idle assets to work, and creates price-discovery pressure around risk. Mina can offer a different version of this primitive by making important parts of the risk model verifiable and compact.
+
+The goal is not to launch a high-risk money market on day one. The goal is to deliver a carefully scoped zkApp foundation that the ecosystem can review, test, and extend into additional collateral types after the initial market proves stable.
+
+## Scope
+
+- o1js SmartContracts for collateral deposits, borrow positions, repayments, withdrawals, and liquidation eligibility
+- ZkProgram helpers for position health calculations and risk threshold checks
+- a web interface for opening, monitoring, and closing lending positions
+- processor integration for indexed positions, events, and user history
+- testnet deployment, public demo, and operator documentation
+- security review preparation with circuit notes, invariants, and threat-model documentation
+
+## Timeline
+
+The project is planned as a 16-week delivery cycle. The first 3 weeks cover protocol design, risk parameter modeling, and circuit architecture. Weeks 4 through 9 cover SmartContract and ZkProgram implementation, including local proving flows and integration tests. Weeks 10 through 12 cover the web app, processor indexing, and wallet transaction UX. Weeks 13 through 15 are reserved for testnet hardening, documentation, and external review preparation. Week 16 is for launch coordination, public demos, and handoff to ecosystem reviewers.
+
+## Deliverables
+
+- audited-ready zkApp contracts and circuit test suite
+- testnet deployment with sample lending and repayment flows
+- borrower and lender dashboards with clear position status
+- liquidation eligibility proof flow and operator guide
+- public documentation covering assumptions, limitations, and future governance hooks
+
+## Budget
+
+**Total requested budget:** 200,000 MINA
+
+The budget covers protocol engineering, o1js circuit development, frontend implementation, processor integration, testing infrastructure, documentation, and external review preparation. Funds will be paid out against delivery milestones so the treasury can verify progress before the full amount is released.`;
+
+function AutomatedProposalCreationDemoStory({
+  args,
+}: {
+  args: MockTreasuryAppProps;
+}): JSX.Element {
+  const initialCursorPosition = {
+    x: typeof window === "undefined" ? 520 : window.innerWidth * 0.48,
+    y: typeof window === "undefined" ? 330 : window.innerHeight * 0.46,
+  };
+  const [showLoading, setShowLoading] = useState(true);
+  const [cursorState, setCursorState] = useState<DemoCursorState>({
+    x: initialCursorPosition.x,
+    y: initialCursorPosition.y,
+    clicking: false,
+    moving: false,
+    visible: false,
+    clickKind: "button",
+  });
+  const cursorPointRef = useRef<DemoPoint>(initialCursorPosition);
+  const automationStartedRef = useRef(false);
+
+  useEffect(() => {
+    document.body.classList.add("automated-proposal-demo-active");
+    const loadingTimerId = window.setTimeout(() => {
+      setShowLoading(false);
+    }, 2600);
+
+    return () => {
+      window.clearTimeout(loadingTimerId);
+      document.body.classList.remove("automated-proposal-demo-active");
+    };
+  }, []);
+
+  useEffect(() => {
+    if (automationStartedRef.current) {
+      return;
+    }
+    automationStartedRef.current = true;
+
+    let cancelled = false;
+    void runAutomatedProposalDemo({
+      setCursorState,
+      cursorPointRef,
+      isCancelled: () => cancelled,
+    }).catch((error) => {
+      console.error("[automated-proposal-demo] automation failed", error);
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  return (
+    <div className="automated-proposal-demo-root">
+      <style>{AUTOMATED_PROPOSAL_DEMO_STYLES}</style>
+      <div className="automated-demo-content">
+        {showLoading ? (
+          <AutomatedProposalDemoLoadingDashboard args={args} />
+        ) : (
+          <MockTreasuryApp {...args} />
+        )}
+      </div>
+      <AutomatedDemoCursor state={cursorState} />
+    </div>
+  );
+}
+
+function AutomatedProposalDemoLoadingDashboard({
+  args,
+}: {
+  args: MockTreasuryAppProps;
+}): JSX.Element {
+  return (
+    <StoryScaffold>
+      <AppChrome
+        activeNavigationItemId="dashboard"
+        searchResults={[]}
+        createProposalLabel={args.createProposalLabel}
+        treasuryBalance={args.headerTreasuryBalance}
+        walletConnectStatus="connected"
+        walletAddress="B62qkEdNmGbUVaUnVtwMeMo9G1QBgfp9c3K7j4FbmXn21zG8ssvaPvi"
+        walletAccountInfo={connectedWalletAccountInfo}
+        onCreateProposalClick={() => {}}
+        onDashboardClick={() => {}}
+        onProposalsClick={() => {}}
+        onSearchSelect={() => {}}
+      >
+        <div className="space-y-4 py-6">
+          <TreasuryLifecyclePeriodInfo
+            loading
+            {...buildLifecycleArgs({
+              lifecycleId: 13,
+              currentPeriod: "proposal",
+              currentPeriodProgress: 24,
+              currentSlot: 18462512,
+              periodEndsIn: "1 day 18 hours",
+            })}
+          />
+          <div className="h-px w-full bg-border/60" aria-hidden="true" />
+          <TreasuryProposalPeriodTable
+            entries={[]}
+            loading
+            description="Current lifecycle proposal period snapshot. Click a row to inspect proposal details."
+          />
+        </div>
+      </AppChrome>
+    </StoryScaffold>
+  );
+}
+
+function AutomatedDemoCursor({ state }: { state: DemoCursorState }): JSX.Element {
+  return (
+    <div
+      className="automated-demo-cursor"
+      data-clicking={state.clicking ? "true" : "false"}
+      data-click-kind={state.clickKind}
+      data-moving={state.moving ? "true" : "false"}
+      style={{
+        transform: `translate3d(${state.x}px, ${state.y}px, 0)`,
+        opacity: state.visible ? 1 : 0,
+      }}
+      aria-hidden="true"
+    >
+      <img
+        className="automated-demo-cursor-pointer"
+        src={AUTOMATED_DEMO_CURSOR_PNG_URL}
+        alt=""
+        draggable={false}
+      />
+      <div className="automated-demo-cursor-ring" />
+    </div>
+  );
+}
+
+async function runAutomatedProposalDemo({
+  setCursorState,
+  cursorPointRef,
+  isCancelled,
+}: {
+  setCursorState: (updater: DemoCursorState | ((current: DemoCursorState) => DemoCursorState)) => void;
+  cursorPointRef: DemoCursorPointRef;
+  isCancelled: () => boolean;
+}): Promise<void> {
+  await delay(5000);
+  if (isCancelled()) {
+    return;
+  }
+
+  await delay(AUTOMATED_DEMO_STORY_BEAT_PAUSE_MS);
+  await clickDemoElement(
+    await waitForDemoElement(() => findButtonByText("Create proposal")),
+    setCursorState,
+    cursorPointRef,
+    isCancelled,
+  );
+
+  await delay(650);
+  const titleInput = await waitForDemoElement(() => findLabeledControl<HTMLInputElement>("Title"));
+  await fillDemoControl(
+    titleInput,
+    "zkApp Lending Market",
+    setCursorState,
+    cursorPointRef,
+    isCancelled,
+    {
+      cursorTarget: { xRatio: 0.06, yRatio: 0.5 },
+    },
+  );
+
+  const amountInput = await waitForDemoElement(() => findLabeledControl<HTMLInputElement>("Amount"));
+  await fillDemoControl(
+    amountInput,
+    "100000",
+    setCursorState,
+    cursorPointRef,
+    isCancelled,
+    {
+      cursorTarget: { xRatio: 0.1, yRatio: 0.5 },
+    },
+  );
+  await delay(700);
+
+  const recipientInput = await waitForDemoElement(() => findLabeledControl<HTMLInputElement>("Recipient"));
+  await fillDemoControl(
+    recipientInput,
+    "B62qkEdNmGbUVaUnVtwMeMo9G1QBgfp9c3K7j4FbmXn21zG8ssvaPvi",
+    setCursorState,
+    cursorPointRef,
+    isCancelled,
+    {
+      cursorTarget: { xRatio: 0.06, yRatio: 0.5 },
+    },
+  );
+
+  const contentTextarea = await waitForDemoElement(() => findLabeledControl<HTMLTextAreaElement>("Content"));
+  await waitForDemoElement(() =>
+    document.querySelector<HTMLElement>(
+      '[data-component="proposal-creation-markdown-write"][data-state="active"]',
+    ),
+  );
+  await fillDemoControl(
+    contentTextarea,
+    AUTOMATED_ZKAPP_LENDING_PROPOSAL_CONTENT,
+    setCursorState,
+    cursorPointRef,
+    isCancelled,
+    {
+      cursorTarget: { xRatio: 0.06, yRatio: 0.08 },
+      inputMode: "paste",
+      hideCursorAfterClick: false,
+    },
+  );
+  await delay(250);
+
+  await clickDemoElement(
+    await waitForDemoElement(() => findButtonByText("Preview")),
+    setCursorState,
+    cursorPointRef,
+    isCancelled,
+  );
+  await waitForDemoElement(() =>
+    document.querySelector<HTMLElement>(
+      '[data-component="proposal-creation-markdown-preview-panel"][data-state="active"] [data-component="proposal-creation-markdown-preview"]',
+    ),
+  );
+  await delay(550);
+
+  const createButton = await waitForDemoElement(() => {
+    const form = document.querySelector("form");
+    if (!form) {
+      return null;
+    }
+    return form.querySelector<HTMLButtonElement>('button[type="submit"]:not(:disabled)');
+  });
+  await delay(180);
+  await clickDemoElement(
+    createButton,
+    setCursorState,
+    cursorPointRef,
+    isCancelled,
+  );
+
+  await delay(600);
+  await clickDemoModalStartButton(
+    setCursorState,
+    cursorPointRef,
+    isCancelled,
+  );
+  setCursorState((current) => ({ ...current, visible: false }));
+  await focusTransactionProgressForDemo(isCancelled);
+  await waitForTransactionProgress(isCancelled, true);
+
+  const votingArea = await waitForDemoElement(
+    () => document.querySelector<HTMLElement>('[data-component="proposal-vote-action-area"]'),
+    12000,
+  );
+  await scrollDemoElementIntoViewport(votingArea, isCancelled);
+  await delay(AUTOMATED_DEMO_STORY_BEAT_PAUSE_MS + 1200);
+
+  await clickDemoElement(
+    await waitForDemoElement(() => findButtonByText("Yay", votingArea)),
+    setCursorState,
+    cursorPointRef,
+    isCancelled,
+  );
+  await clickDemoModalStartButton(
+    setCursorState,
+    cursorPointRef,
+    isCancelled,
+  );
+  setCursorState((current) => ({ ...current, visible: false }));
+  await focusTransactionProgressForDemo(isCancelled);
+  await waitForTransactionProgress(isCancelled, false);
+  await delay(AUTOMATED_DEMO_STORY_BEAT_PAUSE_MS);
+
+  const executeButton = await waitForDemoElement(() => findButtonByText("Execute proposal"), 12000);
+  await delay(AUTOMATED_DEMO_STORY_BEAT_PAUSE_MS + 1000);
+  await clickDemoElement(
+    executeButton,
+    setCursorState,
+    cursorPointRef,
+    isCancelled,
+  );
+  await clickDemoModalStartButton(
+    setCursorState,
+    cursorPointRef,
+    isCancelled,
+  );
+  setCursorState((current) => ({ ...current, visible: false }));
+  await focusTransactionProgressForDemo(isCancelled);
+  await waitForTransactionProgress(isCancelled, false);
+  const fullyPaidOutButton = await waitForDemoElement(
+    () => findButtonByText("Fully paid out", document, { includeDisabled: true }),
+    12000,
+  );
+  await moveDemoCursorToElement(
+    fullyPaidOutButton,
+    setCursorState,
+    cursorPointRef,
+    isCancelled,
+  );
+  await delay(AUTOMATED_DEMO_STORY_BEAT_PAUSE_MS);
+  await delay(AUTOMATED_DEMO_FINAL_HOLD_MS);
+}
+
+function findLabeledControl<T extends HTMLElement>(label: string): T | null {
+  const ariaLabeledControl = document.querySelector<T>(`[aria-label="${label}"]`);
+  if (ariaLabeledControl) {
+    return ariaLabeledControl;
+  }
+
+  const normalizedLabel = normalizeDemoText(label);
+  const matchingLabel = Array.from(document.querySelectorAll<HTMLLabelElement>("label")).find(
+    (labelElement) => normalizeDemoText(labelElement.textContent ?? "") === normalizedLabel,
+  );
+  if (!matchingLabel?.htmlFor) {
+    return null;
+  }
+
+  return document.getElementById(matchingLabel.htmlFor) as T | null;
+}
+
+function findButtonByText(
+  text: string,
+  root: ParentNode = document,
+  options: { includeDisabled?: boolean } = {},
+): HTMLButtonElement | null {
+  const normalizedText = text.trim().toLowerCase();
+  const buttons = Array.from(root.querySelectorAll<HTMLButtonElement>("button"));
+  return (
+    buttons.find(
+      (button) =>
+        button.textContent?.trim().toLowerCase() === normalizedText &&
+        (options.includeDisabled || !button.disabled),
+    ) ??
+    null
+  );
+}
+
+async function waitForDemoElement<T extends HTMLElement>(
+  resolveElement: () => T | null,
+  timeoutMs = 8000,
+): Promise<T> {
+  const startedAt = window.performance.now();
+  while (window.performance.now() - startedAt < timeoutMs) {
+    const element = resolveElement();
+    if (element) {
+      return element;
+    }
+    await delay(100);
+  }
+  throw new Error("Timed out waiting for automated demo element.");
+}
+
+async function fillDemoControl(
+  element: HTMLInputElement | HTMLTextAreaElement,
+  value: string,
+  setCursorState: (updater: DemoCursorState | ((current: DemoCursorState) => DemoCursorState)) => void,
+  cursorPointRef: DemoCursorPointRef,
+  isCancelled: () => boolean,
+  options: {
+    cursorTarget?: { xRatio?: number; yRatio?: number };
+    hideCursorAfterClick?: boolean;
+    inputMode?: "paste" | "type";
+    scrollIntoView?: boolean;
+  } = {},
+): Promise<DemoPoint> {
+  let inputApplied = false;
+  const point = await clickDemoElement(
+    element,
+    setCursorState,
+    cursorPointRef,
+    isCancelled,
+    options.cursorTarget,
+    {
+      ...options,
+      clickKind: "input",
+      hideCursorAfterClick: options.hideCursorAfterClick ?? true,
+      onActivated:
+        options.inputMode === "paste"
+          ? () => {
+              setNativeControlValue(element, "");
+              element.dispatchEvent(new Event("input", { bubbles: true }));
+              pasteDemoControlValue(element, value);
+              inputApplied = true;
+            }
+          : undefined,
+    },
+  );
+  if (isCancelled()) {
+    return point;
+  }
+  if (!inputApplied) {
+    setNativeControlValue(element, "");
+    element.dispatchEvent(new Event("input", { bubbles: true }));
+    await typeDemoControlValue(element, value, isCancelled);
+  }
+  element.dispatchEvent(new Event("change", { bubbles: true }));
+  await delay(350);
+  return point;
+}
+
+async function clickDemoElement(
+  element: HTMLElement,
+  setCursorState: (updater: DemoCursorState | ((current: DemoCursorState) => DemoCursorState)) => void,
+  cursorPointRef: DemoCursorPointRef,
+  isCancelled: () => boolean,
+  cursorTarget: { xRatio?: number; yRatio?: number } = {},
+  options: DemoClickOptions = {},
+): Promise<DemoPoint> {
+  const point = await moveDemoCursorToElement(
+    element,
+    setCursorState,
+    cursorPointRef,
+    isCancelled,
+    cursorTarget,
+    options,
+  );
+  if (isCancelled()) {
+    return point;
+  }
+  await waitForAnimationFrames(2);
+  if (!isDemoPointInsideElement(element, point)) {
+    throw new Error("Automated demo cursor target drifted outside the clicked element.");
+  }
+  const clickKind = options.clickKind ?? "button";
+  setCursorState((current) => ({ ...current, clickKind, moving: false, visible: true }));
+  await delay(AUTOMATED_DEMO_PRE_CLICK_PAUSE_MS);
+  setCursorState((current) => ({ ...current, clicking: true }));
+  dispatchDemoPointerSequence(element, point);
+  focusDemoElementWithoutScroll(element);
+  await options.onActivated?.(point);
+  await delay(AUTOMATED_DEMO_CLICK_HOLD_MS);
+  setCursorState((current) => ({ ...current, clicking: false }));
+  await delay(
+    clickKind === "input"
+      ? AUTOMATED_DEMO_INPUT_POST_CLICK_VISIBLE_MS
+      : AUTOMATED_DEMO_BUTTON_POST_CLICK_VISIBLE_MS,
+  );
+  if (options.hideCursorAfterClick) {
+    setCursorState((current) => ({ ...current, visible: false }));
+  }
+  await delay(
+    options.hideCursorAfterClick
+      ? Math.floor(AUTOMATED_DEMO_POST_CLICK_SETTLE_MS * 0.65)
+      : AUTOMATED_DEMO_POST_CLICK_SETTLE_MS,
+  );
+  return point;
+}
+
+async function moveDemoCursorToElement(
+  element: HTMLElement,
+  setCursorState: (updater: DemoCursorState | ((current: DemoCursorState) => DemoCursorState)) => void,
+  cursorPointRef: DemoCursorPointRef,
+  isCancelled: () => boolean,
+  cursorTarget: { xRatio?: number; yRatio?: number } = {},
+  options: DemoMoveOptions = {},
+): Promise<DemoPoint> {
+  if (isCancelled()) {
+    const rect = element.getBoundingClientRect();
+    return { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
+  }
+  let didScroll = false;
+  if (options.scrollIntoView !== false) {
+    if (!isDemoElementTargetInViewport(element)) {
+      showDemoCursorAtStoredPoint(setCursorState, cursorPointRef);
+      await waitForAnimationFrames(2);
+    }
+    didScroll = await scrollDemoElementIntoViewport(element, isCancelled);
+  }
+  if (didScroll && !isCancelled()) {
+    await delay(AUTOMATED_DEMO_SCROLL_SETTLE_PAUSE_MS);
+  }
+  const elementPoint = resolveDemoElementPoint(element, cursorTarget);
+  await animateDemoCursorToPoint(elementPoint, setCursorState, cursorPointRef, isCancelled);
+  return elementPoint;
+}
+
+function showDemoCursorAtStoredPoint(
+  setCursorState: (updater: DemoCursorState | ((current: DemoCursorState) => DemoCursorState)) => void,
+  cursorPointRef: DemoCursorPointRef,
+): void {
+  setCursorState((current) => ({
+    ...current,
+    moving: false,
+    visible: true,
+    x: cursorPointRef.current.x,
+    y: cursorPointRef.current.y,
+  }));
+}
+
+async function animateDemoCursorToPoint(
+  targetPoint: DemoPoint,
+  setCursorState: (updater: DemoCursorState | ((current: DemoCursorState) => DemoCursorState)) => void,
+  cursorPointRef: DemoCursorPointRef,
+  isCancelled: () => boolean,
+): Promise<void> {
+  const startPoint = cursorPointRef.current;
+  const distance = getDemoPointDistance(startPoint, targetPoint);
+  const travelMs = resolveDemoCursorTravelMs(distance);
+  const startedAt = window.performance.now();
+
+  setCursorState((current) => ({
+    ...current,
+    moving: true,
+    visible: true,
+    x: startPoint.x,
+    y: startPoint.y,
+  }));
+
+  await new Promise<void>((resolve) => {
+    const tick = (now: number): void => {
+      if (isCancelled()) {
+        resolve();
+        return;
+      }
+
+      const progress = clampDemoValue((now - startedAt) / travelMs, 0, 1);
+      const easedProgress = easeInOutDemoCursor(progress);
+      const nextPoint = getLinearDemoPoint(startPoint, targetPoint, easedProgress);
+      cursorPointRef.current = nextPoint;
+
+      setCursorState((current) => ({
+        ...current,
+        moving: true,
+        visible: true,
+        x: nextPoint.x,
+        y: nextPoint.y,
+      }));
+
+      if (progress >= 1) {
+        resolve();
+        return;
+      }
+
+      window.requestAnimationFrame(tick);
+    };
+
+    window.requestAnimationFrame(tick);
+  });
+
+  cursorPointRef.current = targetPoint;
+  setCursorState((current) => ({
+    ...current,
+    moving: false,
+    x: targetPoint.x,
+    y: targetPoint.y,
+  }));
+}
+
+function getDemoPointDistance(startPoint: DemoPoint, endPoint: DemoPoint): number {
+  return Math.hypot(endPoint.x - startPoint.x, endPoint.y - startPoint.y);
+}
+
+function resolveDemoCursorTravelMs(distance: number): number {
+  return Math.round(
+    clampDemoValue(
+      260 + distance * 0.58,
+      AUTOMATED_DEMO_CURSOR_MIN_TRAVEL_MS,
+      AUTOMATED_DEMO_CURSOR_MAX_TRAVEL_MS,
+    ),
+  );
+}
+
+function getLinearDemoPoint(
+  startPoint: DemoPoint,
+  endPoint: DemoPoint,
+  progress: number,
+): DemoPoint {
+  return {
+    x: startPoint.x + (endPoint.x - startPoint.x) * progress,
+    y: startPoint.y + (endPoint.y - startPoint.y) * progress,
+  };
+}
+
+function easeInOutDemoCursor(progress: number): number {
+  return progress < 0.5
+    ? 4 * progress * progress * progress
+    : 1 - Math.pow(-2 * progress + 2, 3) / 2;
+}
+
+function clampDemoValue(value: number, min: number, max: number): number {
+  return Math.min(Math.max(value, min), max);
+}
+
+async function scrollDemoElementIntoViewport(
+  element: HTMLElement,
+  isCancelled: () => boolean,
+): Promise<boolean> {
+  if (isDemoElementTargetInViewport(element)) {
+    return false;
+  }
+
+  element.scrollIntoView({ behavior: "smooth", block: "center", inline: "center" });
+  await waitForDemoScrollToSettle(element, isCancelled);
+  return true;
+}
+
+async function clickDemoModalStartButton(
+  setCursorState: (updater: DemoCursorState | ((current: DemoCursorState) => DemoCursorState)) => void,
+  cursorPointRef: DemoCursorPointRef,
+  isCancelled: () => boolean,
+): Promise<void> {
+  const startButton = await waitForDemoElement(() =>
+    document.querySelector<HTMLButtonElement>('[data-component="transaction-flow-start-button"]'),
+  );
+  await waitForAnimationFrames(2);
+  await clickDemoElement(
+    startButton,
+    setCursorState,
+    cursorPointRef,
+    isCancelled,
+  );
+}
+
+async function focusTransactionProgressForDemo(isCancelled: () => boolean): Promise<void> {
+  const progressRow = await waitForDemoElement(
+    () => document.querySelector<HTMLElement>('[data-component="transaction-flow-progress-row"]'),
+    8000,
+  );
+  await scrollDemoElementIntoViewport(progressRow, isCancelled);
+  await delay(AUTOMATED_DEMO_SCROLL_SETTLE_PAUSE_MS + 220);
+}
+
+async function waitForTransactionProgress(
+  isCancelled: () => boolean,
+  includesPostContentStep: boolean,
+): Promise<void> {
+  const steps = includesPostContentStep
+    ? ["compiling", "proving", "awaitingSignature", "awaitingInclusion", "postingContent"]
+    : ["compiling", "proving", "awaitingSignature", "awaitingInclusion"];
+
+  for (const step of steps) {
+    if (isCancelled()) {
+      return;
+    }
+    const runningIcon = await waitForTransactionProgressIcon(step, isCancelled);
+    if (!runningIcon) {
+      return;
+    }
+    if (runningIcon.dataset.stepStatus === "running") {
+      const completedIcon = await waitForTransactionProgressIcon(
+        step,
+        isCancelled,
+        "completed",
+      );
+      if (!completedIcon) {
+        return;
+      }
+    }
+    await delay(260);
+  }
+}
+
+async function waitForTransactionProgressIcon(
+  step: string,
+  isCancelled: () => boolean,
+  status: "running-or-completed" | "completed" = "running-or-completed",
+  timeoutMs = 20000,
+): Promise<HTMLElement | null> {
+  const startedAt = window.performance.now();
+  const selector =
+    status === "completed"
+      ? `[data-component="transaction-flow-progress-icon"][data-step-id="${step}"][data-step-status="completed"]`
+      : `[data-component="transaction-flow-progress-icon"][data-step-id="${step}"][data-step-status="running"], [data-component="transaction-flow-progress-icon"][data-step-id="${step}"][data-step-status="completed"]`;
+
+  while (window.performance.now() - startedAt < timeoutMs) {
+    if (isCancelled()) {
+      return null;
+    }
+
+    const icon = document.querySelector<HTMLElement>(selector);
+    if (icon) {
+      return icon;
+    }
+
+    if (!document.querySelector('[role="dialog"]')) {
+      return null;
+    }
+
+    await delay(100);
+  }
+
+  return null;
+}
+
+function focusDemoElementWithoutScroll(element: HTMLElement): void {
+  try {
+    element.focus({ preventScroll: true });
+  } catch {
+    element.focus();
+  }
+}
+
+function resolveDemoElementPoint(
+  element: HTMLElement,
+  cursorTarget: { xRatio?: number; yRatio?: number } = {},
+): DemoPoint {
+  const rect = element.getBoundingClientRect();
+  return {
+    x: rect.left + rect.width * (cursorTarget.xRatio ?? 0.5),
+    y: rect.top + rect.height * (cursorTarget.yRatio ?? 0.5),
+  };
+}
+
+function normalizeDemoText(value: string): string {
+  return value.trim().replace(/\s+/g, " ").toLowerCase();
+}
+
+function isDemoPointInsideElement(element: HTMLElement, point: DemoPoint): boolean {
+  const rect = element.getBoundingClientRect();
+  return (
+    point.x >= rect.left - AUTOMATED_DEMO_CLICK_TOLERANCE_PX &&
+    point.x <= rect.right + AUTOMATED_DEMO_CLICK_TOLERANCE_PX &&
+    point.y >= rect.top - AUTOMATED_DEMO_CLICK_TOLERANCE_PX &&
+    point.y <= rect.bottom + AUTOMATED_DEMO_CLICK_TOLERANCE_PX
+  );
+}
+
+function isDemoElementTargetInViewport(element: HTMLElement): boolean {
+  const point = resolveDemoElementPoint(element);
+  return (
+    point.x >= AUTOMATED_DEMO_VIEWPORT_FOLLOW_MARGIN_X &&
+    point.x <= window.innerWidth - AUTOMATED_DEMO_VIEWPORT_FOLLOW_MARGIN_X &&
+    point.y >= AUTOMATED_DEMO_VIEWPORT_FOLLOW_MARGIN_Y &&
+    point.y <= window.innerHeight - AUTOMATED_DEMO_VIEWPORT_FOLLOW_MARGIN_Y
+  );
+}
+
+async function waitForDemoScrollToSettle(
+  element: HTMLElement,
+  isCancelled: () => boolean,
+  timeoutMs = 1400,
+): Promise<void> {
+  const startedAt = window.performance.now();
+  let lastSignature = readDemoScrollSignature(element);
+  let stableFrames = 0;
+
+  while (window.performance.now() - startedAt < timeoutMs) {
+    if (isCancelled()) {
+      return;
+    }
+
+    await waitForAnimationFrames(1);
+    const nextSignature = readDemoScrollSignature(element);
+    if (nextSignature === lastSignature) {
+      stableFrames += 1;
+      if (stableFrames >= 6 && isDemoElementTargetInViewport(element)) {
+        return;
+      }
+    } else {
+      stableFrames = 0;
+      lastSignature = nextSignature;
+    }
+  }
+}
+
+function readDemoScrollSignature(element: HTMLElement): string {
+  const scrollableAncestors = collectDemoScrollableAncestors(element);
+  return [
+    `${window.scrollX}:${window.scrollY}`,
+    ...scrollableAncestors.map((ancestor) => `${ancestor.scrollLeft}:${ancestor.scrollTop}`),
+  ].join("|");
+}
+
+function collectDemoScrollableAncestors(element: HTMLElement): HTMLElement[] {
+  const ancestors: HTMLElement[] = [];
+  let current = element.parentElement;
+
+  while (current && current !== document.body) {
+    const style = window.getComputedStyle(current);
+    const canScrollY =
+      /(auto|scroll|overlay)/.test(style.overflowY) && current.scrollHeight > current.clientHeight;
+    const canScrollX =
+      /(auto|scroll|overlay)/.test(style.overflowX) && current.scrollWidth > current.clientWidth;
+    if (canScrollY || canScrollX) {
+      ancestors.push(current);
+    }
+    current = current.parentElement;
+  }
+
+  return ancestors;
+}
+
+async function waitForDemoMotionToSettle(delayMs = 0): Promise<void> {
+  if (delayMs > 0) {
+    await delay(delayMs);
+  }
+  await waitForAnimationFrames(2);
+}
+
+async function waitForAnimationFrames(count: number): Promise<void> {
+  for (let frame = 0; frame < count; frame += 1) {
+    await new Promise<void>((resolve) => {
+      window.requestAnimationFrame(() => resolve());
+    });
+  }
+}
+
+function setNativeControlValue(element: HTMLInputElement | HTMLTextAreaElement, value: string): void {
+  const prototype = element instanceof HTMLTextAreaElement ? HTMLTextAreaElement.prototype : HTMLInputElement.prototype;
+  const valueSetter = Object.getOwnPropertyDescriptor(prototype, "value")?.set;
+  valueSetter?.call(element, value);
+}
+
+async function typeDemoControlValue(
+  element: HTMLInputElement | HTMLTextAreaElement,
+  value: string,
+  isCancelled: () => boolean,
+): Promise<void> {
+  const delayMs = element instanceof HTMLTextAreaElement ? 6 : 24;
+  let currentValue = "";
+
+  for (const character of value) {
+    if (isCancelled()) {
+      return;
+    }
+    currentValue += character;
+    setNativeControlValue(element, currentValue);
+    element.dispatchEvent(new Event("input", { bubbles: true }));
+    await delay(delayMs);
+  }
+}
+
+function pasteDemoControlValue(
+  element: HTMLInputElement | HTMLTextAreaElement,
+  value: string,
+): void {
+  setNativeControlValue(element, value);
+  element.dispatchEvent(
+    new ClipboardEvent("paste", {
+      bubbles: true,
+      cancelable: true,
+      clipboardData: new DataTransfer(),
+    }),
+  );
+  element.dispatchEvent(new Event("input", { bubbles: true }));
+}
+
+function dispatchDemoPointerSequence(element: HTMLElement, point: DemoPoint): void {
+  const pointerEventInit: PointerEventInit = {
+    bubbles: true,
+    cancelable: true,
+    clientX: point.x,
+    clientY: point.y,
+    pointerId: 1,
+    pointerType: "mouse",
+    isPrimary: true,
+    button: 0,
+    buttons: 1,
+  };
+  const mouseEventInit: MouseEventInit = {
+    bubbles: true,
+    cancelable: true,
+    clientX: point.x,
+    clientY: point.y,
+    button: 0,
+    buttons: 1,
+    view: window,
+  };
+
+  element.dispatchEvent(new PointerEvent("pointerdown", pointerEventInit));
+  element.dispatchEvent(new MouseEvent("mousedown", mouseEventInit));
+  element.dispatchEvent(new PointerEvent("pointerup", { ...pointerEventInit, buttons: 0 }));
+  element.dispatchEvent(new MouseEvent("mouseup", { ...mouseEventInit, buttons: 0 }));
+  element.dispatchEvent(new MouseEvent("click", { ...mouseEventInit, buttons: 0 }));
+}
+
+function createAutomatedDemoVotes(proposalId: string): TreasuryProposalVoteRow[] {
+  return [
+    {
+      id: `${proposalId}-v1`,
+      voterPublicKey: "B62qdemoVoter111111111111111111111111111111111111111111",
+      vote: "yay",
+      voteWeight: "154000 MINA",
+      blockHeight: 452101,
+      status: "Counted",
+    },
+    {
+      id: `${proposalId}-v2`,
+      voterPublicKey: "B62qdemoVoter222222222222222222222222222222222222222222",
+      vote: "nay",
+      voteWeight: "22000 MINA",
+      blockHeight: 452102,
+      status: "Counted",
+    },
+    {
+      id: `${proposalId}-v3`,
+      voterPublicKey: "B62qdemoVoter333333333333333333333333333333333333333333",
+      vote: "abstain",
+      voteWeight: "8500 MINA",
+      blockHeight: 452103,
+      status: "Counted",
+    },
+  ];
+}
+
+const AUTOMATED_PROPOSAL_DEMO_STYLES = `
+body.automated-proposal-demo-active {
+  overflow-x: hidden;
+  background: hsl(var(--background));
+}
+
+.automated-proposal-demo-root,
+.automated-proposal-demo-root * {
+  cursor: none !important;
+}
+
+.automated-proposal-demo-root {
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at 16% 8%, hsl(var(--primary) / 0.08), transparent 28rem),
+    hsl(var(--background));
+}
+
+.automated-demo-content {
+  box-sizing: border-box;
+  min-height: 100vh;
+}
+
+.automated-proposal-demo-root main {
+  gap: 1rem !important;
+}
+
+.automated-proposal-demo-root footer {
+  display: none !important;
+}
+
+.automated-proposal-demo-root [data-component="treasury-header"] {
+  position: static !important;
+  top: auto !important;
+}
+
+.automated-proposal-demo-root [data-component="treasury-header"] > div {
+  margin-top: 0 !important;
+  border-color: transparent !important;
+  background: hsl(var(--background)) !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+}
+
+.automated-proposal-demo-root form button[type="button"]:not([role="tab"]) {
+  display: none !important;
+}
+
+.automated-proposal-demo-root form [aria-invalid="true"] {
+  border-color: hsl(var(--input)) !important;
+  box-shadow: none !important;
+}
+
+.automated-proposal-demo-root form p.text-destructive {
+  display: none !important;
+}
+
+.automated-proposal-demo-root form [class*="text-muted-foreground"] {
+  line-height: 1.35;
+}
+
+.automated-proposal-demo-root [data-component="proposal-creation-markdown-preview"] {
+  max-height: min(42vh, 30rem);
+  overflow: auto;
+}
+
+.automated-proposal-demo-active * {
+  cursor: none !important;
+}
+
+.automated-proposal-demo-root *:focus,
+.automated-proposal-demo-root *:focus-visible,
+.automated-proposal-demo-active *:focus,
+.automated-proposal-demo-active *:focus-visible,
+.automated-proposal-demo-active [data-focus],
+.automated-proposal-demo-active [data-state]:focus,
+.automated-proposal-demo-active [data-state]:focus-visible {
+  outline: none !important;
+  box-shadow: none !important;
+  --tw-ring-offset-shadow: 0 0 #0000 !important;
+  --tw-ring-shadow: 0 0 #0000 !important;
+}
+
+.automated-demo-cursor {
+  position: fixed;
+  left: 0;
+  top: 0;
+  z-index: 2147483647;
+  pointer-events: none;
+  transition: opacity 220ms ease;
+  will-change: transform, opacity;
+}
+
+.automated-demo-cursor-pointer {
+  --automated-demo-cursor-hotspot-x: 14px;
+  --automated-demo-cursor-hotspot-y: 5px;
+  --automated-demo-cursor-hotspot-offset-x: -14px;
+  --automated-demo-cursor-hotspot-offset-y: -5px;
+  position: relative;
+  z-index: 2;
+  display: block;
+  width: 39px;
+  height: 39px;
+  object-fit: contain;
+  filter:
+    drop-shadow(1px 0 0 rgb(0 0 0 / 0.95))
+    drop-shadow(-1px 0 0 rgb(0 0 0 / 0.95))
+    drop-shadow(0 1px 0 rgb(0 0 0 / 0.95))
+    drop-shadow(0 -1px 0 rgb(0 0 0 / 0.95))
+    drop-shadow(1px 1px 0 rgb(0 0 0 / 0.9))
+    drop-shadow(-1px -1px 0 rgb(0 0 0 / 0.9))
+    drop-shadow(0 4px 9px rgb(0 0 0 / 0.28));
+  image-rendering: auto;
+  transform: translate(
+    var(--automated-demo-cursor-hotspot-offset-x),
+    var(--automated-demo-cursor-hotspot-offset-y)
+  );
+  transform-origin:
+    var(--automated-demo-cursor-hotspot-x)
+    var(--automated-demo-cursor-hotspot-y);
+  backface-visibility: hidden;
+  transition: transform 180ms ease;
+  user-select: none;
+}
+
+.automated-demo-cursor-ring {
+  position: absolute;
+  z-index: 1;
+  left: -18px;
+  top: -18px;
+  width: 36px;
+  height: 36px;
+  background: transparent;
+  border: 1.5px solid rgb(15 23 42 / 0.36);
+  border-radius: 999px;
+  opacity: 0;
+  transform: scale(0.44);
+  transform-origin: center;
+  box-shadow:
+    0 0 0 3px rgb(255 255 255 / 0.5),
+    0 8px 18px rgb(15 23 42 / 0.1);
+}
+
+.automated-demo-cursor[data-moving="true"] .automated-demo-cursor-pointer {
+  transform:
+    translate(
+      var(--automated-demo-cursor-hotspot-offset-x),
+      var(--automated-demo-cursor-hotspot-offset-y)
+    )
+    scale(1.1);
+}
+
+.automated-demo-cursor[data-clicking="true"] .automated-demo-cursor-pointer {
+  transform:
+    translate(
+      var(--automated-demo-cursor-hotspot-offset-x),
+      var(--automated-demo-cursor-hotspot-offset-y)
+    )
+    scale(0.92);
+}
+
+.automated-demo-cursor[data-clicking="true"] .automated-demo-cursor-ring {
+  animation: automated-demo-click-ring 520ms ease-out;
+}
+
+.automated-demo-cursor[data-click-kind="input"][data-clicking="true"] .automated-demo-cursor-ring {
+  animation-duration: 420ms;
+}
+
+@keyframes automated-demo-click-ring {
+  0% {
+    opacity: 0;
+    transform: scale(0.5);
+  }
+  22% {
+    opacity: 0.58;
+    transform: scale(0.78);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.16);
+  }
+}
+`;
+
 function MockTreasuryApp({
   dashboardPeriod = "proposal",
   scenario = "default",
@@ -902,9 +2127,13 @@ function MockTreasuryApp({
   walletAccountInfo,
   walletAccountInfoLoading = false,
   isAuroInstalled = true,
+  createProposalLabel,
+  treasuryBalance = "12400000",
+  headerTreasuryBalance = formatWholeMinaAsNanoMinaAmount(treasuryBalance),
 }: MockTreasuryAppProps): JSX.Element {
-  const isHappyPathScenario = scenario === "happyPath";
-  const transactionStepDelayMs = resolveMockTransactionStepDelayMs(scenario);
+  const isHappyPathScenario = scenario === "happyPath" || scenario === "automatedProposalDemo";
+  const showPrototypeJourneyControls = scenario === "happyPath";
+  const transactionStageDelayMs = resolveMockTransactionStageDelayMs(scenario);
   const currentDashboardLifecycleId = DASHBOARD_LIFECYCLE_ID_BY_PERIOD[dashboardPeriod];
   const stalledStepPromiseRef = useRef<Promise<void>>(new Promise(() => {}));
   const [route, setRoute] = useState<StoryRoute>({
@@ -976,8 +2205,6 @@ function MockTreasuryApp({
       : null;
   const prototypeProposalVotes =
     prototypeProposalId !== null ? proposalVotes[prototypeProposalId] ?? [] : [];
-  const prototypeProposalExecutions =
-    prototypeProposalId !== null ? proposalExecutions[prototypeProposalId] ?? [] : [];
   const prototypeProposalDisplayOverride =
     prototypeProposalBaseEntry && isHappyPathScenario
       ? buildPrototypeProposalDisplayEntry({
@@ -1041,7 +2268,10 @@ function MockTreasuryApp({
       ? {
           contentVerificationStatus: "verified",
           hasConnectedWallet: true,
-          connectedWalletVotingWeight: connectedWalletAccountInfo.votingWeight,
+          connectedWalletVotingWeight:
+            scenario === "automatedProposalDemo"
+              ? AUTOMATED_DEMO_CONNECTED_VOTE_WEIGHT
+              : connectedWalletAccountInfo.votingWeight,
         }
       : proposalDetailVariantById[selectedEntry.id] ??
       (selectedEntry.id in createdContentsById
@@ -1116,10 +2346,10 @@ function MockTreasuryApp({
         ? undefined
         : selectedDetailVariant.hasConnectedWallet === false
           ? undefined
-          : selectedDetailVariant.connectedWalletVotingWeight === "0"
+          : selectedDetailVariant.connectedWalletVotingWeight != null
             ? {
                 ...connectedWalletAccountInfo,
-                votingWeight: "0 MINA",
+                votingWeight: selectedDetailVariant.connectedWalletVotingWeight,
               }
             : connectedWalletAccountInfo;
   const dashboardCarryoverEntries =
@@ -1174,14 +2404,19 @@ function MockTreasuryApp({
       period: "Proposal",
       createdAt,
       createdAtBlock: nextCreatedAtBlock,
-      ...createProposalVotingRequirements("400000", "2000", "5100"),
-      requiredParticipation: "80000",
+      ...resolveCreatedProposalVotingRequirements(draft.amount),
     };
 
     setCreatedEntries((current) => [newEntry, ...current]);
     if (isHappyPathScenario) {
-      setPrototypeJourneyPhase("proposal");
-      setDashboardPreviewPhase("proposal");
+      setPrototypeJourneyPhase(scenario === "automatedProposalDemo" ? "voting" : "proposal");
+      setDashboardPreviewPhase(scenario === "automatedProposalDemo" ? "voting" : "proposal");
+    }
+    if (scenario === "automatedProposalDemo") {
+      setCreatedVotesById((current) => ({
+        ...current,
+        [id]: createAutomatedDemoVotes(id),
+      }));
     }
     if (route.page === "proposal-create" && route.draftId) {
       setSavedDrafts((current) => current.filter((entry) => entry.id !== route.draftId));
@@ -1237,11 +2472,13 @@ function MockTreasuryApp({
     }
     const baseVotes = createdVotesById[selectedEntry.id] ?? proposalVotesById[selectedEntry.id] ?? [];
     const nextBlockHeight = resolveNextBlockHeight(baseVotes.map((vote) => vote.blockHeight ?? null), 452100);
+    const connectedVoteWeight =
+      selectedDetailVariant.connectedWalletVotingWeight ?? connectedWalletAccountInfo.votingWeight;
     const nextVote: TreasuryProposalVoteRow = {
       id: `${selectedEntry.id}-v${baseVotes.length + 1}`,
       voterPublicKey: MOCK_CONNECTED_WALLET_ADDRESS,
       vote: voteRequest.vote,
-      voteWeight: connectedWalletAccountInfo.votingWeight,
+      voteWeight: connectedVoteWeight,
       blockHeight: nextBlockHeight,
       status: "Counted",
     };
@@ -1251,8 +2488,9 @@ function MockTreasuryApp({
       [selectedEntry.id]: nextVotes,
     }));
     if (isHappyPathScenario && selectedEntry.id === prototypeProposalId) {
-      setPrototypeJourneyPhase("cooldown");
-      setDashboardPreviewPhase("cooldown");
+      const nextPhase = scenario === "automatedProposalDemo" ? "postCooldown" : "cooldown";
+      setPrototypeJourneyPhase(nextPhase);
+      setDashboardPreviewPhase(nextPhase);
     } else {
       const nextVoteTally = buildVoteTallyFromVotes(selectedEntry, nextVotes, nextBlockHeight);
       setEntryOverridesById((current) => ({
@@ -1332,6 +2570,8 @@ function MockTreasuryApp({
         walletAccountInfo={resolvedWalletAccountInfo}
         walletAccountInfoLoading={walletAccountInfoLoading}
         isAuroInstalled={isAuroInstalled}
+        createProposalLabel={createProposalLabel}
+        treasuryBalance={headerTreasuryBalance}
         onDashboardClick={() =>
           navigate({ page: "dashboard", lifecycleId: dashboardSelectedLifecycleId })
         }
@@ -1368,7 +2608,7 @@ function MockTreasuryApp({
         }}
       >
         <div className="space-y-6 py-6">
-          {isHappyPathScenario ? (
+          {showPrototypeJourneyControls ? (
             <PrototypeJourneyControls
               proposalCreated={prototypeProposalId !== null}
               proposalJourneyPhase={prototypeJourneyPhase}
@@ -1470,7 +2710,7 @@ function MockTreasuryApp({
                 lifecycleId={route.lifecycleId}
                 currentPeriod={proposalCreationPeriod}
                 connectedWalletAddress="B62qkEdNmGbUVaUnVtwMeMo9G1QBgfp9c3K7j4FbmXn21zG8ssvaPvi"
-                treasuryBalance="24000000"
+                treasuryBalance={treasuryBalance}
                 eligibleVotingWeight="360000"
                 initialContent={selectedDraft?.draft.content}
                 initialAmount={selectedDraft?.draft.amount}
@@ -1502,7 +2742,7 @@ function MockTreasuryApp({
                     if (createProposalFlowState === "compiling") {
                       await stalledStepPromiseRef.current;
                     }
-                    await delay(transactionStepDelayMs);
+                    await delay(transactionStageDelayMs.compile);
                   }}
                   onProve={async () => {
                     if (createProposalFlowState === "proveError") {
@@ -1511,7 +2751,7 @@ function MockTreasuryApp({
                     if (createProposalFlowState === "proving") {
                       await stalledStepPromiseRef.current;
                     }
-                    await delay(transactionStepDelayMs);
+                    await delay(transactionStageDelayMs.prove);
                   }}
                   onSignAndSend={async () => {
                     if (createProposalFlowState === "signAndSendError") {
@@ -1520,7 +2760,7 @@ function MockTreasuryApp({
                     if (createProposalFlowState === "awaitingSignature") {
                       await stalledStepPromiseRef.current;
                     }
-                    await delay(transactionStepDelayMs);
+                    await delay(transactionStageDelayMs.signAndSend);
                     return {
                       hash: "5JuDcreateProposalAppStoryHash11111111111111111111111111111111111",
                     };
@@ -1529,7 +2769,7 @@ function MockTreasuryApp({
                     if (createProposalFlowState === "waitForInclusion") {
                       await stalledStepPromiseRef.current;
                     }
-                    await delay(transactionStepDelayMs);
+                    await delay(transactionStageDelayMs.waitForInclusion);
                     return {
                       hash,
                       blockHeight: 452041,
@@ -1542,7 +2782,7 @@ function MockTreasuryApp({
                     if (createProposalFlowState === "postContent") {
                       await stalledStepPromiseRef.current;
                     }
-                    await delay(transactionStepDelayMs);
+                    await delay(transactionStageDelayMs.postContent);
                   }}
                   onComplete={() => {
                     completeCreateProposal(submissionDraft);
@@ -1590,7 +2830,11 @@ function MockTreasuryApp({
                   onOpenChange={handleVoteDialogOpenChange}
                   kind="vote"
                   senderAddress={MOCK_CONNECTED_WALLET_ADDRESS}
-                  transactionDetailsCode={getMockVoteTransactionDetails(selectedEntry, voteRequest.vote)}
+                  transactionDetailsCode={getMockVoteTransactionDetails(
+                    selectedEntry,
+                    voteRequest.vote,
+                    selectedDetailVariant.connectedWalletVotingWeight ?? connectedWalletAccountInfo.votingWeight,
+                  )}
                   submitLabel="Cast vote transaction"
                   summaryItems={buildVoteSummaryItems(
                     selectedEntry,
@@ -1604,7 +2848,7 @@ function MockTreasuryApp({
                     if (voteFlowState === "compiling") {
                       await stalledStepPromiseRef.current;
                     }
-                    await delay(transactionStepDelayMs);
+                    await delay(transactionStageDelayMs.compile);
                   }}
                   onProve={async () => {
                     if (voteFlowState === "proveError") {
@@ -1613,7 +2857,7 @@ function MockTreasuryApp({
                     if (voteFlowState === "proving") {
                       await stalledStepPromiseRef.current;
                     }
-                    await delay(transactionStepDelayMs);
+                    await delay(transactionStageDelayMs.prove);
                   }}
                   onSignAndSend={async () => {
                     if (voteFlowState === "signAndSendError") {
@@ -1622,16 +2866,16 @@ function MockTreasuryApp({
                     if (voteFlowState === "awaitingSignature") {
                       await stalledStepPromiseRef.current;
                     }
-                    await delay(transactionStepDelayMs);
+                    await delay(transactionStageDelayMs.signAndSend);
                     return {
-                      hash: `5JuDvote${selectedEntry.id}Hash111111111111111111111111111111111111`,
+                      hash: "5JuDvoteZkAppLendingMarketHash1111111111111111111111111111111",
                     };
                   }}
                   onWaitForInclusion={async ({ hash }) => {
                     if (voteFlowState === "waitForInclusion") {
                       await stalledStepPromiseRef.current;
                     }
-                    await delay(transactionStepDelayMs);
+                    await delay(transactionStageDelayMs.waitForInclusion);
                     return {
                       hash,
                       blockHeight: 452142,
@@ -1666,7 +2910,7 @@ function MockTreasuryApp({
                     if (executeFlowState === "compiling") {
                       await stalledStepPromiseRef.current;
                     }
-                    await delay(transactionStepDelayMs);
+                    await delay(transactionStageDelayMs.compile);
                   }}
                   onProve={async () => {
                     if (executeFlowState === "proveError") {
@@ -1675,7 +2919,7 @@ function MockTreasuryApp({
                     if (executeFlowState === "proving") {
                       await stalledStepPromiseRef.current;
                     }
-                    await delay(transactionStepDelayMs);
+                    await delay(transactionStageDelayMs.prove);
                   }}
                   onSignAndSend={async () => {
                     if (executeFlowState === "signAndSendError") {
@@ -1684,16 +2928,16 @@ function MockTreasuryApp({
                     if (executeFlowState === "awaitingSignature") {
                       await stalledStepPromiseRef.current;
                     }
-                    await delay(transactionStepDelayMs);
+                    await delay(transactionStageDelayMs.signAndSend);
                     return {
-                      hash: `5JuDexecute${selectedEntry.id}Hash111111111111111111111111111111111`,
+                      hash: "5JuDexecuteZkAppLendingMarketHash11111111111111111111111111111",
                     };
                   }}
                   onWaitForInclusion={async ({ hash }) => {
                     if (executeFlowState === "waitForInclusion") {
                       await stalledStepPromiseRef.current;
                     }
-                    await delay(transactionStepDelayMs);
+                    await delay(transactionStageDelayMs.waitForInclusion);
                     return {
                       hash,
                       blockHeight: 452243,
@@ -1808,6 +3052,8 @@ function AppChrome({
   draftProposals = [],
   searchQuery = "",
   searchResults,
+  createProposalLabel,
+  treasuryBalance = "12400000",
   walletConnectStatus = "connected",
   walletAddress = "B62qkEdNmGbUVaUnVtwMeMo9G1QBgfp9c3K7j4FbmXn21zG8ssvaPvi",
   walletAccountInfo = connectedWalletAccountInfo,
@@ -1825,6 +3071,8 @@ function AppChrome({
   draftProposals?: TreasuryWalletHeaderProps["draftProposals"];
   searchQuery?: string;
   searchResults: TreasuryProposalTableEntry[];
+  createProposalLabel?: TreasuryWalletHeaderProps["createProposalLabel"];
+  treasuryBalance?: TreasuryWalletHeaderProps["treasuryBalance"];
   walletConnectStatus?: TreasuryWalletHeaderProps["walletConnectStatus"];
   walletAddress?: TreasuryWalletHeaderProps["walletAddress"];
   walletAccountInfo?: TreasuryWalletHeaderProps["walletAccountInfo"];
@@ -1852,7 +3100,8 @@ function AppChrome({
         walletAccountInfo={walletAccountInfo}
         walletAccountInfoLoading={walletAccountInfoLoading}
         isAuroInstalled={isAuroInstalled}
-        treasuryBalance="12400000"
+        createProposalLabel={createProposalLabel}
+        treasuryBalance={treasuryBalance}
         draftProposals={draftProposals}
         onCreateProposalClick={onCreateProposalClick}
         onDashboardClick={onDashboardClick}
@@ -2061,7 +3310,7 @@ function buildVoteSummaryItems(
   votingWeight: string | null | undefined,
 ): TreasuryTransactionSummaryItem[] {
   return [
-    { label: "Proposal", value: entry.id },
+    { label: "Proposal", value: entry.title },
     { label: "Vote", value: capitalizeVoteLabel(vote) },
     { label: "Proposal address", value: entry.proposalAddress ?? entry.id, mono: true },
     { label: "Voting weight", value: votingWeight ?? "-" },
@@ -2074,7 +3323,8 @@ function buildExecuteSummaryItems(
   amount: string,
 ): TreasuryTransactionSummaryItem[] {
   return [
-    { label: "Proposal", value: entry.id },
+    { label: "Proposal", value: entry.title },
+    { label: "Proposal address", value: entry.proposalAddress ?? entry.id, mono: true },
     { label: "Recipient wallet", value: recipient, mono: true },
     { label: "Amount to pay out", value: amount },
     { label: "Remaining after execution", value: formatRemainingAfterExecution(entry, amount) },
@@ -2103,6 +3353,7 @@ function getMockCreateProposalTransactionDetails(draft: TreasuryProposalCreation
 function getMockVoteTransactionDetails(
   entry: TreasuryProposalTableEntry,
   vote: "yay" | "nay" | "abstain",
+  votingWeight: string,
 ): string {
   return `{
   feePayer: {
@@ -2115,7 +3366,7 @@ function getMockVoteTransactionDetails(
   accountUpdates: [
     {
       publicKey: "${entry.proposalAddress ?? entry.id}",
-      update: { voteState: ["${vote}", "${connectedWalletAccountInfo.votingWeight}"] },
+      update: { voteState: ["${vote}", "${votingWeight}"] },
       authorizationKind: "proof"
     }
   ]
@@ -2158,6 +3409,47 @@ function formatBondAmount(amount: string): string {
   return new Intl.NumberFormat("en-US", {
     maximumFractionDigits: 0,
   }).format(Math.floor(normalized / 10));
+}
+
+function resolveCreatedProposalVotingRequirements(
+  amount: string,
+): Pick<
+  TreasuryProposalTableEntry,
+  | "stakingEpochDataLedgerTotalCurrency"
+  | "requiredParticipationBp"
+  | "requiredApprovalBp"
+  | "requiredParticipation"
+> {
+  const proposalAmount = parseMinaDisplayValue(amount) ?? 0;
+  const treasuryBalance = 24_000_000;
+  const eligibleVotingWeight = 360_000;
+  const basisPoints = 10_000;
+  const ratioBp = Math.min((proposalAmount * basisPoints) / treasuryBalance, basisPoints);
+  const participationCurveDenominator =
+    ratioBp + (500 * (basisPoints - ratioBp)) / basisPoints;
+  const participationCurveBp = (ratioBp * basisPoints) / participationCurveDenominator;
+  const approvalCurveDenominator = ratioBp + (1000 * (basisPoints - ratioBp)) / basisPoints;
+  const approvalCurveBp = (ratioBp * basisPoints) / approvalCurveDenominator;
+  const requiredParticipationBp =
+    2_000 + ((5_000 - 2_000) * participationCurveBp) / basisPoints;
+  const requiredApprovalBp = 5_100 + ((7_000 - 5_100) * approvalCurveBp) / basisPoints;
+  const requiredParticipationWeight =
+    (eligibleVotingWeight * requiredParticipationBp) / basisPoints;
+
+  return {
+    stakingEpochDataLedgerTotalCurrency: `${eligibleVotingWeight} MINA`,
+    requiredParticipationBp: String(requiredParticipationBp),
+    requiredApprovalBp: String(requiredApprovalBp),
+    requiredParticipation: `${requiredParticipationWeight} MINA`,
+  };
+}
+
+function formatWholeMinaAsNanoMinaAmount(value: string): string {
+  const normalized = value.replace(/[^0-9]/g, "");
+  if (!normalized) {
+    return value;
+  }
+  return (BigInt(normalized) * 1_000_000_000n).toString();
 }
 
 function formatBondAmountFromNumber(amount: number): string {
@@ -2341,7 +3633,7 @@ function buildPrototypeProposalDisplayEntry({
   } else {
     stage =
       proposalJourneyPhase === "executed"
-        ? "Approved"
+        ? "Executed"
         : talliedVoteTally.voteResult === "approved"
           ? "Approved"
           : talliedVoteTally.voteResult === "rejected"
@@ -2382,14 +3674,14 @@ function buildVoteTallyFromVotes(
   const approvalBp = tally.yay + tally.nay > 0 ? (tally.yay * 10_000) / (tally.yay + tally.nay) : 0;
   return {
     blockHeight,
-    yayWeight: String(tally.yay),
-    nayWeight: String(tally.nay),
-    abstainWeight: String(tally.abstain),
+    yayWeight: `${tally.yay} MINA`,
+    nayWeight: `${tally.nay} MINA`,
+    abstainWeight: `${tally.abstain} MINA`,
     createdByEventType: "proposalVoteDispatched",
     requiredParticipationBp: entry.requiredParticipationBp ? String(entry.requiredParticipationBp) : null,
     requiredApprovalBp: entry.requiredApprovalBp ? String(entry.requiredApprovalBp) : null,
     requiredParticipation: entry.requiredParticipation ?? null,
-    totalParticipatingVotes: String(totalParticipatingVotes),
+    totalParticipatingVotes: `${totalParticipatingVotes} MINA`,
     approvalBp: String(Math.floor(approvalBp)),
     voteResult: tally.yay > tally.nay ? "approved" : tally.nay > tally.yay ? "rejected" : null,
   };
@@ -2449,13 +3741,48 @@ function createDetailProposal(
   return {
     ...entry,
     recipient: recipientsById[entry.id] ?? null,
-    zkAppUriHash: `zkapp-uri-hash-${entry.id.toLowerCase()}`,
-    stakingEpochDataLedgerHash: `staking-ledger-hash-${entry.id.toLowerCase()}`,
+    zkAppUriHash: resolveMockZkAppUriHash(entry),
+    stakingEpochDataLedgerHash: resolveMockStakingLedgerHash(entry),
     paidOutAmount: executionsById[entry.id]?.[0]?.paidOutAmount ?? "0 MINA",
     contents: contentsById[entry.id] ?? null,
     updatedAt: entry.createdAt,
     createdAtBlockTimestamp: entry.createdAt,
   };
+}
+
+const MOCK_ZKAPP_URI_HASHES = [
+  "jx7NqM1yVqZ5hS6rH9tK2pQ4wX8cB3dF6gJ7mL9nR2sT5vY8a",
+  "jxB4tW8pQ6mL2sR9yN5vX3cD7gF1hK6aP8qZ2uT5eJ9rM4",
+  "jxD9aS3vL7qN2mY6tR8wK5pC1hF4gX9bQ6zU2eJ7nM5rT8",
+  "jxF2mQ8xC5vR1sN7yT4pL9gH3aW6dK2zU8eJ5nB7rM1qY",
+  "jxH6pT3nW9qL5vS2xR8mK4aD7gF1yC6zU9eJ2bN5rQ8",
+];
+
+const MOCK_STAKING_LEDGER_HASHES = [
+  "jxA8mL4sQ7vN2tY9pC5rX3gF6hK1dW8zU2eJ5nB7qR4",
+  "jxC5qR9yT2mV7sL4pX8nD3gF6hK1aW5zU9eJ2bN8rM6",
+  "jxE2vN8pQ5rL1sT7yM4xC9gF3hK6aW2zU8eJ5nB7dR",
+  "jxG7mX3qV8tH2nK5pS7yD4wF9cL1aM6eR8uZ2sN5vQ",
+  "jxK4pS9vM2qR7tN5yL8xC3gF6hD1aW5zU9eJ2bN8r",
+];
+
+function resolveMockZkAppUriHash(entry: TreasuryProposalTableEntry): string {
+  return MOCK_ZKAPP_URI_HASHES[resolveMockHashIndex(entry, MOCK_ZKAPP_URI_HASHES.length)];
+}
+
+function resolveMockStakingLedgerHash(entry: TreasuryProposalTableEntry): string {
+  return MOCK_STAKING_LEDGER_HASHES[
+    resolveMockHashIndex(entry, MOCK_STAKING_LEDGER_HASHES.length)
+  ];
+}
+
+function resolveMockHashIndex(entry: TreasuryProposalTableEntry, length: number): number {
+  const seed = `${entry.title}:${entry.proposalAddress ?? entry.proposer}`;
+  let hash = 0;
+  for (const character of seed) {
+    hash = (hash * 31 + character.charCodeAt(0)) % length;
+  }
+  return hash;
 }
 
 function buildLifecycleArgs({
@@ -2473,18 +3800,11 @@ function buildLifecycleArgs({
   periodEndsIn: string;
   isHistoricalLifecycle?: boolean;
 }): TreasuryLifecyclePeriodInfoProps {
-  const periodIndexById: Record<TreasuryLifecyclePeriodId, number> = {
-    proposal: 0,
-    exploration: 1,
-    voting: 2,
-    cooldown: 3,
-  };
   const proposalStart = 18462144 + (lifecycleId - 13) * 6144;
   const periodLength = 1536;
   const lifecycleStartDate = new Date("2026-04-09T13:00:00.000Z");
   const lifecycleDateOffsetMs = (lifecycleId - 13) * 8 * 24 * 60 * 60 * 1000;
   const periodDurationMs = 2 * 24 * 60 * 60 * 1000;
-  const currentPeriodIndex = periodIndexById[currentPeriod];
 
   return {
     lifecycleId,

@@ -9,8 +9,9 @@
 # testing
 /coverage
 
-# next.js
-/.next/
+# generated docusaurus content and cache
+/docs/
+/.docusaurus/
 /out/
 
 # production
@@ -33,4 +34,3 @@ yarn-error.log*
 
 # typescript
 *.tsbuildinfo
-next-env.d.ts

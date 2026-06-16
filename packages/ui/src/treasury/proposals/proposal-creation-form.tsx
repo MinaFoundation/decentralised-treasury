@@ -546,7 +546,11 @@ export function TreasuryProposalCreationForm({
                     })}
                   </TabsTrigger>
                 </TabsList>
-                <TabsContent value="write" className="mt-0 flex-1">
+                <TabsContent
+                  value="write"
+                  className="mt-0 flex-1"
+                  data-component="proposal-creation-markdown-write"
+                >
                   <textarea
                     value={content}
                     onChange={(event) => setContent(event.target.value)}
@@ -558,7 +562,11 @@ export function TreasuryProposalCreationForm({
                     aria-invalid={contentError ? "true" : "false"}
                   />
                 </TabsContent>
-                <TabsContent value="preview" className="mt-0 flex-1">
+                <TabsContent
+                  value="preview"
+                  className="mt-0 flex-1"
+                  data-component="proposal-creation-markdown-preview-panel"
+                >
                   <div
                     className="h-full min-h-[22rem] rounded-xl border border-border/70 bg-background px-4 py-4"
                     data-component="proposal-creation-markdown-preview"
