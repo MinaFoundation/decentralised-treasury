@@ -39,20 +39,26 @@ pnpm --dir packages/local-blockchain run start
 
 ## Environment Variables
 
-- `PORT`: Mina/admin server port. Default: `8180`
-- `ARCHIVE_PORT`: Optional archive-compatible GraphQL port. If omitted, the archive server is not started.
-- `HOST`: Bind host. Default: `127.0.0.1`
+- `MINA_NODE_PORT`: Mina/admin server port. Default: `8180`
+- `MINA_ARCHIVE_PORT`: Optional archive-compatible GraphQL port. If omitted, the archive server is not started.
+- `MINA_NODE_HOST`: Bind host. Default: `127.0.0.1`
 - `PROOFS_ENABLED`: Set to `true` to enable proofs when booting the internal `Mina.LocalBlockchain`
 
 Example:
 
 ```bash
-PORT=8080 ARCHIVE_PORT=8282 pnpm --dir packages/local-blockchain run dev
+MINA_NODE_PORT=8080 MINA_ARCHIVE_PORT=8282 pnpm --dir packages/local-blockchain run dev
 ```
 
 ## Run Full Local Stack
 
-To run `local-blockchain`, `apps/api`, and `apps/web`, start each package directly:
+For the fastest full-stack demo, use `DEMO.md`; it generates the
+`.env.local-blockchain` family and starts the Compose app stack through Caddy.
+
+This section is for native package development, where `local-blockchain`,
+`apps/api`, and `apps/web` run directly in separate terminals.
+
+Start the simulator:
 
 ```bash
 pnpm --dir packages/local-blockchain run dev
@@ -94,13 +100,15 @@ pnpm --dir apps/cli run dev -- treasury-owner read-state
 - `treasuryOwnerTokenId`
 
 Use `treasuryOwnerAddress` as the value for `TREASURY_OWNER_CONTRACT_ADDRESS`.
+Keep `treasuryOwnerTokenId` for proposal child-account and SDK/proof workflows;
+the API indexer follows treasury-owner events under Mina's default token
+internally.
 
 ### API Setup
 
 Edit `apps/api/.env.local-blockchain`, then fill in:
 
 - `TREASURY_OWNER_CONTRACT_ADDRESS=<treasuryOwnerPublicKey>`
-- `TREASURY_OWNER_TOKEN_ID=<treasuryOwnerTokenId>`
 - `DATABASE_URL=<your local postgres url>`
 
 Load the env file in each API terminal:
@@ -121,10 +129,11 @@ pnpm --dir apps/api run dev
 If you want to split the API stack manually, use `start:indexer`, `start:api`, and
 `start:processor` in separate terminals.
 
-With the example values above, the API stack will read from:
+With the example values above, the native API stack will read from:
 
 - local archive: `http://127.0.0.1:8282`
-- indexer API: `http://127.0.0.1:4000`
+- app API: `http://127.0.0.1:4000`
+- indexer API: `http://127.0.0.1:4001`
 - processor routes: `http://127.0.0.1:4002`
 
 ### Web Setup
@@ -133,12 +142,17 @@ Edit `apps/web/.env.local-blockchain`, then fill in:
 
 - `NEXT_PUBLIC_TREASURY_OWNER_CONTRACT_ADDRESS=<treasuryOwnerPublicKey>`
 
-The other defaults already point at the local stack:
+If you are running packages directly rather than through Compose, point the web
+env at the direct API ports:
 
 - `NEXT_PUBLIC_TREASURY_API_URL=http://127.0.0.1:4000`
+- `NEXT_PUBLIC_INDEXER_API_URL=http://127.0.0.1:4001`
 - `NEXT_PUBLIC_PROCESSOR_API_URL=http://127.0.0.1:4002`
 - `NEXT_PUBLIC_MINA_NODE_URL=http://127.0.0.1:8080/graphql`
 - `NEXT_PUBLIC_LIFECYCLE_PERIOD_DURATION=20`
+
+The generated `apps/web/.env.local-blockchain` used by the Compose demo points
+at Caddy proxy ports (`4100`, `4101`, and `4102`) instead.
 
 Start the web app:
 
@@ -149,7 +163,7 @@ pnpm --dir apps/web run dev
 Open:
 
 ```bash
-http://127.0.0.1:3000
+http://127.0.0.1:3100
 ```
 
 ### Suggested Terminal Layout
@@ -163,7 +177,7 @@ For demos, keep `http://127.0.0.1:8080/admin` open in another tab so you can ins
 
 ### Mina/Admin server
 
-Base URL: `http://127.0.0.1:$PORT`
+Base URL: `http://127.0.0.1:$MINA_NODE_PORT`
 
 - `GET /healthz`
 - `GET /admin`
@@ -183,9 +197,9 @@ Current `POST /graphql` subset:
 
 ### Archive server
 
-Base URL: `http://127.0.0.1:$ARCHIVE_PORT`
+Base URL: `http://127.0.0.1:$MINA_ARCHIVE_PORT`
 
-Only available when `ARCHIVE_PORT` is set.
+Only available when `MINA_ARCHIVE_PORT` is set.
 
 Current GraphQL subset:
 
@@ -210,7 +224,7 @@ If the UI wants a shortcut like "increment by one lifecycle period", that should
 Open:
 
 ```bash
-http://127.0.0.1:$PORT/admin
+http://127.0.0.1:$MINA_NODE_PORT/admin
 ```
 
 The current built-in screen shows:

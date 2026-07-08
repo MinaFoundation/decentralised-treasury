@@ -778,9 +778,6 @@ describe("lightnet e2e: proposal lifecycle API monitoring", {
         const treasuryOwnerPublicKey = PublicKey.fromBase58(
           deployResult.treasuryOwnerAddress,
         );
-        // TreasuryOwner emits events on the default token id context.
-        const treasuryOwnerTokenId = TokenId.default.toString();
-
         dataSource = createInMemoryDataSource("public", [
           ProposalEntity,
           ProposalExecutionEntity,
@@ -796,7 +793,6 @@ describe("lightnet e2e: proposal lifecycle API monitoring", {
 
         const archiveClient = new ArchiveClient(ARCHIVE_NODE_URL, {
           treasuryOwnerContractAddress: treasuryOwnerPublicKey.toBase58(),
-          treasuryOwnerTokenId,
           archiveRequestTimeoutMs: ARCHIVE_REQUEST_TIMEOUT_MS,
         });
         const initialHeights = await archiveClient.getMaxBlockHeights();

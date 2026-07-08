@@ -228,6 +228,11 @@ const newProposal: TreasuryProposalDetailProposal = {
   latestVoteTally: undefined,
 };
 
+const proposalMissingContent: TreasuryProposalDetailProposal = {
+  ...newProposal,
+  contents: null,
+};
+
 const passedProposalReadyForPayout: TreasuryProposalDetailProposal = {
   ...passingProposal,
   id: "P-128",
@@ -302,6 +307,61 @@ export const NewProposalDetail = {
         hasConnectedWallet={false}
         onLifecycleClick={onLifecycleClick}
         onConnectWalletClick={() => {}}
+      />
+    </StoryFrame>
+  ),
+};
+
+export const MissingContentRetryAvailable = {
+  name: "New Proposal Detail / Content Retry Available",
+  render: () => (
+    <StoryFrame>
+      <TreasuryProposalDetail
+        proposal={proposalMissingContent}
+        votes={[]}
+        executions={[]}
+        contentVerificationStatus="retryable"
+        canRetryContentSubmission
+        onLifecycleClick={onLifecycleClick}
+        onRetryContentSubmission={() => {}}
+      />
+    </StoryFrame>
+  ),
+};
+
+export const MissingContentRetrying = {
+  name: "New Proposal Detail / Content Retrying",
+  render: () => (
+    <StoryFrame>
+      <TreasuryProposalDetail
+        proposal={proposalMissingContent}
+        votes={[]}
+        executions={[]}
+        contentVerificationStatus="retryable"
+        canRetryContentSubmission
+        isRetryingContentSubmission
+        contentRetryLastAttemptAt="2026-04-10T16:42:00.000Z"
+        onLifecycleClick={onLifecycleClick}
+        onRetryContentSubmission={() => {}}
+      />
+    </StoryFrame>
+  ),
+};
+
+export const MissingContentRetryFailed = {
+  name: "New Proposal Detail / Content Retry Failed",
+  render: () => (
+    <StoryFrame>
+      <TreasuryProposalDetail
+        proposal={proposalMissingContent}
+        votes={[]}
+        executions={[]}
+        contentVerificationStatus="retryable"
+        canRetryContentSubmission
+        contentRetryLastAttemptAt="2026-04-10T16:42:00.000Z"
+        contentRetryError="Timed out submitting proposal contents while waiting for the proposal to be indexed."
+        onLifecycleClick={onLifecycleClick}
+        onRetryContentSubmission={() => {}}
       />
     </StoryFrame>
   ),

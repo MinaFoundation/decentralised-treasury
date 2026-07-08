@@ -6,8 +6,8 @@ export const defaultEndpointSettings: EndpointSettingsState["value"] = {
   apiUrl:
     process.env.NEXT_PUBLIC_TREASURY_API_URL ??
     process.env.NEXT_PUBLIC_API_URL ??
-    "http://127.0.0.1:4000",
-  minaNodeUrl: process.env.NEXT_PUBLIC_MINA_NODE_URL ?? "http://127.0.0.1:8080/graphql",
+    "/api",
+  minaNodeUrl: process.env.NEXT_PUBLIC_MINA_NODE_URL ?? "/mina/graphql",
 };
 
 export const initialEndpointSettingsState: EndpointSettingsState = {

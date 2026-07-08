@@ -17,11 +17,14 @@ const DEFAULT_PROCESSOR_BATCH_SIZE = 200;
 const DEFAULT_PROCESSOR_API_PORT = 4_002;
 const DEFAULT_ARCHIVE_REQUEST_TIMEOUT_MS = 15_000;
 const DEFAULT_PROPOSAL_CONTENT_MAX_CHARS = 32 * 1024;
+const DEFAULT_CORS_ALLOWED_ORIGINS = [
+  "http://127.0.0.1:3100",
+  "http://localhost:3100",
+];
 
 export interface ApiConfig {
   archiveNodeUrl: string;
   treasuryOwnerContractAddress: string;
-  treasuryOwnerTokenId: string;
   knownEventTypes: string[];
   databaseUrl: string;
   databaseSchema: string;
@@ -44,13 +47,16 @@ export interface ApiConfig {
   processorApiUrl: string;
   archiveRequestTimeoutMs: number;
   proposalContentMaxChars: number;
+  corsAllowedOrigins: string[];
 }
 
 interface ContractInstanceWithEventsMap {
   events?: Record<string, unknown>;
 }
 
-type ContractClassWithEventsMap = new (...args: unknown[]) => ContractInstanceWithEventsMap;
+type ContractClassWithEventsMap = new (
+  ...args: unknown[]
+) => ContractInstanceWithEventsMap;
 
 interface LoadIndexerConfigOptions {
   treasuryOwnerContractClass: ContractClassWithEventsMap;
@@ -118,7 +124,9 @@ function readEventTypesFromContractClass(
   const contract = new contractClass(contractPublicKey);
   const eventEntries = contract.events;
   if (!eventEntries || typeof eventEntries !== "object") {
-    throw new Error("Configured treasury owner contract class does not expose an events map");
+    throw new Error(
+      "Configured treasury owner contract class does not expose an events map",
+    );
   }
 
   const eventTypes = Object.keys(eventEntries)
@@ -127,9 +135,26 @@ function readEventTypesFromContractClass(
     // Archive event discriminators are encoded using a stable lexical ordering.
     .sort((left, right) => left.localeCompare(right));
   if (!eventTypes.length) {
-    throw new Error("Configured treasury owner contract class exposes an empty events map");
+    throw new Error(
+      "Configured treasury owner contract class exposes an empty events map",
+    );
   }
   return Array.from(new Set(eventTypes));
+}
+
+function readStringListEnv(
+  name: string,
+  env: NodeJS.ProcessEnv,
+  fallback: string[],
+): string[] {
+  const raw = env[name];
+  if (!raw) {
+    return fallback;
+  }
+  return raw
+    .split(",")
+    .map((value) => value.trim())
+    .filter((value) => value.length > 0);
 }
 
 export function loadApiConfig(
@@ -167,16 +192,21 @@ export function loadApiConfig(
     DEFAULT_API_PAGE_LIMIT_MAX,
   );
   if (apiPageLimitDefault > apiPageLimitMax) {
-    throw new Error("API_PAGE_LIMIT_DEFAULT cannot be greater than API_PAGE_LIMIT_MAX");
+    throw new Error(
+      "API_PAGE_LIMIT_DEFAULT cannot be greater than API_PAGE_LIMIT_MAX",
+    );
   }
 
   return {
     archiveNodeUrl: readRequiredEnv("ARCHIVE_NODE_URL", env),
     treasuryOwnerContractAddress,
-    treasuryOwnerTokenId: readRequiredEnv("TREASURY_OWNER_TOKEN_ID", env),
     knownEventTypes,
     databaseUrl: readRequiredEnv("DATABASE_URL", env),
-    databaseSchema: readOptionalEnv("DATABASE_SCHEMA", env, DEFAULT_DATABASE_SCHEMA),
+    databaseSchema: readOptionalEnv(
+      "DATABASE_SCHEMA",
+      env,
+      DEFAULT_DATABASE_SCHEMA,
+    ),
     apiPort,
     apiUrl: readOptionalEnv("API_URL", env, `http://127.0.0.1:${apiPort}`),
     indexerApiPort,
@@ -247,6 +277,11 @@ export function loadApiConfig(
       ["PROPOSAL_CONTENT_MAX_CHARS", "PROPOSAL_CONTENT_MAX_BYTES"],
       env,
       DEFAULT_PROPOSAL_CONTENT_MAX_CHARS,
+    ),
+    corsAllowedOrigins: readStringListEnv(
+      "CORS_ALLOWED_ORIGINS",
+      env,
+      DEFAULT_CORS_ALLOWED_ORIGINS,
     ),
   };
 }

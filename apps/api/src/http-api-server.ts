@@ -1,11 +1,44 @@
 import type { Server } from "node:http";
-import express, { type Express } from "express";
+import express, { type Express, type Request, type Response } from "express";
 
 export interface HttpApiServerOptions {
   name: string;
   port: number;
+  corsAllowedOrigins?: string[];
   registerRoutes?: (app: Express) => void | Promise<void>;
   onStop?: () => void | Promise<void>;
+}
+
+const DEFAULT_CORS_ALLOWED_ORIGINS = [
+  "http://127.0.0.1:3100",
+  "http://localhost:3100",
+];
+
+function isOriginAllowed(origin: string, allowedOrigins: string[]): boolean {
+  return allowedOrigins.includes("*") || allowedOrigins.includes(origin);
+}
+
+function applyCorsHeaders(
+  request: Request,
+  response: Response,
+  allowedOrigins: string[],
+): boolean {
+  const origin = request.headers.origin;
+  if (!origin) {
+    return true;
+  }
+  if (!isOriginAllowed(origin, allowedOrigins)) {
+    return false;
+  }
+
+  response.setHeader(
+    "access-control-allow-origin",
+    allowedOrigins.includes("*") ? "*" : origin,
+  );
+  response.setHeader("vary", "Origin");
+  response.setHeader("access-control-allow-methods", "GET, POST, OPTIONS");
+  response.setHeader("access-control-allow-headers", "content-type");
+  return true;
 }
 
 export class HttpApiServer {
@@ -26,12 +59,24 @@ export class HttpApiServer {
     }
 
     const app = express();
-    app.use((_request, response, next) => {
-      response.setHeader("access-control-allow-origin", "*");
-      response.setHeader("access-control-allow-methods", "GET, POST, OPTIONS");
-      response.setHeader("access-control-allow-headers", "content-type");
-      if (_request.method === "OPTIONS") {
+    const corsAllowedOrigins =
+      this.options.corsAllowedOrigins ?? DEFAULT_CORS_ALLOWED_ORIGINS;
+    app.use((request, response, next) => {
+      const corsAllowed = applyCorsHeaders(
+        request,
+        response,
+        corsAllowedOrigins,
+      );
+      if (request.method === "OPTIONS") {
+        if (!corsAllowed) {
+          response.status(403).json({ error: "CORS origin is not allowed" });
+          return;
+        }
         response.status(204).end();
+        return;
+      }
+      if (!corsAllowed) {
+        response.status(403).json({ error: "CORS origin is not allowed" });
         return;
       }
       next();
@@ -47,7 +92,9 @@ export class HttpApiServer {
 
     await new Promise<void>((resolve) => {
       this.server = app.listen(this.options.port, () => {
-        console.log(`[${this.options.name}] listening on :${this.options.port}`);
+        console.log(
+          `[${this.options.name}] listening on :${this.options.port}`,
+        );
         resolve();
       });
     });

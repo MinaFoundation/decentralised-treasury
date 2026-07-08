@@ -1,5 +1,7 @@
 "use client";
 
+import { resolveEndpointUrl } from "../../endpoint-settings/lib/endpoint-url";
+
 const INCLUSION_POLL_INTERVAL_MS = 2_500;
 const INCLUSION_TIMEOUT_MS = 3 * 60_000;
 
@@ -35,7 +37,9 @@ export async function waitForTransactionInclusion(
   while (true) {
     signal?.throwIfAborted();
 
-    const status = String(await fetchTransactionStatus(transactionHash, minaNodeUrl)).toUpperCase();
+    const status = String(
+      await fetchTransactionStatus(transactionHash, resolveEndpointUrl(minaNodeUrl)),
+    ).toUpperCase();
     if (status === "INCLUDED") {
       return;
     }

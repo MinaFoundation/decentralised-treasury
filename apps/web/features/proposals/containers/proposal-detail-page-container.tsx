@@ -7,6 +7,7 @@ import { TreasuryProposalDetail } from "@repo/ui/treasury-proposal-detail";
 import { TreasuryTransactionFlowDialog } from "@repo/ui/treasury-transaction-flow-dialog";
 import type { TreasuryTransactionSummaryItem } from "@repo/ui/treasury-transaction-flow-dialog";
 import { useAppShellStore } from "../../app-shell/store/app-shell-store";
+import { resolveEndpointUrl } from "../../endpoint-settings/lib/endpoint-url";
 import { useEndpointSettingsState } from "../../endpoint-settings/store/endpoint-settings-store.selectors";
 import { useMinaBlockStore } from "../../mina-blocks/store/mina-block-store";
 import { useTreasuryState } from "../../treasury/store/treasury-store.selectors";
@@ -24,6 +25,14 @@ import {
   type ProposalVoteChoice,
 } from "../lib/proposal-prover-runtime";
 import { useProposalProverWorker } from "../hooks/use-proposal-prover-worker";
+import { submitProposalContents } from "../lib/proposal-content-submission";
+import {
+  getProposalContentRetryRecord,
+  PROPOSAL_CONTENT_RETRIES_CHANGED_EVENT,
+  removeProposalContentRetryRecord,
+  type ProposalContentRetryRecord,
+  updateProposalContentRetryRecord,
+} from "../lib/proposal-content-retry-store";
 import { waitForTransactionInclusion } from "../lib/transaction-inclusion";
 
 interface ProposalDetailPageContainerProps {
@@ -83,16 +92,17 @@ function buildSendZkappMutation(transactionJson: string): string {
 }
 
 async function submitZkappDirectly(minaNodeUrl: string, transactionJson: string): Promise<string> {
+  const resolvedMinaNodeUrl = resolveEndpointUrl(minaNodeUrl);
   const requestBody = {
     query: buildSendZkappMutation(transactionJson),
   };
 
   console.info("[proposal-prover][direct-send] request", {
-    minaNodeUrl,
+    minaNodeUrl: resolvedMinaNodeUrl,
     requestBody,
   });
 
-  const response = await fetch(minaNodeUrl, {
+  const response = await fetch(resolvedMinaNodeUrl, {
     method: "POST",
     headers: {
       "content-type": "application/json",
@@ -306,6 +316,11 @@ export function ProposalDetailPageContainer({
   const [executeAmount, setExecuteAmount] = useState<string | null>(null);
   const [executeDialogOpen, setExecuteDialogOpen] = useState(false);
   const [preparedExecuteFlow, setPreparedExecuteFlow] = useState<PreparedExecuteFlow | null>(null);
+  const [contentRetryRecord, setContentRetryRecord] =
+    useState<ProposalContentRetryRecord | null>(null);
+  const [isRetryingContentSubmission, setIsRetryingContentSubmission] =
+    useState(false);
+  const [contentRetryError, setContentRetryError] = useState<string | null>(null);
   const voteRequestRef = useRef<ProposalVoteChoice | null>(null);
   const preparedVoteFlowRef = useRef<PreparedVoteFlow | null>(null);
   const executeAmountRef = useRef<string | null>(null);
@@ -426,6 +441,94 @@ export function ProposalDetailPageContainer({
     preparedExecuteFlowRef.current = preparedExecuteFlow;
   }, [preparedExecuteFlow]);
 
+  useEffect(() => {
+    const proposalPublicKey = proposal?.proposalAddress;
+    if (!proposalPublicKey) {
+      setContentRetryRecord(null);
+      return;
+    }
+
+    const syncRetryRecord = () => {
+      setContentRetryRecord(getProposalContentRetryRecord(proposalPublicKey));
+    };
+
+    syncRetryRecord();
+    window.addEventListener(PROPOSAL_CONTENT_RETRIES_CHANGED_EVENT, syncRetryRecord);
+    window.addEventListener("storage", syncRetryRecord);
+    return () => {
+      window.removeEventListener(
+        PROPOSAL_CONTENT_RETRIES_CHANGED_EVENT,
+        syncRetryRecord,
+      );
+      window.removeEventListener("storage", syncRetryRecord);
+    };
+  }, [proposal?.proposalAddress]);
+
+  const matchingContentRetryRecord = useMemo(() => {
+    if (!presentedProposal?.proposalAddress || presentedProposal.contents) {
+      return null;
+    }
+    if (!contentRetryRecord) {
+      return null;
+    }
+    if (
+      presentedProposal.zkAppUriHash &&
+      contentRetryRecord.zkAppUriHash !== presentedProposal.zkAppUriHash
+    ) {
+      return null;
+    }
+    return contentRetryRecord;
+  }, [
+    contentRetryRecord,
+    presentedProposal?.contents,
+    presentedProposal?.proposalAddress,
+    presentedProposal?.zkAppUriHash,
+  ]);
+
+  const retryProposalContentSubmission = async (): Promise<void> => {
+    const proposalPublicKey = presentedProposal?.proposalAddress;
+    if (!matchingContentRetryRecord || !proposalPublicKey) {
+      return;
+    }
+    setIsRetryingContentSubmission(true);
+    setContentRetryError(null);
+    updateProposalContentRetryRecord(proposalPublicKey, {
+      lastAttemptAt: new Date().toISOString(),
+      lastError: null,
+    });
+    try {
+      await submitProposalContents({
+        apiUrl: settings.value.apiUrl,
+        proposalPublicKey,
+        contents: matchingContentRetryRecord.contents,
+      });
+      removeProposalContentRetryRecord(proposalPublicKey);
+      setContentRetryRecord(null);
+      setProposal((current) => {
+        if (!current || current.proposalAddress !== proposalPublicKey) {
+          return current;
+        }
+        return {
+          ...current,
+          contents: matchingContentRetryRecord.contents,
+        } as NonNullable<ReturnType<typeof mapProposalItemToDetailProposal>>;
+      });
+      forceRefresh();
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Failed to retry proposal content upload.";
+      setContentRetryError(message);
+      updateProposalContentRetryRecord(proposalPublicKey, {
+        lastError: message,
+      });
+      setAppError(message);
+    } finally {
+      setIsRetryingContentSubmission(false);
+    }
+  };
+
   if (!settings.hydrated || loading) {
     return (
       <section className="rounded-2xl border border-border/70 bg-card p-6 shadow-sm">
@@ -453,7 +556,19 @@ export function ProposalDetailPageContainer({
         votes={votes}
         executions={executions}
         currentLifecycleId={treasury.currentLifecycleId}
-        contentVerificationStatus={presentedProposal.contents ? "verified" : undefined}
+        contentVerificationStatus={
+          presentedProposal.contents
+            ? "verified"
+            : matchingContentRetryRecord
+              ? "retryable"
+              : undefined
+        }
+        canRetryContentSubmission={Boolean(matchingContentRetryRecord)}
+        isRetryingContentSubmission={isRetryingContentSubmission}
+        contentRetryError={
+          contentRetryError ?? matchingContentRetryRecord?.lastError ?? null
+        }
+        contentRetryLastAttemptAt={matchingContentRetryRecord?.lastAttemptAt ?? null}
         hasConnectedWallet={hasConnectedWallet}
         connectedWalletVotingWeight={wallet.accountInfo?.votingWeight}
         hasConnectedProposerWallet={hasConnectedProposerWallet}
@@ -509,6 +624,9 @@ export function ProposalDetailPageContainer({
           setPreparedExecuteFlow(null);
           preparedExecuteFlowRef.current = null;
           setExecuteDialogOpen(true);
+        }}
+        onRetryContentSubmission={() => {
+          void retryProposalContentSubmission();
         }}
       />
       {voteRequest ? (

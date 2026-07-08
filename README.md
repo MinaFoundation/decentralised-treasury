@@ -8,9 +8,10 @@ the Mina decentralized treasury project.
 ### Apps
 
 - `apps/cli`: operational CLI (`mina-treasury`)
-- `apps/api`: indexer + processor runtimt wiring and e2e tests
+- `apps/api`: indexer + processor runtime wiring and e2e tests
 - `apps/web`: web app
 - `apps/docs`: docs app
+- `devops`: Docker Compose deployment stack, operator runbooks, and testnet env tooling
 
 ### Packages
 
@@ -70,7 +71,26 @@ pnpm build
 pnpm lint
 ```
 
-## Dev workflow
+## Choose A Run Path
+
+| Goal                                                            | Start here                                    |
+| --------------------------------------------------------------- | --------------------------------------------- |
+| Run the fastest local simulator demo                            | `DEMO.md`                                     |
+| Run the Compose stack against a Mina testnet node               | `devops/TESTNET.md`                           |
+| Start a local Mina daemon and archive node                      | `devops/TESTNET_MINA_NODE.md`                 |
+| Inspect Compose services, ports, smoke/e2e, and troubleshooting | `devops/README.md`                            |
+| Develop packages directly on the host                           | the native workflow below and package READMEs |
+
+The operator path uses generated `.env.testnet` or `.env.local-blockchain`
+families and exposes only Caddy proxy ports on the host. The native development
+path uses checked-in `.env.dev` files and direct service ports such as `3100`,
+`4000`, and `5432`.
+
+## Native Dev Workflow
+
+This section is for package development and debugging without Compose. For the
+recommended full-stack demo or testnet operator flow, use `DEMO.md` or
+`devops/TESTNET.md`.
 
 ### Start the local blockchain
 

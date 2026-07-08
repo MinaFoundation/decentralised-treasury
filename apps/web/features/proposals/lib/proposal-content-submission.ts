@@ -1,5 +1,7 @@
 "use client";
 
+import { resolveEndpointUrl } from "../../endpoint-settings/lib/endpoint-url";
+
 const DEFAULT_SUBMISSION_TIMEOUT_MS = 60_000;
 const DEFAULT_RETRY_DELAY_MS = 1_000;
 const PROPOSAL_CONTENT_PROPOSAL_NOT_FOUND_ERROR =
@@ -64,7 +66,10 @@ export async function submitProposalContents({
   timeoutMs = DEFAULT_SUBMISSION_TIMEOUT_MS,
   retryDelayMs = DEFAULT_RETRY_DELAY_MS,
 }: SubmitProposalContentsOptions): Promise<SubmitProposalContentsResponse> {
-  const endpoint = new URL(`/proposals/${encodeURIComponent(proposalPublicKey)}/content`, apiUrl);
+  const endpoint = resolveEndpointUrl(
+    apiUrl,
+    `/proposals/${encodeURIComponent(proposalPublicKey)}/content`,
+  );
   const deadline = Date.now() + timeoutMs;
   let lastErrorMessage = "Proposal content submission failed.";
 

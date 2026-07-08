@@ -314,7 +314,7 @@ describe("TreasuryProposalDetail", () => {
             createdByEventType: "proposalVotesTallied",
           },
         }}
-        currentLifecycleId={proposal.lifecycleId + 1}
+        currentLifecycleId={(proposal.lifecycleId ?? 0) + 1}
         executions={[]}
         onExecutePayoutClick={onExecutePayoutClick}
       />,
@@ -563,5 +563,44 @@ describe("TreasuryProposalDetail", () => {
     render(<TreasuryProposalDetail proposal={proposal} contentVerificationStatus="mismatch" />);
 
     expect(screen.getByText("Mismatch")).toBeTruthy();
+  });
+
+  it("shows retry controls when missing proposal content is recoverable", () => {
+    const onRetryContentSubmission = vi.fn();
+
+    render(
+      <TreasuryProposalDetail
+        proposal={{ ...proposal, contents: null }}
+        contentVerificationStatus="retryable"
+        canRetryContentSubmission
+        contentRetryLastAttemptAt="2026-04-10T16:42:00.000Z"
+        contentRetryError="Timed out submitting proposal contents."
+        onRetryContentSubmission={onRetryContentSubmission}
+      />,
+    );
+
+    expect(screen.getByText("Retry needed")).toBeTruthy();
+    expect(screen.getByText("Proposal content needs upload")).toBeTruthy();
+    expect(screen.getByText(/local copy is available/i)).toBeTruthy();
+    expect(screen.getByText("Timed out submitting proposal contents.")).toBeTruthy();
+
+    fireEvent.click(screen.getByRole("button", { name: "Retry content upload" }));
+    expect(onRetryContentSubmission).toHaveBeenCalledOnce();
+  });
+
+  it("disables content retry action while retrying", () => {
+    render(
+      <TreasuryProposalDetail
+        proposal={{ ...proposal, contents: null }}
+        contentVerificationStatus="retryable"
+        canRetryContentSubmission
+        isRetryingContentSubmission
+        onRetryContentSubmission={() => {}}
+      />,
+    );
+
+    expect(
+      screen.getByRole("button", { name: "Retry content upload" }).hasAttribute("disabled"),
+    ).toBe(true);
   });
 });

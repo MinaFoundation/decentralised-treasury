@@ -103,7 +103,11 @@ export interface TreasuryProposalDetailProps {
   currentLifecycleId?: number;
   statusDerivationPeriod?: TreasuryProposalPeriodId;
   tableInitialPageSize?: 10 | 20 | 30 | 40 | 50;
-  contentVerificationStatus?: "loading" | "verified" | "mismatch";
+  contentVerificationStatus?: "loading" | "verified" | "mismatch" | "retryable";
+  canRetryContentSubmission?: boolean;
+  isRetryingContentSubmission?: boolean;
+  contentRetryError?: string | null;
+  contentRetryLastAttemptAt?: string | null;
   hasConnectedWallet?: boolean;
   connectedWalletVotingWeight?: string | null;
   onConnectWalletClick?: () => void;
@@ -114,6 +118,7 @@ export interface TreasuryProposalDetailProps {
   onVoteAbstainClick?: () => void;
   onLifecycleClick?: (lifecycleId: number) => void;
   onExecutePayoutClick?: (amount: string) => void;
+  onRetryContentSubmission?: () => void;
 }
 
 // Mirrors `BOND_AMOUNT_DIVISOR` in the treasury contracts.
@@ -211,6 +216,10 @@ export function TreasuryProposalDetail({
   statusDerivationPeriod,
   tableInitialPageSize = 10,
   contentVerificationStatus,
+  canRetryContentSubmission = false,
+  isRetryingContentSubmission = false,
+  contentRetryError,
+  contentRetryLastAttemptAt,
   hasConnectedWallet = true,
   connectedWalletVotingWeight,
   onConnectWalletClick,
@@ -221,6 +230,7 @@ export function TreasuryProposalDetail({
   onVoteAbstainClick,
   onLifecycleClick,
   onExecutePayoutClick,
+  onRetryContentSubmission,
 }: TreasuryProposalDetailProps): JSX.Element {
   const intl = useTreasuryIntl();
   const markdownContainerRef = useRef<HTMLDivElement | null>(null);
@@ -849,12 +859,73 @@ export function TreasuryProposalDetail({
               </div>
             ) : (
               <div className="flex min-h-[28rem] flex-1 items-center justify-center sm:min-h-[34rem]">
-                <p className="text-sm text-muted-foreground">
-                  {intl.formatMessage({
-                    id: "ui.proposalDetail.contentEmpty",
-                    defaultMessage: "No proposal contents are available yet.",
-                  })}
-                </p>
+                {canRetryContentSubmission ? (
+                  <div
+                    className="max-w-xl rounded-2xl border border-amber-300 bg-amber-50/90 p-5 text-left text-amber-950"
+                    data-component="proposal-content-retry-alert"
+                  >
+                    <div className="flex gap-3">
+                      <CircleAlert
+                        className="mt-0.5 h-5 w-5 shrink-0 text-amber-700"
+                        aria-hidden="true"
+                      />
+                      <div className="min-w-0 space-y-3">
+                        <div className="space-y-1">
+                          <p className="text-sm font-semibold">
+                            {intl.formatMessage({
+                              id: "ui.proposalDetail.contentRetryTitle",
+                              defaultMessage: "Proposal content needs upload",
+                            })}
+                          </p>
+                          <p className="text-sm leading-6 text-amber-900/90">
+                            {intl.formatMessage({
+                              id: "ui.proposalDetail.contentRetryDescription",
+                              defaultMessage:
+                                "This proposal exists on chain, but the markdown content was not attached to the indexed proposal yet. A local copy is available in this browser.",
+                            })}
+                          </p>
+                        </div>
+                        {contentRetryLastAttemptAt ? (
+                          <p className="text-xs text-amber-900/80">
+                            {intl.formatMessage(
+                              {
+                                id: "ui.proposalDetail.contentRetryLastAttempt",
+                                defaultMessage: "Last retry: {timestamp}",
+                              },
+                              { timestamp: formatTimestamp(contentRetryLastAttemptAt) },
+                            )}
+                          </p>
+                        ) : null}
+                        {contentRetryError ? (
+                          <p className="rounded-lg border border-amber-300/70 bg-amber-100/70 px-3 py-2 text-xs leading-5 text-amber-950">
+                            {contentRetryError}
+                          </p>
+                        ) : null}
+                        <Button
+                          type="button"
+                          className="gap-2"
+                          onClick={onRetryContentSubmission}
+                          disabled={isRetryingContentSubmission || !onRetryContentSubmission}
+                        >
+                          {isRetryingContentSubmission ? (
+                            <LoaderCircle className="h-4 w-4 animate-spin" aria-hidden="true" />
+                          ) : null}
+                          {intl.formatMessage({
+                            id: "ui.proposalDetail.contentRetryButton",
+                            defaultMessage: "Retry content upload",
+                          })}
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground">
+                    {intl.formatMessage({
+                      id: "ui.proposalDetail.contentEmpty",
+                      defaultMessage: "No proposal contents are available yet.",
+                    })}
+                  </p>
+                )}
               </div>
             )}
           </section>
@@ -1499,7 +1570,7 @@ function DetailSectionIntro({
 function ContentVerificationIndicator({
   status,
 }: {
-  status: "loading" | "verified" | "mismatch";
+  status: "loading" | "verified" | "mismatch" | "retryable";
 }): JSX.Element {
   const description =
     "Checks whether the markdown served by the API hashes to the same value as the on-chain zkApp URI hash.";
@@ -1531,6 +1602,23 @@ function ContentVerificationIndicator({
         </TooltipTrigger>
         <TooltipContent side="top" className="max-w-72 text-center">
           {description}
+        </TooltipContent>
+      </Tooltip>
+    );
+  }
+
+  if (status === "retryable") {
+    return (
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <div className="inline-flex shrink-0 items-center gap-1 whitespace-nowrap rounded-full border border-amber-200 bg-amber-50 px-1.5 py-0.5 text-[10px] font-medium leading-none text-amber-700">
+            <ShieldAlert className="h-3 w-3" aria-hidden="true" />
+            Retry needed
+          </div>
+        </TooltipTrigger>
+        <TooltipContent side="top" className="max-w-72 text-center">
+          Proposal content is missing from the API, but this browser has a local
+          copy that can be uploaded again.
         </TooltipContent>
       </Tooltip>
     );
