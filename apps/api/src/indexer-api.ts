@@ -19,7 +19,6 @@ async function main(): Promise<void> {
   });
   const archive = new ArchiveClient(config.archiveNodeUrl, {
     treasuryOwnerContractAddress: config.treasuryOwnerContractAddress,
-    treasuryOwnerTokenId: config.treasuryOwnerTokenId,
     archiveRequestTimeoutMs: config.archiveRequestTimeoutMs,
   });
   const statusRoutes = createIndexerStatusRoutes({
@@ -31,6 +30,7 @@ async function main(): Promise<void> {
     port: config.indexerApiPort,
     pageLimitDefault: config.apiPageLimitDefault,
     pageLimitMax: config.apiPageLimitMax,
+    corsAllowedOrigins: config.corsAllowedOrigins,
     registerTopLevelRoutes: async (app) => {
       statusRoutes(app);
     },

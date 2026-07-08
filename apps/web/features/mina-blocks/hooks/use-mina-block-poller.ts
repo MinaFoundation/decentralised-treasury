@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import { useAppShellStore } from "../../app-shell/store/app-shell-store";
+import { resolveEndpointUrl } from "../../endpoint-settings/lib/endpoint-url";
 import { useEndpointSettingsStore } from "../../endpoint-settings/store/endpoint-settings-store";
 import { useMinaBlockStore } from "../store/mina-block-store";
 
@@ -35,7 +36,7 @@ interface LatestBlockResponse {
 async function fetchLatestBlock(
   minaNodeUrl: string,
 ): Promise<{ height: number; hash: string | null }> {
-  const response = await fetch(minaNodeUrl, {
+  const response = await fetch(resolveEndpointUrl(minaNodeUrl), {
     method: "POST",
     headers: {
       "content-type": "application/json",

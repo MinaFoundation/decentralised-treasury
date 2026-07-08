@@ -1,7 +1,10 @@
 import type { ArchiveEventEntity } from "@repo/indexer";
 import type { EventProcessorHandler } from "@repo/processor";
 import type { EntityManager } from "typeorm";
-import type { StakingLedgerServiceLookup } from "../../staking-ledger/lifecycle-staking-ledger-service-registry.js";
+import {
+  LIFECYCLE_DATA_UNAVAILABLE_ERROR,
+  type StakingLedgerServiceLookup,
+} from "../../staking-ledger/lifecycle-staking-ledger-service-registry.js";
 import { ProposalEntity } from "./proposal-entity.js";
 
 const PROPOSAL_CREATED_EVENT_NAME = "proposalCreated";
@@ -384,7 +387,18 @@ export class ProposalCreatedEventHandler implements EventProcessorHandler {
       return null;
     }
 
-    const service = await stakingLedgerServices.getService(String(lifecycleId));
+    let service;
+    try {
+      service = await stakingLedgerServices.getService(String(lifecycleId));
+    } catch (error) {
+      if (
+        error instanceof Error &&
+        error.message === LIFECYCLE_DATA_UNAVAILABLE_ERROR
+      ) {
+        return null;
+      }
+      throw error;
+    }
     const treasuryAccount = await service.getAccountByPublicKey(treasuryOwnerPublicKey);
     if (!treasuryAccount) {
       throw new Error(

@@ -19,13 +19,17 @@ Event type is treated as immutable at ingest:
 
 ## Environment
 
-Use `apps/api/.env.local-blockchain`.
+Use this README for native package development, where API processes bind direct
+host ports such as `4000`, `4001`, and `4002`. For the Compose demo or testnet
+operator stack, use `DEMO.md` or `devops/TESTNET.md`; Compose keeps these ports
+private and exposes the APIs through Caddy on `4100`, `4101`, and `4102`.
+
+Use `apps/api/.env.local-blockchain` for native local-blockchain development.
 
 Required:
 
 - `ARCHIVE_NODE_URL`
 - `TREASURY_OWNER_CONTRACT_ADDRESS`
-- `TREASURY_OWNER_TOKEN_ID`
 - `DATABASE_URL`
 
 Common optional:

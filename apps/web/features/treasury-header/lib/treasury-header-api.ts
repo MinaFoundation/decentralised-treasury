@@ -1,3 +1,5 @@
+import { resolveEndpointUrl } from "../../endpoint-settings/lib/endpoint-url";
+
 import type {
   TreasuryProposalTableEntry,
   TreasuryProposalTableSortDirection,
@@ -250,7 +252,7 @@ export async function fetchProposalSearchResults(
   query: string,
   limit = 8,
 ): Promise<TreasuryProposalTableEntry[]> {
-  const searchUrl = new URL("/proposals/search", apiUrl);
+  const searchUrl = new URL(resolveEndpointUrl(apiUrl, "/proposals/search"));
   searchUrl.searchParams.set("q", query);
   searchUrl.searchParams.set("limit", String(limit));
   searchUrl.searchParams.set("offset", "0");
@@ -267,7 +269,7 @@ export async function fetchProposalSearchResults(
 export async function fetchLatestProposal(
   apiUrl: string,
 ): Promise<TreasuryProposalTableEntry | null> {
-  const proposalsUrl = new URL("/proposals", apiUrl);
+  const proposalsUrl = new URL(resolveEndpointUrl(apiUrl, "/proposals"));
   proposalsUrl.searchParams.set("limit", "1");
   proposalsUrl.searchParams.set("offset", "0");
 
@@ -311,7 +313,7 @@ export async function fetchProposalItemsPage(
   apiUrl: string,
   options: FetchProposalItemsOptions = {},
 ): Promise<ProposalItemsPage> {
-  const proposalsUrl = new URL("/proposals", apiUrl);
+  const proposalsUrl = new URL(resolveEndpointUrl(apiUrl, "/proposals"));
   if (options.lifecycleId !== undefined) {
     proposalsUrl.searchParams.set("lifecycleId", String(options.lifecycleId));
   }
@@ -341,8 +343,10 @@ export async function fetchProposalVotes(
   proposalPublicKey: string,
 ): Promise<TreasuryProposalVoteRow[]> {
   const proposalVotesUrl = new URL(
-    `/proposals/${encodeURIComponent(proposalPublicKey)}/votes`,
-    apiUrl,
+    resolveEndpointUrl(
+      apiUrl,
+      `/proposals/${encodeURIComponent(proposalPublicKey)}/votes`,
+    ),
   );
   const response = await fetch(proposalVotesUrl.toString());
   if (!response.ok) {
@@ -366,8 +370,10 @@ export async function fetchProposalExecutions(
   proposalPublicKey: string,
 ): Promise<TreasuryProposalExecutionRow[]> {
   const proposalExecutionsUrl = new URL(
-    `/proposals/${encodeURIComponent(proposalPublicKey)}/executions`,
-    apiUrl,
+    resolveEndpointUrl(
+      apiUrl,
+      `/proposals/${encodeURIComponent(proposalPublicKey)}/executions`,
+    ),
   );
   const response = await fetch(proposalExecutionsUrl.toString());
   if (!response.ok) {
@@ -412,12 +418,16 @@ export async function fetchWalletLifecycleAccountInfo(
   publicKey: string,
 ): Promise<{ delegatedTo?: string; votingWeight?: string }> {
   const stakingUrl = new URL(
-    `/staking-ledger/lifecycles/${lifecycleId}/accounts/${publicKey}`,
-    apiUrl,
+    resolveEndpointUrl(
+      apiUrl,
+      `/staking-ledger/lifecycles/${lifecycleId}/accounts/${publicKey}`,
+    ),
   );
   const votingUrl = new URL(
-    `/voting-ledger/lifecycles/${lifecycleId}/accounts/${publicKey}`,
-    apiUrl,
+    resolveEndpointUrl(
+      apiUrl,
+      `/voting-ledger/lifecycles/${lifecycleId}/accounts/${publicKey}`,
+    ),
   );
 
   const [stakingResponse, votingResponse] = await Promise.all([
@@ -449,8 +459,10 @@ export async function fetchLifecycleProposalEstimateContext(
   treasuryOwnerPublicKey: string,
 ): Promise<{ treasuryBalance: string; eligibleVotingWeight: string }> {
   const stakingAccountUrl = new URL(
-    `/staking-ledger/lifecycles/${lifecycleId}/accounts/${treasuryOwnerPublicKey}`,
-    apiUrl,
+    resolveEndpointUrl(
+      apiUrl,
+      `/staking-ledger/lifecycles/${lifecycleId}/accounts/${treasuryOwnerPublicKey}`,
+    ),
   );
 
   const [stakingAccountResponse, stakingLedgerTotalCurrency] = await Promise.all([

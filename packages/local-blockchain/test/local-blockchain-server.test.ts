@@ -61,7 +61,9 @@ function getAvailablePort(): Promise<number> {
     server.listen(0, "127.0.0.1", () => {
       const address = server.address();
       if (!address || typeof address === "string") {
-        server.close(() => reject(new Error("Unable to resolve ephemeral port")));
+        server.close(() =>
+          reject(new Error("Unable to resolve ephemeral port")),
+        );
         return;
       }
       server.close((error) => {
@@ -75,7 +77,10 @@ function getAvailablePort(): Promise<number> {
   });
 }
 
-async function waitForHealth(baseUrl: string, timeoutMs = 30_000): Promise<void> {
+async function waitForHealth(
+  baseUrl: string,
+  timeoutMs = 30_000,
+): Promise<void> {
   const startedAt = Date.now();
   while (Date.now() - startedAt < timeoutMs) {
     try {
@@ -107,15 +112,19 @@ function spawnNodeProcess(
   env: NodeJS.ProcessEnv,
   workingDirectory: string,
 ): ChildProcess {
-  return spawn(process.execPath, ["--loader", loaderPath, entryPoint, ...args], {
-    cwd: workingDirectory,
-    env: {
-      ...process.env,
-      ...env,
-      NODE_NO_WARNINGS: "1",
+  return spawn(
+    process.execPath,
+    ["--loader", loaderPath, entryPoint, ...args],
+    {
+      cwd: workingDirectory,
+      env: {
+        ...process.env,
+        ...env,
+        NODE_NO_WARNINGS: "1",
+      },
+      stdio: ["ignore", "pipe", "pipe"],
     },
-    stdio: ["ignore", "pipe", "pipe"],
-  });
+  );
 }
 
 async function readJson<T>(url: string): Promise<T> {
@@ -169,9 +178,14 @@ describe("local blockchain server", () => {
     const loaderPath = fileURLToPath(
       new URL("../../sdk/node_modules/ts-node/esm.mjs", import.meta.url),
     );
-    const serverEntryPoint = fileURLToPath(new URL("../src/server.ts", import.meta.url));
+    const serverEntryPoint = fileURLToPath(
+      new URL("../src/server.ts", import.meta.url),
+    );
     const submitterEntryPoint = fileURLToPath(
-      new URL("./fixtures/submit-payment-from-separate-process.ts", import.meta.url),
+      new URL(
+        "./fixtures/submit-payment-from-separate-process.ts",
+        import.meta.url,
+      ),
     );
     const port = await getAvailablePort();
     const baseUrl = `http://127.0.0.1:${port}`;
@@ -180,7 +194,7 @@ describe("local blockchain server", () => {
       loaderPath,
       serverEntryPoint,
       [],
-      { PORT: String(port) },
+      { MINA_NODE_PORT: String(port) },
       packageDirectory,
     );
 
@@ -194,12 +208,18 @@ describe("local blockchain server", () => {
 
     await waitForHealth(baseUrl);
 
-    const initialState = await readJson<AdminStateResponse>(`${baseUrl}/admin/state`);
+    const initialState = await readJson<AdminStateResponse>(
+      `${baseUrl}/admin/state`,
+    );
     assert.equal(initialState.currentSlot, 0);
     assert.equal(initialState.submittedTransactions, 0);
     assert.equal(initialState.testAccounts.length >= 2, true);
-    const initialSenderBalance = BigInt(initialState.testAccounts[0]?.balance ?? "0");
-    const initialRecipientBalance = BigInt(initialState.testAccounts[1]?.balance ?? "0");
+    const initialSenderBalance = BigInt(
+      initialState.testAccounts[0]?.balance ?? "0",
+    );
+    const initialRecipientBalance = BigInt(
+      initialState.testAccounts[1]?.balance ?? "0",
+    );
 
     const submitterProcess = spawnNodeProcess(
       loaderPath,
@@ -243,15 +263,30 @@ describe("local blockchain server", () => {
     assert.equal(submitterPayload.slotBefore, 0);
     assert.equal(submitterPayload.sendZkapp.failureReason, null);
     assert.ok(submitterPayload.sendZkapp.hash.length > 0);
-    assert.equal(submitterPayload.sendZkapp.id, submitterPayload.sendZkapp.hash);
+    assert.equal(
+      submitterPayload.sendZkapp.id,
+      submitterPayload.sendZkapp.hash,
+    );
 
-    const finalState = await readJson<AdminStateResponse>(`${baseUrl}/admin/state`);
+    const finalState = await readJson<AdminStateResponse>(
+      `${baseUrl}/admin/state`,
+    );
     assert.equal(finalState.currentSlot, 1);
     assert.equal(finalState.submittedTransactions, 1);
-    const finalSenderBalance = BigInt(finalState.testAccounts[0]?.balance ?? "0");
-    const finalRecipientBalance = BigInt(finalState.testAccounts[1]?.balance ?? "0");
-    assert.equal(finalSenderBalance, initialSenderBalance - PAYMENT_AMOUNT - PAYMENT_FEE);
-    assert.equal(finalRecipientBalance, initialRecipientBalance + PAYMENT_AMOUNT);
+    const finalSenderBalance = BigInt(
+      finalState.testAccounts[0]?.balance ?? "0",
+    );
+    const finalRecipientBalance = BigInt(
+      finalState.testAccounts[1]?.balance ?? "0",
+    );
+    assert.equal(
+      finalSenderBalance,
+      initialSenderBalance - PAYMENT_AMOUNT - PAYMENT_FEE,
+    );
+    assert.equal(
+      finalRecipientBalance,
+      initialRecipientBalance + PAYMENT_AMOUNT,
+    );
 
     const transactions = await readJson<TransactionListResponse>(
       `${baseUrl}/admin/transactions`,
@@ -265,7 +300,9 @@ describe("local blockchain server", () => {
     const loaderPath = fileURLToPath(
       new URL("../../sdk/node_modules/ts-node/esm.mjs", import.meta.url),
     );
-    const serverEntryPoint = fileURLToPath(new URL("../src/server.ts", import.meta.url));
+    const serverEntryPoint = fileURLToPath(
+      new URL("../src/server.ts", import.meta.url),
+    );
     const port = await getAvailablePort();
     const baseUrl = `http://127.0.0.1:${port}`;
 
@@ -273,7 +310,7 @@ describe("local blockchain server", () => {
       loaderPath,
       serverEntryPoint,
       [],
-      { PORT: String(port) },
+      { MINA_NODE_PORT: String(port) },
       packageDirectory,
     );
 
@@ -287,14 +324,19 @@ describe("local blockchain server", () => {
     assert.equal(incrementResult.slotBefore, 0);
     assert.equal(incrementResult.slotAfter, 7);
 
-    const setResult = await postJson<SlotMutationResponse>(`${baseUrl}/admin/slot/set`, {
-      slot: 20,
-    });
+    const setResult = await postJson<SlotMutationResponse>(
+      `${baseUrl}/admin/slot/set`,
+      {
+        slot: 20,
+      },
+    );
     assert.equal(setResult.ok, true);
     assert.equal(setResult.slotBefore, 7);
     assert.equal(setResult.slotAfter, 20);
 
-    const finalState = await readJson<AdminStateResponse>(`${baseUrl}/admin/state`);
+    const finalState = await readJson<AdminStateResponse>(
+      `${baseUrl}/admin/state`,
+    );
     assert.equal(finalState.currentSlot, 20);
   });
 
@@ -303,7 +345,9 @@ describe("local blockchain server", () => {
     const loaderPath = fileURLToPath(
       new URL("../../sdk/node_modules/ts-node/esm.mjs", import.meta.url),
     );
-    const serverEntryPoint = fileURLToPath(new URL("../src/server.ts", import.meta.url));
+    const serverEntryPoint = fileURLToPath(
+      new URL("../src/server.ts", import.meta.url),
+    );
     const port = await getAvailablePort();
     const baseUrl = `http://127.0.0.1:${port}`;
 
@@ -311,7 +355,7 @@ describe("local blockchain server", () => {
       loaderPath,
       serverEntryPoint,
       [],
-      { PORT: String(port) },
+      { MINA_NODE_PORT: String(port) },
       packageDirectory,
     );
 
@@ -334,7 +378,10 @@ describe("local blockchain server", () => {
     });
     assert.equal(updateResult.ok, true);
     assert.equal(updateResult.stakingEpochDataLedgerHash, nextHash);
-    assert.equal(updateResult.stakingEpochDataLedgerTotalCurrency, nextTotalCurrency);
+    assert.equal(
+      updateResult.stakingEpochDataLedgerTotalCurrency,
+      nextTotalCurrency,
+    );
 
     const after = await readJson<AdminStateResponse>(`${baseUrl}/admin/state`);
     assert.equal(after.currentSlot, before.currentSlot);
@@ -347,9 +394,14 @@ describe("local blockchain server", () => {
     const loaderPath = fileURLToPath(
       new URL("../../sdk/node_modules/ts-node/esm.mjs", import.meta.url),
     );
-    const serverEntryPoint = fileURLToPath(new URL("../src/server.ts", import.meta.url));
+    const serverEntryPoint = fileURLToPath(
+      new URL("../src/server.ts", import.meta.url),
+    );
     const submitterEntryPoint = fileURLToPath(
-      new URL("./fixtures/submit-proposal-created-from-separate-process.ts", import.meta.url),
+      new URL(
+        "./fixtures/submit-proposal-created-from-separate-process.ts",
+        import.meta.url,
+      ),
     );
     const port = await getAvailablePort();
     const archivePort = await getAvailablePort();
@@ -360,7 +412,7 @@ describe("local blockchain server", () => {
       loaderPath,
       serverEntryPoint,
       [],
-      { PORT: String(port), ARCHIVE_PORT: String(archivePort) },
+      { MINA_NODE_PORT: String(port), MINA_ARCHIVE_PORT: String(archivePort) },
       packageDirectory,
     );
 
@@ -413,7 +465,9 @@ describe("local blockchain server", () => {
       finalSlot: number;
     };
 
-    const finalState = await readJson<AdminStateResponse>(`${baseUrl}/admin/state`);
+    const finalState = await readJson<AdminStateResponse>(
+      `${baseUrl}/admin/state`,
+    );
     assert.equal(finalState.currentSlot, payload.finalSlot);
 
     const proposalAccountResponse = await postGraphql<{
@@ -438,13 +492,21 @@ describe("local blockchain server", () => {
         token: payload.proposalTokenId,
       },
     );
-    assert.equal(proposalAccountResponse.data?.account?.publicKey, payload.proposalPublicKey);
-    assert.equal(proposalAccountResponse.data?.account?.token, payload.proposalTokenId);
-    assert.equal(Array.isArray(proposalAccountResponse.data?.account?.zkappState), true);
+    assert.equal(
+      proposalAccountResponse.data?.account?.publicKey,
+      payload.proposalPublicKey,
+    );
+    assert.equal(
+      proposalAccountResponse.data?.account?.token,
+      payload.proposalTokenId,
+    );
+    assert.equal(
+      Array.isArray(proposalAccountResponse.data?.account?.zkappState),
+      true,
+    );
 
     const archiveClient = new ArchiveClient(archiveUrl, {
       treasuryOwnerContractAddress: payload.treasuryOwnerPublicKey,
-      treasuryOwnerTokenId: "1",
       archiveRequestTimeoutMs: 5_000,
     });
     const archiveEvents = await archiveClient.fetchEvents({
@@ -455,7 +517,10 @@ describe("local blockchain server", () => {
     assert.equal(archiveEvents.length >= 1, true);
     const proposalCreated = archiveEvents
       .flatMap((event) => event.eventData ?? [])
-      .find((eventData) => eventData?.transactionInfo?.hash === payload.proposalTxHash);
+      .find(
+        (eventData) =>
+          eventData?.transactionInfo?.hash === payload.proposalTxHash,
+      );
     assert(proposalCreated, "expected proposalCreated archive event");
     assert.ok((proposalCreated.accountUpdateId ?? "").length > 0);
     assert.equal(Array.isArray(proposalCreated.data), true);
@@ -467,9 +532,14 @@ describe("local blockchain server", () => {
     const loaderPath = fileURLToPath(
       new URL("../../sdk/node_modules/ts-node/esm.mjs", import.meta.url),
     );
-    const serverEntryPoint = fileURLToPath(new URL("../src/server.ts", import.meta.url));
+    const serverEntryPoint = fileURLToPath(
+      new URL("../src/server.ts", import.meta.url),
+    );
     const submitterEntryPoint = fileURLToPath(
-      new URL("./fixtures/submit-full-treasury-flow-from-separate-process.ts", import.meta.url),
+      new URL(
+        "./fixtures/submit-full-treasury-flow-from-separate-process.ts",
+        import.meta.url,
+      ),
     );
     const port = await getAvailablePort();
     const archivePort = await getAvailablePort();
@@ -480,7 +550,7 @@ describe("local blockchain server", () => {
       loaderPath,
       serverEntryPoint,
       [],
-      { PORT: String(port), ARCHIVE_PORT: String(archivePort) },
+      { MINA_NODE_PORT: String(port), MINA_ARCHIVE_PORT: String(archivePort) },
       packageDirectory,
     );
 
@@ -536,7 +606,9 @@ describe("local blockchain server", () => {
       finalSlot: number;
     };
 
-    const finalState = await readJson<AdminStateResponse>(`${baseUrl}/admin/state`);
+    const finalState = await readJson<AdminStateResponse>(
+      `${baseUrl}/admin/state`,
+    );
     assert.equal(finalState.currentSlot, payload.finalSlot);
     assert.equal(finalState.submittedTransactions >= 7, true);
 
@@ -579,15 +651,13 @@ describe("local blockchain server", () => {
       { publicKey: payload.recipientPublicKey, token: payload.proposalTokenId },
     );
     const resolvedRecipientAccount =
-      recipientAccountResponse.data?.account ?? recipientTokenAccountResponse.data?.account;
+      recipientAccountResponse.data?.account ??
+      recipientTokenAccountResponse.data?.account;
     assert.equal(
       resolvedRecipientAccount?.publicKey,
       payload.recipientPublicKey,
     );
-    assert.equal(
-      resolvedRecipientAccount?.balance?.total,
-      "110000000000",
-    );
+    assert.equal(resolvedRecipientAccount?.balance?.total, "110000000000");
 
     const treasuryOwnerAccountResponse = await postGraphql<{
       data?: {
@@ -654,19 +724,25 @@ describe("local blockchain server", () => {
       },
     );
     assert.equal(archiveActionsResponse.data?.actions?.length, 1);
-    assert.equal(archiveActionsResponse.data?.actions?.[0]?.actionData?.length, 3);
-    assert.ok(
-      (archiveActionsResponse.data?.actions?.[0]?.actionState?.actionStateOne ?? "").length >
-        0,
+    assert.equal(
+      archiveActionsResponse.data?.actions?.[0]?.actionData?.length,
+      3,
     );
     assert.ok(
-      (archiveActionsResponse.data?.actions?.[0]?.actionState?.actionStateTwo ?? "").length >
-        0,
+      (
+        archiveActionsResponse.data?.actions?.[0]?.actionState
+          ?.actionStateOne ?? ""
+      ).length > 0,
+    );
+    assert.ok(
+      (
+        archiveActionsResponse.data?.actions?.[0]?.actionState
+          ?.actionStateTwo ?? ""
+      ).length > 0,
     );
 
     const archiveClient = new ArchiveClient(archiveUrl, {
       treasuryOwnerContractAddress: payload.treasuryOwnerPublicKey,
-      treasuryOwnerTokenId: "1",
       archiveRequestTimeoutMs: 5_000,
     });
     const archiveEvents = await archiveClient.fetchEvents({
@@ -692,9 +768,14 @@ describe("local blockchain server", () => {
     const loaderPath = fileURLToPath(
       new URL("../../sdk/node_modules/ts-node/esm.mjs", import.meta.url),
     );
-    const serverEntryPoint = fileURLToPath(new URL("../src/server.ts", import.meta.url));
+    const serverEntryPoint = fileURLToPath(
+      new URL("../src/server.ts", import.meta.url),
+    );
     const submitterEntryPoint = fileURLToPath(
-      new URL("./fixtures/submit-payment-from-separate-process.ts", import.meta.url),
+      new URL(
+        "./fixtures/submit-payment-from-separate-process.ts",
+        import.meta.url,
+      ),
     );
     const port = await getAvailablePort();
     const baseUrl = `http://127.0.0.1:${port}`;
@@ -704,20 +785,31 @@ describe("local blockchain server", () => {
       loaderPath,
       serverEntryPoint,
       [],
-      { PORT: String(port) },
+      { MINA_NODE_PORT: String(port) },
       packageDirectory,
     );
 
     await waitForHealth(baseUrl);
 
-    const initialState = await readJson<AdminStateResponse>(`${baseUrl}/admin/state`);
+    const initialState = await readJson<AdminStateResponse>(
+      `${baseUrl}/admin/state`,
+    );
     const sender = initialState.testAccounts[0];
     assert(sender, "expected a local blockchain test account");
 
-    const fetchedAccount = await fetchAccount({ publicKey: sender.publicKey }, graphqlUrl);
+    const fetchedAccount = await fetchAccount(
+      { publicKey: sender.publicKey },
+      graphqlUrl,
+    );
     assert.equal(fetchedAccount.error, undefined);
-    assert.equal(fetchedAccount.account?.publicKey.toBase58(), sender.publicKey);
-    assert.equal(fetchedAccount.account?.balance.toBigInt().toString(), sender.balance);
+    assert.equal(
+      fetchedAccount.account?.publicKey.toBase58(),
+      sender.publicKey,
+    );
+    assert.equal(
+      fetchedAccount.account?.balance.toBigInt().toString(),
+      sender.balance,
+    );
 
     const submitterProcess = spawnNodeProcess(
       loaderPath,
@@ -770,9 +862,14 @@ describe("local blockchain server", () => {
       const loaderPath = fileURLToPath(
         new URL("../../sdk/node_modules/ts-node/esm.mjs", import.meta.url),
       );
-      const serverEntryPoint = fileURLToPath(new URL("../src/server.ts", import.meta.url));
+      const serverEntryPoint = fileURLToPath(
+        new URL("../src/server.ts", import.meta.url),
+      );
       const submitterEntryPoint = fileURLToPath(
-        new URL("./fixtures/submit-proposal-created-from-separate-process.ts", import.meta.url),
+        new URL(
+          "./fixtures/submit-proposal-created-from-separate-process.ts",
+          import.meta.url,
+        ),
       );
       const port = await getAvailablePort();
       const baseUrl = `http://127.0.0.1:${port}`;
@@ -782,7 +879,7 @@ describe("local blockchain server", () => {
         loaderPath,
         serverEntryPoint,
         [],
-        { PORT: String(port), PROOFS_ENABLED: "false" },
+        { MINA_NODE_PORT: String(port), PROOFS_ENABLED: "false" },
         packageDirectory,
       );
 
@@ -796,7 +893,9 @@ describe("local blockchain server", () => {
 
       await waitForHealth(baseUrl, 60_000);
 
-      const adminState = await readJson<AdminStateResponse>(`${baseUrl}/admin/state`);
+      const adminState = await readJson<AdminStateResponse>(
+        `${baseUrl}/admin/state`,
+      );
       const submitterProcess = spawnNodeProcess(
         loaderPath,
         submitterEntryPoint,
@@ -835,10 +934,18 @@ describe("local blockchain server", () => {
       const treasuryOwner = new TreasuryOwnerSmartContract(
         PublicKey.fromBase58(payload.treasuryOwnerPublicKey),
       );
-      const treasuryDeployedAtSlot = await treasuryOwner.treasuryDeployedAtSlot.fetch();
-      assert.ok(treasuryDeployedAtSlot, "expected treasury deployed slot on chain");
-      const pauseControllerPublicKey = await treasuryOwner.pauseControllerPublicKey.fetch();
-      assert.ok(pauseControllerPublicKey, "expected pause controller public key on chain");
+      const treasuryDeployedAtSlot =
+        await treasuryOwner.treasuryDeployedAtSlot.fetch();
+      assert.ok(
+        treasuryDeployedAtSlot,
+        "expected treasury deployed slot on chain",
+      );
+      const pauseControllerPublicKey =
+        await treasuryOwner.pauseControllerPublicKey.fetch();
+      assert.ok(
+        pauseControllerPublicKey,
+        "expected pause controller public key on chain",
+      );
 
       TreasuryPauseControllerSmartContract.multisigParticipants = Array.from(
         { length: 5 },
@@ -856,8 +963,12 @@ describe("local blockchain server", () => {
       await TreasuryPauseControllerSmartContract.compile();
       await TreasuryOwnerSmartContract.compile();
 
-      const senderPublicKey = PublicKey.fromBase58(adminState.testAccounts[1]!.publicKey);
-      const recipientPublicKey = PublicKey.fromBase58(adminState.testAccounts[2]!.publicKey);
+      const senderPublicKey = PublicKey.fromBase58(
+        adminState.testAccounts[1]!.publicKey,
+      );
+      const recipientPublicKey = PublicKey.fromBase58(
+        adminState.testAccounts[2]!.publicKey,
+      );
       const proposalPrivateKey = PrivateKey.random();
       const proposalPublicKey = proposalPrivateKey.toPublicKey();
       const proposalAmount = UInt64.from(1_000_000_000);
@@ -869,7 +980,8 @@ describe("local blockchain server", () => {
         },
         async () => {
           AccountUpdate.fundNewAccount(senderPublicKey, 1);
-          const bondPayerAccountUpdate = AccountUpdate.createSigned(senderPublicKey);
+          const bondPayerAccountUpdate =
+            AccountUpdate.createSigned(senderPublicKey);
           bondPayerAccountUpdate.balance.subInPlace(
             proposalAmount.div(BOND_AMOUNT_DIVISOR),
           );

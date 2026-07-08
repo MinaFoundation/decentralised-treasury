@@ -12,10 +12,16 @@ import {
 import { Alert, AlertDescription, AlertTitle } from "@repo/ui/components/ui/alert";
 import { Skeleton } from "@repo/ui/components/ui/skeleton";
 import { useAppShellStore } from "../../app-shell/store/app-shell-store";
+import { resolveEndpointUrl } from "../../endpoint-settings/lib/endpoint-url";
 import { useEndpointSettingsState } from "../../endpoint-settings/store/endpoint-settings-store.selectors";
 import { useProposalDrafts } from "../hooks/use-proposal-drafts";
 import { useProposalProverWorker } from "../hooks/use-proposal-prover-worker";
 import { submitProposalContents } from "../lib/proposal-content-submission";
+import {
+  removeProposalContentRetryRecord,
+  saveProposalContentRetryRecord,
+  updateProposalContentRetryRecord,
+} from "../lib/proposal-content-retry-store";
 import { waitForTransactionInclusion } from "../lib/transaction-inclusion";
 import { useTreasuryState } from "../../treasury/store/treasury-store.selectors";
 import { fetchLifecycleProposalEstimateContext } from "../../treasury-header/lib/treasury-header-api";
@@ -135,16 +141,17 @@ function buildSendZkappMutation(transactionJson: string): string {
 }
 
 async function submitZkappDirectly(minaNodeUrl: string, transactionJson: string): Promise<string> {
+  const resolvedMinaNodeUrl = resolveEndpointUrl(minaNodeUrl);
   const requestBody = {
     query: buildSendZkappMutation(transactionJson),
   };
 
   console.info("[proposal-prover][direct-send] request", {
-    minaNodeUrl,
+    minaNodeUrl: resolvedMinaNodeUrl,
     requestBody,
   });
 
-  const response = await fetch(minaNodeUrl, {
+  const response = await fetch(resolvedMinaNodeUrl, {
     method: "POST",
     headers: {
       "content-type": "application/json",
@@ -455,6 +462,12 @@ export function ProposalCreatePageContainer({
               preparedTransaction,
               provedTransactionJson,
             };
+            saveProposalContentRetryRecord({
+              proposalPublicKey: preparedTransaction.proposalPublicKey,
+              zkAppUriHash: preparedTransaction.zkAppUriHash,
+              contents: submissionDraft.content,
+              lastError: null,
+            });
             preparedFlowRef.current = nextPreparedFlow;
             setPreparedFlow(nextPreparedFlow);
           }}
@@ -473,6 +486,13 @@ export function ProposalCreatePageContainer({
             );
 
             if (preparedFlowRef.current) {
+              updateProposalContentRetryRecord(
+                preparedFlowRef.current.preparedTransaction.proposalPublicKey,
+                {
+                  transactionHash: hash,
+                  lastError: null,
+                },
+              );
               preparedFlowRef.current = {
                 ...preparedFlowRef.current,
                 transactionHash: hash,
@@ -499,11 +519,29 @@ export function ProposalCreatePageContainer({
             if (!activeSubmissionDraft) {
               throw new Error("Proposal draft is missing.");
             }
-            await submitProposalContents({
-              apiUrl: settings.value.apiUrl,
-              proposalPublicKey: preparedFlowRef.current.preparedTransaction.proposalPublicKey,
-              contents: activeSubmissionDraft.content,
+            const proposalPublicKey =
+              preparedFlowRef.current.preparedTransaction.proposalPublicKey;
+            updateProposalContentRetryRecord(proposalPublicKey, {
+              lastAttemptAt: new Date().toISOString(),
+              lastError: null,
             });
+            try {
+              await submitProposalContents({
+                apiUrl: settings.value.apiUrl,
+                proposalPublicKey,
+                contents: activeSubmissionDraft.content,
+              });
+              removeProposalContentRetryRecord(proposalPublicKey);
+            } catch (error) {
+              const message =
+                error instanceof Error
+                  ? error.message
+                  : "Failed to submit proposal contents.";
+              updateProposalContentRetryRecord(proposalPublicKey, {
+                lastError: message,
+              });
+              throw error;
+            }
           }}
           onComplete={() => {
             const proposalPublicKey = preparedFlowRef.current?.preparedTransaction.proposalPublicKey;

@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "express": "^5.1.0",
+    "o1js": "github:maht0rz/o1js#feature/mesa-support",
     "typeorm": "^0.3.26"
   },
   "devDependencies": {

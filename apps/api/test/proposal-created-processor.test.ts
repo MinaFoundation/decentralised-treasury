@@ -10,6 +10,7 @@ import { ProposalEntity } from "../src/processors/proposals/proposal-entity.js";
 import { VoteNullifierEntity } from "../src/processors/proposals/vote-nullifier-entity.js";
 import { VoteTallyEntity } from "../src/processors/proposals/vote-tally-entity.js";
 import { VoteEntity } from "../src/processors/proposals/vote-entity.js";
+import { LIFECYCLE_DATA_UNAVAILABLE_ERROR } from "../src/staking-ledger/lifecycle-staking-ledger-service-registry.js";
 import { createInMemoryDataSource } from "./support/create-in-memory-data-source.js";
 
 function buildProposalCreatedEvent(): ArchiveEventEntity {
@@ -155,5 +156,32 @@ describe("ProposalCreatedEventHandler", () => {
     assert.equal(proposal?.requiredParticipationBp, "1234");
     assert.equal(proposal?.requiredApprovalBp, "6789");
     assert.equal(proposal?.requiredParticipation, "55");
+  });
+
+  it("projects proposalCreated when lifecycle staking data is not available", async () => {
+    const event = buildProposalCreatedEvent();
+    const handler = new ProposalCreatedEventHandler({
+      treasuryOwnerPublicKey: "treasury-owner-public-key",
+      stakingLedgerServices: {
+        getService: async () => {
+          throw new Error(LIFECYCLE_DATA_UNAVAILABLE_ERROR);
+        },
+      },
+    });
+
+    assert.equal(
+      await dataSource.transaction(
+        async (manager) => await handler.tryHandle(event, manager),
+      ),
+      true,
+    );
+
+    const proposal = await dataSource.getRepository(ProposalEntity).findOneBy({
+      proposalPublicKey: "proposal-public-key-1",
+    });
+    assert.ok(proposal);
+    assert.equal(proposal?.requiredParticipationBp, null);
+    assert.equal(proposal?.requiredApprovalBp, null);
+    assert.equal(proposal?.requiredParticipation, null);
   });
 });

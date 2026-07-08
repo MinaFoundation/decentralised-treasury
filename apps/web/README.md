@@ -30,11 +30,16 @@ pnpm --dir apps/web run lint
 pnpm --dir apps/web run test
 ```
 
-Default local URL: `http://127.0.0.1:3000`
+Default local URL: `http://127.0.0.1:3100`
 
 ## Environment
 
 Load the env file you want in your shell before starting the app.
+
+Use this README for native package development, where the web app runs on
+`3100` and APIs run directly on `4000`-series ports. For the Compose demo or
+testnet operator stack, use `DEMO.md` or `devops/TESTNET.md`; those paths serve
+the web app through Caddy on `3100` and APIs on `4100`-series ports.
 
 Important frontend env vars:
 
@@ -63,16 +68,18 @@ For the web app to load real data, you need:
 5. the API HTTP server
 6. the API processor
 
-In local development, the web app reads:
+In the Compose operator stack, browser-facing defaults stay same-origin through
+Caddy:
 
-- treasury API from `http://127.0.0.1:4000`
-- indexer API from `http://127.0.0.1:4001`
-- processor routes from `http://127.0.0.1:4002`
-- Mina node GraphQL from `http://127.0.0.1:8080/graphql`
+- treasury API from `/api`
+- indexer API from `/indexer`
+- processor routes from `/processor`
+- Mina node GraphQL from `/mina/graphql`
 
 ## Local Blockchain Setup
 
-This is the fastest way to bring up the full local stack for the web app.
+This native setup is useful when you want each package in its own terminal. It
+is not the recommended full-stack demo path; use `DEMO.md` for that.
 
 ### 1. Prepare env files
 
@@ -82,10 +89,17 @@ Review and update:
 - `apps/cli/.env.local-blockchain`
 - `apps/web/.env.local-blockchain`
 
+For native package development, point the web env at direct API ports:
+
+```text
+NEXT_PUBLIC_TREASURY_API_URL=http://127.0.0.1:4000
+NEXT_PUBLIC_INDEXER_API_URL=http://127.0.0.1:4001
+NEXT_PUBLIC_PROCESSOR_API_URL=http://127.0.0.1:4002
+```
+
 At minimum, make sure these values are correct:
 
 - `TREASURY_OWNER_CONTRACT_ADDRESS`
-- `TREASURY_OWNER_TOKEN_ID`
 - `NEXT_PUBLIC_TREASURY_OWNER_CONTRACT_ADDRESS`
 - `NEXT_PUBLIC_LIFECYCLE_PERIOD_DURATION`
 
@@ -114,7 +128,7 @@ docker run --name treasury-postgres \
 ### 3. Start local blockchain + archive
 
 ```bash
-PORT=8080 ARCHIVE_PORT=8282 pnpm --dir packages/local-blockchain run dev
+MINA_NODE_PORT=8080 MINA_ARCHIVE_PORT=8282 pnpm --dir packages/local-blockchain run dev
 ```
 
 This gives you:
@@ -200,7 +214,7 @@ pnpm --dir apps/web run dev
 Open:
 
 ```bash
-http://127.0.0.1:3000
+http://127.0.0.1:3100
 ```
 
 ## Suggested Terminal Layout

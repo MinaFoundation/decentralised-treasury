@@ -327,7 +327,7 @@ export default function proposalCommandFactory(program: Command) {
     .addOption(
       new Option("--api-url <api-url>", "Treasury API base URL")
         .env("TREASURY_API_URL")
-        .default("http://127.0.0.1:4000"),
+        .default("http://127.0.0.1:4100"),
     )
     .addOption(
       new Option("--mina-node-url <mina-node-url>", "Mina GraphQL URL")

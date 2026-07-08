@@ -336,8 +336,6 @@ describe(
 
         const archiveClient = new ArchiveClient(localArchiveBaseUrl, {
           treasuryOwnerContractAddress: deployTargetPublicKey.toBase58(),
-          // SmartContract (non-token-contract) events live under the default token id.
-          treasuryOwnerTokenId: TokenId.default.toString(),
           archiveRequestTimeoutMs: ARCHIVE_REQUEST_TIMEOUT_MS,
         });
         const initialHeights = await archiveClient.getMaxBlockHeights();

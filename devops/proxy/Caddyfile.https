@@ -1,0 +1,41 @@
+{
+	email {$LETSENCRYPT_EMAIL}
+	acme_ca {$LETSENCRYPT_ACME_CA:https://acme-v02.api.letsencrypt.org/directory}
+}
+
+{$PUBLIC_WEB_DOMAIN} {
+	encode zstd gzip
+
+	handle_path /api/* {
+		reverse_proxy api:4000
+	}
+
+	handle_path /indexer/* {
+		reverse_proxy indexer-api:4001
+	}
+
+	handle_path /processor/* {
+		reverse_proxy processor-api:4002
+	}
+
+	handle_path /mina/* {
+		reverse_proxy {$MINA_NODE_PROXY_UPSTREAM}
+	}
+
+	reverse_proxy web:{$WEB_PORT:3100}
+}
+
+{$PUBLIC_API_DOMAIN} {
+	encode zstd gzip
+	reverse_proxy api:4000
+}
+
+{$PUBLIC_INDEXER_DOMAIN} {
+	encode zstd gzip
+	reverse_proxy indexer-api:4001
+}
+
+{$PUBLIC_PROCESSOR_DOMAIN} {
+	encode zstd gzip
+	reverse_proxy processor-api:4002
+}

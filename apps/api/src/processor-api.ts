@@ -11,7 +11,10 @@ async function main(): Promise<void> {
   const config = loadApiConfig({
     treasuryOwnerContractClass: TreasuryOwnerSmartContract,
   });
-  const dataSource = createProcessorDataSource(config, proposalProcessorOutputEntities);
+  const dataSource = createProcessorDataSource(
+    config,
+    proposalProcessorOutputEntities,
+  );
 
   await dataSource.initialize();
 
@@ -28,6 +31,7 @@ async function main(): Promise<void> {
   const apiServer = new HttpApiServer({
     name: "processor-api",
     port: config.processorApiPort,
+    corsAllowedOrigins: config.corsAllowedOrigins,
     registerRoutes: async (app) => {
       processorStatusRoutes(app);
       processorCrudRoutes(app);
