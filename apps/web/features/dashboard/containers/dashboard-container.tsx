@@ -117,7 +117,11 @@ export function DashboardContainer({
     }
 
     setSelectedLifecycleId((previous) => {
-      if (followCurrentLifecycle || previous === null || previous > currentLifecycleId) {
+      if (
+        followCurrentLifecycle ||
+        previous === null ||
+        previous > currentLifecycleId
+      ) {
         return currentLifecycleId;
       }
       return previous;
@@ -130,23 +134,36 @@ export function DashboardContainer({
     effectiveLifecycleId !== undefined &&
     currentLifecycleId !== undefined &&
     effectiveLifecycleId < currentLifecycleId;
-  const displayedPeriod = isHistoricalLifecycle ? "cooldown" : (treasury.currentPeriod ?? "proposal");
-  const TableComponent = resolveTableComponent(displayedPeriod, isHistoricalLifecycle);
+  const displayedPeriod = isHistoricalLifecycle
+    ? "cooldown"
+    : (treasury.currentPeriod ?? "proposal");
+  const TableComponent = resolveTableComponent(
+    displayedPeriod,
+    isHistoricalLifecycle,
+  );
   const dashboardSortConfig = useMemo(
     () => resolveInitialDashboardSort(displayedPeriod, isHistoricalLifecycle),
     [displayedPeriod, isHistoricalLifecycle],
   );
-  const [sortKey, setSortKey] = useState<TreasuryProposalTableSortKey>(dashboardSortConfig.key);
-  const [sortDirection, setSortDirection] = useState<TreasuryProposalTableSortDirection>(
-    dashboardSortConfig.direction,
+  const [sortKey, setSortKey] = useState<TreasuryProposalTableSortKey>(
+    dashboardSortConfig.key,
   );
-  const slotDurationMs = Number.parseInt(process.env.NEXT_PUBLIC_SLOT_DURATION_MS ?? "", 10);
+  const [sortDirection, setSortDirection] =
+    useState<TreasuryProposalTableSortDirection>(dashboardSortConfig.direction);
+  const slotDurationMs = Number.parseInt(
+    process.env.NEXT_PUBLIC_SLOT_DURATION_MS ?? "",
+    10,
+  );
 
   useEffect(() => {
     setSortKey(dashboardSortConfig.key);
     setSortDirection(dashboardSortConfig.direction);
     setPage(1);
-  }, [dashboardSortConfig.direction, dashboardSortConfig.key, effectiveLifecycleId]);
+  }, [
+    dashboardSortConfig.direction,
+    dashboardSortConfig.key,
+    effectiveLifecycleId,
+  ]);
 
   const lifecycleOptions = useMemo(() => {
     if (currentLifecycleId === undefined) {
@@ -168,7 +185,10 @@ export function DashboardContainer({
       process.env.NEXT_PUBLIC_LIFECYCLE_PERIOD_DURATION ?? "",
       10,
     );
-    if (!Number.isFinite(lifecyclePeriodDuration) || lifecyclePeriodDuration <= 0) {
+    if (
+      !Number.isFinite(lifecyclePeriodDuration) ||
+      lifecyclePeriodDuration <= 0
+    ) {
       return undefined;
     }
     return buildTreasuryLifecyclePeriodMetadata({
@@ -176,7 +196,10 @@ export function DashboardContainer({
       currentGlobalSlot: treasury.currentGlobalSlot,
       treasuryDeployedAtSlot: treasury.treasuryDeployedAtSlot,
       lifecyclePeriodDuration,
-      slotDurationMs: Number.isFinite(slotDurationMs) && slotDurationMs > 0 ? slotDurationMs : undefined,
+      slotDurationMs:
+        Number.isFinite(slotDurationMs) && slotDurationMs > 0
+          ? slotDurationMs
+          : undefined,
     });
   }, [
     effectiveLifecycleId,
@@ -196,7 +219,8 @@ export function DashboardContainer({
     (nextLifecycleId: number) => {
       setSelectedLifecycleId(nextLifecycleId);
       setFollowCurrentLifecycle(
-        currentLifecycleId !== undefined && nextLifecycleId >= currentLifecycleId,
+        currentLifecycleId !== undefined &&
+          nextLifecycleId >= currentLifecycleId,
       );
     },
     [currentLifecycleId],
@@ -204,7 +228,9 @@ export function DashboardContainer({
 
   const handleProposalClick = useCallback(
     (proposal: TreasuryProposalTableEntry) => {
-      const nextProposalId = encodeURIComponent(proposal.proposalAddress ?? proposal.id);
+      const nextProposalId = encodeURIComponent(
+        proposal.proposalAddress ?? proposal.id,
+      );
       router.push(`/proposals/${nextProposalId}`, { scroll: false });
     },
     [router],
@@ -212,11 +238,11 @@ export function DashboardContainer({
 
   const handleCreateProposalClick = useCallback(() => {
     const href =
-      effectiveLifecycleId !== undefined
-        ? `/proposals/create?lifecycleId=${effectiveLifecycleId}&from=dashboard`
+      currentLifecycleId !== undefined
+        ? `/proposals/create?lifecycleId=${currentLifecycleId}&from=dashboard`
         : "/proposals/create?from=dashboard";
     router.push(href, { scroll: false });
-  }, [effectiveLifecycleId, router]);
+  }, [currentLifecycleId, router]);
 
   useEffect(() => {
     if (!settings.hydrated || !settings.value.apiUrl) {
@@ -247,7 +273,9 @@ export function DashboardContainer({
           setEntries([]);
           setTotalCount(0);
           setAppError(
-            error instanceof Error ? error.message : "Failed to fetch lifecycle proposals.",
+            error instanceof Error
+              ? error.message
+              : "Failed to fetch lifecycle proposals.",
           );
         }
       })
@@ -278,9 +306,13 @@ export function DashboardContainer({
         loading={lifecycleLoading}
         lifecycleId={effectiveLifecycleId}
         currentPeriod={displayedPeriod}
-        currentPeriodProgress={isHistoricalLifecycle ? 100 : treasury.currentPeriodProgress}
+        currentPeriodProgress={
+          isHistoricalLifecycle ? 100 : treasury.currentPeriodProgress
+        }
         currentSlot={treasury.currentGlobalSlot}
-        isHistoricalLifecycle={!lifecycleStarted ? false : isHistoricalLifecycle}
+        isHistoricalLifecycle={
+          !lifecycleStarted ? false : isHistoricalLifecycle
+        }
         lifecycleOptions={lifecycleOptions}
         onLifecycleChange={handleLifecycleChange}
         periodMetadata={lifecycleMetadata}
@@ -293,7 +325,9 @@ export function DashboardContainer({
         pageSize={pageSize}
         totalCount={totalCount}
         onPageChange={setPage}
-        onPageSizeChange={(nextPageSize) => setPageSize(nextPageSize as 10 | 20 | 30 | 40 | 50)}
+        onPageSizeChange={(nextPageSize) =>
+          setPageSize(nextPageSize as 10 | 20 | 30 | 40 | 50)
+        }
         sortKey={sortKey}
         sortDirection={sortDirection}
         onSortChange={(nextSortKey, nextSortDirection) => {

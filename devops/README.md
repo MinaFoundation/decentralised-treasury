@@ -86,6 +86,20 @@ packages/local-blockchain/.env.local-blockchain
 Keep Mina private keys in `apps/cli/.env.<family>`. The API, web, and devops env
 files should not contain funded Mina private keys.
 
+For the testnet family, endpoint values are split by where they run:
+
+```text
+apps/cli/.env.testnet  MINA_NODE_URL=http://127.0.0.1:3001/graphql
+apps/cli/.env.testnet  ARCHIVE_NODE_URL=http://127.0.0.1:8282
+devops/.env.testnet    MINA_NODE_PROXY_UPSTREAM=http://host.docker.internal:3001
+apps/api/.env.testnet  ARCHIVE_NODE_URL=http://host.docker.internal:8282
+apps/web/.env.testnet  NEXT_PUBLIC_MINA_NODE_URL=http://127.0.0.1:3100/mina/graphql
+```
+
+The CLI uses host-facing URLs. Compose containers use
+`host.docker.internal` when the Mina daemon and archive node run on the Docker
+host. The browser uses full URLs through the local Caddy web origin.
+
 `.env.compose.example` is kept for manual Compose experiments that use a single
 env file. Do not use it as the primary testnet runbook unless you intentionally
 want to bypass the generated family env layout.
@@ -137,10 +151,10 @@ Set browser/API origins in `apps/web/.env.testnet` and `apps/api/.env.testnet`.
 The web app can stay same-origin through the public web domain:
 
 ```env
-NEXT_PUBLIC_TREASURY_API_URL=/api
-NEXT_PUBLIC_INDEXER_API_URL=/indexer
-NEXT_PUBLIC_PROCESSOR_API_URL=/processor
-NEXT_PUBLIC_MINA_NODE_URL=/mina/graphql
+NEXT_PUBLIC_TREASURY_API_URL=https://treasury.example.com/api
+NEXT_PUBLIC_INDEXER_API_URL=https://treasury.example.com/indexer
+NEXT_PUBLIC_PROCESSOR_API_URL=https://treasury.example.com/processor
+NEXT_PUBLIC_MINA_NODE_URL=https://treasury.example.com/mina/graphql
 CORS_ALLOWED_ORIGINS=https://treasury.example.com
 ```
 

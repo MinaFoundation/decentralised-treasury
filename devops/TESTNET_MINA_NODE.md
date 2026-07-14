@@ -11,7 +11,7 @@ The commands assume:
 - Local network root: `~/.mina-network`
 - Mina daemon client port: `3000`
 - Mina GraphQL port: `3001`
-- Archive GraphQL port: `3086`
+- Archive GraphQL port: `8282`
 - Ephemeral archive Postgres port: `5433`
 
 Set these once in your shell before running the examples:
@@ -71,7 +71,7 @@ Run this from the Mina repo root:
 cd "$MINA_REPO"
 
 nix-shell -p openssl git python3 --run \
-  './scripts/mina-local-network/single-node-load.sh --no-proofs --epoch-min 30 --indefinite --archive'
+  './scripts/mina-local-network/single-node-load.sh --no-proofs --epoch-min 30 --indefinite --archive --archive-graphql-port 8282'
 ```
 
 This starts:
@@ -83,6 +83,29 @@ This starts:
 - continuous payment load
 
 The wrapper is needed because the local script requires an OpenSSL that can generate Ed25519 keys, plus `git` and `python3`.
+The `--archive-graphql-port 8282` flag makes the archive GraphQL endpoint match
+the treasury `ARCHIVE_NODE_URL` defaults in this repo.
+
+## Export Treasury Endpoint Inputs
+
+After the Mina daemon and archive node are running, export the endpoint values
+that the treasury env bootstrap reads:
+
+```bash
+export MINA_NODE_URL=http://127.0.0.1:3001/graphql
+export ARCHIVE_NODE_URL=http://127.0.0.1:8282
+export MINA_NODE_PROXY_UPSTREAM=http://host.docker.internal:3001
+export COMPOSE_ARCHIVE_NODE_URL=http://host.docker.internal:8282
+export NEXT_PUBLIC_TREASURY_API_URL=http://127.0.0.1:3100/api
+export NEXT_PUBLIC_INDEXER_API_URL=http://127.0.0.1:3100/indexer
+export NEXT_PUBLIC_PROCESSOR_API_URL=http://127.0.0.1:3100/processor
+export NEXT_PUBLIC_MINA_NODE_URL=http://127.0.0.1:3100/mina/graphql
+```
+
+`MINA_NODE_URL` and `ARCHIVE_NODE_URL` are for CLI/operator commands on the
+host. `MINA_NODE_PROXY_UPSTREAM` and `COMPOSE_ARCHIVE_NODE_URL` are for Compose
+containers, which reach the Mina node and archive node through
+`host.docker.internal`.
 
 ## Treasury Lifecycle Alignment
 
@@ -151,7 +174,7 @@ export ONLINE_WHALE_PRIVATE_KEY="<Private key from dump-keypair>"
 Use this value only as `SENDER_PRIVATE_KEY` in the CLI/operator env. Do not put it in `apps/api/.env.testnet`, `apps/web/.env.testnet`, or `devops/.env.testnet`.
 
 Now return to `TESTNET.md` and bootstrap the treasury testnet env files from the
-decentralized treasury repo:
+decentralized treasury repo. The command reads the endpoint exports above:
 
 ```bash
 cd "$TREASURY_REPO"
@@ -164,19 +187,22 @@ these Mina-side values:
 
 ```text
 MINA_NODE_URL=http://127.0.0.1:3001/graphql
-ARCHIVE_NODE_URL=http://127.0.0.1:3086/graphql
-NEXT_PUBLIC_MINA_NODE_URL=/mina/graphql
+ARCHIVE_NODE_URL=http://127.0.0.1:8282
+NEXT_PUBLIC_TREASURY_API_URL=http://127.0.0.1:3100/api
+NEXT_PUBLIC_INDEXER_API_URL=http://127.0.0.1:3100/indexer
+NEXT_PUBLIC_PROCESSOR_API_URL=http://127.0.0.1:3100/processor
+NEXT_PUBLIC_MINA_NODE_URL=http://127.0.0.1:3100/mina/graphql
 MINA_NODE_PROXY_UPSTREAM=http://host.docker.internal:3001
-Compose ARCHIVE_NODE_URL=http://host.docker.internal:3086/graphql
+Compose ARCHIVE_NODE_URL=http://host.docker.internal:8282
 LIFECYCLE_PERIOD_DURATION=48
 SQLITE_DATA_DIRECTORY=./.data/testnet-sqlite
 NEXT_PUBLIC_LIFECYCLE_PERIOD_DURATION=48
 NEXT_PUBLIC_SLOT_DURATION_MS=37500
 ```
 
-The browser uses the same-origin `/mina/graphql` proxy path because it connects
-through the Caddy web origin. Compose containers use `host.docker.internal` to
-reach the archive and Mina node running on the Docker host.
+The browser uses full URLs through the local Caddy web origin. Compose
+containers use `host.docker.internal` to reach the archive and Mina node running
+on the Docker host.
 
 ## Set The Treasury Deployment Slot
 
@@ -425,7 +451,7 @@ Use reset when you want a clean local chain:
 cd "$MINA_REPO"
 
 nix-shell -p openssl git python3 --run \
-  './scripts/mina-local-network/single-node-load.sh --no-proofs --epoch-min 30 --indefinite --archive'
+  './scripts/mina-local-network/single-node-load.sh --no-proofs --epoch-min 30 --indefinite --archive --archive-graphql-port 8282'
 ```
 
 Use inherit when you want to reuse the existing `~/.mina-network` keys and config:
@@ -434,7 +460,7 @@ Use inherit when you want to reuse the existing `~/.mina-network` keys and confi
 cd "$MINA_REPO"
 
 nix-shell -p openssl git python3 --run \
-  './scripts/mina-local-network/single-node-load.sh --no-proofs --epoch-min 30 --indefinite --archive -- -c inherit'
+  './scripts/mina-local-network/single-node-load.sh --no-proofs --epoch-min 30 --indefinite --archive --archive-graphql-port 8282 -- -c inherit'
 ```
 
 A normal daemon restart that does not reset or delete `~/.mina-network` keeps the same keypair. A fresh reset regenerates it.

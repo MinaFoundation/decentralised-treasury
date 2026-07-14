@@ -7,7 +7,6 @@ import { TreasuryProposalDetail } from "@repo/ui/treasury-proposal-detail";
 import { TreasuryTransactionFlowDialog } from "@repo/ui/treasury-transaction-flow-dialog";
 import type { TreasuryTransactionSummaryItem } from "@repo/ui/treasury-transaction-flow-dialog";
 import { useAppShellStore } from "../../app-shell/store/app-shell-store";
-import { resolveEndpointUrl } from "../../endpoint-settings/lib/endpoint-url";
 import { useEndpointSettingsState } from "../../endpoint-settings/store/endpoint-settings-store.selectors";
 import { useMinaBlockStore } from "../../mina-blocks/store/mina-block-store";
 import { useTreasuryState } from "../../treasury/store/treasury-store.selectors";
@@ -25,6 +24,7 @@ import {
   type ProposalVoteChoice,
 } from "../lib/proposal-prover-runtime";
 import { useProposalProverWorker } from "../hooks/use-proposal-prover-worker";
+import { signWithAuroWalletAndSubmitZkapp } from "../lib/auro-wallet-zkapp-submission";
 import { submitProposalContents } from "../lib/proposal-content-submission";
 import {
   getProposalContentRetryRecord,
@@ -53,94 +53,10 @@ interface PreparedExecuteFlow {
   transactionHash?: string;
 }
 
-interface DirectSendZkappResponse {
-  data?: {
-    sendZkapp?: {
-      zkapp?: {
-        hash?: string | null;
-        id?: string | null;
-        failureReason?:
-          | Array<{
-              failures?: string[] | null;
-              index?: number | null;
-            }>
-          | null;
-      } | null;
-    } | null;
-  };
-  errors?: Array<{ message?: string }>;
-}
-
-function buildSendZkappMutation(transactionJson: string): string {
-  return `mutation {
-  sendZkapp(input: {
-    zkappCommand: ${JSON.stringify(JSON.parse(transactionJson), null, 2).replace(
-      /\"(\S+)\"\s*:/gm,
-      "$1:",
-    )}
-  }) {
-    zkapp {
-      hash
-      id
-      failureReason {
-        failures
-        index
-      }
-    }
-  }
-}`;
-}
-
-async function submitZkappDirectly(minaNodeUrl: string, transactionJson: string): Promise<string> {
-  const resolvedMinaNodeUrl = resolveEndpointUrl(minaNodeUrl);
-  const requestBody = {
-    query: buildSendZkappMutation(transactionJson),
-  };
-
-  console.info("[proposal-prover][direct-send] request", {
-    minaNodeUrl: resolvedMinaNodeUrl,
-    requestBody,
-  });
-
-  const response = await fetch(resolvedMinaNodeUrl, {
-    method: "POST",
-    headers: {
-      "content-type": "application/json",
-    },
-    body: JSON.stringify(requestBody),
-  });
-
-  if (!response.ok) {
-    throw new Error(`Direct transaction submit failed with status ${response.status}.`);
-  }
-
-  const payload = (await response.json()) as DirectSendZkappResponse;
-  if (payload.errors?.length) {
-    throw new Error(payload.errors.map((error) => error.message).filter(Boolean).join("; "));
-  }
-
-  const zkapp = payload.data?.sendZkapp?.zkapp;
-  if (!zkapp) {
-    throw new Error("Direct transaction submit did not return a zkApp payload.");
-  }
-
-  if (zkapp.failureReason?.length) {
-    throw new Error(
-      `Direct transaction submit was rejected: ${zkapp.failureReason
-        .map((reason) => `${reason.index ?? "unknown"}:${reason.failures?.join(", ") ?? "unknown"}`)
-        .join("; ")}`,
-    );
-  }
-
-  const hash = zkapp.hash ?? zkapp.id;
-  if (!hash) {
-    throw new Error("Direct transaction submit did not return a transaction hash.");
-  }
-
-  return hash;
-}
-
-function logWalletSubmissionTransaction(label: string, transactionJson: string): void {
+function logWalletSubmissionTransaction(
+  label: string,
+  transactionJson: string,
+): void {
   try {
     const parsed = JSON.parse(transactionJson) as {
       feePayer?: { authorization?: unknown };
@@ -171,10 +87,13 @@ function logWalletSubmissionTransaction(label: string, transactionJson: string):
         })) ?? [],
     });
   } catch (error) {
-    console.error("[proposal-prover][wallet-submit] failed to inspect transaction json", {
-      label,
-      error,
-    });
+    console.error(
+      "[proposal-prover][wallet-submit] failed to inspect transaction json",
+      {
+        label,
+        error,
+      },
+    );
   }
 }
 
@@ -201,7 +120,11 @@ function buildVoteSummaryItems(
   return [
     { label: "Proposal title", value: proposalTitle },
     { label: "Vote", value: vote.charAt(0).toUpperCase() + vote.slice(1) },
-    { label: "Proposal address", value: proposal.proposalAddress ?? "-", mono: true },
+    {
+      label: "Proposal address",
+      value: proposal.proposalAddress ?? "-",
+      mono: true,
+    },
     { label: "Voting weight", value: votingWeight ?? "-" },
   ];
 }
@@ -215,7 +138,11 @@ function buildExecuteSummaryItems(
     { label: "Proposal", value: proposal.id },
     { label: "Recipient wallet", value: recipient, mono: true },
     { label: "Amount to pay out", value: `${amount} MINA` },
-    { label: "Proposal address", value: proposal.proposalAddress ?? proposal.id, mono: true },
+    {
+      label: "Proposal address",
+      value: proposal.proposalAddress ?? proposal.id,
+      mono: true,
+    },
   ];
 }
 
@@ -231,9 +158,12 @@ function getVoteTransactionDetails(
       | Record<string, unknown>
       | unknown[];
     const sanitizedTransaction =
-      parsedTransaction && typeof parsedTransaction === "object" && !Array.isArray(parsedTransaction)
+      parsedTransaction &&
+      typeof parsedTransaction === "object" &&
+      !Array.isArray(parsedTransaction)
         ? (() => {
-            const { accountUpdates: _accountUpdates, ...rest } = parsedTransaction;
+            const { accountUpdates: _accountUpdates, ...rest } =
+              parsedTransaction;
             return rest;
           })()
         : parsedTransaction;
@@ -264,9 +194,12 @@ function getExecuteTransactionDetails(
       | Record<string, unknown>
       | unknown[];
     const sanitizedTransaction =
-      parsedTransaction && typeof parsedTransaction === "object" && !Array.isArray(parsedTransaction)
+      parsedTransaction &&
+      typeof parsedTransaction === "object" &&
+      !Array.isArray(parsedTransaction)
         ? (() => {
-            const { accountUpdates: _accountUpdates, ...rest } = parsedTransaction;
+            const { accountUpdates: _accountUpdates, ...rest } =
+              parsedTransaction;
             return rest;
           })()
         : parsedTransaction;
@@ -297,30 +230,35 @@ export function ProposalDetailPageContainer({
   const forceRefresh = useMinaBlockStore((state) => state.forceRefresh);
   const setAppError = useAppShellStore((state) => state.setError);
   const proofsEnabled = resolveProofsEnabled();
-  const {
-    compile,
-    buildAndProveVoteProposal,
-    buildAndProveExecuteProposal,
-  } = useProposalProverWorker(proofsEnabled);
-  const [proposal, setProposal] = useState<ReturnType<typeof mapProposalItemToDetailProposal> | null>(
+  const { compile, buildAndProveVoteProposal, buildAndProveExecuteProposal } =
+    useProposalProverWorker(proofsEnabled);
+  const [proposal, setProposal] = useState<ReturnType<
+    typeof mapProposalItemToDetailProposal
+  > | null>(null);
+  const [votes, setVotes] = useState<
+    Parameters<typeof TreasuryProposalDetail>[0]["votes"]
+  >([]);
+  const [executions, setExecutions] = useState<
+    Parameters<typeof TreasuryProposalDetail>[0]["executions"]
+  >([]);
+  const [loading, setLoading] = useState(false);
+  const [voteRequest, setVoteRequest] = useState<ProposalVoteChoice | null>(
     null,
   );
-  const [votes, setVotes] = useState<Parameters<typeof TreasuryProposalDetail>[0]["votes"]>([]);
-  const [executions, setExecutions] = useState<Parameters<typeof TreasuryProposalDetail>[0]["executions"]>(
-    [],
-  );
-  const [loading, setLoading] = useState(false);
-  const [voteRequest, setVoteRequest] = useState<ProposalVoteChoice | null>(null);
   const [voteDialogOpen, setVoteDialogOpen] = useState(false);
-  const [preparedVoteFlow, setPreparedVoteFlow] = useState<PreparedVoteFlow | null>(null);
+  const [preparedVoteFlow, setPreparedVoteFlow] =
+    useState<PreparedVoteFlow | null>(null);
   const [executeAmount, setExecuteAmount] = useState<string | null>(null);
   const [executeDialogOpen, setExecuteDialogOpen] = useState(false);
-  const [preparedExecuteFlow, setPreparedExecuteFlow] = useState<PreparedExecuteFlow | null>(null);
+  const [preparedExecuteFlow, setPreparedExecuteFlow] =
+    useState<PreparedExecuteFlow | null>(null);
   const [contentRetryRecord, setContentRetryRecord] =
     useState<ProposalContentRetryRecord | null>(null);
   const [isRetryingContentSubmission, setIsRetryingContentSubmission] =
     useState(false);
-  const [contentRetryError, setContentRetryError] = useState<string | null>(null);
+  const [contentRetryError, setContentRetryError] = useState<string | null>(
+    null,
+  );
   const voteRequestRef = useRef<ProposalVoteChoice | null>(null);
   const preparedVoteFlowRef = useRef<PreparedVoteFlow | null>(null);
   const executeAmountRef = useRef<string | null>(null);
@@ -345,11 +283,12 @@ export function ProposalDetailPageContainer({
         const nextProposal =
           items.find(
             (item) =>
-              item.proposalPublicKey === proposalId ||
-              item.id === proposalId,
+              item.proposalPublicKey === proposalId || item.id === proposalId,
           ) ?? null;
 
-        const nextPresentedProposal = nextProposal ? mapProposalItemToDetailProposal(nextProposal) : null;
+        const nextPresentedProposal = nextProposal
+          ? mapProposalItemToDetailProposal(nextProposal)
+          : null;
         setProposal(nextPresentedProposal);
 
         if (!nextPresentedProposal?.proposalAddress) {
@@ -360,8 +299,14 @@ export function ProposalDetailPageContainer({
 
         try {
           const [nextVotes, nextExecutions] = await Promise.all([
-            fetchProposalVotes(settings.value.apiUrl, nextPresentedProposal.proposalAddress),
-            fetchProposalExecutions(settings.value.apiUrl, nextPresentedProposal.proposalAddress),
+            fetchProposalVotes(
+              settings.value.apiUrl,
+              nextPresentedProposal.proposalAddress,
+            ),
+            fetchProposalExecutions(
+              settings.value.apiUrl,
+              nextPresentedProposal.proposalAddress,
+            ),
           ]);
           if (cancelled) {
             return;
@@ -375,7 +320,9 @@ export function ProposalDetailPageContainer({
           setVotes([]);
           setExecutions([]);
           setAppError(
-            error instanceof Error ? error.message : "Failed to fetch proposal vote and execution details.",
+            error instanceof Error
+              ? error.message
+              : "Failed to fetch proposal vote and execution details.",
           );
         }
       })
@@ -387,7 +334,11 @@ export function ProposalDetailPageContainer({
         setProposal(null);
         setVotes([]);
         setExecutions([]);
-        setAppError(error instanceof Error ? error.message : "Failed to fetch proposal detail.");
+        setAppError(
+          error instanceof Error
+            ? error.message
+            : "Failed to fetch proposal detail.",
+        );
       })
       .finally(() => {
         if (!cancelled) {
@@ -398,7 +349,13 @@ export function ProposalDetailPageContainer({
     return () => {
       cancelled = true;
     };
-  }, [proposalId, refreshToken, setAppError, settings.hydrated, settings.value.apiUrl]);
+  }, [
+    proposalId,
+    refreshToken,
+    setAppError,
+    settings.hydrated,
+    settings.value.apiUrl,
+  ]);
 
   const hasConnectedWallet = wallet.status === "connected";
   const presentedProposal = useMemo(
@@ -453,7 +410,10 @@ export function ProposalDetailPageContainer({
     };
 
     syncRetryRecord();
-    window.addEventListener(PROPOSAL_CONTENT_RETRIES_CHANGED_EVENT, syncRetryRecord);
+    window.addEventListener(
+      PROPOSAL_CONTENT_RETRIES_CHANGED_EVENT,
+      syncRetryRecord,
+    );
     window.addEventListener("storage", syncRetryRecord);
     return () => {
       window.removeEventListener(
@@ -541,9 +501,12 @@ export function ProposalDetailPageContainer({
   if (!presentedProposal) {
     return (
       <section className="rounded-2xl border border-border/70 bg-card p-6 shadow-sm">
-        <h2 className="text-xl font-semibold tracking-tight">Proposal not found</h2>
+        <h2 className="text-xl font-semibold tracking-tight">
+          Proposal not found
+        </h2>
         <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
-          The selected proposal could not be found in the current indexed dataset.
+          The selected proposal could not be found in the current indexed
+          dataset.
         </p>
       </section>
     );
@@ -568,7 +531,9 @@ export function ProposalDetailPageContainer({
         contentRetryError={
           contentRetryError ?? matchingContentRetryRecord?.lastError ?? null
         }
-        contentRetryLastAttemptAt={matchingContentRetryRecord?.lastAttemptAt ?? null}
+        contentRetryLastAttemptAt={
+          matchingContentRetryRecord?.lastAttemptAt ?? null
+        }
         hasConnectedWallet={hasConnectedWallet}
         connectedWalletVotingWeight={wallet.accountInfo?.votingWeight}
         hasConnectedProposerWallet={hasConnectedProposerWallet}
@@ -615,7 +580,10 @@ export function ProposalDetailPageContainer({
           router.push(`/?lifecycleId=${lifecycleId}`);
         }}
         onExecutePayoutClick={(amount) => {
-          if (!presentedProposal.proposalAddress || !presentedProposal.recipient) {
+          if (
+            !presentedProposal.proposalAddress ||
+            !presentedProposal.recipient
+          ) {
             setAppError("Proposal execution details are missing.");
             return;
           }
@@ -636,7 +604,9 @@ export function ProposalDetailPageContainer({
           kind="vote"
           autoCloseDelaySeconds={5}
           senderAddress={wallet.address ?? null}
-          transactionDetailsCode={getVoteTransactionDetails(preparedVoteFlow?.preparedTransaction ?? null)}
+          transactionDetailsCode={getVoteTransactionDetails(
+            preparedVoteFlow?.preparedTransaction ?? null,
+          )}
           submitLabel="Cast vote transaction"
           summaryItems={buildVoteSummaryItems(
             presentedProposal,
@@ -679,15 +649,20 @@ export function ProposalDetailPageContainer({
           }}
           onSignAndSend={async (context) => {
             if (!preparedVoteFlowRef.current?.provedTransactionJson) {
-              throw new Error("Vote transaction was not prepared before signing.");
+              throw new Error(
+                "Vote transaction was not prepared before signing.",
+              );
             }
             logWalletSubmissionTransaction(
-              "vote before direct send",
+              "vote before Auro wallet sign",
               preparedVoteFlowRef.current.provedTransactionJson,
             );
-            const hash = await submitZkappDirectly(
+            const hash = await signWithAuroWalletAndSubmitZkapp(
               settings.value.minaNodeUrl,
               preparedVoteFlowRef.current.provedTransactionJson,
+              context.fee,
+              context.memo,
+              context.nonce,
             );
             if (preparedVoteFlowRef.current) {
               preparedVoteFlowRef.current = {
@@ -773,17 +748,22 @@ export function ProposalDetailPageContainer({
             preparedExecuteFlowRef.current = nextPreparedExecuteFlow;
             setPreparedExecuteFlow(nextPreparedExecuteFlow);
           }}
-          onSignAndSend={async () => {
+          onSignAndSend={async (context) => {
             if (!preparedExecuteFlowRef.current?.provedTransactionJson) {
-              throw new Error("Execute transaction was not prepared before signing.");
+              throw new Error(
+                "Execute transaction was not prepared before signing.",
+              );
             }
             logWalletSubmissionTransaction(
-              "execute before direct send",
+              "execute before Auro wallet sign",
               preparedExecuteFlowRef.current.provedTransactionJson,
             );
-            const hash = await submitZkappDirectly(
+            const hash = await signWithAuroWalletAndSubmitZkapp(
               settings.value.minaNodeUrl,
               preparedExecuteFlowRef.current.provedTransactionJson,
+              context.fee,
+              context.memo,
+              context.nonce,
             );
             if (preparedExecuteFlowRef.current) {
               preparedExecuteFlowRef.current = {

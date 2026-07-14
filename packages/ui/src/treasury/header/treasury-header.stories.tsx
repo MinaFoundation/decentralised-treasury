@@ -41,6 +41,8 @@ const defaultWalletArgs = {
   defaultSettings: {
     networkId: "MAINNET" as const,
     apiUrl: "https://api.treasury.local",
+    indexerApiUrl: "https://treasury.local/indexer",
+    processorApiUrl: "https://treasury.local/processor",
     minaNodeUrl: "https://berkeley.minascan.io/graphql",
   },
 } satisfies Partial<TreasuryWalletHeaderProps>;
@@ -48,7 +50,10 @@ const defaultWalletArgs = {
 const connectedWalletArgs = {
   walletConnectStatus: "connected" as const,
   walletAddress: "B62qkEdNmGbUVaUnVtwMeMo9G1QBgfp9c3K7j4FbmXn21zG8ssvaPvi",
-} satisfies Pick<TreasuryWalletHeaderProps, "walletConnectStatus" | "walletAddress">;
+} satisfies Pick<
+  TreasuryWalletHeaderProps,
+  "walletConnectStatus" | "walletAddress"
+>;
 
 const connectedWalletAccountInfo = {
   minaBalance: "284,120 MINA",
@@ -278,7 +283,9 @@ export const SearchableWalletHeader = {
     ...connectedWalletArgs,
     walletAccountInfo: connectedWalletAccountInfo,
   } satisfies Partial<TreasuryWalletHeaderProps>,
-  render: (args: TreasuryWalletHeaderProps) => <SearchableWalletHeaderStory {...args} />,
+  render: (args: TreasuryWalletHeaderProps) => (
+    <SearchableWalletHeaderStory {...args} />
+  ),
 };
 
 export const PausedWalletHeader = {
@@ -302,10 +309,7 @@ export const CustomWalletRenderHeader = {
       <TreasuryWalletHeader
         {...args}
         renderWalletButton={({ isCompact }) => (
-          <button
-            type="button"
-            className="rounded-sm border px-3 py-2 text-sm"
-          >
+          <button type="button" className="rounded-sm border px-3 py-2 text-sm">
             {isCompact ? "Compact wallet action" : "Custom wallet action"}
           </button>
         )}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { TreasuryWalletHeader } from "@repo/ui/treasury-header";
 import { buildTreasuryHeaderProps } from "./treasury-header-view-model";
@@ -12,9 +12,7 @@ import { useTreasuryHeaderBalance } from "../hooks/use-treasury-header-balance";
 import { useTreasuryStatus } from "../hooks/use-treasury-status";
 import { useWalletAccountInfo } from "../hooks/use-wallet-account-info";
 import { useWalletSession } from "../hooks/use-wallet-session";
-import {
-  useHeaderSearchState,
-} from "../store/treasury-header-store.selectors";
+import { useHeaderSearchState } from "../store/treasury-header-store.selectors";
 import { useTreasuryHeaderStore } from "../store/treasury-header-store";
 import { useMinaBlockStore } from "../../mina-blocks/store/mina-block-store";
 import { useProposalDrafts } from "../../proposals/hooks/use-proposal-drafts";
@@ -27,20 +25,13 @@ export function TreasuryHeaderContainer() {
   const search = useHeaderSearchState();
   const treasury = useTreasuryState();
   const settings = useEndpointSettingsState();
-  const setSearchQuery = useTreasuryHeaderStore((state) => state.setSearchQuery);
+  const setSearchQuery = useTreasuryHeaderStore(
+    (state) => state.setSearchQuery,
+  );
   const { wallet, connectWallet, disconnectWallet } = useWalletSession();
   const { saveSettings } = useEndpointSettings();
   const forceRefresh = useMinaBlockStore((state) => state.forceRefresh);
   const { headerDraftProposals, removeDraft } = useProposalDrafts();
-  const [selectedLifecycleId, setSelectedLifecycleId] = useState<number | undefined>(undefined);
-
-  useEffect(() => {
-    const nextValue = Number.parseInt(
-      new URLSearchParams(window.location.search).get("lifecycleId") ?? "",
-      10,
-    );
-    setSelectedLifecycleId(Number.isFinite(nextValue) ? nextValue : undefined);
-  }, []);
 
   useHeaderSearch();
   useTreasuryStatus();
@@ -51,7 +42,6 @@ export function TreasuryHeaderContainer() {
     () =>
       buildTreasuryHeaderProps({
         pathname,
-        selectedLifecycleId,
         search,
         treasury,
         settings,
@@ -68,7 +58,9 @@ export function TreasuryHeaderContainer() {
         push: router.push,
         selectDraftProposal: (draftId) => {
           const from = pathname === "/" ? "dashboard" : "proposals";
-          router.push(`/proposals/create?draftId=${encodeURIComponent(draftId)}&from=${from}`);
+          router.push(
+            `/proposals/create?draftId=${encodeURIComponent(draftId)}&from=${from}`,
+          );
         },
         deleteDraftProposal: (draftId) => {
           removeDraft(draftId);
@@ -84,7 +76,6 @@ export function TreasuryHeaderContainer() {
       router.push,
       saveSettings,
       search,
-      selectedLifecycleId,
       setSearchQuery,
       settings,
       treasury,

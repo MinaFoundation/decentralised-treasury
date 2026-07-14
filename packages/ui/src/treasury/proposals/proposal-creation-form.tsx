@@ -1,15 +1,33 @@
 import { AlertTriangle, RotateCw } from "lucide-react";
-import { type FormEvent, type JSX, type ReactNode, useEffect, useMemo, useState } from "react";
+import {
+  type FormEvent,
+  type JSX,
+  type ReactNode,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 import ReactMarkdown, { type Components } from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { useTreasuryIntl } from "../../i18n";
 import { cn } from "../../lib/utils";
 import { Alert, AlertDescription, AlertTitle } from "../../components/ui/alert";
 import { Button } from "../../components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../../components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "../../components/ui/card";
 import { Input } from "../../components/ui/input";
 import { MinaAmountInput } from "../../components/ui/mina-amount-input";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../components/ui/tabs";
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "../../components/ui/tabs";
 import {
   assertZkappUriWithinByteLimit,
   hashMarkdownContentToZkappUri,
@@ -47,10 +65,14 @@ const PROPOSAL_MARKDOWN_COMPONENTS: Components = {
     <h1 className="mb-4 text-2xl font-semibold tracking-tight">{children}</h1>
   ),
   h2: ({ children }: { children?: ReactNode }) => (
-    <h2 className="mb-3 mt-6 text-xl font-semibold tracking-tight first:mt-0">{children}</h2>
+    <h2 className="mb-3 mt-6 text-xl font-semibold tracking-tight first:mt-0">
+      {children}
+    </h2>
   ),
   h3: ({ children }: { children?: ReactNode }) => (
-    <h3 className="mb-2 mt-5 text-lg font-semibold tracking-tight first:mt-0">{children}</h3>
+    <h3 className="mb-2 mt-5 text-lg font-semibold tracking-tight first:mt-0">
+      {children}
+    </h3>
   ),
   p: ({ children }: { children?: ReactNode }) => (
     <p className="mb-4 leading-7 last:mb-0">{children}</p>
@@ -61,7 +83,9 @@ const PROPOSAL_MARKDOWN_COMPONENTS: Components = {
   ol: ({ children }: { children?: ReactNode }) => (
     <ol className="mb-4 list-decimal space-y-2 pl-6 last:mb-0">{children}</ol>
   ),
-  li: ({ children }: { children?: ReactNode }) => <li className="leading-7">{children}</li>,
+  li: ({ children }: { children?: ReactNode }) => (
+    <li className="leading-7">{children}</li>
+  ),
   blockquote: ({ children }: { children?: ReactNode }) => (
     <blockquote className="mb-4 border-l-2 border-border pl-4 italic text-muted-foreground last:mb-0">
       {children}
@@ -73,7 +97,9 @@ const PROPOSAL_MARKDOWN_COMPONENTS: Components = {
     </pre>
   ),
   code: ({ children }: { children?: ReactNode }) => (
-    <code className="rounded bg-background px-1.5 py-0.5 font-mono text-[0.9em]">{children}</code>
+    <code className="rounded bg-background px-1.5 py-0.5 font-mono text-[0.9em]">
+      {children}
+    </code>
   ),
   a: ({ href, children }: { href?: string; children?: ReactNode }) => (
     <a
@@ -101,18 +127,14 @@ const PROPOSAL_MARKDOWN_COMPONENTS: Components = {
     <tr className="border-t border-border/70">{children}</tr>
   ),
   th: ({ children }: { children?: ReactNode }) => (
-    <th className="border border-border/70 px-3 py-2 text-left font-medium">{children}</th>
+    <th className="border border-border/70 px-3 py-2 text-left font-medium">
+      {children}
+    </th>
   ),
   td: ({ children }: { children?: ReactNode }) => (
     <td className="border border-border/70 px-3 py-2 align-top">{children}</td>
   ),
-  input: ({
-    checked,
-    type,
-  }: {
-    checked?: boolean;
-    type?: string;
-  }) =>
+  input: ({ checked, type }: { checked?: boolean; type?: string }) =>
     type === "checkbox" ? (
       <input
         type="checkbox"
@@ -170,15 +192,19 @@ export function TreasuryProposalCreationForm({
   onCancel,
 }: TreasuryProposalCreationFormProps): JSX.Element {
   const intl = useTreasuryIntl();
-  const initialContentParts = useMemo(() => splitProposalMarkdown(initialContent), [initialContent]);
+  const initialContentParts = useMemo(
+    () => splitProposalMarkdown(initialContent),
+    [initialContent],
+  );
   const [title, setTitle] = useState(initialTitle || initialContentParts.title);
   const [content, setContent] = useState(initialContentParts.body);
-  const [amount, setAmount] = useState(normalizeProposalAmountInput(initialAmount));
+  const [amount, setAmount] = useState(
+    normalizeProposalAmountInput(initialAmount),
+  );
   const [recipient, setRecipient] = useState(initialRecipient);
   const [contentTab, setContentTab] = useState<"write" | "preview">("write");
-  const [proposalContractAddress, setProposalContractAddress] = useState<string>(
-    () => generateProposalContractAddress(),
-  );
+  const [proposalContractAddress, setProposalContractAddress] =
+    useState<string>(() => generateProposalContractAddress());
   const [zkAppUriHash, setZkAppUriHash] = useState<string | null>(null);
   const [isZkAppUriHashLoading, setIsZkAppUriHashLoading] = useState(false);
 
@@ -202,11 +228,15 @@ export function TreasuryProposalCreationForm({
   const hasConnectedWallet = normalizedWalletAddress.length > 0;
   const normalizedTitle = title.trim();
   const normalizedContent = content.trim();
-  const markdownContent = buildProposalMarkdown(normalizedTitle, normalizedContent);
+  const markdownContent = buildProposalMarkdown(
+    normalizedTitle,
+    normalizedContent,
+  );
   const previewMarkdownContent = normalizedContent;
   const normalizedRecipient = recipient.trim();
   const parsedAmountValue = parseProposalAmount(amount);
-  const derivedBondAmount = parsedAmountValue !== null ? Math.floor(parsedAmountValue / 10) : null;
+  const derivedBondAmount =
+    parsedAmountValue !== null ? Math.floor(parsedAmountValue / 10) : null;
   const votingRequirementEstimate = useMemo(
     () =>
       calculateVotingRequirementEstimate({
@@ -220,7 +250,8 @@ export function TreasuryProposalCreationForm({
   const walletError = !hasConnectedWallet
     ? intl.formatMessage({
         id: "ui.proposalCreation.walletRequired",
-        defaultMessage: "Connect the proposer wallet before creating a proposal.",
+        defaultMessage:
+          "Connect the proposer wallet before creating a proposal.",
       })
     : null;
   const titleError =
@@ -273,19 +304,19 @@ export function TreasuryProposalCreationForm({
     contentError === null &&
     amountError === null &&
     recipientError === null;
-  const canCreateProposal = currentPeriod == null || currentPeriod === "proposal";
+  const canCreateProposal =
+    currentPeriod == null || currentPeriod === "proposal";
   const isDraftOnlyPeriod = !canCreateProposal;
-  const resolvedSubmitLabel =
-    isDraftOnlyPeriod
-      ? intl.formatMessage({
-          id: "ui.proposalCreation.saveDraft",
-          defaultMessage: "Save as draft",
-        })
-      : submitLabel ??
-        intl.formatMessage({
-          id: "ui.proposalCreation.submit",
-          defaultMessage: "Create proposal",
-        });
+  const resolvedSubmitLabel = isDraftOnlyPeriod
+    ? intl.formatMessage({
+        id: "ui.proposalCreation.saveDraft",
+        defaultMessage: "Save as draft",
+      })
+    : (submitLabel ??
+      intl.formatMessage({
+        id: "ui.proposalCreation.submit",
+        defaultMessage: "Create proposal",
+      }));
   const primaryActionLabel = !hasConnectedWallet
     ? intl.formatMessage({
         id: "ui.proposalCreation.connectWalletCta",
@@ -398,7 +429,10 @@ export function TreasuryProposalCreationForm({
 
       {isDraftOnlyPeriod ? (
         <Alert variant="warning" className="flex items-start gap-3 py-3">
-          <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-amber-700" aria-hidden="true" />
+          <AlertTriangle
+            className="mt-0.5 h-5 w-5 shrink-0 text-amber-700"
+            aria-hidden="true"
+          />
           <div className="min-w-0">
             <AlertTitle>
               {intl.formatMessage({
@@ -411,7 +445,7 @@ export function TreasuryProposalCreationForm({
                 {
                   id: "ui.proposalCreation.draftOnlyDescription",
                   defaultMessage:
-                    "Lifecycle {id} is currently in the {period} period. You can save this proposal as a draft and submit it once the proposal period begins.",
+                    "The current lifecycle (Lifecycle {id}) is currently in the {period} period. You can save this proposal as a draft and submit it once the proposal period begins.",
                 },
                 {
                   id: lifecycleId ?? "-",
@@ -427,9 +461,7 @@ export function TreasuryProposalCreationForm({
         <Card className="h-full rounded-2xl shadow-none">
           <CardContent className="flex h-full flex-col space-y-6 p-5">
             <div className="grid gap-4 sm:grid-cols-2">
-              <FieldShell
-                label={lifecycleLabel}
-              >
+              <FieldShell label={lifecycleLabel}>
                 <Input
                   value={
                     lifecycleId != null
@@ -449,9 +481,7 @@ export function TreasuryProposalCreationForm({
                   aria-label={lifecycleLabel}
                 />
               </FieldShell>
-              <FieldShell
-                label={proposerWalletLabel}
-              >
+              <FieldShell label={proposerWalletLabel}>
                 <Input
                   value={
                     hasConnectedWallet
@@ -468,10 +498,7 @@ export function TreasuryProposalCreationForm({
               </FieldShell>
             </div>
 
-            <FieldShell
-              label={titleLabel}
-              error={titleError}
-            >
+            <FieldShell label={titleLabel} error={titleError}>
               <Input
                 value={title}
                 onChange={(event) => setTitle(event.target.value)}
@@ -485,10 +512,7 @@ export function TreasuryProposalCreationForm({
             </FieldShell>
 
             <div className="grid gap-4 sm:grid-cols-2">
-              <FieldShell
-                label={amountLabel}
-                error={amountError}
-              >
+              <FieldShell label={amountLabel} error={amountError}>
                 <MinaAmountInput
                   value={amount}
                   onChange={(event) => setAmount(event.target.value)}
@@ -500,10 +524,7 @@ export function TreasuryProposalCreationForm({
                   aria-invalid={amountError ? "true" : "false"}
                 />
               </FieldShell>
-              <FieldShell
-                label={recipientLabel}
-                error={recipientError}
-              >
+              <FieldShell label={recipientLabel} error={recipientError}>
                 <Input
                   value={recipient}
                   onChange={(event) => setRecipient(event.target.value)}
@@ -529,7 +550,9 @@ export function TreasuryProposalCreationForm({
             >
               <Tabs
                 value={contentTab}
-                onValueChange={(value) => setContentTab(value as "write" | "preview")}
+                onValueChange={(value) =>
+                  setContentTab(value as "write" | "preview")
+                }
                 className="flex flex-1 flex-col space-y-2"
               >
                 <TabsList className="self-start">
@@ -576,7 +599,8 @@ export function TreasuryProposalCreationForm({
                       <p className="text-sm text-muted-foreground">
                         {intl.formatMessage({
                           id: "ui.proposalCreation.previewEmpty",
-                          defaultMessage: "Markdown preview will appear here once content is entered.",
+                          defaultMessage:
+                            "Markdown preview will appear here once content is entered.",
                         })}
                       </p>
                     )}
@@ -588,256 +612,273 @@ export function TreasuryProposalCreationForm({
         </Card>
 
         <div className="space-y-4">
-        <Card className="rounded-2xl shadow-none">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-lg">
-              {intl.formatMessage({
-                id: "ui.proposalCreation.votingEstimateTitle",
-                defaultMessage: "Voting requirement estimate",
-              })}
-            </CardTitle>
-            <CardDescription className="text-sm leading-6 text-foreground/70">
-              {intl.formatMessage({
-                id: "ui.proposalCreation.votingEstimateDescription",
-                defaultMessage:
-                  "Estimated from the requested amount, current treasury balance, and current eligible voting weight.",
-              })}
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <SummaryRow
-              label={intl.formatMessage({
-                id: "ui.proposalCreation.summaryParticipationEstimate",
-                defaultMessage: "Participation estimate",
-              })}
-              value={
-                votingRequirementEstimate
-                  ? intl.formatMessage(
-                      {
-                        id: "ui.proposalCreation.summaryParticipationEstimateValue",
-                        defaultMessage: "{percent} of eligible voting weight ({amount})",
-                      },
-                      {
-                        percent: formatBasisPointsPercent(votingRequirementEstimate.requiredParticipationBp),
-                        amount: formatVoteCriteriaAmount(
-                          votingRequirementEstimate.requiredParticipationWeight,
-                        ),
-                      },
-                    )
-                  : "-"
-              }
-            />
-            <SummaryRow
-              label={intl.formatMessage({
-                id: "ui.proposalCreation.summaryApprovalEstimate",
-                defaultMessage: "Approval estimate",
-              })}
-              value={
-                votingRequirementEstimate
-                  ? intl.formatMessage(
-                      {
-                        id: "ui.proposalCreation.summaryApprovalEstimateValue",
-                        defaultMessage: "{percent} yay over nay",
-                      },
-                      {
-                        percent: formatBasisPointsPercent(votingRequirementEstimate.requiredApprovalBp),
-                      },
-                    )
-                  : "-"
-              }
-            />
-          </CardContent>
-        </Card>
-
-        <Card className="rounded-2xl shadow-none">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-lg">
-              {intl.formatMessage({
-                id: "ui.proposalCreation.summaryTitle",
-                defaultMessage: "Submission summary",
-              })}
-            </CardTitle>
-            <CardDescription className="text-sm leading-6 text-foreground/70">
-              {intl.formatMessage({
-                id: "ui.proposalCreation.summaryDescription",
-                defaultMessage:
-                  "Review the proposal details and submission context before continuing.",
-              })}
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <SummaryRow
-              label={intl.formatMessage({
-                id: "ui.proposalCreation.summaryLifecycle",
-                defaultMessage: "Lifecycle",
-              })}
-              value={
-                lifecycleId != null
-                  ? intl.formatMessage(
-                      {
-                        id: "ui.proposalCreation.summaryLifecycleValue",
-                        defaultMessage: "Lifecycle {id}",
-                      },
-                      { id: lifecycleId },
-                    )
-                  : intl.formatMessage({
-                      id: "ui.proposalCreation.summaryLifecyclePending",
-                      defaultMessage: "Computed automatically",
-                    })
-              }
-            />
-            <SummaryRow
-              label={intl.formatMessage({
-                id: "ui.proposalCreation.summaryProposerWallet",
-                defaultMessage: "Proposer wallet",
-              })}
-              value={
-                hasConnectedWallet
-                  ? normalizedWalletAddress
-                  : intl.formatMessage({
-                      id: "ui.proposalCreation.summaryWalletMissing",
-                      defaultMessage: "Wallet not connected",
-                    })
-              }
-              mono={hasConnectedWallet}
-            />
-            <SummaryRow
-              label={intl.formatMessage({
-                id: "ui.proposalCreation.summaryProposalContractAddress",
-                defaultMessage: "Proposal contract address",
-              })}
-              value={proposalContractAddress}
-              description={intl.formatMessage({
-                id: "ui.proposalCreation.summaryProposalContractAddressDescription",
-                defaultMessage:
-                  "Generated automatically during submission. The temporary private key is discarded automatically.",
-              })}
-              action={
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  className="h-7 w-7 rounded-sm text-muted-foreground"
-                  aria-label={intl.formatMessage({
-                    id: "ui.proposalCreation.regenerateProposalContractAddress",
-                    defaultMessage: "Regenerate proposal contract address",
-                  })}
-                  onClick={() => {
-                    setProposalContractAddress(generateProposalContractAddress());
-                  }}
-                >
-                  <RotateCw className="h-3.5 w-3.5" aria-hidden="true" />
-                </Button>
-              }
-              mono
-            />
-            <SummaryRow
-              label={intl.formatMessage({
-                id: "ui.proposalCreation.summaryRequestedAmount",
-                defaultMessage: "Requested amount",
-              })}
-              value={parsedAmountValue !== null ? formatProposalAmount(parsedAmountValue) : "-"}
-            />
-            <SummaryRow
-              label={intl.formatMessage({
-                id: "ui.proposalCreation.summaryBondAmount",
-                defaultMessage: "Derived bond amount",
-              })}
-              value={derivedBondAmount !== null ? formatProposalAmount(derivedBondAmount) : "-"}
-            />
-            <SummaryRow
-              label={intl.formatMessage({
-                id: "ui.proposalCreation.summaryRecipient",
-                defaultMessage: "Recipient",
-              })}
-              value={normalizedRecipient || "-"}
-              mono={normalizedRecipient.length > 0}
-            />
-            <SummaryRow
-              label={intl.formatMessage({
-                id: "ui.proposalCreation.summaryTitle",
-                defaultMessage: "Title",
-              })}
-              value={normalizedTitle || "-"}
-            />
-            <SummaryRow
-              label={intl.formatMessage({
-                id: "ui.proposalCreation.summaryZkAppUriHash",
-                defaultMessage: "zkApp URI hash",
-              })}
-              value={
-                isZkAppUriHashLoading
-                  ? intl.formatMessage({
-                      id: "ui.proposalCreation.summaryZkAppUriHashLoading",
-                      defaultMessage: "Computing...",
-                    })
-                  : zkAppUriHash ?? "-"
-              }
-              mono
-            />
-
-            <Alert variant="default" className="border-border/70 bg-muted/20">
-              <AlertTitle>
+          <Card className="rounded-2xl shadow-none">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-lg">
                 {intl.formatMessage({
-                  id: "ui.proposalCreation.reviewReminderTitle",
-                  defaultMessage: "Before submitting",
+                  id: "ui.proposalCreation.votingEstimateTitle",
+                  defaultMessage: "Voting requirement estimate",
                 })}
-              </AlertTitle>
-              <AlertDescription>
+              </CardTitle>
+              <CardDescription className="text-sm leading-6 text-foreground/70">
                 {intl.formatMessage({
-                  id: "ui.proposalCreation.reviewReminder",
+                  id: "ui.proposalCreation.votingEstimateDescription",
                   defaultMessage:
-                    "Confirm the title, markdown body, recipient, amount, current lifecycle, and connected proposer wallet before creating the proposal.",
+                    "Estimated from the requested amount, current treasury balance, and current eligible voting weight.",
                 })}
-              </AlertDescription>
-            </Alert>
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <SummaryRow
+                label={intl.formatMessage({
+                  id: "ui.proposalCreation.summaryParticipationEstimate",
+                  defaultMessage: "Participation estimate",
+                })}
+                value={
+                  votingRequirementEstimate
+                    ? intl.formatMessage(
+                        {
+                          id: "ui.proposalCreation.summaryParticipationEstimateValue",
+                          defaultMessage:
+                            "{percent} of eligible voting weight ({amount})",
+                        },
+                        {
+                          percent: formatBasisPointsPercent(
+                            votingRequirementEstimate.requiredParticipationBp,
+                          ),
+                          amount: formatVoteCriteriaAmount(
+                            votingRequirementEstimate.requiredParticipationWeight,
+                          ),
+                        },
+                      )
+                    : "-"
+                }
+              />
+              <SummaryRow
+                label={intl.formatMessage({
+                  id: "ui.proposalCreation.summaryApprovalEstimate",
+                  defaultMessage: "Approval estimate",
+                })}
+                value={
+                  votingRequirementEstimate
+                    ? intl.formatMessage(
+                        {
+                          id: "ui.proposalCreation.summaryApprovalEstimateValue",
+                          defaultMessage: "{percent} yay over nay",
+                        },
+                        {
+                          percent: formatBasisPointsPercent(
+                            votingRequirementEstimate.requiredApprovalBp,
+                          ),
+                        },
+                      )
+                    : "-"
+                }
+              />
+            </CardContent>
+          </Card>
 
-            <div className="flex flex-col items-stretch gap-2 pt-1">
-              <Button
-                type={!hasConnectedWallet ? "button" : "submit"}
-                disabled={!hasConnectedWallet ? !onConnectWalletClick : !canSubmit}
-                onClick={!hasConnectedWallet ? onConnectWalletClick : undefined}
-                className="h-11 w-full px-5 text-sm font-semibold"
-              >
-                {primaryActionLabel}
-              </Button>
-              {!isDraftOnlyPeriod && onSaveDraft ? (
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  disabled={!canSubmitWithoutWallet}
-                  onClick={handleSaveDraftClick}
-                  className="h-auto self-center px-0 py-0 text-xs font-medium text-muted-foreground shadow-none hover:bg-transparent hover:text-foreground"
-                >
+          <Card className="rounded-2xl shadow-none">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-lg">
+                {intl.formatMessage({
+                  id: "ui.proposalCreation.summaryTitle",
+                  defaultMessage: "Submission summary",
+                })}
+              </CardTitle>
+              <CardDescription className="text-sm leading-6 text-foreground/70">
+                {intl.formatMessage({
+                  id: "ui.proposalCreation.summaryDescription",
+                  defaultMessage:
+                    "Review the proposal details and submission context before continuing.",
+                })}
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <SummaryRow
+                label={intl.formatMessage({
+                  id: "ui.proposalCreation.summaryLifecycle",
+                  defaultMessage: "Lifecycle",
+                })}
+                value={
+                  lifecycleId != null
+                    ? intl.formatMessage(
+                        {
+                          id: "ui.proposalCreation.summaryLifecycleValue",
+                          defaultMessage: "Lifecycle {id}",
+                        },
+                        { id: lifecycleId },
+                      )
+                    : intl.formatMessage({
+                        id: "ui.proposalCreation.summaryLifecyclePending",
+                        defaultMessage: "Computed automatically",
+                      })
+                }
+              />
+              <SummaryRow
+                label={intl.formatMessage({
+                  id: "ui.proposalCreation.summaryProposerWallet",
+                  defaultMessage: "Proposer wallet",
+                })}
+                value={
+                  hasConnectedWallet
+                    ? normalizedWalletAddress
+                    : intl.formatMessage({
+                        id: "ui.proposalCreation.summaryWalletMissing",
+                        defaultMessage: "Wallet not connected",
+                      })
+                }
+                mono={hasConnectedWallet}
+              />
+              <SummaryRow
+                label={intl.formatMessage({
+                  id: "ui.proposalCreation.summaryProposalContractAddress",
+                  defaultMessage: "Proposal contract address",
+                })}
+                value={proposalContractAddress}
+                description={intl.formatMessage({
+                  id: "ui.proposalCreation.summaryProposalContractAddressDescription",
+                  defaultMessage:
+                    "Generated automatically during submission. The temporary private key is discarded automatically.",
+                })}
+                action={
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="h-7 w-7 rounded-sm text-muted-foreground"
+                    aria-label={intl.formatMessage({
+                      id: "ui.proposalCreation.regenerateProposalContractAddress",
+                      defaultMessage: "Regenerate proposal contract address",
+                    })}
+                    onClick={() => {
+                      setProposalContractAddress(
+                        generateProposalContractAddress(),
+                      );
+                    }}
+                  >
+                    <RotateCw className="h-3.5 w-3.5" aria-hidden="true" />
+                  </Button>
+                }
+                mono
+              />
+              <SummaryRow
+                label={intl.formatMessage({
+                  id: "ui.proposalCreation.summaryRequestedAmount",
+                  defaultMessage: "Requested amount",
+                })}
+                value={
+                  parsedAmountValue !== null
+                    ? formatProposalAmount(parsedAmountValue)
+                    : "-"
+                }
+              />
+              <SummaryRow
+                label={intl.formatMessage({
+                  id: "ui.proposalCreation.summaryBondAmount",
+                  defaultMessage: "Derived bond amount",
+                })}
+                value={
+                  derivedBondAmount !== null
+                    ? formatProposalAmount(derivedBondAmount)
+                    : "-"
+                }
+              />
+              <SummaryRow
+                label={intl.formatMessage({
+                  id: "ui.proposalCreation.summaryRecipient",
+                  defaultMessage: "Recipient",
+                })}
+                value={normalizedRecipient || "-"}
+                mono={normalizedRecipient.length > 0}
+              />
+              <SummaryRow
+                label={intl.formatMessage({
+                  id: "ui.proposalCreation.summaryTitle",
+                  defaultMessage: "Title",
+                })}
+                value={normalizedTitle || "-"}
+              />
+              <SummaryRow
+                label={intl.formatMessage({
+                  id: "ui.proposalCreation.summaryZkAppUriHash",
+                  defaultMessage: "zkApp URI hash",
+                })}
+                value={
+                  isZkAppUriHashLoading
+                    ? intl.formatMessage({
+                        id: "ui.proposalCreation.summaryZkAppUriHashLoading",
+                        defaultMessage: "Computing...",
+                      })
+                    : (zkAppUriHash ?? "-")
+                }
+                mono
+              />
+
+              <Alert variant="default" className="border-border/70 bg-muted/20">
+                <AlertTitle>
                   {intl.formatMessage({
-                    id: "ui.proposalCreation.saveDraft",
-                    defaultMessage: "Save as draft",
+                    id: "ui.proposalCreation.reviewReminderTitle",
+                    defaultMessage: "Before submitting",
                   })}
-                </Button>
-              ) : null}
-              {onCancel ? (
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={onCancel}
-                  className="h-auto self-center px-0 py-0 text-xs font-medium text-muted-foreground shadow-none hover:bg-transparent hover:text-foreground"
-                >
+                </AlertTitle>
+                <AlertDescription>
                   {intl.formatMessage({
-                    id: "ui.proposalCreation.cancel",
-                    defaultMessage: "Cancel",
+                    id: "ui.proposalCreation.reviewReminder",
+                    defaultMessage:
+                      "Confirm the title, markdown body, recipient, amount, current lifecycle, and connected proposer wallet before creating the proposal.",
                   })}
+                </AlertDescription>
+              </Alert>
+
+              <div className="flex flex-col items-stretch gap-2 pt-1">
+                <Button
+                  type={!hasConnectedWallet ? "button" : "submit"}
+                  disabled={
+                    !hasConnectedWallet ? !onConnectWalletClick : !canSubmit
+                  }
+                  onClick={
+                    !hasConnectedWallet ? onConnectWalletClick : undefined
+                  }
+                  className="h-11 w-full px-5 text-sm font-semibold"
+                >
+                  {primaryActionLabel}
                 </Button>
-              ) : null}
-              {!hasConnectedWallet && canSubmitWithoutWallet ? (
-                <p className="text-sm text-muted-foreground">
-                  {walletError}
-                </p>
-              ) : null}
-            </div>
-          </CardContent>
-        </Card>
+                {!isDraftOnlyPeriod && onSaveDraft ? (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    disabled={!canSubmitWithoutWallet}
+                    onClick={handleSaveDraftClick}
+                    className="h-auto self-center px-0 py-0 text-xs font-medium text-muted-foreground shadow-none hover:bg-transparent hover:text-foreground"
+                  >
+                    {intl.formatMessage({
+                      id: "ui.proposalCreation.saveDraft",
+                      defaultMessage: "Save as draft",
+                    })}
+                  </Button>
+                ) : null}
+                {onCancel ? (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={onCancel}
+                    className="h-auto self-center px-0 py-0 text-xs font-medium text-muted-foreground shadow-none hover:bg-transparent hover:text-foreground"
+                  >
+                    {intl.formatMessage({
+                      id: "ui.proposalCreation.cancel",
+                      defaultMessage: "Cancel",
+                    })}
+                  </Button>
+                ) : null}
+                {!hasConnectedWallet && canSubmitWithoutWallet ? (
+                  <p className="text-sm text-muted-foreground">{walletError}</p>
+                ) : null}
+              </div>
+            </CardContent>
+          </Card>
         </div>
       </div>
     </form>
@@ -863,7 +904,9 @@ function FieldShell({
         {label}
       </label>
       {children}
-      {description ? <p className="text-sm text-muted-foreground">{description}</p> : null}
+      {description ? (
+        <p className="text-sm text-muted-foreground">{description}</p>
+      ) : null}
       {error ? <p className="text-sm text-destructive">{error}</p> : null}
     </div>
   );
@@ -890,8 +933,17 @@ function SummaryRow({
         </p>
         {action}
       </div>
-      <p className={cn("text-sm text-foreground", mono && "break-all font-mono text-xs")}>{value}</p>
-      {description ? <p className="text-xs leading-5 text-muted-foreground">{description}</p> : null}
+      <p
+        className={cn(
+          "text-sm text-foreground",
+          mono && "break-all font-mono text-xs",
+        )}
+      >
+        {value}
+      </p>
+      {description ? (
+        <p className="text-xs leading-5 text-muted-foreground">{description}</p>
+      ) : null}
     </div>
   );
 }
@@ -965,7 +1017,10 @@ function buildProposalMarkdown(title: string, body: string): string {
   return `# ${normalizedTitle}\n\n${normalizedBody}`;
 }
 
-function splitProposalMarkdown(markdown: string): { title: string; body: string } {
+function splitProposalMarkdown(markdown: string): {
+  title: string;
+  body: string;
+} {
   const normalizedMarkdown = markdown.trim();
   if (!normalizedMarkdown) {
     return { title: "", body: "" };
@@ -1001,7 +1056,9 @@ function generateProposalContractAddress(): string {
   return `${prefix}${suffix}`;
 }
 
-function formatLifecyclePeriod(value: TreasuryLifecyclePeriodId | null | undefined): string {
+function formatLifecyclePeriod(
+  value: TreasuryLifecyclePeriodId | null | undefined,
+): string {
   if (value === "proposal") {
     return "proposal";
   }
@@ -1044,24 +1101,34 @@ function calculateVotingRequirementEstimate({
   }
 
   const basisPoints = 10_000;
-  const ratioBp = Math.min((proposalAmount * basisPoints) / parsedTreasuryBalance, basisPoints);
+  const ratioBp = Math.min(
+    (proposalAmount * basisPoints) / parsedTreasuryBalance,
+    basisPoints,
+  );
   const participationCurveDenominator =
     ratioBp + (500 * (basisPoints - ratioBp)) / basisPoints;
-  const participationCurveBp = (ratioBp * basisPoints) / participationCurveDenominator;
-  const approvalCurveDenominator = ratioBp + (1000 * (basisPoints - ratioBp)) / basisPoints;
+  const participationCurveBp =
+    (ratioBp * basisPoints) / participationCurveDenominator;
+  const approvalCurveDenominator =
+    ratioBp + (1000 * (basisPoints - ratioBp)) / basisPoints;
   const approvalCurveBp = (ratioBp * basisPoints) / approvalCurveDenominator;
 
-  const requiredParticipationBp = 2_000 + ((5_000 - 2_000) * participationCurveBp) / basisPoints;
-  const requiredApprovalBp = 5_100 + ((7_000 - 5_100) * approvalCurveBp) / basisPoints;
+  const requiredParticipationBp =
+    2_000 + ((5_000 - 2_000) * participationCurveBp) / basisPoints;
+  const requiredApprovalBp =
+    5_100 + ((7_000 - 5_100) * approvalCurveBp) / basisPoints;
 
   return {
     requiredParticipationBp,
     requiredApprovalBp,
-    requiredParticipationWeight: (parsedEligibleVotingWeight * requiredParticipationBp) / basisPoints,
+    requiredParticipationWeight:
+      (parsedEligibleVotingWeight * requiredParticipationBp) / basisPoints,
   };
 }
 
-function parseContextAmount(value: string | number | null | undefined): number | null {
+function parseContextAmount(
+  value: string | number | null | undefined,
+): number | null {
   if (typeof value === "number") {
     return Number.isFinite(value) ? value : null;
   }

@@ -14,6 +14,8 @@ describe("useHeaderSearch", () => {
     useEndpointSettingsStore.getState().hydrateSettings({
       networkId: "MAINNET",
       apiUrl: "http://127.0.0.1:4000",
+      indexerApiUrl: "http://127.0.0.1:4001",
+      processorApiUrl: "http://127.0.0.1:4002",
       minaNodeUrl: "http://127.0.0.1:8080/graphql",
     });
   });

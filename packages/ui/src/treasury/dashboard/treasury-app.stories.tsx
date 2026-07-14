@@ -1,6 +1,19 @@
-import { type JSX, type ReactNode, useEffect, useMemo, useRef, useState } from "react";
+import {
+  type JSX,
+  type ReactNode,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { Button } from "../../components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../../components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "../../components/ui/card";
 import { TreasuryStatusFooter } from "../footer/treasury-status-footer";
 import {
   TreasuryWalletHeader,
@@ -60,7 +73,9 @@ function createProposalVotingRequirements(
   requiredApprovalBp: string,
 ): Pick<
   TreasuryProposalTableEntry,
-  "stakingEpochDataLedgerTotalCurrency" | "requiredParticipationBp" | "requiredApprovalBp"
+  | "stakingEpochDataLedgerTotalCurrency"
+  | "requiredParticipationBp"
+  | "requiredApprovalBp"
 > {
   return {
     stakingEpochDataLedgerTotalCurrency,
@@ -422,7 +437,8 @@ const proposalVotesById: Record<string, TreasuryProposalVoteRow[]> = {
   "P-126": [
     {
       id: "P-126-v1",
-      voterPublicKey: "B62qwalletless111111111111111111111111111111111111111111",
+      voterPublicKey:
+        "B62qwalletless111111111111111111111111111111111111111111",
       vote: "yay",
       voteWeight: "88200",
       blockHeight: 450698,
@@ -430,7 +446,8 @@ const proposalVotesById: Record<string, TreasuryProposalVoteRow[]> = {
     },
     {
       id: "P-126-v2",
-      voterPublicKey: "B62qwalletless222222222222222222222222222222222222222222",
+      voterPublicKey:
+        "B62qwalletless222222222222222222222222222222222222222222",
       vote: "nay",
       voteWeight: "28420",
       blockHeight: 450699,
@@ -438,7 +455,8 @@ const proposalVotesById: Record<string, TreasuryProposalVoteRow[]> = {
     },
     {
       id: "P-126-v3",
-      voterPublicKey: "B62qwalletless333333333333333333333333333333333333333333",
+      voterPublicKey:
+        "B62qwalletless333333333333333333333333333333333333333333",
       vote: "yay",
       voteWeight: "66680",
       blockHeight: 450700,
@@ -511,7 +529,8 @@ const proposalVotesById: Record<string, TreasuryProposalVoteRow[]> = {
   "P-139": [
     {
       id: "P-139-v1",
-      voterPublicKey: "B62qhistoricalvoter11111111111111111111111111111111111111",
+      voterPublicKey:
+        "B62qhistoricalvoter11111111111111111111111111111111111111",
       vote: "yay",
       voteWeight: "175000",
       blockHeight: 449429,
@@ -519,7 +538,8 @@ const proposalVotesById: Record<string, TreasuryProposalVoteRow[]> = {
     },
     {
       id: "P-139-v2",
-      voterPublicKey: "B62qhistoricalvoter22222222222222222222222222222222222222",
+      voterPublicKey:
+        "B62qhistoricalvoter22222222222222222222222222222222222222",
       vote: "nay",
       voteWeight: "42200",
       blockHeight: 449430,
@@ -546,7 +566,9 @@ const proposalExecutionsById: Record<string, TreasuryProposalExecutionRow[]> = {
 
 type MockProposalDetailVariant = Pick<
   TreasuryProposalDetailProps,
-  "contentVerificationStatus" | "hasConnectedWallet" | "connectedWalletVotingWeight"
+  | "contentVerificationStatus"
+  | "hasConnectedWallet"
+  | "connectedWalletVotingWeight"
 >;
 
 const proposalDetailVariantById: Record<string, MockProposalDetailVariant> = {
@@ -696,7 +718,9 @@ export const ClickableMockApp = {
     scenario: "happyPath",
     ...defaultMockAppArgs,
   } satisfies MockTreasuryAppProps,
-  render: (args: MockTreasuryAppProps): JSX.Element => <MockTreasuryApp {...args} />,
+  render: (args: MockTreasuryAppProps): JSX.Element => (
+    <MockTreasuryApp {...args} />
+  ),
 };
 
 export const Demo = {
@@ -713,7 +737,9 @@ export const Demo = {
       },
     },
   },
-  render: (args: MockTreasuryAppProps): JSX.Element => <MockTreasuryApp {...args} />,
+  render: (args: MockTreasuryAppProps): JSX.Element => (
+    <MockTreasuryApp {...args} />
+  ),
 };
 
 export const ProposalPeriodApp = {
@@ -721,7 +747,9 @@ export const ProposalPeriodApp = {
     dashboardPeriod: "proposal",
     ...defaultMockAppArgs,
   } satisfies MockTreasuryAppProps,
-  render: (args: MockTreasuryAppProps): JSX.Element => <MockTreasuryApp {...args} />,
+  render: (args: MockTreasuryAppProps): JSX.Element => (
+    <MockTreasuryApp {...args} />
+  ),
 };
 
 export const ExplorationPeriodApp = {
@@ -729,7 +757,9 @@ export const ExplorationPeriodApp = {
     dashboardPeriod: "exploration",
     ...defaultMockAppArgs,
   } satisfies MockTreasuryAppProps,
-  render: (args: MockTreasuryAppProps): JSX.Element => <MockTreasuryApp {...args} />,
+  render: (args: MockTreasuryAppProps): JSX.Element => (
+    <MockTreasuryApp {...args} />
+  ),
 };
 
 export const VotingPeriodApp = {
@@ -737,7 +767,9 @@ export const VotingPeriodApp = {
     dashboardPeriod: "voting",
     ...defaultMockAppArgs,
   } satisfies MockTreasuryAppProps,
-  render: (args: MockTreasuryAppProps): JSX.Element => <MockTreasuryApp {...args} />,
+  render: (args: MockTreasuryAppProps): JSX.Element => (
+    <MockTreasuryApp {...args} />
+  ),
 };
 
 export const CooldownPeriodApp = {
@@ -745,7 +777,9 @@ export const CooldownPeriodApp = {
     dashboardPeriod: "cooldown",
     ...defaultMockAppArgs,
   } satisfies MockTreasuryAppProps,
-  render: (args: MockTreasuryAppProps): JSX.Element => <MockTreasuryApp {...args} />,
+  render: (args: MockTreasuryAppProps): JSX.Element => (
+    <MockTreasuryApp {...args} />
+  ),
 };
 
 export const DisconnectedWalletApp = {
@@ -756,7 +790,9 @@ export const DisconnectedWalletApp = {
     walletAccountInfo: undefined,
     ...defaultMockAppArgs,
   } satisfies MockTreasuryAppProps,
-  render: (args: MockTreasuryAppProps): JSX.Element => <MockTreasuryApp {...args} />,
+  render: (args: MockTreasuryAppProps): JSX.Element => (
+    <MockTreasuryApp {...args} />
+  ),
 };
 
 export const ConnectingWalletApp = {
@@ -765,7 +801,9 @@ export const ConnectingWalletApp = {
     walletConnectStatus: "connecting",
     ...defaultMockAppArgs,
   } satisfies MockTreasuryAppProps,
-  render: (args: MockTreasuryAppProps): JSX.Element => <MockTreasuryApp {...args} />,
+  render: (args: MockTreasuryAppProps): JSX.Element => (
+    <MockTreasuryApp {...args} />
+  ),
 };
 
 export const ErrorWalletApp = {
@@ -776,7 +814,9 @@ export const ErrorWalletApp = {
     walletAccountInfo: undefined,
     ...defaultMockAppArgs,
   } satisfies MockTreasuryAppProps,
-  render: (args: MockTreasuryAppProps): JSX.Element => <MockTreasuryApp {...args} />,
+  render: (args: MockTreasuryAppProps): JSX.Element => (
+    <MockTreasuryApp {...args} />
+  ),
 };
 
 export const LoadingWalletAccountApp = {
@@ -786,7 +826,9 @@ export const LoadingWalletAccountApp = {
     walletAccountInfoLoading: true,
     ...defaultMockAppArgs,
   } satisfies MockTreasuryAppProps,
-  render: (args: MockTreasuryAppProps): JSX.Element => <MockTreasuryApp {...args} />,
+  render: (args: MockTreasuryAppProps): JSX.Element => (
+    <MockTreasuryApp {...args} />
+  ),
 };
 
 export const InstallWalletApp = {
@@ -798,7 +840,9 @@ export const InstallWalletApp = {
     isAuroInstalled: false,
     ...defaultMockAppArgs,
   } satisfies MockTreasuryAppProps,
-  render: (args: MockTreasuryAppProps): JSX.Element => <MockTreasuryApp {...args} />,
+  render: (args: MockTreasuryAppProps): JSX.Element => (
+    <MockTreasuryApp {...args} />
+  ),
 };
 
 type MockDashboardPeriod = TreasuryLifecyclePeriodId;
@@ -832,7 +876,10 @@ type PrototypeJourneyPhase =
   | "cooldown"
   | "postCooldown"
   | "executed";
-type PrototypeDashboardPreviewPhase = Exclude<PrototypeJourneyPhase, "executed">;
+type PrototypeDashboardPreviewPhase = Exclude<
+  PrototypeJourneyPhase,
+  "executed"
+>;
 
 const PROTOTYPE_DASHBOARD_PREVIEW_PHASES: PrototypeDashboardPreviewPhase[] = [
   "proposal",
@@ -842,7 +889,9 @@ const PROTOTYPE_DASHBOARD_PREVIEW_PHASES: PrototypeDashboardPreviewPhase[] = [
   "postCooldown",
 ];
 
-function resolveMockTransactionStepDelayMs(scenario: MockStoryScenario): number {
+function resolveMockTransactionStepDelayMs(
+  scenario: MockStoryScenario,
+): number {
   return scenario === "happyPath" ? 1200 : 20;
 }
 
@@ -866,12 +915,16 @@ const DASHBOARD_LIFECYCLE_ID_BY_PERIOD: Record<MockDashboardPeriod, number> = {
   cooldown: 11,
 };
 
-const DASHBOARD_LIFECYCLE_OPTIONS = Object.values(DASHBOARD_LIFECYCLE_ID_BY_PERIOD).sort(
-  (left, right) => left - right,
-);
+const DASHBOARD_LIFECYCLE_OPTIONS = Object.values(
+  DASHBOARD_LIFECYCLE_ID_BY_PERIOD,
+).sort((left, right) => left - right);
 
-function resolveDashboardLifecycleOptions(currentLifecycleId: number): number[] {
-  return DASHBOARD_LIFECYCLE_OPTIONS.filter((lifecycleId) => lifecycleId <= currentLifecycleId);
+function resolveDashboardLifecycleOptions(
+  currentLifecycleId: number,
+): number[] {
+  return DASHBOARD_LIFECYCLE_OPTIONS.filter(
+    (lifecycleId) => lifecycleId <= currentLifecycleId,
+  );
 }
 
 type StoryRoute =
@@ -883,7 +936,11 @@ type StoryRoute =
       lifecycleId: number;
       draftId?: string;
     }
-  | { page: "proposal-detail"; proposalId: string; previousPage: "dashboard" | "proposals" };
+  | {
+      page: "proposal-detail";
+      proposalId: string;
+      previousPage: "dashboard" | "proposals";
+    };
 
 type SavedProposalDraft = {
   id: string;
@@ -905,25 +962,35 @@ function MockTreasuryApp({
 }: MockTreasuryAppProps): JSX.Element {
   const isHappyPathScenario = scenario === "happyPath";
   const transactionStepDelayMs = resolveMockTransactionStepDelayMs(scenario);
-  const currentDashboardLifecycleId = DASHBOARD_LIFECYCLE_ID_BY_PERIOD[dashboardPeriod];
+  const currentDashboardLifecycleId =
+    DASHBOARD_LIFECYCLE_ID_BY_PERIOD[dashboardPeriod];
   const stalledStepPromiseRef = useRef<Promise<void>>(new Promise(() => {}));
   const [route, setRoute] = useState<StoryRoute>({
     page: "dashboard",
     lifecycleId: currentDashboardLifecycleId,
   });
   const [searchQuery, setSearchQuery] = useState("");
-  const [createdEntries, setCreatedEntries] = useState<TreasuryProposalTableEntry[]>([]);
+  const [createdEntries, setCreatedEntries] = useState<
+    TreasuryProposalTableEntry[]
+  >([]);
   const [entryOverridesById, setEntryOverridesById] = useState<
     Record<string, Partial<TreasuryProposalTableEntry>>
   >({});
-  const [createdContentsById, setCreatedContentsById] = useState<Record<string, string>>({});
-  const [createdRecipientsById, setCreatedRecipientsById] = useState<Record<string, string>>({});
-  const [createdVotesById, setCreatedVotesById] = useState<Record<string, TreasuryProposalVoteRow[]>>({});
+  const [createdContentsById, setCreatedContentsById] = useState<
+    Record<string, string>
+  >({});
+  const [createdRecipientsById, setCreatedRecipientsById] = useState<
+    Record<string, string>
+  >({});
+  const [createdVotesById, setCreatedVotesById] = useState<
+    Record<string, TreasuryProposalVoteRow[]>
+  >({});
   const [createdExecutionsById, setCreatedExecutionsById] = useState<
     Record<string, TreasuryProposalExecutionRow[]>
   >({});
   const [savedDrafts, setSavedDrafts] = useState<SavedProposalDraft[]>([]);
-  const [submissionDraft, setSubmissionDraft] = useState<TreasuryProposalCreationDraft | null>(null);
+  const [submissionDraft, setSubmissionDraft] =
+    useState<TreasuryProposalCreationDraft | null>(null);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [voteDialogOpen, setVoteDialogOpen] = useState(false);
   const [executeDialogOpen, setExecuteDialogOpen] = useState(false);
@@ -969,15 +1036,22 @@ function MockTreasuryApp({
     () => ({ ...proposalExecutionsById, ...createdExecutionsById }),
     [createdExecutionsById],
   );
-  const prototypeProposalId = isHappyPathScenario ? createdEntries[0]?.id ?? null : null;
+  const prototypeProposalId = isHappyPathScenario
+    ? (createdEntries[0]?.id ?? null)
+    : null;
   const prototypeProposalBaseEntry =
     prototypeProposalId !== null
-      ? createdEntries.find((entry) => entry.id === prototypeProposalId) ?? null
+      ? (createdEntries.find((entry) => entry.id === prototypeProposalId) ??
+        null)
       : null;
   const prototypeProposalVotes =
-    prototypeProposalId !== null ? proposalVotes[prototypeProposalId] ?? [] : [];
+    prototypeProposalId !== null
+      ? (proposalVotes[prototypeProposalId] ?? [])
+      : [];
   const prototypeProposalExecutions =
-    prototypeProposalId !== null ? proposalExecutions[prototypeProposalId] ?? [] : [];
+    prototypeProposalId !== null
+      ? (proposalExecutions[prototypeProposalId] ?? [])
+      : [];
   const prototypeProposalDisplayOverride =
     prototypeProposalBaseEntry && isHappyPathScenario
       ? buildPrototypeProposalDisplayEntry({
@@ -989,12 +1063,15 @@ function MockTreasuryApp({
       : null;
   const proposalEntries = useMemo(() => {
     const baseEntries = isHappyPathScenario
-      ? allProposalEntries.filter((entry) => entry.lifecycleId !== currentDashboardLifecycleId)
+      ? allProposalEntries.filter(
+          (entry) => entry.lifecycleId !== currentDashboardLifecycleId,
+        )
       : allProposalEntries;
     return [...createdEntries, ...baseEntries].map((entry) => ({
       ...entry,
       ...(entryOverridesById[entry.id] ?? {}),
-      ...(prototypeProposalDisplayOverride && entry.id === prototypeProposalDisplayOverride.id
+      ...(prototypeProposalDisplayOverride &&
+      entry.id === prototypeProposalDisplayOverride.id
         ? prototypeProposalDisplayOverride
         : {}),
     }));
@@ -1030,11 +1107,11 @@ function MockTreasuryApp({
 
   const selectedEntry =
     route.page === "proposal-detail"
-      ? proposalEntries.find((entry) => entry.id === route.proposalId) ?? null
+      ? (proposalEntries.find((entry) => entry.id === route.proposalId) ?? null)
       : null;
   const selectedDraft =
     route.page === "proposal-create" && route.draftId
-      ? savedDrafts.find((draft) => draft.id === route.draftId) ?? null
+      ? (savedDrafts.find((draft) => draft.id === route.draftId) ?? null)
       : null;
   const selectedDetailVariant: MockProposalDetailVariant = selectedEntry
     ? selectedEntry.id === prototypeProposalId && isHappyPathScenario
@@ -1043,38 +1120,51 @@ function MockTreasuryApp({
           hasConnectedWallet: true,
           connectedWalletVotingWeight: connectedWalletAccountInfo.votingWeight,
         }
-      : proposalDetailVariantById[selectedEntry.id] ??
-      (selectedEntry.id in createdContentsById
-        ? {
-            contentVerificationStatus: "loading",
-            hasConnectedWallet: true,
-          }
-        : {})
+      : (proposalDetailVariantById[selectedEntry.id] ??
+        (selectedEntry.id in createdContentsById
+          ? {
+              contentVerificationStatus: "loading",
+              hasConnectedWallet: true,
+            }
+          : {}))
     : {};
-  const selectedVotes = selectedEntry ? proposalVotes[selectedEntry.id] ?? [] : [];
-  const selectedExecutions = selectedEntry ? proposalExecutions[selectedEntry.id] ?? [] : [];
+  const selectedVotes = selectedEntry
+    ? (proposalVotes[selectedEntry.id] ?? [])
+    : [];
+  const selectedExecutions = selectedEntry
+    ? (proposalExecutions[selectedEntry.id] ?? [])
+    : [];
   const currentLifecycleId =
     route.page === "dashboard"
-      ? route.lifecycleId ?? currentDashboardLifecycleId
+      ? (route.lifecycleId ?? currentDashboardLifecycleId)
       : route.page === "proposal-create"
         ? route.lifecycleId
         : currentDashboardLifecycleId;
   const dashboardSelectedLifecycleId = isHappyPathScenario
-    ? resolveDashboardPreviewLifecycleId(dashboardPreviewPhase, currentDashboardLifecycleId)
+    ? resolveDashboardPreviewLifecycleId(
+        dashboardPreviewPhase,
+        currentDashboardLifecycleId,
+      )
     : currentDashboardLifecycleId;
   const currentLifecyclePeriodOverride =
     isHappyPathScenario && currentLifecycleId === dashboardSelectedLifecycleId
       ? resolveDashboardPreviewCurrentPeriod(dashboardPreviewPhase)
       : undefined;
-  const currentLifecycleEntries = proposalEntries.filter((entry) => entry.lifecycleId === currentLifecycleId);
-  const currentLifecyclePeriod =
-    currentLifecyclePeriodOverride ?? resolveMockLifecyclePeriod(currentLifecycleEntries);
-  const proposalCreationPeriod =
-    isHappyPathScenario && prototypeProposalId !== null ? "exploration" : currentLifecyclePeriod;
-  const prototypeUnlockedDashboardPreviewPhases = resolvePrototypeUnlockedDashboardPreviewPhases(
-    prototypeProposalId !== null,
-    prototypeJourneyPhase,
+  const currentLifecycleEntries = proposalEntries.filter(
+    (entry) => entry.lifecycleId === currentLifecycleId,
   );
+  const currentLifecyclePeriod =
+    currentLifecyclePeriodOverride ??
+    resolveMockLifecyclePeriod(currentLifecycleEntries);
+  const proposalCreationPeriod =
+    isHappyPathScenario && prototypeProposalId !== null
+      ? "exploration"
+      : currentLifecyclePeriod;
+  const prototypeUnlockedDashboardPreviewPhases =
+    resolvePrototypeUnlockedDashboardPreviewPhases(
+      prototypeProposalId !== null,
+      prototypeJourneyPhase,
+    );
   const canAdvancePrototypeJourney =
     isHappyPathScenario &&
     prototypeProposalId !== null &&
@@ -1087,12 +1177,13 @@ function MockTreasuryApp({
           ? "postCooldown"
           : prototypeJourneyPhase
       : null;
-  const selectedDetailStatusDerivationPeriod =
-    selectedDetailPrototypePhase
-      ? resolvePrototypeDetailStatusDerivationPeriod(selectedDetailPrototypePhase)
-      : undefined;
+  const selectedDetailStatusDerivationPeriod = selectedDetailPrototypePhase
+    ? resolvePrototypeDetailStatusDerivationPeriod(selectedDetailPrototypePhase)
+    : undefined;
   const selectedDetailEntry =
-    selectedEntry?.id === prototypeProposalId && isHappyPathScenario && selectedDetailPrototypePhase
+    selectedEntry?.id === prototypeProposalId &&
+    isHappyPathScenario &&
+    selectedDetailPrototypePhase
       ? buildPrototypeProposalDisplayEntry({
           entry: selectedEntry,
           dashboardPreviewPhase: selectedDetailPrototypePhase,
@@ -1102,7 +1193,9 @@ function MockTreasuryApp({
       : selectedEntry;
   const resolvedWalletConnectStatus =
     walletConnectStatus ??
-    (selectedDetailVariant.hasConnectedWallet === false ? "disconnected" : "connected");
+    (selectedDetailVariant.hasConnectedWallet === false
+      ? "disconnected"
+      : "connected");
   const resolvedWalletAddress =
     walletAddress !== undefined
       ? walletAddress
@@ -1155,11 +1248,15 @@ function MockTreasuryApp({
   ): void => {
     navigate({ page: "proposal-create", previousPage, lifecycleId, draftId });
   };
-  const completeCreateProposal = (draft: TreasuryProposalCreationDraft): void => {
+  const completeCreateProposal = (
+    draft: TreasuryProposalCreationDraft,
+  ): void => {
     const createdCount = createdEntries.length;
     const nextNumericId = 200 + createdCount;
     const id = `P-${nextNumericId}`;
-    const createdAt = new Date(Date.UTC(2026, 3, 11, 10, createdCount, 0)).toISOString();
+    const createdAt = new Date(
+      Date.UTC(2026, 3, 11, 10, createdCount, 0),
+    ).toISOString();
     const nextCreatedAtBlock = 452000 + createdCount;
     const newEntry: TreasuryProposalTableEntry = {
       id,
@@ -1184,25 +1281,39 @@ function MockTreasuryApp({
       setDashboardPreviewPhase("proposal");
     }
     if (route.page === "proposal-create" && route.draftId) {
-      setSavedDrafts((current) => current.filter((entry) => entry.id !== route.draftId));
+      setSavedDrafts((current) =>
+        current.filter((entry) => entry.id !== route.draftId),
+      );
     }
     setCreatedContentsById((current) => ({ ...current, [id]: draft.content }));
-    setCreatedRecipientsById((current) => ({ ...current, [id]: draft.recipient }));
+    setCreatedRecipientsById((current) => ({
+      ...current,
+      [id]: draft.recipient,
+    }));
     navigate({
       page: "proposal-detail",
       proposalId: id,
-      previousPage: route.page === "proposal-create" ? route.previousPage : "proposals",
+      previousPage:
+        route.page === "proposal-create" ? route.previousPage : "proposals",
     });
   };
-  const handleCreateProposalSubmit = (draft: TreasuryProposalCreationDraft): void => {
+  const handleCreateProposalSubmit = (
+    draft: TreasuryProposalCreationDraft,
+  ): void => {
     setSubmissionDraft(draft);
     setCreateDialogOpen(true);
   };
-  const handleSaveProposalDraft = (draft: TreasuryProposalCreationDraft): void => {
-    const existingDraftId = route.page === "proposal-create" ? route.draftId : undefined;
+  const handleSaveProposalDraft = (
+    draft: TreasuryProposalCreationDraft,
+  ): void => {
+    const existingDraftId =
+      route.page === "proposal-create" ? route.draftId : undefined;
     const nextDraftId =
-      existingDraftId ?? `D-${200 + createdEntries.length + savedDrafts.length}`;
-    const updatedAt = new Date(Date.UTC(2026, 3, 11, 10, savedDrafts.length, 0)).toISOString();
+      existingDraftId ??
+      `D-${200 + createdEntries.length + savedDrafts.length}`;
+    const updatedAt = new Date(
+      Date.UTC(2026, 3, 11, 10, savedDrafts.length, 0),
+    ).toISOString();
 
     setSavedDrafts((current) => {
       const nextSavedDraft = {
@@ -1210,7 +1321,9 @@ function MockTreasuryApp({
         updatedAt,
         draft,
       };
-      const existingIndex = current.findIndex((entry) => entry.id === nextDraftId);
+      const existingIndex = current.findIndex(
+        (entry) => entry.id === nextDraftId,
+      );
       if (existingIndex >= 0) {
         const next = [...current];
         next[existingIndex] = nextSavedDraft;
@@ -1232,11 +1345,21 @@ function MockTreasuryApp({
     setVoteDialogOpen(true);
   };
   const handleVoteComplete = (): void => {
-    if (!selectedEntry || !voteRequest || voteRequest.proposalId !== selectedEntry.id) {
+    if (
+      !selectedEntry ||
+      !voteRequest ||
+      voteRequest.proposalId !== selectedEntry.id
+    ) {
       return;
     }
-    const baseVotes = createdVotesById[selectedEntry.id] ?? proposalVotesById[selectedEntry.id] ?? [];
-    const nextBlockHeight = resolveNextBlockHeight(baseVotes.map((vote) => vote.blockHeight ?? null), 452100);
+    const baseVotes =
+      createdVotesById[selectedEntry.id] ??
+      proposalVotesById[selectedEntry.id] ??
+      [];
+    const nextBlockHeight = resolveNextBlockHeight(
+      baseVotes.map((vote) => vote.blockHeight ?? null),
+      452100,
+    );
     const nextVote: TreasuryProposalVoteRow = {
       id: `${selectedEntry.id}-v${baseVotes.length + 1}`,
       voterPublicKey: MOCK_CONNECTED_WALLET_ADDRESS,
@@ -1254,7 +1377,11 @@ function MockTreasuryApp({
       setPrototypeJourneyPhase("cooldown");
       setDashboardPreviewPhase("cooldown");
     } else {
-      const nextVoteTally = buildVoteTallyFromVotes(selectedEntry, nextVotes, nextBlockHeight);
+      const nextVoteTally = buildVoteTallyFromVotes(
+        selectedEntry,
+        nextVotes,
+        nextBlockHeight,
+      );
       setEntryOverridesById((current) => ({
         ...current,
         [selectedEntry.id]: {
@@ -1273,12 +1400,19 @@ function MockTreasuryApp({
     setExecuteDialogOpen(true);
   };
   const handleExecuteComplete = (): void => {
-    if (!selectedEntry || !executeRequest || executeRequest.proposalId !== selectedEntry.id) {
+    if (
+      !selectedEntry ||
+      !executeRequest ||
+      executeRequest.proposalId !== selectedEntry.id
+    ) {
       return;
     }
     const baseExecutions =
-      createdExecutionsById[selectedEntry.id] ?? proposalExecutionsById[selectedEntry.id] ?? [];
-    const requestedAmount = parseMinaDisplayValue(selectedEntry.requestedAmount) ?? 0;
+      createdExecutionsById[selectedEntry.id] ??
+      proposalExecutionsById[selectedEntry.id] ??
+      [];
+    const requestedAmount =
+      parseMinaDisplayValue(selectedEntry.requestedAmount) ?? 0;
     const totalPaidOut = baseExecutions.reduce((sum, execution) => {
       return sum + (parseMinaDisplayValue(execution.paidOutAmount) ?? 0);
     }, 0);
@@ -1324,7 +1458,9 @@ function MockTreasuryApp({
   return (
     <StoryScaffold>
       <AppChrome
-        activeNavigationItemId={route.page === "dashboard" ? "dashboard" : "proposals"}
+        activeNavigationItemId={
+          route.page === "dashboard" ? "dashboard" : "proposals"
+        }
         searchQuery={searchQuery}
         searchResults={searchResults}
         walletConnectStatus={resolvedWalletConnectStatus}
@@ -1333,12 +1469,18 @@ function MockTreasuryApp({
         walletAccountInfoLoading={walletAccountInfoLoading}
         isAuroInstalled={isAuroInstalled}
         onDashboardClick={() =>
-          navigate({ page: "dashboard", lifecycleId: dashboardSelectedLifecycleId })
+          navigate({
+            page: "dashboard",
+            lifecycleId: dashboardSelectedLifecycleId,
+          })
         }
         onProposalsClick={() => navigate({ page: "proposals" })}
         onSearchQueryChange={setSearchQuery}
         onSearchSelect={(entry) => {
-          openProposal(entry, route.page === "dashboard" ? "dashboard" : "proposals");
+          openProposal(
+            entry,
+            route.page === "dashboard" ? "dashboard" : "proposals",
+          );
         }}
         onCreateProposalClick={() =>
           openProposalCreate(
@@ -1373,10 +1515,14 @@ function MockTreasuryApp({
               proposalCreated={prototypeProposalId !== null}
               proposalJourneyPhase={prototypeJourneyPhase}
               dashboardPreviewPhase={dashboardPreviewPhase}
-              unlockedDashboardPreviewPhases={prototypeUnlockedDashboardPreviewPhases}
+              unlockedDashboardPreviewPhases={
+                prototypeUnlockedDashboardPreviewPhases
+              }
               canAdvanceJourney={canAdvancePrototypeJourney}
               onAdvanceJourney={() => {
-                const nextPhase = resolveNextPrototypeJourneyPhase(prototypeJourneyPhase);
+                const nextPhase = resolveNextPrototypeJourneyPhase(
+                  prototypeJourneyPhase,
+                );
                 if (!nextPhase) {
                   return;
                 }
@@ -1405,7 +1551,10 @@ function MockTreasuryApp({
                 }
               }}
               onResetJourney={() => {
-                setRoute({ page: "dashboard", lifecycleId: currentDashboardLifecycleId });
+                setRoute({
+                  page: "dashboard",
+                  lifecycleId: currentDashboardLifecycleId,
+                });
                 setSearchQuery("");
                 setCreatedEntries([]);
                 setEntryOverridesById({});
@@ -1431,16 +1580,19 @@ function MockTreasuryApp({
                 lifecycleId={route.lifecycleId ?? dashboardSelectedLifecycleId}
                 currentLifecycleId={dashboardSelectedLifecycleId}
                 currentPeriodOverride={
-                  (route.lifecycleId ?? dashboardSelectedLifecycleId) === dashboardSelectedLifecycleId
+                  (route.lifecycleId ?? dashboardSelectedLifecycleId) ===
+                  dashboardSelectedLifecycleId
                     ? currentLifecyclePeriodOverride
                     : undefined
                 }
                 forceHistoricalLifecycle={
                   isHappyPathScenario &&
-                  (route.lifecycleId ?? dashboardSelectedLifecycleId) < dashboardSelectedLifecycleId
+                  (route.lifecycleId ?? dashboardSelectedLifecycleId) <
+                    dashboardSelectedLifecycleId
                 }
                 carryoverEntries={
-                  (route.lifecycleId ?? dashboardSelectedLifecycleId) === dashboardSelectedLifecycleId
+                  (route.lifecycleId ?? dashboardSelectedLifecycleId) ===
+                  dashboardSelectedLifecycleId
                     ? dashboardCarryoverEntries
                     : []
                 }
@@ -1491,10 +1643,14 @@ function MockTreasuryApp({
                   onOpenChange={handleCreateDialogOpenChange}
                   kind="createProposal"
                   senderAddress={submissionDraft.proposerAddress ?? null}
-                  transactionDetailsCode={getMockCreateProposalTransactionDetails(submissionDraft)}
+                  transactionDetailsCode={getMockCreateProposalTransactionDetails(
+                    submissionDraft,
+                  )}
                   submitLabel="Create proposal transaction"
                   preventCloseWhileRunning
-                  summaryItems={buildCreateProposalSummaryItems(submissionDraft)}
+                  summaryItems={buildCreateProposalSummaryItems(
+                    submissionDraft,
+                  )}
                   onCompile={async () => {
                     if (createProposalFlowState === "compileError") {
                       throw new Error("Contract compilation failed.");
@@ -1563,9 +1719,13 @@ function MockTreasuryApp({
                 )}
                 votes={selectedVotes}
                 executions={selectedExecutions}
-                contentVerificationStatus={selectedDetailVariant.contentVerificationStatus}
+                contentVerificationStatus={
+                  selectedDetailVariant.contentVerificationStatus
+                }
                 hasConnectedWallet={selectedDetailVariant.hasConnectedWallet}
-                connectedWalletVotingWeight={selectedDetailVariant.connectedWalletVotingWeight}
+                connectedWalletVotingWeight={
+                  selectedDetailVariant.connectedWalletVotingWeight
+                }
                 statusDerivationPeriod={selectedDetailStatusDerivationPeriod}
                 onConnectWalletClick={() => {}}
                 onVoteYayClick={() => {
@@ -1590,12 +1750,16 @@ function MockTreasuryApp({
                   onOpenChange={handleVoteDialogOpenChange}
                   kind="vote"
                   senderAddress={MOCK_CONNECTED_WALLET_ADDRESS}
-                  transactionDetailsCode={getMockVoteTransactionDetails(selectedEntry, voteRequest.vote)}
+                  transactionDetailsCode={getMockVoteTransactionDetails(
+                    selectedEntry,
+                    voteRequest.vote,
+                  )}
                   submitLabel="Cast vote transaction"
                   summaryItems={buildVoteSummaryItems(
                     selectedEntry,
                     voteRequest.vote,
-                    selectedDetailVariant.connectedWalletVotingWeight ?? connectedWalletAccountInfo.votingWeight,
+                    selectedDetailVariant.connectedWalletVotingWeight ??
+                      connectedWalletAccountInfo.votingWeight,
                   )}
                   onCompile={async () => {
                     if (voteFlowState === "compileError") {
@@ -1642,7 +1806,8 @@ function MockTreasuryApp({
                   }}
                 />
               ) : null}
-              {executeRequest && executeRequest.proposalId === selectedEntry.id ? (
+              {executeRequest &&
+              executeRequest.proposalId === selectedEntry.id ? (
                 <TreasuryTransactionFlowDialog
                   open={executeDialogOpen}
                   onOpenChange={handleExecuteDialogOpenChange}
@@ -1651,12 +1816,14 @@ function MockTreasuryApp({
                   transactionDetailsCode={getMockExecuteTransactionDetails(
                     selectedEntry,
                     executeRequest.amount,
-                    proposalRecipients[selectedEntry.id] ?? "B62qrecipientUnknown",
+                    proposalRecipients[selectedEntry.id] ??
+                      "B62qrecipientUnknown",
                   )}
                   submitLabel="Execute payout transaction"
                   summaryItems={buildExecuteSummaryItems(
                     selectedEntry,
-                    proposalRecipients[selectedEntry.id] ?? "B62qrecipientUnknown",
+                    proposalRecipients[selectedEntry.id] ??
+                      "B62qrecipientUnknown",
                     executeRequest.amount,
                   )}
                   onCompile={async () => {
@@ -1736,10 +1903,13 @@ function PrototypeJourneyControls({
   unlockedDashboardPreviewPhases: PrototypeDashboardPreviewPhase[];
   canAdvanceJourney: boolean;
   onAdvanceJourney: () => void;
-  onDashboardPreviewPhaseChange: (phase: PrototypeDashboardPreviewPhase) => void;
+  onDashboardPreviewPhaseChange: (
+    phase: PrototypeDashboardPreviewPhase,
+  ) => void;
   onResetJourney: () => void;
 }): JSX.Element {
-  const nextJourneyPhase = resolveNextPrototypeJourneyPhase(proposalJourneyPhase);
+  const nextJourneyPhase =
+    resolveNextPrototypeJourneyPhase(proposalJourneyPhase);
 
   return (
     <Card className="border-primary/20 bg-primary/[0.03] shadow-none">
@@ -1748,11 +1918,17 @@ function PrototypeJourneyControls({
           <div className="space-y-1">
             <CardTitle className="text-lg">Demo controls</CardTitle>
             <CardDescription className="max-w-3xl text-[15px] leading-6 text-foreground/70">
-              Click through the full treasury prototype flow, then preview how the dashboard looks
-              across the lifecycle stages without introducing any extra proposals.
+              Click through the full treasury prototype flow, then preview how
+              the dashboard looks across the lifecycle stages without
+              introducing any extra proposals.
             </CardDescription>
           </div>
-          <Button type="button" variant="outline" size="sm" onClick={onResetJourney}>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={onResetJourney}
+          >
             Reset demo
           </Button>
         </div>
@@ -1760,7 +1936,9 @@ function PrototypeJourneyControls({
         <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
           <p className="text-sm text-foreground/85">
             Proposal journey:{" "}
-            <span className="font-medium">{resolvePrototypeJourneyPhaseLabel(proposalJourneyPhase)}</span>
+            <span className="font-medium">
+              {resolvePrototypeJourneyPhaseLabel(proposalJourneyPhase)}
+            </span>
           </p>
           {!proposalCreated ? (
             <p className="text-sm text-muted-foreground">
@@ -1772,7 +1950,8 @@ function PrototypeJourneyControls({
             </Button>
           ) : (
             <p className="text-sm text-muted-foreground">
-              Continue with vote or execute directly from the proposal detail page.
+              Continue with vote or execute directly from the proposal detail
+              page.
             </p>
           )}
         </div>
@@ -1787,7 +1966,9 @@ function PrototypeJourneyControls({
                 key={phase}
                 type="button"
                 size="sm"
-                variant={dashboardPreviewPhase === phase ? "default" : "outline"}
+                variant={
+                  dashboardPreviewPhase === phase ? "default" : "outline"
+                }
                 onClick={() => {
                   onDashboardPreviewPhaseChange(phase);
                 }}
@@ -1845,6 +2026,8 @@ function AppChrome({
         defaultSettings={{
           networkId: "MAINNET",
           apiUrl: "https://api.mina-treasury.example",
+          indexerApiUrl: "https://treasury.example/indexer",
+          processorApiUrl: "https://treasury.example/processor",
           minaNodeUrl: "https://mina-mainnet-node.example/graphql",
         }}
         walletConnectStatus={walletConnectStatus}
@@ -1905,9 +2088,13 @@ function DashboardPage({
   onLifecycleChange?: (lifecycleId: number) => void;
   onProposalClick: (entry: TreasuryProposalTableEntry) => void;
 }): JSX.Element {
-  const lifecycleEntries = entries.filter((entry) => entry.lifecycleId === lifecycleId);
-  const currentPeriod = currentPeriodOverride ?? resolveMockLifecyclePeriod(lifecycleEntries);
-  const isHistoricalLifecycle = forceHistoricalLifecycle || lifecycleId < currentLifecycleId;
+  const lifecycleEntries = entries.filter(
+    (entry) => entry.lifecycleId === lifecycleId,
+  );
+  const currentPeriod =
+    currentPeriodOverride ?? resolveMockLifecyclePeriod(lifecycleEntries);
+  const isHistoricalLifecycle =
+    forceHistoricalLifecycle || lifecycleId < currentLifecycleId;
   const currentPeriodEntries = lifecycleEntries.filter((entry) => {
     const normalizedPeriod = entry.period.toLowerCase();
     if (normalizedPeriod === currentPeriod) {
@@ -1970,10 +2157,16 @@ function resolveMockLifecyclePeriod(
         period === "cooldown",
     );
 
-  return periods.sort((left, right) => periodPriority[right] - periodPriority[left])[0] ?? "voting";
+  return (
+    periods.sort(
+      (left, right) => periodPriority[right] - periodPriority[left],
+    )[0] ?? "voting"
+  );
 }
 
-function resolveMockLifecycleProgress(currentPeriod: TreasuryLifecyclePeriodId): number {
+function resolveMockLifecycleProgress(
+  currentPeriod: TreasuryLifecyclePeriodId,
+): number {
   const progressByPeriod: Record<TreasuryLifecyclePeriodId, number> = {
     proposal: 24,
     exploration: 46,
@@ -1984,7 +2177,9 @@ function resolveMockLifecycleProgress(currentPeriod: TreasuryLifecyclePeriodId):
   return progressByPeriod[currentPeriod];
 }
 
-function resolveMockLifecyclePeriodEndsIn(currentPeriod: TreasuryLifecyclePeriodId): string {
+function resolveMockLifecyclePeriodEndsIn(
+  currentPeriod: TreasuryLifecyclePeriodId,
+): string {
   const endsInByPeriod: Record<TreasuryLifecyclePeriodId, string> = {
     proposal: "1 day 18 hours",
     exploration: "1 day 11 hours",
@@ -2011,7 +2206,9 @@ function resolveMockLifecycleCurrentSlot(
   return proposalStart + periodLength * periodIndexById[currentPeriod] + 1044;
 }
 
-function capitalizePeriodLabel(period: TreasuryLifecyclePeriodId): "Proposal" | "Exploration" | "Voting" | "Cooldown" {
+function capitalizePeriodLabel(
+  period: TreasuryLifecyclePeriodId,
+): "Proposal" | "Exploration" | "Voting" | "Cooldown" {
   if (period === "proposal") {
     return "Proposal";
   }
@@ -2027,7 +2224,10 @@ function capitalizePeriodLabel(period: TreasuryLifecyclePeriodId): "Proposal" | 
 function formatRelativeDraftTimestamp(updatedAt: string): string {
   const updatedDate = new Date(updatedAt);
   const now = new Date(Date.UTC(2026, 3, 11, 12, 0, 0));
-  const diffHours = Math.max(0, Math.round((now.getTime() - updatedDate.getTime()) / (1000 * 60 * 60)));
+  const diffHours = Math.max(
+    0,
+    Math.round((now.getTime() - updatedDate.getTime()) / (1000 * 60 * 60)),
+  );
   if (diffHours < 1) {
     return "Updated just now";
   }
@@ -2063,7 +2263,11 @@ function buildVoteSummaryItems(
   return [
     { label: "Proposal", value: entry.id },
     { label: "Vote", value: capitalizeVoteLabel(vote) },
-    { label: "Proposal address", value: entry.proposalAddress ?? entry.id, mono: true },
+    {
+      label: "Proposal address",
+      value: entry.proposalAddress ?? entry.id,
+      mono: true,
+    },
     { label: "Voting weight", value: votingWeight ?? "-" },
   ];
 }
@@ -2077,11 +2281,16 @@ function buildExecuteSummaryItems(
     { label: "Proposal", value: entry.id },
     { label: "Recipient wallet", value: recipient, mono: true },
     { label: "Amount to pay out", value: amount },
-    { label: "Remaining after execution", value: formatRemainingAfterExecution(entry, amount) },
+    {
+      label: "Remaining after execution",
+      value: formatRemainingAfterExecution(entry, amount),
+    },
   ];
 }
 
-function getMockCreateProposalTransactionDetails(draft: TreasuryProposalCreationDraft): string {
+function getMockCreateProposalTransactionDetails(
+  draft: TreasuryProposalCreationDraft,
+): string {
   return `{
   feePayer: {
     body: {
@@ -2168,7 +2377,9 @@ function formatBondAmountFromNumber(amount: number): string {
     : "-";
 }
 
-function parseMinaDisplayValue(value: string | null | undefined): number | null {
+function parseMinaDisplayValue(
+  value: string | null | undefined,
+): number | null {
   if (typeof value !== "string") {
     return null;
   }
@@ -2277,7 +2488,9 @@ function buildPrototypeProposalDisplayEntry({
   proposalJourneyPhase: PrototypeJourneyPhase;
   votes: TreasuryProposalVoteRow[];
 }): TreasuryProposalTableEntry {
-  const dashboardCurrentPeriod = resolveDashboardPreviewCurrentPeriod(dashboardPreviewPhase);
+  const dashboardCurrentPeriod = resolveDashboardPreviewCurrentPeriod(
+    dashboardPreviewPhase,
+  );
   const prototypeVoteBlockHeight = resolveNextBlockHeight(
     votes.map((vote) => vote.blockHeight ?? null),
     entry.createdAtBlock ?? 452000,
@@ -2319,7 +2532,8 @@ function buildPrototypeProposalDisplayEntry({
   let period: TreasuryProposalTableEntry["period"] = capitalizePeriodLabel(
     dashboardCurrentPeriod,
   );
-  let latestVoteTally: TreasuryProposalLatestVoteTally | null | undefined = undefined;
+  let latestVoteTally: TreasuryProposalLatestVoteTally | null | undefined =
+    undefined;
 
   if (dashboardPreviewPhase === "proposal") {
     stage = "Submitted";
@@ -2379,23 +2593,38 @@ function buildVoteTallyFromVotes(
     { yay: 0, nay: 0, abstain: 0 },
   );
   const totalParticipatingVotes = tally.yay + tally.nay + tally.abstain;
-  const approvalBp = tally.yay + tally.nay > 0 ? (tally.yay * 10_000) / (tally.yay + tally.nay) : 0;
+  const approvalBp =
+    tally.yay + tally.nay > 0
+      ? (tally.yay * 10_000) / (tally.yay + tally.nay)
+      : 0;
   return {
     blockHeight,
     yayWeight: String(tally.yay),
     nayWeight: String(tally.nay),
     abstainWeight: String(tally.abstain),
     createdByEventType: "proposalVoteDispatched",
-    requiredParticipationBp: entry.requiredParticipationBp ? String(entry.requiredParticipationBp) : null,
-    requiredApprovalBp: entry.requiredApprovalBp ? String(entry.requiredApprovalBp) : null,
+    requiredParticipationBp: entry.requiredParticipationBp
+      ? String(entry.requiredParticipationBp)
+      : null,
+    requiredApprovalBp: entry.requiredApprovalBp
+      ? String(entry.requiredApprovalBp)
+      : null,
     requiredParticipation: entry.requiredParticipation ?? null,
     totalParticipatingVotes: String(totalParticipatingVotes),
     approvalBp: String(Math.floor(approvalBp)),
-    voteResult: tally.yay > tally.nay ? "approved" : tally.nay > tally.yay ? "rejected" : null,
+    voteResult:
+      tally.yay > tally.nay
+        ? "approved"
+        : tally.nay > tally.yay
+          ? "rejected"
+          : null,
   };
 }
 
-function formatRemainingAfterExecution(entry: TreasuryProposalTableEntry, payoutAmount: string): string {
+function formatRemainingAfterExecution(
+  entry: TreasuryProposalTableEntry,
+  payoutAmount: string,
+): string {
   const requestedAmount = parseMinaDisplayValue(entry.requestedAmount) ?? 0;
   const nextPayoutAmount = parseMinaDisplayValue(payoutAmount) ?? 0;
   const remainingAmount = Math.max(requestedAmount - nextPayoutAmount, 0);
@@ -2418,7 +2647,8 @@ function delay(ms: number): Promise<void> {
   });
 }
 
-const MOCK_CONNECTED_WALLET_ADDRESS = "B62qkEdNmGbUVaUnVtwMeMo9G1QBgfp9c3K7j4FbmXn21zG8ssvaPvi";
+const MOCK_CONNECTED_WALLET_ADDRESS =
+  "B62qkEdNmGbUVaUnVtwMeMo9G1QBgfp9c3K7j4FbmXn21zG8ssvaPvi";
 
 function MissingProposalState({
   onViewAllProposals,
@@ -2430,7 +2660,8 @@ function MissingProposalState({
       <CardHeader>
         <CardTitle>Proposal not found</CardTitle>
         <CardDescription>
-          The selected proposal does not exist in the mock Storybook dataset anymore.
+          The selected proposal does not exist in the mock Storybook dataset
+          anymore.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -2501,37 +2732,51 @@ function buildLifecycleArgs({
           lifecycleStartDate.getTime() + lifecycleDateOffsetMs,
         ).toISOString(),
         estimatedEnd: new Date(
-          lifecycleStartDate.getTime() + lifecycleDateOffsetMs + periodDurationMs,
+          lifecycleStartDate.getTime() +
+            lifecycleDateOffsetMs +
+            periodDurationMs,
         ).toISOString(),
       },
       {
         period: "exploration",
         slotRange: `${proposalStart + periodLength} - ${proposalStart + periodLength * 2 - 1}`,
         estimatedStart: new Date(
-          lifecycleStartDate.getTime() + lifecycleDateOffsetMs + periodDurationMs,
+          lifecycleStartDate.getTime() +
+            lifecycleDateOffsetMs +
+            periodDurationMs,
         ).toISOString(),
         estimatedEnd: new Date(
-          lifecycleStartDate.getTime() + lifecycleDateOffsetMs + periodDurationMs * 2,
+          lifecycleStartDate.getTime() +
+            lifecycleDateOffsetMs +
+            periodDurationMs * 2,
         ).toISOString(),
       },
       {
         period: "voting",
         slotRange: `${proposalStart + periodLength * 2} - ${proposalStart + periodLength * 3 - 1}`,
         estimatedStart: new Date(
-          lifecycleStartDate.getTime() + lifecycleDateOffsetMs + periodDurationMs * 2,
+          lifecycleStartDate.getTime() +
+            lifecycleDateOffsetMs +
+            periodDurationMs * 2,
         ).toISOString(),
         estimatedEnd: new Date(
-          lifecycleStartDate.getTime() + lifecycleDateOffsetMs + periodDurationMs * 3,
+          lifecycleStartDate.getTime() +
+            lifecycleDateOffsetMs +
+            periodDurationMs * 3,
         ).toISOString(),
       },
       {
         period: "cooldown",
         slotRange: `${proposalStart + periodLength * 3} - ${proposalStart + periodLength * 4 - 1}`,
         estimatedStart: new Date(
-          lifecycleStartDate.getTime() + lifecycleDateOffsetMs + periodDurationMs * 3,
+          lifecycleStartDate.getTime() +
+            lifecycleDateOffsetMs +
+            periodDurationMs * 3,
         ).toISOString(),
         estimatedEnd: new Date(
-          lifecycleStartDate.getTime() + lifecycleDateOffsetMs + periodDurationMs * 4,
+          lifecycleStartDate.getTime() +
+            lifecycleDateOffsetMs +
+            periodDurationMs * 4,
         ).toISOString(),
       },
     ],
