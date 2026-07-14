@@ -42,7 +42,9 @@ function createProposalVotingRequirements(
   requiredApprovalBp: string,
 ): Pick<
   TreasuryProposalTableEntry,
-  "stakingEpochDataLedgerTotalCurrency" | "requiredParticipationBp" | "requiredApprovalBp"
+  | "stakingEpochDataLedgerTotalCurrency"
+  | "requiredParticipationBp"
+  | "requiredApprovalBp"
 > {
   return {
     stakingEpochDataLedgerTotalCurrency,
@@ -455,6 +457,8 @@ function DashboardWithFullHeader({
           defaultSettings={{
             networkId: "MAINNET",
             apiUrl: "https://api.mina-treasury.example",
+            indexerApiUrl: "https://treasury.example/indexer",
+            processorApiUrl: "https://treasury.example/processor",
             minaNodeUrl: "https://mina-mainnet-node.example/graphql",
           }}
           walletConnectStatus={walletConnectStatus}
@@ -478,13 +482,14 @@ function DashboardWithFullHeader({
         <main className="flex w-full flex-col gap-6 py-6">
           <TreasuryLifecyclePeriodInfo
             loading={loading}
-            {...(lifecycleInfo ?? buildLifecycleArgs({
-              lifecycleId: 12,
-              currentPeriod: "voting",
-              currentPeriodProgress: 68,
-              currentSlot: 18460115,
-              periodEndsIn: "1 day 4 hours",
-            }))}
+            {...(lifecycleInfo ??
+              buildLifecycleArgs({
+                lifecycleId: 12,
+                currentPeriod: "voting",
+                currentPeriodProgress: 68,
+                currentSlot: 18460115,
+                periodEndsIn: "1 day 4 hours",
+              }))}
           />
 
           <div className="h-px w-full bg-border/60" aria-hidden="true" />
@@ -576,7 +581,9 @@ export const ExplorationPeriodDashboard = {
         currentPeriodProgress: 41,
         periodEndsIn: "1 day 18 hours",
       })}
-      proposalEntriesOverride={proposalEntries.filter((entry) => entry.period === "Exploration")}
+      proposalEntriesOverride={proposalEntries.filter(
+        (entry) => entry.period === "Exploration",
+      )}
     />
   ),
 };
@@ -592,7 +599,9 @@ export const VotingPeriodDashboard = {
         currentSlot: 18460115,
         periodEndsIn: "1 day 4 hours",
       })}
-      proposalEntriesOverride={proposalEntries.filter((entry) => entry.period === "Voting")}
+      proposalEntriesOverride={proposalEntries.filter(
+        (entry) => entry.period === "Voting",
+      )}
     />
   ),
 };
@@ -607,7 +616,9 @@ export const CooldownPeriodDashboard = {
         currentPeriodProgress: 84,
         periodEndsIn: "7 hours 12 minutes",
       })}
-      proposalEntriesOverride={proposalEntries.filter((entry) => entry.period === "Cooldown")}
+      proposalEntriesOverride={proposalEntries.filter(
+        (entry) => entry.period === "Cooldown",
+      )}
     />
   ),
 };
@@ -622,7 +633,9 @@ export const CompletedLifecycleDashboard = {
         currentPeriodProgress: 100,
         isHistoricalLifecycle: true,
       })}
-      proposalEntriesOverride={proposalEntries.filter((entry) => entry.period === "Cooldown")}
+      proposalEntriesOverride={proposalEntries.filter(
+        (entry) => entry.period === "Cooldown",
+      )}
     />
   ),
 };
@@ -633,7 +646,7 @@ export const ConnectedWalletDashboard = {
       {...args}
       activeNavigationItemId="my-wallet"
       walletConnectStatus="connected"
-        walletAddress="B62qkEdNmGbUVaUnVtwMeMo9G1QBgfp9c3K7j4FbmXn21zG8ssvaPvi"
+      walletAddress="B62qkEdNmGbUVaUnVtwMeMo9G1QBgfp9c3K7j4FbmXn21zG8ssvaPvi"
       walletAccountInfo={connectedWalletAccountInfo}
     />
   ),
@@ -702,7 +715,8 @@ function buildLifecycleArgs({
     currentSlot ??
     Math.min(
       currentPeriodStart + currentPeriodWidth,
-      currentPeriodStart + Math.round((currentPeriodWidth * currentPeriodProgress) / 100),
+      currentPeriodStart +
+        Math.round((currentPeriodWidth * currentPeriodProgress) / 100),
     );
 
   return {
@@ -720,37 +734,51 @@ function buildLifecycleArgs({
           lifecycleStartDate.getTime() + lifecycleDateOffsetMs,
         ).toISOString(),
         estimatedEnd: new Date(
-          lifecycleStartDate.getTime() + lifecycleDateOffsetMs + periodDurationMs,
+          lifecycleStartDate.getTime() +
+            lifecycleDateOffsetMs +
+            periodDurationMs,
         ).toISOString(),
       },
       {
         period: "exploration",
         slotRange: `${proposalStart + periodLength} - ${proposalStart + periodLength * 2 - 1}`,
         estimatedStart: new Date(
-          lifecycleStartDate.getTime() + lifecycleDateOffsetMs + periodDurationMs,
+          lifecycleStartDate.getTime() +
+            lifecycleDateOffsetMs +
+            periodDurationMs,
         ).toISOString(),
         estimatedEnd: new Date(
-          lifecycleStartDate.getTime() + lifecycleDateOffsetMs + periodDurationMs * 2,
+          lifecycleStartDate.getTime() +
+            lifecycleDateOffsetMs +
+            periodDurationMs * 2,
         ).toISOString(),
       },
       {
         period: "voting",
         slotRange: `${proposalStart + periodLength * 2} - ${proposalStart + periodLength * 3 - 1}`,
         estimatedStart: new Date(
-          lifecycleStartDate.getTime() + lifecycleDateOffsetMs + periodDurationMs * 2,
+          lifecycleStartDate.getTime() +
+            lifecycleDateOffsetMs +
+            periodDurationMs * 2,
         ).toISOString(),
         estimatedEnd: new Date(
-          lifecycleStartDate.getTime() + lifecycleDateOffsetMs + periodDurationMs * 3,
+          lifecycleStartDate.getTime() +
+            lifecycleDateOffsetMs +
+            periodDurationMs * 3,
         ).toISOString(),
       },
       {
         period: "cooldown",
         slotRange: `${proposalStart + periodLength * 3} - ${proposalStart + periodLength * 4 - 1}`,
         estimatedStart: new Date(
-          lifecycleStartDate.getTime() + lifecycleDateOffsetMs + periodDurationMs * 3,
+          lifecycleStartDate.getTime() +
+            lifecycleDateOffsetMs +
+            periodDurationMs * 3,
         ).toISOString(),
         estimatedEnd: new Date(
-          lifecycleStartDate.getTime() + lifecycleDateOffsetMs + periodDurationMs * 4,
+          lifecycleStartDate.getTime() +
+            lifecycleDateOffsetMs +
+            periodDurationMs * 4,
         ).toISOString(),
       },
     ],

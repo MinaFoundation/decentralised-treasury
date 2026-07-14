@@ -44,6 +44,8 @@ describe("useWalletAccountInfo", () => {
     useEndpointSettingsStore.getState().hydrateSettings({
       networkId: "MAINNET",
       apiUrl: "http://127.0.0.1:4000",
+      indexerApiUrl: "http://127.0.0.1:4001",
+      processorApiUrl: "http://127.0.0.1:4002",
       minaNodeUrl: "http://127.0.0.1:8080/graphql",
     });
     useTreasuryStore.getState().setTreasuryState({
@@ -82,13 +84,17 @@ describe("useWalletAccountInfo", () => {
 
     await waitFor(() => {
       expect(fetchMock).toHaveBeenCalledTimes(2);
-      expect(useTreasuryHeaderStore.getState().wallet.accountInfo?.minaBalance).toBe("4.2 MINA");
+      expect(
+        useTreasuryHeaderStore.getState().wallet.accountInfo?.minaBalance,
+      ).toBe("4.2 MINA");
     });
 
-    expect(useTreasuryHeaderStore.getState().wallet.accountInfo?.delegatedTo).toBe(
-      "B62qdelegate",
-    );
-    expect(useTreasuryHeaderStore.getState().wallet.accountInfo?.votingWeight).toBe("120 MINA");
+    expect(
+      useTreasuryHeaderStore.getState().wallet.accountInfo?.delegatedTo,
+    ).toBe("B62qdelegate");
+    expect(
+      useTreasuryHeaderStore.getState().wallet.accountInfo?.votingWeight,
+    ).toBe("120 MINA");
   });
 
   it("loads wallet account info for lifecycle zero", async () => {
@@ -109,9 +115,18 @@ describe("useWalletAccountInfo", () => {
     renderHook(() => useWalletAccountInfo());
 
     await waitFor(() => {
-      expect(balanceSpy).toHaveBeenCalledWith("http://127.0.0.1:8080/graphql", "B62qwallet");
-      expect(lifecycleSpy).toHaveBeenCalledWith("http://127.0.0.1:4000", 0, "B62qwallet");
-      expect(useTreasuryHeaderStore.getState().wallet.accountInfo?.minaBalance).toBe("4.2 MINA");
+      expect(balanceSpy).toHaveBeenCalledWith(
+        "http://127.0.0.1:8080/graphql",
+        "B62qwallet",
+      );
+      expect(lifecycleSpy).toHaveBeenCalledWith(
+        "http://127.0.0.1:4000",
+        0,
+        "B62qwallet",
+      );
+      expect(
+        useTreasuryHeaderStore.getState().wallet.accountInfo?.minaBalance,
+      ).toBe("4.2 MINA");
     });
   });
 
@@ -123,17 +138,24 @@ describe("useWalletAccountInfo", () => {
     const balanceSpy = vi
       .spyOn(minaAccounts, "fetchMinaAccountBalance")
       .mockResolvedValue("4.2 MINA");
-    const lifecycleSpy = vi.spyOn(treasuryHeaderApi, "fetchWalletLifecycleAccountInfo");
+    const lifecycleSpy = vi.spyOn(
+      treasuryHeaderApi,
+      "fetchWalletLifecycleAccountInfo",
+    );
 
     renderHook(() => useWalletAccountInfo());
 
     await waitFor(() => {
-      expect(balanceSpy).toHaveBeenCalledWith("http://127.0.0.1:8080/graphql", "B62qwallet");
-      expect(useTreasuryHeaderStore.getState().wallet.accountInfo?.minaBalance).toBe("4.2 MINA");
+      expect(balanceSpy).toHaveBeenCalledWith(
+        "http://127.0.0.1:8080/graphql",
+        "B62qwallet",
+      );
+      expect(
+        useTreasuryHeaderStore.getState().wallet.accountInfo?.minaBalance,
+      ).toBe("4.2 MINA");
     });
 
     expect(lifecycleSpy).not.toHaveBeenCalled();
     expect(useTreasuryHeaderStore.getState().wallet.error).toBeNull();
   });
-
 });

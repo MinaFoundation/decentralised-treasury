@@ -170,7 +170,7 @@ Execute the proposal from the UI after the cooldown period ends.
 ## Real Mina Testnet Path
 
 For the same treasury flow against a real Mina node on GraphQL `3001` and
-archive `3086`, use:
+archive `8282`, use:
 
 ```zsh
 pnpm env:bootstrap testnet -- --sender-private-key <FUNDED_TESTNET_PRIVATE_KEY>

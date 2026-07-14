@@ -68,13 +68,13 @@ For the web app to load real data, you need:
 5. the API HTTP server
 6. the API processor
 
-In the Compose operator stack, browser-facing defaults stay same-origin through
-Caddy:
+In the Compose operator stack, browser-facing defaults use full URLs through
+Caddy on the web origin:
 
-- treasury API from `/api`
-- indexer API from `/indexer`
-- processor routes from `/processor`
-- Mina node GraphQL from `/mina/graphql`
+- treasury API from `http://127.0.0.1:3100/api`
+- indexer API from `http://127.0.0.1:3100/indexer`
+- processor routes from `http://127.0.0.1:3100/processor`
+- Mina node GraphQL from `http://127.0.0.1:3100/mina/graphql`
 
 ## Local Blockchain Setup
 

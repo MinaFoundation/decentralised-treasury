@@ -148,12 +148,62 @@ function parseSlotRange(slotRange: string | undefined): ParsedSlotRange | null {
   return { start, end };
 }
 
-function parseNumericValue(value: number | string | null | undefined): number | null {
+function parseNumericValue(
+  value: number | string | null | undefined,
+): number | null {
   if (value === null || value === undefined || value === "") {
     return null;
   }
   const parsed = typeof value === "number" ? value : Number(value);
   return Number.isFinite(parsed) ? parsed : null;
+}
+
+function compareLifecycleOptionsDescending(
+  left: number | string,
+  right: number | string,
+): number {
+  const leftNumber = parseNumericValue(left);
+  const rightNumber = parseNumericValue(right);
+
+  if (leftNumber !== null && rightNumber !== null) {
+    return rightNumber - leftNumber;
+  }
+  if (leftNumber !== null) {
+    return -1;
+  }
+  if (rightNumber !== null) {
+    return 1;
+  }
+  return String(right).localeCompare(String(left), undefined, {
+    numeric: true,
+  });
+}
+
+function resolveLatestLifecycleOption(
+  options: Array<number | string>,
+): number | string | null {
+  let latestOption: number | string | null = null;
+  let latestOptionNumber: number | null = null;
+
+  for (const option of options) {
+    const optionNumber = parseNumericValue(option);
+
+    if (latestOption === null) {
+      latestOption = option;
+      latestOptionNumber = optionNumber;
+      continue;
+    }
+
+    if (
+      optionNumber !== null &&
+      (latestOptionNumber === null || optionNumber > latestOptionNumber)
+    ) {
+      latestOption = option;
+      latestOptionNumber = optionNumber;
+    }
+  }
+
+  return latestOption;
 }
 
 function formatSlotRangeLabel(slotRange: string | undefined): string | null {
@@ -243,15 +293,38 @@ function formatStaticCountdownToDate(
   const days = Math.floor(totalMinutes / (24 * 60));
   const hours = Math.floor((totalMinutes % (24 * 60)) / 60);
   const minutes = totalMinutes % 60;
+  const parts = [
+    days > 0
+      ? intl.formatMessage(
+          {
+            id: "ui.lifecycle.staticCountdownDays",
+            defaultMessage: "{count} {count, plural, one {day} other {days}}",
+          },
+          { count: days },
+        )
+      : null,
+    hours > 0
+      ? intl.formatMessage(
+          {
+            id: "ui.lifecycle.staticCountdownHours",
+            defaultMessage: "{count} {count, plural, one {hour} other {hours}}",
+          },
+          { count: hours },
+        )
+      : null,
+    minutes > 0 || (days === 0 && hours === 0)
+      ? intl.formatMessage(
+          {
+            id: "ui.lifecycle.staticCountdownMinutes",
+            defaultMessage:
+              "{count} {count, plural, one {minute} other {minutes}}",
+          },
+          { count: minutes },
+        )
+      : null,
+  ].filter((part): part is string => part !== null);
 
-  return intl.formatMessage(
-    {
-      id: "ui.lifecycle.staticCountdown",
-      defaultMessage:
-        "{days} {days, plural, one {day} other {days}} {hours} {hours, plural, one {hour} other {hours}} {minutes} {minutes, plural, one {minute} other {minutes}}",
-    },
-    { days, hours, minutes },
-  );
+  return parts.join(" ");
 }
 
 function formatTimingSummary(
@@ -283,9 +356,9 @@ export function TreasuryLifecyclePeriodInfo({
 }: TreasuryLifecyclePeriodInfoProps): JSX.Element {
   const intl = useTreasuryIntl();
   const [isLifecycleSelectorOpen, setIsLifecycleSelectorOpen] = useState(false);
-  const [maxDerivedLifecycleId, setMaxDerivedLifecycleId] = useState<number | null>(
-    parseNumericValue(lifecycleId),
-  );
+  const [maxDerivedLifecycleId, setMaxDerivedLifecycleId] = useState<
+    number | null
+  >(parseNumericValue(lifecycleId));
   const resolvedCurrentSlot = parseNumericValue(currentSlot);
   const numericLifecycleId = parseNumericValue(lifecycleId);
 
@@ -301,7 +374,10 @@ export function TreasuryLifecyclePeriodInfo({
   const resolvedLifecycleOptions =
     lifecycleOptions ??
     (maxDerivedLifecycleId !== null
-      ? Array.from({ length: maxDerivedLifecycleId + 1 }, (_value, index) => index)
+      ? Array.from(
+          { length: maxDerivedLifecycleId + 1 },
+          (_value, index) => index,
+        )
       : []);
   const formatLifecycleOptionLabel = (option: number | string): string =>
     intl.formatMessage(
@@ -312,18 +388,19 @@ export function TreasuryLifecyclePeriodInfo({
       { id: option },
     );
   const currentValidLifecycleOption =
-    resolvedLifecycleOptions.length > 0
-      ? (resolvedLifecycleOptions[resolvedLifecycleOptions.length - 1] ?? null)
-      : null;
+    resolveLatestLifecycleOption(resolvedLifecycleOptions);
   const currentValidLifecycleOptionLabel =
     currentValidLifecycleOption !== null
       ? formatLifecycleOptionLabel(currentValidLifecycleOption)
       : null;
   const currentValidLifecycleOptionNumber =
-    currentValidLifecycleOption !== null ? Number(currentValidLifecycleOption) : null;
-  const historicalLifecycleOptions = resolvedLifecycleOptions.filter(
-    (option) => String(option) !== String(currentValidLifecycleOption),
-  ).slice().reverse();
+    currentValidLifecycleOption !== null
+      ? parseNumericValue(currentValidLifecycleOption)
+      : null;
+  const historicalLifecycleOptions = resolvedLifecycleOptions
+    .filter((option) => String(option) !== String(currentValidLifecycleOption))
+    .slice()
+    .sort(compareLifecycleOptionsDescending);
   const currentPeriodIndex = Math.max(
     0,
     PERIODS.findIndex((period) => period.id === currentPeriod),
@@ -382,15 +459,14 @@ export function TreasuryLifecyclePeriodInfo({
     intl,
     currentPeriodMetadata?.estimatedEnd,
   );
-  const endingInSummary =
-    isHistoricalLifecycle
-      ? formatCompactDateTime(intl, lifecycleEndMetadata?.estimatedEnd)
-      : countdownLabel ??
-        periodEndsIn ??
-        intl.formatMessage({
-          id: "ui.lifecycle.endingInFallback",
-          defaultMessage: "Not available",
-        });
+  const endingInSummary = isHistoricalLifecycle
+    ? formatCompactDateTime(intl, lifecycleEndMetadata?.estimatedEnd)
+    : (countdownLabel ??
+      periodEndsIn ??
+      intl.formatMessage({
+        id: "ui.lifecycle.endingInFallback",
+        defaultMessage: "Not available",
+      }));
 
   if (loading) {
     return (
@@ -449,7 +525,10 @@ export function TreasuryLifecyclePeriodInfo({
           <div className="space-y-2">
             <div className="hidden lg:grid lg:grid-cols-4 lg:gap-3">
               {Array.from({ length: 4 }, (_value, index) => (
-                <Skeleton key={`loading-progress-label-${index}`} className="h-4 w-20" />
+                <Skeleton
+                  key={`loading-progress-label-${index}`}
+                  className="h-4 w-20"
+                />
               ))}
             </div>
             <div className="relative flex min-w-0 gap-px">
@@ -476,372 +555,392 @@ export function TreasuryLifecyclePeriodInfo({
       data-component="treasury-lifecycle-period-info"
     >
       <header className="border-b border-border/80 px-1 sm:px-2 pb-8">
-          <div className="flex flex-col gap-8 lg:flex-row lg:items-start lg:justify-between lg:gap-10">
-            <div className="min-w-0 flex-1 space-y-2">
-              <div className="flex flex-wrap items-center gap-2 text-xs font-medium uppercase tracking-[0.12em] text-muted-foreground">
-                {lifecycleId !== undefined ? (
-                  resolvedLifecycleOptions.length > 0 ? (
-                    <>
-                      <label className="relative inline-flex items-center sm:hidden">
-                        <span className="sr-only">
-                          {intl.formatMessage({
-                            id: "ui.lifecycle.selectorLabel",
-                            defaultMessage: "Select lifecycle",
-                          })}
-                        </span>
-                        <select
-                          className="min-w-[8.75rem] appearance-none bg-transparent py-1 pr-4 text-[11px] font-medium uppercase tracking-[0.12em] text-foreground outline-none"
-                          value={String(lifecycleId)}
-                          onChange={(event) => {
-                            onLifecycleChange?.(Number(event.target.value));
-                          }}
+        <div className="flex flex-col gap-8 lg:flex-row lg:items-start lg:justify-between lg:gap-10">
+          <div className="min-w-0 flex-1 space-y-2">
+            <div className="flex flex-wrap items-center gap-2 text-xs font-medium uppercase tracking-[0.12em] text-muted-foreground">
+              {lifecycleId !== undefined ? (
+                resolvedLifecycleOptions.length > 0 ? (
+                  <>
+                    <label className="relative inline-flex items-center sm:hidden">
+                      <span className="sr-only">
+                        {intl.formatMessage({
+                          id: "ui.lifecycle.selectorLabel",
+                          defaultMessage: "Select lifecycle",
+                        })}
+                      </span>
+                      <select
+                        className="min-w-[8.75rem] appearance-none bg-transparent py-1 pr-4 text-[11px] font-medium uppercase tracking-[0.12em] text-foreground outline-none"
+                        value={String(lifecycleId)}
+                        onChange={(event) => {
+                          onLifecycleChange?.(Number(event.target.value));
+                        }}
+                        aria-label={intl.formatMessage({
+                          id: "ui.lifecycle.selectorLabel",
+                          defaultMessage: "Select lifecycle",
+                        })}
+                      >
+                        {currentValidLifecycleOption !== null ? (
+                          <optgroup
+                            label={intl.formatMessage({
+                              id: "ui.lifecycle.selectorSectionCurrent",
+                              defaultMessage: "Current",
+                            })}
+                          >
+                            <option
+                              key={String(currentValidLifecycleOption)}
+                              value={String(currentValidLifecycleOption)}
+                            >
+                              {currentValidLifecycleOptionLabel}
+                            </option>
+                          </optgroup>
+                        ) : null}
+                        {historicalLifecycleOptions.length > 0 ? (
+                          <optgroup
+                            label={intl.formatMessage({
+                              id: "ui.lifecycle.selectorSectionHistorical",
+                              defaultMessage: "Historical",
+                            })}
+                          >
+                            {historicalLifecycleOptions.map((option) => (
+                              <option
+                                key={String(option)}
+                                value={String(option)}
+                              >
+                                {formatLifecycleOptionLabel(option)}
+                              </option>
+                            ))}
+                          </optgroup>
+                        ) : null}
+                      </select>
+                      <ChevronDown
+                        className="pointer-events-none absolute right-1 h-3.5 w-3.5 text-muted-foreground"
+                        strokeWidth={2.25}
+                        aria-hidden="true"
+                      />
+                    </label>
+
+                    <Popover
+                      open={isLifecycleSelectorOpen}
+                      onOpenChange={setIsLifecycleSelectorOpen}
+                    >
+                      <PopoverTrigger asChild>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          className="hidden h-auto min-w-0 gap-1 rounded-sm px-0 py-1 text-[11px] font-medium uppercase tracking-[0.12em] text-foreground hover:bg-transparent hover:text-foreground sm:inline-flex"
                           aria-label={intl.formatMessage({
                             id: "ui.lifecycle.selectorLabel",
                             defaultMessage: "Select lifecycle",
                           })}
                         >
+                          {intl.formatMessage(
+                            {
+                              id: "ui.lifecycle.lifecycleId",
+                              defaultMessage: "Lifecycle {id}",
+                            },
+                            { id: lifecycleId },
+                          )}
+                          <ChevronDown
+                            className={cn(
+                              "h-3.5 w-3.5 text-muted-foreground transition-transform",
+                              isLifecycleSelectorOpen ? "rotate-180" : "",
+                            )}
+                            strokeWidth={2.25}
+                            aria-hidden="true"
+                          />
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent
+                        align="start"
+                        side="bottom"
+                        sideOffset={8}
+                        className="hidden w-48 p-1 sm:block"
+                      >
+                        <div className="border-b border-border/60 px-2.5 py-2">
+                          <p className="text-[11px] leading-relaxed text-muted-foreground">
+                            {intl.formatMessage({
+                              id: "ui.lifecycle.selectorDescription",
+                              defaultMessage: "Select a lifecycle to display",
+                            })}
+                          </p>
+                        </div>
+                        <div className="max-h-64 overflow-auto py-1 [scrollbar-color:hsl(var(--border))_transparent] [scrollbar-width:thin] [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-border/70 [&::-webkit-scrollbar-track]:bg-transparent">
                           {currentValidLifecycleOption !== null ? (
-                            <optgroup
-                              label={intl.formatMessage({
-                                id: "ui.lifecycle.selectorSectionCurrent",
-                                defaultMessage: "Current",
-                              })}
+                            <div className="px-2.5 pb-1 pt-1">
+                              <p className="text-[10px] font-medium uppercase tracking-[0.12em] text-muted-foreground/70">
+                                {intl.formatMessage({
+                                  id: "ui.lifecycle.selectorSectionCurrent",
+                                  defaultMessage: "Current",
+                                })}
+                              </p>
+                            </div>
+                          ) : null}
+                          {currentValidLifecycleOption !== null ? (
+                            <button
+                              type="button"
+                              className={cn(
+                                "flex w-full items-center justify-between gap-3 rounded-sm px-2.5 py-2 text-left text-sm transition-colors hover:bg-muted hover:text-foreground",
+                                String(currentValidLifecycleOption) ===
+                                  String(lifecycleId)
+                                  ? "bg-muted text-foreground"
+                                  : "text-muted-foreground",
+                              )}
+                              onClick={() => {
+                                if (
+                                  currentValidLifecycleOptionNumber !== null
+                                ) {
+                                  onLifecycleChange?.(
+                                    currentValidLifecycleOptionNumber,
+                                  );
+                                }
+                                setIsLifecycleSelectorOpen(false);
+                              }}
                             >
-                              <option
-                                key={String(currentValidLifecycleOption)}
-                                value={String(currentValidLifecycleOption)}
-                              >
+                              <span className="min-w-0">
                                 {currentValidLifecycleOptionLabel}
-                              </option>
-                            </optgroup>
+                              </span>
+                              {String(currentValidLifecycleOption) ===
+                              String(lifecycleId) ? (
+                                <Check
+                                  className="h-3.5 w-3.5 shrink-0 text-primary"
+                                  aria-hidden="true"
+                                />
+                              ) : null}
+                            </button>
                           ) : null}
                           {historicalLifecycleOptions.length > 0 ? (
-                            <optgroup
-                              label={intl.formatMessage({
-                                id: "ui.lifecycle.selectorSectionHistorical",
-                                defaultMessage: "Historical",
-                              })}
-                            >
-                              {historicalLifecycleOptions.map((option) => (
-                                <option key={String(option)} value={String(option)}>
-                                  {formatLifecycleOptionLabel(option)}
-                                </option>
-                              ))}
-                            </optgroup>
-                          ) : null}
-                        </select>
-                        <ChevronDown
-                          className="pointer-events-none absolute right-1 h-3.5 w-3.5 text-muted-foreground"
-                          strokeWidth={2.25}
-                          aria-hidden="true"
-                        />
-                      </label>
-
-                      <Popover
-                        open={isLifecycleSelectorOpen}
-                        onOpenChange={setIsLifecycleSelectorOpen}
-                      >
-                        <PopoverTrigger asChild>
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            className="hidden h-auto min-w-0 gap-1 rounded-sm px-0 py-1 text-[11px] font-medium uppercase tracking-[0.12em] text-foreground hover:bg-transparent hover:text-foreground sm:inline-flex"
-                            aria-label={intl.formatMessage({
-                              id: "ui.lifecycle.selectorLabel",
-                              defaultMessage: "Select lifecycle",
-                            })}
-                          >
-                            {intl.formatMessage(
-                              {
-                                id: "ui.lifecycle.lifecycleId",
-                                defaultMessage: "Lifecycle {id}",
-                              },
-                              { id: lifecycleId },
-                            )}
-                            <ChevronDown
-                              className={cn(
-                                "h-3.5 w-3.5 text-muted-foreground transition-transform",
-                                isLifecycleSelectorOpen ? "rotate-180" : "",
-                              )}
-                              strokeWidth={2.25}
-                              aria-hidden="true"
-                            />
-                          </Button>
-                        </PopoverTrigger>
-                        <PopoverContent
-                          align="start"
-                          side="bottom"
-                          sideOffset={8}
-                          className="hidden w-48 p-1 sm:block"
-                        >
-                          <div className="border-b border-border/60 px-2.5 py-2">
-                            <p className="text-[11px] leading-relaxed text-muted-foreground">
-                              {intl.formatMessage({
-                                id: "ui.lifecycle.selectorDescription",
-                                defaultMessage: "Select a lifecycle to display",
-                              })}
-                            </p>
-                          </div>
-                          <div className="max-h-64 overflow-auto py-1 [scrollbar-color:hsl(var(--border))_transparent] [scrollbar-width:thin] [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-border/70 [&::-webkit-scrollbar-track]:bg-transparent">
-                            {currentValidLifecycleOption !== null ? (
-                              <div className="px-2.5 pb-1 pt-1">
+                            <>
+                              <div className="px-2.5 pb-1 pt-3">
                                 <p className="text-[10px] font-medium uppercase tracking-[0.12em] text-muted-foreground/70">
                                   {intl.formatMessage({
-                                    id: "ui.lifecycle.selectorSectionCurrent",
-                                    defaultMessage: "Current",
+                                    id: "ui.lifecycle.selectorSectionHistorical",
+                                    defaultMessage: "Historical",
                                   })}
                                 </p>
                               </div>
-                            ) : null}
-                            {currentValidLifecycleOption !== null ? (
-                              <button
-                                type="button"
-                                className={cn(
-                                  "flex w-full items-center justify-between gap-3 rounded-sm px-2.5 py-2 text-left text-sm transition-colors hover:bg-muted hover:text-foreground",
-                                  String(currentValidLifecycleOption) === String(lifecycleId)
-                                    ? "bg-muted text-foreground"
-                                    : "text-muted-foreground",
-                                )}
-                                onClick={() => {
-                                  if (currentValidLifecycleOptionNumber !== null) {
-                                    onLifecycleChange?.(currentValidLifecycleOptionNumber);
-                                  }
-                                  setIsLifecycleSelectorOpen(false);
-                                }}
-                              >
-                                <span className="min-w-0">
-                                  {currentValidLifecycleOptionLabel}
-                                </span>
-                                {String(currentValidLifecycleOption) === String(lifecycleId) ? (
-                                  <Check className="h-3.5 w-3.5 shrink-0 text-primary" aria-hidden="true" />
-                                ) : null}
-                              </button>
-                            ) : null}
-                            {historicalLifecycleOptions.length > 0 ? (
-                              <>
-                                <div className="px-2.5 pb-1 pt-3">
-                                  <p className="text-[10px] font-medium uppercase tracking-[0.12em] text-muted-foreground/70">
-                                    {intl.formatMessage({
-                                      id: "ui.lifecycle.selectorSectionHistorical",
-                                      defaultMessage: "Historical",
-                                    })}
-                                  </p>
-                                </div>
-                                {historicalLifecycleOptions.map((option) => {
-                                  const isSelected = String(option) === String(lifecycleId);
-                                  return (
-                                    <button
-                                      key={String(option)}
-                                      type="button"
-                                      className={cn(
-                                        "flex w-full items-center justify-between gap-3 rounded-sm px-2.5 py-2 text-left text-sm transition-colors hover:bg-muted hover:text-foreground",
-                                        isSelected
-                                          ? "bg-muted text-foreground"
-                                          : "text-muted-foreground",
-                                      )}
-                                      onClick={() => {
-                                        onLifecycleChange?.(Number(option));
-                                        setIsLifecycleSelectorOpen(false);
-                                      }}
-                                    >
-                                      <span className="min-w-0">
-                                        {formatLifecycleOptionLabel(option)}
-                                      </span>
-                                      {isSelected ? (
-                                        <Check
-                                          className="h-3.5 w-3.5 shrink-0 text-primary"
-                                          aria-hidden="true"
-                                        />
-                                      ) : null}
-                                    </button>
-                                  );
-                                })}
-                              </>
-                            ) : null}
-                          </div>
-                        </PopoverContent>
-                      </Popover>
-                    </>
-                  ) : (
-                    <span>
-                      {intl.formatMessage(
-                        {
-                          id: "ui.lifecycle.lifecycleId",
-                          defaultMessage: "Lifecycle {id}",
-                        },
-                        { id: lifecycleId },
-                      )}
-                    </span>
-                  )
-                ) : null}
-              </div>
+                              {historicalLifecycleOptions.map((option) => {
+                                const isSelected =
+                                  String(option) === String(lifecycleId);
+                                return (
+                                  <button
+                                    key={String(option)}
+                                    type="button"
+                                    className={cn(
+                                      "flex w-full items-center justify-between gap-3 rounded-sm px-2.5 py-2 text-left text-sm transition-colors hover:bg-muted hover:text-foreground",
+                                      isSelected
+                                        ? "bg-muted text-foreground"
+                                        : "text-muted-foreground",
+                                    )}
+                                    onClick={() => {
+                                      onLifecycleChange?.(Number(option));
+                                      setIsLifecycleSelectorOpen(false);
+                                    }}
+                                  >
+                                    <span className="min-w-0">
+                                      {formatLifecycleOptionLabel(option)}
+                                    </span>
+                                    {isSelected ? (
+                                      <Check
+                                        className="h-3.5 w-3.5 shrink-0 text-primary"
+                                        aria-hidden="true"
+                                      />
+                                    ) : null}
+                                  </button>
+                                );
+                              })}
+                            </>
+                          ) : null}
+                        </div>
+                      </PopoverContent>
+                    </Popover>
+                  </>
+                ) : (
+                  <span>
+                    {intl.formatMessage(
+                      {
+                        id: "ui.lifecycle.lifecycleId",
+                        defaultMessage: "Lifecycle {id}",
+                      },
+                      { id: lifecycleId },
+                    )}
+                  </span>
+                )
+              ) : null}
+            </div>
 
-              <div className="space-y-2">
-                <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between sm:gap-6">
-                  <div className="min-w-0 flex-1 space-y-3">
-                    <div className="flex min-w-0 items-center gap-2">
-                      <span className="shrink-0 text-2xl sm:text-3xl" aria-hidden="true">
-                        {currentPeriodDefinition?.emoji}
+            <div className="space-y-2">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between sm:gap-6">
+                <div className="min-w-0 flex-1 space-y-3">
+                  <div className="flex min-w-0 items-center gap-2">
+                    <span
+                      className="shrink-0 text-2xl sm:text-3xl"
+                      aria-hidden="true"
+                    >
+                      {currentPeriodDefinition?.emoji}
+                    </span>
+                    <h2 className="text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
+                      {title ?? currentPeriodTitle}
+                    </h2>
+                  </div>
+                  <p className="max-w-3xl text-base leading-relaxed text-muted-foreground">
+                    {description ?? currentPeriodPurpose}
+                  </p>
+                </div>
+                <div className="shrink-0 space-y-2 sm:min-w-[12rem] sm:pt-0 sm:text-right">
+                  <p className="text-xs font-medium uppercase tracking-[0.12em] text-muted-foreground">
+                    {isHistoricalLifecycle
+                      ? intl.formatMessage({
+                          id: "ui.lifecycle.ended",
+                          defaultMessage: "Ended",
+                        })
+                      : intl.formatMessage({
+                          id: "ui.lifecycle.endingIn",
+                          defaultMessage: "Ending in",
+                        })}
+                  </p>
+                  <p className="text-xl font-semibold tabular-nums tracking-tight text-foreground">
+                    {endingInSummary}
+                  </p>
+                  {remainingSlotsLabel ? (
+                    <p className="text-sm leading-snug text-muted-foreground">
+                      <span className="font-mono tabular-nums">
+                        {remainingSlotsLabel}
                       </span>
-                      <h2 className="text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
-                        {title ?? currentPeriodTitle}
-                      </h2>
-                    </div>
-                    <p className="max-w-3xl text-base leading-relaxed text-muted-foreground">
-                      {description ?? currentPeriodPurpose}
                     </p>
-                  </div>
-                  <div className="shrink-0 space-y-2 sm:min-w-[12rem] sm:pt-0 sm:text-right">
-                    <p className="text-xs font-medium uppercase tracking-[0.12em] text-muted-foreground">
-                      {isHistoricalLifecycle
-                        ? intl.formatMessage({
-                            id: "ui.lifecycle.ended",
-                            defaultMessage: "Ended",
-                          })
-                        : intl.formatMessage({
-                            id: "ui.lifecycle.endingIn",
-                            defaultMessage: "Ending in",
-                          })}
-                    </p>
-                    <p className="text-xl font-semibold tabular-nums tracking-tight text-foreground">
-                      {endingInSummary}
-                    </p>
-                    {remainingSlotsLabel ? (
-                      <p className="text-sm leading-snug text-muted-foreground">
-                        <span className="font-mono tabular-nums">{remainingSlotsLabel}</span>
-                      </p>
-                    ) : null}
-                  </div>
+                  ) : null}
                 </div>
               </div>
             </div>
           </div>
+        </div>
       </header>
 
       <div className="space-y-5 pt-1">
         <ol className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
           {PERIODS.map((period, index) => {
-              const isActive = !isHistoricalLifecycle && period.id === currentPeriod;
-              const isCompleted = isHistoricalLifecycle || index < currentPeriodIndex;
-              const metadata = metadataByPeriod.get(period.id);
-              const periodPurposeText =
-                metadata?.purpose ??
-                intl.formatMessage({
-                  id: `ui.lifecycle.purpose.${period.id}`,
-                  defaultMessage: period.id,
-                });
-              const stateLabel = isActive
+            const isActive =
+              !isHistoricalLifecycle && period.id === currentPeriod;
+            const isCompleted =
+              isHistoricalLifecycle || index < currentPeriodIndex;
+            const metadata = metadataByPeriod.get(period.id);
+            const periodPurposeText =
+              metadata?.purpose ??
+              intl.formatMessage({
+                id: `ui.lifecycle.purpose.${period.id}`,
+                defaultMessage: period.id,
+              });
+            const stateLabel = isActive
+              ? intl.formatMessage({
+                  id: "ui.lifecycle.state.current",
+                  defaultMessage: "Current",
+                })
+              : isCompleted
                 ? intl.formatMessage({
-                    id: "ui.lifecycle.state.current",
-                    defaultMessage: "Current",
+                    id: "ui.lifecycle.state.completed",
+                    defaultMessage: "Completed",
                   })
-                : isCompleted
-                  ? intl.formatMessage({
-                      id: "ui.lifecycle.state.completed",
-                      defaultMessage: "Completed",
-                    })
-                  : intl.formatMessage({
-                      id: "ui.lifecycle.state.upcoming",
-                      defaultMessage: "Upcoming",
-                    });
+                : intl.formatMessage({
+                    id: "ui.lifecycle.state.upcoming",
+                    defaultMessage: "Upcoming",
+                  });
 
-              const periodTimingSummary = formatTimingSummary(
-                intl,
-                metadata?.slotRange,
-                metadata?.estimatedStart,
-                metadata?.estimatedEnd,
-              );
+            const periodTimingSummary = formatTimingSummary(
+              intl,
+              metadata?.slotRange,
+              metadata?.estimatedStart,
+              metadata?.estimatedEnd,
+            );
 
-              return (
-                <li
-                  key={period.id}
-                  className={cn(
-                    "rounded-xl border px-4 py-4 transition-colors",
-                    isActive
-                      ? "border-primary/50 bg-primary/12 shadow-sm ring-1 ring-primary/20 text-foreground"
-                      : isCompleted
-                        ? "border-border/70 bg-muted/35 text-foreground/80"
-                        : "border-border/70 bg-background text-muted-foreground",
-                  )}
-                >
-                  <div className="space-y-2.5">
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="min-w-0 flex-1">
-                        <span
-                          className={cn(
-                            "flex min-w-0 items-center gap-1.5 truncate text-sm",
-                            isActive ? "font-semibold" : "font-medium",
-                          )}
-                        >
-                          <span className="shrink-0" aria-hidden="true">
-                            {period.emoji}
-                          </span>
-                          <span className="truncate">
+            return (
+              <li
+                key={period.id}
+                className={cn(
+                  "rounded-xl border px-4 py-4 transition-colors",
+                  isActive
+                    ? "border-primary/50 bg-primary/12 shadow-sm ring-1 ring-primary/20 text-foreground"
+                    : isCompleted
+                      ? "border-border/70 bg-muted/35 text-foreground/80"
+                      : "border-border/70 bg-background text-muted-foreground",
+                )}
+              >
+                <div className="space-y-2.5">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0 flex-1">
+                      <span
+                        className={cn(
+                          "flex min-w-0 items-center gap-1.5 truncate text-sm",
+                          isActive ? "font-semibold" : "font-medium",
+                        )}
+                      >
+                        <span className="shrink-0" aria-hidden="true">
+                          {period.emoji}
+                        </span>
+                        <span className="truncate">
                           {intl.formatMessage({
                             id: `ui.lifecycle.period.${period.id}`,
                             defaultMessage: period.id,
                           })}
-                          </span>
                         </span>
-                      </div>
-                      <span
-                        className={cn(
+                      </span>
+                    </div>
+                    <span
+                      className={cn(
                         "mt-0.5 inline-flex shrink-0 items-center rounded-sm py-1 text-[11px] font-medium leading-none",
-                          isActive
+                        isActive
                           ? "bg-primary/12 px-2.5 text-primary"
-                            : isCompleted
+                          : isCompleted
                             ? "bg-muted px-2.5 text-foreground/80"
                             : "bg-background px-2.5 text-muted-foreground",
-                        )}
-                      >
+                      )}
+                    >
                       {stateLabel}
                     </span>
-                    </div>
-                    <div className="w-full">
-                      <p className="text-xs leading-relaxed text-muted-foreground">
-                        {periodPurposeText}
-                      </p>
-                    </div>
                   </div>
-                  {periodTimingSummary.primary ||
-                  periodTimingSummary.secondary ? (
-                    <div className="mt-3 space-y-1.5 border-t border-border/60 pt-3">
-                      {periodTimingSummary.primary ? (
-                        <div className="space-y-1.5">
-                          <p className="text-[10px] font-medium uppercase tracking-[0.12em] text-muted-foreground/70">
-                            {intl.formatMessage({
-                              id: "ui.lifecycle.duration",
-                              defaultMessage: "Duration",
-                            })}
-                          </p>
-                          <p
-                            className={cn(
-                              "text-xs leading-relaxed",
-                              isActive ? "text-foreground" : "text-foreground/85",
-                            )}
-                          >
-                            <span className="font-mono font-medium tabular-nums">
-                              {periodTimingSummary.primary}
-                            </span>
-                          </p>
-                        </div>
-                      ) : null}
-                      {periodTimingSummary.secondary ? (
+                  <div className="w-full">
+                    <p className="text-xs leading-relaxed text-muted-foreground">
+                      {periodPurposeText}
+                    </p>
+                  </div>
+                </div>
+                {periodTimingSummary.primary ||
+                periodTimingSummary.secondary ? (
+                  <div className="mt-3 space-y-1.5 border-t border-border/60 pt-3">
+                    {periodTimingSummary.primary ? (
+                      <div className="space-y-1.5">
+                        <p className="text-[10px] font-medium uppercase tracking-[0.12em] text-muted-foreground/70">
+                          {intl.formatMessage({
+                            id: "ui.lifecycle.duration",
+                            defaultMessage: "Duration",
+                          })}
+                        </p>
                         <p
                           className={cn(
-                            "text-[11px] leading-relaxed",
-                            "text-muted-foreground",
+                            "text-xs leading-relaxed",
+                            isActive ? "text-foreground" : "text-foreground/85",
                           )}
                         >
-                          <span className="font-mono tabular-nums">
-                            {periodTimingSummary.secondary}
+                          <span className="font-mono font-medium tabular-nums">
+                            {periodTimingSummary.primary}
                           </span>
                         </p>
-                      ) : null}
-                    </div>
-                  ) : null}
-                </li>
-              );
+                      </div>
+                    ) : null}
+                    {periodTimingSummary.secondary ? (
+                      <p
+                        className={cn(
+                          "text-[11px] leading-relaxed",
+                          "text-muted-foreground",
+                        )}
+                      >
+                        <span className="font-mono tabular-nums">
+                          {periodTimingSummary.secondary}
+                        </span>
+                      </p>
+                    ) : null}
+                  </div>
+                ) : null}
+              </li>
+            );
           })}
         </ol>
 
@@ -852,14 +951,17 @@ export function TreasuryLifecyclePeriodInfo({
                 id: `ui.lifecycle.period.${period.id}`,
                 defaultMessage: period.id,
               });
-              const isCurrentPeriod = !isHistoricalLifecycle && period.id === currentPeriod;
+              const isCurrentPeriod =
+                !isHistoricalLifecycle && period.id === currentPeriod;
 
               return (
                 <div
                   key={period.id}
                   className={cn(
                     "flex min-w-0 items-center gap-1.5 text-xs",
-                    isCurrentPeriod ? "font-medium text-primary" : "text-muted-foreground",
+                    isCurrentPeriod
+                      ? "font-medium text-primary"
+                      : "text-muted-foreground",
                   )}
                 >
                   {isCurrentPeriod ? (
@@ -895,8 +997,10 @@ export function TreasuryLifecyclePeriodInfo({
                 metadata?.slotRange,
                 resolvedCurrentSlot,
               );
-              const isCurrentPeriod = !isHistoricalLifecycle && period.id === currentPeriod;
-              const isCompletedPeriod = isHistoricalLifecycle || index < currentPeriodIndex;
+              const isCurrentPeriod =
+                !isHistoricalLifecycle && period.id === currentPeriod;
+              const isCompletedPeriod =
+                isHistoricalLifecycle || index < currentPeriodIndex;
               const isFirst = index === 0;
               const isLast = index === PERIODS.length - 1;
 
@@ -928,7 +1032,8 @@ export function TreasuryLifecyclePeriodInfo({
                     <div
                       className={cn(
                         "absolute inset-y-0 left-0 transition-all",
-                        (!isHistoricalLifecycle && isCurrentPeriod) || isCompletedPeriod
+                        (!isHistoricalLifecycle && isCurrentPeriod) ||
+                          isCompletedPeriod
                           ? "bg-primary"
                           : "bg-foreground/35",
                         isFirst && isLast

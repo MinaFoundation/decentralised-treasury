@@ -1,10 +1,7 @@
-"use client";
-
 import {
   assertZkappUriWithinByteLimit,
   hashMarkdownContentToZkappUri,
 } from "@repo/sdk/src/utils/proposal-content-hash.js";
-import { resolveEndpointUrl } from "../../endpoint-settings/lib/endpoint-url";
 
 const MINA_DECIMALS = 1_000_000_000n;
 
@@ -31,7 +28,6 @@ export interface PreparedCreateProposalTransaction {
 interface ConstructedCreateProposalTransaction {
   transaction: any;
   proposalPrivateKey: any;
-  inlineSignerPrivateKeys: any[];
   preparedTransaction: Omit<
     PreparedCreateProposalTransaction,
     "transactionJson"
@@ -59,13 +55,11 @@ export interface PreparedVoteProposalTransaction {
 
 interface ConstructedVoteProposalTransaction {
   transaction: any;
-  inlineSignerPrivateKeys: any[];
   preparedTransaction: Omit<PreparedVoteProposalTransaction, "transactionJson">;
 }
 
 interface ConstructedExecuteProposalTransaction {
   transaction: any;
-  inlineSignerPrivateKeys: any[];
   preparedTransaction: Omit<
     PreparedExecuteProposalTransaction,
     "transactionJson"
@@ -102,6 +96,25 @@ export interface SerializedProposalCompileArtifacts {
 
 interface ProposalProverOptions {
   proofsEnabled?: boolean;
+}
+
+function getRuntimeOrigin(): string | undefined {
+  return typeof globalThis.location?.origin === "string"
+    ? globalThis.location.origin
+    : undefined;
+}
+
+function resolveProverEndpointUrl(endpointRoot: string): string {
+  const trimmedEndpointRoot = endpointRoot.trim();
+  const runtimeOrigin = getRuntimeOrigin();
+
+  if (!runtimeOrigin && !/^[a-z][a-z\d+\-.]*:\/\//i.test(trimmedEndpointRoot)) {
+    throw new Error(
+      `Relative endpoint URL requires a browser origin: ${endpointRoot}`,
+    );
+  }
+
+  return new URL(trimmedEndpointRoot, runtimeOrigin).toString();
 }
 
 interface TransactionAuthorizationSummaryItem {
@@ -326,34 +339,6 @@ function getConfiguredProposalCompileArtifacts(): SerializedProposalCompileArtif
   };
 }
 
-function getConfiguredInlineSignerPrivateKeyBase58s(): string[] {
-  const signerPrivateKeysJson =
-    process.env.NEXT_PUBLIC_INLINE_SIGNER_PRIVATE_KEYS_JSON;
-
-  if (
-    typeof signerPrivateKeysJson !== "string" ||
-    signerPrivateKeysJson.trim().length === 0
-  ) {
-    throw new Error(
-      "Missing required browser prover config: NEXT_PUBLIC_INLINE_SIGNER_PRIVATE_KEYS_JSON.",
-    );
-  }
-
-  const parsed = parseJsonStringValue(signerPrivateKeysJson);
-  if (!Array.isArray(parsed)) {
-    throw new Error(
-      "NEXT_PUBLIC_INLINE_SIGNER_PRIVATE_KEYS_JSON must be a JSON array.",
-    );
-  }
-
-  const signerPrivateKeys = parsed.filter(
-    (value): value is string =>
-      typeof value === "string" && value.trim().length > 0,
-  );
-
-  return Array.from(new Set(signerPrivateKeys.map((value) => value.trim())));
-}
-
 export async function getProposalModules(): Promise<{
   o1js: any;
   TreasuryOwnerSmartContract: any;
@@ -393,7 +378,7 @@ export async function getProposalModules(): Promise<{
       proposalModule as { TreasuryProposalSmartContract: any }
     ).TreasuryProposalSmartContract,
     LIFECYCLE_PERIOD_DURATION: (
-      ownerModule as { LIFECYCLE_PERIOD_DURATION: any }
+      ownerModule as unknown as { LIFECYCLE_PERIOD_DURATION: any }
     ).LIFECYCLE_PERIOD_DURATION,
     MULTISIG_PARTICIPANTS_COUNT: (
       multisigSignaturesModule as {
@@ -520,10 +505,7 @@ export async function buildCreateProposalTransactionInCurrentThread(
     input,
     options,
   );
-  constructed.transaction.sign([
-    ...constructed.inlineSignerPrivateKeys,
-    constructed.proposalPrivateKey,
-  ]);
+  constructed.transaction.sign([constructed.proposalPrivateKey]);
   return {
     ...constructed.preparedTransaction,
     transactionJson: normalizeSerializedTransactionJson(
@@ -582,21 +564,13 @@ export async function buildAndProveCreateProposalTransactionInCurrentThread(
   logExpectedSignerCoverage(
     "after prove before sign",
     provedUnsignedTransactionJson,
-    [
-      ...constructed.inlineSignerPrivateKeys.map((privateKey) =>
-        privateKey.toPublicKey().toBase58(),
-      ),
-      constructed.proposalPrivateKey.toPublicKey().toBase58(),
-    ],
+    [constructed.proposalPrivateKey.toPublicKey().toBase58()],
   );
   assertProofsPresent("after prove before sign", provedUnsignedTransactionJson);
   console.info("[proposal-prover][create] sign begin", {
     proposalPublicKey: constructed.preparedTransaction.proposalPublicKey,
   });
-  constructed.transaction.sign([
-    ...constructed.inlineSignerPrivateKeys,
-    constructed.proposalPrivateKey,
-  ]);
+  constructed.transaction.sign([constructed.proposalPrivateKey]);
   const signedAt = Date.now();
   const provedTransactionJson = normalizeSerializedTransactionJson(
     constructed.transaction.toJSON(),
@@ -606,9 +580,6 @@ export async function buildAndProveCreateProposalTransactionInCurrentThread(
     provedTransactionJson,
   );
   logExpectedSignerCoverage("after combined sign", provedTransactionJson, [
-    ...constructed.inlineSignerPrivateKeys.map((privateKey) =>
-      privateKey.toPublicKey().toBase58(),
-    ),
     constructed.proposalPrivateKey.toPublicKey().toBase58(),
   ]);
   console.info("[proposal-prover][create] buildAndProve complete", {
@@ -663,21 +634,8 @@ async function constructCreateProposalTransactionInCurrentThread(
     fetchAccount,
   } = o1js;
 
-  const inlineSignerPrivateKeys =
-    getConfiguredInlineSignerPrivateKeyBase58s().map((value) =>
-      PrivateKey.fromBase58(value),
-    );
   const senderPublicKey = PublicKey.fromBase58(input.senderAddress);
   const senderPublicKeyBase58 = senderPublicKey.toBase58();
-  const senderPrivateKey = inlineSignerPrivateKeys.find(
-    (privateKey) =>
-      privateKey.toPublicKey().toBase58() === senderPublicKeyBase58,
-  );
-  if (!senderPrivateKey) {
-    throw new Error(
-      `Connected wallet ${senderPublicKeyBase58} is not available for inline signing. Add its private key to NEXT_PUBLIC_INLINE_SIGNER_PRIVATE_KEYS_JSON.`,
-    );
-  }
   const recipientPublicKey = PublicKey.fromBase58(input.recipient);
   const treasuryOwnerPublicKey = PublicKey.fromBase58(
     input.treasuryOwnerContractAddress,
@@ -701,7 +659,9 @@ async function constructCreateProposalTransactionInCurrentThread(
     elapsedMs: artifactsReadyAt - startedAt,
   });
 
-  Mina.setActiveInstance(Mina.Network(resolveEndpointUrl(input.minaNodeUrl)));
+  Mina.setActiveInstance(
+    Mina.Network(resolveProverEndpointUrl(input.minaNodeUrl)),
+  );
 
   console.info("[proposal-prover][create] fetch sender account start", {
     senderAddress: senderPublicKeyBase58,
@@ -711,7 +671,7 @@ async function constructCreateProposalTransactionInCurrentThread(
   });
   if (senderFetchError) {
     throw new Error(
-      `Fee payer account ${senderPublicKeyBase58} was not found on the Mina node. Connect a funded wallet on this network for inline signing.`,
+      `Fee payer account ${senderPublicKeyBase58} was not found on the Mina node. Connect a funded wallet on this network.`,
     );
   }
   console.info("[proposal-prover][create] fetch sender account complete", {
@@ -794,7 +754,6 @@ async function constructCreateProposalTransactionInCurrentThread(
   return {
     transaction,
     proposalPrivateKey,
-    inlineSignerPrivateKeys,
     preparedTransaction: {
       proposalPublicKey: proposalPublicKey.toBase58(),
       proposalZkAppUri: proposalArtifacts.proposalZkAppUri,
@@ -813,7 +772,6 @@ export async function buildVoteProposalTransactionInCurrentThread(
     input,
     options,
   );
-  constructed.transaction.sign(constructed.inlineSignerPrivateKeys);
   return {
     ...constructed.preparedTransaction,
     transactionJson: normalizeSerializedTransactionJson(
@@ -846,35 +804,18 @@ export async function buildAndProveVoteProposalTransactionInCurrentThread(
   logExpectedSignerCoverage(
     "vote after prove before sign",
     provedUnsignedTransactionJson,
-    constructed.inlineSignerPrivateKeys.map((privateKey) =>
-      privateKey.toPublicKey().toBase58(),
-    ),
+    [],
   );
   assertProofsPresent(
     "vote after prove before sign",
     provedUnsignedTransactionJson,
   );
-  constructed.transaction.sign(constructed.inlineSignerPrivateKeys);
-  const provedTransactionJson = normalizeSerializedTransactionJson(
-    constructed.transaction.toJSON(),
-  );
-  logTransactionAuthorizationSummary(
-    "vote after combined sign",
-    provedTransactionJson,
-  );
-  logExpectedSignerCoverage(
-    "vote after combined sign",
-    provedTransactionJson,
-    constructed.inlineSignerPrivateKeys.map((privateKey) =>
-      privateKey.toPublicKey().toBase58(),
-    ),
-  );
   return {
     preparedTransaction: {
       ...constructed.preparedTransaction,
-      transactionJson: provedTransactionJson,
+      transactionJson: provedUnsignedTransactionJson,
     },
-    provedTransactionJson,
+    provedTransactionJson: provedUnsignedTransactionJson,
   };
 }
 
@@ -895,30 +836,17 @@ async function constructVoteProposalTransactionInCurrentThread(
   }
 
   const { o1js, TreasuryOwnerSmartContract, Vote } = await getProposalModules();
-  const { Mina, PrivateKey, PublicKey, fetchAccount } = o1js;
-
-  const inlineSignerPrivateKeys =
-    getConfiguredInlineSignerPrivateKeyBase58s().map((value) =>
-      PrivateKey.fromBase58(value),
-    );
+  const { Mina, PublicKey, fetchAccount } = o1js;
   const senderPublicKey = PublicKey.fromBase58(input.senderAddress);
-  const senderPublicKeyBase58 = senderPublicKey.toBase58();
-  const senderPrivateKey = inlineSignerPrivateKeys.find(
-    (privateKey) =>
-      privateKey.toPublicKey().toBase58() === senderPublicKeyBase58,
-  );
-  if (!senderPrivateKey) {
-    throw new Error(
-      `Connected wallet ${senderPublicKeyBase58} is not available for inline signing. Add its private key to NEXT_PUBLIC_INLINE_SIGNER_PRIVATE_KEYS_JSON.`,
-    );
-  }
   const treasuryOwnerPublicKey = PublicKey.fromBase58(
     input.treasuryOwnerContractAddress,
   );
   const proposalPublicKey = PublicKey.fromBase58(input.proposalPublicKey);
   const feeNanomina = Number(parseDecimalMinaToNanomina(input.fee));
 
-  Mina.setActiveInstance(Mina.Network(resolveEndpointUrl(input.minaNodeUrl)));
+  Mina.setActiveInstance(
+    Mina.Network(resolveProverEndpointUrl(input.minaNodeUrl)),
+  );
 
   const treasuryOwner = new TreasuryOwnerSmartContract(treasuryOwnerPublicKey);
   const proposalTokenId = treasuryOwner.deriveTokenId();
@@ -975,7 +903,6 @@ async function constructVoteProposalTransactionInCurrentThread(
 
   return {
     transaction,
-    inlineSignerPrivateKeys,
     preparedTransaction: {
       proposalPublicKey: input.proposalPublicKey,
       vote: input.vote,
@@ -993,7 +920,6 @@ export async function buildExecuteProposalTransactionInCurrentThread(
     input,
     options,
   );
-  constructed.transaction.sign(constructed.inlineSignerPrivateKeys);
   return {
     ...constructed.preparedTransaction,
     transactionJson: normalizeSerializedTransactionJson(
@@ -1026,35 +952,18 @@ export async function buildAndProveExecuteProposalTransactionInCurrentThread(
   logExpectedSignerCoverage(
     "execute after prove before sign",
     provedUnsignedTransactionJson,
-    constructed.inlineSignerPrivateKeys.map((privateKey) =>
-      privateKey.toPublicKey().toBase58(),
-    ),
+    [],
   );
   assertProofsPresent(
     "execute after prove before sign",
     provedUnsignedTransactionJson,
   );
-  constructed.transaction.sign(constructed.inlineSignerPrivateKeys);
-  const provedTransactionJson = normalizeSerializedTransactionJson(
-    constructed.transaction.toJSON(),
-  );
-  logTransactionAuthorizationSummary(
-    "execute after combined sign",
-    provedTransactionJson,
-  );
-  logExpectedSignerCoverage(
-    "execute after combined sign",
-    provedTransactionJson,
-    constructed.inlineSignerPrivateKeys.map((privateKey) =>
-      privateKey.toPublicKey().toBase58(),
-    ),
-  );
   return {
     preparedTransaction: {
       ...constructed.preparedTransaction,
-      transactionJson: provedTransactionJson,
+      transactionJson: provedUnsignedTransactionJson,
     },
-    provedTransactionJson,
+    provedTransactionJson: provedUnsignedTransactionJson,
   };
 }
 
@@ -1075,25 +984,9 @@ async function constructExecuteProposalTransactionInCurrentThread(
   }
 
   const { o1js, TreasuryOwnerSmartContract } = await getProposalModules();
-  const { AccountUpdate, Mina, PrivateKey, PublicKey, UInt64, fetchAccount } =
-    o1js;
-
-  const inlineSignerPrivateKeys =
-    getConfiguredInlineSignerPrivateKeyBase58s().map((value) =>
-      PrivateKey.fromBase58(value),
-    );
+  const { AccountUpdate, Mina, PublicKey, UInt64, fetchAccount } = o1js;
 
   const senderPublicKey = PublicKey.fromBase58(input.senderAddress);
-  const senderPublicKeyBase58 = senderPublicKey.toBase58();
-  const senderPrivateKey = inlineSignerPrivateKeys.find(
-    (privateKey) =>
-      privateKey.toPublicKey().toBase58() === senderPublicKeyBase58,
-  );
-  if (!senderPrivateKey) {
-    throw new Error(
-      `Connected wallet ${senderPublicKeyBase58} is not available for inline signing. Add its private key to NEXT_PUBLIC_INLINE_SIGNER_PRIVATE_KEYS_JSON.`,
-    );
-  }
   const treasuryOwnerPublicKey = PublicKey.fromBase58(
     input.treasuryOwnerContractAddress,
   );
@@ -1104,7 +997,9 @@ async function constructExecuteProposalTransactionInCurrentThread(
   );
   const feeNanomina = Number(parseDecimalMinaToNanomina(input.fee));
 
-  Mina.setActiveInstance(Mina.Network(resolveEndpointUrl(input.minaNodeUrl)));
+  Mina.setActiveInstance(
+    Mina.Network(resolveProverEndpointUrl(input.minaNodeUrl)),
+  );
 
   const treasuryOwner = new TreasuryOwnerSmartContract(treasuryOwnerPublicKey);
   const proposalTokenId = treasuryOwner.deriveTokenId();
@@ -1168,7 +1063,6 @@ async function constructExecuteProposalTransactionInCurrentThread(
 
   return {
     transaction,
-    inlineSignerPrivateKeys,
     preparedTransaction: {
       proposalPublicKey: input.proposalPublicKey,
       recipient: input.recipient,

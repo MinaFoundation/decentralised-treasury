@@ -18,6 +18,8 @@ import { Input } from "../../components/ui/input";
 export interface TreasuryEndpointSettings {
   networkId?: string;
   apiUrl: string;
+  indexerApiUrl: string;
+  processorApiUrl: string;
   minaNodeUrl: string;
 }
 
@@ -46,6 +48,8 @@ function areSettingsEqual(
   return (
     left.networkId === right.networkId &&
     left.apiUrl === right.apiUrl &&
+    left.indexerApiUrl === right.indexerApiUrl &&
+    left.processorApiUrl === right.processorApiUrl &&
     left.minaNodeUrl === right.minaNodeUrl
   );
 }
@@ -77,20 +81,25 @@ export function TreasurySettingsDialog({
   const initialValue = {
     networkId: defaultValue?.networkId,
     apiUrl: defaultValue?.apiUrl ?? "",
+    indexerApiUrl: defaultValue?.indexerApiUrl ?? "",
+    processorApiUrl: defaultValue?.processorApiUrl ?? "",
     minaNodeUrl: defaultValue?.minaNodeUrl ?? "",
   };
   const [open, setOpen] = useState(false);
-  const [internalValue, setInternalValue] = useState<TreasuryEndpointSettings>(initialValue);
-  const [draftValue, setDraftValue] = useState<TreasuryEndpointSettings>(
-    {
-      networkId: value?.networkId ?? initialValue.networkId,
-      apiUrl: value?.apiUrl ?? initialValue.apiUrl,
-      minaNodeUrl: value?.minaNodeUrl ?? initialValue.minaNodeUrl,
-    },
-  );
+  const [internalValue, setInternalValue] =
+    useState<TreasuryEndpointSettings>(initialValue);
+  const [draftValue, setDraftValue] = useState<TreasuryEndpointSettings>({
+    networkId: value?.networkId ?? initialValue.networkId,
+    apiUrl: value?.apiUrl ?? initialValue.apiUrl,
+    indexerApiUrl: value?.indexerApiUrl ?? initialValue.indexerApiUrl,
+    processorApiUrl: value?.processorApiUrl ?? initialValue.processorApiUrl,
+    minaNodeUrl: value?.minaNodeUrl ?? initialValue.minaNodeUrl,
+  });
   const currentValue = {
     networkId: value?.networkId ?? internalValue.networkId,
     apiUrl: value?.apiUrl ?? internalValue.apiUrl,
+    indexerApiUrl: value?.indexerApiUrl ?? internalValue.indexerApiUrl,
+    processorApiUrl: value?.processorApiUrl ?? internalValue.processorApiUrl,
     minaNodeUrl: value?.minaNodeUrl ?? internalValue.minaNodeUrl,
   };
 
@@ -103,8 +112,14 @@ export function TreasurySettingsDialog({
 
   const dialogDescriptionId = useId();
   const apiUrlValid = isLikelyValidUrl(draftValue.apiUrl);
+  const indexerApiUrlValid = isLikelyValidUrl(draftValue.indexerApiUrl);
+  const processorApiUrlValid = isLikelyValidUrl(draftValue.processorApiUrl);
   const minaNodeUrlValid = isLikelyValidUrl(draftValue.minaNodeUrl);
-  const canSave = apiUrlValid && minaNodeUrlValid;
+  const canSave =
+    apiUrlValid &&
+    indexerApiUrlValid &&
+    processorApiUrlValid &&
+    minaNodeUrlValid;
   const canReset = !areSettingsEqual(draftValue, initialValue);
 
   const applyChange = (next: TreasuryEndpointSettings): void => {
@@ -156,8 +171,15 @@ export function TreasurySettingsDialog({
           )}
           aria-label={resolvedTriggerLabel}
         >
-          <Settings className={cn("h-4 w-4", iconOnly ? "" : "mr-1.5")} aria-hidden="true" />
-          {iconOnly ? <span className="sr-only">{resolvedTriggerLabel}</span> : resolvedTriggerLabel}
+          <Settings
+            className={cn("h-4 w-4", iconOnly ? "" : "mr-1.5")}
+            aria-hidden="true"
+          />
+          {iconOnly ? (
+            <span className="sr-only">{resolvedTriggerLabel}</span>
+          ) : (
+            resolvedTriggerLabel
+          )}
         </Button>
       </DialogTrigger>
       <DialogContent
@@ -182,7 +204,10 @@ export function TreasurySettingsDialog({
 
         <div className="mt-4 space-y-3">
           <div className="space-y-1.5">
-            <label htmlFor="treasury-settings-api-url" className="text-sm font-medium">
+            <label
+              htmlFor="treasury-settings-api-url"
+              className="text-sm font-medium"
+            >
               {intl.formatMessage({
                 id: "ui.header.settings.apiUrl.label",
                 defaultMessage: "API URL",
@@ -220,7 +245,88 @@ export function TreasurySettingsDialog({
           </div>
 
           <div className="space-y-1.5">
-            <label htmlFor="treasury-settings-mina-node-url" className="text-sm font-medium">
+            <label
+              htmlFor="treasury-settings-indexer-api-url"
+              className="text-sm font-medium"
+            >
+              {intl.formatMessage({
+                id: "ui.header.settings.indexerApiUrl.label",
+                defaultMessage: "Indexer API URL",
+              })}
+            </label>
+            <Input
+              id="treasury-settings-indexer-api-url"
+              type="url"
+              value={draftValue.indexerApiUrl}
+              placeholder={intl.formatMessage({
+                id: "ui.header.settings.indexerApiUrl.placeholder",
+                defaultMessage: "https://treasury.example.com/indexer",
+              })}
+              onChange={(event) =>
+                applyChange(
+                  updateSettingsField(
+                    draftValue,
+                    "indexerApiUrl",
+                    event.target.value,
+                  ),
+                )
+              }
+            />
+            {!indexerApiUrlValid ? (
+              <p className="text-xs text-destructive">
+                {intl.formatMessage({
+                  id: "ui.header.settings.invalidUrl",
+                  defaultMessage:
+                    "Please enter a valid URL with http:// or https://.",
+                })}
+              </p>
+            ) : null}
+          </div>
+
+          <div className="space-y-1.5">
+            <label
+              htmlFor="treasury-settings-processor-api-url"
+              className="text-sm font-medium"
+            >
+              {intl.formatMessage({
+                id: "ui.header.settings.processorApiUrl.label",
+                defaultMessage: "Processor API URL",
+              })}
+            </label>
+            <Input
+              id="treasury-settings-processor-api-url"
+              type="url"
+              value={draftValue.processorApiUrl}
+              placeholder={intl.formatMessage({
+                id: "ui.header.settings.processorApiUrl.placeholder",
+                defaultMessage: "https://treasury.example.com/processor",
+              })}
+              onChange={(event) =>
+                applyChange(
+                  updateSettingsField(
+                    draftValue,
+                    "processorApiUrl",
+                    event.target.value,
+                  ),
+                )
+              }
+            />
+            {!processorApiUrlValid ? (
+              <p className="text-xs text-destructive">
+                {intl.formatMessage({
+                  id: "ui.header.settings.invalidUrl",
+                  defaultMessage:
+                    "Please enter a valid URL with http:// or https://.",
+                })}
+              </p>
+            ) : null}
+          </div>
+
+          <div className="space-y-1.5">
+            <label
+              htmlFor="treasury-settings-mina-node-url"
+              className="text-sm font-medium"
+            >
               {intl.formatMessage({
                 id: "ui.header.settings.minaNodeUrl.label",
                 defaultMessage: "Mina node URL",
@@ -269,14 +375,22 @@ export function TreasurySettingsDialog({
             })}
           </Button>
           <DialogClose asChild>
-            <Button variant="outline" className="w-full sm:w-auto" onClick={handleCancel}>
+            <Button
+              variant="outline"
+              className="w-full sm:w-auto"
+              onClick={handleCancel}
+            >
               {intl.formatMessage({
                 id: "ui.header.settings.cancel",
                 defaultMessage: "Cancel",
               })}
             </Button>
           </DialogClose>
-          <Button onClick={handleSave} disabled={!canSave} className="w-full sm:w-auto">
+          <Button
+            onClick={handleSave}
+            disabled={!canSave}
+            className="w-full sm:w-auto"
+          >
             {intl.formatMessage({
               id: "ui.header.settings.save",
               defaultMessage: "Save settings",

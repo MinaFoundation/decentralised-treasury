@@ -1,4 +1,10 @@
-import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
+import {
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  within,
+} from "@testing-library/react";
 import { type JSX, useState } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { TreasuryIntlProvider } from "../../i18n";
@@ -78,9 +84,11 @@ describe("TreasuryHeader", () => {
     expect(screen.getByRole("button", { name: "Dashboard" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "Proposals" })).toBeTruthy();
     expect(screen.queryByRole("button", { name: "My Wallet" })).toBeNull();
-    expect(screen.getByRole("button", { name: "Dashboard" }).getAttribute("aria-current")).toBe(
-      "page",
-    );
+    expect(
+      screen
+        .getByRole("button", { name: "Dashboard" })
+        .getAttribute("aria-current"),
+    ).toBe("page");
   });
 
   it("supports disabling logo", () => {
@@ -91,11 +99,15 @@ describe("TreasuryHeader", () => {
   it("supports changing the active navigation item", () => {
     render(<TreasuryHeader activeNavigationItemId="proposals" />);
 
-    expect(screen.getByRole("button", { name: "Proposals" }).getAttribute("aria-current")).toBe(
-      "page",
-    );
     expect(
-      screen.getByRole("button", { name: "Dashboard" }).getAttribute("aria-current"),
+      screen
+        .getByRole("button", { name: "Proposals" })
+        .getAttribute("aria-current"),
+    ).toBe("page");
+    expect(
+      screen
+        .getByRole("button", { name: "Dashboard" })
+        .getAttribute("aria-current"),
     ).toBeNull();
   });
 
@@ -112,8 +124,12 @@ describe("TreasuryHeader", () => {
       configurable: true,
     });
 
-    const { container } = render(<TreasuryHeader stickyCardScrollOffset={24} />);
-    const header = container.querySelector('[data-component="treasury-header"]');
+    const { container } = render(
+      <TreasuryHeader stickyCardScrollOffset={24} />,
+    );
+    const header = container.querySelector(
+      '[data-component="treasury-header"]',
+    );
 
     expect(header?.getAttribute("data-sticky-card-active")).toBe("false");
 
@@ -125,16 +141,24 @@ describe("TreasuryHeader", () => {
 
   it("shows proposal search by default", () => {
     render(<TreasuryHeader />);
-    expect(screen.getByRole("button", { name: /Find proposals/i })).toBeTruthy();
+    expect(
+      screen.getByRole("button", { name: /Find proposals/i }),
+    ).toBeTruthy();
   });
 
   it("renders a paused treasury banner when the contract is paused", () => {
     const { container } = render(<TreasuryHeader treasuryPaused />);
-    const header = container.querySelector('[data-component="treasury-header"]');
-    const banner = container.querySelector('[data-component="treasury-paused-banner"]');
+    const header = container.querySelector(
+      '[data-component="treasury-header"]',
+    );
+    const banner = container.querySelector(
+      '[data-component="treasury-paused-banner"]',
+    );
 
     expect(
-      screen.getByText("Treasury paused. Governance actions are temporarily unavailable."),
+      screen.getByText(
+        "Treasury paused. Governance actions are temporarily unavailable.",
+      ),
     ).toBeTruthy();
     expect(header?.firstElementChild).toBe(banner);
   });
@@ -149,14 +173,18 @@ describe("TreasuryHeader", () => {
     expect(trigger.textContent).toContain("Find proposals");
 
     fireEvent.click(trigger);
-    expect(screen.getByRole("heading", { name: "Find proposals" })).toBeTruthy();
+    expect(
+      screen.getByRole("heading", { name: "Find proposals" }),
+    ).toBeTruthy();
 
     fireEvent.change(screen.getByRole("searchbox"), {
       target: { value: "Alpha" },
     });
     expect(screen.getByText("Alpha fund")).toBeTruthy();
     expect(
-      screen.getByText("B62qalpha111111111111111111111111111111111111111111111"),
+      screen.getByText(
+        "B62qalpha111111111111111111111111111111111111111111111",
+      ),
     ).toBeTruthy();
     expect(screen.queryByText("B62abc")).toBeNull();
   });
@@ -172,7 +200,9 @@ describe("TreasuryHeader", () => {
   it("opens proposal search with Ctrl+K", () => {
     render(<HeaderWithProposalSearch />);
     fireEvent.keyDown(document, { key: "k", ctrlKey: true });
-    expect(screen.getByRole("heading", { name: "Find proposals" })).toBeTruthy();
+    expect(
+      screen.getByRole("heading", { name: "Find proposals" }),
+    ).toBeTruthy();
   });
 
   it("renders primary navigation with a title divider", () => {
@@ -205,10 +235,16 @@ describe("TreasuryHeader", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Open menu" }));
 
-    const compactMenu = container.querySelector('[data-component="header-compact-menu"]');
+    const compactMenu = container.querySelector(
+      '[data-component="header-compact-menu"]',
+    );
     expect(compactMenu).toBeTruthy();
 
-    fireEvent.click(within(compactMenu as HTMLElement).getByRole("button", { name: "Proposals" }));
+    fireEvent.click(
+      within(compactMenu as HTMLElement).getByRole("button", {
+        name: "Proposals",
+      }),
+    );
     expect(onProposalsClick).toHaveBeenCalledTimes(1);
   });
 
@@ -250,7 +286,9 @@ describe("TreasuryWalletHeader", () => {
   it("renders primary create proposal action and handles click", () => {
     const onCreateProposalClick = vi.fn();
 
-    render(<TreasuryWalletHeader onCreateProposalClick={onCreateProposalClick} />);
+    render(
+      <TreasuryWalletHeader onCreateProposalClick={onCreateProposalClick} />,
+    );
 
     const createProposalButton = screen.getByRole("button", {
       name: "New proposal",
@@ -272,7 +310,9 @@ describe("TreasuryWalletHeader", () => {
   it("shows an empty state when no draft proposals exist", () => {
     render(<TreasuryWalletHeader draftProposals={[]} />);
 
-    fireEvent.click(screen.getByRole("button", { name: "Show draft proposals" }));
+    fireEvent.click(
+      screen.getByRole("button", { name: "Show draft proposals" }),
+    );
 
     expect(screen.getByText("Your draft proposals")).toBeTruthy();
     expect(screen.getByText("Start your first draft proposal")).toBeTruthy();
@@ -300,8 +340,14 @@ describe("TreasuryWalletHeader", () => {
       />,
     );
 
-    fireEvent.click(screen.getByRole("button", { name: "Show draft proposals" }));
-    fireEvent.click(screen.getByRole("button", { name: /Governance office-hours expansion/i }));
+    fireEvent.click(
+      screen.getByRole("button", { name: "Show draft proposals" }),
+    );
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: /Governance office-hours expansion/i,
+      }),
+    );
 
     expect(onDraftProposalSelect).toHaveBeenCalledTimes(1);
     expect(onDraftProposalSelect).toHaveBeenCalledWith("D-134");
@@ -326,16 +372,22 @@ describe("TreasuryWalletHeader", () => {
       />,
     );
 
-    fireEvent.click(screen.getByRole("button", { name: "Show draft proposals" }));
+    fireEvent.click(
+      screen.getByRole("button", { name: "Show draft proposals" }),
+    );
 
     const deleteButton = screen.getByRole("button", {
       name: "Delete draft Governance office-hours expansion",
     });
     expect(deleteButton.className.includes("opacity-0")).toBe(true);
-    expect(deleteButton.className.includes("group-hover:opacity-100")).toBe(true);
+    expect(deleteButton.className.includes("group-hover:opacity-100")).toBe(
+      true,
+    );
 
     fireEvent.click(deleteButton);
-    expect(screen.getByRole("heading", { name: "Delete draft proposal?" })).toBeTruthy();
+    expect(
+      screen.getByRole("heading", { name: "Delete draft proposal?" }),
+    ).toBeTruthy();
 
     fireEvent.click(screen.getByRole("button", { name: /^Delete draft$/i }));
 
@@ -381,7 +433,9 @@ describe("TreasuryWalletHeader", () => {
       />,
     );
 
-    fireEvent.click(screen.getByRole("button", { name: "Open wallet account details" }));
+    fireEvent.click(
+      screen.getByRole("button", { name: "Open wallet account details" }),
+    );
     expect(
       document.querySelector('[data-component="wallet-account-loading"]'),
     ).toBeTruthy();
@@ -407,7 +461,9 @@ describe("TreasuryWalletHeader", () => {
     render(
       <TreasuryWalletHeader
         renderWalletButton={({ isCompact }) => (
-          <button type="button">{isCompact ? "Compact wallet" : "Custom wallet"}</button>
+          <button type="button">
+            {isCompact ? "Compact wallet" : "Custom wallet"}
+          </button>
         )}
       />,
     );
@@ -422,6 +478,8 @@ describe("TreasuryWalletHeader", () => {
         defaultSettings={{
           networkId: "MAINNET",
           apiUrl: "https://api.treasury.local",
+          indexerApiUrl: "https://treasury.local/indexer",
+          processorApiUrl: "https://treasury.local/processor",
           minaNodeUrl: "https://berkeley.minascan.io/graphql",
         }}
       />,
@@ -432,6 +490,8 @@ describe("TreasuryWalletHeader", () => {
       screen.getByRole("heading", { name: "Dashboard settings" }),
     ).toBeTruthy();
     expect(screen.getByLabelText("API URL")).toBeTruthy();
+    expect(screen.getByLabelText("Indexer API URL")).toBeTruthy();
+    expect(screen.getByLabelText("Processor API URL")).toBeTruthy();
     expect(screen.getByLabelText("Mina node URL")).toBeTruthy();
   });
 
@@ -442,6 +502,8 @@ describe("TreasuryWalletHeader", () => {
         defaultSettings={{
           networkId: "MAINNET",
           apiUrl: "https://api.old.local",
+          indexerApiUrl: "https://old.local/indexer",
+          processorApiUrl: "https://old.local/processor",
           minaNodeUrl: "https://node.old.local/graphql",
         }}
         onSettingsSave={onSettingsSave}
@@ -452,6 +514,12 @@ describe("TreasuryWalletHeader", () => {
     fireEvent.change(screen.getByLabelText("API URL"), {
       target: { value: "https://api.new.local" },
     });
+    fireEvent.change(screen.getByLabelText("Indexer API URL"), {
+      target: { value: "https://new.local/indexer" },
+    });
+    fireEvent.change(screen.getByLabelText("Processor API URL"), {
+      target: { value: "https://new.local/processor" },
+    });
     fireEvent.change(screen.getByLabelText("Mina node URL"), {
       target: { value: "https://node.new.local/graphql" },
     });
@@ -461,6 +529,8 @@ describe("TreasuryWalletHeader", () => {
     expect(onSettingsSave).toHaveBeenCalledWith({
       networkId: "MAINNET",
       apiUrl: "https://api.new.local",
+      indexerApiUrl: "https://new.local/indexer",
+      processorApiUrl: "https://new.local/processor",
       minaNodeUrl: "https://node.new.local/graphql",
     });
   });
@@ -471,6 +541,8 @@ describe("TreasuryWalletHeader", () => {
         defaultSettings={{
           networkId: "MAINNET",
           apiUrl: "https://api.old.local",
+          indexerApiUrl: "https://old.local/indexer",
+          processorApiUrl: "https://old.local/processor",
           minaNodeUrl: "https://node.old.local/graphql",
         }}
       />,

@@ -46,21 +46,64 @@ If the funded sender key is already present in `apps/cli/.env.testnet`, rerun
 Before bootstrapping, make sure you have:
 
 - a browser-reachable Mina GraphQL endpoint
+- a host-reachable Mina GraphQL endpoint for CLI/operator commands
 - an archive GraphQL endpoint reachable from Compose containers
+- a host-reachable archive GraphQL endpoint for CLI/operator commands
 - a funded sender private key for testnet fees
 
 For a local Mina node using the companion runbook, the defaults are:
 
 ```text
 MINA_NODE_URL=http://127.0.0.1:3001/graphql
-ARCHIVE_NODE_URL=http://127.0.0.1:3086/graphql
-NEXT_PUBLIC_MINA_NODE_URL=/mina/graphql
+ARCHIVE_NODE_URL=http://127.0.0.1:8282
+NEXT_PUBLIC_TREASURY_API_URL=http://127.0.0.1:3100/api
+NEXT_PUBLIC_INDEXER_API_URL=http://127.0.0.1:3100/indexer
+NEXT_PUBLIC_PROCESSOR_API_URL=http://127.0.0.1:3100/processor
+NEXT_PUBLIC_MINA_NODE_URL=http://127.0.0.1:3100/mina/graphql
 MINA_NODE_PROXY_UPSTREAM=http://host.docker.internal:3001
-Compose ARCHIVE_NODE_URL=http://host.docker.internal:3086/graphql
+Compose ARCHIVE_NODE_URL=http://host.docker.internal:8282
 ```
 
-For hosted infrastructure, edit the generated env files after bootstrap so the
-CLI, API, and browser all point at the same network.
+Start that local Mina node with the archive GraphQL port pinned to `8282`:
+
+```bash
+nix-shell -p openssl git python3 --run \
+  './scripts/mina-local-network/single-node-load.sh --no-proofs --epoch-min 30 --indefinite --archive --archive-graphql-port 8282'
+```
+
+For hosted infrastructure or non-default local ports, pass the endpoints to
+bootstrap instead of editing generated files by hand:
+
+```bash
+pnpm env:bootstrap testnet -- \
+  --sender-private-key <FUNDED_TESTNET_PRIVATE_KEY> \
+  --mina-node-url http://127.0.0.1:3001/graphql \
+  --archive-node-url http://127.0.0.1:8282 \
+  --compose-mina-node-upstream http://host.docker.internal:3001 \
+  --compose-archive-node-url http://host.docker.internal:8282 \
+  --next-public-treasury-api-url http://127.0.0.1:3100/api \
+  --next-public-indexer-api-url http://127.0.0.1:3100/indexer \
+  --next-public-processor-api-url http://127.0.0.1:3100/processor \
+  --next-public-mina-node-url http://127.0.0.1:3100/mina/graphql
+```
+
+`--mina-node-url` and `--archive-node-url` are the host-facing URLs written to
+`apps/cli/.env.testnet`. `--compose-mina-node-upstream` and
+`--compose-archive-node-url` are the container-facing URLs used by Caddy,
+API, indexer, and processor containers.
+
+The bootstrap command also reads existing shell values when flags are omitted:
+
+```bash
+export MINA_NODE_URL=http://127.0.0.1:3001/graphql
+export ARCHIVE_NODE_URL=http://127.0.0.1:8282
+export MINA_NODE_PROXY_UPSTREAM=http://host.docker.internal:3001
+export COMPOSE_ARCHIVE_NODE_URL=http://host.docker.internal:8282
+export NEXT_PUBLIC_TREASURY_API_URL=http://127.0.0.1:3100/api
+export NEXT_PUBLIC_INDEXER_API_URL=http://127.0.0.1:3100/indexer
+export NEXT_PUBLIC_PROCESSOR_API_URL=http://127.0.0.1:3100/processor
+export NEXT_PUBLIC_MINA_NODE_URL=http://127.0.0.1:3100/mina/graphql
+```
 
 ## 2. Bootstrap Env Files
 
@@ -99,7 +142,7 @@ Check `apps/cli/.env.testnet`:
 
 ```text
 MINA_NODE_URL=http://127.0.0.1:3001/graphql
-ARCHIVE_NODE_URL=http://127.0.0.1:3086/graphql
+ARCHIVE_NODE_URL=http://127.0.0.1:8282
 SENDER_PRIVATE_KEY=<funded sender>
 LIFECYCLE_PERIOD_DURATION=48
 SQLITE_DATA_DIRECTORY=./.data/testnet-sqlite
@@ -108,7 +151,7 @@ SQLITE_DATA_DIRECTORY=./.data/testnet-sqlite
 Check `apps/api/.env.testnet`:
 
 ```text
-ARCHIVE_NODE_URL=http://host.docker.internal:3086/graphql
+ARCHIVE_NODE_URL=http://host.docker.internal:8282
 DATABASE_URL=postgres://...
 TREASURY_OWNER_CONTRACT_ADDRESS=<generated treasury owner public key>
 SQLITE_DATA_DIRECTORY=/data/sqlite
@@ -117,10 +160,10 @@ SQLITE_DATA_DIRECTORY=/data/sqlite
 Check `apps/web/.env.testnet`:
 
 ```text
-NEXT_PUBLIC_TREASURY_API_URL=/api
-NEXT_PUBLIC_INDEXER_API_URL=/indexer
-NEXT_PUBLIC_PROCESSOR_API_URL=/processor
-NEXT_PUBLIC_MINA_NODE_URL=/mina/graphql
+NEXT_PUBLIC_TREASURY_API_URL=http://127.0.0.1:3100/api
+NEXT_PUBLIC_INDEXER_API_URL=http://127.0.0.1:3100/indexer
+NEXT_PUBLIC_PROCESSOR_API_URL=http://127.0.0.1:3100/processor
+NEXT_PUBLIC_MINA_NODE_URL=http://127.0.0.1:3100/mina/graphql
 NEXT_PUBLIC_NETWORK_ID=DEVNET
 ```
 
@@ -171,16 +214,6 @@ NEXT_PUBLIC_EMPTY_NULLIFIER_ROOT=...
 ```
 
 Future `pnpm testnet:env` runs preserve those values.
-
-For private local demos only, the browser prover can also use inline signing
-keys:
-
-```text
-NEXT_PUBLIC_INLINE_SIGNER_PRIVATE_KEYS_JSON=["<voter-or-operator-private-key>"]
-```
-
-This value is exposed to the browser. Do not use real funded keys here on a
-public deployment.
 
 ## 6. Deploy And Fund The Treasury
 
@@ -289,10 +322,10 @@ Set browser/API values in `apps/web/.env.testnet` and `apps/api/.env.testnet`.
 The web app can stay same-origin through the public web domain:
 
 ```env
-NEXT_PUBLIC_TREASURY_API_URL=/api
-NEXT_PUBLIC_INDEXER_API_URL=/indexer
-NEXT_PUBLIC_PROCESSOR_API_URL=/processor
-NEXT_PUBLIC_MINA_NODE_URL=/mina/graphql
+NEXT_PUBLIC_TREASURY_API_URL=https://treasury.example.com/api
+NEXT_PUBLIC_INDEXER_API_URL=https://treasury.example.com/indexer
+NEXT_PUBLIC_PROCESSOR_API_URL=https://treasury.example.com/processor
+NEXT_PUBLIC_MINA_NODE_URL=https://treasury.example.com/mina/graphql
 CORS_ALLOWED_ORIGINS=https://treasury.example.com
 ```
 

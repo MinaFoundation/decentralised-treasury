@@ -6,16 +6,18 @@ import type { TreasuryProposalCreationDraft } from "@repo/ui/treasury-proposal-c
 import { TreasuryProposalCreationForm } from "@repo/ui/treasury-proposal-creation-form";
 import type { TreasuryTransactionSummaryItem } from "@repo/ui/treasury-transaction-flow-dialog";
 import { TreasuryTransactionFlowDialog } from "@repo/ui/treasury-transaction-flow-dialog";
+import { type PreparedCreateProposalTransaction } from "../lib/proposal-prover-runtime";
 import {
-  type PreparedCreateProposalTransaction,
-} from "../lib/proposal-prover-runtime";
-import { Alert, AlertDescription, AlertTitle } from "@repo/ui/components/ui/alert";
+  Alert,
+  AlertDescription,
+  AlertTitle,
+} from "@repo/ui/components/ui/alert";
 import { Skeleton } from "@repo/ui/components/ui/skeleton";
 import { useAppShellStore } from "../../app-shell/store/app-shell-store";
-import { resolveEndpointUrl } from "../../endpoint-settings/lib/endpoint-url";
 import { useEndpointSettingsState } from "../../endpoint-settings/store/endpoint-settings-store.selectors";
 import { useProposalDrafts } from "../hooks/use-proposal-drafts";
 import { useProposalProverWorker } from "../hooks/use-proposal-prover-worker";
+import { signWithAuroWalletAndSubmitZkapp } from "../lib/auro-wallet-zkapp-submission";
 import { submitProposalContents } from "../lib/proposal-content-submission";
 import {
   removeProposalContentRetryRecord,
@@ -30,7 +32,6 @@ import { useWalletSession } from "../../treasury-header/hooks/use-wallet-session
 type CreateProposalPreviousPage = "dashboard" | "proposals";
 
 interface ProposalCreatePageContainerProps {
-  initialLifecycleId?: number;
   draftId?: string;
   previousPage?: CreateProposalPreviousPage;
 }
@@ -47,25 +48,10 @@ interface ProposalEstimateContext {
   eligibleVotingWeight?: string;
 }
 
-interface DirectSendZkappResponse {
-  data?: {
-    sendZkapp?: {
-      zkapp?: {
-        hash?: string | null;
-        id?: string | null;
-        failureReason?:
-          | Array<{
-              failures?: string[] | null;
-              index?: number | null;
-            }>
-          | null;
-      } | null;
-    } | null;
-  };
-  errors?: Array<{ message?: string }>;
-}
-
-function logWalletSubmissionTransaction(label: string, transactionJson: string): void {
+function logWalletSubmissionTransaction(
+  label: string,
+  transactionJson: string,
+): void {
   try {
     const parsed = JSON.parse(transactionJson) as {
       feePayer?: { authorization?: unknown };
@@ -96,97 +82,14 @@ function logWalletSubmissionTransaction(label: string, transactionJson: string):
         })) ?? [],
     });
   } catch (error) {
-    console.error("[proposal-prover][wallet-submit] failed to inspect transaction json", {
-      label,
-      error,
-    });
-  }
-}
-
-interface MinaSendTransactionResult {
-  hash?: string;
-  code?: number;
-  message?: string;
-}
-
-interface MinaProvider {
-  sendTransaction?: (args: {
-    transaction: string | object;
-    feePayer?: {
-      fee?: number;
-      memo?: string;
-    };
-    nonce?: number;
-  }) => Promise<MinaSendTransactionResult>;
-}
-
-function buildSendZkappMutation(transactionJson: string): string {
-  return `mutation {
-  sendZkapp(input: {
-    zkappCommand: ${JSON.stringify(JSON.parse(transactionJson), null, 2).replace(
-      /\"(\S+)\"\s*:/gm,
-      "$1:",
-    )}
-  }) {
-    zkapp {
-      hash
-      id
-      failureReason {
-        failures
-        index
-      }
-    }
-  }
-}`;
-}
-
-async function submitZkappDirectly(minaNodeUrl: string, transactionJson: string): Promise<string> {
-  const resolvedMinaNodeUrl = resolveEndpointUrl(minaNodeUrl);
-  const requestBody = {
-    query: buildSendZkappMutation(transactionJson),
-  };
-
-  console.info("[proposal-prover][direct-send] request", {
-    minaNodeUrl: resolvedMinaNodeUrl,
-    requestBody,
-  });
-
-  const response = await fetch(resolvedMinaNodeUrl, {
-    method: "POST",
-    headers: {
-      "content-type": "application/json",
-    },
-    body: JSON.stringify(requestBody),
-  });
-
-  if (!response.ok) {
-    throw new Error(`Direct transaction submit failed with status ${response.status}.`);
-  }
-
-  const payload = (await response.json()) as DirectSendZkappResponse;
-  if (payload.errors?.length) {
-    throw new Error(payload.errors.map((error) => error.message).filter(Boolean).join("; "));
-  }
-
-  const zkapp = payload.data?.sendZkapp?.zkapp;
-  if (!zkapp) {
-    throw new Error("Direct transaction submit did not return a zkApp payload.");
-  }
-
-  if (zkapp.failureReason?.length) {
-    throw new Error(
-      `Direct transaction submit was rejected: ${zkapp.failureReason
-        .map((reason) => `${reason.index ?? "unknown"}:${reason.failures?.join(", ") ?? "unknown"}`)
-        .join("; ")}`,
+    console.error(
+      "[proposal-prover][wallet-submit] failed to inspect transaction json",
+      {
+        label,
+        error,
+      },
     );
   }
-
-  const hash = zkapp.hash ?? zkapp.id;
-  if (!hash) {
-    throw new Error("Direct transaction submit did not return a transaction hash.");
-  }
-
-  return hash;
 }
 
 function resolveProofsEnabled(): boolean {
@@ -255,9 +158,12 @@ function getCreateProposalTransactionDetails(
       | Record<string, unknown>
       | unknown[];
     const sanitizedTransaction =
-      parsedTransaction && typeof parsedTransaction === "object" && !Array.isArray(parsedTransaction)
+      parsedTransaction &&
+      typeof parsedTransaction === "object" &&
+      !Array.isArray(parsedTransaction)
         ? (() => {
-            const { accountUpdates: _accountUpdates, ...rest } = parsedTransaction;
+            const { accountUpdates: _accountUpdates, ...rest } =
+              parsedTransaction;
             return rest;
           })()
         : parsedTransaction;
@@ -288,7 +194,6 @@ function resolveBackHref(
 }
 
 export function ProposalCreatePageContainer({
-  initialLifecycleId,
   draftId,
   previousPage = "proposals",
 }: ProposalCreatePageContainerProps): JSX.Element {
@@ -299,22 +204,27 @@ export function ProposalCreatePageContainer({
   const setAppError = useAppShellStore((state) => state.setError);
   const { getDraftById, removeDraft, saveDraft } = useProposalDrafts();
   const proofsEnabled = resolveProofsEnabled();
-  const { compile, buildAndProveCreateProposal } = useProposalProverWorker(proofsEnabled);
-  const [submissionDraft, setSubmissionDraft] = useState<TreasuryProposalCreationDraft | null>(null);
+  const { compile, buildAndProveCreateProposal } =
+    useProposalProverWorker(proofsEnabled);
+  const [submissionDraft, setSubmissionDraft] =
+    useState<TreasuryProposalCreationDraft | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [preparedFlow, setPreparedFlow] = useState<PreparedCreateProposalFlow | null>(null);
-  const [estimateContext, setEstimateContext] = useState<ProposalEstimateContext>({});
+  const [preparedFlow, setPreparedFlow] =
+    useState<PreparedCreateProposalFlow | null>(null);
+  const [estimateContext, setEstimateContext] =
+    useState<ProposalEstimateContext>({});
   const submissionDraftRef = useRef<TreasuryProposalCreationDraft | null>(null);
   const preparedFlowRef = useRef<PreparedCreateProposalFlow | null>(null);
 
   const selectedDraft = draftId ? getDraftById(draftId) : null;
-  const resolvedLifecycleId = initialLifecycleId ?? selectedDraft?.draft.lifecycleId ?? treasury.currentLifecycleId ?? null;
+  const resolvedLifecycleId = treasury.currentLifecycleId ?? null;
   const createProposalPeriod = resolveCreateProposalPeriod(
     resolvedLifecycleId,
     treasury.currentLifecycleId,
     treasury.currentPeriod,
   );
-  const treasuryOwnerAddress = process.env.NEXT_PUBLIC_TREASURY_OWNER_CONTRACT_ADDRESS ?? "";
+  const treasuryOwnerAddress =
+    process.env.NEXT_PUBLIC_TREASURY_OWNER_CONTRACT_ADDRESS ?? "";
   const hasRequiredConfig =
     settings.hydrated &&
     Boolean(settings.value.apiUrl) &&
@@ -330,7 +240,12 @@ export function ProposalCreatePageContainer({
   }, [preparedFlow]);
 
   useEffect(() => {
-    if (!settings.hydrated || !settings.value.apiUrl || resolvedLifecycleId == null || !treasuryOwnerAddress) {
+    if (
+      !settings.hydrated ||
+      !settings.value.apiUrl ||
+      resolvedLifecycleId == null ||
+      !treasuryOwnerAddress
+    ) {
       setEstimateContext({});
       return;
     }
@@ -367,9 +282,12 @@ export function ProposalCreatePageContainer({
 
   const handleSaveDraft = (draft: TreasuryProposalCreationDraft): void => {
     saveDraft(draft, draftId);
-    router.push(resolveBackHref(previousPage, draft.lifecycleId ?? resolvedLifecycleId), {
-      scroll: false,
-    });
+    router.push(
+      resolveBackHref(previousPage, draft.lifecycleId ?? resolvedLifecycleId),
+      {
+        scroll: false,
+      },
+    );
   };
 
   const handleSubmit = (draft: TreasuryProposalCreationDraft): void => {
@@ -395,8 +313,8 @@ export function ProposalCreatePageContainer({
         <Alert variant="destructive">
           <AlertTitle>Proposal creation is not configured</AlertTitle>
           <AlertDescription>
-            Configure the treasury API URL, Mina node URL, and treasury owner contract address before
-            creating proposals from the web app.
+            Configure the treasury API URL, Mina node URL, and treasury owner
+            contract address before creating proposals from the web app.
           </AlertDescription>
         </Alert>
       ) : null}
@@ -430,7 +348,9 @@ export function ProposalCreatePageContainer({
           autoCloseDelaySeconds={5}
           senderAddress={submissionDraft.proposerAddress ?? null}
           summaryItems={buildCreateProposalSummaryItems(submissionDraft)}
-          transactionDetailsCode={getCreateProposalTransactionDetails(preparedFlow?.preparedTransaction ?? null)}
+          transactionDetailsCode={getCreateProposalTransactionDetails(
+            preparedFlow?.preparedTransaction ?? null,
+          )}
           submitLabel="Create proposal transaction"
           preventCloseWhileRunning
           onCompile={async () => {
@@ -441,14 +361,17 @@ export function ProposalCreatePageContainer({
           }}
           onProve={async (context) => {
             if (!hasRequiredConfig || resolvedLifecycleId == null) {
-              throw new Error("Lifecycle context is not available for proposal creation.");
+              throw new Error(
+                "Lifecycle context is not available for proposal creation.",
+              );
             }
 
             const { preparedTransaction, provedTransactionJson } =
               await buildAndProveCreateProposal({
                 minaNodeUrl: settings.value.minaNodeUrl,
                 treasuryOwnerContractAddress: treasuryOwnerAddress,
-                senderAddress: submissionDraft.proposerAddress ?? context.senderAddress,
+                senderAddress:
+                  submissionDraft.proposerAddress ?? context.senderAddress,
                 lifecycleId: resolvedLifecycleId,
                 recipient: submissionDraft.recipient,
                 amount: submissionDraft.amount,
@@ -472,17 +395,25 @@ export function ProposalCreatePageContainer({
             setPreparedFlow(nextPreparedFlow);
           }}
           onSignAndSend={async (context) => {
-            if (!preparedFlowRef.current?.provedTransactionJson || !preparedFlowRef.current.preparedTransaction) {
-              throw new Error("Proposal transaction was not prepared before signing.");
+            if (
+              !preparedFlowRef.current?.provedTransactionJson ||
+              !preparedFlowRef.current.preparedTransaction
+            ) {
+              throw new Error(
+                "Proposal transaction was not prepared before signing.",
+              );
             }
 
             logWalletSubmissionTransaction(
-              "create proposal before direct send",
+              "create proposal before Auro wallet sign",
               preparedFlowRef.current.provedTransactionJson,
             );
-            const hash = await submitZkappDirectly(
+            const hash = await signWithAuroWalletAndSubmitZkapp(
               settings.value.minaNodeUrl,
               preparedFlowRef.current.provedTransactionJson,
+              context.fee,
+              context.memo,
+              context.nonce,
             );
 
             if (preparedFlowRef.current) {
@@ -544,7 +475,8 @@ export function ProposalCreatePageContainer({
             }
           }}
           onComplete={() => {
-            const proposalPublicKey = preparedFlowRef.current?.preparedTransaction.proposalPublicKey;
+            const proposalPublicKey =
+              preparedFlowRef.current?.preparedTransaction.proposalPublicKey;
             if (draftId) {
               removeDraft(draftId);
             }
@@ -554,9 +486,12 @@ export function ProposalCreatePageContainer({
             setPreparedFlow(null);
             preparedFlowRef.current = null;
             if (proposalPublicKey) {
-              router.push(`/proposals/${encodeURIComponent(proposalPublicKey)}`, {
-                scroll: false,
-              });
+              router.push(
+                `/proposals/${encodeURIComponent(proposalPublicKey)}`,
+                {
+                  scroll: false,
+                },
+              );
             }
           }}
           onError={(error) => {

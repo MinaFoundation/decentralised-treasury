@@ -10,7 +10,7 @@ import {
 } from "../lib/wallet-session-storage";
 import { useTreasuryHeaderStore } from "../store/treasury-header-store";
 
-interface MinaProvider {
+interface AuroWalletProvider {
   requestAccounts?: () => Promise<string[]>;
   sendTransaction?: (args: {
     onlySign?: boolean;
@@ -27,19 +27,23 @@ interface MinaProvider {
     signedData?: string;
   }>;
   on?: (eventName: string, listener: (accounts: string[]) => void) => void;
-  removeListener?: (eventName: string, listener: (accounts: string[]) => void) => void;
+  removeListener?: (
+    eventName: string,
+    listener: (accounts: string[]) => void,
+  ) => void;
 }
 
 declare global {
   interface Window {
-    mina?: MinaProvider;
+    mina?: AuroWalletProvider;
   }
 }
 
-
 export function useWalletSession() {
   const wallet = useTreasuryHeaderStore((state) => state.wallet);
-  const setWalletState = useTreasuryHeaderStore((state) => state.setWalletState);
+  const setWalletState = useTreasuryHeaderStore(
+    (state) => state.setWalletState,
+  );
   const setAppError = useAppShellStore((state) => state.setError);
   const forceRefresh = useMinaBlockStore((state) => state.forceRefresh);
 

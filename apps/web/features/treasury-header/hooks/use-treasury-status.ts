@@ -10,8 +10,6 @@ import {
 } from "../../treasury/lib/treasury-lifecycle";
 import { useTreasuryStore } from "../../treasury/store/treasury-store";
 
-const DEFAULT_INDEXER_API_URL = "/indexer";
-
 interface HealthzResponse {
   ok?: boolean;
 }
@@ -31,11 +29,12 @@ export function useTreasuryStatus(): void {
   const minaNodeUrl = useEndpointSettingsStore(
     (state) => state.value.minaNodeUrl,
   );
+  const indexerApiUrl = useEndpointSettingsStore(
+    (state) => state.value.indexerApiUrl,
+  );
   const setTreasuryState = useTreasuryStore((state) => state.setTreasuryState);
   const lastCheckedAt = useMinaBlockStore((state) => state.lastCheckedAt);
   const refreshToken = useMinaBlockStore((state) => state.refreshToken);
-  const indexerApiUrl =
-    process.env.NEXT_PUBLIC_INDEXER_API_URL ?? DEFAULT_INDEXER_API_URL;
 
   useEffect(() => {
     if (!hydrated || !apiUrl || !indexerApiUrl) {

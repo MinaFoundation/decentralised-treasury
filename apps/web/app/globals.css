@@ -40,3 +40,18 @@
     @apply bg-background text-foreground;
   }
 }
+
+@keyframes route-loading-bar {
+  0% {
+    transform: translateX(-100%);
+  }
+
+  100% {
+    transform: translateX(300%);
+  }
+}
+
+.route-loading-bar {
+  width: 35%;
+  animation: route-loading-bar 1s ease-in-out infinite;
+}
