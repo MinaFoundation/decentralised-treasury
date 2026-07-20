@@ -126,50 +126,56 @@ export async function runVotingLedgerScheduler(
   await compileService.close();
   logger.info("[voting-ledger-scheduler] compile done");
 
+  async function findNewestCandidate(): Promise<
+    { file: string; epoch: number; hash: string; lifecycleId: string } | undefined
+  > {
+    const files = await readdir(options.stakingLedgersDirectory);
+    let newest:
+      | { file: string; epoch: number; hash: string; lifecycleId: string }
+      | undefined;
+    for (const file of files) {
+      const match = LEDGER_FILENAME_PATTERN.exec(file);
+      if (!match) continue;
+      const epoch = Number(match[1]);
+      const hash = match[2];
+      const lifecycleId = lifecycleIdForEpoch(epoch, deployedEpoch);
+      if (lifecycleId === undefined) continue;
+      if (existsSync(doneMarkerPath(lifecycleId))) continue;
+      if (!newest || epoch > newest.epoch) {
+        newest = { file, epoch, hash, lifecycleId };
+      }
+    }
+    return newest;
+  }
+
   let inFlight = false;
   const pollOnce = async () => {
     if (inFlight) return;
     inFlight = true;
     try {
-      const files = await readdir(options.stakingLedgersDirectory);
-      const candidates: {
-        file: string;
-        epoch: number;
-        hash: string;
-        lifecycleId: string;
-      }[] = [];
-      for (const file of files) {
-        const match = LEDGER_FILENAME_PATTERN.exec(file);
-        if (!match) continue;
-        const epoch = Number(match[1]);
-        const hash = match[2];
-        const lifecycleId = lifecycleIdForEpoch(epoch, deployedEpoch);
-        if (lifecycleId === undefined) continue;
-        if (existsSync(doneMarkerPath(lifecycleId))) continue;
-        candidates.push({ file, epoch, hash, lifecycleId });
-      }
+      // Re-scan and re-pick the newest unprocessed lifecycle every cycle
+      // (rather than queuing up the whole backlog at once) so a freshly
+      // arrived epoch is picked up and prioritized as soon as the current
+      // lifecycle finishes, instead of waiting behind an already-queued
+      // backlog of older lifecycles.
+      const candidate = await findNewestCandidate();
+      if (!candidate) return;
+      const { file, epoch, hash, lifecycleId } = candidate;
 
-      // Newest lifecycle first: on a fresh start against a large backlog, this
-      // makes the currently-relevant lifecycle available as soon as possible
-      // instead of waiting for every historical lifecycle to process first.
-      candidates.sort((a, b) => b.epoch - a.epoch);
-
-      for (const { file, epoch, hash, lifecycleId } of candidates) {
-        logger.info(
-          `[voting-ledger-scheduler] processing epoch=${epoch} lifecycleId=${lifecycleId} file=${file}`,
+      logger.info(
+        `[voting-ledger-scheduler] processing epoch=${epoch} lifecycleId=${lifecycleId} file=${file}`,
+      );
+      try {
+        await processLedgerFile({
+          filePath: join(options.stakingLedgersDirectory, file),
+          epoch,
+          expectedHash: hash,
+          lifecycleId,
+        });
+      } catch (error) {
+        logger.error(
+          `[voting-ledger-scheduler] failed to process epoch=${epoch} lifecycleId=${lifecycleId}: ${String(error)}`,
         );
-        try {
-          await processLedgerFile({
-            filePath: join(options.stakingLedgersDirectory, file),
-            epoch,
-            expectedHash: hash,
-            lifecycleId,
-          });
-        } catch (error) {
-          logger.error(
-            `[voting-ledger-scheduler] failed to process epoch=${epoch} lifecycleId=${lifecycleId}: ${String(error)}`,
-          );
-        }
       }
     } catch (error) {
       logger.error(`[voting-ledger-scheduler] poll cycle failed: ${String(error)}`);
