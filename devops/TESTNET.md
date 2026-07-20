@@ -448,18 +448,67 @@ Tallying votes requires two proofs:
 - exhausted staking-ledger-to-voting-ledger proof
 - merged vote-reducer proof
 
-The CLI and Compose stack share lifecycle SQLite data. By default the testnet
+The CLI and Compose stack are each configured with their own
+`SQLITE_DATA_DIRECTORY` / `SQLITE_DATA_HOST_PATH`. By default the testnet
 family uses:
 
 ```text
-CLI:     ./.data/testnet-sqlite
-Compose: ../.data/testnet-sqlite mounted at /data/sqlite
+CLI (apps/cli/.env.testnet):  ./.data/testnet-sqlite (relative to apps/cli)
+Compose (devops/.env.testnet): SQLITE_DATA_HOST_PATH, mounted at /data/sqlite
+  - on this host: /opt/mina/.treasury-sqlite
 ```
+
+These are two different directories unless you explicitly point the CLI at
+the Compose path (e.g. `SQLITE_DATA_DIRECTORY="$SQLITE_DATA_HOST_PATH" pnpm run cli -- ...`,
+as `devops/TESTNET_MINA_NODE.md` does) — keep this in mind when running CLI
+commands manually against lifecycle data the Compose stack (including
+`voting-ledger-scheduler`) already produced, or vice versa.
+
+When `SQLITE_DATA_HOST_PATH` doesn't exist yet, run
+`node devops/scripts/ensure-sqlite-data-dir.mjs devops/.env.testnet` first (the
+`testnet:up*` scripts already do this) — Compose containers run as a non-root
+user and can't write into a directory Docker would otherwise auto-create as
+root.
 
 ### Build Staking-Ledger-To-Voting-Ledger Data
 
-Use a staking ledger JSON for the target lifecycle and network. For a local Mina
-node, `devops/TESTNET_MINA_NODE.md` is the source of truth for ledger export.
+The Compose stack runs a `voting-ledger-scheduler` service that automates this.
+It watches `STAKING_LEDGERS_HOST_PATH` (default
+`/opt/mina/.mina-network/staking_ledgers`, populated on the host by the Mina
+daemon or `monitor-staking-ledger.sh` as `<epoch>-<hash>.tar.gz` files) and, for
+every epoch that starts a new treasury lifecycle
+(`epoch == deployedEpoch + 4 * lifecycleId`, given `TREASURY_DEPLOYED_AT_SLOT`
+and `LIFECYCLE_PERIOD_DURATION`), automatically:
+
+1. hydrates that lifecycle's staking-ledger SQLite (`staking-ledger from-file`),
+2. verifies the resulting root hash against the hash embedded in the archive's
+   filename (the same `mina ledger hash` value the chain would serve over
+   GraphQL as `stakingEpochData.ledger.hash`),
+3. runs `staking-ledger-to-voting-ledger trace-digest` (circuit `compile` runs
+   once at service startup, not per lifecycle),
+4. and writes `<lifecycleId>.sqlite.done` as a completion marker.
+
+Check `docker compose ... logs -f voting-ledger-scheduler` to follow progress,
+and `<SQLITE_DATA_HOST_PATH>/<lifecycleId>.sqlite.done` to confirm a given
+lifecycle is ready. A hash mismatch is logged as an error and that lifecycle is
+left unprocessed (retried every cycle) rather than silently accepted.
+
+The container runs as the non-root `node` user (uid 1000) for hardening. If
+`SQLITE_DATA_HOST_PATH` doesn't exist yet, Docker creates it as `root` on first
+use, which the `voting-ledger-scheduler` (and `api-migrate`) container can't
+write into — this fails as `SQLITE_CANTOPEN: unable to open database file`.
+Fix by matching the host directory's owner to uid 1000:
+
+```bash
+mkdir -p "$SQLITE_DATA_HOST_PATH"
+chown -R 1000:1000 "$SQLITE_DATA_HOST_PATH"
+```
+
+The steps below remain useful for one-off runs, debugging a specific lifecycle,
+or networks where nothing populates `STAKING_LEDGERS_HOST_PATH` automatically
+(for example `local-blockchain`). Use a staking ledger JSON for the target
+lifecycle and network. For a local Mina node, `devops/TESTNET_MINA_NODE.md` is
+the source of truth for ledger export.
 
 Populate lifecycle SQLite:
 

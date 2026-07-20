@@ -145,6 +145,24 @@ services:
       api-migrate:
         condition: service_completed_successfully
 
+  voting-ledger-scheduler:
+    <<: *app-image
+    command: ["pnpm", "--dir", "apps/cli", "run", "mina-treasury", "--", "voting-ledger-scheduler", "start"]
+    environment:
+      LIFECYCLE_PERIOD_DURATION: ${LIFECYCLE_PERIOD_DURATION:-7140}
+      TREASURY_DEPLOYED_AT_SLOT: ${TREASURY_DEPLOYED_AT_SLOT:-0}
+      PROOFS_ENABLED: ${PROOFS_ENABLED:-false}
+      SQLITE_DATA_DIRECTORY: ${SQLITE_DATA_DIRECTORY:-/data/sqlite}
+      STAKING_LEDGERS_DIRECTORY: /staking-ledgers
+      VOTING_LEDGER_SCHEDULER_POLL_INTERVAL_MS: ${VOTING_LEDGER_SCHEDULER_POLL_INTERVAL_MS:-30000}
+    volumes:
+      - ${SQLITE_DATA_HOST_PATH:-./.data/sqlite}:${SQLITE_DATA_DIRECTORY:-/data/sqlite}
+      - ${STAKING_LEDGERS_HOST_PATH:-/opt/mina/.mina-network/staking_ledgers}:/staking-ledgers:ro
+    depends_on:
+      api-migrate:
+        condition: service_completed_successfully
+    restart: unless-stopped
+
   web:
     <<: *app-image
     command:

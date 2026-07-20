@@ -30,6 +30,27 @@ import { hashWithPrefix } from "../../provable/hashing-helpers.js";
 import { MerkleTreeStorage } from "../../storage/merkle-tree-storage.js";
 import { logger } from "../../logging/logger.js";
 
+const NANOMINA_PER_MINA = 1_000_000_000n;
+const MINA_DECIMAL_PLACES = 9;
+
+// Mina ledger exports represent amounts as whole-or-fractional MINA strings
+// (e.g. "1550" or "0.000000028" for dust balances), not nanomina integers.
+// Parsing the fractional part as a string (rather than via Number) avoids
+// float rounding errors at nanomina precision.
+function parseMinaAmountToNanomina(value: string | number): bigint {
+  const raw = String(value).trim();
+  const [wholePart, fractionalPart = ""] = raw.split(".");
+  if (fractionalPart.length > MINA_DECIMAL_PLACES) {
+    throw new Error(
+      `Mina amount "${value}" has more than ${MINA_DECIMAL_PLACES} decimal places, which exceeds nanomina precision`,
+    );
+  }
+  const paddedFractionalPart = fractionalPart.padEnd(MINA_DECIMAL_PLACES, "0");
+  return (
+    BigInt(wholePart || "0") * NANOMINA_PER_MINA + BigInt(paddedFractionalPart || "0")
+  );
+}
+
 export interface StakingLedger {
   getAllAccounts(): Promise<Account[]>;
   accountCount(): Promise<number>;
@@ -237,15 +258,15 @@ export abstract class BaseStakingLedger implements StakingLedger {
         ? new Timing({
             isTimed: Bool(true),
             initialMinimumBalance: UInt64.from(
-              value.timing.initial_minimum_balance,
-            ).mul(1_000_000_000),
+              parseMinaAmountToNanomina(value.timing.initial_minimum_balance),
+            ),
             cliffTime: UInt32.from(value.timing.cliff_time),
-            cliffAmount: UInt64.from(value.timing.cliff_amount).mul(
-              1_000_000_000,
+            cliffAmount: UInt64.from(
+              parseMinaAmountToNanomina(value.timing.cliff_amount),
             ),
             vestingPeriod: UInt32.from(value.timing.vesting_period),
-            vestingIncrement: UInt64.from(value.timing.vesting_increment).mul(
-              1_000_000_000,
+            vestingIncrement: UInt64.from(
+              parseMinaAmountToNanomina(value.timing.vesting_increment),
             ),
           })
         : Timing.empty(),
@@ -294,7 +315,7 @@ export abstract class BaseStakingLedger implements StakingLedger {
           })
         : Zkapp.empty(),
 
-      balance: UInt64.from(value.balance).mul(1_000_000_000),
+      balance: UInt64.from(parseMinaAmountToNanomina(value.balance)),
       delegate: value.delegate
         ? PublicKey.fromBase58(value.delegate)
         : PublicKey.empty(),
