@@ -2,6 +2,7 @@ import type {
   TreasuryLifecyclePeriodId,
   TreasuryLifecyclePeriodMetadata,
 } from "@repo/ui/treasury-lifecycle-period-info";
+import { resolveEndpointUrl } from "../../endpoint-settings/lib/endpoint-url";
 
 const CURRENT_GLOBAL_SLOT_QUERY = `
   query CurrentTreasuryLifecycleState {
@@ -53,10 +54,11 @@ async function fetchTreasuryDeployedAtSlot(
   const { TreasuryOwnerSmartContract } = await import(
     "@repo/sdk/src/provable/contracts/treasury-owner.js"
   );
+  const resolvedMinaNodeUrl = resolveEndpointUrl(minaNodeUrl);
 
   Mina.setActiveInstance(
     Mina.Network({
-      mina: minaNodeUrl,
+      mina: resolvedMinaNodeUrl,
     }),
   );
 
@@ -85,10 +87,11 @@ export async function fetchTreasuryPausedState(
         "@repo/sdk/src/provable/contracts/treasury-pause-controller/treasury-pause-controller.js"
       ),
     ]);
+  const resolvedMinaNodeUrl = resolveEndpointUrl(minaNodeUrl);
 
   Mina.setActiveInstance(
     Mina.Network({
-      mina: minaNodeUrl,
+      mina: resolvedMinaNodeUrl,
     }),
   );
 
@@ -119,7 +122,7 @@ async function fetchCurrentTreasuryLifecycleState(
   minaNodeUrl: string,
   treasuryOwnerAddress: string,
 ): Promise<{ currentGlobalSlot: number; treasuryDeployedAtSlot: number }> {
-  const response = await fetch(minaNodeUrl, {
+  const response = await fetch(resolveEndpointUrl(minaNodeUrl), {
     method: "POST",
     headers: {
       "content-type": "application/json",

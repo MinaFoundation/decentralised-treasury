@@ -3,8 +3,9 @@ import {
   EVENTS_QUERY_FALLBACK,
   NETWORK_STATE_QUERY,
 } from "./queries.js";
+import { TokenId } from "o1js";
 
-const ARCHIVE_DEFAULT_TOKEN_ID = "wSHV2S4qX9jFsLjQo8r1BsMLH2ZRKsZx6EJd1sbozGPieEC4Jf";
+const ARCHIVE_DEFAULT_TOKEN_ID = TokenId.toBase58(TokenId.default);
 
 export type ArchiveBlockStatus = "PENDING" | "CANONICAL";
 
@@ -66,22 +67,16 @@ export interface FetchEventsOptions {
 
 export interface ArchiveClientConfig {
   treasuryOwnerContractAddress: string;
-  treasuryOwnerTokenId: string;
   archiveRequestTimeoutMs: number;
 }
 
 export class ArchiveClient {
   private supportsBlockTimestamp: boolean | null = null;
-  private readonly normalizedTreasuryOwnerTokenId: string;
 
   public constructor(
     private readonly archiveNodeUrl: string,
     private readonly config: ArchiveClientConfig,
-  ) {
-    this.normalizedTreasuryOwnerTokenId = normalizeArchiveTokenId(
-      config.treasuryOwnerTokenId,
-    );
-  }
+  ) {}
 
   private async post<TData>(
     query: string,
@@ -157,7 +152,10 @@ export class ArchiveClient {
     const variables = {
       input: {
         address: this.config.treasuryOwnerContractAddress,
-        tokenId: this.normalizedTreasuryOwnerTokenId,
+        // TreasuryOwner events are emitted by the owner account update under
+        // Mina's default token. Proposal child account actions use the derived
+        // token id, but those are fetched by the separate SDK/proof pipeline.
+        tokenId: ARCHIVE_DEFAULT_TOKEN_ID,
         status: options.status,
         from: options.from,
         to: options.to,
@@ -192,8 +190,4 @@ export class ArchiveClient {
     }
     return /Cannot query field ["']timestamp["']/i.test(error.message);
   }
-}
-
-function normalizeArchiveTokenId(tokenId: string): string {
-  return tokenId === "1" ? ARCHIVE_DEFAULT_TOKEN_ID : tokenId;
 }

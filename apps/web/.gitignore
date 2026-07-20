@@ -36,7 +36,8 @@ yarn-error.log*
 !.env.e2e
 !.env.e2e.example
 !.env.lightnet
-!.env.local-blockchain
+!.env.local-blockchain.example
+!.env.testnet.example
 
 # vercel
 .vercel

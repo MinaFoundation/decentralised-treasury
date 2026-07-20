@@ -10,7 +10,7 @@ From repo root:
 pnpm --dir apps/docs run dev
 ```
 
-Default local URL: `http://localhost:3001`
+Default local URL: `http://localhost:3200`
 
 ## Build and Start
 

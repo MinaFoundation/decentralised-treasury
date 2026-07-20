@@ -45,6 +45,7 @@ async function main(): Promise<void> {
   const apiServer = new HttpApiServer({
     name: "app-api",
     port: config.apiPort,
+    corsAllowedOrigins: config.corsAllowedOrigins,
     registerRoutes: async (app) => {
       stakingLedgerRoutes(app);
       votingLedgerAccountRoutes(app);

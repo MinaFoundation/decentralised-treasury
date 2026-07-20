@@ -1,18 +1,13 @@
 /// <reference lib="webworker" />
 
-import {
-  buildAndProveCreateProposalTransactionInCurrentThread,
-  buildAndProveExecuteProposalTransactionInCurrentThread,
-  buildAndProveVoteProposalTransactionInCurrentThread,
-  proveTransactionJsonInCurrentThread,
-  serializeProposalCompileArtifactsInCurrentThread,
-  type SerializedProposalCompileArtifacts,
-} from "../lib/proposal-prover-runtime";
+import type { SerializedProposalCompileArtifacts } from "../lib/proposal-prover-runtime";
 import type {
   ProposalProverWorkerRequest,
   ProposalProverWorkerResponse,
   ProposalProverWorkerStatus,
 } from "../lib/proposal-prover-worker.types";
+
+type ProposalProverRuntime = typeof import("../lib/proposal-prover-runtime");
 
 let compileArtifacts: SerializedProposalCompileArtifacts | null = null;
 let compileProofsEnabled: boolean | null = null;
@@ -21,6 +16,20 @@ let status: ProposalProverWorkerStatus = {
   phase: "idle",
   error: null,
 };
+let proposalProverRuntimePromise: Promise<ProposalProverRuntime> | null = null;
+
+function ensureWorkerWindowAlias(): void {
+  const globalScope = globalThis as typeof globalThis & {
+    window?: Window & typeof globalThis;
+  };
+  globalScope.window ??= globalThis as unknown as Window & typeof globalThis;
+}
+
+async function getProposalProverRuntime(): Promise<ProposalProverRuntime> {
+  ensureWorkerWindowAlias();
+  proposalProverRuntimePromise ??= import("../lib/proposal-prover-runtime");
+  return proposalProverRuntimePromise;
+}
 
 function getErrorMessage(
   error: unknown,
@@ -49,7 +58,9 @@ function getErrorMessage(
   return fallbackMessage;
 }
 
-async function ensureCompiled(proofsEnabled: boolean): Promise<SerializedProposalCompileArtifacts> {
+async function ensureCompiled(
+  proofsEnabled: boolean,
+): Promise<SerializedProposalCompileArtifacts> {
   if (compileArtifacts && compileProofsEnabled === proofsEnabled) {
     console.info("[proposal-prover][worker] reusing compile artifacts", {
       proofsEnabled,
@@ -71,7 +82,11 @@ async function ensureCompiled(proofsEnabled: boolean): Promise<SerializedProposa
     proofsEnabled,
   });
 
-  compileArtifacts = await serializeProposalCompileArtifactsInCurrentThread({ proofsEnabled });
+  const { serializeProposalCompileArtifactsInCurrentThread } =
+    await getProposalProverRuntime();
+  compileArtifacts = await serializeProposalCompileArtifactsInCurrentThread({
+    proofsEnabled,
+  });
   compileProofsEnabled = proofsEnabled;
   console.info("[proposal-prover][worker] compile complete", {
     proofsEnabled,
@@ -86,14 +101,20 @@ async function ensureCompiled(proofsEnabled: boolean): Promise<SerializedProposa
 }
 
 function postResponse(response: ProposalProverWorkerResponse): void {
-  const safeResponse = JSON.parse(JSON.stringify(response)) as ProposalProverWorkerResponse;
+  const safeResponse = JSON.parse(
+    JSON.stringify(response),
+  ) as ProposalProverWorkerResponse;
   console.info("[proposal-prover][worker] posting response", {
     id: safeResponse.id,
     ok: safeResponse.ok,
     phase: safeResponse.status.phase,
     ready: safeResponse.status.ready,
-    hasCompileArtifacts: safeResponse.ok ? Boolean(safeResponse.compileArtifacts) : false,
-    transactionJsonType: safeResponse.ok ? typeof safeResponse.transactionJson : undefined,
+    hasCompileArtifacts: safeResponse.ok
+      ? Boolean(safeResponse.compileArtifacts)
+      : false,
+    transactionJsonType: safeResponse.ok
+      ? typeof safeResponse.transactionJson
+      : undefined,
     transactionJsonLength:
       safeResponse.ok && typeof safeResponse.transactionJson === "string"
         ? safeResponse.transactionJson.length
@@ -107,11 +128,15 @@ self.onmessage = async (event: MessageEvent<ProposalProverWorkerRequest>) => {
   console.info("[proposal-prover][worker] received request", {
     id: message.id,
     type: message.type,
-    proofsEnabled: "proofsEnabled" in message ? message.proofsEnabled : undefined,
+    proofsEnabled:
+      "proofsEnabled" in message ? message.proofsEnabled : undefined,
     transactionJsonType:
-      message.type === "proveTransactionJson" ? typeof message.transactionJson : undefined,
+      message.type === "proveTransactionJson"
+        ? typeof message.transactionJson
+        : undefined,
     transactionJsonLength:
-      message.type === "proveTransactionJson" && typeof message.transactionJson === "string"
+      message.type === "proveTransactionJson" &&
+      typeof message.transactionJson === "string"
         ? message.transactionJson.length
         : undefined,
   });
@@ -150,22 +175,36 @@ self.onmessage = async (event: MessageEvent<ProposalProverWorkerRequest>) => {
         phase: "proving",
         error: null,
       };
-      console.info("[proposal-prover][worker] building and proving create proposal", {
-        id: message.id,
-        senderAddress: message.input.senderAddress,
-        lifecycleId: message.input.lifecycleId,
-      });
-      const { preparedTransaction: preparedCreateProposalTransaction, provedTransactionJson: transactionJson } =
-        await buildAndProveCreateProposalTransactionInCurrentThread(message.input, {
+      console.info(
+        "[proposal-prover][worker] building and proving create proposal",
+        {
+          id: message.id,
+          senderAddress: message.input.senderAddress,
+          lifecycleId: message.input.lifecycleId,
+        },
+      );
+      const { buildAndProveCreateProposalTransactionInCurrentThread } =
+        await getProposalProverRuntime();
+      const {
+        preparedTransaction: preparedCreateProposalTransaction,
+        provedTransactionJson: transactionJson,
+      } = await buildAndProveCreateProposalTransactionInCurrentThread(
+        message.input,
+        {
           proofsEnabled: message.proofsEnabled,
           compileArtifacts: nextCompileArtifacts,
-        });
-      console.info("[proposal-prover][worker] create build and prove complete", {
-        id: message.id,
-        proposalPublicKey: preparedCreateProposalTransaction.proposalPublicKey,
-        elapsedMs: Date.now() - createStartedAt,
-        transactionJsonLength: transactionJson.length,
-      });
+        },
+      );
+      console.info(
+        "[proposal-prover][worker] create build and prove complete",
+        {
+          id: message.id,
+          proposalPublicKey:
+            preparedCreateProposalTransaction.proposalPublicKey,
+          elapsedMs: Date.now() - createStartedAt,
+          transactionJsonLength: transactionJson.length,
+        },
+      );
       status = {
         ready: true,
         phase: "idle",
@@ -189,17 +228,27 @@ self.onmessage = async (event: MessageEvent<ProposalProverWorkerRequest>) => {
         phase: "proving",
         error: null,
       };
-      console.info("[proposal-prover][worker] building and proving vote proposal", {
-        id: message.id,
-        senderAddress: message.input.senderAddress,
-        proposalPublicKey: message.input.proposalPublicKey,
-        vote: message.input.vote,
-      });
-      const { preparedTransaction: preparedVoteProposalTransaction, provedTransactionJson: transactionJson } =
-        await buildAndProveVoteProposalTransactionInCurrentThread(message.input, {
+      console.info(
+        "[proposal-prover][worker] building and proving vote proposal",
+        {
+          id: message.id,
+          senderAddress: message.input.senderAddress,
+          proposalPublicKey: message.input.proposalPublicKey,
+          vote: message.input.vote,
+        },
+      );
+      const { buildAndProveVoteProposalTransactionInCurrentThread } =
+        await getProposalProverRuntime();
+      const {
+        preparedTransaction: preparedVoteProposalTransaction,
+        provedTransactionJson: transactionJson,
+      } = await buildAndProveVoteProposalTransactionInCurrentThread(
+        message.input,
+        {
           proofsEnabled: message.proofsEnabled,
           compileArtifacts: nextCompileArtifacts,
-        });
+        },
+      );
       status = {
         ready: true,
         phase: "idle",
@@ -223,12 +272,17 @@ self.onmessage = async (event: MessageEvent<ProposalProverWorkerRequest>) => {
         phase: "proving",
         error: null,
       };
-      console.info("[proposal-prover][worker] building and proving execute proposal", {
-        id: message.id,
-        senderAddress: message.input.senderAddress,
-        proposalPublicKey: message.input.proposalPublicKey,
-        recipient: message.input.recipient,
-      });
+      console.info(
+        "[proposal-prover][worker] building and proving execute proposal",
+        {
+          id: message.id,
+          senderAddress: message.input.senderAddress,
+          proposalPublicKey: message.input.proposalPublicKey,
+          recipient: message.input.recipient,
+        },
+      );
+      const { buildAndProveExecuteProposalTransactionInCurrentThread } =
+        await getProposalProverRuntime();
       const {
         preparedTransaction: preparedExecuteProposalTransaction,
         provedTransactionJson: transactionJson,
@@ -265,16 +319,25 @@ self.onmessage = async (event: MessageEvent<ProposalProverWorkerRequest>) => {
       id: message.id,
       transactionJsonType: typeof message.transactionJson,
       transactionJsonLength:
-        typeof message.transactionJson === "string" ? message.transactionJson.length : undefined,
+        typeof message.transactionJson === "string"
+          ? message.transactionJson.length
+          : undefined,
     });
-    const transactionJson = await proveTransactionJsonInCurrentThread(message.transactionJson, {
-      proofsEnabled: message.proofsEnabled,
-    });
+    const { proveTransactionJsonInCurrentThread } =
+      await getProposalProverRuntime();
+    const transactionJson = await proveTransactionJsonInCurrentThread(
+      message.transactionJson,
+      {
+        proofsEnabled: message.proofsEnabled,
+      },
+    );
     console.info("[proposal-prover][worker] prove complete", {
       id: message.id,
       transactionJsonType: typeof transactionJson,
       transactionJsonLength:
-        typeof transactionJson === "string" ? transactionJson.length : undefined,
+        typeof transactionJson === "string"
+          ? transactionJson.length
+          : undefined,
     });
     status = {
       ready: true,

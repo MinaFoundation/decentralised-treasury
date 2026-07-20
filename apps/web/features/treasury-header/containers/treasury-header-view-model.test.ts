@@ -15,7 +15,6 @@ describe("buildTreasuryHeaderProps", () => {
 
     const props = buildTreasuryHeaderProps({
       pathname: "/proposals",
-      selectedLifecycleId: 12,
       search: {
         query: "grant",
         results: [
@@ -50,6 +49,8 @@ describe("buildTreasuryHeaderProps", () => {
         value: {
           networkId: "MAINNET",
           apiUrl: "http://127.0.0.1:4000",
+          indexerApiUrl: "http://127.0.0.1:4001",
+          processorApiUrl: "http://127.0.0.1:4002",
           minaNodeUrl: "http://127.0.0.1:8080/graphql",
         },
       },
@@ -85,11 +86,15 @@ describe("buildTreasuryHeaderProps", () => {
     expect(props.walletConnectStatus).toBe("connected");
 
     props.onCreateProposalClick?.();
-    expect(push).toHaveBeenCalledWith("/proposals/create?lifecycleId=12&from=proposals");
+    expect(push).toHaveBeenCalledWith(
+      "/proposals/create?lifecycleId=12&from=proposals",
+    );
 
     const settings = {
       networkId: "MAINNET",
       apiUrl: "http://127.0.0.1:4000",
+      indexerApiUrl: "http://127.0.0.1:4001",
+      processorApiUrl: "http://127.0.0.1:4002",
       minaNodeUrl: "http://127.0.0.1:8080/graphql",
     };
 
@@ -149,6 +154,8 @@ describe("buildTreasuryHeaderProps", () => {
         value: {
           networkId: "MAINNET",
           apiUrl: "http://127.0.0.1:4000",
+          indexerApiUrl: "http://127.0.0.1:4001",
+          processorApiUrl: "http://127.0.0.1:4002",
           minaNodeUrl: "http://127.0.0.1:8080/graphql",
         },
       },

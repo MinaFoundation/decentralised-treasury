@@ -25,7 +25,6 @@ interface ArchiveEventsSource {
 export interface EventsIndexerConfig {
   archiveNodeUrl: string;
   treasuryOwnerContractAddress: string;
-  treasuryOwnerTokenId: string;
   knownEventTypes: string[];
   archiveRequestTimeoutMs: number;
   databaseUrl: string;

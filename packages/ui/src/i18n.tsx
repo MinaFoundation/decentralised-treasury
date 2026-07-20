@@ -54,6 +54,12 @@ export const defaultTreasuryIntlMessages: Record<string, string> = {
     "Configure endpoints used by the dashboard containers in apps/web.",
   "ui.header.settings.apiUrl.label": "API URL",
   "ui.header.settings.apiUrl.placeholder": "https://api.example.com",
+  "ui.header.settings.indexerApiUrl.label": "Indexer API URL",
+  "ui.header.settings.indexerApiUrl.placeholder":
+    "https://treasury.example.com/indexer",
+  "ui.header.settings.processorApiUrl.label": "Processor API URL",
+  "ui.header.settings.processorApiUrl.placeholder":
+    "https://treasury.example.com/processor",
   "ui.header.settings.minaNodeUrl.label": "Mina node URL",
   "ui.header.settings.minaNodeUrl.placeholder":
     "https://berkeley.minascan.io/graphql",
@@ -116,7 +122,8 @@ export const defaultTreasuryIntlMessages: Record<string, string> = {
     "Voting has closed and the proposal did not satisfy the acceptance criteria.",
   "ui.proposalsTable.statusDescription.abandoned":
     "Voting closed without any votes being cast for this proposal.",
-  "ui.proposalsTable.statusDescription.default": "Current proposal status: {status}.",
+  "ui.proposalsTable.statusDescription.default":
+    "Current proposal status: {status}.",
   "ui.lifecycle.lifecycleId": "Lifecycle {id}",
   "ui.lifecycle.selectorLabel": "Select lifecycle",
   "ui.lifecycle.selectorDescription": "Select a lifecycle to display",

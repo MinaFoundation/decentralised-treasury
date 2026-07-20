@@ -1,5 +1,5 @@
 import type { Server } from "node:http";
-import express, { type Express } from "express";
+import express, { type Express, type Request, type Response } from "express";
 import type { EventsRepository } from "./events-repository.js";
 
 export interface EventsApiServerOptions {
@@ -7,6 +7,7 @@ export interface EventsApiServerOptions {
   pageLimitDefault: number;
   pageLimitMax: number;
   indexerPrefix?: string;
+  corsAllowedOrigins?: string[];
   registerTopLevelRoutes?: (app: Express) => void | Promise<void>;
   /**
    * @deprecated Use registerTopLevelRoutes instead.
@@ -16,6 +17,38 @@ export interface EventsApiServerOptions {
 }
 
 class QueryValidationError extends Error {}
+
+const DEFAULT_CORS_ALLOWED_ORIGINS = [
+  "http://127.0.0.1:3100",
+  "http://localhost:3100",
+];
+
+function isOriginAllowed(origin: string, allowedOrigins: string[]): boolean {
+  return allowedOrigins.includes("*") || allowedOrigins.includes(origin);
+}
+
+function applyCorsHeaders(
+  request: Request,
+  response: Response,
+  allowedOrigins: string[],
+): boolean {
+  const origin = request.headers.origin;
+  if (!origin) {
+    return true;
+  }
+  if (!isOriginAllowed(origin, allowedOrigins)) {
+    return false;
+  }
+
+  response.setHeader(
+    "access-control-allow-origin",
+    allowedOrigins.includes("*") ? "*" : origin,
+  );
+  response.setHeader("vary", "Origin");
+  response.setHeader("access-control-allow-methods", "GET, POST, OPTIONS");
+  response.setHeader("access-control-allow-headers", "content-type");
+  return true;
+}
 
 function parsePositiveInt(
   value: unknown,
@@ -42,7 +75,9 @@ function parseBoolean(value: unknown, fallback: boolean): boolean {
   if (value === "false") {
     return false;
   }
-  throw new QueryValidationError("boolean query parameter must be true or false");
+  throw new QueryValidationError(
+    "boolean query parameter must be true or false",
+  );
 }
 
 function parseUpdatedAfter(value: unknown): Date {
@@ -51,7 +86,9 @@ function parseUpdatedAfter(value: unknown): Date {
   }
   const parsed = new Date(value);
   if (Number.isNaN(parsed.getTime())) {
-    throw new QueryValidationError("updatedAfter must be a valid ISO timestamp");
+    throw new QueryValidationError(
+      "updatedAfter must be a valid ISO timestamp",
+    );
   }
   return parsed;
 }
@@ -108,12 +145,24 @@ export class EventsApiServer {
     await this.repository.initialize();
 
     const app = express();
-    app.use((_request, response, next) => {
-      response.setHeader("access-control-allow-origin", "*");
-      response.setHeader("access-control-allow-methods", "GET, POST, OPTIONS");
-      response.setHeader("access-control-allow-headers", "content-type");
-      if (_request.method === "OPTIONS") {
+    const corsAllowedOrigins =
+      this.options.corsAllowedOrigins ?? DEFAULT_CORS_ALLOWED_ORIGINS;
+    app.use((request, response, next) => {
+      const corsAllowed = applyCorsHeaders(
+        request,
+        response,
+        corsAllowedOrigins,
+      );
+      if (request.method === "OPTIONS") {
+        if (!corsAllowed) {
+          response.status(403).json({ error: "CORS origin is not allowed" });
+          return;
+        }
         response.status(204).end();
+        return;
+      }
+      if (!corsAllowed) {
+        response.status(403).json({ error: "CORS origin is not allowed" });
         return;
       }
       next();

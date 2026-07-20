@@ -51,7 +51,7 @@ describe("TreasuryLifecyclePeriodInfo", () => {
       ).length,
     ).toBeGreaterThan(0);
     expect(screen.getByText("Ending in")).toBeTruthy();
-    expect(screen.getByText("1 day 4 hours 0 minutes")).toBeTruthy();
+    expect(screen.getByText("1 day 4 hours")).toBeTruthy();
     expect(screen.getByText("#492 slots")).toBeTruthy();
   });
 
@@ -78,12 +78,12 @@ describe("TreasuryLifecyclePeriodInfo", () => {
       </TreasuryIntlProvider>,
     );
 
-    expect(screen.getByText("0 days 0 hours 3 minutes")).toBeTruthy();
+    expect(screen.getByText("3 minutes")).toBeTruthy();
     expect(screen.getByText("#3 slots")).toBeTruthy();
 
     vi.advanceTimersByTime(150000);
 
-    expect(screen.getByText("0 days 0 hours 3 minutes")).toBeTruthy();
+    expect(screen.getByText("3 minutes")).toBeTruthy();
     expect(screen.getByText("#3 slots")).toBeTruthy();
   });
 
@@ -110,14 +110,16 @@ describe("TreasuryLifecyclePeriodInfo", () => {
       </TreasuryIntlProvider>,
     );
 
-    const progressbar = screen.getByRole("progressbar", { name: "Voting progress" });
+    const progressbar = screen.getByRole("progressbar", {
+      name: "Voting progress",
+    });
     expect(progressbar.getAttribute("aria-valuenow")).toBe("68");
-    expect(screen.getByText("0 days 0 hours 3 minutes")).toBeTruthy();
+    expect(screen.getByText("3 minutes")).toBeTruthy();
     expect(screen.getByText("#3 slots")).toBeTruthy();
 
     vi.advanceTimersByTime(60000);
 
-    expect(screen.getByText("0 days 0 hours 3 minutes")).toBeTruthy();
+    expect(screen.getByText("3 minutes")).toBeTruthy();
     expect(screen.getByText("#3 slots")).toBeTruthy();
     expect(progressbar.getAttribute("aria-valuenow")).toBe("68");
   });
@@ -170,16 +172,29 @@ describe("TreasuryLifecyclePeriodInfo", () => {
   it("renders lifecycle progress as four period progress bars", () => {
     render(
       <TreasuryIntlProvider locale="en">
-        <TreasuryLifecyclePeriodInfo currentPeriod="proposal" currentPeriodProgress={50} />
+        <TreasuryLifecyclePeriodInfo
+          currentPeriod="proposal"
+          currentPeriodProgress={50}
+        />
       </TreasuryIntlProvider>,
     );
 
-    expect(screen.getByRole("progressbar", { name: "Proposal progress" })).toBeTruthy();
-    expect(screen.getByRole("progressbar", { name: "Exploration progress" })).toBeTruthy();
-    expect(screen.getByRole("progressbar", { name: "Voting progress" })).toBeTruthy();
-    expect(screen.getByRole("progressbar", { name: "Cooldown progress" })).toBeTruthy();
     expect(
-      screen.getByRole("progressbar", { name: "Proposal progress" }).getAttribute("aria-valuenow"),
+      screen.getByRole("progressbar", { name: "Proposal progress" }),
+    ).toBeTruthy();
+    expect(
+      screen.getByRole("progressbar", { name: "Exploration progress" }),
+    ).toBeTruthy();
+    expect(
+      screen.getByRole("progressbar", { name: "Voting progress" }),
+    ).toBeTruthy();
+    expect(
+      screen.getByRole("progressbar", { name: "Cooldown progress" }),
+    ).toBeTruthy();
+    expect(
+      screen
+        .getByRole("progressbar", { name: "Proposal progress" })
+        .getAttribute("aria-valuenow"),
     ).toBe("50");
   });
 
@@ -195,7 +210,9 @@ describe("TreasuryLifecyclePeriodInfo", () => {
     );
     expect(lifecycleSection?.getAttribute("data-loading")).toBe("true");
     expect(screen.queryByRole("heading", { name: /period$/i })).toBeNull();
-    expect(container.querySelectorAll(".animate-pulse").length).toBeGreaterThan(0);
+    expect(container.querySelectorAll(".animate-pulse").length).toBeGreaterThan(
+      0,
+    );
   });
 
   it("renders a lifecycle selector and reports selection changes", () => {
@@ -219,6 +236,38 @@ describe("TreasuryLifecyclePeriodInfo", () => {
     fireEvent.change(selector, { target: { value: "5" } });
 
     expect(onLifecycleChange).toHaveBeenCalledWith(5);
+  });
+
+  it("treats the latest lifecycle option as current and orders historical options by recency", () => {
+    render(
+      <TreasuryIntlProvider locale="en">
+        <TreasuryLifecyclePeriodInfo
+          lifecycleId={5}
+          currentPeriod="voting"
+          lifecycleOptions={[5, 4, 3, 2, 1, 0]}
+        />
+      </TreasuryIntlProvider>,
+    );
+
+    const selector = screen.getByRole("combobox", {
+      name: "Select lifecycle",
+    }) as HTMLSelectElement;
+    const [currentGroup, historicalGroup] = Array.from(
+      selector.querySelectorAll("optgroup"),
+    );
+
+    expect(currentGroup?.label).toBe("Current");
+    expect(
+      Array.from(currentGroup?.querySelectorAll("option") ?? []).map(
+        (option) => option.value,
+      ),
+    ).toEqual(["5"]);
+    expect(historicalGroup?.label).toBe("Historical");
+    expect(
+      Array.from(historicalGroup?.querySelectorAll("option") ?? []).map(
+        (option) => option.value,
+      ),
+    ).toEqual(["4", "3", "2", "1", "0"]);
   });
 
   it("keeps derived lifecycle options after selecting a lower lifecycle", () => {

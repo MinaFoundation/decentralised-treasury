@@ -15,8 +15,10 @@ vi.mock("../../treasury/lib/treasury-lifecycle", () => ({
 }));
 
 describe("useTreasuryStatus", () => {
-  const originalOwnerAddress = process.env.NEXT_PUBLIC_TREASURY_OWNER_CONTRACT_ADDRESS;
-  const originalLifecyclePeriodDuration = process.env.NEXT_PUBLIC_LIFECYCLE_PERIOD_DURATION;
+  const originalOwnerAddress =
+    process.env.NEXT_PUBLIC_TREASURY_OWNER_CONTRACT_ADDRESS;
+  const originalLifecyclePeriodDuration =
+    process.env.NEXT_PUBLIC_LIFECYCLE_PERIOD_DURATION;
 
   beforeEach(() => {
     process.env.NEXT_PUBLIC_TREASURY_OWNER_CONTRACT_ADDRESS = "B62qtreasury";
@@ -27,13 +29,17 @@ describe("useTreasuryStatus", () => {
     useEndpointSettingsStore.getState().hydrateSettings({
       networkId: "MAINNET",
       apiUrl: "http://127.0.0.1:4000",
+      indexerApiUrl: "http://127.0.0.1:4001",
+      processorApiUrl: "http://127.0.0.1:4002",
       minaNodeUrl: "http://127.0.0.1:8080/graphql",
     });
   });
 
   afterEach(() => {
-    process.env.NEXT_PUBLIC_TREASURY_OWNER_CONTRACT_ADDRESS = originalOwnerAddress;
-    process.env.NEXT_PUBLIC_LIFECYCLE_PERIOD_DURATION = originalLifecyclePeriodDuration;
+    process.env.NEXT_PUBLIC_TREASURY_OWNER_CONTRACT_ADDRESS =
+      originalOwnerAddress;
+    process.env.NEXT_PUBLIC_LIFECYCLE_PERIOD_DURATION =
+      originalLifecyclePeriodDuration;
     vi.restoreAllMocks();
   });
 
@@ -73,7 +79,10 @@ describe("useTreasuryStatus", () => {
     expect(fetchCurrentTreasuryLifecycleSnapshot).toHaveBeenCalledWith(
       "http://127.0.0.1:8080/graphql",
       process.env.NEXT_PUBLIC_TREASURY_OWNER_CONTRACT_ADDRESS,
-      Number.parseInt(process.env.NEXT_PUBLIC_LIFECYCLE_PERIOD_DURATION ?? "", 10),
+      Number.parseInt(
+        process.env.NEXT_PUBLIC_LIFECYCLE_PERIOD_DURATION ?? "",
+        10,
+      ),
     );
     expect(fetchTreasuryPausedState).toHaveBeenCalledWith(
       "http://127.0.0.1:8080/graphql",

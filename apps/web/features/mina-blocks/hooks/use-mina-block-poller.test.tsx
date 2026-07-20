@@ -1,7 +1,10 @@
 import { act, renderHook } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { useEndpointSettingsStore } from "../../endpoint-settings/store/endpoint-settings-store";
-import { initialMinaBlockState, useMinaBlockStore } from "../store/mina-block-store";
+import {
+  initialMinaBlockState,
+  useMinaBlockStore,
+} from "../store/mina-block-store";
 import { useMinaBlockPoller } from "./use-mina-block-poller";
 
 describe("useMinaBlockPoller", () => {
@@ -12,6 +15,8 @@ describe("useMinaBlockPoller", () => {
     useEndpointSettingsStore.getState().hydrateSettings({
       networkId: "MAINNET",
       apiUrl: "http://127.0.0.1:4000",
+      indexerApiUrl: "http://127.0.0.1:4001",
+      processorApiUrl: "http://127.0.0.1:4002",
       minaNodeUrl: "http://127.0.0.1:8080/graphql",
     });
   });
@@ -29,26 +34,24 @@ describe("useMinaBlockPoller", () => {
   }
 
   it("registers a new block and increments refresh token", async () => {
-    const fetchMock = vi
-      .spyOn(globalThis, "fetch")
-      .mockResolvedValue(
-        new Response(
-          JSON.stringify({
-            data: {
-              bestChain: [
-                {
-                  stateHash: "hash-1",
-                  protocolState: {
-                    consensusState: {
-                      blockHeight: "42",
-                    },
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          data: {
+            bestChain: [
+              {
+                stateHash: "hash-1",
+                protocolState: {
+                  consensusState: {
+                    blockHeight: "42",
                   },
                 },
-              ],
-            },
-          }),
-        ),
-      );
+              },
+            ],
+          },
+        }),
+      ),
+    );
 
     renderHook(() => useMinaBlockPoller());
 
@@ -61,26 +64,24 @@ describe("useMinaBlockPoller", () => {
   });
 
   it("does not increment refresh token when the polled block is unchanged", async () => {
-    const fetchMock = vi
-      .spyOn(globalThis, "fetch")
-      .mockResolvedValue(
-        new Response(
-          JSON.stringify({
-            data: {
-              bestChain: [
-                {
-                  stateHash: "hash-1",
-                  protocolState: {
-                    consensusState: {
-                      blockHeight: "42",
-                    },
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          data: {
+            bestChain: [
+              {
+                stateHash: "hash-1",
+                protocolState: {
+                  consensusState: {
+                    blockHeight: "42",
                   },
                 },
-              ],
-            },
-          }),
-        ),
-      );
+              },
+            ],
+          },
+        }),
+      ),
+    );
 
     renderHook(() => useMinaBlockPoller());
 

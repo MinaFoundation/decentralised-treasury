@@ -1,0 +1,314 @@
+name: decentralized-treasury
+
+x-app-image: &app-image
+  image: decentralized-treasury:devops
+  build:
+    context: ..
+    dockerfile: devops/docker/Dockerfile
+  extra_hosts:
+    - "host.docker.internal:host-gateway"
+  security_opt:
+    - "no-new-privileges:true"
+  cap_drop:
+    - ALL
+  tmpfs:
+    - /tmp
+
+x-api-environment: &api-environment
+  DATABASE_URL: ${DATABASE_URL:?Set DATABASE_URL in apps/api/.env.testnet}
+  DATABASE_SCHEMA: ${DATABASE_SCHEMA:-public}
+  ARCHIVE_NODE_URL: ${ARCHIVE_NODE_URL:-http://host.docker.internal:8282}
+  TREASURY_OWNER_CONTRACT_ADDRESS: ${TREASURY_OWNER_CONTRACT_ADDRESS:-B62qpExe8CAaGkR4HRxyXvkziQpE6Aq3U71MJLHivP8pCsiDk1BbU9Z}
+  API_PORT: "4000"
+  API_URL: ${API_URL:-http://api:4000}
+  INDEXER_API_PORT: "4001"
+  INDEXER_API_URL: ${INDEXER_API_URL:-http://indexer-api:4001}
+  PROCESSOR_API_PORT: "4002"
+  PROCESSOR_API_URL: ${PROCESSOR_API_URL:-http://processor-api:4002}
+  SQLITE_DATA_DIRECTORY: ${SQLITE_DATA_DIRECTORY:-/data/sqlite}
+  POLL_PENDING_INTERVAL_MS: ${POLL_PENDING_INTERVAL_MS:-5000}
+  POLL_CANONICAL_INTERVAL_MS: ${POLL_CANONICAL_INTERVAL_MS:-15000}
+  PROCESSOR_POLL_INTERVAL_MS: ${PROCESSOR_POLL_INTERVAL_MS:-2000}
+  PROOFS_ENABLED: ${PROOFS_ENABLED:-false}
+  CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://127.0.0.1:3100,http://localhost:3100}
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in devops/.env.testnet}
+      POSTGRES_DB: ${POSTGRES_DB:-treasury_api}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    security_opt:
+      - "no-new-privileges:true"
+
+  api-migrate:
+    <<: *app-image
+    command: ["pnpm", "--dir", "apps/api", "run", "migration:run"]
+    environment:
+      <<: *api-environment
+    volumes:
+      - ${SQLITE_DATA_HOST_PATH:-./.data/sqlite}:${SQLITE_DATA_DIRECTORY:-/data/sqlite}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+
+  api:
+    <<: *app-image
+    command: ["pnpm", "--dir", "apps/api", "run", "start:api"]
+    environment:
+      <<: *api-environment
+    volumes:
+      - ${SQLITE_DATA_HOST_PATH:-./.data/sqlite}:${SQLITE_DATA_DIRECTORY:-/data/sqlite}:ro
+    depends_on:
+      api-migrate:
+        condition: service_completed_successfully
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:4000/healthz').then((r)=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+
+  indexer-api:
+    <<: *app-image
+    command: ["pnpm", "--dir", "apps/api", "run", "start:indexer-api"]
+    environment:
+      <<: *api-environment
+    depends_on:
+      api-migrate:
+        condition: service_completed_successfully
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:4001/healthz').then((r)=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+
+  processor-api:
+    <<: *app-image
+    command: ["pnpm", "--dir", "apps/api", "run", "start:processor-api"]
+    environment:
+      <<: *api-environment
+    depends_on:
+      api-migrate:
+        condition: service_completed_successfully
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:4002/healthz').then((r)=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+
+  indexer:
+    <<: *app-image
+    command: ["pnpm", "--dir", "apps/api", "run", "start:indexer"]
+    environment:
+      <<: *api-environment
+    depends_on:
+      api-migrate:
+        condition: service_completed_successfully
+
+  processor:
+    <<: *app-image
+    command: ["pnpm", "--dir", "apps/api", "run", "start:processor"]
+    environment:
+      <<: *api-environment
+    volumes:
+      - ${SQLITE_DATA_HOST_PATH:-./.data/sqlite}:${SQLITE_DATA_DIRECTORY:-/data/sqlite}:ro
+    depends_on:
+      indexer-api:
+        condition: service_healthy
+      api-migrate:
+        condition: service_completed_successfully
+
+  voting-ledger-scheduler:
+    <<: *app-image
+    command: ["pnpm", "--dir", "apps/cli", "run", "mina-treasury", "--", "voting-ledger-scheduler", "start"]
+    environment:
+      LIFECYCLE_PERIOD_DURATION: ${LIFECYCLE_PERIOD_DURATION:-7140}
+      TREASURY_DEPLOYED_AT_SLOT: ${TREASURY_DEPLOYED_AT_SLOT:-0}
+      PROOFS_ENABLED: ${PROOFS_ENABLED:-false}
+      SQLITE_DATA_DIRECTORY: ${SQLITE_DATA_DIRECTORY:-/data/sqlite}
+      STAKING_LEDGERS_DIRECTORY: /staking-ledgers
+      VOTING_LEDGER_SCHEDULER_POLL_INTERVAL_MS: ${VOTING_LEDGER_SCHEDULER_POLL_INTERVAL_MS:-30000}
+    volumes:
+      - ${SQLITE_DATA_HOST_PATH:-./.data/sqlite}:${SQLITE_DATA_DIRECTORY:-/data/sqlite}
+      - ${STAKING_LEDGERS_HOST_PATH:-/opt/mina/.mina-network/staking_ledgers}:/staking-ledgers:ro
+    depends_on:
+      api-migrate:
+        condition: service_completed_successfully
+    restart: unless-stopped
+
+  web:
+    <<: *app-image
+    command:
+      [
+        "pnpm",
+        "--dir",
+        "apps/web",
+        "run",
+        "dev",
+        "--hostname",
+        "0.0.0.0",
+        "--port",
+        "${WEB_PORT:-3100}",
+      ]
+    environment:
+      NEXT_PUBLIC_TREASURY_API_URL: ${NEXT_PUBLIC_TREASURY_API_URL:-http://127.0.0.1:3100/api}
+      NEXT_PUBLIC_INDEXER_API_URL: ${NEXT_PUBLIC_INDEXER_API_URL:-http://127.0.0.1:3100/indexer}
+      NEXT_PUBLIC_PROCESSOR_API_URL: ${NEXT_PUBLIC_PROCESSOR_API_URL:-http://127.0.0.1:3100/processor}
+      NEXT_PUBLIC_MINA_NODE_URL: ${NEXT_PUBLIC_MINA_NODE_URL:-http://127.0.0.1:3100/mina/graphql}
+      NEXT_PUBLIC_TREASURY_OWNER_CONTRACT_ADDRESS: ${NEXT_PUBLIC_TREASURY_OWNER_CONTRACT_ADDRESS:-${TREASURY_OWNER_CONTRACT_ADDRESS:-B62qpExe8CAaGkR4HRxyXvkziQpE6Aq3U71MJLHivP8pCsiDk1BbU9Z}}
+      NEXT_PUBLIC_LIFECYCLE_PERIOD_DURATION: ${NEXT_PUBLIC_LIFECYCLE_PERIOD_DURATION:-7140}
+      NEXT_PUBLIC_SLOT_DURATION_MS: ${NEXT_PUBLIC_SLOT_DURATION_MS:-180000}
+      NEXT_PUBLIC_PROOFS_ENABLED: ${NEXT_PUBLIC_PROOFS_ENABLED:-false}
+      NEXT_PUBLIC_NETWORK_ID: ${NEXT_PUBLIC_NETWORK_ID:-MAINNET}
+      NEXT_PUBLIC_VOTE_REDUCER_VERIFICATION_KEY_JSON: ${NEXT_PUBLIC_VOTE_REDUCER_VERIFICATION_KEY_JSON:-}
+      NEXT_PUBLIC_STAKING_LEDGER_TO_VOTING_LEDGER_VERIFICATION_KEY_JSON: ${NEXT_PUBLIC_STAKING_LEDGER_TO_VOTING_LEDGER_VERIFICATION_KEY_JSON:-}
+      NEXT_PUBLIC_TREASURY_PROPOSAL_VERIFICATION_KEY_JSON: ${NEXT_PUBLIC_TREASURY_PROPOSAL_VERIFICATION_KEY_JSON:-}
+      NEXT_PUBLIC_EMPTY_VOTING_LEDGER_ROOT: ${NEXT_PUBLIC_EMPTY_VOTING_LEDGER_ROOT:-}
+      NEXT_PUBLIC_EMPTY_NULLIFIER_ROOT: ${NEXT_PUBLIC_EMPTY_NULLIFIER_ROOT:-}
+    depends_on:
+      api:
+        condition: service_healthy
+      indexer-api:
+        condition: service_healthy
+      processor-api:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:${WEB_PORT:-3100}').then((r)=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+
+  reverse-proxy:
+    image: caddy:2.8.4-alpine
+    profiles:
+      - proxy
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    environment:
+      WEB_PORT: ${WEB_PORT:-3100}
+      PROXY_WEB_PORT: ${PROXY_WEB_PORT:-3100}
+      PROXY_API_PORT: ${PROXY_API_PORT:-4100}
+      PROXY_INDEXER_PORT: ${PROXY_INDEXER_PORT:-4101}
+      PROXY_PROCESSOR_PORT: ${PROXY_PROCESSOR_PORT:-4102}
+      MINA_NODE_PROXY_UPSTREAM: ${MINA_NODE_PROXY_UPSTREAM:-http://host.docker.internal:8080}
+    ports:
+      - "${BIND_ADDRESS:-127.0.0.1}:${PROXY_WEB_PORT:-3100}:${PROXY_WEB_PORT:-3100}"
+      - "${BIND_ADDRESS:-127.0.0.1}:${PROXY_API_PORT:-4100}:${PROXY_API_PORT:-4100}"
+      - "${BIND_ADDRESS:-127.0.0.1}:${PROXY_INDEXER_PORT:-4101}:${PROXY_INDEXER_PORT:-4101}"
+      - "${BIND_ADDRESS:-127.0.0.1}:${PROXY_PROCESSOR_PORT:-4102}:${PROXY_PROCESSOR_PORT:-4102}"
+    volumes:
+      - ./proxy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on:
+      web:
+        condition: service_healthy
+      api:
+        condition: service_healthy
+      indexer-api:
+        condition: service_healthy
+      processor-api:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "caddy", "validate", "--config", "/etc/caddy/Caddyfile"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+    security_opt:
+      - "no-new-privileges:true"
+    cap_drop:
+      - ALL
+    cap_add:
+      - NET_BIND_SERVICE
+
+  reverse-proxy-public:
+    image: caddy:2.8.4-alpine
+    profiles:
+      - public-proxy
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    environment:
+      WEB_PORT: ${WEB_PORT:-3100}
+      MINA_NODE_PROXY_UPSTREAM: ${MINA_NODE_PROXY_UPSTREAM:-http://host.docker.internal:8080}
+      LETSENCRYPT_EMAIL: ${LETSENCRYPT_EMAIL:-}
+      LETSENCRYPT_ACME_CA: ${LETSENCRYPT_ACME_CA:-https://acme-v02.api.letsencrypt.org/directory}
+      PUBLIC_WEB_DOMAIN: ${PUBLIC_WEB_DOMAIN:-}
+      PUBLIC_API_DOMAIN: ${PUBLIC_API_DOMAIN:-}
+      PUBLIC_INDEXER_DOMAIN: ${PUBLIC_INDEXER_DOMAIN:-}
+      PUBLIC_PROCESSOR_DOMAIN: ${PUBLIC_PROCESSOR_DOMAIN:-}
+    entrypoint: ["/bin/sh", "-ec"]
+    command:
+      - |
+        for name in LETSENCRYPT_EMAIL PUBLIC_WEB_DOMAIN PUBLIC_API_DOMAIN PUBLIC_INDEXER_DOMAIN PUBLIC_PROCESSOR_DOMAIN; do
+          value=$$(printenv "$$name")
+          if [ -z "$$value" ]; then
+            echo "Set $$name before running pnpm testnet:up:public" >&2
+            exit 1
+          fi
+        done
+        exec caddy run --config /etc/caddy/Caddyfile --adapter caddyfile
+    ports:
+      - "${PROXY_PUBLIC_BIND_ADDRESS:-0.0.0.0}:${PROXY_HTTP_PORT:-80}:80"
+      - "${PROXY_PUBLIC_BIND_ADDRESS:-0.0.0.0}:${PROXY_HTTPS_PORT:-443}:443"
+    volumes:
+      - ./proxy/Caddyfile.https:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on:
+      web:
+        condition: service_healthy
+      api:
+        condition: service_healthy
+      indexer-api:
+        condition: service_healthy
+      processor-api:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "caddy", "validate", "--config", "/etc/caddy/Caddyfile"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+    security_opt:
+      - "no-new-privileges:true"
+    cap_drop:
+      - ALL
+    cap_add:
+      - NET_BIND_SERVICE
+
+volumes:
+  caddy-data:
+  caddy-config:
+  postgres-data:

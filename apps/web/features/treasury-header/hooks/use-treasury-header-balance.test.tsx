@@ -24,7 +24,8 @@ vi.mock("o1js", () => ({
 }));
 
 describe("useTreasuryHeaderBalance", () => {
-  const originalOwnerAddress = process.env.NEXT_PUBLIC_TREASURY_OWNER_CONTRACT_ADDRESS;
+  const originalOwnerAddress =
+    process.env.NEXT_PUBLIC_TREASURY_OWNER_CONTRACT_ADDRESS;
 
   beforeEach(() => {
     process.env.NEXT_PUBLIC_TREASURY_OWNER_CONTRACT_ADDRESS = "B62qtreasury";
@@ -34,12 +35,15 @@ describe("useTreasuryHeaderBalance", () => {
     useEndpointSettingsStore.getState().hydrateSettings({
       networkId: "MAINNET",
       apiUrl: "http://127.0.0.1:4000",
+      indexerApiUrl: "http://127.0.0.1:4001",
+      processorApiUrl: "http://127.0.0.1:4002",
       minaNodeUrl: "http://127.0.0.1:8080/graphql",
     });
   });
 
   afterEach(() => {
-    process.env.NEXT_PUBLIC_TREASURY_OWNER_CONTRACT_ADDRESS = originalOwnerAddress;
+    process.env.NEXT_PUBLIC_TREASURY_OWNER_CONTRACT_ADDRESS =
+      originalOwnerAddress;
     vi.restoreAllMocks();
   });
 

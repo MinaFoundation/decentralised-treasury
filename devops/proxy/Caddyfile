@@ -1,0 +1,36 @@
+http://:{$PROXY_WEB_PORT:3100} {
+	encode zstd gzip
+
+	handle_path /api/* {
+		reverse_proxy api:4000
+	}
+
+	handle_path /indexer/* {
+		reverse_proxy indexer-api:4001
+	}
+
+	handle_path /processor/* {
+		reverse_proxy processor-api:4002
+	}
+
+	handle_path /mina/* {
+		reverse_proxy {$MINA_NODE_PROXY_UPSTREAM}
+	}
+
+	reverse_proxy web:{$WEB_PORT:3100}
+}
+
+http://:{$PROXY_API_PORT:4100} {
+	encode zstd gzip
+	reverse_proxy api:4000
+}
+
+http://:{$PROXY_INDEXER_PORT:4101} {
+	encode zstd gzip
+	reverse_proxy indexer-api:4001
+}
+
+http://:{$PROXY_PROCESSOR_PORT:4102} {
+	encode zstd gzip
+	reverse_proxy processor-api:4002
+}

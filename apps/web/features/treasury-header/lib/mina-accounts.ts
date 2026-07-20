@@ -1,3 +1,5 @@
+import { resolveEndpointUrl } from "../../endpoint-settings/lib/endpoint-url";
+
 const NANO_MINA_PER_MINA = 1_000_000_000n;
 
 function formatFractionalMina(fractional: bigint): string {
@@ -29,10 +31,11 @@ export async function fetchMinaAccountBalanceNanomina(
   publicKeyBase58: string,
 ): Promise<string> {
   const { Mina, PublicKey, fetchAccount } = await import("o1js");
+  const resolvedMinaNodeUrl = resolveEndpointUrl(minaNodeUrl);
 
   Mina.setActiveInstance(
     Mina.Network({
-      mina: minaNodeUrl,
+      mina: resolvedMinaNodeUrl,
     }),
   );
 
@@ -77,7 +80,7 @@ interface BestChainResponse {
 }
 
 export async function fetchStakingLedgerTotalCurrency(minaNodeUrl: string): Promise<string> {
-  const response = await fetch(minaNodeUrl, {
+  const response = await fetch(resolveEndpointUrl(minaNodeUrl), {
     method: "POST",
     headers: {
       "content-type": "application/json",

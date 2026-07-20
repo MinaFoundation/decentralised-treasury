@@ -1,5 +1,3 @@
-"use client";
-
 import {
   assertZkappUriWithinByteLimit,
   hashMarkdownContentToZkappUri,
@@ -30,8 +28,10 @@ export interface PreparedCreateProposalTransaction {
 interface ConstructedCreateProposalTransaction {
   transaction: any;
   proposalPrivateKey: any;
-  inlineSignerPrivateKeys: any[];
-  preparedTransaction: Omit<PreparedCreateProposalTransaction, "transactionJson">;
+  preparedTransaction: Omit<
+    PreparedCreateProposalTransaction,
+    "transactionJson"
+  >;
 }
 
 export type ProposalVoteChoice = "yay" | "nay" | "abstain";
@@ -55,14 +55,15 @@ export interface PreparedVoteProposalTransaction {
 
 interface ConstructedVoteProposalTransaction {
   transaction: any;
-  inlineSignerPrivateKeys: any[];
   preparedTransaction: Omit<PreparedVoteProposalTransaction, "transactionJson">;
 }
 
 interface ConstructedExecuteProposalTransaction {
   transaction: any;
-  inlineSignerPrivateKeys: any[];
-  preparedTransaction: Omit<PreparedExecuteProposalTransaction, "transactionJson">;
+  preparedTransaction: Omit<
+    PreparedExecuteProposalTransaction,
+    "transactionJson"
+  >;
 }
 
 export interface PrepareExecuteProposalTransactionInput {
@@ -95,6 +96,25 @@ export interface SerializedProposalCompileArtifacts {
 
 interface ProposalProverOptions {
   proofsEnabled?: boolean;
+}
+
+function getRuntimeOrigin(): string | undefined {
+  return typeof globalThis.location?.origin === "string"
+    ? globalThis.location.origin
+    : undefined;
+}
+
+function resolveProverEndpointUrl(endpointRoot: string): string {
+  const trimmedEndpointRoot = endpointRoot.trim();
+  const runtimeOrigin = getRuntimeOrigin();
+
+  if (!runtimeOrigin && !/^[a-z][a-z\d+\-.]*:\/\//i.test(trimmedEndpointRoot)) {
+    throw new Error(
+      `Relative endpoint URL requires a browser origin: ${endpointRoot}`,
+    );
+  }
+
+  return new URL(trimmedEndpointRoot, runtimeOrigin).toString();
 }
 
 interface TransactionAuthorizationSummaryItem {
@@ -141,7 +161,10 @@ function summarizeTransactionAuthorization(transactionJson: string): {
   };
 }
 
-function logTransactionAuthorizationSummary(label: string, transactionJson: string): void {
+function logTransactionAuthorizationSummary(
+  label: string,
+  transactionJson: string,
+): void {
   try {
     const parsed = summarizeTransactionAuthorization(transactionJson);
     console.info(`[proposal-prover][tx-json] ${label}`, {
@@ -149,10 +172,13 @@ function logTransactionAuthorizationSummary(label: string, transactionJson: stri
       accountUpdates: parsed.accountUpdates,
     });
   } catch (error) {
-    console.error("[proposal-prover][tx-json] failed to inspect transaction json", {
-      label,
-      error,
-    });
+    console.error(
+      "[proposal-prover][tx-json] failed to inspect transaction json",
+      {
+        label,
+        error,
+      },
+    );
   }
 }
 
@@ -175,11 +201,14 @@ function logExpectedSignerCoverage(
       ),
     });
   } catch (error) {
-    console.error("[proposal-prover][tx-json] failed to inspect signer coverage", {
-      label,
-      signerPublicKeys,
-      error,
-    });
+    console.error(
+      "[proposal-prover][tx-json] failed to inspect signer coverage",
+      {
+        label,
+        signerPublicKeys,
+        error,
+      },
+    );
   }
 }
 
@@ -197,14 +226,18 @@ function assertProofsPresent(label: string, transactionJson: string): void {
   });
   throw new Error(
     `Proof generation did not populate all proved account updates: ${missingProofs
-      .map((accountUpdate) => `${accountUpdate.index}:${accountUpdate.publicKey ?? "unknown"}`)
+      .map(
+        (accountUpdate) =>
+          `${accountUpdate.index}:${accountUpdate.publicKey ?? "unknown"}`,
+      )
       .join(", ")}`,
   );
 }
 
 let compileContractsPromise: Promise<void> | null = null;
 let compileContractsProofsEnabled: boolean | null = null;
-let compiledProposalCompileArtifacts: SerializedProposalCompileArtifacts | null = null;
+let compiledProposalCompileArtifacts: SerializedProposalCompileArtifacts | null =
+  null;
 
 function parseJsonStringValue(value: string): unknown {
   const candidates = [value];
@@ -244,18 +277,22 @@ function parseJsonStringValue(value: string): unknown {
 }
 
 function getConfiguredProposalCompileArtifacts(): SerializedProposalCompileArtifacts {
-  const lifecyclePeriodDuration = process.env.NEXT_PUBLIC_LIFECYCLE_PERIOD_DURATION;
+  const lifecyclePeriodDuration =
+    process.env.NEXT_PUBLIC_LIFECYCLE_PERIOD_DURATION;
   const voteReducerVerificationKeyJson =
     process.env.NEXT_PUBLIC_VOTE_REDUCER_VERIFICATION_KEY_JSON;
   const stakingLedgerToVotingLedgerVerificationKeyJson =
-    process.env.NEXT_PUBLIC_STAKING_LEDGER_TO_VOTING_LEDGER_VERIFICATION_KEY_JSON;
+    process.env
+      .NEXT_PUBLIC_STAKING_LEDGER_TO_VOTING_LEDGER_VERIFICATION_KEY_JSON;
   const treasuryProposalVerificationKeyJson =
     process.env.NEXT_PUBLIC_TREASURY_PROPOSAL_VERIFICATION_KEY_JSON;
   const emptyNullifierRoot = process.env.NEXT_PUBLIC_EMPTY_NULLIFIER_ROOT;
-  const emptyVotingLedgerRoot = process.env.NEXT_PUBLIC_EMPTY_VOTING_LEDGER_ROOT;
+  const emptyVotingLedgerRoot =
+    process.env.NEXT_PUBLIC_EMPTY_VOTING_LEDGER_ROOT;
 
   const missingName =
-    typeof lifecyclePeriodDuration !== "string" || lifecyclePeriodDuration.trim().length === 0
+    typeof lifecyclePeriodDuration !== "string" ||
+    lifecyclePeriodDuration.trim().length === 0
       ? "NEXT_PUBLIC_LIFECYCLE_PERIOD_DURATION"
       : typeof voteReducerVerificationKeyJson !== "string" ||
           voteReducerVerificationKeyJson.trim().length === 0
@@ -266,20 +303,23 @@ function getConfiguredProposalCompileArtifacts(): SerializedProposalCompileArtif
           : typeof treasuryProposalVerificationKeyJson !== "string" ||
               treasuryProposalVerificationKeyJson.trim().length === 0
             ? "NEXT_PUBLIC_TREASURY_PROPOSAL_VERIFICATION_KEY_JSON"
-            : typeof emptyNullifierRoot !== "string" || emptyNullifierRoot.trim().length === 0
+            : typeof emptyNullifierRoot !== "string" ||
+                emptyNullifierRoot.trim().length === 0
               ? "NEXT_PUBLIC_EMPTY_NULLIFIER_ROOT"
-              : typeof emptyVotingLedgerRoot !== "string" || emptyVotingLedgerRoot.trim().length === 0
+              : typeof emptyVotingLedgerRoot !== "string" ||
+                  emptyVotingLedgerRoot.trim().length === 0
                 ? "NEXT_PUBLIC_EMPTY_VOTING_LEDGER_ROOT"
                 : null;
 
   if (missingName) {
     throw new Error(
-      `Missing required browser prover config: ${missingName}. Run the treasury-owner CLI compile command and copy the emitted browserEnv values into apps/web/.env.dev.`,
+      `Missing required browser prover config: ${missingName}. Run the treasury-owner CLI compile command and copy the emitted browserEnv values into apps/web/.env.dev, apps/web/.env.testnet, or apps/web/.env.local-blockchain.`,
     );
   }
 
   const configuredLifecyclePeriodDuration = lifecyclePeriodDuration as string;
-  const configuredVoteReducerVerificationKeyJson = voteReducerVerificationKeyJson as string;
+  const configuredVoteReducerVerificationKeyJson =
+    voteReducerVerificationKeyJson as string;
   const configuredStakingLedgerToVotingLedgerVerificationKeyJson =
     stakingLedgerToVotingLedgerVerificationKeyJson as string;
   const configuredTreasuryProposalVerificationKeyJson =
@@ -292,36 +332,11 @@ function getConfiguredProposalCompileArtifacts(): SerializedProposalCompileArtif
     voteReducerVerificationKeyJson: configuredVoteReducerVerificationKeyJson,
     stakingLedgerToVotingLedgerVerificationKeyJson:
       configuredStakingLedgerToVotingLedgerVerificationKeyJson,
-    treasuryProposalVerificationKeyJson: configuredTreasuryProposalVerificationKeyJson,
+    treasuryProposalVerificationKeyJson:
+      configuredTreasuryProposalVerificationKeyJson,
     emptyNullifierRoot: configuredEmptyNullifierRoot,
     emptyVotingLedgerRoot: configuredEmptyVotingLedgerRoot,
   };
-}
-
-function getConfiguredInlineSignerPrivateKeyBase58s(): string[] {
-  const senderPrivateKey = process.env.NEXT_PUBLIC_INLINE_SENDER_PRIVATE_KEY;
-  const signerPrivateKeysJson = process.env.NEXT_PUBLIC_INLINE_SIGNER_PRIVATE_KEYS_JSON;
-
-  if (typeof signerPrivateKeysJson !== "string" || signerPrivateKeysJson.trim().length === 0) {
-    throw new Error(
-      "Missing required browser prover config: NEXT_PUBLIC_INLINE_SIGNER_PRIVATE_KEYS_JSON.",
-    );
-  }
-
-  const parsed = parseJsonStringValue(signerPrivateKeysJson);
-  if (!Array.isArray(parsed)) {
-    throw new Error("NEXT_PUBLIC_INLINE_SIGNER_PRIVATE_KEYS_JSON must be a JSON array.");
-  }
-
-  const signerPrivateKeys = parsed.filter(
-    (value): value is string => typeof value === "string" && value.trim().length > 0,
-  );
-
-  if (typeof senderPrivateKey === "string" && senderPrivateKey.trim().length > 0) {
-    signerPrivateKeys.unshift(senderPrivateKey.trim());
-  }
-
-  return Array.from(new Set(signerPrivateKeys.map((value) => value.trim())));
 }
 
 export async function getProposalModules(): Promise<{
@@ -343,28 +358,33 @@ export async function getProposalModules(): Promise<{
   ] = await Promise.all([
     import("o1js"),
     import("@repo/sdk/src/provable/contracts/treasury-owner.js"),
-    import(
-      "@repo/sdk/src/provable/contracts/treasury-pause-controller/treasury-pause-controller.js"
-    ),
+    import("@repo/sdk/src/provable/contracts/treasury-pause-controller/treasury-pause-controller.js"),
     import("@repo/sdk/src/provable/contracts/treasury-pause-controller/multisig-signatures.js"),
     import("@repo/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.js"),
     import("@repo/sdk/src/provable/contracts/treasury-proposal/vote-reducer.js"),
-    ]);
+  ]);
 
   return {
     o1js,
-    TreasuryOwnerSmartContract: (ownerModule as { TreasuryOwnerSmartContract: any })
-      .TreasuryOwnerSmartContract,
-    TreasuryPauseControllerSmartContract: (pauseControllerModule as {
-      TreasuryPauseControllerSmartContract: any;
-    }).TreasuryPauseControllerSmartContract,
-    TreasuryProposalSmartContract: (proposalModule as { TreasuryProposalSmartContract: any })
-      .TreasuryProposalSmartContract,
-    LIFECYCLE_PERIOD_DURATION: (ownerModule as { LIFECYCLE_PERIOD_DURATION: any })
-      .LIFECYCLE_PERIOD_DURATION,
-    MULTISIG_PARTICIPANTS_COUNT: (multisigSignaturesModule as {
-      MULTISIG_PARTICIPANTS_COUNT: number;
-    }).MULTISIG_PARTICIPANTS_COUNT,
+    TreasuryOwnerSmartContract: (
+      ownerModule as { TreasuryOwnerSmartContract: any }
+    ).TreasuryOwnerSmartContract,
+    TreasuryPauseControllerSmartContract: (
+      pauseControllerModule as {
+        TreasuryPauseControllerSmartContract: any;
+      }
+    ).TreasuryPauseControllerSmartContract,
+    TreasuryProposalSmartContract: (
+      proposalModule as { TreasuryProposalSmartContract: any }
+    ).TreasuryProposalSmartContract,
+    LIFECYCLE_PERIOD_DURATION: (
+      ownerModule as unknown as { LIFECYCLE_PERIOD_DURATION: any }
+    ).LIFECYCLE_PERIOD_DURATION,
+    MULTISIG_PARTICIPANTS_COUNT: (
+      multisigSignaturesModule as {
+        MULTISIG_PARTICIPANTS_COUNT: number;
+      }
+    ).MULTISIG_PARTICIPANTS_COUNT,
     Vote: (voteReducerModule as { Vote: any }).Vote,
   };
 }
@@ -373,7 +393,10 @@ export async function compileProposalContractsInCurrentThread(
   options?: ProposalProverOptions,
 ): Promise<void> {
   const proofsEnabled = options?.proofsEnabled ?? true;
-  if (!compileContractsPromise || compileContractsProofsEnabled !== proofsEnabled) {
+  if (
+    !compileContractsPromise ||
+    compileContractsProofsEnabled !== proofsEnabled
+  ) {
     compileContractsPromise = (async () => {
       const configuredArtifacts = getConfiguredProposalCompileArtifacts();
       const {
@@ -384,7 +407,9 @@ export async function compileProposalContractsInCurrentThread(
         MULTISIG_PARTICIPANTS_COUNT,
       } = await getProposalModules();
       const { UInt32, VerificationKey } = o1js;
-      await applySerializedProposalCompileArtifactsInCurrentThread(configuredArtifacts);
+      await applySerializedProposalCompileArtifactsInCurrentThread(
+        configuredArtifacts,
+      );
       TreasuryOwnerSmartContract.lifecyclePeriodDuration = UInt32.from(
         configuredArtifacts.lifecyclePeriodDuration,
       );
@@ -394,7 +419,8 @@ export async function compileProposalContractsInCurrentThread(
       );
       const { verificationKey: treasuryProposalVerificationKey } =
         await TreasuryProposalSmartContract.compile();
-      TreasuryOwnerSmartContract.proposalContractVerificationKey = treasuryProposalVerificationKey;
+      TreasuryOwnerSmartContract.proposalContractVerificationKey =
+        treasuryProposalVerificationKey;
       await TreasuryPauseControllerSmartContract.compile();
       await TreasuryOwnerSmartContract.compile();
       compiledProposalCompileArtifacts = {
@@ -414,7 +440,9 @@ export async function serializeProposalCompileArtifactsInCurrentThread(options?:
   proofsEnabled?: boolean;
 }): Promise<SerializedProposalCompileArtifacts> {
   await compileProposalContractsInCurrentThread(options);
-  return compiledProposalCompileArtifacts ?? getConfiguredProposalCompileArtifacts();
+  return (
+    compiledProposalCompileArtifacts ?? getConfiguredProposalCompileArtifacts()
+  );
 }
 
 export async function applySerializedProposalCompileArtifactsInCurrentThread(
@@ -427,7 +455,9 @@ export async function applySerializedProposalCompileArtifactsInCurrentThread(
     parseJsonStringValue(artifacts.voteReducerVerificationKeyJson),
   );
   const stakingLedgerToVotingLedgerVerificationKey = VerificationKey.fromJSON(
-    parseJsonStringValue(artifacts.stakingLedgerToVotingLedgerVerificationKeyJson),
+    parseJsonStringValue(
+      artifacts.stakingLedgerToVotingLedgerVerificationKeyJson,
+    ),
   );
   const treasuryProposalVerificationKey = VerificationKey.fromJSON(
     parseJsonStringValue(artifacts.treasuryProposalVerificationKeyJson),
@@ -445,7 +475,8 @@ export async function applySerializedProposalCompileArtifactsInCurrentThread(
   TreasuryProposalSmartContract.emptyVotingLedgerRoot = Field(
     artifacts.emptyVotingLedgerRoot,
   );
-  TreasuryProposalSmartContract._verificationKey = treasuryProposalVerificationKey;
+  TreasuryProposalSmartContract._verificationKey =
+    treasuryProposalVerificationKey;
   TreasuryOwnerSmartContract.proposalContractVerificationKey =
     treasuryProposalVerificationKey;
 }
@@ -474,13 +505,12 @@ export async function buildCreateProposalTransactionInCurrentThread(
     input,
     options,
   );
-  constructed.transaction.sign([
-    ...constructed.inlineSignerPrivateKeys,
-    constructed.proposalPrivateKey,
-  ]);
+  constructed.transaction.sign([constructed.proposalPrivateKey]);
   return {
     ...constructed.preparedTransaction,
-    transactionJson: normalizeSerializedTransactionJson(constructed.transaction.toJSON()),
+    transactionJson: normalizeSerializedTransactionJson(
+      constructed.transaction.toJSON(),
+    ),
   };
 }
 
@@ -527,26 +557,29 @@ export async function buildAndProveCreateProposalTransactionInCurrentThread(
   const provedUnsignedTransactionJson = normalizeSerializedTransactionJson(
     constructed.transaction.toJSON(),
   );
-  logTransactionAuthorizationSummary("after prove before sign", provedUnsignedTransactionJson);
-  logExpectedSignerCoverage("after prove before sign", provedUnsignedTransactionJson, [
-    ...constructed.inlineSignerPrivateKeys.map((privateKey) => privateKey.toPublicKey().toBase58()),
-    constructed.proposalPrivateKey.toPublicKey().toBase58(),
-  ]);
+  logTransactionAuthorizationSummary(
+    "after prove before sign",
+    provedUnsignedTransactionJson,
+  );
+  logExpectedSignerCoverage(
+    "after prove before sign",
+    provedUnsignedTransactionJson,
+    [constructed.proposalPrivateKey.toPublicKey().toBase58()],
+  );
   assertProofsPresent("after prove before sign", provedUnsignedTransactionJson);
   console.info("[proposal-prover][create] sign begin", {
     proposalPublicKey: constructed.preparedTransaction.proposalPublicKey,
   });
-  constructed.transaction.sign([
-    ...constructed.inlineSignerPrivateKeys,
-    constructed.proposalPrivateKey,
-  ]);
+  constructed.transaction.sign([constructed.proposalPrivateKey]);
   const signedAt = Date.now();
   const provedTransactionJson = normalizeSerializedTransactionJson(
     constructed.transaction.toJSON(),
   );
-  logTransactionAuthorizationSummary("after combined sign", provedTransactionJson);
+  logTransactionAuthorizationSummary(
+    "after combined sign",
+    provedTransactionJson,
+  );
   logExpectedSignerCoverage("after combined sign", provedTransactionJson, [
-    ...constructed.inlineSignerPrivateKeys.map((privateKey) => privateKey.toPublicKey().toBase58()),
     constructed.proposalPrivateKey.toPublicKey().toBase58(),
   ]);
   console.info("[proposal-prover][create] buildAndProve complete", {
@@ -573,10 +606,16 @@ async function constructCreateProposalTransactionInCurrentThread(
   const startedAt = Date.now();
   if (options?.compileArtifacts) {
     console.info("[proposal-prover][create] applying cached compile artifacts");
-    await applySerializedProposalCompileArtifactsInCurrentThread(options.compileArtifacts);
+    await applySerializedProposalCompileArtifactsInCurrentThread(
+      options.compileArtifacts,
+    );
   } else {
-    console.info("[proposal-prover][create] compile artifacts missing, compiling in current thread");
-    await compileProposalContractsInCurrentThread({ proofsEnabled: options?.proofsEnabled });
+    console.info(
+      "[proposal-prover][create] compile artifacts missing, compiling in current thread",
+    );
+    await compileProposalContractsInCurrentThread({
+      proofsEnabled: options?.proofsEnabled,
+    });
   }
   const modulesReadyAt = Date.now();
   console.info("[proposal-prover][create] prover modules ready", {
@@ -584,32 +623,35 @@ async function constructCreateProposalTransactionInCurrentThread(
   });
 
   const { o1js, TreasuryOwnerSmartContract } = await getProposalModules();
-  const { AccountUpdate, Mina, PrivateKey, PublicKey, UInt32, UInt64, ZkappUri, fetchAccount } =
-    o1js;
+  const {
+    AccountUpdate,
+    Mina,
+    PrivateKey,
+    PublicKey,
+    UInt32,
+    UInt64,
+    ZkappUri,
+    fetchAccount,
+  } = o1js;
 
-  const inlineSignerPrivateKeys = getConfiguredInlineSignerPrivateKeyBase58s().map((value) =>
-    PrivateKey.fromBase58(value),
-  );
   const senderPublicKey = PublicKey.fromBase58(input.senderAddress);
   const senderPublicKeyBase58 = senderPublicKey.toBase58();
-  const senderPrivateKey = inlineSignerPrivateKeys.find(
-    (privateKey) => privateKey.toPublicKey().toBase58() === senderPublicKeyBase58,
-  );
-  if (!senderPrivateKey) {
-    throw new Error(
-      `Connected wallet ${senderPublicKeyBase58} is not available for inline signing. Add its private key to NEXT_PUBLIC_INLINE_SIGNER_PRIVATE_KEYS_JSON.`,
-    );
-  }
   const recipientPublicKey = PublicKey.fromBase58(input.recipient);
-  const treasuryOwnerPublicKey = PublicKey.fromBase58(input.treasuryOwnerContractAddress);
+  const treasuryOwnerPublicKey = PublicKey.fromBase58(
+    input.treasuryOwnerContractAddress,
+  );
   const proposalPrivateKey = PrivateKey.random();
   const proposalPublicKey = proposalPrivateKey.toPublicKey();
-  const proposalAmount = UInt64.from(parseProposalAmountMinaToNanomina(input.amount));
+  const proposalAmount = UInt64.from(
+    parseProposalAmountMinaToNanomina(input.amount),
+  );
   const bondAmount = proposalAmount.div(10);
   const feeNanomina = Number(parseDecimalMinaToNanomina(input.fee));
   const lifecycleId = UInt32.from(input.lifecycleId);
   console.info("[proposal-prover][create] deriving proposal zkApp URI");
-  const proposalArtifacts = await createProposalZkAppUriArtifacts(input.contents);
+  const proposalArtifacts = await createProposalZkAppUriArtifacts(
+    input.contents,
+  );
   const artifactsReadyAt = Date.now();
   console.info("[proposal-prover][create] proposal artifacts ready", {
     proposalPublicKey: proposalPublicKey.toBase58(),
@@ -617,7 +659,9 @@ async function constructCreateProposalTransactionInCurrentThread(
     elapsedMs: artifactsReadyAt - startedAt,
   });
 
-  Mina.setActiveInstance(Mina.Network(input.minaNodeUrl));
+  Mina.setActiveInstance(
+    Mina.Network(resolveProverEndpointUrl(input.minaNodeUrl)),
+  );
 
   console.info("[proposal-prover][create] fetch sender account start", {
     senderAddress: senderPublicKeyBase58,
@@ -627,7 +671,7 @@ async function constructCreateProposalTransactionInCurrentThread(
   });
   if (senderFetchError) {
     throw new Error(
-      `Fee payer account ${senderPublicKeyBase58} was not found on the Mina node. Connect a funded wallet on this network for inline signing.`,
+      `Fee payer account ${senderPublicKeyBase58} was not found on the Mina node. Connect a funded wallet on this network.`,
     );
   }
   console.info("[proposal-prover][create] fetch sender account complete", {
@@ -646,21 +690,30 @@ async function constructCreateProposalTransactionInCurrentThread(
       `Treasury owner account ${input.treasuryOwnerContractAddress} was not found on the Mina node.`,
     );
   }
-  console.info("[proposal-prover][create] fetch treasury owner account complete", {
-    elapsedMs: Date.now() - treasuryFetchStartedAt,
-  });
+  console.info(
+    "[proposal-prover][create] fetch treasury owner account complete",
+    {
+      elapsedMs: Date.now() - treasuryFetchStartedAt,
+    },
+  );
 
   const treasuryOwner = new TreasuryOwnerSmartContract(treasuryOwnerPublicKey);
   const pauseControllerFetchStartedAt = Date.now();
-  console.info("[proposal-prover][create] fetch pause controller public key start");
-  const pauseControllerPublicKey = await treasuryOwner.pauseControllerPublicKey.fetch();
+  console.info(
+    "[proposal-prover][create] fetch pause controller public key start",
+  );
+  const pauseControllerPublicKey =
+    await treasuryOwner.pauseControllerPublicKey.fetch();
   if (!pauseControllerPublicKey) {
     throw new Error("Treasury owner pause controller public key is not set.");
   }
-  console.info("[proposal-prover][create] fetch pause controller public key complete", {
-    pauseControllerPublicKey: pauseControllerPublicKey.toBase58(),
-    elapsedMs: Date.now() - pauseControllerFetchStartedAt,
-  });
+  console.info(
+    "[proposal-prover][create] fetch pause controller public key complete",
+    {
+      pauseControllerPublicKey: pauseControllerPublicKey.toBase58(),
+      elapsedMs: Date.now() - pauseControllerFetchStartedAt,
+    },
+  );
 
   const transactionBuildStartedAt = Date.now();
   console.info("[proposal-prover][create] Mina.transaction start", {
@@ -701,7 +754,6 @@ async function constructCreateProposalTransactionInCurrentThread(
   return {
     transaction,
     proposalPrivateKey,
-    inlineSignerPrivateKeys,
     preparedTransaction: {
       proposalPublicKey: proposalPublicKey.toBase58(),
       proposalZkAppUri: proposalArtifacts.proposalZkAppUri,
@@ -720,10 +772,11 @@ export async function buildVoteProposalTransactionInCurrentThread(
     input,
     options,
   );
-  constructed.transaction.sign(constructed.inlineSignerPrivateKeys);
   return {
     ...constructed.preparedTransaction,
-    transactionJson: normalizeSerializedTransactionJson(constructed.transaction.toJSON()),
+    transactionJson: normalizeSerializedTransactionJson(
+      constructed.transaction.toJSON(),
+    ),
   };
 }
 
@@ -744,29 +797,25 @@ export async function buildAndProveVoteProposalTransactionInCurrentThread(
   const provedUnsignedTransactionJson = normalizeSerializedTransactionJson(
     constructed.transaction.toJSON(),
   );
-  logTransactionAuthorizationSummary("vote after prove before sign", provedUnsignedTransactionJson);
+  logTransactionAuthorizationSummary(
+    "vote after prove before sign",
+    provedUnsignedTransactionJson,
+  );
   logExpectedSignerCoverage(
     "vote after prove before sign",
     provedUnsignedTransactionJson,
-    constructed.inlineSignerPrivateKeys.map((privateKey) => privateKey.toPublicKey().toBase58()),
+    [],
   );
-  assertProofsPresent("vote after prove before sign", provedUnsignedTransactionJson);
-  constructed.transaction.sign(constructed.inlineSignerPrivateKeys);
-  const provedTransactionJson = normalizeSerializedTransactionJson(
-    constructed.transaction.toJSON(),
-  );
-  logTransactionAuthorizationSummary("vote after combined sign", provedTransactionJson);
-  logExpectedSignerCoverage(
-    "vote after combined sign",
-    provedTransactionJson,
-    constructed.inlineSignerPrivateKeys.map((privateKey) => privateKey.toPublicKey().toBase58()),
+  assertProofsPresent(
+    "vote after prove before sign",
+    provedUnsignedTransactionJson,
   );
   return {
     preparedTransaction: {
       ...constructed.preparedTransaction,
-      transactionJson: provedTransactionJson,
+      transactionJson: provedUnsignedTransactionJson,
     },
-    provedTransactionJson,
+    provedTransactionJson: provedUnsignedTransactionJson,
   };
 }
 
@@ -777,32 +826,27 @@ async function constructVoteProposalTransactionInCurrentThread(
   },
 ): Promise<ConstructedVoteProposalTransaction> {
   if (options?.compileArtifacts) {
-    await applySerializedProposalCompileArtifactsInCurrentThread(options.compileArtifacts);
+    await applySerializedProposalCompileArtifactsInCurrentThread(
+      options.compileArtifacts,
+    );
   } else {
-    await compileProposalContractsInCurrentThread({ proofsEnabled: options?.proofsEnabled });
+    await compileProposalContractsInCurrentThread({
+      proofsEnabled: options?.proofsEnabled,
+    });
   }
 
   const { o1js, TreasuryOwnerSmartContract, Vote } = await getProposalModules();
-  const { Mina, PrivateKey, PublicKey, fetchAccount } = o1js;
-
-  const inlineSignerPrivateKeys = getConfiguredInlineSignerPrivateKeyBase58s().map((value) =>
-    PrivateKey.fromBase58(value),
-  );
+  const { Mina, PublicKey, fetchAccount } = o1js;
   const senderPublicKey = PublicKey.fromBase58(input.senderAddress);
-  const senderPublicKeyBase58 = senderPublicKey.toBase58();
-  const senderPrivateKey = inlineSignerPrivateKeys.find(
-    (privateKey) => privateKey.toPublicKey().toBase58() === senderPublicKeyBase58,
+  const treasuryOwnerPublicKey = PublicKey.fromBase58(
+    input.treasuryOwnerContractAddress,
   );
-  if (!senderPrivateKey) {
-    throw new Error(
-      `Connected wallet ${senderPublicKeyBase58} is not available for inline signing. Add its private key to NEXT_PUBLIC_INLINE_SIGNER_PRIVATE_KEYS_JSON.`,
-    );
-  }
-  const treasuryOwnerPublicKey = PublicKey.fromBase58(input.treasuryOwnerContractAddress);
   const proposalPublicKey = PublicKey.fromBase58(input.proposalPublicKey);
   const feeNanomina = Number(parseDecimalMinaToNanomina(input.fee));
 
-  Mina.setActiveInstance(Mina.Network(input.minaNodeUrl));
+  Mina.setActiveInstance(
+    Mina.Network(resolveProverEndpointUrl(input.minaNodeUrl)),
+  );
 
   const treasuryOwner = new TreasuryOwnerSmartContract(treasuryOwnerPublicKey);
   const proposalTokenId = treasuryOwner.deriveTokenId();
@@ -835,7 +879,8 @@ async function constructVoteProposalTransactionInCurrentThread(
     );
   }
 
-  const pauseControllerPublicKey = await treasuryOwner.pauseControllerPublicKey.fetch();
+  const pauseControllerPublicKey =
+    await treasuryOwner.pauseControllerPublicKey.fetch();
   if (!pauseControllerPublicKey) {
     throw new Error("Treasury owner pause controller public key is not set.");
   }
@@ -858,7 +903,6 @@ async function constructVoteProposalTransactionInCurrentThread(
 
   return {
     transaction,
-    inlineSignerPrivateKeys,
     preparedTransaction: {
       proposalPublicKey: input.proposalPublicKey,
       vote: input.vote,
@@ -876,10 +920,11 @@ export async function buildExecuteProposalTransactionInCurrentThread(
     input,
     options,
   );
-  constructed.transaction.sign(constructed.inlineSignerPrivateKeys);
   return {
     ...constructed.preparedTransaction,
-    transactionJson: normalizeSerializedTransactionJson(constructed.transaction.toJSON()),
+    transactionJson: normalizeSerializedTransactionJson(
+      constructed.transaction.toJSON(),
+    ),
   };
 }
 
@@ -907,32 +952,18 @@ export async function buildAndProveExecuteProposalTransactionInCurrentThread(
   logExpectedSignerCoverage(
     "execute after prove before sign",
     provedUnsignedTransactionJson,
-    constructed.inlineSignerPrivateKeys.map((privateKey) =>
-      privateKey.toPublicKey().toBase58(),
-    ),
+    [],
   );
-  assertProofsPresent("execute after prove before sign", provedUnsignedTransactionJson);
-  constructed.transaction.sign(constructed.inlineSignerPrivateKeys);
-  const provedTransactionJson = normalizeSerializedTransactionJson(
-    constructed.transaction.toJSON(),
-  );
-  logTransactionAuthorizationSummary(
-    "execute after combined sign",
-    provedTransactionJson,
-  );
-  logExpectedSignerCoverage(
-    "execute after combined sign",
-    provedTransactionJson,
-    constructed.inlineSignerPrivateKeys.map((privateKey) =>
-      privateKey.toPublicKey().toBase58(),
-    ),
+  assertProofsPresent(
+    "execute after prove before sign",
+    provedUnsignedTransactionJson,
   );
   return {
     preparedTransaction: {
       ...constructed.preparedTransaction,
-      transactionJson: provedTransactionJson,
+      transactionJson: provedUnsignedTransactionJson,
     },
-    provedTransactionJson,
+    provedTransactionJson: provedUnsignedTransactionJson,
   };
 }
 
@@ -943,35 +974,32 @@ async function constructExecuteProposalTransactionInCurrentThread(
   },
 ): Promise<ConstructedExecuteProposalTransaction> {
   if (options?.compileArtifacts) {
-    await applySerializedProposalCompileArtifactsInCurrentThread(options.compileArtifacts);
+    await applySerializedProposalCompileArtifactsInCurrentThread(
+      options.compileArtifacts,
+    );
   } else {
-    await compileProposalContractsInCurrentThread({ proofsEnabled: options?.proofsEnabled });
+    await compileProposalContractsInCurrentThread({
+      proofsEnabled: options?.proofsEnabled,
+    });
   }
 
   const { o1js, TreasuryOwnerSmartContract } = await getProposalModules();
-  const { AccountUpdate, Mina, PrivateKey, PublicKey, UInt64, fetchAccount } = o1js;
-
-  const inlineSignerPrivateKeys = getConfiguredInlineSignerPrivateKeyBase58s().map((value) =>
-    PrivateKey.fromBase58(value),
-  );
+  const { AccountUpdate, Mina, PublicKey, UInt64, fetchAccount } = o1js;
 
   const senderPublicKey = PublicKey.fromBase58(input.senderAddress);
-  const senderPublicKeyBase58 = senderPublicKey.toBase58();
-  const senderPrivateKey = inlineSignerPrivateKeys.find(
-    (privateKey) => privateKey.toPublicKey().toBase58() === senderPublicKeyBase58,
+  const treasuryOwnerPublicKey = PublicKey.fromBase58(
+    input.treasuryOwnerContractAddress,
   );
-  if (!senderPrivateKey) {
-    throw new Error(
-      `Connected wallet ${senderPublicKeyBase58} is not available for inline signing. Add its private key to NEXT_PUBLIC_INLINE_SIGNER_PRIVATE_KEYS_JSON.`,
-    );
-  }
-  const treasuryOwnerPublicKey = PublicKey.fromBase58(input.treasuryOwnerContractAddress);
   const proposalPublicKey = PublicKey.fromBase58(input.proposalPublicKey);
   const recipientPublicKey = PublicKey.fromBase58(input.recipient);
-  const amountToPayOut = UInt64.from(parseProposalAmountMinaToNanomina(input.amount));
+  const amountToPayOut = UInt64.from(
+    parseProposalAmountMinaToNanomina(input.amount),
+  );
   const feeNanomina = Number(parseDecimalMinaToNanomina(input.fee));
 
-  Mina.setActiveInstance(Mina.Network(input.minaNodeUrl));
+  Mina.setActiveInstance(
+    Mina.Network(resolveProverEndpointUrl(input.minaNodeUrl)),
+  );
 
   const treasuryOwner = new TreasuryOwnerSmartContract(treasuryOwnerPublicKey);
   const proposalTokenId = treasuryOwner.deriveTokenId();
@@ -1004,7 +1032,8 @@ async function constructExecuteProposalTransactionInCurrentThread(
     );
   }
 
-  const pauseControllerPublicKey = await treasuryOwner.pauseControllerPublicKey.fetch();
+  const pauseControllerPublicKey =
+    await treasuryOwner.pauseControllerPublicKey.fetch();
   if (!pauseControllerPublicKey) {
     throw new Error("Treasury owner pause controller public key is not set.");
   }
@@ -1034,7 +1063,6 @@ async function constructExecuteProposalTransactionInCurrentThread(
 
   return {
     transaction,
-    inlineSignerPrivateKeys,
     preparedTransaction: {
       proposalPublicKey: input.proposalPublicKey,
       recipient: input.recipient,
@@ -1059,7 +1087,9 @@ export async function proveTransactionJsonInCurrentThread(
     const transaction = await o1js.Mina.Transaction.fromJSON(transactionJson);
     logTransactionAuthorizationSummary("before prove", transactionJson);
     await transaction.prove();
-    const provedTransactionJson = normalizeSerializedTransactionJson(transaction.toJSON());
+    const provedTransactionJson = normalizeSerializedTransactionJson(
+      transaction.toJSON(),
+    );
     logTransactionAuthorizationSummary("after prove", provedTransactionJson);
     assertProofsPresent("after prove", provedTransactionJson);
     return provedTransactionJson;
@@ -1070,7 +1100,9 @@ export async function proveTransactionJsonInCurrentThread(
     });
     const message =
       error instanceof Error
-        ? error.message.trim() || error.stack?.split("\n")[0] || "Unknown prover error."
+        ? error.message.trim() ||
+          error.stack?.split("\n")[0] ||
+          "Unknown prover error."
         : typeof error === "string"
           ? error.trim() || "Unknown prover error."
           : "Unknown prover error.";

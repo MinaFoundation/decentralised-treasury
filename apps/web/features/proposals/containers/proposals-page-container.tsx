@@ -24,7 +24,9 @@ export function ProposalsPageContainer({
   const treasury = useTreasuryState();
   const refreshToken = useMinaBlockStore((state) => state.refreshToken);
   const setAppError = useAppShellStore((state) => state.setError);
-  const [entries, setEntries] = useState<ReturnType<typeof mapProposalItemToEntry>[]>([]);
+  const [entries, setEntries] = useState<
+    ReturnType<typeof mapProposalItemToEntry>[]
+  >([]);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -49,7 +51,9 @@ export function ProposalsPageContainer({
           return;
         }
         setEntries([]);
-        setAppError(error instanceof Error ? error.message : "Failed to fetch proposals.");
+        setAppError(
+          error instanceof Error ? error.message : "Failed to fetch proposals.",
+        );
       })
       .finally(() => {
         if (!cancelled) {
@@ -60,7 +64,13 @@ export function ProposalsPageContainer({
     return () => {
       cancelled = true;
     };
-  }, [lifecycleId, refreshToken, setAppError, settings.hydrated, settings.value.apiUrl]);
+  }, [
+    lifecycleId,
+    refreshToken,
+    setAppError,
+    settings.hydrated,
+    settings.value.apiUrl,
+  ]);
 
   const sortedEntries = useMemo(
     () =>
@@ -75,14 +85,16 @@ export function ProposalsPageContainer({
   );
 
   const handleProposalClick = (proposal: (typeof entries)[number]) => {
-    const nextProposalId = encodeURIComponent(proposal.proposalAddress ?? proposal.id);
+    const nextProposalId = encodeURIComponent(
+      proposal.proposalAddress ?? proposal.id,
+    );
     router.push(`/proposals/${nextProposalId}`, { scroll: false });
   };
 
   const handleCreateProposalClick = () => {
     const href =
-      lifecycleId !== undefined
-        ? `/proposals/create?lifecycleId=${lifecycleId}&from=proposals`
+      treasury.currentLifecycleId !== undefined
+        ? `/proposals/create?lifecycleId=${treasury.currentLifecycleId}&from=proposals`
         : "/proposals/create?from=proposals";
     router.push(href, { scroll: false });
   };

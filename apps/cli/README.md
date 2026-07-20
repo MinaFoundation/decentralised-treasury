@@ -35,6 +35,14 @@ cd apps/cli
 pnpm run mina-treasury -- <command> <subcommand> [options]
 ```
 
+For testnet and demo operator flows, prefer the generated env families from
+`devops/TESTNET.md` or `DEMO.md`, for example:
+
+```bash
+dotenvx run -f apps/cli/.env.testnet -- pnpm run cli -- --help
+dotenvx run -f apps/cli/.env.local-blockchain -- pnpm run cli -- --help
+```
+
 For the local-blockchain stack env:
 
 ```bash

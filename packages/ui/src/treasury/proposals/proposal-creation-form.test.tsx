@@ -1,4 +1,11 @@
-import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import {
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { TreasuryProposalCreationForm } from "./proposal-creation-form";
 
@@ -22,8 +29,10 @@ describe("TreasuryProposalCreationForm", () => {
     expect(screen.getByDisplayValue("Lifecycle 12")).toBeTruthy();
     expect(screen.queryByLabelText("Proposal contract address")).toBeNull();
     const proposalAddressLabel = screen.getByText("Proposal contract address");
-    const proposalAddressRow = proposalAddressLabel.parentElement?.parentElement as HTMLElement;
-    const initialProposalAddress = within(proposalAddressRow).getByText(/^B62/).textContent;
+    const proposalAddressRow = proposalAddressLabel.parentElement
+      ?.parentElement as HTMLElement;
+    const initialProposalAddress =
+      within(proposalAddressRow).getByText(/^B62/).textContent;
     expect(initialProposalAddress).toBeTruthy();
     expect(
       within(proposalAddressRow).getByText(
@@ -35,21 +44,31 @@ describe("TreasuryProposalCreationForm", () => {
         name: "Regenerate proposal contract address",
       }),
     );
-    expect(within(proposalAddressRow).getByText(/^B62/).textContent).not.toBe(initialProposalAddress);
-    expect((screen.getByLabelText("Amount") as HTMLInputElement).type).toBe("number");
-    expect(document.querySelectorAll('[data-component="mina-amount-suffix"]')).toHaveLength(1);
+    expect(within(proposalAddressRow).getByText(/^B62/).textContent).not.toBe(
+      initialProposalAddress,
+    );
+    expect((screen.getByLabelText("Amount") as HTMLInputElement).type).toBe(
+      "number",
+    );
+    expect(
+      document.querySelectorAll('[data-component="mina-amount-suffix"]'),
+    ).toHaveLength(1);
 
     fireEvent.change(screen.getByLabelText("Title"), {
       target: { value: "Governance office-hours expansion" },
     });
     expect(screen.getAllByText("Title").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("Governance office-hours expansion").length).toBeGreaterThan(0);
+    expect(
+      screen.getAllByText("Governance office-hours expansion").length,
+    ).toBeGreaterThan(0);
     expect(screen.queryByText("Markdown heading")).toBeNull();
     fireEvent.change(screen.getByLabelText("Amount"), {
       target: { value: "96000" },
     });
     fireEvent.change(screen.getByLabelText("Recipient"), {
-      target: { value: "B62qrecipientAmbassador1111111111111111111111111111111111" },
+      target: {
+        value: "B62qrecipientAmbassador1111111111111111111111111111111111",
+      },
     });
     fireEvent.change(screen.getByLabelText("Content"), {
       target: {
@@ -61,7 +80,8 @@ describe("TreasuryProposalCreationForm", () => {
 
     expect(onSubmit).toHaveBeenCalledWith({
       lifecycleId: 12,
-      proposerAddress: "B62qkEdNmGbUVaUnVtwMeMo9G1QBgfp9c3K7j4FbmXn21zG8ssvaPvi",
+      proposerAddress:
+        "B62qkEdNmGbUVaUnVtwMeMo9G1QBgfp9c3K7j4FbmXn21zG8ssvaPvi",
       content:
         "# Governance office-hours expansion\n\n## Summary\n\nExpand recurring governance office hours.",
       amount: "96,000",
@@ -80,7 +100,9 @@ describe("TreasuryProposalCreationForm", () => {
       />,
     );
 
-    const connectButton = screen.getByRole("button", { name: "Connect proposer wallet" });
+    const connectButton = screen.getByRole("button", {
+      name: "Connect proposer wallet",
+    });
     expect(connectButton.hasAttribute("disabled")).toBe(false);
 
     fireEvent.click(connectButton);
@@ -99,7 +121,9 @@ describe("TreasuryProposalCreationForm", () => {
     );
 
     expect(screen.getByText("Voting requirement estimate")).toBeTruthy();
-    expect(screen.getByText("22.23% of eligible voting weight (80,029.74 MINA)")).toBeTruthy();
+    expect(
+      screen.getByText("22.23% of eligible voting weight (80,029.74 MINA)"),
+    ).toBeTruthy();
     expect(screen.getByText("51.73% yay over nay")).toBeTruthy();
   });
 
@@ -114,7 +138,9 @@ describe("TreasuryProposalCreationForm", () => {
       />,
     );
 
-    expect(screen.getByText("24.05% of eligible voting weight (63,683.06 MINA)")).toBeTruthy();
+    expect(
+      screen.getByText("24.05% of eligible voting weight (63,683.06 MINA)"),
+    ).toBeTruthy();
     expect(screen.getByText("52.38% yay over nay")).toBeTruthy();
   });
 
@@ -126,7 +152,9 @@ describe("TreasuryProposalCreationForm", () => {
       />,
     );
 
-    expect((screen.getByLabelText("Amount") as HTMLInputElement).value).toBe("");
+    expect((screen.getByLabelText("Amount") as HTMLInputElement).value).toBe(
+      "",
+    );
 
     rerender(
       <TreasuryProposalCreationForm
@@ -136,7 +164,9 @@ describe("TreasuryProposalCreationForm", () => {
       />,
     );
 
-    expect((screen.getByLabelText("Amount") as HTMLInputElement).value).toBe("96000");
+    expect((screen.getByLabelText("Amount") as HTMLInputElement).value).toBe(
+      "96000",
+    );
   });
 
   it("starts the content editor with a generic proposal template", () => {
@@ -147,7 +177,9 @@ describe("TreasuryProposalCreationForm", () => {
       />,
     );
 
-    const contentInput = screen.getByLabelText("Content") as HTMLTextAreaElement;
+    const contentInput = screen.getByLabelText(
+      "Content",
+    ) as HTMLTextAreaElement;
     expect(contentInput.value).toContain("## Summary");
     expect(contentInput.value).toContain("## Scope of work");
     expect(contentInput.value).not.toContain("# Proposal title");
@@ -169,7 +201,9 @@ describe("TreasuryProposalCreationForm", () => {
     return waitFor(() => {
       expect(previewTab.getAttribute("data-state")).toBe("active");
       expect(screen.getByRole("heading", { name: "Summary" })).toBeTruthy();
-      expect(screen.queryByRole("heading", { name: "Preview title" })).toBeNull();
+      expect(
+        screen.queryByRole("heading", { name: "Preview title" }),
+      ).toBeNull();
     });
   });
 
@@ -185,7 +219,9 @@ describe("TreasuryProposalCreationForm", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
     expect(onCancel).toHaveBeenCalledTimes(1);
-    expect(screen.getByRole("button", { name: "Create proposal" })).toBeTruthy();
+    expect(
+      screen.getByRole("button", { name: "Create proposal" }),
+    ).toBeTruthy();
   });
 
   it("shows a secondary save draft action during the proposal period", () => {
@@ -209,7 +245,9 @@ describe("TreasuryProposalCreationForm", () => {
       target: { value: "96000" },
     });
     fireEvent.change(screen.getByLabelText("Recipient"), {
-      target: { value: "B62qrecipientAmbassador1111111111111111111111111111111111" },
+      target: {
+        value: "B62qrecipientAmbassador1111111111111111111111111111111111",
+      },
     });
     fireEvent.change(screen.getByLabelText("Content"), {
       target: {
@@ -217,7 +255,9 @@ describe("TreasuryProposalCreationForm", () => {
       },
     });
 
-    const draftButtons = screen.getAllByRole("button", { name: "Save as draft" });
+    const draftButtons = screen.getAllByRole("button", {
+      name: "Save as draft",
+    });
     expect(draftButtons).toHaveLength(1);
 
     fireEvent.click(draftButtons[0] as HTMLButtonElement);
@@ -225,7 +265,8 @@ describe("TreasuryProposalCreationForm", () => {
     expect(onSubmit).not.toHaveBeenCalled();
     expect(onSaveDraft).toHaveBeenCalledWith({
       lifecycleId: 12,
-      proposerAddress: "B62qkEdNmGbUVaUnVtwMeMo9G1QBgfp9c3K7j4FbmXn21zG8ssvaPvi",
+      proposerAddress:
+        "B62qkEdNmGbUVaUnVtwMeMo9G1QBgfp9c3K7j4FbmXn21zG8ssvaPvi",
       content:
         "# Governance office-hours expansion\n\n## Summary\n\nExpand recurring governance office hours.",
       amount: "96,000",
@@ -247,6 +288,13 @@ describe("TreasuryProposalCreationForm", () => {
       />,
     );
 
+    expect(screen.getByText("Proposal submissions are not open")).toBeTruthy();
+    expect(
+      screen.getByText(
+        "The current lifecycle (Lifecycle 12) is currently in the cooldown period. You can save this proposal as a draft and submit it once the proposal period begins.",
+      ),
+    ).toBeTruthy();
+
     fireEvent.change(screen.getByLabelText("Title"), {
       target: { value: "Governance office-hours expansion" },
     });
@@ -254,7 +302,9 @@ describe("TreasuryProposalCreationForm", () => {
       target: { value: "96000" },
     });
     fireEvent.change(screen.getByLabelText("Recipient"), {
-      target: { value: "B62qrecipientAmbassador1111111111111111111111111111111111" },
+      target: {
+        value: "B62qrecipientAmbassador1111111111111111111111111111111111",
+      },
     });
     fireEvent.change(screen.getByLabelText("Content"), {
       target: {
@@ -263,14 +313,17 @@ describe("TreasuryProposalCreationForm", () => {
     });
 
     expect(screen.getByRole("button", { name: "Save as draft" })).toBeTruthy();
-    expect(screen.getAllByRole("button", { name: "Save as draft" })).toHaveLength(1);
+    expect(
+      screen.getAllByRole("button", { name: "Save as draft" }),
+    ).toHaveLength(1);
 
     fireEvent.click(screen.getByRole("button", { name: "Save as draft" }));
 
     expect(onSubmit).not.toHaveBeenCalled();
     expect(onSaveDraft).toHaveBeenCalledWith({
       lifecycleId: 12,
-      proposerAddress: "B62qkEdNmGbUVaUnVtwMeMo9G1QBgfp9c3K7j4FbmXn21zG8ssvaPvi",
+      proposerAddress:
+        "B62qkEdNmGbUVaUnVtwMeMo9G1QBgfp9c3K7j4FbmXn21zG8ssvaPvi",
       content:
         "# Governance office-hours expansion\n\n## Summary\n\nExpand recurring governance office hours.",
       amount: "96,000",

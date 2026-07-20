@@ -7,7 +7,6 @@ import type { TreasuryState } from "../../treasury/store/treasury-store.types";
 
 interface BuildTreasuryHeaderPropsInput {
   pathname: string;
-  selectedLifecycleId?: number;
   search: TreasuryHeaderSearchState;
   treasury: TreasuryState;
   settings: EndpointSettingsState;
@@ -31,7 +30,7 @@ function buildProposalSearchHref(entry: TreasuryProposalTableEntry): string {
 export function buildTreasuryHeaderProps(
   input: BuildTreasuryHeaderPropsInput,
 ): TreasuryWalletHeaderProps {
-  const createProposalLifecycleId = input.selectedLifecycleId ?? input.treasury.currentLifecycleId;
+  const createProposalLifecycleId = input.treasury.currentLifecycleId;
   const createProposalFrom = input.pathname === "/" ? "dashboard" : "proposals";
   const createProposalHref =
     createProposalLifecycleId !== undefined
@@ -40,7 +39,9 @@ export function buildTreasuryHeaderProps(
 
   return {
     className: "max-w-none",
-    activeNavigationItemId: input.pathname.startsWith("/proposals") ? "proposals" : "dashboard",
+    activeNavigationItemId: input.pathname.startsWith("/proposals")
+      ? "proposals"
+      : "dashboard",
     treasuryPaused: input.treasury.paused,
     treasuryBalance: input.treasury.balance,
     treasuryBalanceLoading: input.treasury.loading,
