@@ -20,6 +20,7 @@ import { createSqliteStakingLedgerToVotingLedgerDigestTraceStorage } from "../..
 import { createSqliteStakingLedgerToVotingLedgerProofStorage } from "../../storage/sqlite/factory/sqlite-staking-ledger-to-voting-ledger-proof-storage.js";
 import { createSqliteBatchWriter } from "../../storage/sqlite/factory/sqlite-batch-writer.js";
 import { getSqliteDbPath } from "../../storage/sqlite/sqlite-db-path.js";
+import { applyFastSqlitePragmas } from "../../storage/sqlite/sqlite-fast-pragmas.js";
 import {
   StakingLedgerToVotingLedgerProver,
   type StakingLedgerToVotingLedgerTaskQueue,
@@ -63,6 +64,7 @@ export class SqliteStakingLedgerToVotingLedgerService
     const sqlitePath = getSqliteDbPath(lifecycleId);
     mkdirSync(dirname(sqlitePath), { recursive: true });
     this.sqliteStore = new KeyvSqlite({ uri: sqlitePath });
+    await applyFastSqlitePragmas(this.sqliteStore);
 
     const stakingLedgerStorage = createSqliteStakingLedgerStorage(
       lifecycleId,

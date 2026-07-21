@@ -10,6 +10,7 @@ import {
   getSqliteDbPath,
   getSqliteInMemoryDbPath,
 } from "../../storage/sqlite/sqlite-db-path.js";
+import { applyFastSqlitePragmas } from "../../storage/sqlite/sqlite-fast-pragmas.js";
 import {
   type HydrateAccountsOptions,
   type HydrateMerkleTreeOptions,
@@ -105,6 +106,7 @@ export class SqliteStakingLedgerService implements StakingLedgerService {
   }
 
   public async start(): Promise<void> {
+    await applyFastSqlitePragmas(this.sqliteStore);
     const stakingLedgerStorage = createSqliteStakingLedgerStorage(
       this.options.lifecycleId,
       this.sqliteStore,

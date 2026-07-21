@@ -12,18 +12,36 @@ import { logger } from "@repo/sdk/src/index.js";
 import { parseIntOption } from "./option-parsers.js";
 
 const NUMBER_OF_PERIODS_PER_LIFECYCLE = 4;
-const COMPILE_LIFECYCLE_ID = "staking-ledger-to-voting-ledger-compile";
 const LEDGER_FILENAME_PATTERN = /^(\d+)-([^.]+)\.tar\.gz$/;
 
-interface VotingLedgerSchedulerOptions {
+interface DirectoryOptions {
   stakingLedgersDirectory: string;
   lifecyclePeriodDuration: number;
   treasuryDeployedAtSlot: number;
-  pollIntervalMs: number;
 }
 
 function doneMarkerPath(lifecycleId: string): string {
   return `${getSqliteDbPath(lifecycleId)}.done`;
+}
+
+// A lifecycle's digest trace always resumes from index 0 (see traceDigest()),
+// so if a previous attempt crashed after partially committing batches, retrying
+// in place replays those batches against already-advanced voting-ledger state
+// and fails the same way forever (the exact failure mode the TODO in
+// staking-ledger-to-voting-ledger.ts's digest() warns about). Wiping the
+// lifecycle's SQLite file before every attempt guarantees each attempt starts
+// from a clean slate instead of getting stuck in a permanent crash loop.
+async function resetLifecycleStorage(lifecycleId: string): Promise<void> {
+  const dbPath = getSqliteDbPath(lifecycleId);
+  for (const path of [dbPath, `${dbPath}-journal`, `${dbPath}-wal`, `${dbPath}-shm`]) {
+    await rm(path, { force: true });
+  }
+}
+
+function deployedEpochFor(options: DirectoryOptions): number {
+  return Math.floor(
+    options.treasuryDeployedAtSlot / options.lifecyclePeriodDuration,
+  );
 }
 
 function lifecycleIdForEpoch(
@@ -37,17 +55,75 @@ function lifecycleIdForEpoch(
   return String(offset / NUMBER_OF_PERIODS_PER_LIFECYCLE);
 }
 
-async function processLedgerFile({
-  filePath,
-  epoch,
-  expectedHash,
-  lifecycleId,
-}: {
-  filePath: string;
+function epochForLifecycleId(lifecycleId: string, deployedEpoch: number): number {
+  return deployedEpoch + Number(lifecycleId) * NUMBER_OF_PERIODS_PER_LIFECYCLE;
+}
+
+interface LedgerCandidate {
+  file: string;
   epoch: number;
-  expectedHash: string;
+  hash: string;
   lifecycleId: string;
-}): Promise<void> {
+}
+
+async function findLedgerFiles(
+  options: DirectoryOptions,
+): Promise<LedgerCandidate[]> {
+  const deployedEpoch = deployedEpochFor(options);
+  const files = await readdir(options.stakingLedgersDirectory);
+  const candidates: LedgerCandidate[] = [];
+  for (const file of files) {
+    const match = LEDGER_FILENAME_PATTERN.exec(file);
+    if (!match) continue;
+    const epoch = Number(match[1]);
+    const hash = match[2];
+    const lifecycleId = lifecycleIdForEpoch(epoch, deployedEpoch);
+    if (lifecycleId === undefined) continue;
+    candidates.push({ file, epoch, hash, lifecycleId });
+  }
+  return candidates;
+}
+
+async function findNewestUnprocessedCandidate(
+  options: DirectoryOptions,
+): Promise<LedgerCandidate | undefined> {
+  const candidates = await findLedgerFiles(options);
+  let newest: LedgerCandidate | undefined;
+  for (const candidate of candidates) {
+    if (existsSync(doneMarkerPath(candidate.lifecycleId))) continue;
+    if (!newest || candidate.epoch > newest.epoch) {
+      newest = candidate;
+    }
+  }
+  return newest;
+}
+
+async function findCandidateForLifecycle(
+  lifecycleId: string,
+  options: DirectoryOptions,
+): Promise<LedgerCandidate> {
+  const deployedEpoch = deployedEpochFor(options);
+  const expectedEpoch = epochForLifecycleId(lifecycleId, deployedEpoch);
+  const candidates = await findLedgerFiles(options);
+  const candidate = candidates.find((c) => c.epoch === expectedEpoch);
+  if (!candidate) {
+    throw new Error(
+      `No staking ledger file found for lifecycleId=${lifecycleId} (expected epoch=${expectedEpoch}) in ${options.stakingLedgersDirectory}`,
+    );
+  }
+  return candidate;
+}
+
+async function processCandidate(candidate: LedgerCandidate, options: DirectoryOptions): Promise<void> {
+  const { file, epoch, hash: expectedHash, lifecycleId } = candidate;
+  const filePath = join(options.stakingLedgersDirectory, file);
+
+  logger.info(
+    `[voting-ledger-scheduler] processing epoch=${epoch} lifecycleId=${lifecycleId} file=${file}`,
+  );
+
+  await resetLifecycleStorage(lifecycleId);
+
   const tmpDir = await mkdtemp(join(tmpdir(), "voting-ledger-"));
   try {
     await tar.x({ file: filePath, cwd: tmpDir });
@@ -64,10 +140,9 @@ async function processLedgerFile({
       const computedRoot = await stakingLedgerService.getRootHash();
       const expectedRoot = LedgerHashBase58.fromBase58(expectedHash);
       if (!computedRoot.equals(expectedRoot).toBoolean()) {
-        logger.error(
-          `[voting-ledger-scheduler] hash mismatch for epoch=${epoch} lifecycleId=${lifecycleId}: computed=${computedRoot.toString()} expected=${expectedRoot.toString()} (from filename hash ${expectedHash}). Skipping — this lifecycle will be retried next cycle.`,
+        throw new Error(
+          `hash mismatch for epoch=${epoch} lifecycleId=${lifecycleId}: computed=${computedRoot.toString()} expected=${expectedRoot.toString()} (from filename hash ${expectedHash})`,
         );
-        return;
       }
       logger.info(
         `[voting-ledger-scheduler] hash verified for epoch=${epoch} lifecycleId=${lifecycleId}: ${computedRoot.toString()}`,
@@ -107,105 +182,36 @@ async function processLedgerFile({
   }
 }
 
-export async function runVotingLedgerScheduler(
-  options: VotingLedgerSchedulerOptions,
+// Processes a single, explicitly named lifecycle end-to-end. This is the only
+// entry point for reprocessing a lifecycle that a previous automatic run
+// skipped or crashed on — there is no automatic backward scan of the backlog.
+// Run it by hand against the already-running scheduler container, e.g.:
+//   docker exec voting-ledger-scheduler pnpm --dir apps/cli run mina-treasury -- voting-ledger-scheduler process-lifecycle --lifecycle-id 17
+export async function processLifecycle(
+  options: DirectoryOptions & { lifecycleId: string },
 ): Promise<void> {
-  const deployedEpoch = Math.floor(
-    options.treasuryDeployedAtSlot / options.lifecyclePeriodDuration,
-  );
-
-  logger.info(
-    `[voting-ledger-scheduler] starting (stakingLedgersDirectory=${options.stakingLedgersDirectory}, deployedEpoch=${deployedEpoch}, pollIntervalMs=${options.pollIntervalMs})`,
-  );
-
-  logger.info("[voting-ledger-scheduler] compiling staking-ledger-to-voting-ledger circuit");
-  const compileService = new SqliteStakingLedgerToVotingLedgerService({
-    lifecycleId: COMPILE_LIFECYCLE_ID,
-  });
-  await compileService.compile();
-  await compileService.close();
-  logger.info("[voting-ledger-scheduler] compile done");
-
-  async function findNewestCandidate(): Promise<
-    { file: string; epoch: number; hash: string; lifecycleId: string } | undefined
-  > {
-    const files = await readdir(options.stakingLedgersDirectory);
-    let newest:
-      | { file: string; epoch: number; hash: string; lifecycleId: string }
-      | undefined;
-    for (const file of files) {
-      const match = LEDGER_FILENAME_PATTERN.exec(file);
-      if (!match) continue;
-      const epoch = Number(match[1]);
-      const hash = match[2];
-      const lifecycleId = lifecycleIdForEpoch(epoch, deployedEpoch);
-      if (lifecycleId === undefined) continue;
-      if (existsSync(doneMarkerPath(lifecycleId))) continue;
-      if (!newest || epoch > newest.epoch) {
-        newest = { file, epoch, hash, lifecycleId };
-      }
-    }
-    return newest;
-  }
-
-  let inFlight = false;
-  const pollOnce = async () => {
-    if (inFlight) return;
-    inFlight = true;
-    try {
-      // Re-scan and re-pick the newest unprocessed lifecycle every cycle
-      // (rather than queuing up the whole backlog at once) so a freshly
-      // arrived epoch is picked up and prioritized as soon as the current
-      // lifecycle finishes, instead of waiting behind an already-queued
-      // backlog of older lifecycles.
-      const candidate = await findNewestCandidate();
-      if (!candidate) return;
-      const { file, epoch, hash, lifecycleId } = candidate;
-
-      logger.info(
-        `[voting-ledger-scheduler] processing epoch=${epoch} lifecycleId=${lifecycleId} file=${file}`,
-      );
-      try {
-        await processLedgerFile({
-          filePath: join(options.stakingLedgersDirectory, file),
-          epoch,
-          expectedHash: hash,
-          lifecycleId,
-        });
-      } catch (error) {
-        logger.error(
-          `[voting-ledger-scheduler] failed to process epoch=${epoch} lifecycleId=${lifecycleId}: ${String(error)}`,
-        );
-      }
-    } catch (error) {
-      logger.error(`[voting-ledger-scheduler] poll cycle failed: ${String(error)}`);
-    } finally {
-      inFlight = false;
-    }
-  };
-
-  await pollOnce();
-  const timer = setInterval(() => void pollOnce(), options.pollIntervalMs);
-
-  let shuttingDown = false;
-  const shutdown = () => {
-    if (shuttingDown) return;
-    shuttingDown = true;
-    clearInterval(timer);
-    logger.info("[voting-ledger-scheduler] shutting down");
-    process.exit(0);
-  };
-  process.on("SIGINT", shutdown);
-  process.on("SIGTERM", shutdown);
-
-  await new Promise<void>(() => {});
+  const candidate = await findCandidateForLifecycle(options.lifecycleId, options);
+  await processCandidate(candidate, options);
 }
 
-export default function votingLedgerSchedulerCommandFactory(program: Command) {
-  const command = program.command("voting-ledger-scheduler");
+// Single-shot check: process the newest arrived lifecycle if it hasn't been
+// done yet, otherwise do nothing. Intended to be invoked repeatedly by the
+// container's poll loop (see devops/docker/voting-ledger-scheduler-entrypoint.sh)
+// so a freshly arrived epoch is picked up automatically. Deliberately does not
+// scan for or retry older un-done lifecycles — that backward catch-up is what
+// used to crash-loop the whole container; it is now a deliberate, manual
+// `process-lifecycle` invocation instead.
+export async function processNewest(options: DirectoryOptions): Promise<void> {
+  const candidate = await findNewestUnprocessedCandidate(options);
+  if (!candidate) {
+    logger.info("[voting-ledger-scheduler] no new lifecycle to process");
+    return;
+  }
+  await processCandidate(candidate, options);
+}
 
-  command
-    .command("start")
+function addDirectoryOptions<T extends Command>(command: T): T {
+  return command
     .addOption(
       new Option(
         "--staking-ledgers-directory <staking-ledgers-directory>",
@@ -231,15 +237,30 @@ export default function votingLedgerSchedulerCommandFactory(program: Command) {
         .env("TREASURY_DEPLOYED_AT_SLOT")
         .argParser(parseIntOption)
         .default(0),
-    )
-    .addOption(
-      new Option(
-        "--poll-interval-ms <poll-interval-ms>",
-        "How often to scan the staking ledgers directory, in milliseconds",
+    ) as T;
+}
+
+export default function votingLedgerSchedulerCommandFactory(program: Command) {
+  const command = program.command("voting-ledger-scheduler");
+
+  addDirectoryOptions(
+    command
+      .command("process-lifecycle")
+      .description(
+        "Process one explicitly named lifecycle end-to-end (extract, verify, trace-digest, mark done). Always resets any prior partial state for that lifecycle first.",
       )
-        .env("VOTING_LEDGER_SCHEDULER_POLL_INTERVAL_MS")
-        .argParser(parseIntOption)
-        .default(30000),
-    )
-    .action(runVotingLedgerScheduler);
+      .addOption(
+        new Option("--lifecycle-id <lifecycle-id>", "Lifecycle ID to process")
+          .env("LIFECYCLE_ID")
+          .makeOptionMandatory(),
+      ),
+  ).action(processLifecycle);
+
+  addDirectoryOptions(
+    command
+      .command("process-newest")
+      .description(
+        "Process the newest arrived, not-yet-done lifecycle, if any. No-op otherwise. Does not backfill older lifecycles.",
+      ),
+  ).action(processNewest);
 }

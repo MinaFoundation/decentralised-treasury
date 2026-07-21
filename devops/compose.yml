@@ -147,14 +147,20 @@ services:
 
   voting-ledger-scheduler:
     <<: *app-image
-    command: ["pnpm", "--dir", "apps/cli", "run", "mina-treasury", "--", "voting-ledger-scheduler", "start"]
+    # Bash poll loop, not a long-lived Node process: every cycle shells out to
+    # the CLI's `voting-ledger-scheduler process-newest` for whichever
+    # lifecycle just arrived. It never backfills older lifecycles on its own.
+    # To (re)process a specific lifecycle by hand, use `docker exec` against
+    # this same container, e.g.:
+    #   docker exec voting-ledger-scheduler pnpm --dir apps/cli run mina-treasury -- voting-ledger-scheduler process-lifecycle --lifecycle-id 17
+    command: ["/bin/sh", "devops/docker/voting-ledger-scheduler-entrypoint.sh"]
     environment:
       LIFECYCLE_PERIOD_DURATION: ${LIFECYCLE_PERIOD_DURATION:-7140}
       TREASURY_DEPLOYED_AT_SLOT: ${TREASURY_DEPLOYED_AT_SLOT:-0}
       PROOFS_ENABLED: ${PROOFS_ENABLED:-false}
       SQLITE_DATA_DIRECTORY: ${SQLITE_DATA_DIRECTORY:-/data/sqlite}
       STAKING_LEDGERS_DIRECTORY: /staking-ledgers
-      VOTING_LEDGER_SCHEDULER_POLL_INTERVAL_MS: ${VOTING_LEDGER_SCHEDULER_POLL_INTERVAL_MS:-30000}
+      VOTING_LEDGER_SCHEDULER_POLL_INTERVAL_SECONDS: ${VOTING_LEDGER_SCHEDULER_POLL_INTERVAL_SECONDS:-30}
     volumes:
       - ${SQLITE_DATA_HOST_PATH:-./.data/sqlite}:${SQLITE_DATA_DIRECTORY:-/data/sqlite}
       - ${STAKING_LEDGERS_HOST_PATH:-/opt/mina/.mina-network/staking_ledgers}:/staking-ledgers:ro
@@ -224,6 +230,7 @@ services:
       PROXY_INDEXER_PORT: ${PROXY_INDEXER_PORT:-4101}
       PROXY_PROCESSOR_PORT: ${PROXY_PROCESSOR_PORT:-4102}
       MINA_NODE_PROXY_UPSTREAM: ${MINA_NODE_PROXY_UPSTREAM:-http://host.docker.internal:8080}
+      ARCHIVE_NODE_PROXY_UPSTREAM: ${ARCHIVE_NODE_PROXY_UPSTREAM:-http://host.docker.internal:8080}
     ports:
       - "${BIND_ADDRESS:-127.0.0.1}:${PROXY_WEB_PORT:-3100}:${PROXY_WEB_PORT:-3100}"
       - "${BIND_ADDRESS:-127.0.0.1}:${PROXY_API_PORT:-4100}:${PROXY_API_PORT:-4100}"
@@ -263,6 +270,7 @@ services:
     environment:
       WEB_PORT: ${WEB_PORT:-3100}
       MINA_NODE_PROXY_UPSTREAM: ${MINA_NODE_PROXY_UPSTREAM:-http://host.docker.internal:8080}
+      ARCHIVE_NODE_PROXY_UPSTREAM: ${ARCHIVE_NODE_PROXY_UPSTREAM:-http://host.docker.internal:8080}
       LETSENCRYPT_EMAIL: ${LETSENCRYPT_EMAIL:-}
       LETSENCRYPT_ACME_CA: ${LETSENCRYPT_ACME_CA:-https://acme-v02.api.letsencrypt.org/directory}
       PUBLIC_WEB_DOMAIN: ${PUBLIC_WEB_DOMAIN:-}
@@ -272,19 +280,33 @@ services:
     entrypoint: ["/bin/sh", "-ec"]
     command:
       - |
-        for name in LETSENCRYPT_EMAIL PUBLIC_WEB_DOMAIN PUBLIC_API_DOMAIN PUBLIC_INDEXER_DOMAIN PUBLIC_PROCESSOR_DOMAIN; do
+        for name in LETSENCRYPT_EMAIL PUBLIC_WEB_DOMAIN; do
           value=$$(printenv "$$name")
           if [ -z "$$value" ]; then
             echo "Set $$name before running pnpm testnet:up:public" >&2
             exit 1
           fi
         done
+        cp /etc/caddy/Caddyfile.https.template /etc/caddy/Caddyfile
+        # PUBLIC_API_DOMAIN / PUBLIC_INDEXER_DOMAIN / PUBLIC_PROCESSOR_DOMAIN are
+        # optional: the web app already reaches api/indexer/processor same-origin
+        # through PUBLIC_WEB_DOMAIN's /api, /indexer, /processor paths. Only add a
+        # dedicated public site for a service if its domain var is set.
+        if [ -n "$$(printenv PUBLIC_API_DOMAIN)" ]; then
+          printf '\n{$$PUBLIC_API_DOMAIN} {\n\tencode zstd gzip\n\treverse_proxy api:4000\n}\n' >> /etc/caddy/Caddyfile
+        fi
+        if [ -n "$$(printenv PUBLIC_INDEXER_DOMAIN)" ]; then
+          printf '\n{$$PUBLIC_INDEXER_DOMAIN} {\n\tencode zstd gzip\n\treverse_proxy indexer-api:4001\n}\n' >> /etc/caddy/Caddyfile
+        fi
+        if [ -n "$$(printenv PUBLIC_PROCESSOR_DOMAIN)" ]; then
+          printf '\n{$$PUBLIC_PROCESSOR_DOMAIN} {\n\tencode zstd gzip\n\treverse_proxy processor-api:4002\n}\n' >> /etc/caddy/Caddyfile
+        fi
         exec caddy run --config /etc/caddy/Caddyfile --adapter caddyfile
     ports:
       - "${PROXY_PUBLIC_BIND_ADDRESS:-0.0.0.0}:${PROXY_HTTP_PORT:-80}:80"
       - "${PROXY_PUBLIC_BIND_ADDRESS:-0.0.0.0}:${PROXY_HTTPS_PORT:-443}:443"
     volumes:
-      - ./proxy/Caddyfile.https:/etc/caddy/Caddyfile:ro
+      - ./proxy/Caddyfile.https:/etc/caddy/Caddyfile.https.template:ro
       - caddy-data:/data
       - caddy-config:/config
     depends_on:
