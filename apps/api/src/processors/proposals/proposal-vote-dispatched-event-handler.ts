@@ -316,14 +316,19 @@ export class ProposalVoteDispatchedEventHandler implements EventProcessorHandler
       existingNullifier !== null &&
       existingNullifier.sourceEventId !== event.id;
 
+    // Always run this, even for a duplicate/replayed vote (deltaWeight 0):
+    // a processor_votes row is about to be written at `blockHeight` below,
+    // and its FK requires a processor_vote_tallies row to already exist at
+    // that (proposalPublicKey, blockHeight) pair.
+    await this.applyVoteWeightDelta(manager, {
+      proposal,
+      proposalPublicKey: payload.proposalPublicKey,
+      blockHeight,
+      vote: payload.vote,
+      deltaWeight: existingNullifier === null ? voteWeight : 0n,
+    });
+
     if (!existingNullifier) {
-      await this.applyVoteWeightDelta(manager, {
-        proposal,
-        proposalPublicKey: payload.proposalPublicKey,
-        blockHeight,
-        vote: payload.vote,
-        deltaWeight: voteWeight,
-      });
       await voteNullifierRepository.insert({
         sourceEventId: event.id,
         proposalPublicKey: payload.proposalPublicKey,
@@ -389,7 +394,7 @@ export class ProposalVoteDispatchedEventHandler implements EventProcessorHandler
       deltaWeight: bigint;
     },
   ): Promise<void> {
-    if (input.vote === "dummy" || input.deltaWeight === 0n) {
+    if (input.vote === "dummy") {
       return;
     }
 
@@ -405,12 +410,16 @@ export class ProposalVoteDispatchedEventHandler implements EventProcessorHandler
       },
     });
 
-    const talliedRowAtBlock = existingTallies.find(
-      (row) =>
-        row.blockHeight === input.blockHeight &&
-        row.createdByEventType === PROPOSAL_VOTES_TALLIED_EVENT_NAME,
+    const rowAtBlock = existingTallies.find(
+      (row) => row.blockHeight === input.blockHeight,
     );
-    if (talliedRowAtBlock) {
+    if (input.deltaWeight === 0n && rowAtBlock) {
+      // A tally row already exists at this height (from an earlier vote or
+      // a votesTallied snapshot): the FK a vote insert needs is already
+      // satisfiable and there's no weight change to apply.
+      return;
+    }
+    if (rowAtBlock?.createdByEventType === PROPOSAL_VOTES_TALLIED_EVENT_NAME) {
       throw new Error(
         `[proposal-processor] cannot apply dispatched vote delta on tallied block for proposalPublicKey=${input.proposalPublicKey} blockHeight=${input.blockHeight}`,
       );
