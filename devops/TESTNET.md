@@ -473,25 +473,46 @@ root.
 ### Build Staking-Ledger-To-Voting-Ledger Data
 
 The Compose stack runs a `voting-ledger-scheduler` service that automates this.
-It watches `STAKING_LEDGERS_HOST_PATH` (default
-`/opt/mina/.mina-network/staking_ledgers`, populated on the host by the Mina
-daemon or `monitor-staking-ledger.sh` as `<epoch>-<hash>.tar.gz` files) and, for
-every epoch that starts a new treasury lifecycle
-(`epoch == deployedEpoch + 4 * lifecycleId`, given `TREASURY_DEPLOYED_AT_SLOT`
-and `LIFECYCLE_PERIOD_DURATION`), automatically:
+It's a plain bash poll loop (`devops/docker/voting-ledger-scheduler-entrypoint.sh`)
+around the CLI — there is no long-lived Node process. Every
+`VOTING_LEDGER_SCHEDULER_POLL_INTERVAL_SECONDS` (default 30s) it runs the same
+`staking-ledger` / `staking-ledger-to-voting-ledger` commands shown below
+directly (config comes from the container's environment, not
+`apps/cli/.env.testnet` — it doesn't need the private keys that file also
+holds), watching `STAKING_LEDGERS_HOST_PATH` (default `/opt/mina/.mina-network/staking_ledgers`,
+populated on the host by the Mina daemon or `monitor-staking-ledger.sh` as
+`<epoch>-<hash>.tar.gz` files) and, if the newest epoch that starts a new
+treasury lifecycle (`epoch == deployedEpoch + 4 * lifecycleId`, given
+`TREASURY_DEPLOYED_AT_SLOT` and `LIFECYCLE_PERIOD_DURATION`) isn't done yet:
 
 1. hydrates that lifecycle's staking-ledger SQLite (`staking-ledger from-file`),
 2. verifies the resulting root hash against the hash embedded in the archive's
    filename (the same `mina ledger hash` value the chain would serve over
    GraphQL as `stakingEpochData.ledger.hash`),
-3. runs `staking-ledger-to-voting-ledger trace-digest` (circuit `compile` runs
-   once at service startup, not per lifecycle),
+3. runs `staking-ledger-to-voting-ledger trace-digest`,
 4. and writes `<lifecycleId>.sqlite.done` as a completion marker.
+
+This only ever looks at the *newest* arrived lifecycle — it never scans
+backward through the backlog, so a lifecycle that failed or was skipped (e.g.
+a hash mismatch) is **not** retried automatically. To (re)process a specific
+lifecycle by hand, run the same CLI command against the already-running
+container:
+
+```bash
+docker exec voting-ledger-scheduler /bin/sh \
+  devops/docker/voting-ledger-scheduler-entrypoint.sh process-lifecycle 17
+```
+
+`process-lifecycle` always wipes that lifecycle's SQLite state first, so a
+retry after a crash or hash mismatch starts clean rather than replaying
+already-committed batches against advanced state.
 
 Check `docker compose ... logs -f voting-ledger-scheduler` to follow progress,
 and `<SQLITE_DATA_HOST_PATH>/<lifecycleId>.sqlite.done` to confirm a given
-lifecycle is ready. A hash mismatch is logged as an error and that lifecycle is
-left unprocessed (retried every cycle) rather than silently accepted.
+lifecycle is ready. A hash mismatch or crash is logged with its exit status
+(the poll loop captures the CLI subprocess's real exit code, including
+128+signal for a signal kill) and that lifecycle is left unprocessed until
+someone runs `process-lifecycle` for it by hand.
 
 The container runs as the non-root `node` user (uid 1000) for hardening. If
 `SQLITE_DATA_HOST_PATH` doesn't exist yet, Docker creates it as `root` on first
