@@ -11,7 +11,6 @@ import proposalCommandFactory from "./commands/proposal.js";
 import voteReducerCommandFactory from "./commands/vote-reducer.js";
 import multisigSignCommandFactory from "./commands/multisig-sign.js";
 import transferCommandFactory from "./commands/transfer.js";
-import votingLedgerSchedulerCommandFactory from "./commands/voting-ledger-scheduler.js";
 
 export function createProgram(): Command {
   const program = new Command();
@@ -28,7 +27,6 @@ export function createProgram(): Command {
     lightnetCommandFactory,
     generateKeypairsCommandFactory,
     transferCommandFactory,
-    votingLedgerSchedulerCommandFactory,
   ].forEach((commandFactory) => commandFactory(program));
 
   return program;

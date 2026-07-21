@@ -475,9 +475,11 @@ root.
 The Compose stack runs a `voting-ledger-scheduler` service that automates this.
 It's a plain bash poll loop (`devops/docker/voting-ledger-scheduler-entrypoint.sh`)
 around the CLI — there is no long-lived Node process. Every
-`VOTING_LEDGER_SCHEDULER_POLL_INTERVAL_SECONDS` (default 30s) it shells out to
-`voting-ledger-scheduler process-newest`, which watches
-`STAKING_LEDGERS_HOST_PATH` (default `/opt/mina/.mina-network/staking_ledgers`,
+`VOTING_LEDGER_SCHEDULER_POLL_INTERVAL_SECONDS` (default 30s) it runs the same
+`staking-ledger` / `staking-ledger-to-voting-ledger` commands shown below
+directly (config comes from the container's environment, not
+`apps/cli/.env.testnet` — it doesn't need the private keys that file also
+holds), watching `STAKING_LEDGERS_HOST_PATH` (default `/opt/mina/.mina-network/staking_ledgers`,
 populated on the host by the Mina daemon or `monitor-staking-ledger.sh` as
 `<epoch>-<hash>.tar.gz` files) and, if the newest epoch that starts a new
 treasury lifecycle (`epoch == deployedEpoch + 4 * lifecycleId`, given
@@ -497,8 +499,8 @@ lifecycle by hand, run the same CLI command against the already-running
 container:
 
 ```bash
-docker exec voting-ledger-scheduler pnpm --dir apps/cli run mina-treasury -- \
-  voting-ledger-scheduler process-lifecycle --lifecycle-id 17
+docker exec voting-ledger-scheduler /bin/sh \
+  devops/docker/voting-ledger-scheduler-entrypoint.sh process-lifecycle 17
 ```
 
 `process-lifecycle` always wipes that lifecycle's SQLite state first, so a

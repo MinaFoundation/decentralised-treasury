@@ -147,12 +147,15 @@ services:
 
   voting-ledger-scheduler:
     <<: *app-image
-    # Bash poll loop, not a long-lived Node process: every cycle shells out to
-    # the CLI's `voting-ledger-scheduler process-newest` for whichever
-    # lifecycle just arrived. It never backfills older lifecycles on its own.
-    # To (re)process a specific lifecycle by hand, use `docker exec` against
-    # this same container, e.g.:
-    #   docker exec voting-ledger-scheduler pnpm --dir apps/cli run mina-treasury -- voting-ledger-scheduler process-lifecycle --lifecycle-id 17
+    # Bash poll loop, not a long-lived Node process: every cycle it shells out
+    # to the existing `staking-ledger` / `staking-ledger-to-voting-ledger` CLI
+    # commands, the same way devops/TESTNET.md documents doing this by hand
+    # (config comes from `environment:` below, not from apps/cli/.env.testnet
+    # - this container doesn't need the private keys that file also holds).
+    # It never backfills older lifecycles on its own. To (re)process a
+    # specific lifecycle by hand, use `docker exec` against this same
+    # container, e.g.:
+    #   docker exec voting-ledger-scheduler /bin/sh devops/docker/voting-ledger-scheduler-entrypoint.sh process-lifecycle 17
     command: ["/bin/sh", "devops/docker/voting-ledger-scheduler-entrypoint.sh"]
     environment:
       LIFECYCLE_PERIOD_DURATION: ${LIFECYCLE_PERIOD_DURATION:-7140}

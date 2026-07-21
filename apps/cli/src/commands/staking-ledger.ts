@@ -1,4 +1,5 @@
 import { Command, Option } from "commander";
+import { LedgerHashBase58 } from "o1js";
 import { SqliteStakingLedgerService } from "@repo/sdk/src/services/sqlite/sqlite-staking-ledger-service.js";
 import { parseIntOption } from "./option-parsers.js";
 
@@ -11,7 +12,7 @@ export async function getRootHash({
   await service.start();
   const rootHash = await service.getRootHash();
   await service.close();
-  console.log(rootHash);
+  console.log(LedgerHashBase58.toBase58(rootHash));
 }
 
 export async function hydrateAccounts({
