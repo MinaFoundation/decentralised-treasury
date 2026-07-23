@@ -5,6 +5,7 @@ x-app-image: &app-image
   build:
     context: ..
     dockerfile: devops/docker/Dockerfile
+    target: base
   extra_hosts:
     - "host.docker.internal:host-gateway"
   security_opt:
@@ -48,6 +49,7 @@ services:
       retries: 20
     security_opt:
       - "no-new-privileges:true"
+    restart: always
 
   api-migrate:
     <<: *app-image
@@ -82,6 +84,7 @@ services:
       interval: 5s
       timeout: 5s
       retries: 30
+    restart: always
 
   indexer-api:
     <<: *app-image
@@ -102,6 +105,7 @@ services:
       interval: 5s
       timeout: 5s
       retries: 30
+    restart: always
 
   processor-api:
     <<: *app-image
@@ -122,6 +126,7 @@ services:
       interval: 5s
       timeout: 5s
       retries: 30
+    restart: always
 
   indexer:
     <<: *app-image
@@ -131,6 +136,7 @@ services:
     depends_on:
       api-migrate:
         condition: service_completed_successfully
+    restart: always
 
   processor:
     <<: *app-image
@@ -144,6 +150,7 @@ services:
         condition: service_healthy
       api-migrate:
         condition: service_completed_successfully
+    restart: always
 
   voting-ledger-scheduler:
     <<: *app-image
@@ -170,22 +177,43 @@ services:
     depends_on:
       api-migrate:
         condition: service_completed_successfully
-    restart: unless-stopped
+    restart: always
 
   web:
     <<: *app-image
+    image: decentralized-treasury:devops-web
+    build:
+      context: ..
+      dockerfile: devops/docker/Dockerfile
+      target: web
+      args:
+        NEXT_PUBLIC_TREASURY_API_URL: ${NEXT_PUBLIC_TREASURY_API_URL:-http://127.0.0.1:3100/api}
+        NEXT_PUBLIC_INDEXER_API_URL: ${NEXT_PUBLIC_INDEXER_API_URL:-http://127.0.0.1:3100/indexer}
+        NEXT_PUBLIC_PROCESSOR_API_URL: ${NEXT_PUBLIC_PROCESSOR_API_URL:-http://127.0.0.1:3100/processor}
+        NEXT_PUBLIC_MINA_NODE_URL: ${NEXT_PUBLIC_MINA_NODE_URL:-http://127.0.0.1:3100/mina/graphql}
+        NEXT_PUBLIC_TREASURY_OWNER_CONTRACT_ADDRESS: ${NEXT_PUBLIC_TREASURY_OWNER_CONTRACT_ADDRESS:-${TREASURY_OWNER_CONTRACT_ADDRESS:-B62qpExe8CAaGkR4HRxyXvkziQpE6Aq3U71MJLHivP8pCsiDk1BbU9Z}}
+        NEXT_PUBLIC_LIFECYCLE_PERIOD_DURATION: ${NEXT_PUBLIC_LIFECYCLE_PERIOD_DURATION:-7140}
+        NEXT_PUBLIC_SLOT_DURATION_MS: ${NEXT_PUBLIC_SLOT_DURATION_MS:-180000}
+        NEXT_PUBLIC_PROOFS_ENABLED: ${NEXT_PUBLIC_PROOFS_ENABLED:-false}
+        NEXT_PUBLIC_NETWORK_ID: ${NEXT_PUBLIC_NETWORK_ID:-MAINNET}
+        NEXT_PUBLIC_VOTE_REDUCER_VERIFICATION_KEY_JSON: ${NEXT_PUBLIC_VOTE_REDUCER_VERIFICATION_KEY_JSON:-}
+        NEXT_PUBLIC_STAKING_LEDGER_TO_VOTING_LEDGER_VERIFICATION_KEY_JSON: ${NEXT_PUBLIC_STAKING_LEDGER_TO_VOTING_LEDGER_VERIFICATION_KEY_JSON:-}
+        NEXT_PUBLIC_TREASURY_PROPOSAL_VERIFICATION_KEY_JSON: ${NEXT_PUBLIC_TREASURY_PROPOSAL_VERIFICATION_KEY_JSON:-}
+        NEXT_PUBLIC_EMPTY_VOTING_LEDGER_ROOT: ${NEXT_PUBLIC_EMPTY_VOTING_LEDGER_ROOT:-}
+        NEXT_PUBLIC_EMPTY_NULLIFIER_ROOT: ${NEXT_PUBLIC_EMPTY_NULLIFIER_ROOT:-}
     command:
       [
         "pnpm",
         "--dir",
         "apps/web",
         "run",
-        "dev",
+        "start",
         "--hostname",
         "0.0.0.0",
         "--port",
         "${WEB_PORT:-3100}",
       ]
+    restart: always
     environment:
       NEXT_PUBLIC_TREASURY_API_URL: ${NEXT_PUBLIC_TREASURY_API_URL:-http://127.0.0.1:3100/api}
       NEXT_PUBLIC_INDEXER_API_URL: ${NEXT_PUBLIC_INDEXER_API_URL:-http://127.0.0.1:3100/indexer}
@@ -263,6 +291,7 @@ services:
       - ALL
     cap_add:
       - NET_BIND_SERVICE
+    restart: always
 
   reverse-proxy-public:
     image: caddy:2.8.4-alpine
@@ -332,6 +361,7 @@ services:
       - ALL
     cap_add:
       - NET_BIND_SERVICE
+    restart: always
 
 volumes:
   caddy-data:

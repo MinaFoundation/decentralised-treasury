@@ -24,18 +24,3 @@
 
 	reverse_proxy web:{$WEB_PORT:3100}
 }
-
-{$PUBLIC_API_DOMAIN} {
-	encode zstd gzip
-	reverse_proxy api:4000
-}
-
-{$PUBLIC_INDEXER_DOMAIN} {
-	encode zstd gzip
-	reverse_proxy indexer-api:4001
-}
-
-{$PUBLIC_PROCESSOR_DOMAIN} {
-	encode zstd gzip
-	reverse_proxy processor-api:4002
-}
