@@ -1048,10 +1048,6 @@ function MockTreasuryApp({
     prototypeProposalId !== null
       ? (proposalVotes[prototypeProposalId] ?? [])
       : [];
-  const prototypeProposalExecutions =
-    prototypeProposalId !== null
-      ? (proposalExecutions[prototypeProposalId] ?? [])
-      : [];
   const prototypeProposalDisplayOverride =
     prototypeProposalBaseEntry && isHappyPathScenario
       ? buildPrototypeProposalDisplayEntry({
@@ -2704,18 +2700,11 @@ function buildLifecycleArgs({
   periodEndsIn: string;
   isHistoricalLifecycle?: boolean;
 }): TreasuryLifecyclePeriodInfoProps {
-  const periodIndexById: Record<TreasuryLifecyclePeriodId, number> = {
-    proposal: 0,
-    exploration: 1,
-    voting: 2,
-    cooldown: 3,
-  };
   const proposalStart = 18462144 + (lifecycleId - 13) * 6144;
   const periodLength = 1536;
   const lifecycleStartDate = new Date("2026-04-09T13:00:00.000Z");
   const lifecycleDateOffsetMs = (lifecycleId - 13) * 8 * 24 * 60 * 60 * 1000;
   const periodDurationMs = 2 * 24 * 60 * 60 * 1000;
-  const currentPeriodIndex = periodIndexById[currentPeriod];
 
   return {
     lifecycleId,

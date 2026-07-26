@@ -432,12 +432,6 @@ export function TreasuryLifecyclePeriodInfo({
       defaultMessage: currentPeriod,
     });
 
-  const heroTimingSummary = formatTimingSummary(
-    intl,
-    currentPeriodMetadata?.slotRange,
-    currentPeriodMetadata?.estimatedStart,
-    currentPeriodMetadata?.estimatedEnd,
-  );
   const currentPeriodProgressSummary = resolveLifecycleProgressSummary(
     currentPeriod,
     isHistoricalLifecycle,

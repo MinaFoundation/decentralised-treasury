@@ -271,7 +271,6 @@ export function TreasuryTransactionFlowDialog({
       ? terminalStepId
       : stepOrder.find((stepId) => stepStatuses[stepId] === "error") ??
         (stepStatuses.waitForInclusion === "completed" ? terminalStepId : "review"));
-  const displayedStep = steps.find((step) => step.id === displayedStepId) ?? steps[0]!;
   const headerDescription =
     displayedStepId === "review"
       ? resolvedDescription
@@ -1422,28 +1421,6 @@ function getDefaultDescription(
     id: "ui.transactionFlow.voteDescription",
     defaultMessage:
       "Review the vote summary and confirm the transaction details before continuing.",
-  });
-}
-
-function resolveKindLabel(
-  intl: ReturnType<typeof useTreasuryIntl>,
-  kind: TreasuryTransactionFlowKind,
-): string {
-  if (kind === "createProposal") {
-    return intl.formatMessage({
-      id: "ui.transactionFlow.kindCreate",
-      defaultMessage: "Create proposal",
-    });
-  }
-  if (kind === "executeProposal") {
-    return intl.formatMessage({
-      id: "ui.transactionFlow.kindExecute",
-      defaultMessage: "Execute",
-    });
-  }
-  return intl.formatMessage({
-    id: "ui.transactionFlow.kindVote",
-    defaultMessage: "Vote",
   });
 }
 

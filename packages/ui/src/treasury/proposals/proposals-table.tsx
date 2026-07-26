@@ -141,8 +141,6 @@ export interface TreasuryProposalsTableProps {
 
 const PAGE_SIZE_OPTIONS = [10, 20, 30, 40, 50] as const;
 const TABLE_VIEWPORT_MIN_HEIGHT_CLASS = "min-h-[32rem]";
-const SUCCESS_COLOR_CLASS = "emerald-600";
-const FAILURE_COLOR_CLASS = "rose-600";
 const DEFAULT_COLUMNS: TreasuryProposalTableColumnKey[] = [
   "title",
   "lifecycleId",
@@ -740,7 +738,6 @@ export function TreasuryProposalsTable({
     return resolvedSortDirection === "desc" ? sorted.reverse() : sorted;
   }, [filteredEntries, resolvedSortDirection, resolvedSortKey]);
 
-  const totalEntries = resolvedEntries.length;
   const filteredCount = isServerControlledPagination ? (totalCount ?? 0) : sortedEntries.length;
   const totalPages = Math.max(1, Math.ceil(filteredCount / resolvedPageSize));
   const currentPage = Math.min(resolvedPage, totalPages);
