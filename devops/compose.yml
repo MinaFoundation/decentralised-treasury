@@ -69,7 +69,7 @@ services:
     environment:
       <<: *api-environment
     volumes:
-      - ${SQLITE_DATA_HOST_PATH:-./.data/sqlite}:${SQLITE_DATA_DIRECTORY:-/data/sqlite}:ro
+      - ${SQLITE_DATA_HOST_PATH:-./.data/sqlite}:${SQLITE_DATA_DIRECTORY:-/data/sqlite}
     depends_on:
       api-migrate:
         condition: service_completed_successfully
@@ -144,7 +144,7 @@ services:
     environment:
       <<: *api-environment
     volumes:
-      - ${SQLITE_DATA_HOST_PATH:-./.data/sqlite}:${SQLITE_DATA_DIRECTORY:-/data/sqlite}:ro
+      - ${SQLITE_DATA_HOST_PATH:-./.data/sqlite}:${SQLITE_DATA_DIRECTORY:-/data/sqlite}
     depends_on:
       indexer-api:
         condition: service_healthy
