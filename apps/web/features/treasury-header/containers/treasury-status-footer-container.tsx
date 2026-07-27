@@ -13,7 +13,7 @@ export function TreasuryStatusFooterContainer() {
       networkId={settings.value.networkId}
       health={treasury.health}
       buildSha={process.env.NEXT_PUBLIC_BUILD_SHA}
-      className="max-w-none"
+      className="max-w-none px-0 sm:px-0 lg:px-0"
     />
   );
 }

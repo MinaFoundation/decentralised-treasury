@@ -8,7 +8,6 @@ import { fetchProposalSearchResults } from "../lib/treasury-header-api";
 import { useTreasuryHeaderStore } from "../store/treasury-header-store";
 
 const SEARCH_DEBOUNCE_MS = 250;
-const SEARCH_LOADING_DELAY_MS = 150;
 
 export function useHeaderSearch(): void {
   const apiUrl = useEndpointSettingsStore((state) => state.value.apiUrl);
@@ -43,7 +42,6 @@ export function useHeaderSearch(): void {
     }
 
     let cancelled = false;
-    let loadingTimeoutId: number | undefined;
     const queryKey = `${apiUrl}:${normalizedQuery}`;
     const isInitialQueryLoad = loadedQueryRef.current !== queryKey;
     setSearchError(null);
@@ -54,11 +52,7 @@ export function useHeaderSearch(): void {
 
     const timeoutId = window.setTimeout(() => {
       if (isInitialQueryLoad) {
-        loadingTimeoutId = window.setTimeout(() => {
-          if (!cancelled) {
-            setSearchLoading(true);
-          }
-        }, SEARCH_LOADING_DELAY_MS);
+        setSearchLoading(true);
       }
 
       void fetchProposalSearchResults(apiUrl, normalizedQuery)
@@ -82,9 +76,6 @@ export function useHeaderSearch(): void {
           }
         })
         .finally(() => {
-          if (loadingTimeoutId !== undefined) {
-            window.clearTimeout(loadingTimeoutId);
-          }
           if (!cancelled && isInitialQueryLoad) {
             setSearchLoading(false);
           }
@@ -94,9 +85,6 @@ export function useHeaderSearch(): void {
     return () => {
       cancelled = true;
       window.clearTimeout(timeoutId);
-      if (loadingTimeoutId !== undefined) {
-        window.clearTimeout(loadingTimeoutId);
-      }
     };
   }, [
     apiUrl,

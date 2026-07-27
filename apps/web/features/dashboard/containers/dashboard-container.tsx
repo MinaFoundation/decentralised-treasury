@@ -11,7 +11,6 @@ import {
   buildTreasuryLifecyclePeriodMetadata,
 } from "../../treasury/lib/treasury-lifecycle";
 import { useTreasuryState } from "../../treasury/store/treasury-store.selectors";
-import { TreasuryStatusFooterContainer } from "../../treasury-header/containers/treasury-status-footer-container";
 import {
   fetchProposalItemsPage,
   mapProposalItemToEntry,
@@ -171,7 +170,10 @@ export function DashboardContainer({
     if (currentLifecycleId === undefined) {
       return undefined;
     }
-    return buildTreasuryLifecycleOptions(currentLifecycleId);
+    return buildTreasuryLifecycleOptions(
+      currentLifecycleId,
+      currentLifecycleId + 1,
+    );
   }, [currentLifecycleId]);
 
   const lifecycleMetadata = useMemo(() => {
@@ -371,7 +373,6 @@ export function DashboardContainer({
         onProposalClick={handleProposalClick}
         onCreateProposalClick={handleCreateProposalClick}
       />
-      <TreasuryStatusFooterContainer />
     </section>
   );
 }

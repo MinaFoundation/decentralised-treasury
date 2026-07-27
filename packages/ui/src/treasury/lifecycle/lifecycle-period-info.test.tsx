@@ -316,4 +316,33 @@ describe("TreasuryLifecyclePeriodInfo", () => {
 
     expect(onLifecycleChange).toHaveBeenCalledWith(3);
   });
+
+  it("searches older lifecycles in the desktop selector", () => {
+    const onLifecycleChange = vi.fn();
+
+    render(
+      <TreasuryIntlProvider locale="en">
+        <TreasuryLifecyclePeriodInfo
+          lifecycleId={12}
+          currentPeriod="voting"
+          lifecycleOptions={Array.from(
+            { length: 13 },
+            (_, index) => 12 - index,
+          )}
+          onLifecycleChange={onLifecycleChange}
+        />
+      </TreasuryIntlProvider>,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Select lifecycle" }));
+    fireEvent.change(
+      screen.getByRole("searchbox", { name: "Search lifecycles" }),
+      { target: { value: "Lifecycle 2" } },
+    );
+
+    expect(screen.queryByRole("button", { name: "Lifecycle 11" })).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "Lifecycle 2" }));
+
+    expect(onLifecycleChange).toHaveBeenCalledWith(2);
+  });
 });

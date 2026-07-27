@@ -70,7 +70,7 @@ describe("useHeaderSearch", () => {
     );
   });
 
-  it("only shows loading if the search request stays pending", async () => {
+  it("shows loading while the search API request is pending", async () => {
     let resolveFetch: ((value: Response) => void) | undefined;
     vi.spyOn(globalThis, "fetch").mockImplementation(
       () =>
@@ -84,12 +84,6 @@ describe("useHeaderSearch", () => {
     renderHook(() => useHeaderSearch());
 
     await vi.advanceTimersByTimeAsync(250);
-    expect(useTreasuryHeaderStore.getState().search.loading).toBe(false);
-
-    await vi.advanceTimersByTimeAsync(149);
-    expect(useTreasuryHeaderStore.getState().search.loading).toBe(false);
-
-    await vi.advanceTimersByTimeAsync(1);
     expect(useTreasuryHeaderStore.getState().search.loading).toBe(true);
 
     resolveFetch?.(
