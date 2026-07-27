@@ -6,6 +6,11 @@
 {$PUBLIC_WEB_DOMAIN} {
 	encode zstd gzip
 
+	redir /api /api/
+	redir /indexer /indexer/
+	redir /processor /processor/
+	redir /mina /mina/
+
 	handle_path /api/* {
 		reverse_proxy api:4000
 	}
@@ -18,8 +23,18 @@
 		reverse_proxy processor-api:4002
 	}
 
-	handle_path /mina/* {
-		reverse_proxy {$MINA_NODE_PROXY_UPSTREAM}
+	handle /mina/* {
+		route {
+			uri strip_prefix /mina
+
+			@minaGraphiQL {
+				path /graphql
+				method GET
+			}
+			header @minaGraphiQL Content-Type "text/html; charset=utf-8"
+
+			reverse_proxy {$MINA_NODE_PROXY_UPSTREAM}
+		}
 	}
 
 	reverse_proxy web:{$WEB_PORT:3100}
