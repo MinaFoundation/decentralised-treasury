@@ -1,4 +1,4 @@
-import { act, renderHook } from "@testing-library/react";
+import { act, cleanup, renderHook } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { useEndpointSettingsStore } from "../../endpoint-settings/store/endpoint-settings-store";
 import { useMinaBlockStore } from "../../mina-blocks/store/mina-block-store";
@@ -21,6 +21,7 @@ describe("useHeaderSearch", () => {
   });
 
   afterEach(() => {
+    cleanup();
     vi.useRealTimers();
     vi.restoreAllMocks();
   });
@@ -117,6 +118,67 @@ describe("useHeaderSearch", () => {
     ]);
 
     renderHook(() => useHeaderSearch());
+    await flushAsyncWork();
+
+    expect(useTreasuryHeaderStore.getState().search.results).toHaveLength(0);
+  });
+
+  it("keeps current results visible during a block refresh", async () => {
+    let resolveRefresh: ((value: Response) => void) | undefined;
+    const fetchMock = vi
+      .spyOn(globalThis, "fetch")
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            items: [
+              {
+                id: "P-1",
+                title: "Original result",
+                lifecycleId: 12,
+                proposalPublicKey: "B62qproposal",
+                senderPublicKey: "B62qsender",
+                amount: "10 MINA",
+                status: "Voting",
+                createdAt: "2026-01-01",
+              },
+            ],
+          }),
+        ),
+      )
+      .mockImplementationOnce(
+        () =>
+          new Promise<Response>((resolve) => {
+            resolveRefresh = resolve;
+          }),
+      );
+
+    useTreasuryHeaderStore.getState().setSearchQuery("search");
+    renderHook(() => useHeaderSearch());
+
+    await vi.advanceTimersByTimeAsync(250);
+    await flushAsyncWork();
+    expect(useTreasuryHeaderStore.getState().search.results[0]?.title).toBe(
+      "Original result",
+    );
+
+    act(() => {
+      useMinaBlockStore.getState().forceRefresh();
+    });
+    await vi.advanceTimersByTimeAsync(400);
+
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(useTreasuryHeaderStore.getState().search.loading).toBe(false);
+    expect(useTreasuryHeaderStore.getState().search.results[0]?.title).toBe(
+      "Original result",
+    );
+
+    resolveRefresh?.(
+      new Response(
+        JSON.stringify({
+          items: [],
+        }),
+      ),
+    );
     await flushAsyncWork();
 
     expect(useTreasuryHeaderStore.getState().search.results).toHaveLength(0);

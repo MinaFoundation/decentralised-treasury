@@ -25,6 +25,7 @@ export interface TreasuryStatusFooterProps {
   networkLabel?: string;
   networkOptions?: TreasuryNetworkOption[];
   networkConfigRaw?: string | null;
+  buildSha?: string | null;
   health?: TreasuryNetworkHealthSnapshot;
   className?: string;
 }
@@ -42,7 +43,17 @@ function formatMetric(value: number | string | null | undefined): string {
   return `${value}`;
 }
 
-function resolveStatusToneClass(status: TreasuryHealthStatus | undefined): string {
+function formatBuildSha(value: string | null | undefined): string {
+  const normalized = value?.trim();
+  if (!normalized || normalized === "unknown") {
+    return "-";
+  }
+  return normalized.slice(0, 12);
+}
+
+function resolveStatusToneClass(
+  status: TreasuryHealthStatus | undefined,
+): string {
   if (status === "healthy") {
     return "text-emerald-700";
   }
@@ -89,6 +100,7 @@ export function TreasuryStatusFooter({
   networkLabel,
   networkOptions,
   networkConfigRaw,
+  buildSha,
   health,
   className,
 }: TreasuryStatusFooterProps): JSX.Element {
@@ -107,21 +119,33 @@ export function TreasuryStatusFooter({
 
   const metrics: FooterMetric[] = [
     {
-      label: intl.formatMessage({ id: "ui.footer.network", defaultMessage: "Network" }),
+      label: intl.formatMessage({
+        id: "ui.footer.network",
+        defaultMessage: "Network",
+      }),
       value: resolvedNetworkLabel,
     },
     {
-      label: intl.formatMessage({ id: "ui.footer.apiHealth", defaultMessage: "API" }),
+      label: intl.formatMessage({
+        id: "ui.footer.apiHealth",
+        defaultMessage: "API",
+      }),
       value: formatHealthStatus(intl, health?.apiStatus),
       tone: health?.apiStatus,
     },
     {
-      label: intl.formatMessage({ id: "ui.footer.indexerHealth", defaultMessage: "Indexer" }),
+      label: intl.formatMessage({
+        id: "ui.footer.indexerHealth",
+        defaultMessage: "Indexer",
+      }),
       value: formatHealthStatus(intl, health?.indexerStatus),
       tone: health?.indexerStatus,
     },
     {
-      label: intl.formatMessage({ id: "ui.footer.liveSlot", defaultMessage: "Chain" }),
+      label: intl.formatMessage({
+        id: "ui.footer.liveSlot",
+        defaultMessage: "Chain",
+      }),
       value: formatMetric(health?.latestLiveSlot),
     },
     {
@@ -132,12 +156,25 @@ export function TreasuryStatusFooter({
       value: formatMetric(health?.latestIndexedSlot),
     },
     {
-      label: intl.formatMessage({ id: "ui.footer.slotLag", defaultMessage: "Lag" }),
+      label: intl.formatMessage({
+        id: "ui.footer.slotLag",
+        defaultMessage: "Lag",
+      }),
       value: formatMetric(health?.slotLag),
     },
     {
-      label: intl.formatMessage({ id: "ui.footer.updatedAt", defaultMessage: "Updated" }),
+      label: intl.formatMessage({
+        id: "ui.footer.updatedAt",
+        defaultMessage: "Updated",
+      }),
       value: formatMetric(health?.updatedAt),
+    },
+    {
+      label: intl.formatMessage({
+        id: "ui.footer.build",
+        defaultMessage: "Build",
+      }),
+      value: formatBuildSha(buildSha),
     },
   ];
 
@@ -151,12 +188,20 @@ export function TreasuryStatusFooter({
     >
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] sm:text-xs">
         {metrics.map((metric) => (
-          <p key={metric.label} className="flex items-center gap-1 text-muted-foreground">
+          <p
+            key={metric.label}
+            className="flex items-center gap-1 text-muted-foreground"
+          >
             <span className="tracking-tight">{metric.label}</span>
             <span className="text-border" aria-hidden="true">
               /
             </span>
-            <span className={cn("font-medium text-foreground", resolveStatusToneClass(metric.tone))}>
+            <span
+              className={cn(
+                "font-medium text-foreground",
+                resolveStatusToneClass(metric.tone),
+              )}
+            >
               {metric.value}
             </span>
           </p>

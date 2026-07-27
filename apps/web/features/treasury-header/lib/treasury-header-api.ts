@@ -10,7 +10,10 @@ import type {
   TreasuryProposalExecutionRow,
   TreasuryProposalVoteRow,
 } from "@repo/ui/treasury-proposal-detail";
-import { fetchStakingLedgerTotalCurrency, formatNanominaBalance } from "./mina-accounts";
+import {
+  fetchStakingLedgerTotalCurrency,
+  formatNanominaBalance,
+} from "./mina-accounts";
 
 export interface ProposalApiItem {
   id: string;
@@ -51,6 +54,10 @@ interface ProposalListResponse {
 }
 
 interface ProposalVotesResponse {
+  total?: number;
+  nextOffset?: number | null;
+  limit?: number;
+  offset?: number;
   items?: Array<{
     id: string;
     proposalPublicKey?: string;
@@ -65,6 +72,10 @@ interface ProposalVotesResponse {
 }
 
 interface ProposalExecutionsResponse {
+  total?: number;
+  nextOffset?: number | null;
+  limit?: number;
+  offset?: number;
   items?: Array<{
     id: string;
     proposalPublicKey?: string;
@@ -96,6 +107,27 @@ export interface ProposalItemsPage {
   offset: number;
 }
 
+export interface FetchProposalDetailRowsOptions {
+  limit?: number;
+  offset?: number;
+}
+
+export interface ProposalVotesPage {
+  items: TreasuryProposalVoteRow[];
+  total: number;
+  nextOffset: number | null;
+  limit: number;
+  offset: number;
+}
+
+export interface ProposalExecutionsPage {
+  items: TreasuryProposalExecutionRow[];
+  total: number;
+  nextOffset: number | null;
+  limit: number;
+  offset: number;
+}
+
 const PROPOSAL_LIST_SORT_KEY_MAP: Partial<
   Record<TreasuryProposalTableSortKey, string>
 > = {
@@ -114,10 +146,15 @@ function appendProposalListSort(
   if (!apiSortKey) {
     return;
   }
-  url.searchParams.append("sort", `${apiSortKey},${(sortDirection ?? "desc").toUpperCase()}`);
+  url.searchParams.append(
+    "sort",
+    `${apiSortKey},${(sortDirection ?? "desc").toUpperCase()}`,
+  );
 }
 
-function extractTitleFromMarkdown(contents: string | null | undefined): string | undefined {
+function extractTitleFromMarkdown(
+  contents: string | null | undefined,
+): string | undefined {
   const normalized = contents?.replace(/^\uFEFF/, "");
   if (!normalized) {
     return undefined;
@@ -204,10 +241,13 @@ function inferPausedState(
   return undefined;
 }
 
-export function mapProposalItemToEntry(item: ProposalApiItem): TreasuryProposalTableEntry {
+export function mapProposalItemToEntry(
+  item: ProposalApiItem,
+): TreasuryProposalTableEntry {
   const stage = item.stage ?? item.status ?? "Unknown";
   const period = item.period ?? inferProposalPeriod(stage);
-  const title = extractTitleFromMarkdown(item.contents) ?? item.title ?? item.id;
+  const title =
+    extractTitleFromMarkdown(item.contents) ?? item.title ?? item.id;
   const isPaused = inferPausedState(stage, item.isPaused);
 
   return {
@@ -221,7 +261,8 @@ export function mapProposalItemToEntry(item: ProposalApiItem): TreasuryProposalT
     period,
     createdAt: item.createdAt ?? "-",
     createdAtBlock: item.createdAtBlockHeight,
-    stakingEpochDataLedgerTotalCurrency: item.stakingEpochDataLedgerTotalCurrency,
+    stakingEpochDataLedgerTotalCurrency:
+      item.stakingEpochDataLedgerTotalCurrency,
     requiredParticipationBp: item.requiredParticipationBp,
     requiredApprovalBp: item.requiredApprovalBp,
     requiredParticipation: item.requiredParticipation,
@@ -309,6 +350,24 @@ export async function fetchProposalItems(
   return page.items;
 }
 
+export async function fetchProposalItem(
+  apiUrl: string,
+  proposalPublicKey: string,
+): Promise<ProposalApiItem | null> {
+  const proposalUrl = resolveEndpointUrl(
+    apiUrl,
+    `/proposals/${encodeURIComponent(proposalPublicKey)}`,
+  );
+  const response = await fetch(proposalUrl);
+  if (response.status === 404) {
+    return null;
+  }
+  if (!response.ok) {
+    throw new Error(`Failed to fetch proposal detail: ${response.status}`);
+  }
+  return (await response.json()) as ProposalApiItem;
+}
+
 export async function fetchProposalItemsPage(
   apiUrl: string,
   options: FetchProposalItemsOptions = {},
@@ -342,19 +401,35 @@ export async function fetchProposalVotes(
   apiUrl: string,
   proposalPublicKey: string,
 ): Promise<TreasuryProposalVoteRow[]> {
+  const page = await fetchProposalVotesPage(apiUrl, proposalPublicKey, {
+    limit: 200,
+    offset: 0,
+  });
+  return page.items;
+}
+
+export async function fetchProposalVotesPage(
+  apiUrl: string,
+  proposalPublicKey: string,
+  options: FetchProposalDetailRowsOptions = {},
+): Promise<ProposalVotesPage> {
   const proposalVotesUrl = new URL(
     resolveEndpointUrl(
       apiUrl,
       `/proposals/${encodeURIComponent(proposalPublicKey)}/votes`,
     ),
   );
+  const limit = options.limit ?? 10;
+  const offset = options.offset ?? 0;
+  proposalVotesUrl.searchParams.set("limit", String(limit));
+  proposalVotesUrl.searchParams.set("offset", String(offset));
   const response = await fetch(proposalVotesUrl.toString());
   if (!response.ok) {
     throw new Error(`Failed to fetch proposal votes: ${response.status}`);
   }
 
   const payload = (await response.json()) as ProposalVotesResponse;
-  return (payload.items ?? []).map((item) => ({
+  const items = (payload.items ?? []).map((item) => ({
     id: item.id,
     voterPublicKey: item.voterPublicKey ?? "-",
     vote: item.vote ?? "-",
@@ -363,25 +438,48 @@ export async function fetchProposalVotes(
     isNullified: item.isNullified,
     status: item.status ?? null,
   }));
+  return {
+    items,
+    total: payload.total ?? items.length,
+    nextOffset: payload.nextOffset ?? null,
+    limit: payload.limit ?? limit,
+    offset: payload.offset ?? offset,
+  };
 }
 
 export async function fetchProposalExecutions(
   apiUrl: string,
   proposalPublicKey: string,
 ): Promise<TreasuryProposalExecutionRow[]> {
+  const page = await fetchProposalExecutionsPage(apiUrl, proposalPublicKey, {
+    limit: 200,
+    offset: 0,
+  });
+  return page.items;
+}
+
+export async function fetchProposalExecutionsPage(
+  apiUrl: string,
+  proposalPublicKey: string,
+  options: FetchProposalDetailRowsOptions = {},
+): Promise<ProposalExecutionsPage> {
   const proposalExecutionsUrl = new URL(
     resolveEndpointUrl(
       apiUrl,
       `/proposals/${encodeURIComponent(proposalPublicKey)}/executions`,
     ),
   );
+  const limit = options.limit ?? 10;
+  const offset = options.offset ?? 0;
+  proposalExecutionsUrl.searchParams.set("limit", String(limit));
+  proposalExecutionsUrl.searchParams.set("offset", String(offset));
   const response = await fetch(proposalExecutionsUrl.toString());
   if (!response.ok) {
     throw new Error(`Failed to fetch proposal executions: ${response.status}`);
   }
 
   const payload = (await response.json()) as ProposalExecutionsResponse;
-  return (payload.items ?? []).map((item) => ({
+  const items = (payload.items ?? []).map((item) => ({
     id: item.id,
     recipient: item.recipient ?? "-",
     amountToPayOut: item.amountToPayOut ?? "0",
@@ -392,6 +490,13 @@ export async function fetchProposalExecutions(
     blockHeight: item.blockHeight ?? null,
     status: item.status ?? null,
   }));
+  return {
+    items,
+    total: payload.total ?? items.length,
+    nextOffset: payload.nextOffset ?? null,
+    limit: payload.limit ?? limit,
+    offset: payload.offset ?? offset,
+  };
 }
 
 interface StakingLedgerAccountResponse {
@@ -436,15 +541,19 @@ export async function fetchWalletLifecycleAccountInfo(
   ]);
 
   if (!stakingResponse.ok) {
-    throw new Error(`Failed to fetch staking account: ${stakingResponse.status}`);
+    throw new Error(
+      `Failed to fetch staking account: ${stakingResponse.status}`,
+    );
   }
 
   if (!votingResponse.ok) {
     throw new Error(`Failed to fetch voting account: ${votingResponse.status}`);
   }
 
-  const stakingAccount = await parseOptionalJson<StakingLedgerAccountResponse>(stakingResponse);
-  const votingAccount = await parseOptionalJson<VotingLedgerAccountResponse>(votingResponse);
+  const stakingAccount =
+    await parseOptionalJson<StakingLedgerAccountResponse>(stakingResponse);
+  const votingAccount =
+    await parseOptionalJson<VotingLedgerAccountResponse>(votingResponse);
 
   return {
     delegatedTo: stakingAccount?.delegatePublicKey ?? undefined,
@@ -465,16 +574,21 @@ export async function fetchLifecycleProposalEstimateContext(
     ),
   );
 
-  const [stakingAccountResponse, stakingLedgerTotalCurrency] = await Promise.all([
-    fetch(stakingAccountUrl.toString()),
-    fetchStakingLedgerTotalCurrency(minaNodeUrl),
-  ]);
+  const [stakingAccountResponse, stakingLedgerTotalCurrency] =
+    await Promise.all([
+      fetch(stakingAccountUrl.toString()),
+      fetchStakingLedgerTotalCurrency(minaNodeUrl),
+    ]);
 
   if (!stakingAccountResponse.ok) {
-    throw new Error(`Failed to fetch staking treasury account: ${stakingAccountResponse.status}`);
+    throw new Error(
+      `Failed to fetch staking treasury account: ${stakingAccountResponse.status}`,
+    );
   }
 
-  const stakingAccount = await parseOptionalJson<StakingLedgerAccountResponse>(stakingAccountResponse);
+  const stakingAccount = await parseOptionalJson<StakingLedgerAccountResponse>(
+    stakingAccountResponse,
+  );
 
   return {
     treasuryBalance: formatNanominaBalance(stakingAccount?.balance ?? "0"),

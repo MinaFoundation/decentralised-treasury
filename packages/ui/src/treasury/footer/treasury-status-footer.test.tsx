@@ -34,6 +34,18 @@ describe("TreasuryStatusFooter", () => {
     expect(screen.getByText("Stagingnet")).toBeTruthy();
   });
 
+  it("renders a shortened build SHA", () => {
+    const footer = render(
+      <TreasuryStatusFooter
+        networkId="MAINNET"
+        buildSha="0123456789abcdef0123456789abcdef"
+      />,
+    );
+
+    expect(footer.container.textContent).toContain("Build");
+    expect(footer.container.textContent).toContain("0123456789ab");
+  });
+
   it("falls back to dash for missing metric values", () => {
     render(<TreasuryStatusFooter networkId="DEVNET" />);
     expect(screen.getAllByText("-").length).toBeGreaterThan(0);

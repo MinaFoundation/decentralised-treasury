@@ -1,12 +1,134 @@
 import { describe, expect, it, vi, afterEach } from "vitest";
 import {
   fetchLifecycleProposalEstimateContext,
+  fetchProposalExecutionsPage,
+  fetchProposalItem,
+  fetchProposalVotesPage,
   fetchWalletLifecycleAccountInfo,
   inferProposalPeriod,
   mapProposalItemToDetailProposal,
   mapProposalItemToEntry,
 } from "./treasury-header-api";
 import * as minaAccounts from "./mina-accounts";
+
+describe("fetchProposalItem", () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it("fetches one proposal by its public key", async () => {
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(
+      new Response(
+        JSON.stringify({
+          id: "proposal-1",
+          proposalPublicKey: "B62qproposal/key",
+        }),
+      ),
+    );
+
+    await expect(
+      fetchProposalItem("http://127.0.0.1:3100/api", "B62qproposal/key"),
+    ).resolves.toMatchObject({
+      id: "proposal-1",
+      proposalPublicKey: "B62qproposal/key",
+    });
+    expect(fetchMock).toHaveBeenCalledWith(
+      "http://127.0.0.1:3100/api/proposals/B62qproposal%2Fkey",
+    );
+  });
+
+  it("returns null when the proposal is not indexed", async () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(
+      new Response(JSON.stringify({ error: "Proposal not found" }), {
+        status: 404,
+      }),
+    );
+
+    await expect(
+      fetchProposalItem("http://127.0.0.1:3100/api", "B62qmissing"),
+    ).resolves.toBeNull();
+  });
+});
+
+describe("proposal detail pagination", () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it("fetches a page of proposal votes", async () => {
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(
+      new Response(
+        JSON.stringify({
+          total: 12,
+          limit: 5,
+          offset: 5,
+          nextOffset: 10,
+          items: [
+            {
+              id: "vote-6",
+              voterPublicKey: "B62qvoter",
+              vote: "yay",
+              voteWeight: "1000",
+            },
+          ],
+        }),
+      ),
+    );
+
+    await expect(
+      fetchProposalVotesPage("http://127.0.0.1:3100/api", "B62qproposal/key", {
+        limit: 5,
+        offset: 5,
+      }),
+    ).resolves.toMatchObject({
+      total: 12,
+      limit: 5,
+      offset: 5,
+      nextOffset: 10,
+      items: [{ id: "vote-6", voterPublicKey: "B62qvoter" }],
+    });
+    expect(fetchMock).toHaveBeenCalledWith(
+      "http://127.0.0.1:3100/api/proposals/B62qproposal%2Fkey/votes?limit=5&offset=5",
+    );
+  });
+
+  it("fetches a page of proposal executions", async () => {
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(
+      new Response(
+        JSON.stringify({
+          total: 3,
+          limit: 2,
+          offset: 0,
+          nextOffset: 2,
+          items: [
+            {
+              id: "execution-1",
+              senderPublicKey: "B62qexecutor",
+              paidOutAmount: "500",
+              remainingAmount: "500",
+            },
+          ],
+        }),
+      ),
+    );
+
+    await expect(
+      fetchProposalExecutionsPage("http://127.0.0.1:3100/api", "B62qproposal", {
+        limit: 2,
+        offset: 0,
+      }),
+    ).resolves.toMatchObject({
+      total: 3,
+      limit: 2,
+      offset: 0,
+      nextOffset: 2,
+      items: [{ id: "execution-1", senderPublicKey: "B62qexecutor" }],
+    });
+    expect(fetchMock).toHaveBeenCalledWith(
+      "http://127.0.0.1:3100/api/proposals/B62qproposal/executions?limit=2&offset=0",
+    );
+  });
+});
 
 describe("fetchWalletLifecycleAccountInfo", () => {
   afterEach(() => {
@@ -20,7 +142,11 @@ describe("fetchWalletLifecycleAccountInfo", () => {
       .mockResolvedValueOnce(new Response("null"));
 
     await expect(
-      fetchWalletLifecycleAccountInfo("http://127.0.0.1:4000", 12, "B62qwallet"),
+      fetchWalletLifecycleAccountInfo(
+        "http://127.0.0.1:4000",
+        12,
+        "B62qwallet",
+      ),
     ).resolves.toEqual({
       delegatedTo: undefined,
       votingWeight: "0 MINA",
@@ -36,10 +162,14 @@ describe("fetchLifecycleProposalEstimateContext", () => {
   });
 
   it("returns formatted lifecycle treasury estimate inputs", async () => {
-    vi.spyOn(minaAccounts, "fetchStakingLedgerTotalCurrency").mockResolvedValue("360000 MINA");
+    vi.spyOn(minaAccounts, "fetchStakingLedgerTotalCurrency").mockResolvedValue(
+      "360000 MINA",
+    );
     const fetchMock = vi
       .spyOn(globalThis, "fetch")
-      .mockResolvedValueOnce(new Response(JSON.stringify({ balance: "2400000000000000" })));
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ balance: "2400000000000000" })),
+      );
 
     await expect(
       fetchLifecycleProposalEstimateContext(

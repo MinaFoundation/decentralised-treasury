@@ -10,14 +10,18 @@ import {
   ShieldAlert,
   ShieldCheck,
 } from "lucide-react";
-import { type JSX, type ReactNode, useEffect, useMemo, useRef, useState } from "react";
+import {
+  type JSX,
+  type ReactNode,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import ReactMarkdown, { type Components } from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { useTreasuryIntl } from "../../i18n";
-import {
-  formatMinaAmountWithSuffix,
-  parseMinaAmount,
-} from "../../lib/mina";
+import { formatMinaAmountWithSuffix, parseMinaAmount } from "../../lib/mina";
 import { cn } from "../../lib/utils";
 import { Badge } from "../../components/ui/badge";
 import { Button } from "../../components/ui/button";
@@ -95,10 +99,21 @@ export interface TreasuryProposalExecutionRow {
   status?: string | null;
 }
 
+export interface TreasuryDetailTablePagination {
+  page: number;
+  pageSize: 10 | 20 | 30 | 40 | 50;
+  totalCount: number;
+  loading?: boolean;
+  onPageChange: (page: number) => void;
+  onPageSizeChange: (pageSize: 10 | 20 | 30 | 40 | 50) => void;
+}
+
 export interface TreasuryProposalDetailProps {
   proposal: TreasuryProposalDetailProposal;
   votes?: TreasuryProposalVoteRow[];
   executions?: TreasuryProposalExecutionRow[];
+  votesPagination?: TreasuryDetailTablePagination;
+  executionsPagination?: TreasuryDetailTablePagination;
   className?: string;
   currentLifecycleId?: number;
   statusDerivationPeriod?: TreasuryProposalPeriodId;
@@ -128,10 +143,14 @@ const PROPOSAL_MARKDOWN_COMPONENTS: Components = {
     <h1 className="mb-4 text-2xl font-semibold tracking-tight">{children}</h1>
   ),
   h2: ({ children }: { children?: ReactNode }) => (
-    <h2 className="mb-3 mt-6 text-xl font-semibold tracking-tight first:mt-0">{children}</h2>
+    <h2 className="mb-3 mt-6 text-xl font-semibold tracking-tight first:mt-0">
+      {children}
+    </h2>
   ),
   h3: ({ children }: { children?: ReactNode }) => (
-    <h3 className="mb-2 mt-5 text-lg font-semibold tracking-tight first:mt-0">{children}</h3>
+    <h3 className="mb-2 mt-5 text-lg font-semibold tracking-tight first:mt-0">
+      {children}
+    </h3>
   ),
   p: ({ children }: { children?: ReactNode }) => (
     <p className="mb-4 leading-7 last:mb-0">{children}</p>
@@ -142,7 +161,9 @@ const PROPOSAL_MARKDOWN_COMPONENTS: Components = {
   ol: ({ children }: { children?: ReactNode }) => (
     <ol className="mb-4 list-decimal space-y-2 pl-6 last:mb-0">{children}</ol>
   ),
-  li: ({ children }: { children?: ReactNode }) => <li className="leading-7">{children}</li>,
+  li: ({ children }: { children?: ReactNode }) => (
+    <li className="leading-7">{children}</li>
+  ),
   blockquote: ({ children }: { children?: ReactNode }) => (
     <blockquote className="mb-4 border-l-2 border-border pl-4 italic text-muted-foreground last:mb-0">
       {children}
@@ -154,7 +175,9 @@ const PROPOSAL_MARKDOWN_COMPONENTS: Components = {
     </pre>
   ),
   code: ({ children }: { children?: ReactNode }) => (
-    <code className="rounded bg-background px-1.5 py-0.5 font-mono text-[0.9em]">{children}</code>
+    <code className="rounded bg-background px-1.5 py-0.5 font-mono text-[0.9em]">
+      {children}
+    </code>
   ),
   a: ({ href, children }: { href?: string; children?: ReactNode }) => (
     <a
@@ -182,18 +205,14 @@ const PROPOSAL_MARKDOWN_COMPONENTS: Components = {
     <tr className="border-t border-border/70">{children}</tr>
   ),
   th: ({ children }: { children?: ReactNode }) => (
-    <th className="border border-border/70 px-3 py-2 text-left font-medium">{children}</th>
+    <th className="border border-border/70 px-3 py-2 text-left font-medium">
+      {children}
+    </th>
   ),
   td: ({ children }: { children?: ReactNode }) => (
     <td className="border border-border/70 px-3 py-2 align-top">{children}</td>
   ),
-  input: ({
-    checked,
-    type,
-  }: {
-    checked?: boolean;
-    type?: string;
-  }) =>
+  input: ({ checked, type }: { checked?: boolean; type?: string }) =>
     type === "checkbox" ? (
       <input
         type="checkbox"
@@ -211,6 +230,8 @@ export function TreasuryProposalDetail({
   proposal,
   votes = [],
   executions = [],
+  votesPagination,
+  executionsPagination,
   className,
   currentLifecycleId,
   statusDerivationPeriod,
@@ -234,10 +255,10 @@ export function TreasuryProposalDetail({
 }: TreasuryProposalDetailProps): JSX.Element {
   const intl = useTreasuryIntl();
   const markdownContainerRef = useRef<HTMLDivElement | null>(null);
-  const { title: contentTitle, body: contentBody } = extractMarkdownTitleAndBody(
-    proposal.contents,
-  );
-  const effectivePeriod = statusDerivationPeriod ?? parsePeriodValue(proposal.period) ?? null;
+  const { title: contentTitle, body: contentBody } =
+    extractMarkdownTitleAndBody(proposal.contents);
+  const effectivePeriod =
+    statusDerivationPeriod ?? parsePeriodValue(proposal.period) ?? null;
   const showVoteActions = effectivePeriod === "voting";
   const isPreVotingPeriod =
     effectivePeriod === "proposal" || effectivePeriod === "exploration";
@@ -251,7 +272,8 @@ export function TreasuryProposalDetail({
     connectedWalletVotingWeight != null &&
     parseVoteWeight(connectedWalletVotingWeight) <= 0;
   const showDisabledPreVotingOverlay = isPreVotingPeriod;
-  const showVoteActionOverlay = isProposalPaused || showDisabledPreVotingOverlay || hasZeroVotingWeight;
+  const showVoteActionOverlay =
+    isProposalPaused || showDisabledPreVotingOverlay || hasZeroVotingWeight;
   const voteActionOverlayTitle = isProposalPaused
     ? intl.formatMessage({
         id: "ui.proposalDetail.pausedActionOverlayTitle",
@@ -273,17 +295,19 @@ export function TreasuryProposalDetail({
           "This proposal has been vetoed. Voting and execution actions are unavailable.",
       })
     : showDisabledPreVotingOverlay
-    ? intl.formatMessage({
-        id: "ui.proposalDetail.waitingForVotingOverlay",
-        defaultMessage:
-          "Voting actions will unlock once this proposal enters the voting period.",
-      })
-    : intl.formatMessage({
-        id: "ui.proposalDetail.zeroVotingWeightOverlay",
-        defaultMessage:
-          "You have zero voting weight. Connect a wallet with more than zero voting weight.",
-      });
-  const resolvedStage = isProposalPaused ? "VETOED" : resolveDerivedStage(proposal, statusDerivationPeriod);
+      ? intl.formatMessage({
+          id: "ui.proposalDetail.waitingForVotingOverlay",
+          defaultMessage:
+            "Voting actions will unlock once this proposal enters the voting period.",
+        })
+      : intl.formatMessage({
+          id: "ui.proposalDetail.zeroVotingWeightOverlay",
+          defaultMessage:
+            "You have zero voting weight. Connect a wallet with more than zero voting weight.",
+        });
+  const resolvedStage = isProposalPaused
+    ? "VETOED"
+    : resolveDerivedStage(proposal, statusDerivationPeriod);
   const resolvedProposal = {
     ...proposal,
     stage: resolvedStage,
@@ -293,39 +317,46 @@ export function TreasuryProposalDetail({
   const resolvedLifecycleId =
     typeof proposal.lifecycleId === "number"
       ? proposal.lifecycleId
-      : proposal.lifecycleId != null && Number.isFinite(Number(proposal.lifecycleId))
+      : proposal.lifecycleId != null &&
+          Number.isFinite(Number(proposal.lifecycleId))
         ? Number(proposal.lifecycleId)
         : null;
-  const latestExecution = useMemo(() => resolveLatestExecution(executions), [executions]);
+  const hasExecutionHistory =
+    (executionsPagination?.totalCount ?? executions.length) > 0;
   const requestedAmountValue = parseDisplayAmount(proposal.requestedAmount);
-  const requestedAmountDisplay = formatMinaAmountWithSuffix(proposal.requestedAmount) ?? "-";
+  const requestedAmountDisplay =
+    formatMinaAmountWithSuffix(proposal.requestedAmount) ?? "-";
   const derivedBondAmountValue =
     requestedAmountValue != null && requestedAmountValue > 0
       ? Math.floor(requestedAmountValue / PROPOSAL_BOND_AMOUNT_DIVISOR)
       : null;
   const totalPayoutAmountValue =
-    requestedAmountValue != null ? requestedAmountValue + (derivedBondAmountValue ?? 0) : null;
+    requestedAmountValue != null
+      ? requestedAmountValue + (derivedBondAmountValue ?? 0)
+      : null;
   const bondAmountDisplay =
-    derivedBondAmountValue != null ? formatDisplayAmount(derivedBondAmountValue) : "-";
+    derivedBondAmountValue != null
+      ? formatDisplayAmount(derivedBondAmountValue)
+      : "-";
   const paidOutAmountDisplay =
-    formatMinaAmountWithSuffix(latestExecution?.paidOutAmount ?? proposal.paidOutAmount ?? "0") ??
-    "0 MINA";
+    formatMinaAmountWithSuffix(proposal.paidOutAmount ?? "0") ?? "0 MINA";
   const paidOutAmountValue = parseDisplayAmount(paidOutAmountDisplay);
   const remainingAmountValue =
-    parseDisplayAmount(latestExecution?.remainingAmount) ??
-    (totalPayoutAmountValue != null && paidOutAmountValue != null
+    totalPayoutAmountValue != null && paidOutAmountValue != null
       ? Math.max(totalPayoutAmountValue - paidOutAmountValue, 0)
-      : null);
+      : null;
   const remainingAmountDisplay =
-    formatMinaAmountWithSuffix(latestExecution?.remainingAmount) ??
-    (remainingAmountValue != null ? formatDisplayAmount(remainingAmountValue) : "-");
+    remainingAmountValue != null
+      ? formatDisplayAmount(remainingAmountValue)
+      : "-";
   const normalizedResolvedStage = resolvedStage.trim().toLowerCase();
   const showEmptyVoteSummary =
     isPreVotingPeriod || normalizedResolvedStage === "abandoned";
   const hasOnChainTallySubmitted =
     proposal.latestVoteTally?.createdByEventType === "proposalVotesTallied";
   const isProposalPassed =
-    normalizedResolvedStage === "passed" || normalizedResolvedStage === "approved";
+    normalizedResolvedStage === "passed" ||
+    normalizedResolvedStage === "approved";
   const hasAdvancedBeyondProposalLifecycle =
     resolvedLifecycleId != null && currentLifecycleId != null
       ? currentLifecycleId > resolvedLifecycleId
@@ -335,7 +366,8 @@ export function TreasuryProposalDetail({
     (hasAdvancedBeyondProposalLifecycle === null
       ? effectivePeriod === "cooldown" || isPreVotingPeriod || showVoteActions
       : !hasAdvancedBeyondProposalLifecycle);
-  const isFullyPaidOut = remainingAmountValue !== null && remainingAmountValue <= 0;
+  const isFullyPaidOut =
+    remainingAmountValue !== null && remainingAmountValue <= 0;
   const needsOnChainTallyBeforeExecution =
     !isProposalPaused &&
     !hasOnChainTallySubmitted &&
@@ -354,34 +386,34 @@ export function TreasuryProposalDetail({
         defaultMessage: "VETOED",
       })
     : canExecutePayout
-    ? executions.length > 0
-      ? intl.formatMessage({
-          id: "ui.proposalDetail.executePayoutInProgress",
-          defaultMessage: "Payout available",
-        })
-      : intl.formatMessage({
-          id: "ui.proposalDetail.executePayoutReady",
-          defaultMessage: "Ready",
-        })
-    : isFullyPaidOut
-      ? intl.formatMessage({
-          id: "ui.proposalDetail.executePayoutComplete",
-          defaultMessage: "Complete",
-        })
-      : needsOnChainTallyBeforeExecution
+      ? hasExecutionHistory
         ? intl.formatMessage({
-            id: "ui.proposalDetail.executePayoutNeedsOnChainTally",
-            defaultMessage: "Awaiting on-chain tally submission",
-          })
-      : isExecutionLockedByCooldown
-        ? intl.formatMessage({
-            id: "ui.proposalDetail.executePayoutCooldownLocked",
-            defaultMessage: "Execution available post-cooldown",
+            id: "ui.proposalDetail.executePayoutInProgress",
+            defaultMessage: "Payout available",
           })
         : intl.formatMessage({
-            id: "ui.proposalDetail.executePayoutLocked",
-            defaultMessage: "Locked",
-          });
+            id: "ui.proposalDetail.executePayoutReady",
+            defaultMessage: "Ready",
+          })
+      : isFullyPaidOut
+        ? intl.formatMessage({
+            id: "ui.proposalDetail.executePayoutComplete",
+            defaultMessage: "Complete",
+          })
+        : needsOnChainTallyBeforeExecution
+          ? intl.formatMessage({
+              id: "ui.proposalDetail.executePayoutNeedsOnChainTally",
+              defaultMessage: "Awaiting on-chain tally submission",
+            })
+          : isExecutionLockedByCooldown
+            ? intl.formatMessage({
+                id: "ui.proposalDetail.executePayoutCooldownLocked",
+                defaultMessage: "Execution available post-cooldown",
+              })
+            : intl.formatMessage({
+                id: "ui.proposalDetail.executePayoutLocked",
+                defaultMessage: "Locked",
+              });
   const executePayoutMessage = isProposalPaused
     ? intl.formatMessage({
         id: "ui.proposalDetail.executePayoutPausedMessage",
@@ -389,85 +421,85 @@ export function TreasuryProposalDetail({
           "This proposal has been vetoed. Voting and execution actions are disabled.",
       })
     : canExecutePayout
-    ? executions.length > 0
-      ? intl.formatMessage({
-          id: "ui.proposalDetail.executePayoutContinueMessage",
-          defaultMessage:
-            "Cooldown has cleared and this proposal can continue payout from its remaining balance.",
-        })
-      : intl.formatMessage({
-          id: "ui.proposalDetail.executePayoutReadyMessage",
-          defaultMessage:
-            "Cooldown has cleared and this passed proposal is ready to execute its first payout.",
-        })
-    : isFullyPaidOut
-      ? intl.formatMessage({
-          id: "ui.proposalDetail.executePayoutCompleteMessage",
-          defaultMessage: "This proposal has already been fully paid out.",
-        })
-      : needsOnChainTallyBeforeExecution
+      ? hasExecutionHistory
         ? intl.formatMessage({
-            id: "ui.proposalDetail.executePayoutNeedsOnChainTallyMessage",
+            id: "ui.proposalDetail.executePayoutContinueMessage",
             defaultMessage:
-              "Voting has ended, but execution stays locked until the final on-chain tally is submitted.",
+              "Cooldown has cleared and this proposal can continue payout from its remaining balance.",
           })
-      : isExecutionLockedByCooldown
+        : intl.formatMessage({
+            id: "ui.proposalDetail.executePayoutReadyMessage",
+            defaultMessage:
+              "Cooldown has cleared and this passed proposal is ready to execute its first payout.",
+          })
+      : isFullyPaidOut
         ? intl.formatMessage({
-            id: "ui.proposalDetail.executePayoutCooldownMessage",
-            defaultMessage:
-              "This proposal has been tallied on-chain and passed, but execution is only possible after cooldown ends.",
+            id: "ui.proposalDetail.executePayoutCompleteMessage",
+            defaultMessage: "This proposal has already been fully paid out.",
           })
-        : isPreVotingPeriod
+        : needsOnChainTallyBeforeExecution
           ? intl.formatMessage({
-              id: "ui.proposalDetail.executePayoutBeforeVotingMessage",
+              id: "ui.proposalDetail.executePayoutNeedsOnChainTallyMessage",
               defaultMessage:
-                "Execution opens only after the proposal passes voting and clears the cooldown period.",
+                "Voting has ended, but execution stays locked until the final on-chain tally is submitted.",
             })
-          : showVoteActions
+          : isExecutionLockedByCooldown
             ? intl.formatMessage({
-                id: "ui.proposalDetail.executePayoutDuringVotingMessage",
+                id: "ui.proposalDetail.executePayoutCooldownMessage",
                 defaultMessage:
-                  "This proposal must finish voting with a passing result before execution can open.",
+                  "This proposal has been tallied on-chain and passed, but execution is only possible after cooldown ends.",
               })
-            : intl.formatMessage({
-                id: "ui.proposalDetail.executePayoutFailedMessage",
-                defaultMessage:
-                  "Only proposals with a passing result can be executed for payout.",
-              });
+            : isPreVotingPeriod
+              ? intl.formatMessage({
+                  id: "ui.proposalDetail.executePayoutBeforeVotingMessage",
+                  defaultMessage:
+                    "Execution opens only after the proposal passes voting and clears the cooldown period.",
+                })
+              : showVoteActions
+                ? intl.formatMessage({
+                    id: "ui.proposalDetail.executePayoutDuringVotingMessage",
+                    defaultMessage:
+                      "This proposal must finish voting with a passing result before execution can open.",
+                  })
+                : intl.formatMessage({
+                    id: "ui.proposalDetail.executePayoutFailedMessage",
+                    defaultMessage:
+                      "Only proposals with a passing result can be executed for payout.",
+                  });
   const executePayoutButtonLabel = isProposalPaused
     ? intl.formatMessage({
         id: "ui.proposalDetail.proposalPausedButton",
         defaultMessage: "Proposal vetoed",
       })
     : canExecutePayout
-    ? executions.length > 0
-      ? intl.formatMessage({
-          id: "ui.proposalDetail.continuePayout",
-          defaultMessage: "Continue payout",
-        })
-      : intl.formatMessage({
-          id: "ui.proposalDetail.executeProposal",
-          defaultMessage: "Execute proposal",
-        })
-    : isFullyPaidOut
-      ? intl.formatMessage({
-          id: "ui.proposalDetail.fullyPaidOut",
-          defaultMessage: "Fully paid out",
-        })
-      : needsOnChainTallyBeforeExecution
+      ? hasExecutionHistory
         ? intl.formatMessage({
-            id: "ui.proposalDetail.submitTallyFirst",
-            defaultMessage: "Submit tally first",
-          })
-      : isExecutionLockedByCooldown
-        ? intl.formatMessage({
-            id: "ui.proposalDetail.availableAfterCooldown",
-            defaultMessage: "Available post-cooldown",
+            id: "ui.proposalDetail.continuePayout",
+            defaultMessage: "Continue payout",
           })
         : intl.formatMessage({
-            id: "ui.proposalDetail.mustPassToExecute",
-            defaultMessage: "Must pass to execute",
-          });
+            id: "ui.proposalDetail.executeProposal",
+            defaultMessage: "Execute proposal",
+          })
+      : isFullyPaidOut
+        ? intl.formatMessage({
+            id: "ui.proposalDetail.fullyPaidOut",
+            defaultMessage: "Fully paid out",
+          })
+        : needsOnChainTallyBeforeExecution
+          ? intl.formatMessage({
+              id: "ui.proposalDetail.submitTallyFirst",
+              defaultMessage: "Submit tally first",
+            })
+          : isExecutionLockedByCooldown
+            ? intl.formatMessage({
+                id: "ui.proposalDetail.availableAfterCooldown",
+                defaultMessage: "Available post-cooldown",
+              })
+            : intl.formatMessage({
+                id: "ui.proposalDetail.mustPassToExecute",
+                defaultMessage: "Must pass to execute",
+              });
   const [payoutAmountInput, setPayoutAmountInput] = useState("");
   const collapsedContentMaxHeightPx = 56 * 16;
   const [isContentExpanded, setIsContentExpanded] = useState(false);
@@ -493,7 +525,8 @@ export function TreasuryProposalDetail({
                 id: "ui.proposalDetail.nonPositivePayoutAmount",
                 defaultMessage: "Payout amount must be greater than zero.",
               })
-            : remainingAmountValue !== null && parsedPayoutAmountValue > remainingAmountValue
+            : remainingAmountValue !== null &&
+                parsedPayoutAmountValue > remainingAmountValue
               ? intl.formatMessage(
                   {
                     id: "ui.proposalDetail.payoutExceedsRemaining",
@@ -505,7 +538,9 @@ export function TreasuryProposalDetail({
               : null
       : null;
   const canSubmitPayout =
-    canExecutePayout && hasConnectedProposerWallet && payoutAmountError === null;
+    canExecutePayout &&
+    hasConnectedProposerWallet &&
+    payoutAmountError === null;
   const votingDetailRows = [
     {
       label: intl.formatMessage({
@@ -519,7 +554,9 @@ export function TreasuryProposalDetail({
         id: "ui.proposalDetail.latestTallyBlock",
         defaultMessage: "Latest tally block",
       }),
-      value: proposal.latestVoteTally?.blockHeight ? `#${proposal.latestVoteTally.blockHeight}` : "-",
+      value: proposal.latestVoteTally?.blockHeight
+        ? `#${proposal.latestVoteTally.blockHeight}`
+        : "-",
     },
     {
       label: intl.formatMessage({
@@ -535,7 +572,8 @@ export function TreasuryProposalDetail({
       }),
       value:
         formatBasisPointsPercent(
-          proposal.requiredParticipationBp ?? proposal.latestVoteTally?.requiredParticipationBp,
+          proposal.requiredParticipationBp ??
+            proposal.latestVoteTally?.requiredParticipationBp,
         ) ?? "-",
     },
     {
@@ -545,7 +583,8 @@ export function TreasuryProposalDetail({
       }),
       value:
         formatBasisPointsPercent(
-          proposal.requiredApprovalBp ?? proposal.latestVoteTally?.requiredApprovalBp,
+          proposal.requiredApprovalBp ??
+            proposal.latestVoteTally?.requiredApprovalBp,
         ) ?? "-",
     },
     {
@@ -554,7 +593,8 @@ export function TreasuryProposalDetail({
         defaultMessage: "Required participation weight",
       }),
       value: formatWeight(
-        proposal.requiredParticipation ?? proposal.latestVoteTally?.requiredParticipation,
+        proposal.requiredParticipation ??
+          proposal.latestVoteTally?.requiredParticipation,
       ),
     },
     {
@@ -583,7 +623,8 @@ export function TreasuryProposalDetail({
   const visibleVotingDetailRows = isVotingDetailsExpanded
     ? votingDetailRows
     : votingDetailRows.slice(0, votingDetailPreviewCount);
-  const hasHiddenVotingDetailRows = votingDetailRows.length > votingDetailPreviewCount;
+  const hasHiddenVotingDetailRows =
+    votingDetailRows.length > votingDetailPreviewCount;
   const votingSummary = isPreVotingPeriod
     ? { yay: 0, nay: 0, abstain: 0 }
     : resolvedProposal.voteSummary;
@@ -597,12 +638,16 @@ export function TreasuryProposalDetail({
     }
 
     const updateOverflowState = (): void => {
-      setContentIsOverflowing(container.scrollHeight > collapsedContentMaxHeightPx + 1);
+      setContentIsOverflowing(
+        container.scrollHeight > collapsedContentMaxHeightPx + 1,
+      );
     };
 
     const animationFrame = window.requestAnimationFrame(updateOverflowState);
     const resizeObserver =
-      typeof ResizeObserver !== "undefined" ? new ResizeObserver(updateOverflowState) : null;
+      typeof ResizeObserver !== "undefined"
+        ? new ResizeObserver(updateOverflowState)
+        : null;
 
     resizeObserver?.observe(container);
     window.addEventListener("resize", updateOverflowState);
@@ -638,19 +683,22 @@ export function TreasuryProposalDetail({
             className="flex items-start gap-3 rounded-2xl border border-amber-300 bg-amber-50/90 px-4 py-3 text-amber-950"
             data-component="proposal-paused-banner"
           >
-            <CircleAlert className="mt-0.5 h-5 w-5 shrink-0 text-amber-700" aria-hidden="true" />
+            <CircleAlert
+              className="mt-0.5 h-5 w-5 shrink-0 text-amber-700"
+              aria-hidden="true"
+            />
             <div className="min-w-0 space-y-1">
               <p className="text-sm font-semibold">
                 {intl.formatMessage({
                   id: "ui.proposalDetail.pausedBannerTitle",
-                    defaultMessage: "Proposal vetoed",
+                  defaultMessage: "Proposal vetoed",
                 })}
               </p>
               <p className="text-sm leading-6 text-amber-900/90">
                 {intl.formatMessage({
                   id: "ui.proposalDetail.pausedBannerMessage",
                   defaultMessage:
-                      "Voting and execution actions are disabled for this vetoed proposal.",
+                    "Voting and execution actions are disabled for this vetoed proposal.",
                 })}
               </p>
             </div>
@@ -746,14 +794,19 @@ export function TreasuryProposalDetail({
                       id: "ui.proposalDetail.createdAtLabel",
                       defaultMessage: "Created at",
                     })}
-                    value={formatTimestamp(proposal.createdAt, proposal.createdAtBlock)}
+                    value={formatTimestamp(
+                      proposal.createdAt,
+                      proposal.createdAtBlock,
+                    )}
                   />
                   <HeroStat
                     label={intl.formatMessage({
                       id: "ui.proposalDetail.proposalAddressLabel",
                       defaultMessage: "Proposal address",
                     })}
-                    value={truncateMiddle(proposal.proposalAddress ?? proposal.id)}
+                    value={truncateMiddle(
+                      proposal.proposalAddress ?? proposal.id,
+                    )}
                   />
                   <HeroStat
                     label={intl.formatMessage({
@@ -781,7 +834,11 @@ export function TreasuryProposalDetail({
                       id: "ui.proposalDetail.ledgerHash",
                       defaultMessage: "Staking ledger hash",
                     })}
-                    value={truncateMiddle(proposal.stakingEpochDataLedgerHash ?? "-", 10, 10)}
+                    value={truncateMiddle(
+                      proposal.stakingEpochDataLedgerHash ?? "-",
+                      10,
+                      10,
+                    )}
                     mono
                   />
                   <HeroStat
@@ -793,7 +850,9 @@ export function TreasuryProposalDetail({
                     mono
                     labelAdornment={
                       contentVerificationStatus ? (
-                        <ContentVerificationIndicator status={contentVerificationStatus} />
+                        <ContentVerificationIndicator
+                          status={contentVerificationStatus}
+                        />
                       ) : undefined
                     }
                   />
@@ -812,7 +871,10 @@ export function TreasuryProposalDetail({
                     data-component="proposal-markdown-box"
                   >
                     <article className="text-[15px] text-foreground sm:text-base">
-                      <ReactMarkdown remarkPlugins={[remarkGfm]} components={PROPOSAL_MARKDOWN_COMPONENTS}>
+                      <ReactMarkdown
+                        remarkPlugins={[remarkGfm]}
+                        components={PROPOSAL_MARKDOWN_COMPONENTS}
+                      >
                         {contentBody}
                       </ReactMarkdown>
                     </article>
@@ -892,7 +954,11 @@ export function TreasuryProposalDetail({
                                 id: "ui.proposalDetail.contentRetryLastAttempt",
                                 defaultMessage: "Last retry: {timestamp}",
                               },
-                              { timestamp: formatTimestamp(contentRetryLastAttemptAt) },
+                              {
+                                timestamp: formatTimestamp(
+                                  contentRetryLastAttemptAt,
+                                ),
+                              },
                             )}
                           </p>
                         ) : null}
@@ -905,10 +971,16 @@ export function TreasuryProposalDetail({
                           type="button"
                           className="gap-2"
                           onClick={onRetryContentSubmission}
-                          disabled={isRetryingContentSubmission || !onRetryContentSubmission}
+                          disabled={
+                            isRetryingContentSubmission ||
+                            !onRetryContentSubmission
+                          }
                         >
                           {isRetryingContentSubmission ? (
-                            <LoaderCircle className="h-4 w-4 animate-spin" aria-hidden="true" />
+                            <LoaderCircle
+                              className="h-4 w-4 animate-spin"
+                              aria-hidden="true"
+                            />
                           ) : null}
                           {intl.formatMessage({
                             id: "ui.proposalDetail.contentRetryButton",
@@ -956,12 +1028,16 @@ export function TreasuryProposalDetail({
                   ) : (
                     <VoteSummaryChart
                       summary={votingSummary}
-                      eligibleVotingWeight={resolveEligibleVotingWeight(proposal)}
+                      eligibleVotingWeight={resolveEligibleVotingWeight(
+                        proposal,
+                      )}
                     />
                   )}
                   <AcceptanceCriteriaCell
                     participationActual={resolveParticipationActual(proposal)}
-                    participationRequirement={resolveParticipationRequirement(proposal)}
+                    participationRequirement={resolveParticipationRequirement(
+                      proposal,
+                    )}
                     approvalActual={resolveApprovalActual(proposal)}
                     approvalRequirement={resolveApprovalRequirement(proposal)}
                   />
@@ -973,7 +1049,9 @@ export function TreasuryProposalDetail({
                           defaultMessage: "Cast a vote",
                         })}
                       </p>
-                      {isProposalPaused || showDisabledPreVotingOverlay || hasConnectedWallet ? (
+                      {isProposalPaused ||
+                      showDisabledPreVotingOverlay ||
+                      hasConnectedWallet ? (
                         <div
                           className="relative overflow-hidden rounded-xl"
                           data-component="proposal-vote-action-area"
@@ -981,7 +1059,8 @@ export function TreasuryProposalDetail({
                           <div
                             className={cn(
                               "space-y-2 rounded-xl",
-                              showVoteActionOverlay && "pointer-events-none opacity-80 saturate-90",
+                              showVoteActionOverlay &&
+                                "pointer-events-none opacity-80 saturate-90",
                             )}
                           >
                             <div className="grid gap-2 sm:grid-cols-2">
@@ -1022,8 +1101,8 @@ export function TreasuryProposalDetail({
                                 isProposalPaused
                                   ? "proposal-paused-overlay"
                                   : showDisabledPreVotingOverlay
-                                  ? "proposal-voting-pending-overlay"
-                                  : "proposal-zero-voting-weight-overlay"
+                                    ? "proposal-voting-pending-overlay"
+                                    : "proposal-zero-voting-weight-overlay"
                               }
                             >
                               <div className="w-full max-w-sm space-y-0.5">
@@ -1071,7 +1150,11 @@ export function TreasuryProposalDetail({
                     </div>
                     <div className="space-y-3">
                       {visibleVotingDetailRows.map((row) => (
-                        <DetailRow key={row.label} label={row.label} value={row.value} />
+                        <DetailRow
+                          key={row.label}
+                          label={row.label}
+                          value={row.value}
+                        />
                       ))}
                     </div>
                     {hasHiddenVotingDetailRows && !isVotingDetailsExpanded ? (
@@ -1086,7 +1169,10 @@ export function TreasuryProposalDetail({
                               setIsVotingDetailsExpanded(true);
                             }}
                           >
-                            <ChevronDown className="h-3.5 w-3.5" aria-hidden="true" />
+                            <ChevronDown
+                              className="h-3.5 w-3.5"
+                              aria-hidden="true"
+                            />
                             {intl.formatMessage({
                               id: "ui.proposalDetail.showVotingDetails",
                               defaultMessage: "Show details",
@@ -1106,7 +1192,10 @@ export function TreasuryProposalDetail({
                             setIsVotingDetailsExpanded(false);
                           }}
                         >
-                          <ChevronUp className="h-3.5 w-3.5" aria-hidden="true" />
+                          <ChevronUp
+                            className="h-3.5 w-3.5"
+                            aria-hidden="true"
+                          />
                           {intl.formatMessage({
                             id: "ui.proposalDetail.hideVotingDetails",
                             defaultMessage: "Hide details",
@@ -1159,13 +1248,17 @@ export function TreasuryProposalDetail({
                 </CardDescription>
                 {needsOnChainTallyBeforeExecution ? (
                   <div className="flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50/80 px-3 py-2.5 text-sm text-amber-900">
-                    <CircleAlert className="mt-0.5 h-4 w-4 shrink-0 text-amber-700" aria-hidden="true" />
+                    <CircleAlert
+                      className="mt-0.5 h-4 w-4 shrink-0 text-amber-700"
+                      aria-hidden="true"
+                    />
                     <div className="min-w-0 space-y-1">
                       <div className="flex flex-wrap items-center gap-1.5">
                         <p className="font-medium">
                           {intl.formatMessage({
                             id: "ui.proposalDetail.executionNeedsOnChainTallyWarning",
-                            defaultMessage: "Awaiting on-chain tally submission.",
+                            defaultMessage:
+                              "Awaiting on-chain tally submission.",
                           })}
                         </p>
                         <Tooltip>
@@ -1175,13 +1268,20 @@ export function TreasuryProposalDetail({
                               className="inline-flex h-5 w-5 items-center justify-center rounded-full text-amber-700 transition hover:bg-amber-100"
                               aria-label={intl.formatMessage({
                                 id: "ui.proposalDetail.learnMoreOnChainTally",
-                                defaultMessage: "Learn more about on-chain tally submission",
+                                defaultMessage:
+                                  "Learn more about on-chain tally submission",
                               })}
                             >
-                              <CircleHelp className="h-3.5 w-3.5" aria-hidden="true" />
+                              <CircleHelp
+                                className="h-3.5 w-3.5"
+                                aria-hidden="true"
+                              />
                             </button>
                           </TooltipTrigger>
-                          <TooltipContent side="top" className="max-w-80 text-left">
+                          <TooltipContent
+                            side="top"
+                            className="max-w-80 text-left"
+                          >
                             {intl.formatMessage({
                               id: "ui.proposalDetail.executionTallyCliTooltip",
                               defaultMessage:
@@ -1241,7 +1341,11 @@ export function TreasuryProposalDetail({
                         defaultMessage: "0",
                       })}
                       value={payoutAmountInput}
-                      disabled={isProposalPaused || !canExecutePayout || !hasConnectedProposerWallet}
+                      disabled={
+                        isProposalPaused ||
+                        !canExecutePayout ||
+                        !hasConnectedProposerWallet
+                      }
                       onChange={(event) => {
                         setPayoutAmountInput(event.target.value);
                       }}
@@ -1263,7 +1367,8 @@ export function TreasuryProposalDetail({
                       {intl.formatMessage(
                         {
                           id: "ui.proposalDetail.maxPayoutHint",
-                          defaultMessage: "You can execute up to {remainingAmount}.",
+                          defaultMessage:
+                            "You can execute up to {remainingAmount}.",
                         },
                         { remainingAmount: remainingAmountDisplay },
                       )}
@@ -1288,7 +1393,10 @@ export function TreasuryProposalDetail({
                     variant={canExecutePayout ? "default" : "outline"}
                     disabled={!canSubmitPayout}
                     onClick={() => {
-                      if (!canSubmitPayout || parsedPayoutAmountValue === null) {
+                      if (
+                        !canSubmitPayout ||
+                        parsedPayoutAmountValue === null
+                      ) {
                         return;
                       }
                       onExecutePayoutClick?.(String(parsedPayoutAmountValue));
@@ -1316,6 +1424,7 @@ export function TreasuryProposalDetail({
           <PaginatedDetailTable
             rows={votes}
             initialPageSize={tableInitialPageSize}
+            pagination={votesPagination}
             columns={[
               { key: "voter", label: "Voter", className: "w-[44%]" },
               { key: "vote", label: "Vote", className: "w-[16%]" },
@@ -1324,14 +1433,17 @@ export function TreasuryProposalDetail({
             ]}
             emptyMessage={intl.formatMessage({
               id: "ui.proposalDetail.votesEmpty",
-              defaultMessage: "No vote records are available for this proposal yet.",
+              defaultMessage:
+                "No vote records are available for this proposal yet.",
             })}
             renderRow={(vote) => (
               <TableRow key={vote.id}>
                 <TableCell className="w-[44%] break-all px-6 font-mono text-xs">
                   {vote.voterPublicKey}
                 </TableCell>
-                <TableCell className="w-[16%] px-6">{formatVoteLabel(vote.vote)}</TableCell>
+                <TableCell className="w-[16%] px-6">
+                  {formatVoteLabel(vote.vote)}
+                </TableCell>
                 <TableCell className="w-[22%] px-6 font-medium">
                   {formatWeight(vote.voteWeight)}
                 </TableCell>
@@ -1351,12 +1463,14 @@ export function TreasuryProposalDetail({
             })}
             description={intl.formatMessage({
               id: "ui.proposalDetail.executionsDescription",
-              defaultMessage: "Payout records associated with proposal execution.",
+              defaultMessage:
+                "Payout records associated with proposal execution.",
             })}
           />
           <PaginatedDetailTable
             rows={executions}
             initialPageSize={tableInitialPageSize}
+            pagination={executionsPagination}
             columns={[
               { key: "executedBy", label: "Executed by", className: "w-[42%]" },
               { key: "paidOut", label: "Paid out", className: "w-[20%]" },
@@ -1365,7 +1479,8 @@ export function TreasuryProposalDetail({
             ]}
             emptyMessage={intl.formatMessage({
               id: "ui.proposalDetail.executionsEmpty",
-              defaultMessage: "No execution records are available for this proposal yet.",
+              defaultMessage:
+                "No execution records are available for this proposal yet.",
             })}
             renderRow={(execution) => (
               <TableRow key={execution.id}>
@@ -1398,37 +1513,81 @@ function PaginatedDetailTable<T extends { id: string }>({
   emptyMessage,
   renderRow,
   initialPageSize,
+  pagination,
 }: {
   rows: T[];
   columns: Array<{ key: string; label: string; className?: string }>;
   emptyMessage: string;
   renderRow: (row: T) => JSX.Element;
   initialPageSize: 10 | 20 | 30 | 40 | 50;
+  pagination?: TreasuryDetailTablePagination;
 }): JSX.Element {
   const intl = useTreasuryIntl();
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState<number>(initialPageSize);
+  const isServerControlled = pagination !== undefined;
+  const resolvedPage = pagination?.page ?? page;
+  const resolvedPageSize = pagination?.pageSize ?? pageSize;
+  const totalCount = pagination?.totalCount ?? rows.length;
+  const loading = pagination?.loading ?? false;
 
   useEffect(() => {
-    setPage(1);
-  }, [rows.length]);
+    if (!isServerControlled) {
+      setPage(1);
+    }
+  }, [isServerControlled, rows.length]);
 
-  const totalPages = Math.max(1, Math.ceil(rows.length / pageSize));
-  const currentPage = Math.min(page, totalPages);
+  const totalPages = Math.max(1, Math.ceil(totalCount / resolvedPageSize));
+  const currentPage = Math.min(resolvedPage, totalPages);
 
   useEffect(() => {
-    if (page > totalPages) {
+    if (resolvedPage <= totalPages) {
+      return;
+    }
+    if (pagination) {
+      pagination.onPageChange(totalPages);
+    } else {
       setPage(totalPages);
     }
-  }, [page, totalPages]);
+  }, [pagination, resolvedPage, totalPages]);
 
   const paginatedRows = useMemo(() => {
-    const start = (currentPage - 1) * pageSize;
-    return rows.slice(start, start + pageSize);
-  }, [currentPage, pageSize, rows]);
+    if (isServerControlled) {
+      return rows;
+    }
+    const start = (currentPage - 1) * resolvedPageSize;
+    return rows.slice(start, start + resolvedPageSize);
+  }, [currentPage, isServerControlled, resolvedPageSize, rows]);
 
-  const rangeStart = rows.length === 0 ? 0 : (currentPage - 1) * pageSize + 1;
-  const rangeEnd = rows.length === 0 ? 0 : Math.min(currentPage * pageSize, rows.length);
+  const rangeStart =
+    totalCount === 0 ? 0 : (currentPage - 1) * resolvedPageSize + 1;
+  const rangeEnd =
+    totalCount === 0
+      ? 0
+      : isServerControlled
+        ? paginatedRows.length === 0
+          ? 0
+          : Math.min(rangeStart + paginatedRows.length - 1, totalCount)
+        : Math.min(currentPage * resolvedPageSize, totalCount);
+
+  const handlePageChange = (nextPage: number): void => {
+    if (pagination) {
+      pagination.onPageChange(nextPage);
+    } else {
+      setPage(nextPage);
+    }
+  };
+
+  const handlePageSizeChange = (
+    nextPageSize: (typeof DETAIL_TABLE_PAGE_SIZE_OPTIONS)[number],
+  ): void => {
+    if (pagination) {
+      pagination.onPageSizeChange(nextPageSize);
+    } else {
+      setPage(1);
+      setPageSize(nextPageSize);
+    }
+  };
 
   return (
     <Card className="rounded-xl shadow-none">
@@ -1437,11 +1596,16 @@ function PaginatedDetailTable<T extends { id: string }>({
           <TableHeader>
             <TableRow className="hover:bg-transparent">
               {columns.map((column) => (
-                <TableHead key={column.key} className={cn("px-6", column.className)}>
+                <TableHead
+                  key={column.key}
+                  className={cn("px-6", column.className)}
+                >
                   <span
                     className={cn(
                       "inline-flex items-center gap-1.5 whitespace-nowrap text-xs font-medium uppercase tracking-[0.08em] text-muted-foreground",
-                      column.className?.includes("text-right") ? "ml-auto flex" : "",
+                      column.className?.includes("text-right")
+                        ? "ml-auto flex"
+                        : "",
                     )}
                   >
                     {column.label}
@@ -1451,14 +1615,32 @@ function PaginatedDetailTable<T extends { id: string }>({
             </TableRow>
           </TableHeader>
           <TableBody>
-            {paginatedRows.length > 0 ? (
+            {loading ? (
+              <TableRow>
+                <TableCell
+                  colSpan={columns.length}
+                  className="h-24 text-center text-muted-foreground"
+                >
+                  <span className="inline-flex items-center gap-2">
+                    <LoaderCircle
+                      className="h-4 w-4 animate-spin"
+                      aria-hidden="true"
+                    />
+                    {intl.formatMessage({
+                      id: "ui.proposalDetail.tableLoading",
+                      defaultMessage: "Loading records",
+                    })}
+                  </span>
+                </TableCell>
+              </TableRow>
+            ) : paginatedRows.length > 0 ? (
               paginatedRows.map((row) => renderRow(row))
             ) : (
               <EmptyTableRow colSpan={columns.length} message={emptyMessage} />
             )}
           </TableBody>
         </Table>
-        {rows.length > 0 ? (
+        {totalCount > 0 ? (
           <div className="flex flex-col gap-3 border-t px-2 py-2.5 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
             <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:gap-3">
               <label className="flex items-center gap-2">
@@ -1469,9 +1651,16 @@ function PaginatedDetailTable<T extends { id: string }>({
                   })}
                 </span>
                 <select
-                  value={pageSize}
-                  onChange={(event) => setPageSize(Number(event.target.value))}
+                  value={resolvedPageSize}
+                  onChange={(event) =>
+                    handlePageSizeChange(
+                      Number(
+                        event.target.value,
+                      ) as (typeof DETAIL_TABLE_PAGE_SIZE_OPTIONS)[number],
+                    )
+                  }
                   className="h-8 rounded-md border border-input bg-background pl-2 pr-7 text-sm text-foreground"
+                  disabled={loading}
                   aria-label={intl.formatMessage({
                     id: "ui.proposalsTable.pageSize.label",
                     defaultMessage: "Entries per page",
@@ -1502,7 +1691,7 @@ function PaginatedDetailTable<T extends { id: string }>({
                   {
                     start: rangeStart,
                     end: rangeEnd,
-                    count: rows.length,
+                    count: totalCount,
                   },
                 )}
               </p>
@@ -1513,8 +1702,8 @@ function PaginatedDetailTable<T extends { id: string }>({
                 type="button"
                 variant="outline"
                 size="sm"
-                onClick={() => setPage((value) => Math.max(1, value - 1))}
-                disabled={currentPage === 1}
+                onClick={() => handlePageChange(Math.max(1, currentPage - 1))}
+                disabled={loading || currentPage === 1}
               >
                 <ChevronLeft className="mr-1 h-4 w-4" aria-hidden="true" />
                 {intl.formatMessage({
@@ -1526,8 +1715,10 @@ function PaginatedDetailTable<T extends { id: string }>({
                 type="button"
                 variant="outline"
                 size="sm"
-                onClick={() => setPage((value) => Math.min(totalPages, value + 1))}
-                disabled={currentPage === totalPages}
+                onClick={() =>
+                  handlePageChange(Math.min(totalPages, currentPage + 1))
+                }
+                disabled={loading || currentPage === totalPages}
               >
                 {intl.formatMessage({
                   id: "ui.proposalsTable.next",
@@ -1658,7 +1849,9 @@ function HeroStat({
         </p>
         {labelAdornment}
       </div>
-      <p className={cn("text-sm text-foreground", mono && "font-mono text-xs")}>{value}</p>
+      <p className={cn("text-sm text-foreground", mono && "font-mono text-xs")}>
+        {value}
+      </p>
     </div>
   );
 }
@@ -1675,28 +1868,43 @@ function DetailRow({
   return (
     <div className="flex items-start justify-between gap-3 border-b border-border/50 pb-3 last:border-b-0 last:pb-0">
       <span className="text-sm text-muted-foreground">{label}</span>
-      <span className={cn("text-right text-sm", mono && "break-all font-mono")}>{value}</span>
+      <span className={cn("text-right text-sm", mono && "break-all font-mono")}>
+        {value}
+      </span>
     </div>
   );
 }
 
 function EmptyVoteSummaryChart(): JSX.Element {
   return (
-    <div className="space-y-2 min-w-[11rem]" aria-hidden="true" data-component="proposal-empty-vote-summary">
+    <div
+      className="space-y-2 min-w-[11rem]"
+      aria-hidden="true"
+      data-component="proposal-empty-vote-summary"
+    >
       <div className="flex h-2.5 overflow-hidden rounded-full bg-muted">
         <div className="w-full bg-muted" />
       </div>
       <div className="flex items-center gap-3 text-[11px] text-muted-foreground">
         <span className="inline-flex items-center gap-1">
-          <span className="h-2 w-2 rounded-full bg-emerald-600/40" aria-hidden="true" />
+          <span
+            className="h-2 w-2 rounded-full bg-emerald-600/40"
+            aria-hidden="true"
+          />
           Yay 0%
         </span>
         <span className="inline-flex items-center gap-1">
-          <span className="h-2 w-2 rounded-full bg-rose-600/40" aria-hidden="true" />
+          <span
+            className="h-2 w-2 rounded-full bg-rose-600/40"
+            aria-hidden="true"
+          />
           Nay 0%
         </span>
         <span className="inline-flex items-center gap-1">
-          <span className="h-2 w-2 rounded-full bg-slate-400/70" aria-hidden="true" />
+          <span
+            className="h-2 w-2 rounded-full bg-slate-400/70"
+            aria-hidden="true"
+          />
           Abstain 0%
         </span>
       </div>
@@ -1721,7 +1929,10 @@ function EmptyTableRow({
 }): JSX.Element {
   return (
     <TableRow className="hover:bg-transparent">
-      <TableCell colSpan={colSpan} className="py-8 text-center text-sm text-muted-foreground">
+      <TableCell
+        colSpan={colSpan}
+        className="py-8 text-center text-sm text-muted-foreground"
+      >
         {message}
       </TableCell>
     </TableRow>
@@ -1769,20 +1980,10 @@ function formatInputAmount(value: number): string {
   return value.toString();
 }
 
-function resolveLatestExecution(
-  executions: TreasuryProposalExecutionRow[],
-): TreasuryProposalExecutionRow | null {
-  return executions.reduce<TreasuryProposalExecutionRow | null>((latest, current) => {
-    if (!latest) {
-      return current;
-    }
-    const latestBlock = latest.blockHeight ?? -1;
-    const currentBlock = current.blockHeight ?? -1;
-    return currentBlock >= latestBlock ? current : latest;
-  }, null);
-}
-
-function formatTimestamp(value: string | undefined | null, blockHeight?: number): string {
+function formatTimestamp(
+  value: string | undefined | null,
+  blockHeight?: number,
+): string {
   if (!value) {
     return blockHeight ? `#${blockHeight}` : "-";
   }
@@ -1799,9 +2000,10 @@ function formatTimestamp(value: string | undefined | null, blockHeight?: number)
   return blockHeight ? `${formatted} (#${blockHeight})` : formatted;
 }
 
-function extractMarkdownTitleAndBody(
-  contents: string | null | undefined,
-): { title: string | null; body: string | null } {
+function extractMarkdownTitleAndBody(contents: string | null | undefined): {
+  title: string | null;
+  body: string | null;
+} {
   if (!contents) {
     return { title: null, body: null };
   }

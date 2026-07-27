@@ -31,7 +31,10 @@ import { Input } from "../../components/ui/input";
 
 type StepStatus = "idle" | "running" | "completed" | "error";
 
-export type TreasuryTransactionFlowKind = "createProposal" | "vote" | "executeProposal";
+export type TreasuryTransactionFlowKind =
+  | "createProposal"
+  | "vote"
+  | "executeProposal";
 export type TreasuryTransactionFlowStepId =
   | "review"
   | "signAndSend"
@@ -112,7 +115,9 @@ function sanitizeTransactionDetailsPayload(value: unknown): unknown {
   return value;
 }
 
-function sanitizeTransactionDetailsCode(transactionDetailsCode?: string): string | undefined {
+function sanitizeTransactionDetailsCode(
+  transactionDetailsCode?: string,
+): string | undefined {
   if (!transactionDetailsCode) {
     return transactionDetailsCode;
   }
@@ -153,30 +158,50 @@ export function TreasuryTransactionFlowDialog({
   const showPostContentStep = typeof onPostInclusion === "function";
   const runIdRef = useRef(0);
   const activeStepRef = useRef<TreasuryTransactionFlowStepId | null>(null);
-  const signAndSendPhaseRef = useRef<"compiling" | "proving" | "awaitingSignature" | null>(null);
+  const signAndSendPhaseRef = useRef<
+    "compiling" | "proving" | "awaitingSignature" | null
+  >(null);
   const [fee, setFee] = useState(defaultFee);
   const [nonce, setNonce] = useState(defaultNonce);
   const [memo, setMemo] = useState(defaultMemo);
-  const [stepStatuses, setStepStatuses] = useState<Record<TreasuryTransactionFlowStepId, StepStatus>>(
-    createInitialStepStatuses,
-  );
-  const [activeStep, setActiveStep] = useState<TreasuryTransactionFlowStepId | null>(null);
+  const [stepStatuses, setStepStatuses] = useState<
+    Record<TreasuryTransactionFlowStepId, StepStatus>
+  >(createInitialStepStatuses);
+  const [activeStep, setActiveStep] =
+    useState<TreasuryTransactionFlowStepId | null>(null);
   const [signAndSendPhase, setSignAndSendPhase] = useState<
     "compiling" | "proving" | "awaitingSignature" | null
   >(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [failedStage, setFailedStage] = useState<
-    "compiling" | "proving" | "awaitingSignature" | "awaitingInclusion" | "postingContent" | null
+    | "compiling"
+    | "proving"
+    | "awaitingSignature"
+    | "awaitingInclusion"
+    | "postingContent"
+    | null
   >(null);
   const [transactionHash, setTransactionHash] = useState<string | null>(null);
-  const [completion, setCompletion] = useState<TreasuryTransactionCompletionResult | null>(null);
+  const [completion, setCompletion] =
+    useState<TreasuryTransactionCompletionResult | null>(null);
   const [notificationDismissed, setNotificationDismissed] = useState(false);
-  const [autoCloseRemainingSeconds, setAutoCloseRemainingSeconds] = useState<number | null>(null);
+  const [autoCloseRemainingSeconds, setAutoCloseRemainingSeconds] = useState<
+    number | null
+  >(null);
   const [autoCloseCancelled, setAutoCloseCancelled] = useState(false);
-  const completionRef = useRef<TreasuryTransactionCompletionResult | null>(null);
+  const completionRef = useRef<TreasuryTransactionCompletionResult | null>(
+    null,
+  );
   const completionCallbackInvokedRef = useRef(false);
   const onCompleteRef = useRef(onComplete);
   const onOpenChangeRef = useRef(onOpenChange);
+
+  useEffect(
+    () => () => {
+      runIdRef.current += 1;
+    },
+    [],
+  );
 
   useEffect(() => {
     if (!open && completion) {
@@ -214,7 +239,8 @@ export function TreasuryTransactionFlowDialog({
       : parsedNonce === null
         ? intl.formatMessage({
             id: "ui.transactionFlow.nonceInvalid",
-            defaultMessage: "Nonce must be a whole number greater than or equal to zero.",
+            defaultMessage:
+              "Nonce must be a whole number greater than or equal to zero.",
           })
         : null;
   const senderError = !hasSenderAddress
@@ -224,14 +250,21 @@ export function TreasuryTransactionFlowDialog({
       })
     : null;
   const canStart =
-    activeStep === null && !completion && !senderError && !feeError && !nonceError;
+    activeStep === null &&
+    !completion &&
+    !senderError &&
+    !feeError &&
+    !nonceError;
   const isRunning = activeStep !== null;
   const isWaitingForInclusion = activeStep === "waitForInclusion";
   const isLockedWhileRunning = preventCloseWhileRunning && isRunning;
-  const showBackgroundWaitingNotice = !preventCloseWhileRunning && !open && isWaitingForInclusion;
-  const showCompletionNotification = !open && completion && !notificationDismissed;
+  const showBackgroundWaitingNotice =
+    !preventCloseWhileRunning && !open && isWaitingForInclusion;
+  const showCompletionNotification =
+    !open && completion && !notificationDismissed;
   const normalizedAutoCloseDelaySeconds =
-    typeof autoCloseDelaySeconds === "number" && Number.isFinite(autoCloseDelaySeconds)
+    typeof autoCloseDelaySeconds === "number" &&
+    Number.isFinite(autoCloseDelaySeconds)
       ? Math.max(0, Math.floor(autoCloseDelaySeconds))
       : 0;
   const shouldAutoCloseAfterCompletion = normalizedAutoCloseDelaySeconds > 0;
@@ -262,25 +295,38 @@ export function TreasuryTransactionFlowDialog({
     },
   );
   const steps = useMemo(() => getStepDefinitions(intl), [intl]);
-  const stepOrder = useMemo(() => getStepOrder(showPostContentStep), [showPostContentStep]);
-  const terminalStepId = showPostContentStep ? "postContent" : "waitForInclusion";
-  const completedHeaderDescription = getCompletedHeaderDescription(intl, showPostContentStep);
+  const stepOrder = useMemo(
+    () => getStepOrder(showPostContentStep),
+    [showPostContentStep],
+  );
+  const terminalStepId = showPostContentStep
+    ? "postContent"
+    : "waitForInclusion";
+  const completedHeaderDescription = getCompletedHeaderDescription(
+    intl,
+    showPostContentStep,
+  );
   const displayedStepId =
     activeStep ??
     (completion
       ? terminalStepId
-      : stepOrder.find((stepId) => stepStatuses[stepId] === "error") ??
-        (stepStatuses.waitForInclusion === "completed" ? terminalStepId : "review"));
+      : (stepOrder.find((stepId) => stepStatuses[stepId] === "error") ??
+        (stepStatuses.waitForInclusion === "completed"
+          ? terminalStepId
+          : "review")));
   const headerDescription =
     displayedStepId === "review"
       ? resolvedDescription
       : completion
         ? completedHeaderDescription
-      : displayedStepId === "signAndSend"
-        ? steps.find((step) => step.id === "signAndSend")?.description ?? resolvedDescription
-      : displayedStepId === "postContent"
-        ? steps.find((step) => step.id === "postContent")?.description ?? resolvedDescription
-        : steps.find((step) => step.id === "waitForInclusion")?.description ?? resolvedDescription;
+        : displayedStepId === "signAndSend"
+          ? (steps.find((step) => step.id === "signAndSend")?.description ??
+            resolvedDescription)
+          : displayedStepId === "postContent"
+            ? (steps.find((step) => step.id === "postContent")?.description ??
+              resolvedDescription)
+            : (steps.find((step) => step.id === "waitForInclusion")
+                ?.description ?? resolvedDescription);
   const displayedTransactionDetailsCode = useMemo(
     () => sanitizeTransactionDetailsCode(transactionDetailsCode),
     [transactionDetailsCode],
@@ -322,7 +368,12 @@ export function TreasuryTransactionFlowDialog({
     }
     setAutoCloseCancelled(false);
     setAutoCloseRemainingSeconds(normalizedAutoCloseDelaySeconds);
-  }, [completion, normalizedAutoCloseDelaySeconds, open, shouldAutoCloseAfterCompletion]);
+  }, [
+    completion,
+    normalizedAutoCloseDelaySeconds,
+    open,
+    shouldAutoCloseAfterCompletion,
+  ]);
 
   useEffect(() => {
     if (
@@ -423,7 +474,8 @@ export function TreasuryTransactionFlowDialog({
         runIdRef,
       });
 
-      let completionResult: TreasuryTransactionCompletionResult = signAndSendResult;
+      let completionResult: TreasuryTransactionCompletionResult =
+        signAndSendResult;
       await runStep({
         currentRunId,
         stepId: "waitForInclusion",
@@ -535,7 +587,9 @@ export function TreasuryTransactionFlowDialog({
             <DialogHeader className="border-b px-4 py-4 sm:px-5">
               <div className="space-y-2">
                 <DialogTitle>{resolvedTitle}</DialogTitle>
-                <DialogDescription id={descriptionId}>{headerDescription}</DialogDescription>
+                <DialogDescription id={descriptionId}>
+                  {headerDescription}
+                </DialogDescription>
               </div>
             </DialogHeader>
 
@@ -545,7 +599,10 @@ export function TreasuryTransactionFlowDialog({
                   <section className="space-y-4 rounded-2xl border border-primary/25 bg-gradient-to-b from-primary/[0.08] via-primary/[0.03] to-transparent px-5 py-4 shadow-[0_1px_0_rgba(0,0,0,0.015)]">
                     <div className="grid gap-3 md:grid-cols-2">
                       {summaryItems.map((item) => (
-                        <SummaryRow key={`${item.label}-${item.value}`} item={item} />
+                        <SummaryRow
+                          key={`${item.label}-${item.value}`}
+                          item={item}
+                        />
                       ))}
                     </div>
                   </section>
@@ -565,8 +622,7 @@ export function TreasuryTransactionFlowDialog({
                           <span className="block text-sm leading-6 text-muted-foreground">
                             {intl.formatMessage({
                               id: "ui.transactionFlow.txSettingsDescription",
-                              defaultMessage:
-                                "Fee, memo, and sender wallet.",
+                              defaultMessage: "Fee, memo, and sender wallet.",
                             })}
                           </span>
                         </div>
@@ -584,7 +640,9 @@ export function TreasuryTransactionFlowDialog({
                           error={senderError}
                         >
                           <Input
-                            value={hasSenderAddress ? normalizedSenderAddress : ""}
+                            value={
+                              hasSenderAddress ? normalizedSenderAddress : ""
+                            }
                             disabled
                             aria-label={intl.formatMessage({
                               id: "ui.transactionFlow.senderLabel",
@@ -700,69 +758,76 @@ export function TreasuryTransactionFlowDialog({
             </div>
 
             <DialogFooter className="border-t px-4 py-4 sm:justify-between sm:px-5">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={closeDialog}
+                disabled={isLockedWhileRunning}
+              >
+                {isWaitingForInclusion
+                  ? preventCloseWhileRunning
+                    ? intl.formatMessage({
+                        id: "ui.transactionFlow.closeDisabled",
+                        defaultMessage:
+                          "Close disabled until content is posted",
+                      })
+                    : intl.formatMessage({
+                        id: "ui.transactionFlow.closeAndWait",
+                        defaultMessage: "Close and keep waiting",
+                      })
+                  : activeStep === "postContent" && preventCloseWhileRunning
+                    ? intl.formatMessage({
+                        id: "ui.transactionFlow.closeDisabled",
+                        defaultMessage:
+                          "Close disabled until content is posted",
+                      })
+                    : intl.formatMessage({
+                        id: "ui.transactionFlow.close",
+                        defaultMessage: "Close",
+                      })}
+              </Button>
+              <div className="flex gap-2">
                 <Button
                   type="button"
-                  variant="outline"
-                  onClick={closeDialog}
-                  disabled={isLockedWhileRunning}
+                  onClick={
+                    completion
+                      ? isAutoCloseCountdownActive
+                        ? () => {
+                            setAutoCloseCancelled(true);
+                            setAutoCloseRemainingSeconds(null);
+                          }
+                        : closeDialog
+                      : () => void handleStart()
+                  }
+                  disabled={!completion && !canStart}
+                  data-component="transaction-flow-start-button"
                 >
-                  {isWaitingForInclusion
-                    ? preventCloseWhileRunning
-                      ? intl.formatMessage({
-                          id: "ui.transactionFlow.closeDisabled",
-                          defaultMessage: "Close disabled until content is posted",
-                        })
-                      : intl.formatMessage({
-                          id: "ui.transactionFlow.closeAndWait",
-                          defaultMessage: "Close and keep waiting",
-                        })
-                    : activeStep === "postContent" && preventCloseWhileRunning
-                      ? intl.formatMessage({
-                          id: "ui.transactionFlow.closeDisabled",
-                          defaultMessage: "Close disabled until content is posted",
-                        })
-                      : intl.formatMessage({
-                          id: "ui.transactionFlow.close",
-                          defaultMessage: "Close",
-                        })}
-                </Button>
-                <div className="flex gap-2">
-                  <Button
-                    type="button"
-                    onClick={
-                      completion
-                        ? isAutoCloseCountdownActive
-                          ? () => {
-                              setAutoCloseCancelled(true);
-                              setAutoCloseRemainingSeconds(null);
-                            }
-                          : closeDialog
-                        : () => void handleStart()
-                    }
-                    disabled={!completion && !canStart}
-                    data-component="transaction-flow-start-button"
-                  >
-                    {isRunning ? (
-                      <>
-                        <LoaderCircle className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" />
-                        {getRunningButtonLabel(intl, activeStep)}
-                      </>
+                  {isRunning ? (
+                    <>
+                      <LoaderCircle
+                        className="mr-2 h-4 w-4 animate-spin"
+                        aria-hidden="true"
+                      />
+                      {getRunningButtonLabel(intl, activeStep)}
+                    </>
+                  ) : completion ? (
+                    isAutoCloseCountdownActive ? (
+                      keepOpenCountdownLabel
                     ) : (
-                      completion
-                        ? isAutoCloseCountdownActive
-                          ? keepOpenCountdownLabel
-                          : doneLabel
-                        : errorMessage
-                          ? intl.formatMessage({
-                              id: "ui.transactionFlow.retry",
-                              defaultMessage: "Try again",
-                            })
-                        : displayedStepId === "review"
-                          ? reviewSubmitLabel
-                          : resolvedSubmitLabel
-                    )}
-                  </Button>
-                </div>
+                      doneLabel
+                    )
+                  ) : errorMessage ? (
+                    intl.formatMessage({
+                      id: "ui.transactionFlow.retry",
+                      defaultMessage: "Try again",
+                    })
+                  ) : displayedStepId === "review" ? (
+                    reviewSubmitLabel
+                  ) : (
+                    resolvedSubmitLabel
+                  )}
+                </Button>
+              </div>
             </DialogFooter>
           </div>
         </DialogContent>
@@ -789,11 +854,15 @@ export function TreasuryTransactionFlowDialog({
                     )
                   : intl.formatMessage({
                       id: "ui.transactionFlow.backgroundWaitingBody",
-                      defaultMessage: "The transaction has been sent and is still being monitored.",
+                      defaultMessage:
+                        "The transaction has been sent and is still being monitored.",
                     })}
               </p>
             </div>
-            <LoaderCircle className="h-4 w-4 shrink-0 animate-spin text-primary" aria-hidden="true" />
+            <LoaderCircle
+              className="h-4 w-4 shrink-0 animate-spin text-primary"
+              aria-hidden="true"
+            />
           </div>
         </FixedNotificationCard>
       ) : null}
@@ -813,17 +882,21 @@ export function TreasuryTransactionFlowDialog({
                   ? intl.formatMessage(
                       {
                         id: "ui.transactionFlow.notificationCompleteBody",
-                        defaultMessage: "The network included the transaction at block #{blockHeight}.",
+                        defaultMessage:
+                          "The network included the transaction at block #{blockHeight}.",
                       },
                       { blockHeight: String(completion.blockHeight) },
                     )
                   : intl.formatMessage({
                       id: "ui.transactionFlow.notificationCompleteNoBlock",
-                      defaultMessage: "The network included the transaction successfully.",
+                      defaultMessage:
+                        "The network included the transaction successfully.",
                     })}
               </p>
               {completion?.hash ? (
-                <p className="break-all font-mono text-xs text-muted-foreground">{completion.hash}</p>
+                <p className="break-all font-mono text-xs text-muted-foreground">
+                  {completion.hash}
+                </p>
               ) : null}
             </div>
             <button
@@ -864,13 +937,22 @@ function FieldShell({
   );
 }
 
-function SummaryRow({ item }: { item: TreasuryTransactionSummaryItem }): JSX.Element {
+function SummaryRow({
+  item,
+}: {
+  item: TreasuryTransactionSummaryItem;
+}): JSX.Element {
   return (
     <div className="space-y-1 border-b border-border/60 pb-3 last:border-b-0 last:pb-0">
       <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-muted-foreground">
         {item.label}
       </p>
-      <p className={cn("text-sm text-foreground", item.mono && "break-all font-mono text-xs")}>
+      <p
+        className={cn(
+          "text-sm text-foreground",
+          item.mono && "break-all font-mono text-xs",
+        )}
+      >
         {item.value}
       </p>
     </div>
@@ -962,9 +1044,9 @@ function TransactionFlowCenteredProgress({
       ? failedStage
       : isPostingContent
         ? "postingContent"
-      : isWaitingForInclusion
-        ? "awaitingInclusion"
-        : signAndSendPhase ?? "compiling";
+        : isWaitingForInclusion
+          ? "awaitingInclusion"
+          : (signAndSendPhase ?? "compiling");
   const isError = Boolean(errorMessage && failedStage);
   const [now, setNow] = useState(() => Date.now());
   const [completedDurationsMs, setCompletedDurationsMs] = useState<
@@ -1059,39 +1141,39 @@ function TransactionFlowCenteredProgress({
                         id: "ui.transactionFlow.postContentFailedTitle",
                         defaultMessage: "Content posting failed",
                       })
-                  : intl.formatMessage({
-                      id: "ui.transactionFlow.inclusionFailedTitle",
-                      defaultMessage: "Inclusion check failed",
-                    })
+                    : intl.formatMessage({
+                        id: "ui.transactionFlow.inclusionFailedTitle",
+                        defaultMessage: "Inclusion check failed",
+                      })
             : currentStage === "compiling"
-            ? intl.formatMessage({
-                id: "ui.transactionFlow.compilingTitle",
-                defaultMessage: "Compiling contracts",
-              })
-            : currentStage === "proving"
               ? intl.formatMessage({
-                  id: "ui.transactionFlow.provingTitle",
-                  defaultMessage: "Generating proof",
+                  id: "ui.transactionFlow.compilingTitle",
+                  defaultMessage: "Compiling contracts",
                 })
-              : currentStage === "awaitingSignature"
+              : currentStage === "proving"
                 ? intl.formatMessage({
-                    id: "ui.transactionFlow.awaitingSignatureTitle",
-                    defaultMessage: "Sign & send",
+                    id: "ui.transactionFlow.provingTitle",
+                    defaultMessage: "Generating proof",
                   })
-                : currentStage === "postingContent"
+                : currentStage === "awaitingSignature"
                   ? intl.formatMessage({
-                      id: "ui.transactionFlow.postContentTitle",
-                      defaultMessage: "Posting proposal content",
+                      id: "ui.transactionFlow.awaitingSignatureTitle",
+                      defaultMessage: "Sign & send",
                     })
-                : currentStage === "awaitingInclusion"
-                  ? intl.formatMessage({
-                      id: "ui.transactionFlow.awaitingInclusionTitle",
-                      defaultMessage: "Awaiting inclusion",
-                    })
-                  : intl.formatMessage({
-                      id: "ui.transactionFlow.completedTitle",
-                      defaultMessage: "Transaction completed",
-                    })}
+                  : currentStage === "postingContent"
+                    ? intl.formatMessage({
+                        id: "ui.transactionFlow.postContentTitle",
+                        defaultMessage: "Posting proposal content",
+                      })
+                    : currentStage === "awaitingInclusion"
+                      ? intl.formatMessage({
+                          id: "ui.transactionFlow.awaitingInclusionTitle",
+                          defaultMessage: "Awaiting inclusion",
+                        })
+                      : intl.formatMessage({
+                          id: "ui.transactionFlow.completedTitle",
+                          defaultMessage: "Transaction completed",
+                        })}
         </h4>
         <p className="max-w-lg text-sm leading-6 text-muted-foreground">
           {isError
@@ -1119,80 +1201,90 @@ function TransactionFlowCenteredProgress({
                         defaultMessage:
                           "The transaction was included, but proposal content could not be attached successfully.",
                       })
-                  : intl.formatMessage({
-                      id: "ui.transactionFlow.inclusionFailedBody",
-                      defaultMessage:
-                        "The transaction was sent, but inclusion monitoring failed before completion could be confirmed.",
-                    })
-            : completion
-            ? completion?.blockHeight != null
-              ? transactionHash
-                ? intl.formatMessage(
-                    {
-                      id: "ui.transactionFlow.completedBodyWithBlockAndHash",
-                      defaultMessage: "Included at block #{blockHeight}. Transaction hash: {hash}",
-                    },
-                    { blockHeight: String(completion.blockHeight), hash: transactionHash },
-                  )
-                : intl.formatMessage(
-                    {
-                      id: "ui.transactionFlow.completedBodyWithBlock",
-                      defaultMessage: "Included at block #{blockHeight}.",
-                    },
-                    { blockHeight: String(completion.blockHeight) },
-                  )
-              : transactionHash
-                ? intl.formatMessage(
-                    {
-                      id: "ui.transactionFlow.completedBodyWithHash",
-                      defaultMessage: "The transaction was included successfully. Transaction hash: {hash}",
-                    },
-                    { hash: transactionHash },
-                  )
-                : intl.formatMessage({
-                    id: "ui.transactionFlow.completedBody",
-                    defaultMessage: "The transaction was included successfully.",
-                  })
-            : currentStage === "compiling"
-            ? intl.formatMessage({
-                id: "ui.transactionFlow.compilingBody",
-                defaultMessage: "Preparing local contract artifacts before the transaction can be proved.",
-              })
-            : currentStage === "proving"
-              ? intl.formatMessage({
-                  id: "ui.transactionFlow.provingBody",
-                  defaultMessage: "Building the Mina transaction and generating transaction proofs locally.",
-                })
-              : currentStage === "awaitingSignature"
-                ? intl.formatMessage({
-                    id: "ui.transactionFlow.awaitingSignatureBody",
-                    defaultMessage: "Auro should now be open. Approve the transaction there to continue.",
-                  })
-                : currentStage === "postingContent"
-                  ? intl.formatMessage({
-                      id: "ui.transactionFlow.postContentBody",
-                      defaultMessage:
-                        "Waiting for the processor to index the proposal, then retrying content attachment until it succeeds.",
-                    })
-                : currentStage === "awaitingInclusion"
-                  ? transactionHash
-                    ? intl.formatMessage(
-                        {
-                          id: "ui.transactionFlow.awaitingInclusionBodyWithHash",
-                          defaultMessage:
-                            "The transaction was broadcast successfully and is now being monitored for inclusion. Transaction hash: {hash}",
-                        },
-                        { hash: transactionHash },
-                      )
                     : intl.formatMessage({
-                        id: "ui.transactionFlow.awaitingInclusionBody",
+                        id: "ui.transactionFlow.inclusionFailedBody",
                         defaultMessage:
-                          "The transaction was broadcast successfully and is now being monitored for inclusion.",
+                          "The transaction was sent, but inclusion monitoring failed before completion could be confirmed.",
                       })
+            : completion
+              ? completion?.blockHeight != null
+                ? transactionHash
+                  ? intl.formatMessage(
+                      {
+                        id: "ui.transactionFlow.completedBodyWithBlockAndHash",
+                        defaultMessage:
+                          "Included at block #{blockHeight}. Transaction hash: {hash}",
+                      },
+                      {
+                        blockHeight: String(completion.blockHeight),
+                        hash: transactionHash,
+                      },
+                    )
+                  : intl.formatMessage(
+                      {
+                        id: "ui.transactionFlow.completedBodyWithBlock",
+                        defaultMessage: "Included at block #{blockHeight}.",
+                      },
+                      { blockHeight: String(completion.blockHeight) },
+                    )
+                : transactionHash
+                  ? intl.formatMessage(
+                      {
+                        id: "ui.transactionFlow.completedBodyWithHash",
+                        defaultMessage:
+                          "The transaction was included successfully. Transaction hash: {hash}",
+                      },
+                      { hash: transactionHash },
+                    )
                   : intl.formatMessage({
                       id: "ui.transactionFlow.completedBody",
-                      defaultMessage: "The transaction was included successfully.",
-                    })}
+                      defaultMessage:
+                        "The transaction was included successfully.",
+                    })
+              : currentStage === "compiling"
+                ? intl.formatMessage({
+                    id: "ui.transactionFlow.compilingBody",
+                    defaultMessage:
+                      "Preparing local contract artifacts before the transaction can be proved.",
+                  })
+                : currentStage === "proving"
+                  ? intl.formatMessage({
+                      id: "ui.transactionFlow.provingBody",
+                      defaultMessage:
+                        "Building the Mina transaction and generating transaction proofs locally.",
+                    })
+                  : currentStage === "awaitingSignature"
+                    ? intl.formatMessage({
+                        id: "ui.transactionFlow.awaitingSignatureBody",
+                        defaultMessage:
+                          "Auro should now be open. Approve the transaction there to continue.",
+                      })
+                    : currentStage === "postingContent"
+                      ? intl.formatMessage({
+                          id: "ui.transactionFlow.postContentBody",
+                          defaultMessage:
+                            "Waiting for the processor to index the proposal, then retrying content attachment until it succeeds.",
+                        })
+                      : currentStage === "awaitingInclusion"
+                        ? transactionHash
+                          ? intl.formatMessage(
+                              {
+                                id: "ui.transactionFlow.awaitingInclusionBodyWithHash",
+                                defaultMessage:
+                                  "The transaction was broadcast successfully and is now being monitored for inclusion. Transaction hash: {hash}",
+                              },
+                              { hash: transactionHash },
+                            )
+                          : intl.formatMessage({
+                              id: "ui.transactionFlow.awaitingInclusionBody",
+                              defaultMessage:
+                                "The transaction was broadcast successfully and is now being monitored for inclusion.",
+                            })
+                        : intl.formatMessage({
+                            id: "ui.transactionFlow.completedBody",
+                            defaultMessage:
+                              "The transaction was included successfully.",
+                          })}
         </p>
         {isWaitingForInclusion ? (
           <p className="max-w-lg text-sm leading-6 text-muted-foreground">
@@ -1246,31 +1338,34 @@ function TransactionFlowCenteredProgress({
                           id: "ui.transactionFlow.progressFailed",
                           defaultMessage: "Failed",
                         })
-                    : null
+                      : null
                 : status === "error"
                   ? intl.formatMessage({
                       id: "ui.transactionFlow.progressFailed",
                       defaultMessage: "Failed",
                     })
-                : null;
+                  : null;
             const durationMs =
               item.id === "awaitingSignature"
                 ? null
                 : status === "completed"
-                ? completedDurationsMs[item.id]
-                : (status === "running" || status === "error") && activeStageRef.current === item.id
-                  ? now - activeStageStartedAtRef.current
-                  : null;
+                  ? completedDurationsMs[item.id]
+                  : (status === "running" || status === "error") &&
+                      activeStageRef.current === item.id
+                    ? now - activeStageStartedAtRef.current
+                    : null;
             return (
               <div key={item.id} className="flex items-start">
                 <div className="flex w-28 flex-col items-center text-center">
                   <div
                     className={cn(
                       "flex h-8 w-8 shrink-0 items-center justify-center rounded-full border bg-background text-xs font-semibold",
-                      status === "completed" && "border-emerald-300/70 text-emerald-600",
+                      status === "completed" &&
+                        "border-emerald-300/70 text-emerald-600",
                       status === "running" && "border-primary/40 text-primary",
                       status === "error" && "border-rose-300/70 text-rose-600",
-                      status === "idle" && "border-border/70 text-muted-foreground",
+                      status === "idle" &&
+                        "border-border/70 text-muted-foreground",
                     )}
                   >
                     {status === "completed" ? (
@@ -1278,14 +1373,21 @@ function TransactionFlowCenteredProgress({
                     ) : status === "error" ? (
                       <CircleAlert className="h-4 w-4" aria-hidden="true" />
                     ) : status === "running" ? (
-                      <LoaderCircle className="h-4 w-4 animate-spin" aria-hidden="true" />
+                      <LoaderCircle
+                        className="h-4 w-4 animate-spin"
+                        aria-hidden="true"
+                      />
                     ) : (
                       <span>{index + 1}</span>
                     )}
                   </div>
-                  <p className="mt-2 text-xs font-medium leading-5 text-foreground">{item.label}</p>
+                  <p className="mt-2 text-xs font-medium leading-5 text-foreground">
+                    {item.label}
+                  </p>
                   {statusLabel ? (
-                    <p className="text-[11px] leading-5 text-muted-foreground">{statusLabel}</p>
+                    <p className="text-[11px] leading-5 text-muted-foreground">
+                      {statusLabel}
+                    </p>
                   ) : durationMs != null ? (
                     <p className="text-[11px] leading-5 text-muted-foreground">
                       {formatStepDuration(durationMs)}
@@ -1293,7 +1395,10 @@ function TransactionFlowCenteredProgress({
                   ) : null}
                 </div>
                 {!isLast ? (
-                  <div className="mt-4 h-px w-12 shrink-0 bg-border/70" aria-hidden="true" />
+                  <div
+                    className="mt-4 h-px w-12 shrink-0 bg-border/70"
+                    aria-hidden="true"
+                  />
                 ) : null}
               </div>
             );
@@ -1368,7 +1473,10 @@ function FixedNotificationCard({
   );
 }
 
-function createInitialStepStatuses(): Record<TreasuryTransactionFlowStepId, StepStatus> {
+function createInitialStepStatuses(): Record<
+  TreasuryTransactionFlowStepId,
+  StepStatus
+> {
   return {
     review: "idle",
     signAndSend: "idle",
@@ -1424,9 +1532,11 @@ function getDefaultDescription(
   });
 }
 
-function getStepDefinitions(
-  intl: ReturnType<typeof useTreasuryIntl>,
-): Array<{ id: TreasuryTransactionFlowStepId; label: string; description: string }> {
+function getStepDefinitions(intl: ReturnType<typeof useTreasuryIntl>): Array<{
+  id: TreasuryTransactionFlowStepId;
+  label: string;
+  description: string;
+}> {
   return [
     {
       id: "review",
@@ -1479,7 +1589,9 @@ function getStepDefinitions(
   ];
 }
 
-function getStepOrder(showPostContentStep: boolean): TreasuryTransactionFlowStepId[] {
+function getStepOrder(
+  showPostContentStep: boolean,
+): TreasuryTransactionFlowStepId[] {
   return showPostContentStep
     ? ["review", "signAndSend", "waitForInclusion", "postContent"]
     : ["review", "signAndSend", "waitForInclusion"];
@@ -1499,7 +1611,8 @@ function getCompletedHeaderDescription(
 
   return intl.formatMessage({
     id: "ui.transactionFlow.stepCompletedDescription",
-    defaultMessage: "The transaction has been included on chain and no further monitoring is needed.",
+    defaultMessage:
+      "The transaction has been included on chain and no further monitoring is needed.",
   });
 }
 

@@ -1,4 +1,4 @@
-import { renderHook, waitFor } from "@testing-library/react";
+import { act, cleanup, renderHook, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { fetchAccount } from "o1js";
 import { useEndpointSettingsStore } from "../../endpoint-settings/store/endpoint-settings-store";
@@ -59,6 +59,7 @@ describe("useWalletAccountInfo", () => {
   });
 
   afterEach(() => {
+    cleanup();
     vi.restoreAllMocks();
   });
 
@@ -157,5 +158,66 @@ describe("useWalletAccountInfo", () => {
 
     expect(lifecycleSpy).not.toHaveBeenCalled();
     expect(useTreasuryHeaderStore.getState().wallet.error).toBeNull();
+  });
+
+  it("keeps account info visible during a block refresh", async () => {
+    let resolveBalance: ((value: string) => void) | undefined;
+    let resolveLifecycle:
+      | ((
+          value: Awaited<
+            ReturnType<typeof treasuryHeaderApi.fetchWalletLifecycleAccountInfo>
+          >,
+        ) => void)
+      | undefined;
+    vi.spyOn(minaAccounts, "fetchMinaAccountBalance")
+      .mockResolvedValueOnce("4.2 MINA")
+      .mockImplementationOnce(
+        () =>
+          new Promise<string>((resolve) => {
+            resolveBalance = resolve;
+          }),
+      );
+    vi.spyOn(treasuryHeaderApi, "fetchWalletLifecycleAccountInfo")
+      .mockResolvedValueOnce({
+        delegatedTo: "B62qdelegate",
+        votingWeight: "120 MINA",
+      })
+      .mockImplementationOnce(
+        () =>
+          new Promise((resolve) => {
+            resolveLifecycle = resolve;
+          }),
+      );
+
+    renderHook(() => useWalletAccountInfo());
+
+    await waitFor(() => {
+      expect(
+        useTreasuryHeaderStore.getState().wallet.accountInfo?.votingWeight,
+      ).toBe("120 MINA");
+    });
+
+    act(() => {
+      useMinaBlockStore.getState().forceRefresh();
+    });
+
+    expect(
+      useTreasuryHeaderStore.getState().wallet.accountInfo?.votingWeight,
+    ).toBe("120 MINA");
+    expect(useTreasuryHeaderStore.getState().wallet.accountInfoLoading).toBe(
+      false,
+    );
+
+    resolveBalance?.("4.3 MINA");
+    resolveLifecycle?.({
+      delegatedTo: "B62qdelegate",
+      votingWeight: "121 MINA",
+    });
+
+    await waitFor(() => {
+      expect(
+        useTreasuryHeaderStore.getState().wallet.accountInfo?.votingWeight,
+      ).toBe("121 MINA");
+    });
   });
 });

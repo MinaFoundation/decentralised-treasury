@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { useAppShellStore } from "../../app-shell/store/app-shell-store";
 import { useEndpointSettingsStore } from "../../endpoint-settings/store/endpoint-settings-store";
 import { useMinaBlockStore } from "../../mina-blocks/store/mina-block-store";
@@ -8,16 +8,21 @@ import { useTreasuryStore } from "../../treasury/store/treasury-store";
 import { fetchMinaAccountBalanceNanomina } from "../lib/mina-accounts";
 
 export function useTreasuryHeaderBalance(): void {
-  const minaNodeUrl = useEndpointSettingsStore((state) => state.value.minaNodeUrl);
+  const minaNodeUrl = useEndpointSettingsStore(
+    (state) => state.value.minaNodeUrl,
+  );
   const hydrated = useEndpointSettingsStore((state) => state.hydrated);
   const setTreasuryState = useTreasuryStore((state) => state.setTreasuryState);
   const setAppError = useAppShellStore((state) => state.setError);
   const refreshToken = useMinaBlockStore((state) => state.refreshToken);
+  const loadedIdentityRef = useRef<string | null>(null);
 
   useEffect(() => {
-    const treasuryOwnerAddress = process.env.NEXT_PUBLIC_TREASURY_OWNER_CONTRACT_ADDRESS;
+    const treasuryOwnerAddress =
+      process.env.NEXT_PUBLIC_TREASURY_OWNER_CONTRACT_ADDRESS;
 
     if (!hydrated || !minaNodeUrl || !treasuryOwnerAddress) {
+      loadedIdentityRef.current = null;
       setTreasuryState({
         balance: undefined,
         error: null,
@@ -27,15 +32,21 @@ export function useTreasuryHeaderBalance(): void {
     }
 
     let cancelled = false;
+    const identity = `${minaNodeUrl}:${treasuryOwnerAddress}`;
+    const isInitialLoad = loadedIdentityRef.current !== identity;
 
     const load = async () => {
       setTreasuryState({
-        loading: true,
+        ...(isInitialLoad ? { balance: undefined } : {}),
+        loading: isInitialLoad,
         error: null,
       });
 
       try {
-        const balance = await fetchMinaAccountBalanceNanomina(minaNodeUrl, treasuryOwnerAddress);
+        const balance = await fetchMinaAccountBalanceNanomina(
+          minaNodeUrl,
+          treasuryOwnerAddress,
+        );
 
         if (!cancelled) {
           setTreasuryState({
@@ -43,13 +54,16 @@ export function useTreasuryHeaderBalance(): void {
             loading: false,
             error: null,
           });
+          loadedIdentityRef.current = identity;
         }
       } catch (error) {
         if (!cancelled) {
           const message =
-            error instanceof Error ? error.message : "Failed to fetch treasury balance.";
+            error instanceof Error
+              ? error.message
+              : "Failed to fetch treasury balance.";
           setTreasuryState({
-            balance: undefined,
+            ...(isInitialLoad ? { balance: undefined } : {}),
             loading: false,
             error: message,
           });

@@ -411,6 +411,7 @@ export function ProposalCreatePageContainer({
             const hash = await signWithAuroWalletAndSubmitZkapp(
               settings.value.minaNodeUrl,
               preparedFlowRef.current.provedTransactionJson,
+              context.senderAddress,
               context.fee,
               context.memo,
               context.nonce,

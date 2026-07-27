@@ -1,7 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { withMinimumLoadingDuration } from "../../app-shell/lib/minimum-loading-duration";
 import { useAppShellStore } from "../../app-shell/store/app-shell-store";
 import { useEndpointSettingsState } from "../../endpoint-settings/store/endpoint-settings-store.selectors";
 import { useMinaBlockStore } from "../../mina-blocks/store/mina-block-store";
@@ -101,7 +102,8 @@ export function DashboardContainer({
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState<10 | 20 | 30 | 40 | 50>(10);
   const [totalCount, setTotalCount] = useState(0);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const loadedQueryRef = useRef<string | null>(null);
 
   const currentLifecycleId = treasury.currentLifecycleId;
   const lifecycleStarted = treasury.lifecycleStarted ?? true;
@@ -245,33 +247,64 @@ export function DashboardContainer({
   }, [currentLifecycleId, router]);
 
   useEffect(() => {
-    if (!settings.hydrated || !settings.value.apiUrl) {
+    if (!settings.hydrated) {
+      loadedQueryRef.current = null;
+      setEntries([]);
+      setTotalCount(0);
+      setLoading(true);
+      return;
+    }
+    if (!settings.value.apiUrl) {
+      loadedQueryRef.current = null;
       setEntries([]);
       setTotalCount(0);
       setLoading(false);
       return;
     }
+    if (effectiveLifecycleId === undefined) {
+      loadedQueryRef.current = null;
+      setEntries([]);
+      setTotalCount(0);
+      setLoading(true);
+      return;
+    }
 
     let cancelled = false;
-    setLoading(true);
+    const queryKey = JSON.stringify({
+      apiUrl: settings.value.apiUrl,
+      lifecycleId: effectiveLifecycleId,
+      page,
+      pageSize,
+      sortKey,
+      sortDirection,
+    });
+    const isInitialQueryLoad = loadedQueryRef.current !== queryKey;
+    if (isInitialQueryLoad) {
+      setLoading(true);
+    }
 
-    void fetchProposalItemsPage(settings.value.apiUrl, {
+    const request = fetchProposalItemsPage(settings.value.apiUrl, {
       lifecycleId: effectiveLifecycleId,
       limit: pageSize,
       offset: (page - 1) * pageSize,
       sortKey,
       sortDirection,
-    })
+    });
+
+    void (isInitialQueryLoad ? withMinimumLoadingDuration(request) : request)
       .then((result) => {
         if (!cancelled) {
           setEntries(result.items.map(mapProposalItemToEntry));
           setTotalCount(result.total);
+          loadedQueryRef.current = queryKey;
         }
       })
       .catch((error) => {
         if (!cancelled) {
-          setEntries([]);
-          setTotalCount(0);
+          if (isInitialQueryLoad) {
+            setEntries([]);
+            setTotalCount(0);
+          }
           setAppError(
             error instanceof Error
               ? error.message
@@ -280,7 +313,7 @@ export function DashboardContainer({
         }
       })
       .finally(() => {
-        if (!cancelled) {
+        if (!cancelled && isInitialQueryLoad) {
           setLoading(false);
         }
       });

@@ -1,4 +1,4 @@
-import { renderHook, waitFor } from "@testing-library/react";
+import { cleanup, renderHook, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { useEndpointSettingsStore } from "../../endpoint-settings/store/endpoint-settings-store";
 import { useMinaBlockStore } from "../../mina-blocks/store/mina-block-store";
@@ -36,6 +36,7 @@ describe("useTreasuryStatus", () => {
   });
 
   afterEach(() => {
+    cleanup();
     process.env.NEXT_PUBLIC_TREASURY_OWNER_CONTRACT_ADDRESS =
       originalOwnerAddress;
     process.env.NEXT_PUBLIC_LIFECYCLE_PERIOD_DURATION =
@@ -96,5 +97,51 @@ describe("useTreasuryStatus", () => {
     expect(useTreasuryStore.getState().paused).toBe(true);
     expect(useTreasuryStore.getState().health.apiStatus).toBe("healthy");
     expect(useTreasuryStore.getState().health.indexerStatus).toBe("degraded");
+  });
+
+  it("preserves lifecycle state when a background refresh fails", async () => {
+    useTreasuryStore.getState().setTreasuryState({
+      currentLifecycleId: 7,
+      currentPeriod: "voting",
+      currentPeriodProgress: 68,
+      currentGlobalSlot: 18460115,
+      treasuryDeployedAtSlot: 18403000,
+      lifecycleStarted: true,
+      paused: true,
+    });
+    vi.mocked(fetchCurrentTreasuryLifecycleSnapshot).mockRejectedValue(
+      new Error("node unavailable"),
+    );
+    vi.mocked(fetchTreasuryPausedState).mockRejectedValue(
+      new Error("node unavailable"),
+    );
+    vi.spyOn(globalThis, "fetch")
+      .mockResolvedValueOnce(new Response(JSON.stringify({ ok: true })))
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            archive: {
+              canonicalMaxBlockHeight: 100,
+              pendingMaxBlockHeight: 102,
+            },
+            remainingCanonicalBlocks: 0,
+            remainingPendingBlocks: 0,
+          }),
+        ),
+      );
+
+    renderHook(() => useTreasuryStatus());
+
+    await waitFor(() => {
+      expect(useTreasuryStore.getState().health.apiStatus).toBe("healthy");
+    });
+
+    expect(useTreasuryStore.getState().currentLifecycleId).toBe(7);
+    expect(useTreasuryStore.getState().currentPeriod).toBe("voting");
+    expect(useTreasuryStore.getState().currentPeriodProgress).toBe(68);
+    expect(useTreasuryStore.getState().currentGlobalSlot).toBe(18460115);
+    expect(useTreasuryStore.getState().treasuryDeployedAtSlot).toBe(18403000);
+    expect(useTreasuryStore.getState().lifecycleStarted).toBe(true);
+    expect(useTreasuryStore.getState().paused).toBe(true);
   });
 });

@@ -84,7 +84,11 @@ const PROPOSAL_LIST_SORT_COLUMNS = {
   createdAt: `proposals."created_at"`,
 } as const;
 
-function parsePositiveInt(value: unknown, fallback: number, max: number): number {
+function parsePositiveInt(
+  value: unknown,
+  fallback: number,
+  max: number,
+): number {
   if (typeof value !== "string" || value.trim().length === 0) {
     return fallback;
   }
@@ -111,7 +115,9 @@ function parseOptionalLifecycleId(value: unknown): number | null {
     return null;
   }
   if (typeof value !== "string" || !/^\d+$/.test(value.trim())) {
-    throw new RequestValidationError("lifecycleId must be a non-negative integer");
+    throw new RequestValidationError(
+      "lifecycleId must be a non-negative integer",
+    );
   }
   return Number.parseInt(value, 10);
 }
@@ -123,10 +129,15 @@ function parseSortValues(value: unknown): string[] {
   if (typeof value === "string") {
     return [value];
   }
-  if (Array.isArray(value) && value.every((entry) => typeof entry === "string")) {
+  if (
+    Array.isArray(value) &&
+    value.every((entry) => typeof entry === "string")
+  ) {
     return value;
   }
-  throw new RequestValidationError("sort must be a string or repeated query parameter");
+  throw new RequestValidationError(
+    "sort must be a string or repeated query parameter",
+  );
 }
 
 function parseProposalListOrderBy(value: unknown): string {
@@ -140,17 +151,28 @@ function parseProposalListOrderBy(value: unknown): string {
 
   const clauses = sortValues.map((sortValue) => {
     const [field, directionCandidate] = sortValue.split(",");
-    const column = PROPOSAL_LIST_SORT_COLUMNS[field as keyof typeof PROPOSAL_LIST_SORT_COLUMNS];
+    const column =
+      PROPOSAL_LIST_SORT_COLUMNS[
+        field as keyof typeof PROPOSAL_LIST_SORT_COLUMNS
+      ];
     if (!column) {
       throw new RequestValidationError(`unsupported sort field: ${field}`);
     }
-    const normalizedDirection = (directionCandidate ?? "ASC").trim().toUpperCase();
+    const normalizedDirection = (directionCandidate ?? "ASC")
+      .trim()
+      .toUpperCase();
     if (normalizedDirection !== "ASC" && normalizedDirection !== "DESC") {
-      throw new RequestValidationError(`unsupported sort direction: ${directionCandidate}`);
+      throw new RequestValidationError(
+        `unsupported sort direction: ${directionCandidate}`,
+      );
     }
     const direction = normalizedDirection as ProposalListSortDirection;
     const nullsClause =
-      field === "senderPublicKey" ? (direction === "ASC" ? " NULLS FIRST" : " NULLS LAST") : "";
+      field === "senderPublicKey"
+        ? direction === "ASC"
+          ? " NULLS FIRST"
+          : " NULLS LAST"
+        : "";
     return `${column} ${direction}${nullsClause}`;
   });
 
@@ -162,7 +184,9 @@ function toIsoString(value: string | Date | null): string | null {
   if (value === null) {
     return null;
   }
-  return value instanceof Date ? value.toISOString() : new Date(value).toISOString();
+  return value instanceof Date
+    ? value.toISOString()
+    : new Date(value).toISOString();
 }
 
 function isMissingProcessorProposalsTable(error: unknown): boolean {
@@ -174,7 +198,9 @@ function isMissingProcessorProposalsTable(error: unknown): boolean {
     return true;
   }
   const message =
-    "message" in error ? String((error as { message?: unknown }).message ?? "") : "";
+    "message" in error
+      ? String((error as { message?: unknown }).message ?? "")
+      : "";
   return (
     message.includes("processor_proposals") &&
     (message.includes("does not exist") || message.includes("relation"))
@@ -203,7 +229,9 @@ async function loadLatestVoteTallies(
     return new Map();
   }
 
-  const placeholders = proposalPublicKeys.map((_, index) => `$${index + 1}`).join(", ");
+  const placeholders = proposalPublicKeys
+    .map((_, index) => `$${index + 1}`)
+    .join(", ");
   const rows = (await dataSource.query(
     `SELECT
       "proposal_public_key",
@@ -233,6 +261,50 @@ async function loadLatestVoteTallies(
   return latestTallies;
 }
 
+function mapProposalRow(
+  row: ProposalListQueryRow,
+  latestVoteTally: ProposalListVoteTallyRow | undefined,
+) {
+  return {
+    id: String(row.id),
+    proposalPublicKey: row.proposal_public_key,
+    lifecycleId: Number(row.lifecycle_id),
+    amount: row.amount,
+    recipient: row.recipient,
+    senderPublicKey: row.sender_public_key,
+    zkAppUriHash: row.zkapp_uri_hash,
+    stakingEpochDataLedgerHash: row.staking_epoch_data_ledger_hash,
+    stakingEpochDataLedgerTotalCurrency:
+      row.staking_epoch_data_ledger_total_currency,
+    requiredParticipationBp: row.required_participation_bp,
+    requiredApprovalBp: row.required_approval_bp,
+    requiredParticipation: row.required_participation,
+    status: row.status,
+    isPaused: Boolean(row.is_paused),
+    paidOutAmount: row.paid_out_amount,
+    contents: row.contents,
+    createdAtBlockHeight: row.created_at_block_height,
+    createdAtBlockTimestamp: toIsoString(row.created_at_block_timestamp),
+    createdAt: toIsoString(row.created_at),
+    updatedAt: toIsoString(row.updated_at),
+    latestVoteTally: latestVoteTally
+      ? {
+          blockHeight: latestVoteTally.block_height,
+          yayWeight: latestVoteTally.yay_weight,
+          nayWeight: latestVoteTally.nay_weight,
+          abstainWeight: latestVoteTally.abstain_weight,
+          createdByEventType: latestVoteTally.created_by_event_type,
+          requiredParticipationBp: latestVoteTally.required_participation_bp,
+          requiredApprovalBp: latestVoteTally.required_approval_bp,
+          requiredParticipation: latestVoteTally.required_participation,
+          totalParticipatingVotes: latestVoteTally.total_participating_votes,
+          approvalBp: latestVoteTally.approval_bp,
+          voteResult: latestVoteTally.vote_result,
+        }
+      : null,
+  };
+}
+
 export function createProposalListRoutes({
   dataSource,
   pageLimitDefault = DEFAULT_PROPOSAL_LIST_LIMIT,
@@ -241,7 +313,9 @@ export function createProposalListRoutes({
   const resolvedPageLimitDefault = Math.max(1, pageLimitDefault);
   const resolvedPageLimitMax = Math.max(resolvedPageLimitDefault, pageLimitMax);
 
-  return (app: Parameters<NonNullable<EventsApiServerOptions["registerRoutes"]>>[0]) => {
+  return (
+    app: Parameters<NonNullable<EventsApiServerOptions["registerRoutes"]>>[0],
+  ) => {
     app.get("/proposals", async (request, response) => {
       try {
         const lifecycleId = parseOptionalLifecycleId(request.query.lifecycleId);
@@ -306,46 +380,9 @@ export function createProposalListRoutes({
           dataSource,
           visibleRows.map((row) => row.proposal_public_key),
         );
-        const items = visibleRows.map((row) => {
-          const latestVoteTally = latestTallies.get(row.proposal_public_key);
-          return {
-            id: String(row.id),
-            proposalPublicKey: row.proposal_public_key,
-            lifecycleId: Number(row.lifecycle_id),
-            amount: row.amount,
-            recipient: row.recipient,
-            senderPublicKey: row.sender_public_key,
-            zkAppUriHash: row.zkapp_uri_hash,
-            stakingEpochDataLedgerHash: row.staking_epoch_data_ledger_hash,
-            stakingEpochDataLedgerTotalCurrency: row.staking_epoch_data_ledger_total_currency,
-            requiredParticipationBp: row.required_participation_bp,
-            requiredApprovalBp: row.required_approval_bp,
-            requiredParticipation: row.required_participation,
-            status: row.status,
-            isPaused: Boolean(row.is_paused),
-            paidOutAmount: row.paid_out_amount,
-            contents: row.contents,
-            createdAtBlockHeight: row.created_at_block_height,
-            createdAtBlockTimestamp: toIsoString(row.created_at_block_timestamp),
-            createdAt: toIsoString(row.created_at),
-            updatedAt: toIsoString(row.updated_at),
-            latestVoteTally: latestVoteTally
-              ? {
-                  blockHeight: latestVoteTally.block_height,
-                  yayWeight: latestVoteTally.yay_weight,
-                  nayWeight: latestVoteTally.nay_weight,
-                  abstainWeight: latestVoteTally.abstain_weight,
-                  createdByEventType: latestVoteTally.created_by_event_type,
-                  requiredParticipationBp: latestVoteTally.required_participation_bp,
-                  requiredApprovalBp: latestVoteTally.required_approval_bp,
-                  requiredParticipation: latestVoteTally.required_participation,
-                  totalParticipatingVotes: latestVoteTally.total_participating_votes,
-                  approvalBp: latestVoteTally.approval_bp,
-                  voteResult: latestVoteTally.vote_result,
-                }
-              : null,
-          };
-        });
+        const items = visibleRows.map((row) =>
+          mapProposalRow(row, latestTallies.get(row.proposal_public_key)),
+        );
 
         response.json({
           lifecycleId,
@@ -375,19 +412,95 @@ export function createProposalListRoutes({
       }
     });
 
-    app.get("/proposals/:proposalPublicKey/votes", async (request, response) => {
+    app.get("/proposals/:proposalPublicKey", async (request, response) => {
       try {
         const { proposalPublicKey } = request.params;
-        const exists = await proposalExists(dataSource, proposalPublicKey);
-        if (!exists) {
+        const rows = (await dataSource.query(
+          `SELECT
+            proposals."id",
+            proposals."proposal_public_key",
+            proposals."lifecycle_id",
+            proposals."amount",
+            proposals."recipient",
+            proposals."sender_public_key",
+            proposals."zkapp_uri_hash",
+            proposals."staking_epoch_data_ledger_hash",
+            proposals."staking_epoch_data_ledger_total_currency",
+            proposals."required_participation_bp",
+            proposals."required_approval_bp",
+            proposals."required_participation",
+            proposals."status",
+            proposals."is_paused",
+            proposals."paid_out_amount",
+            proposals."contents",
+            proposals."created_at_block_height",
+            proposals."created_at_block_timestamp",
+            proposals."created_at",
+            proposals."updated_at"
+          FROM "processor_proposals" proposals
+          WHERE proposals."proposal_public_key" = $1
+             OR CAST(proposals."id" AS TEXT) = $1
+          LIMIT 1`,
+          [proposalPublicKey],
+        )) as ProposalListQueryRow[];
+        const row = rows[0];
+        if (!row) {
           response.status(404).json({
             error: "Proposal not found",
           });
           return;
         }
 
-        const rows = (await dataSource.query(
-          `SELECT
+        const latestTallies = await loadLatestVoteTallies(dataSource, [
+          row.proposal_public_key,
+        ]);
+        response.json(
+          mapProposalRow(row, latestTallies.get(row.proposal_public_key)),
+        );
+      } catch (error) {
+        if (isMissingProcessorProposalsTable(error)) {
+          response.status(503).json({
+            error: "proposal detail API is unavailable",
+          });
+          return;
+        }
+        console.error("[indexer-api] failed to fetch proposal detail", error);
+        response.status(500).json({
+          error: "Internal server error",
+        });
+      }
+    });
+
+    app.get(
+      "/proposals/:proposalPublicKey/votes",
+      async (request, response) => {
+        try {
+          const { proposalPublicKey } = request.params;
+          const exists = await proposalExists(dataSource, proposalPublicKey);
+          if (!exists) {
+            response.status(404).json({
+              error: "Proposal not found",
+            });
+            return;
+          }
+
+          const limit = parsePositiveInt(
+            request.query.limit,
+            resolvedPageLimitDefault,
+            resolvedPageLimitMax,
+          );
+          const offset = parseNonNegativeInt(request.query.offset, 0);
+          const totalCountRow = (await dataSource.query(
+            `SELECT COUNT(*)::int AS count
+          FROM "processor_votes"
+          WHERE "proposal_public_key" = $1
+            AND "is_nullified" = false
+            AND "status" <> 'orphaned'`,
+            [proposalPublicKey],
+          )) as Array<{ count: number | string }>;
+          const total = Number(totalCountRow[0]?.count ?? 0);
+          const rows = (await dataSource.query(
+            `SELECT
             "id",
             "proposal_public_key",
             "voter_public_key",
@@ -401,51 +514,81 @@ export function createProposalListRoutes({
           WHERE "proposal_public_key" = $1
             AND "is_nullified" = false
             AND "status" <> 'orphaned'
-          ORDER BY "block_height" DESC NULLS LAST, "created_at" DESC, "id" DESC`,
-          [proposalPublicKey],
-        )) as ProposalVoteRow[];
+          ORDER BY "block_height" DESC NULLS LAST, "created_at" DESC, "id" DESC
+          LIMIT $2 OFFSET $3`,
+            [proposalPublicKey, limit + 1, offset],
+          )) as ProposalVoteRow[];
 
-        response.json({
-          proposalPublicKey,
-          items: rows.map((row) => ({
-            id: String(row.id),
-            proposalPublicKey: row.proposal_public_key,
-            voterPublicKey: row.voter_public_key,
-            vote: row.vote,
-            voteWeight: row.vote_weight,
-            blockHeight: row.block_height,
-            isNullified: Boolean(row.is_nullified),
-            status: row.status,
-            createdAt: toIsoString(row.created_at),
-          })),
-        });
-      } catch (error) {
-        if (isMissingProcessorProposalsTable(error)) {
-          response.status(503).json({
-            error: "proposal votes API is unavailable",
+          const hasMore = rows.length > limit;
+          const visibleRows = rows.slice(0, limit);
+          response.json({
+            proposalPublicKey,
+            limit,
+            offset,
+            total,
+            items: visibleRows.map((row) => ({
+              id: String(row.id),
+              proposalPublicKey: row.proposal_public_key,
+              voterPublicKey: row.voter_public_key,
+              vote: row.vote,
+              voteWeight: row.vote_weight,
+              blockHeight: row.block_height,
+              isNullified: Boolean(row.is_nullified),
+              status: row.status,
+              createdAt: toIsoString(row.created_at),
+            })),
+            nextOffset: hasMore ? offset + limit : null,
           });
-          return;
-        }
-        console.error("[indexer-api] failed to list proposal votes", error);
-        response.status(500).json({
-          error: "Internal server error",
-        });
-      }
-    });
-
-    app.get("/proposals/:proposalPublicKey/executions", async (request, response) => {
-      try {
-        const { proposalPublicKey } = request.params;
-        const exists = await proposalExists(dataSource, proposalPublicKey);
-        if (!exists) {
-          response.status(404).json({
-            error: "Proposal not found",
+        } catch (error) {
+          if (error instanceof RequestValidationError) {
+            response.status(400).json({
+              error: error.message,
+            });
+            return;
+          }
+          if (isMissingProcessorProposalsTable(error)) {
+            response.status(503).json({
+              error: "proposal votes API is unavailable",
+            });
+            return;
+          }
+          console.error("[indexer-api] failed to list proposal votes", error);
+          response.status(500).json({
+            error: "Internal server error",
           });
-          return;
         }
+      },
+    );
 
-        const rows = (await dataSource.query(
-          `SELECT
+    app.get(
+      "/proposals/:proposalPublicKey/executions",
+      async (request, response) => {
+        try {
+          const { proposalPublicKey } = request.params;
+          const exists = await proposalExists(dataSource, proposalPublicKey);
+          if (!exists) {
+            response.status(404).json({
+              error: "Proposal not found",
+            });
+            return;
+          }
+
+          const limit = parsePositiveInt(
+            request.query.limit,
+            resolvedPageLimitDefault,
+            resolvedPageLimitMax,
+          );
+          const offset = parseNonNegativeInt(request.query.offset, 0);
+          const totalCountRow = (await dataSource.query(
+            `SELECT COUNT(*)::int AS count
+          FROM "processor_proposal_executions"
+          WHERE "proposal_public_key" = $1
+            AND "status" <> 'orphaned'`,
+            [proposalPublicKey],
+          )) as Array<{ count: number | string }>;
+          const total = Number(totalCountRow[0]?.count ?? 0);
+          const rows = (await dataSource.query(
+            `SELECT
             "id",
             "proposal_public_key",
             "recipient",
@@ -460,38 +603,55 @@ export function createProposalListRoutes({
           FROM "processor_proposal_executions"
           WHERE "proposal_public_key" = $1
             AND "status" <> 'orphaned'
-          ORDER BY "block_height" DESC NULLS LAST, "created_at" DESC, "id" DESC`,
-          [proposalPublicKey],
-        )) as ProposalExecutionRow[];
+          ORDER BY "block_height" DESC NULLS LAST, "created_at" DESC, "id" DESC
+          LIMIT $2 OFFSET $3`,
+            [proposalPublicKey, limit + 1, offset],
+          )) as ProposalExecutionRow[];
 
-        response.json({
-          proposalPublicKey,
-          items: rows.map((row) => ({
-            id: String(row.id),
-            proposalPublicKey: row.proposal_public_key,
-            recipient: row.recipient,
-            amountToPayOut: row.amount_to_pay_out,
-            bondAmount: row.bond_amount,
-            senderPublicKey: row.sender_public_key,
-            paidOutAmount: row.paid_out_amount,
-            remainingAmount: row.remaining_amount,
-            blockHeight: row.block_height,
-            status: row.status,
-            createdAt: toIsoString(row.created_at),
-          })),
-        });
-      } catch (error) {
-        if (isMissingProcessorProposalsTable(error)) {
-          response.status(503).json({
-            error: "proposal executions API is unavailable",
+          const hasMore = rows.length > limit;
+          const visibleRows = rows.slice(0, limit);
+          response.json({
+            proposalPublicKey,
+            limit,
+            offset,
+            total,
+            items: visibleRows.map((row) => ({
+              id: String(row.id),
+              proposalPublicKey: row.proposal_public_key,
+              recipient: row.recipient,
+              amountToPayOut: row.amount_to_pay_out,
+              bondAmount: row.bond_amount,
+              senderPublicKey: row.sender_public_key,
+              paidOutAmount: row.paid_out_amount,
+              remainingAmount: row.remaining_amount,
+              blockHeight: row.block_height,
+              status: row.status,
+              createdAt: toIsoString(row.created_at),
+            })),
+            nextOffset: hasMore ? offset + limit : null,
           });
-          return;
+        } catch (error) {
+          if (error instanceof RequestValidationError) {
+            response.status(400).json({
+              error: error.message,
+            });
+            return;
+          }
+          if (isMissingProcessorProposalsTable(error)) {
+            response.status(503).json({
+              error: "proposal executions API is unavailable",
+            });
+            return;
+          }
+          console.error(
+            "[indexer-api] failed to list proposal executions",
+            error,
+          );
+          response.status(500).json({
+            error: "Internal server error",
+          });
         }
-        console.error("[indexer-api] failed to list proposal executions", error);
-        response.status(500).json({
-          error: "Internal server error",
-        });
-      }
-    });
+      },
+    );
   };
 }

@@ -30,7 +30,8 @@ const proposal: TreasuryProposalDetailProposal = {
   createdAtBlock: 450920,
   createdAtBlockTimestamp: "2026-04-01T14:32:00.000Z",
   zkAppUriHash: "jxd4rzzq0r4x8n88v4c1xv7c1c2kpyz0j9f8v0w9a2n7w6m0k1",
-  stakingEpochDataLedgerHash: "jxledgerhash12pass0000000000000000000000000000000000",
+  stakingEpochDataLedgerHash:
+    "jxledgerhash12pass0000000000000000000000000000000000",
   stakingEpochDataLedgerTotalCurrency: toNanomina(400000),
   requiredParticipationBp: "2000",
   requiredApprovalBp: "5100",
@@ -77,7 +78,8 @@ describe("TreasuryProposalDetail", () => {
             recipient: proposal.recipient!,
             amountToPayOut: toNanomina(80000),
             bondAmount: toNanomina(5000),
-            senderPublicKey: "B62qsenderPassExample1111111111111111111111111111111111111",
+            senderPublicKey:
+              "B62qsenderPassExample1111111111111111111111111111111111111",
             paidOutAmount: toNanomina(80000),
             remainingAmount: toNanomina(40000),
             blockHeight: 451010,
@@ -93,10 +95,14 @@ describe("TreasuryProposalDetail", () => {
 
     expect(screen.getByText(proposal.title)).toBeTruthy();
     expect(screen.getByText("Passing")).toBeTruthy();
-    expect(document.querySelector('[data-component="proposal-markdown-box"]')).toBeTruthy();
+    expect(
+      document.querySelector('[data-component="proposal-markdown-box"]'),
+    ).toBeTruthy();
     expect(screen.getAllByText(proposal.title).length).toBe(1);
     expect(screen.getByRole("heading", { name: "Overview" })).toBeTruthy();
-    expect(screen.getByText(/regional zero-knowledge education efforts/i)).toBeTruthy();
+    expect(
+      screen.getByText(/regional zero-knowledge education efforts/i),
+    ).toBeTruthy();
     expect(screen.getByText("Amount")).toBeTruthy();
     expect(screen.getAllByText("Created at").length).toBeGreaterThan(0);
     expect(screen.getByText("Proposal address")).toBeTruthy();
@@ -108,18 +114,26 @@ describe("TreasuryProposalDetail", () => {
     expect(screen.getByText("B62qrecipien...111111111111")).toBeTruthy();
     expect(screen.getByText("Verified")).toBeTruthy();
     expect(screen.getByRole("heading", { name: "Voting" })).toBeTruthy();
-    expect(screen.getByRole("heading", { name: "Execute / payout" })).toBeTruthy();
+    expect(
+      screen.getByRole("heading", { name: "Execute / payout" }),
+    ).toBeTruthy();
     expect(screen.getByText("Votes")).toBeTruthy();
     expect(screen.getByText("Execution history")).toBeTruthy();
     expect(screen.getByRole("button", { name: "Yay" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "Nay" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "Abstain" })).toBeTruthy();
-    expect(screen.getByRole("button", { name: "Must pass to execute" }).hasAttribute("disabled")).toBe(
-      true,
-    );
+    expect(
+      screen
+        .getByRole("button", { name: "Must pass to execute" })
+        .hasAttribute("disabled"),
+    ).toBe(true);
     expect(screen.getByText(votes[0]!.voterPublicKey)).toBeTruthy();
     expect(screen.getByText("Executed by")).toBeTruthy();
-    expect(screen.getByText("B62qsenderPassExample1111111111111111111111111111111111111")).toBeTruthy();
+    expect(
+      screen.getByText(
+        "B62qsenderPassExample1111111111111111111111111111111111111",
+      ),
+    ).toBeTruthy();
     expect(screen.getAllByText("Page 1 of 2").length).toBeGreaterThan(0);
     expect(screen.getAllByText("Showing 1-10 of 11").length).toBeGreaterThan(0);
 
@@ -135,6 +149,59 @@ describe("TreasuryProposalDetail", () => {
     expect(screen.getAllByText("Page 2 of 2").length).toBeGreaterThan(0);
   });
 
+  it("supports independent server-driven vote and execution pagination", () => {
+    const onVotesPageChange = vi.fn();
+    const onExecutionsPageChange = vi.fn();
+    const onVotesPageSizeChange = vi.fn();
+
+    render(
+      <TreasuryProposalDetail
+        proposal={proposal}
+        votes={[
+          {
+            id: "vote-1",
+            voterPublicKey: "B62qvoter-page-one",
+            vote: "yay",
+            voteWeight: toNanomina(10),
+          },
+        ]}
+        executions={[
+          {
+            id: "execution-1",
+            recipient: proposal.recipient!,
+            amountToPayOut: toNanomina(1),
+            paidOutAmount: toNanomina(1),
+            remainingAmount: toNanomina(10),
+          },
+        ]}
+        votesPagination={{
+          page: 1,
+          pageSize: 10,
+          totalCount: 21,
+          onPageChange: onVotesPageChange,
+          onPageSizeChange: onVotesPageSizeChange,
+        }}
+        executionsPagination={{
+          page: 1,
+          pageSize: 10,
+          totalCount: 1,
+          onPageChange: onExecutionsPageChange,
+          onPageSizeChange: vi.fn(),
+        }}
+      />,
+    );
+
+    expect(screen.getByText("Showing 1-1 of 21")).toBeTruthy();
+    fireEvent.click(screen.getAllByRole("button", { name: "Next" })[0]!);
+    expect(onVotesPageChange).toHaveBeenCalledWith(2);
+    expect(onExecutionsPageChange).not.toHaveBeenCalled();
+
+    fireEvent.change(screen.getAllByLabelText("Entries per page")[0]!, {
+      target: { value: "20" },
+    });
+    expect(onVotesPageSizeChange).toHaveBeenCalledWith(20);
+  });
+
   it("renders empty states without voting actions outside voting period", () => {
     render(
       <TreasuryProposalDetail
@@ -143,9 +210,13 @@ describe("TreasuryProposalDetail", () => {
     );
 
     expect(screen.queryByRole("button", { name: "Yay" })).toBeNull();
-    expect(screen.getByText("No vote records are available for this proposal yet.")).toBeTruthy();
     expect(
-      screen.getByText("No execution records are available for this proposal yet."),
+      screen.getByText("No vote records are available for this proposal yet."),
+    ).toBeTruthy();
+    expect(
+      screen.getByText(
+        "No execution records are available for this proposal yet.",
+      ),
     ).toBeTruthy();
   });
 
@@ -159,14 +230,26 @@ describe("TreasuryProposalDetail", () => {
     expect(screen.getByRole("heading", { name: "Voting" })).toBeTruthy();
     expect(screen.getByText("Current vote status")).toBeTruthy();
     expect(screen.getByText("Voting details")).toBeTruthy();
-    expect(screen.getByRole("button", { name: "Yay" }).hasAttribute("disabled")).toBe(true);
-    expect(screen.getByRole("button", { name: "Nay" }).hasAttribute("disabled")).toBe(true);
-    expect(screen.getByRole("button", { name: "Abstain" }).hasAttribute("disabled")).toBe(true);
+    expect(
+      screen.getByRole("button", { name: "Yay" }).hasAttribute("disabled"),
+    ).toBe(true);
+    expect(
+      screen.getByRole("button", { name: "Nay" }).hasAttribute("disabled"),
+    ).toBe(true);
+    expect(
+      screen.getByRole("button", { name: "Abstain" }).hasAttribute("disabled"),
+    ).toBe(true);
     expect(screen.getByText("Waiting for voting to start")).toBeTruthy();
     expect(
-      screen.getByText(/Voting actions will unlock once this proposal enters the voting period\./),
+      screen.getByText(
+        /Voting actions will unlock once this proposal enters the voting period\./,
+      ),
     ).toBeTruthy();
-    expect(document.querySelector('[data-component="proposal-voting-pending-overlay"]')).toBeTruthy();
+    expect(
+      document.querySelector(
+        '[data-component="proposal-voting-pending-overlay"]',
+      ),
+    ).toBeTruthy();
   });
 
   it("shows connect wallet instead of vote actions when disconnected", () => {
@@ -180,20 +263,29 @@ describe("TreasuryProposalDetail", () => {
       />,
     );
 
-    expect(screen.getByRole("button", { name: "Connect a wallet to vote" })).toBeTruthy();
+    expect(
+      screen.getByRole("button", { name: "Connect a wallet to vote" }),
+    ).toBeTruthy();
     expect(screen.getByText("Cast a vote")).toBeTruthy();
     expect(screen.queryByRole("button", { name: "Yay" })).toBeNull();
     expect(screen.queryByRole("button", { name: "Nay" })).toBeNull();
     expect(screen.queryByRole("button", { name: "Abstain" })).toBeNull();
 
-    fireEvent.click(screen.getByRole("button", { name: "Connect a wallet to vote" }));
+    fireEvent.click(
+      screen.getByRole("button", { name: "Connect a wallet to vote" }),
+    );
     expect(onConnectWalletClick).toHaveBeenCalledOnce();
   });
 
   it("calls lifecycle click handler when lifecycle link is pressed", () => {
     const onLifecycleClick = vi.fn();
 
-    render(<TreasuryProposalDetail proposal={proposal} onLifecycleClick={onLifecycleClick} />);
+    render(
+      <TreasuryProposalDetail
+        proposal={proposal}
+        onLifecycleClick={onLifecycleClick}
+      />,
+    );
 
     fireEvent.click(screen.getByRole("button", { name: "Lifecycle 12" }));
     expect(onLifecycleClick).toHaveBeenCalledWith(12);
@@ -225,9 +317,13 @@ describe("TreasuryProposalDetail", () => {
     expect(screen.getByText("Eligible voting weight")).toBeTruthy();
     expect(screen.queryByText("Yay weight")).toBeNull();
 
-    fireEvent.click(screen.getAllByRole("button", { name: "Show details" }).at(-1)!);
+    fireEvent.click(
+      screen.getAllByRole("button", { name: "Show details" }).at(-1)!,
+    );
     expect(screen.getByText("Yay weight")).toBeTruthy();
-    expect(screen.getAllByRole("button", { name: "Hide details" }).length).toBeGreaterThan(0);
+    expect(
+      screen.getAllByRole("button", { name: "Hide details" }).length,
+    ).toBeGreaterThan(0);
   });
 
   it("shows an empty vote summary bar when the proposal is abandoned", () => {
@@ -250,7 +346,9 @@ describe("TreasuryProposalDetail", () => {
     );
 
     expect(screen.getByText("Abandoned")).toBeTruthy();
-    expect(document.querySelector('[data-component="proposal-empty-vote-summary"]')).toBeTruthy();
+    expect(
+      document.querySelector('[data-component="proposal-empty-vote-summary"]'),
+    ).toBeTruthy();
     expect(screen.getByText("Current vote status")).toBeTruthy();
   });
 
@@ -270,11 +368,14 @@ describe("TreasuryProposalDetail", () => {
     );
 
     expect(screen.getByText("Execution available post-cooldown")).toBeTruthy();
-    expect(screen.getByText("This proposal has been tallied on-chain and passed, but execution is only possible after cooldown ends.")).toBeTruthy();
-    expect(screen.getByRole("button", { name: "Available post-cooldown" })).toHaveProperty(
-      "disabled",
-      true,
-    );
+    expect(
+      screen.getByText(
+        "This proposal has been tallied on-chain and passed, but execution is only possible after cooldown ends.",
+      ),
+    ).toBeTruthy();
+    expect(
+      screen.getByRole("button", { name: "Available post-cooldown" }),
+    ).toHaveProperty("disabled", true);
   });
 
   it("keeps execute payout locked when a passed proposal still resolves to voting period", () => {
@@ -294,10 +395,9 @@ describe("TreasuryProposalDetail", () => {
 
     expect(screen.getByText("Execution available post-cooldown")).toBeTruthy();
     expect(screen.queryByText("Ready")).toBeNull();
-    expect(screen.getByRole("button", { name: "Available post-cooldown" })).toHaveProperty(
-      "disabled",
-      true,
-    );
+    expect(
+      screen.getByRole("button", { name: "Available post-cooldown" }),
+    ).toHaveProperty("disabled", true);
   });
 
   it("unlocks execute payout for passed proposals from earlier lifecycles", () => {
@@ -321,12 +421,43 @@ describe("TreasuryProposalDetail", () => {
     );
 
     expect(screen.queryByText("Execution available post-cooldown")).toBeNull();
-    expect(screen.getByRole("button", { name: "Execute proposal" }).hasAttribute("disabled")).toBe(
-      false,
-    );
+    expect(
+      screen
+        .getByRole("button", { name: "Execute proposal" })
+        .hasAttribute("disabled"),
+    ).toBe(false);
 
     fireEvent.click(screen.getByRole("button", { name: "Execute proposal" }));
     expect(onExecutePayoutClick).toHaveBeenCalledWith("132000");
+  });
+
+  it("uses the execution total when the current execution page is empty", () => {
+    render(
+      <TreasuryProposalDetail
+        proposal={{
+          ...proposal,
+          stage: "Passed",
+          period: "Cooldown",
+          latestVoteTally: {
+            ...proposal.latestVoteTally!,
+            createdByEventType: "proposalVotesTallied",
+          },
+        }}
+        currentLifecycleId={(proposal.lifecycleId ?? 0) + 1}
+        executions={[]}
+        executionsPagination={{
+          page: 2,
+          pageSize: 10,
+          totalCount: 11,
+          onPageChange: vi.fn(),
+          onPageSizeChange: vi.fn(),
+        }}
+      />,
+    );
+
+    expect(
+      screen.getByRole("button", { name: "Continue payout" }),
+    ).toBeTruthy();
   });
 
   it("shows an execution warning until an on-chain tally has been submitted", () => {
@@ -346,11 +477,15 @@ describe("TreasuryProposalDetail", () => {
 
     expect(screen.getByText("Awaiting on-chain tally submission")).toBeTruthy();
     expect(
-      screen.getByText("Voting has ended, but execution stays locked until the final on-chain tally is submitted."),
+      screen.getByText(
+        "Voting has ended, but execution stays locked until the final on-chain tally is submitted.",
+      ),
     ).toBeTruthy();
-    expect(screen.getByRole("button", { name: "Submit tally first" }).hasAttribute("disabled")).toBe(
-      true,
-    );
+    expect(
+      screen
+        .getByRole("button", { name: "Submit tally first" })
+        .hasAttribute("disabled"),
+    ).toBe(true);
   });
 
   it("enables execute payout after a passed proposal clears cooldown", () => {
@@ -372,10 +507,14 @@ describe("TreasuryProposalDetail", () => {
       />,
     );
 
-    const amountInput = screen.getByLabelText("Payout amount") as HTMLInputElement;
+    const amountInput = screen.getByLabelText(
+      "Payout amount",
+    ) as HTMLInputElement;
     expect(amountInput.type).toBe("number");
     expect(amountInput.value).toBe("132000");
-    expect(document.querySelectorAll('[data-component="mina-amount-suffix"]')).toHaveLength(1);
+    expect(
+      document.querySelectorAll('[data-component="mina-amount-suffix"]'),
+    ).toHaveLength(1);
     fireEvent.click(screen.getByRole("button", { name: "Execute proposal" }));
     expect(onExecutePayoutClick).toHaveBeenCalledWith("132000");
   });
@@ -401,11 +540,15 @@ describe("TreasuryProposalDetail", () => {
     });
 
     expect(
-      screen.getByText("Payout amount cannot exceed the remaining payout of 132,000 MINA."),
+      screen.getByText(
+        "Payout amount cannot exceed the remaining payout of 132,000 MINA.",
+      ),
     ).toBeTruthy();
-    expect(screen.getByRole("button", { name: "Execute proposal" }).hasAttribute("disabled")).toBe(
-      true,
-    );
+    expect(
+      screen
+        .getByRole("button", { name: "Execute proposal" })
+        .hasAttribute("disabled"),
+    ).toBe(true);
   });
 
   it("requires the proposer wallet to be connected before execution", () => {
@@ -433,7 +576,11 @@ describe("TreasuryProposalDetail", () => {
         "Connect the proposer wallet before executing or paying out this proposal.",
       ),
     ).toBeTruthy();
-    fireEvent.click(screen.getByRole("button", { name: "Connect recipient wallet to execute" }));
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: "Connect recipient wallet to execute",
+      }),
+    );
     expect(onConnectProposerWalletClick).toHaveBeenCalledOnce();
   });
 
@@ -458,11 +605,21 @@ describe("TreasuryProposalDetail", () => {
         "Voting and execution actions are disabled for this vetoed proposal.",
       ),
     ).toBeTruthy();
-    expect(document.querySelector('[data-component="proposal-paused-banner"]')).toBeTruthy();
-    expect(document.querySelector('[data-component="proposal-paused-overlay"]')).toBeTruthy();
-    expect(screen.getByRole("button", { name: "Yay" }).hasAttribute("disabled")).toBe(true);
-    expect(screen.getByRole("button", { name: "Nay" }).hasAttribute("disabled")).toBe(true);
-    expect(screen.getByRole("button", { name: "Abstain" }).hasAttribute("disabled")).toBe(true);
+    expect(
+      document.querySelector('[data-component="proposal-paused-banner"]'),
+    ).toBeTruthy();
+    expect(
+      document.querySelector('[data-component="proposal-paused-overlay"]'),
+    ).toBeTruthy();
+    expect(
+      screen.getByRole("button", { name: "Yay" }).hasAttribute("disabled"),
+    ).toBe(true);
+    expect(
+      screen.getByRole("button", { name: "Nay" }).hasAttribute("disabled"),
+    ).toBe(true);
+    expect(
+      screen.getByRole("button", { name: "Abstain" }).hasAttribute("disabled"),
+    ).toBe(true);
 
     fireEvent.click(screen.getByRole("button", { name: "Yay" }));
     fireEvent.click(screen.getByRole("button", { name: "Nay" }));
@@ -487,7 +644,9 @@ describe("TreasuryProposalDetail", () => {
 
     expect(screen.getAllByText("VETOED").length).toBeGreaterThan(0);
     expect(screen.getAllByText("Proposal vetoed").length).toBeGreaterThan(0);
-    expect(document.querySelector('[data-component="proposal-paused-banner"]')).toBeTruthy();
+    expect(
+      document.querySelector('[data-component="proposal-paused-banner"]'),
+    ).toBeTruthy();
   });
 
   it("disables execution controls when a passed proposal is paused", () => {
@@ -516,10 +675,14 @@ describe("TreasuryProposalDetail", () => {
         "This proposal has been vetoed. Voting and execution actions are disabled.",
       ),
     ).toBeTruthy();
-    expect((screen.getByLabelText("Payout amount") as HTMLInputElement).disabled).toBe(true);
-    expect(screen.getByRole("button", { name: "Proposal vetoed" }).hasAttribute("disabled")).toBe(
-      true,
-    );
+    expect(
+      (screen.getByLabelText("Payout amount") as HTMLInputElement).disabled,
+    ).toBe(true);
+    expect(
+      screen
+        .getByRole("button", { name: "Proposal vetoed" })
+        .hasAttribute("disabled"),
+    ).toBe(true);
 
     fireEvent.click(screen.getByRole("button", { name: "Proposal vetoed" }));
     expect(onExecutePayoutClick).not.toHaveBeenCalled();
@@ -541,15 +704,25 @@ describe("TreasuryProposalDetail", () => {
       />,
     );
 
-    expect(document.querySelector('[data-component="proposal-zero-voting-weight-overlay"]')).toBeTruthy();
+    expect(
+      document.querySelector(
+        '[data-component="proposal-zero-voting-weight-overlay"]',
+      ),
+    ).toBeTruthy();
     expect(
       screen.getByText(
         "You have zero voting weight. Connect a wallet with more than zero voting weight.",
       ),
     ).toBeTruthy();
-    expect(screen.getByRole("button", { name: "Yay" }).hasAttribute("disabled")).toBe(true);
-    expect(screen.getByRole("button", { name: "Nay" }).hasAttribute("disabled")).toBe(true);
-    expect(screen.getByRole("button", { name: "Abstain" }).hasAttribute("disabled")).toBe(true);
+    expect(
+      screen.getByRole("button", { name: "Yay" }).hasAttribute("disabled"),
+    ).toBe(true);
+    expect(
+      screen.getByRole("button", { name: "Nay" }).hasAttribute("disabled"),
+    ).toBe(true);
+    expect(
+      screen.getByRole("button", { name: "Abstain" }).hasAttribute("disabled"),
+    ).toBe(true);
 
     fireEvent.click(screen.getByRole("button", { name: "Yay" }));
     fireEvent.click(screen.getByRole("button", { name: "Nay" }));
@@ -560,7 +733,12 @@ describe("TreasuryProposalDetail", () => {
   });
 
   it("shows content verification failure state", () => {
-    render(<TreasuryProposalDetail proposal={proposal} contentVerificationStatus="mismatch" />);
+    render(
+      <TreasuryProposalDetail
+        proposal={proposal}
+        contentVerificationStatus="mismatch"
+      />,
+    );
 
     expect(screen.getByText("Mismatch")).toBeTruthy();
   });
@@ -582,9 +760,13 @@ describe("TreasuryProposalDetail", () => {
     expect(screen.getByText("Retry needed")).toBeTruthy();
     expect(screen.getByText("Proposal content needs upload")).toBeTruthy();
     expect(screen.getByText(/local copy is available/i)).toBeTruthy();
-    expect(screen.getByText("Timed out submitting proposal contents.")).toBeTruthy();
+    expect(
+      screen.getByText("Timed out submitting proposal contents."),
+    ).toBeTruthy();
 
-    fireEvent.click(screen.getByRole("button", { name: "Retry content upload" }));
+    fireEvent.click(
+      screen.getByRole("button", { name: "Retry content upload" }),
+    );
     expect(onRetryContentSubmission).toHaveBeenCalledOnce();
   });
 
@@ -600,7 +782,9 @@ describe("TreasuryProposalDetail", () => {
     );
 
     expect(
-      screen.getByRole("button", { name: "Retry content upload" }).hasAttribute("disabled"),
+      screen
+        .getByRole("button", { name: "Retry content upload" })
+        .hasAttribute("disabled"),
     ).toBe(true);
   });
 });

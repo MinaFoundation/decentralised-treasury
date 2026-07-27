@@ -50,8 +50,8 @@ async function main(): Promise<void> {
       stakingLedgerRoutes(app);
       votingLedgerAccountRoutes(app);
       proposalContentRoutes(app);
-      proposalListRoutes(app);
       proposalSearchRoutes(app);
+      proposalListRoutes(app);
     },
     onStop: async () => {
       await Promise.all([

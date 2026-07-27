@@ -1,5 +1,11 @@
 import { useEffect, useState } from "react";
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import {
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { TreasuryTransactionFlowDialog } from "./transaction-flow-dialog";
 
@@ -21,9 +27,15 @@ describe("TreasuryTransactionFlowDialog", () => {
       />,
     );
 
-    expect((screen.getByLabelText("Fee (MINA)") as HTMLInputElement).value).toBe("0.2");
-    expect((screen.getByLabelText("Nonce") as HTMLInputElement).value).toBe("12");
-    expect((screen.getByLabelText("Memo") as HTMLInputElement).value).toBe("proposal-create");
+    expect(
+      (screen.getByLabelText("Fee (MINA)") as HTMLInputElement).value,
+    ).toBe("0.2");
+    expect((screen.getByLabelText("Nonce") as HTMLInputElement).value).toBe(
+      "12",
+    );
+    expect((screen.getByLabelText("Memo") as HTMLInputElement).value).toBe(
+      "proposal-create",
+    );
   });
 
   it("renders a stage-specific compile failure state", async () => {
@@ -45,9 +57,86 @@ describe("TreasuryTransactionFlowDialog", () => {
     expect(screen.getByText("Try again")).toBeTruthy();
   });
 
+  it("does not continue a transaction flow after the modal is remounted", async () => {
+    let resolveProof: (() => void) | undefined;
+    const onSignAndSend = vi.fn();
+    const view = render(
+      <TreasuryTransactionFlowDialog
+        open
+        onOpenChange={() => {}}
+        kind="vote"
+        senderAddress="B62qrecipientPassExample111111111111111111111111111111111"
+        onProve={() =>
+          new Promise<void>((resolve) => {
+            resolveProof = resolve;
+          })
+        }
+        onSignAndSend={onSignAndSend}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: /sign and send/i }));
+    await waitFor(() => {
+      expect(resolveProof).toBeTypeOf("function");
+    });
+
+    view.unmount();
+    resolveProof?.();
+    await Promise.resolve();
+
+    expect(onSignAndSend).not.toHaveBeenCalled();
+  });
+
+  it("finishes an in-flight flow with its original callbacks after a rerender", async () => {
+    let resolveProof: (() => void) | undefined;
+    const originalOnSignAndSend = vi.fn().mockResolvedValue({});
+    const updatedOnSignAndSend = vi.fn().mockResolvedValue({});
+    const senderAddress =
+      "B62qrecipientPassExample111111111111111111111111111111111";
+    const view = render(
+      <TreasuryTransactionFlowDialog
+        open
+        onOpenChange={() => {}}
+        kind="vote"
+        senderAddress={senderAddress}
+        onProve={() =>
+          new Promise<void>((resolve) => {
+            resolveProof = resolve;
+          })
+        }
+        onSignAndSend={originalOnSignAndSend}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: /sign and send/i }));
+    await waitFor(() => {
+      expect(resolveProof).toBeTypeOf("function");
+    });
+
+    view.rerender(
+      <TreasuryTransactionFlowDialog
+        open
+        onOpenChange={() => {}}
+        kind="vote"
+        senderAddress={senderAddress}
+        onProve={async () => {}}
+        onSignAndSend={updatedOnSignAndSend}
+      />,
+    );
+
+    resolveProof?.();
+
+    await waitFor(() => {
+      expect(originalOnSignAndSend).toHaveBeenCalledTimes(1);
+    });
+    expect(updatedOnSignAndSend).not.toHaveBeenCalled();
+  });
+
   it("keeps waiting in the background after the dialog closes", async () => {
     const inclusionResolver: {
-      current: null | ((value: { hash?: string; blockHeight?: number }) => void);
+      current:
+        | null
+        | ((value: { hash?: string; blockHeight?: number }) => void);
     } = {
       current: null,
     };
@@ -66,9 +155,13 @@ describe("TreasuryTransactionFlowDialog", () => {
 
     await screen.findByRole("button", { name: "Close and keep waiting" });
 
-    fireEvent.click(screen.getByRole("button", { name: "Close and keep waiting" }));
+    fireEvent.click(
+      screen.getByRole("button", { name: "Close and keep waiting" }),
+    );
 
-    expect(screen.getByText("Waiting for inclusion in background")).toBeTruthy();
+    expect(
+      screen.getByText("Waiting for inclusion in background"),
+    ).toBeTruthy();
 
     if (!inclusionResolver.current) {
       throw new Error("Expected inclusion resolver to be available.");
@@ -79,9 +172,15 @@ describe("TreasuryTransactionFlowDialog", () => {
       blockHeight: 452043,
     });
 
-    expect(await screen.findByText("The network included the transaction at block #452043.")).toBeTruthy();
     expect(
-      screen.getByText("5JuDexecuteHashTest111111111111111111111111111111111111111"),
+      await screen.findByText(
+        "The network included the transaction at block #452043.",
+      ),
+    ).toBeTruthy();
+    expect(
+      screen.getByText(
+        "5JuDexecuteHashTest111111111111111111111111111111111111111",
+      ),
     ).toBeTruthy();
   });
 
@@ -134,7 +233,13 @@ describe("TreasuryTransactionFlowDialog", () => {
     fireEvent.click(screen.getByRole("button", { name: /sign and send/i }));
 
     expect(await screen.findByText("Posting proposal content")).toBeTruthy();
-    expect(callOrder).toEqual(["compile", "prove", "signAndSend", "waitForInclusion", "postInclusion"]);
+    expect(callOrder).toEqual([
+      "compile",
+      "prove",
+      "signAndSend",
+      "waitForInclusion",
+      "postInclusion",
+    ]);
 
     if (!postInclusionResolver.current) {
       throw new Error("Expected post-inclusion resolver to be available.");
@@ -182,7 +287,9 @@ describe("TreasuryTransactionFlowDialog", () => {
     );
 
     fireEvent.click(screen.getByRole("button", { name: /sign and send/i }));
-    expect(await screen.findByRole("button", { name: "Keep open (1s)" })).toBeTruthy();
+    expect(
+      await screen.findByRole("button", { name: "Keep open (1s)" }),
+    ).toBeTruthy();
 
     await waitFor(
       () => {
@@ -218,7 +325,9 @@ describe("TreasuryTransactionFlowDialog", () => {
     );
 
     fireEvent.click(screen.getByRole("button", { name: /sign and send/i }));
-    fireEvent.click(await screen.findByRole("button", { name: "Keep open (1s)" }));
+    fireEvent.click(
+      await screen.findByRole("button", { name: "Keep open (1s)" }),
+    );
 
     expect(await screen.findByRole("button", { name: "Done" })).toBeTruthy();
     await new Promise((resolve) => setTimeout(resolve, 1300));
@@ -236,7 +345,9 @@ describe("TreasuryTransactionFlowDialog", () => {
     render(<RerenderingParentHarness onDialogClosed={onDialogClosed} />);
 
     fireEvent.click(screen.getByRole("button", { name: /sign and send/i }));
-    expect(await screen.findByRole("button", { name: "Keep open (1s)" })).toBeTruthy();
+    expect(
+      await screen.findByRole("button", { name: "Keep open (1s)" }),
+    ).toBeTruthy();
 
     await waitFor(
       () => {
@@ -280,7 +391,11 @@ function BackgroundWaitingHarness({
   );
 }
 
-function RerenderingParentHarness({ onDialogClosed }: { onDialogClosed: () => void }) {
+function RerenderingParentHarness({
+  onDialogClosed,
+}: {
+  onDialogClosed: () => void;
+}) {
   const [open, setOpen] = useState(true);
   const [tick, setTick] = useState(0);
 

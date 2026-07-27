@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { useAppShellStore } from "../../app-shell/store/app-shell-store";
 import { useEndpointSettingsStore } from "../../endpoint-settings/store/endpoint-settings-store";
 import { useMinaBlockStore } from "../../mina-blocks/store/mina-block-store";
@@ -13,17 +13,30 @@ export function useWalletAccountInfo(): void {
   const settings = useEndpointSettingsStore((state) => state.value);
   const hydrated = useEndpointSettingsStore((state) => state.hydrated);
   const wallet = useTreasuryHeaderStore((state) => state.wallet);
-  const currentLifecycleId = useTreasuryStore((state) => state.currentLifecycleId);
-  const setWalletAccountInfo = useTreasuryHeaderStore((state) => state.setWalletAccountInfo);
+  const currentLifecycleId = useTreasuryStore(
+    (state) => state.currentLifecycleId,
+  );
+  const setWalletAccountInfo = useTreasuryHeaderStore(
+    (state) => state.setWalletAccountInfo,
+  );
   const setWalletAccountInfoLoading = useTreasuryHeaderStore(
     (state) => state.setWalletAccountInfoLoading,
   );
-  const setWalletState = useTreasuryHeaderStore((state) => state.setWalletState);
+  const setWalletState = useTreasuryHeaderStore(
+    (state) => state.setWalletState,
+  );
   const setAppError = useAppShellStore((state) => state.setError);
   const refreshToken = useMinaBlockStore((state) => state.refreshToken);
+  const loadedIdentityRef = useRef<string | null>(null);
 
   useEffect(() => {
-    if (!hydrated || wallet.status !== "connected" || !wallet.address || !settings.minaNodeUrl) {
+    if (
+      !hydrated ||
+      wallet.status !== "connected" ||
+      !wallet.address ||
+      !settings.minaNodeUrl
+    ) {
+      loadedIdentityRef.current = null;
       return;
     }
 
@@ -31,23 +44,41 @@ export function useWalletAccountInfo(): void {
     const address = wallet.address;
     const apiUrl = settings.apiUrl;
     const minaNodeUrl = settings.minaNodeUrl;
-    const shouldFetchLifecycleInfo = currentLifecycleId != null && Boolean(apiUrl);
+    const shouldFetchLifecycleInfo =
+      currentLifecycleId != null && Boolean(apiUrl);
+    const identity = JSON.stringify({
+      address,
+      apiUrl,
+      minaNodeUrl,
+      currentLifecycleId,
+    });
+    const isInitialLoad = loadedIdentityRef.current !== identity;
 
     const load = async () => {
-      setWalletAccountInfoLoading(true);
-      const [minaBalanceResult, lifecycleAccountInfoResult] = await Promise.allSettled([
-        fetchMinaAccountBalance(minaNodeUrl, address),
-        shouldFetchLifecycleInfo
-          ? fetchWalletLifecycleAccountInfo(apiUrl, currentLifecycleId, address)
-          : Promise.resolve(undefined),
-      ]);
+      if (isInitialLoad) {
+        setWalletAccountInfo(undefined);
+        setWalletAccountInfoLoading(true);
+      }
+      const [minaBalanceResult, lifecycleAccountInfoResult] =
+        await Promise.allSettled([
+          fetchMinaAccountBalance(minaNodeUrl, address),
+          shouldFetchLifecycleInfo
+            ? fetchWalletLifecycleAccountInfo(
+                apiUrl,
+                currentLifecycleId,
+                address,
+              )
+            : Promise.resolve(undefined),
+        ]);
 
       if (cancelled) {
         return;
       }
 
       const minaBalance =
-        minaBalanceResult.status === "fulfilled" ? minaBalanceResult.value : undefined;
+        minaBalanceResult.status === "fulfilled"
+          ? minaBalanceResult.value
+          : undefined;
       const lifecycleAccountInfo =
         lifecycleAccountInfoResult.status === "fulfilled"
           ? lifecycleAccountInfoResult.value
@@ -59,7 +90,8 @@ export function useWalletAccountInfo(): void {
           delegatedTo: lifecycleAccountInfo?.delegatedTo,
           votingWeight: lifecycleAccountInfo?.votingWeight,
         });
-      } else {
+        loadedIdentityRef.current = identity;
+      } else if (isInitialLoad) {
         setWalletAccountInfo(undefined);
       }
 
@@ -77,7 +109,9 @@ export function useWalletAccountInfo(): void {
           error: null,
         });
       }
-      setWalletAccountInfoLoading(false);
+      if (isInitialLoad) {
+        setWalletAccountInfoLoading(false);
+      }
     };
 
     void load();

@@ -10,6 +10,7 @@ interface AuroSendTransactionResult {
 }
 
 interface AuroWalletProvider {
+  requestAccounts?: () => Promise<string[]>;
   request?: (args: {
     method: string;
     params?: unknown;
@@ -47,6 +48,73 @@ const SEND_ZKAPP_MUTATION = `
     }
   }
 `;
+
+function readFeePayerPublicKey(transactionJson: string): string {
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(transactionJson) as unknown;
+  } catch {
+    throw new Error("Prepared transaction data is invalid. Please try again.");
+  }
+
+  const publicKey =
+    typeof parsed === "object" &&
+    parsed !== null &&
+    "feePayer" in parsed &&
+    typeof parsed.feePayer === "object" &&
+    parsed.feePayer !== null &&
+    "body" in parsed.feePayer &&
+    typeof parsed.feePayer.body === "object" &&
+    parsed.feePayer.body !== null &&
+    "publicKey" in parsed.feePayer.body &&
+    typeof parsed.feePayer.body.publicKey === "string"
+      ? parsed.feePayer.body.publicKey
+      : null;
+
+  if (!publicKey) {
+    throw new Error(
+      "Prepared transaction does not contain a fee payer. Please try again.",
+    );
+  }
+
+  return publicKey;
+}
+
+async function assertAuroAccountMatchesTransaction(
+  provider: AuroWalletProvider,
+  transactionJson: string,
+  expectedSenderAddress: string,
+): Promise<void> {
+  const feePayerPublicKey = readFeePayerPublicKey(transactionJson);
+  if (feePayerPublicKey !== expectedSenderAddress) {
+    throw new Error(
+      "This transaction was prepared for a different account. Please retry with the currently connected account.",
+    );
+  }
+
+  if (!provider.requestAccounts) {
+    throw new Error(
+      "Unable to verify the selected Auro account. Reconnect Auro and try again.",
+    );
+  }
+
+  const selectedAddress = (await provider.requestAccounts())[0];
+  if (!selectedAddress) {
+    throw new Error(
+      "No account is selected in Auro. Select an account and retry.",
+    );
+  }
+  if (selectedAddress !== expectedSenderAddress) {
+    throw new Error(
+      `Auro is currently using ${selectedAddress}, but this transaction was prepared for ${expectedSenderAddress}. Switch accounts and retry.`,
+    );
+  }
+
+  console.info("[auro-wallet] verified transaction signer", {
+    selectedAddress,
+    feePayerPublicKey,
+  });
+}
 
 function parseSignedZkappCommand(
   signedData: AuroSendTransactionResult["signedData"],
@@ -111,6 +179,7 @@ async function submitSignedZkappCommand(
 export async function signWithAuroWalletAndSubmitZkapp(
   minaNodeUrl: string,
   transactionJson: string,
+  expectedSenderAddress: string,
   fee: string,
   memo: string,
   nonce?: number,
@@ -122,6 +191,12 @@ export async function signWithAuroWalletAndSubmitZkapp(
       "Connected Auro wallet does not support transaction signing.",
     );
   }
+
+  await assertAuroAccountMatchesTransaction(
+    auroProvider,
+    transactionJson,
+    expectedSenderAddress,
+  );
 
   const sendTransactionArgs = {
     onlySign: true,

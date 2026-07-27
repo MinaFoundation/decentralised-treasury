@@ -1,10 +1,15 @@
 # syntax=docker/dockerfile:1
 FROM node:24.6.0-bookworm-slim AS base
 
+ARG BUILD_SHA=unknown
+
+LABEL org.opencontainers.image.revision=$BUILD_SHA
+
 ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
 ENV NODE_NO_WARNINGS=1
 ENV REDISMS_DISABLE_POSTINSTALL=true
+ENV NEXT_PUBLIC_BUILD_SHA=$BUILD_SHA
 
 RUN apt-get update \
   && apt-get install -y --no-install-recommends \

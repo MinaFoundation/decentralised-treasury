@@ -12,6 +12,7 @@ export function TreasuryStatusFooterContainer() {
     <TreasuryStatusFooter
       networkId={settings.value.networkId}
       health={treasury.health}
+      buildSha={process.env.NEXT_PUBLIC_BUILD_SHA}
       className="max-w-none"
     />
   );

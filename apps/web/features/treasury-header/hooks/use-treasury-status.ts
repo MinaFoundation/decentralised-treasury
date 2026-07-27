@@ -148,15 +148,22 @@ export function useTreasuryStatus(): void {
 
         if (!cancelled) {
           setTreasuryState({
-            paused: treasuryPaused,
-            currentLifecycleId: currentLifecycleSnapshot?.currentLifecycleId,
-            lifecycleStarted: currentLifecycleSnapshot?.lifecycleStarted,
-            currentPeriod: currentLifecycleSnapshot?.currentPeriod,
-            currentPeriodProgress:
-              currentLifecycleSnapshot?.currentPeriodProgress,
-            currentGlobalSlot: currentLifecycleSnapshot?.currentGlobalSlot,
-            treasuryDeployedAtSlot:
-              currentLifecycleSnapshot?.treasuryDeployedAtSlot,
+            ...(treasuryPausedResult.status === "fulfilled"
+              ? { paused: treasuryPaused }
+              : {}),
+            ...(currentLifecycleSnapshot
+              ? {
+                  currentLifecycleId:
+                    currentLifecycleSnapshot.currentLifecycleId,
+                  lifecycleStarted: currentLifecycleSnapshot.lifecycleStarted,
+                  currentPeriod: currentLifecycleSnapshot.currentPeriod,
+                  currentPeriodProgress:
+                    currentLifecycleSnapshot.currentPeriodProgress,
+                  currentGlobalSlot: currentLifecycleSnapshot.currentGlobalSlot,
+                  treasuryDeployedAtSlot:
+                    currentLifecycleSnapshot.treasuryDeployedAtSlot,
+                }
+              : {}),
             health: {
               apiStatus: healthzResponse
                 ? healthzResponse.ok && healthzPayload?.ok !== false

@@ -18,7 +18,9 @@ function getAvailablePort(): Promise<number> {
     server.listen(0, "127.0.0.1", () => {
       const address = server.address();
       if (!address || typeof address === "string") {
-        server.close(() => reject(new Error("Unable to resolve ephemeral port")));
+        server.close(() =>
+          reject(new Error("Unable to resolve ephemeral port")),
+        );
         return;
       }
       const { port } = address;
@@ -161,6 +163,7 @@ describe("proposal list endpoint", () => {
       total: number;
       nextOffset: number | null;
       items: Array<{
+        id: string;
         proposalPublicKey: string;
         lifecycleId: number;
         amount: string;
@@ -186,6 +189,45 @@ describe("proposal list endpoint", () => {
     assert.equal(payload.items[0]?.latestVoteTally?.blockHeight, 510);
     assert.equal(payload.items[0]?.latestVoteTally?.voteResult, "approved");
     assert.equal(payload.items[0]?.latestVoteTally?.approvalBp, "7142");
+
+    const detailResponse = await fetch(
+      `http://127.0.0.1:${port}/proposals/B62qproposal-current`,
+    );
+    assert.equal(detailResponse.status, 200);
+    const detailPayload = (await detailResponse.json()) as {
+      proposalPublicKey: string;
+      lifecycleId: number;
+      contents: string | null;
+      latestVoteTally: {
+        blockHeight: number;
+        voteResult: string | null;
+      } | null;
+    };
+    assert.equal(detailPayload.proposalPublicKey, "B62qproposal-current");
+    assert.equal(detailPayload.lifecycleId, 7);
+    assert.equal(
+      detailPayload.contents,
+      "# Fund regional grants\n\nLifecycle-scoped proposal.",
+    );
+    assert.equal(detailPayload.latestVoteTally?.blockHeight, 510);
+    assert.equal(detailPayload.latestVoteTally?.voteResult, "approved");
+
+    const detailByIdResponse = await fetch(
+      `http://127.0.0.1:${port}/proposals/${payload.items[0]?.id}`,
+    );
+    assert.equal(detailByIdResponse.status, 200);
+    const detailByIdPayload = (await detailByIdResponse.json()) as {
+      proposalPublicKey: string;
+    };
+    assert.equal(detailByIdPayload.proposalPublicKey, "B62qproposal-current");
+
+    const missingDetailResponse = await fetch(
+      `http://127.0.0.1:${port}/proposals/B62qproposal-missing`,
+    );
+    assert.equal(missingDetailResponse.status, 404);
+    assert.deepEqual(await missingDetailResponse.json(), {
+      error: "Proposal not found",
+    });
   });
 
   it("rejects invalid lifecycle filters", async () => {
@@ -323,20 +365,36 @@ describe("proposal list endpoint", () => {
       contents: "# Votes proposal",
     });
 
-    await dataSource.getRepository(VoteTallyEntity).insert({
-      proposalPublicKey: "B62qproposal-votes",
-      blockHeight: 510,
-      yayWeight: "300000",
-      nayWeight: "120000",
-      abstainWeight: "10000",
-      requiredParticipationBp: "3000",
-      requiredApprovalBp: "5000",
-      requiredParticipation: "258000",
-      totalParticipatingVotes: "430000",
-      approvalBp: "7142",
-      voteResult: "approved",
-      createdByEventType: "proposalVotesTallied",
-    });
+    await dataSource.getRepository(VoteTallyEntity).insert([
+      {
+        proposalPublicKey: "B62qproposal-votes",
+        blockHeight: 510,
+        yayWeight: "300000",
+        nayWeight: "120000",
+        abstainWeight: "10000",
+        requiredParticipationBp: "3000",
+        requiredApprovalBp: "5000",
+        requiredParticipation: "258000",
+        totalParticipatingVotes: "430000",
+        approvalBp: "7142",
+        voteResult: "approved",
+        createdByEventType: "proposalVotesTallied",
+      },
+      {
+        proposalPublicKey: "B62qproposal-votes",
+        blockHeight: 509,
+        yayWeight: "300000",
+        nayWeight: "90000",
+        abstainWeight: "0",
+        requiredParticipationBp: "3000",
+        requiredApprovalBp: "5000",
+        requiredParticipation: "258000",
+        totalParticipatingVotes: "390000",
+        approvalBp: "7692",
+        voteResult: "approved",
+        createdByEventType: "proposalVoteDispatched",
+      },
+    ]);
 
     await dataSource.getRepository(VoteEntity).insert([
       {
@@ -369,6 +427,16 @@ describe("proposal list endpoint", () => {
         isNullified: false,
         status: "orphaned",
       },
+      {
+        archiveEventId: "vote-4",
+        proposalPublicKey: "B62qproposal-votes",
+        voterPublicKey: "B62qvoter-4",
+        vote: "nay",
+        voteWeight: "90000",
+        blockHeight: 509,
+        isNullified: false,
+        status: "canonical",
+      },
     ]);
 
     server = new EventsApiServer(repository, {
@@ -377,17 +445,23 @@ describe("proposal list endpoint", () => {
       pageLimitMax: 50,
       registerRoutes: createProposalListRoutes({
         dataSource,
+        pageLimitDefault: 1,
+        pageLimitMax: 10,
       }),
     });
     await server.start();
 
     const response = await fetch(
-      `http://127.0.0.1:${port}/proposals/B62qproposal-votes/votes`,
+      `http://127.0.0.1:${port}/proposals/B62qproposal-votes/votes?limit=1&offset=0`,
     );
     assert.equal(response.status, 200);
 
     const payload = (await response.json()) as {
       proposalPublicKey: string;
+      limit: number;
+      offset: number;
+      total: number;
+      nextOffset: number | null;
       items: Array<{
         id: string;
         proposalPublicKey: string;
@@ -402,6 +476,10 @@ describe("proposal list endpoint", () => {
     };
 
     assert.equal(payload.proposalPublicKey, "B62qproposal-votes");
+    assert.equal(payload.limit, 1);
+    assert.equal(payload.offset, 0);
+    assert.equal(payload.total, 2);
+    assert.equal(payload.nextOffset, 1);
     assert.equal(payload.items.length, 1);
     assert.equal(payload.items[0]?.proposalPublicKey, "B62qproposal-votes");
     assert.equal(payload.items[0]?.voterPublicKey, "B62qvoter-1");
@@ -412,6 +490,18 @@ describe("proposal list endpoint", () => {
     assert.equal(payload.items[0]?.status, "canonical");
     assert.equal(typeof payload.items[0]?.id, "string");
     assert.equal(typeof payload.items[0]?.createdAt, "string");
+
+    const secondPageResponse = await fetch(
+      `http://127.0.0.1:${port}/proposals/B62qproposal-votes/votes?limit=1&offset=1`,
+    );
+    const secondPage = (await secondPageResponse.json()) as typeof payload;
+    assert.equal(secondPage.items[0]?.voterPublicKey, "B62qvoter-4");
+    assert.equal(secondPage.nextOffset, null);
+
+    const invalidResponse = await fetch(
+      `http://127.0.0.1:${port}/proposals/B62qproposal-votes/votes?limit=0`,
+    );
+    assert.equal(invalidResponse.status, 400);
   });
 
   it("lists scoped execution rows for a proposal", async () => {
@@ -469,6 +559,20 @@ describe("proposal list endpoint", () => {
         blockHeight: 599,
         status: "orphaned",
       },
+      {
+        archiveEventId: "execution-3",
+        proposalPublicKey: "B62qproposal-executions",
+        lifecycleId: 7,
+        recipient: "B62qrecipient-executions",
+        amountToPayOut: "500000000",
+        proposalAmount: "8400000000",
+        bondAmount: "840000000",
+        senderPublicKey: "B62qexecutor-3",
+        paidOutAmount: "5500000000",
+        remainingAmount: "2900000000",
+        blockHeight: 598,
+        status: "canonical",
+      },
     ]);
 
     server = new EventsApiServer(repository, {
@@ -477,17 +581,23 @@ describe("proposal list endpoint", () => {
       pageLimitMax: 50,
       registerRoutes: createProposalListRoutes({
         dataSource,
+        pageLimitDefault: 1,
+        pageLimitMax: 10,
       }),
     });
     await server.start();
 
     const response = await fetch(
-      `http://127.0.0.1:${port}/proposals/B62qproposal-executions/executions`,
+      `http://127.0.0.1:${port}/proposals/B62qproposal-executions/executions?limit=1&offset=0`,
     );
     assert.equal(response.status, 200);
 
     const payload = (await response.json()) as {
       proposalPublicKey: string;
+      limit: number;
+      offset: number;
+      total: number;
+      nextOffset: number | null;
       items: Array<{
         id: string;
         proposalPublicKey: string;
@@ -504,8 +614,15 @@ describe("proposal list endpoint", () => {
     };
 
     assert.equal(payload.proposalPublicKey, "B62qproposal-executions");
+    assert.equal(payload.limit, 1);
+    assert.equal(payload.offset, 0);
+    assert.equal(payload.total, 2);
+    assert.equal(payload.nextOffset, 1);
     assert.equal(payload.items.length, 1);
-    assert.equal(payload.items[0]?.proposalPublicKey, "B62qproposal-executions");
+    assert.equal(
+      payload.items[0]?.proposalPublicKey,
+      "B62qproposal-executions",
+    );
     assert.equal(payload.items[0]?.recipient, "B62qrecipient-executions");
     assert.equal(payload.items[0]?.amountToPayOut, "5000000000");
     assert.equal(payload.items[0]?.bondAmount, "840000000");
@@ -516,5 +633,17 @@ describe("proposal list endpoint", () => {
     assert.equal(payload.items[0]?.status, "canonical");
     assert.equal(typeof payload.items[0]?.id, "string");
     assert.equal(typeof payload.items[0]?.createdAt, "string");
+
+    const secondPageResponse = await fetch(
+      `http://127.0.0.1:${port}/proposals/B62qproposal-executions/executions?limit=1&offset=1`,
+    );
+    const secondPage = (await secondPageResponse.json()) as typeof payload;
+    assert.equal(secondPage.items[0]?.senderPublicKey, "B62qexecutor-3");
+    assert.equal(secondPage.nextOffset, null);
+
+    const invalidResponse = await fetch(
+      `http://127.0.0.1:${port}/proposals/B62qproposal-executions/executions?offset=-1`,
+    );
+    assert.equal(invalidResponse.status, 400);
   });
 });

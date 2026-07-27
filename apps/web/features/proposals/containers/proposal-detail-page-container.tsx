@@ -6,15 +6,16 @@ import { Skeleton } from "@repo/ui/components/ui/skeleton";
 import { TreasuryProposalDetail } from "@repo/ui/treasury-proposal-detail";
 import { TreasuryTransactionFlowDialog } from "@repo/ui/treasury-transaction-flow-dialog";
 import type { TreasuryTransactionSummaryItem } from "@repo/ui/treasury-transaction-flow-dialog";
+import { withMinimumLoadingDuration } from "../../app-shell/lib/minimum-loading-duration";
 import { useAppShellStore } from "../../app-shell/store/app-shell-store";
 import { useEndpointSettingsState } from "../../endpoint-settings/store/endpoint-settings-store.selectors";
 import { useMinaBlockStore } from "../../mina-blocks/store/mina-block-store";
 import { useTreasuryState } from "../../treasury/store/treasury-store.selectors";
 import { useWalletSession } from "../../treasury-header/hooks/use-wallet-session";
 import {
-  fetchProposalExecutions,
-  fetchProposalItems,
-  fetchProposalVotes,
+  fetchProposalExecutionsPage,
+  fetchProposalItem,
+  fetchProposalVotesPage,
   mapProposalItemToDetailProposal,
 } from "../../treasury-header/lib/treasury-header-api";
 import { applyDerivedProposalPresentationToDetail } from "../lib/proposal-presentation";
@@ -39,7 +40,10 @@ interface ProposalDetailPageContainerProps {
   proposalId: string;
 }
 
+type DetailPageSize = 10 | 20 | 30 | 40 | 50;
+
 interface PreparedVoteFlow {
+  routeProposalId: string;
   vote: ProposalVoteChoice;
   preparedTransaction: PreparedVoteProposalTransaction;
   provedTransactionJson?: string;
@@ -47,10 +51,34 @@ interface PreparedVoteFlow {
 }
 
 interface PreparedExecuteFlow {
+  routeProposalId: string;
   amount: string;
   preparedTransaction: PreparedExecuteProposalTransaction;
   provedTransactionJson?: string;
   transactionHash?: string;
+}
+
+type DetailProposal = NonNullable<
+  ReturnType<typeof mapProposalItemToDetailProposal>
+>;
+
+interface VoteFlowSession {
+  routeProposalId: string;
+  proposal: DetailProposal;
+  vote: ProposalVoteChoice;
+  senderAddress: string | null;
+  votingWeight: string | null | undefined;
+  minaNodeUrl: string;
+  treasuryOwnerContractAddress: string;
+}
+
+interface ExecuteFlowSession {
+  routeProposalId: string;
+  proposal: DetailProposal;
+  amount: string;
+  senderAddress: string | null;
+  minaNodeUrl: string;
+  treasuryOwnerContractAddress: string;
 }
 
 function logWalletSubmissionTransaction(
@@ -241,15 +269,27 @@ export function ProposalDetailPageContainer({
   const [executions, setExecutions] = useState<
     Parameters<typeof TreasuryProposalDetail>[0]["executions"]
   >([]);
-  const [loading, setLoading] = useState(false);
-  const [voteRequest, setVoteRequest] = useState<ProposalVoteChoice | null>(
-    null,
-  );
+  const [votesPage, setVotesPage] = useState(1);
+  const [votesPageSize, setVotesPageSize] = useState<DetailPageSize>(10);
+  const [votesTotalCount, setVotesTotalCount] = useState(0);
+  const [votesLoading, setVotesLoading] = useState(false);
+  const [votesInitialized, setVotesInitialized] = useState(false);
+  const [executionsPage, setExecutionsPage] = useState(1);
+  const [executionsPageSize, setExecutionsPageSize] =
+    useState<DetailPageSize>(10);
+  const [executionsTotalCount, setExecutionsTotalCount] = useState(0);
+  const [executionsLoading, setExecutionsLoading] = useState(false);
+  const [executionsInitialized, setExecutionsInitialized] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [voteSession, setVoteSession] = useState<VoteFlowSession | null>(null);
   const [voteDialogOpen, setVoteDialogOpen] = useState(false);
+  const [voteDialogSession, setVoteDialogSession] = useState(0);
   const [preparedVoteFlow, setPreparedVoteFlow] =
     useState<PreparedVoteFlow | null>(null);
-  const [executeAmount, setExecuteAmount] = useState<string | null>(null);
+  const [executeSession, setExecuteSession] =
+    useState<ExecuteFlowSession | null>(null);
   const [executeDialogOpen, setExecuteDialogOpen] = useState(false);
+  const [executeDialogSession, setExecuteDialogSession] = useState(0);
   const [preparedExecuteFlow, setPreparedExecuteFlow] =
     useState<PreparedExecuteFlow | null>(null);
   const [contentRetryRecord, setContentRetryRecord] =
@@ -259,71 +299,90 @@ export function ProposalDetailPageContainer({
   const [contentRetryError, setContentRetryError] = useState<string | null>(
     null,
   );
-  const voteRequestRef = useRef<ProposalVoteChoice | null>(null);
   const preparedVoteFlowRef = useRef<PreparedVoteFlow | null>(null);
-  const executeAmountRef = useRef<string | null>(null);
   const preparedExecuteFlowRef = useRef<PreparedExecuteFlow | null>(null);
+  const loadedProposalKeyRef = useRef<string | null>(null);
+  const loadedVotesQueryRef = useRef<string | null>(null);
+  const loadedExecutionsQueryRef = useRef<string | null>(null);
 
   useEffect(() => {
-    if (!settings.hydrated || !settings.value.apiUrl) {
+    setVotesPage(1);
+    setExecutionsPage(1);
+  }, [proposalId]);
+
+  useEffect(() => {
+    loadedProposalKeyRef.current = null;
+    loadedVotesQueryRef.current = null;
+    loadedExecutionsQueryRef.current = null;
+    setProposal(null);
+    setLoading(true);
+    setVotes([]);
+    setVotesTotalCount(0);
+    setVotesInitialized(false);
+    setExecutions([]);
+    setExecutionsTotalCount(0);
+    setExecutionsInitialized(false);
+  }, [proposalId]);
+
+  useEffect(() => {
+    setVoteDialogOpen(false);
+    setVoteSession(null);
+    setPreparedVoteFlow(null);
+    preparedVoteFlowRef.current = null;
+    setExecuteDialogOpen(false);
+    setExecuteSession(null);
+    setPreparedExecuteFlow(null);
+    preparedExecuteFlowRef.current = null;
+  }, [proposalId, wallet.address]);
+
+  useEffect(() => {
+    if (!settings.hydrated) {
+      loadedProposalKeyRef.current = null;
       setProposal(null);
+      setLoading(true);
+      return;
+    }
+    if (!settings.value.apiUrl) {
+      loadedProposalKeyRef.current = null;
+      setProposal(null);
+      setVotesInitialized(true);
+      setExecutionsInitialized(true);
       setLoading(false);
       return;
     }
 
     let cancelled = false;
-    setLoading(true);
+    const proposalKey = `${settings.value.apiUrl}:${proposalId}`;
+    const isInitialProposalLoad = loadedProposalKeyRef.current !== proposalKey;
+    if (isInitialProposalLoad) {
+      loadedVotesQueryRef.current = null;
+      loadedExecutionsQueryRef.current = null;
+      setLoading(true);
+      setProposal(null);
+      setVotesInitialized(false);
+      setExecutionsInitialized(false);
+    }
 
-    void fetchProposalItems(settings.value.apiUrl, undefined, 200)
-      .then(async (items) => {
+    const request = fetchProposalItem(settings.value.apiUrl, proposalId);
+
+    void (isInitialProposalLoad ? withMinimumLoadingDuration(request) : request)
+      .then((nextProposal) => {
         if (cancelled) {
           return;
         }
-
-        const nextProposal =
-          items.find(
-            (item) =>
-              item.proposalPublicKey === proposalId || item.id === proposalId,
-          ) ?? null;
 
         const nextPresentedProposal = nextProposal
           ? mapProposalItemToDetailProposal(nextProposal)
           : null;
         setProposal(nextPresentedProposal);
-
+        loadedProposalKeyRef.current = proposalKey;
         if (!nextPresentedProposal?.proposalAddress) {
           setVotes([]);
+          setVotesTotalCount(0);
+          setVotesInitialized(true);
           setExecutions([]);
-          return;
-        }
-
-        try {
-          const [nextVotes, nextExecutions] = await Promise.all([
-            fetchProposalVotes(
-              settings.value.apiUrl,
-              nextPresentedProposal.proposalAddress,
-            ),
-            fetchProposalExecutions(
-              settings.value.apiUrl,
-              nextPresentedProposal.proposalAddress,
-            ),
-          ]);
-          if (cancelled) {
-            return;
-          }
-          setVotes(nextVotes);
-          setExecutions(nextExecutions);
-        } catch (error) {
-          if (cancelled) {
-            return;
-          }
-          setVotes([]);
-          setExecutions([]);
-          setAppError(
-            error instanceof Error
-              ? error.message
-              : "Failed to fetch proposal vote and execution details.",
-          );
+          setExecutionsTotalCount(0);
+          setExecutionsInitialized(true);
         }
       })
       .catch((error) => {
@@ -331,9 +390,15 @@ export function ProposalDetailPageContainer({
           return;
         }
 
-        setProposal(null);
-        setVotes([]);
-        setExecutions([]);
+        if (isInitialProposalLoad) {
+          setProposal(null);
+          setVotes([]);
+          setVotesTotalCount(0);
+          setVotesInitialized(true);
+          setExecutions([]);
+          setExecutionsTotalCount(0);
+          setExecutionsInitialized(true);
+        }
         setAppError(
           error instanceof Error
             ? error.message
@@ -341,7 +406,7 @@ export function ProposalDetailPageContainer({
         );
       })
       .finally(() => {
-        if (!cancelled) {
+        if (!cancelled && isInitialProposalLoad) {
           setLoading(false);
         }
       });
@@ -351,6 +416,149 @@ export function ProposalDetailPageContainer({
     };
   }, [
     proposalId,
+    refreshToken,
+    setAppError,
+    settings.hydrated,
+    settings.value.apiUrl,
+  ]);
+
+  useEffect(() => {
+    const proposalPublicKey = proposal?.proposalAddress;
+    if (!settings.hydrated || !settings.value.apiUrl || !proposalPublicKey) {
+      return;
+    }
+
+    let cancelled = false;
+    const votesQueryKey = JSON.stringify({
+      apiUrl: settings.value.apiUrl,
+      proposalPublicKey,
+      page: votesPage,
+      pageSize: votesPageSize,
+    });
+    const isInitialVotesLoad = loadedVotesQueryRef.current !== votesQueryKey;
+    if (isInitialVotesLoad) {
+      setVotesLoading(true);
+    }
+
+    const request = fetchProposalVotesPage(
+      settings.value.apiUrl,
+      proposalPublicKey,
+      {
+        limit: votesPageSize,
+        offset: (votesPage - 1) * votesPageSize,
+      },
+    );
+
+    void (isInitialVotesLoad ? withMinimumLoadingDuration(request) : request)
+      .then((result) => {
+        if (!cancelled) {
+          setVotes(result.items);
+          setVotesTotalCount(result.total);
+          loadedVotesQueryRef.current = votesQueryKey;
+        }
+      })
+      .catch((error) => {
+        if (!cancelled) {
+          if (isInitialVotesLoad) {
+            setVotes([]);
+            setVotesTotalCount(0);
+          }
+          setAppError(
+            error instanceof Error
+              ? error.message
+              : "Failed to fetch proposal votes.",
+          );
+        }
+      })
+      .finally(() => {
+        if (!cancelled) {
+          if (isInitialVotesLoad) {
+            setVotesLoading(false);
+          }
+          setVotesInitialized(true);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    proposal?.proposalAddress,
+    refreshToken,
+    setAppError,
+    settings.hydrated,
+    settings.value.apiUrl,
+    votesPage,
+    votesPageSize,
+  ]);
+
+  useEffect(() => {
+    const proposalPublicKey = proposal?.proposalAddress;
+    if (!settings.hydrated || !settings.value.apiUrl || !proposalPublicKey) {
+      return;
+    }
+
+    let cancelled = false;
+    const executionsQueryKey = JSON.stringify({
+      apiUrl: settings.value.apiUrl,
+      proposalPublicKey,
+      page: executionsPage,
+      pageSize: executionsPageSize,
+    });
+    const isInitialExecutionsLoad =
+      loadedExecutionsQueryRef.current !== executionsQueryKey;
+    if (isInitialExecutionsLoad) {
+      setExecutionsLoading(true);
+    }
+
+    const request = fetchProposalExecutionsPage(
+      settings.value.apiUrl,
+      proposalPublicKey,
+      {
+        limit: executionsPageSize,
+        offset: (executionsPage - 1) * executionsPageSize,
+      },
+    );
+
+    void (
+      isInitialExecutionsLoad ? withMinimumLoadingDuration(request) : request
+    )
+      .then((result) => {
+        if (!cancelled) {
+          setExecutions(result.items);
+          setExecutionsTotalCount(result.total);
+          loadedExecutionsQueryRef.current = executionsQueryKey;
+        }
+      })
+      .catch((error) => {
+        if (!cancelled) {
+          if (isInitialExecutionsLoad) {
+            setExecutions([]);
+            setExecutionsTotalCount(0);
+          }
+          setAppError(
+            error instanceof Error
+              ? error.message
+              : "Failed to fetch proposal executions.",
+          );
+        }
+      })
+      .finally(() => {
+        if (!cancelled) {
+          if (isInitialExecutionsLoad) {
+            setExecutionsLoading(false);
+          }
+          setExecutionsInitialized(true);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    executionsPage,
+    executionsPageSize,
+    proposal?.proposalAddress,
     refreshToken,
     setAppError,
     settings.hydrated,
@@ -377,22 +585,9 @@ export function ProposalDetailPageContainer({
       wallet.address === presentedProposal.proposer,
     [hasConnectedWallet, presentedProposal?.proposer, wallet.address],
   );
-  const hasRequiredConfig =
-    settings.hydrated &&
-    Boolean(settings.value.minaNodeUrl) &&
-    Boolean(process.env.NEXT_PUBLIC_TREASURY_OWNER_CONTRACT_ADDRESS);
-
-  useEffect(() => {
-    voteRequestRef.current = voteRequest;
-  }, [voteRequest]);
-
   useEffect(() => {
     preparedVoteFlowRef.current = preparedVoteFlow;
   }, [preparedVoteFlow]);
-
-  useEffect(() => {
-    executeAmountRef.current = executeAmount;
-  }, [executeAmount]);
 
   useEffect(() => {
     preparedExecuteFlowRef.current = preparedExecuteFlow;
@@ -489,7 +684,33 @@ export function ProposalDetailPageContainer({
     }
   };
 
-  if (!settings.hydrated || loading) {
+  const openVoteSession = (vote: ProposalVoteChoice): void => {
+    if (!presentedProposal?.proposalAddress) {
+      setAppError("Proposal public key is missing.");
+      return;
+    }
+    setVoteSession({
+      routeProposalId: proposalId,
+      proposal: presentedProposal,
+      vote,
+      senderAddress: wallet.address ?? null,
+      votingWeight: wallet.accountInfo?.votingWeight,
+      minaNodeUrl: settings.value.minaNodeUrl,
+      treasuryOwnerContractAddress:
+        process.env.NEXT_PUBLIC_TREASURY_OWNER_CONTRACT_ADDRESS ?? "",
+    });
+    setPreparedVoteFlow(null);
+    preparedVoteFlowRef.current = null;
+    setVoteDialogSession((session) => session + 1);
+    setVoteDialogOpen(true);
+  };
+
+  if (
+    !settings.hydrated ||
+    loading ||
+    !votesInitialized ||
+    !executionsInitialized
+  ) {
     return (
       <section className="rounded-2xl border border-border/70 bg-card p-6 shadow-sm">
         <Skeleton className="h-9 w-28" />
@@ -518,6 +739,28 @@ export function ProposalDetailPageContainer({
         proposal={presentedProposal}
         votes={votes}
         executions={executions}
+        votesPagination={{
+          page: votesPage,
+          pageSize: votesPageSize,
+          totalCount: votesTotalCount,
+          loading: votesLoading,
+          onPageChange: setVotesPage,
+          onPageSizeChange: (nextPageSize) => {
+            setVotesPage(1);
+            setVotesPageSize(nextPageSize);
+          },
+        }}
+        executionsPagination={{
+          page: executionsPage,
+          pageSize: executionsPageSize,
+          totalCount: executionsTotalCount,
+          loading: executionsLoading,
+          onPageChange: setExecutionsPage,
+          onPageSizeChange: (nextPageSize) => {
+            setExecutionsPage(1);
+            setExecutionsPageSize(nextPageSize);
+          },
+        }}
         currentLifecycleId={treasury.currentLifecycleId}
         contentVerificationStatus={
           presentedProposal.contents
@@ -544,37 +787,13 @@ export function ProposalDetailPageContainer({
           void connectWallet();
         }}
         onVoteYayClick={() => {
-          if (!presentedProposal.proposalAddress) {
-            setAppError("Proposal public key is missing.");
-            return;
-          }
-          setVoteRequest("yay");
-          voteRequestRef.current = "yay";
-          setPreparedVoteFlow(null);
-          preparedVoteFlowRef.current = null;
-          setVoteDialogOpen(true);
+          openVoteSession("yay");
         }}
         onVoteNayClick={() => {
-          if (!presentedProposal.proposalAddress) {
-            setAppError("Proposal public key is missing.");
-            return;
-          }
-          setVoteRequest("nay");
-          voteRequestRef.current = "nay";
-          setPreparedVoteFlow(null);
-          preparedVoteFlowRef.current = null;
-          setVoteDialogOpen(true);
+          openVoteSession("nay");
         }}
         onVoteAbstainClick={() => {
-          if (!presentedProposal.proposalAddress) {
-            setAppError("Proposal public key is missing.");
-            return;
-          }
-          setVoteRequest("abstain");
-          voteRequestRef.current = "abstain";
-          setPreparedVoteFlow(null);
-          preparedVoteFlowRef.current = null;
-          setVoteDialogOpen(true);
+          openVoteSession("abstain");
         }}
         onLifecycleClick={(lifecycleId) => {
           router.push(`/?lifecycleId=${lifecycleId}`);
@@ -587,60 +806,69 @@ export function ProposalDetailPageContainer({
             setAppError("Proposal execution details are missing.");
             return;
           }
-          setExecuteAmount(amount);
-          executeAmountRef.current = amount;
+          setExecuteSession({
+            routeProposalId: proposalId,
+            proposal: presentedProposal,
+            amount,
+            senderAddress: wallet.address ?? null,
+            minaNodeUrl: settings.value.minaNodeUrl,
+            treasuryOwnerContractAddress:
+              process.env.NEXT_PUBLIC_TREASURY_OWNER_CONTRACT_ADDRESS ?? "",
+          });
           setPreparedExecuteFlow(null);
           preparedExecuteFlowRef.current = null;
+          setExecuteDialogSession((session) => session + 1);
           setExecuteDialogOpen(true);
         }}
         onRetryContentSubmission={() => {
           void retryProposalContentSubmission();
         }}
       />
-      {voteRequest ? (
+      {voteSession ? (
         <TreasuryTransactionFlowDialog
+          key={voteDialogSession}
           open={voteDialogOpen}
           onOpenChange={setVoteDialogOpen}
           kind="vote"
           autoCloseDelaySeconds={5}
-          senderAddress={wallet.address ?? null}
+          senderAddress={voteSession.senderAddress}
           transactionDetailsCode={getVoteTransactionDetails(
             preparedVoteFlow?.preparedTransaction ?? null,
           )}
           submitLabel="Cast vote transaction"
           summaryItems={buildVoteSummaryItems(
-            presentedProposal,
-            voteRequest,
-            wallet.accountInfo?.votingWeight,
+            voteSession.proposal,
+            voteSession.vote,
+            voteSession.votingWeight,
           )}
           onCompile={async () => {
-            if (!hasRequiredConfig) {
+            if (
+              !voteSession.minaNodeUrl ||
+              !voteSession.treasuryOwnerContractAddress
+            ) {
               throw new Error("Proposal transaction configuration is missing.");
             }
             await compile();
           }}
           onProve={async (context) => {
-            if (!hasRequiredConfig || !presentedProposal.proposalAddress) {
+            if (!voteSession.proposal.proposalAddress) {
               throw new Error("Proposal vote details are missing.");
-            }
-            const nextVote = voteRequestRef.current;
-            if (!nextVote) {
-              throw new Error("Vote selection is missing.");
             }
             const { preparedTransaction, provedTransactionJson } =
               await buildAndProveVoteProposal({
-                minaNodeUrl: settings.value.minaNodeUrl,
+                minaNodeUrl: voteSession.minaNodeUrl,
                 treasuryOwnerContractAddress:
-                  process.env.NEXT_PUBLIC_TREASURY_OWNER_CONTRACT_ADDRESS ?? "",
+                  voteSession.treasuryOwnerContractAddress,
                 senderAddress: context.senderAddress,
-                proposalPublicKey: presentedProposal.proposalAddress,
-                vote: nextVote,
+                proposalPublicKey: voteSession.proposal.proposalAddress,
+                vote: voteSession.vote,
                 fee: context.fee,
                 nonce: context.nonce,
                 memo: context.memo,
               });
             const nextPreparedVoteFlow: PreparedVoteFlow = {
-              vote: nextVote,
+              routeProposalId: voteSession.routeProposalId,
+              vote: voteSession.vote,
               preparedTransaction,
               provedTransactionJson,
             };
@@ -648,18 +876,35 @@ export function ProposalDetailPageContainer({
             setPreparedVoteFlow(nextPreparedVoteFlow);
           }}
           onSignAndSend={async (context) => {
-            if (!preparedVoteFlowRef.current?.provedTransactionJson) {
+            const activePreparedVote = preparedVoteFlowRef.current;
+            if (!activePreparedVote?.provedTransactionJson) {
               throw new Error(
                 "Vote transaction was not prepared before signing.",
               );
             }
+            if (
+              activePreparedVote.routeProposalId !== voteSession.routeProposalId
+            ) {
+              throw new Error(
+                "The active proposal changed while preparing this vote. Please retry.",
+              );
+            }
+
+            console.info("[proposal-prover][wallet-submit] vote context", {
+              feePayer: context.senderAddress,
+              proposalPublicKey:
+                activePreparedVote.preparedTransaction.proposalPublicKey,
+              vote: activePreparedVote.vote,
+              nonce: context.nonce,
+            });
             logWalletSubmissionTransaction(
               "vote before Auro wallet sign",
-              preparedVoteFlowRef.current.provedTransactionJson,
+              activePreparedVote.provedTransactionJson,
             );
             const hash = await signWithAuroWalletAndSubmitZkapp(
-              settings.value.minaNodeUrl,
-              preparedVoteFlowRef.current.provedTransactionJson,
+              voteSession.minaNodeUrl,
+              activePreparedVote.provedTransactionJson,
+              context.senderAddress,
               context.fee,
               context.memo,
               context.nonce,
@@ -677,13 +922,12 @@ export function ProposalDetailPageContainer({
             if (!hash) {
               throw new Error("Transaction hash is missing.");
             }
-            await waitForTransactionInclusion(settings.value.minaNodeUrl, hash);
+            await waitForTransactionInclusion(voteSession.minaNodeUrl, hash);
             return { hash };
           }}
           onComplete={() => {
             setVoteDialogOpen(false);
-            setVoteRequest(null);
-            voteRequestRef.current = null;
+            setVoteSession(null);
             setPreparedVoteFlow(null);
             preparedVoteFlowRef.current = null;
             forceRefresh();
@@ -693,55 +937,55 @@ export function ProposalDetailPageContainer({
           }}
         />
       ) : null}
-      {executeAmount ? (
+      {executeSession ? (
         <TreasuryTransactionFlowDialog
+          key={executeDialogSession}
           open={executeDialogOpen}
           onOpenChange={setExecuteDialogOpen}
           kind="executeProposal"
           autoCloseDelaySeconds={5}
-          senderAddress={wallet.address ?? null}
+          senderAddress={executeSession.senderAddress}
           transactionDetailsCode={getExecuteTransactionDetails(
             preparedExecuteFlow?.preparedTransaction ?? null,
           )}
           submitLabel="Execute payout transaction"
           summaryItems={buildExecuteSummaryItems(
-            presentedProposal,
-            presentedProposal.recipient ?? "-",
-            executeAmount,
+            executeSession.proposal,
+            executeSession.proposal.recipient ?? "-",
+            executeSession.amount,
           )}
           onCompile={async () => {
-            if (!hasRequiredConfig) {
+            if (
+              !executeSession.minaNodeUrl ||
+              !executeSession.treasuryOwnerContractAddress
+            ) {
               throw new Error("Proposal transaction configuration is missing.");
             }
             await compile();
           }}
           onProve={async (context) => {
             if (
-              !hasRequiredConfig ||
-              !presentedProposal.proposalAddress ||
-              !presentedProposal.recipient
+              !executeSession.proposal.proposalAddress ||
+              !executeSession.proposal.recipient
             ) {
               throw new Error("Proposal execution details are missing.");
             }
-            const nextAmount = executeAmountRef.current;
-            if (!nextAmount) {
-              throw new Error("Payout amount is missing.");
-            }
             const { preparedTransaction, provedTransactionJson } =
               await buildAndProveExecuteProposal({
-                minaNodeUrl: settings.value.minaNodeUrl,
+                minaNodeUrl: executeSession.minaNodeUrl,
                 treasuryOwnerContractAddress:
-                  process.env.NEXT_PUBLIC_TREASURY_OWNER_CONTRACT_ADDRESS ?? "",
+                  executeSession.treasuryOwnerContractAddress,
                 senderAddress: context.senderAddress,
-                proposalPublicKey: presentedProposal.proposalAddress,
-                recipient: presentedProposal.recipient,
-                amount: nextAmount,
+                proposalPublicKey: executeSession.proposal.proposalAddress,
+                recipient: executeSession.proposal.recipient,
+                amount: executeSession.amount,
                 fee: context.fee,
                 nonce: context.nonce,
                 memo: context.memo,
               });
             const nextPreparedExecuteFlow: PreparedExecuteFlow = {
-              amount: nextAmount,
+              routeProposalId: executeSession.routeProposalId,
+              amount: executeSession.amount,
               preparedTransaction,
               provedTransactionJson,
             };
@@ -749,18 +993,28 @@ export function ProposalDetailPageContainer({
             setPreparedExecuteFlow(nextPreparedExecuteFlow);
           }}
           onSignAndSend={async (context) => {
-            if (!preparedExecuteFlowRef.current?.provedTransactionJson) {
+            const activePreparedExecution = preparedExecuteFlowRef.current;
+            if (!activePreparedExecution?.provedTransactionJson) {
               throw new Error(
                 "Execute transaction was not prepared before signing.",
               );
             }
+            if (
+              activePreparedExecution.routeProposalId !==
+              executeSession.routeProposalId
+            ) {
+              throw new Error(
+                "The active proposal changed while preparing this execution. Please retry.",
+              );
+            }
             logWalletSubmissionTransaction(
               "execute before Auro wallet sign",
-              preparedExecuteFlowRef.current.provedTransactionJson,
+              activePreparedExecution.provedTransactionJson,
             );
             const hash = await signWithAuroWalletAndSubmitZkapp(
-              settings.value.minaNodeUrl,
-              preparedExecuteFlowRef.current.provedTransactionJson,
+              executeSession.minaNodeUrl,
+              activePreparedExecution.provedTransactionJson,
+              context.senderAddress,
               context.fee,
               context.memo,
               context.nonce,
@@ -778,13 +1032,12 @@ export function ProposalDetailPageContainer({
             if (!hash) {
               throw new Error("Transaction hash is missing.");
             }
-            await waitForTransactionInclusion(settings.value.minaNodeUrl, hash);
+            await waitForTransactionInclusion(executeSession.minaNodeUrl, hash);
             return { hash };
           }}
           onComplete={() => {
             setExecuteDialogOpen(false);
-            setExecuteAmount(null);
-            executeAmountRef.current = null;
+            setExecuteSession(null);
             setPreparedExecuteFlow(null);
             preparedExecuteFlowRef.current = null;
             forceRefresh();
