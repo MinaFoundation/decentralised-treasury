@@ -4,6 +4,7 @@ import type { DataSource } from "typeorm";
 interface ProcessorStatusRoutesOptions {
   dataSource: DataSource;
   processorName: string;
+  eventTypes: string[];
 }
 
 interface ProcessorOffsetSnapshot {
@@ -19,7 +20,9 @@ interface ProcessorOffsetQueryRow {
 }
 
 function toIsoString(value: string | Date): string {
-  return value instanceof Date ? value.toISOString() : new Date(value).toISOString();
+  return value instanceof Date
+    ? value.toISOString()
+    : new Date(value).toISOString();
 }
 
 function isMissingProcessorOffsetsTable(error: unknown): boolean {
@@ -31,7 +34,9 @@ function isMissingProcessorOffsetsTable(error: unknown): boolean {
     return true;
   }
   const message =
-    "message" in error ? String((error as { message?: unknown }).message ?? "") : "";
+    "message" in error
+      ? String((error as { message?: unknown }).message ?? "")
+      : "";
   return (
     message.includes("processor_offsets") &&
     (message.includes("does not exist") || message.includes("relation"))
@@ -70,15 +75,27 @@ async function readProcessorOffset(
 async function readProcessorBacklogCount(
   dataSource: DataSource,
   offset: ProcessorOffsetSnapshot | null,
+  eventTypes: string[],
 ): Promise<number> {
+  if (eventTypes.length === 0) {
+    return 0;
+  }
+  const eventTypePlaceholders = eventTypes
+    .map((_, index) => `$${index + 3}`)
+    .join(", ");
   const result = await dataSource.query(
     `SELECT COUNT(*)::bigint AS "count"
      FROM "archive_events"
-     WHERE (
+     WHERE "event_type" IN (${eventTypePlaceholders})
+     AND (
        "updated_at" > $1
        OR ("updated_at" = $1 AND "id" > $2)
      )`,
-    [offset?.lastSeenUpdatedAt ?? new Date(0).toISOString(), offset?.lastSeenEventId ?? "0"],
+    [
+      offset?.lastSeenUpdatedAt ?? new Date(0).toISOString(),
+      offset?.lastSeenEventId ?? "0",
+      ...eventTypes,
+    ],
   );
   return Number(
     String((result as Array<{ count?: string | number }>)[0]?.count ?? 0),
@@ -88,14 +105,21 @@ async function readProcessorBacklogCount(
 export function createProcessorStatusRoutes({
   dataSource,
   processorName,
-}: ProcessorStatusRoutesOptions): NonNullable<EventsApiServerOptions["registerRoutes"]> {
+  eventTypes,
+}: ProcessorStatusRoutesOptions): NonNullable<
+  EventsApiServerOptions["registerRoutes"]
+> {
   return (app) => {
     app.get("/status", async (_request, response) => {
       try {
-        const processorOffset = await readProcessorOffset(dataSource, processorName);
+        const processorOffset = await readProcessorOffset(
+          dataSource,
+          processorName,
+        );
         const remainingEvents = await readProcessorBacklogCount(
           dataSource,
           processorOffset,
+          eventTypes,
         );
         response.json({
           ok: true,
@@ -104,7 +128,10 @@ export function createProcessorStatusRoutes({
           remainingEvents,
         });
       } catch (error) {
-        console.error("[processor-api] failed to fetch processor status", error);
+        console.error(
+          "[processor-api] failed to fetch processor status",
+          error,
+        );
         response.status(500).json({
           error: "Internal server error",
         });

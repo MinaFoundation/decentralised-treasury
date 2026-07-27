@@ -39,8 +39,8 @@ describe("buildTreasuryHeaderProps", () => {
         loading: false,
         error: null,
         health: {
-          apiStatus: "healthy",
-          indexerStatus: "healthy",
+          nodeBlockHeight: 100,
+          nodeFresh: true,
           updatedAt: null,
         },
       },
@@ -144,8 +144,8 @@ describe("buildTreasuryHeaderProps", () => {
         loading: false,
         error: null,
         health: {
-          apiStatus: "healthy",
-          indexerStatus: "healthy",
+          nodeBlockHeight: 100,
+          nodeFresh: true,
           updatedAt: null,
         },
       },

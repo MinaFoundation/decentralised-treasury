@@ -10,13 +10,14 @@ import {
 export type TreasuryHealthStatus = "healthy" | "degraded" | "down" | "unknown";
 
 export interface TreasuryNetworkHealthSnapshot {
-  apiStatus?: TreasuryHealthStatus;
-  indexerStatus?: TreasuryHealthStatus;
-  latestLiveSlot?: number | string | null;
-  latestLiveBlock?: number | string | null;
-  latestIndexedSlot?: number | string | null;
-  latestIndexedBlock?: number | string | null;
-  slotLag?: number | string | null;
+  nodeBlockHeight?: number | null;
+  nodeFresh?: boolean;
+  archiveBlockHeight?: number | null;
+  archiveFresh?: boolean;
+  indexerBlockHeight?: number | null;
+  indexerFresh?: boolean;
+  processorRemainingEvents?: number | null;
+  processorFresh?: boolean;
   updatedAt?: string | null;
 }
 
@@ -51,6 +52,80 @@ function formatBuildSha(value: string | null | undefined): string {
   return normalized.slice(0, 12);
 }
 
+function formatBlockHeight(value: number | null | undefined): string {
+  return value === null || value === undefined ? "-" : `#${value}`;
+}
+
+function formatNodeProgress(
+  height: number | null | undefined,
+  fresh: boolean | undefined,
+): Pick<FooterMetric, "value" | "tone"> {
+  if (height === null || height === undefined) {
+    return { value: "Unavailable", tone: "unknown" };
+  }
+  if (fresh === false) {
+    return { value: `Stale · ${formatBlockHeight(height)}`, tone: "degraded" };
+  }
+  return { value: formatBlockHeight(height) };
+}
+
+function formatBlockProgress(
+  height: number | null | undefined,
+  referenceHeight: number | null | undefined,
+  fresh: boolean | undefined,
+  referenceFresh: boolean | undefined,
+): Pick<FooterMetric, "value" | "tone"> {
+  if (height === null || height === undefined) {
+    return { value: "Unavailable", tone: "unknown" };
+  }
+  if (fresh === false) {
+    return { value: `Stale · ${formatBlockHeight(height)}`, tone: "degraded" };
+  }
+  if (
+    referenceHeight === null ||
+    referenceHeight === undefined ||
+    referenceFresh === false
+  ) {
+    return { value: formatBlockHeight(height) };
+  }
+  const blocksBehind = Math.max(0, referenceHeight - height);
+  if (blocksBehind === 0) {
+    return {
+      value: `Up to date · ${formatBlockHeight(height)}`,
+      tone: "healthy",
+    };
+  }
+  return {
+    value: `Behind by ${blocksBehind} · ${formatBlockHeight(height)}`,
+    tone: "degraded",
+  };
+}
+
+function formatProcessorProgress(
+  remainingEvents: number | null | undefined,
+  fresh: boolean | undefined,
+): Pick<FooterMetric, "value" | "tone"> {
+  if (remainingEvents === null || remainingEvents === undefined) {
+    return { value: "Unavailable", tone: "unknown" };
+  }
+  if (fresh === false) {
+    return {
+      value:
+        remainingEvents === 0
+          ? "Stale · previously up to date"
+          : `Stale · ${remainingEvents} events pending`,
+      tone: "degraded",
+    };
+  }
+  if (remainingEvents === 0) {
+    return { value: "Up to date", tone: "healthy" };
+  }
+  return {
+    value: `${remainingEvents} events pending`,
+    tone: "degraded",
+  };
+}
+
 function resolveStatusToneClass(
   status: TreasuryHealthStatus | undefined,
 ): string {
@@ -64,35 +139,6 @@ function resolveStatusToneClass(
     return "text-destructive";
   }
   return "text-muted-foreground";
-}
-
-function formatHealthStatus(
-  intl: ReturnType<typeof useTreasuryIntl>,
-  status: TreasuryHealthStatus | undefined,
-): string {
-  const resolved = status ?? "unknown";
-  if (resolved === "healthy") {
-    return intl.formatMessage({
-      id: "ui.footer.health.healthy",
-      defaultMessage: "Healthy",
-    });
-  }
-  if (resolved === "degraded") {
-    return intl.formatMessage({
-      id: "ui.footer.health.degraded",
-      defaultMessage: "Degraded",
-    });
-  }
-  if (resolved === "down") {
-    return intl.formatMessage({
-      id: "ui.footer.health.down",
-      defaultMessage: "Down",
-    });
-  }
-  return intl.formatMessage({
-    id: "ui.footer.health.unknown",
-    defaultMessage: "Unknown",
-  });
 }
 
 export function TreasuryStatusFooter({
@@ -116,6 +162,26 @@ export function TreasuryStatusFooter({
       id: "ui.footer.network.unknown",
       defaultMessage: "Unknown",
     });
+  const nodeProgress = formatNodeProgress(
+    health?.nodeBlockHeight,
+    health?.nodeFresh,
+  );
+  const archiveProgress = formatBlockProgress(
+    health?.archiveBlockHeight,
+    health?.nodeBlockHeight,
+    health?.archiveFresh,
+    health?.nodeFresh,
+  );
+  const indexerProgress = formatBlockProgress(
+    health?.indexerBlockHeight,
+    health?.archiveBlockHeight,
+    health?.indexerFresh,
+    health?.archiveFresh,
+  );
+  const processorProgress = formatProcessorProgress(
+    health?.processorRemainingEvents,
+    health?.processorFresh,
+  );
 
   const metrics: FooterMetric[] = [
     {
@@ -127,47 +193,31 @@ export function TreasuryStatusFooter({
     },
     {
       label: intl.formatMessage({
-        id: "ui.footer.apiHealth",
-        defaultMessage: "API",
+        id: "ui.footer.node",
+        defaultMessage: "Node",
       }),
-      value: formatHealthStatus(intl, health?.apiStatus),
-      tone: health?.apiStatus,
+      ...nodeProgress,
     },
     {
       label: intl.formatMessage({
-        id: "ui.footer.indexerHealth",
+        id: "ui.footer.archive",
+        defaultMessage: "Archive",
+      }),
+      ...archiveProgress,
+    },
+    {
+      label: intl.formatMessage({
+        id: "ui.footer.indexer",
         defaultMessage: "Indexer",
       }),
-      value: formatHealthStatus(intl, health?.indexerStatus),
-      tone: health?.indexerStatus,
+      ...indexerProgress,
     },
     {
       label: intl.formatMessage({
-        id: "ui.footer.liveSlot",
-        defaultMessage: "Chain",
+        id: "ui.footer.processor",
+        defaultMessage: "Processor",
       }),
-      value: formatMetric(health?.latestLiveSlot),
-    },
-    {
-      label: intl.formatMessage({
-        id: "ui.footer.indexedSlot",
-        defaultMessage: "Indexed",
-      }),
-      value: formatMetric(health?.latestIndexedSlot),
-    },
-    {
-      label: intl.formatMessage({
-        id: "ui.footer.slotLag",
-        defaultMessage: "Lag",
-      }),
-      value: formatMetric(health?.slotLag),
-    },
-    {
-      label: intl.formatMessage({
-        id: "ui.footer.updatedAt",
-        defaultMessage: "Updated",
-      }),
-      value: formatMetric(health?.updatedAt),
+      ...processorProgress,
     },
     {
       label: intl.formatMessage({
@@ -175,6 +225,13 @@ export function TreasuryStatusFooter({
         defaultMessage: "Build",
       }),
       value: formatBuildSha(buildSha),
+    },
+    {
+      label: intl.formatMessage({
+        id: "ui.footer.updatedAt",
+        defaultMessage: "Updated",
+      }),
+      value: formatMetric(health?.updatedAt),
     },
   ];
 

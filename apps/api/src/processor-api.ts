@@ -26,6 +26,7 @@ async function main(): Promise<void> {
   const processorStatusRoutes = createProcessorStatusRoutes({
     dataSource,
     processorName: config.processorName,
+    eventTypes: config.knownEventTypes,
   });
 
   const apiServer = new HttpApiServer({

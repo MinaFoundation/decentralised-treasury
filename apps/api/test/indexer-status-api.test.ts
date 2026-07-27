@@ -1,7 +1,11 @@
 import assert from "node:assert/strict";
 import { createServer } from "node:net";
 import { afterEach, describe, it } from "node:test";
-import { EventsApiServer, EventsIndexer, EventsRepository } from "@repo/indexer";
+import {
+  EventsApiServer,
+  EventsIndexer,
+  EventsRepository,
+} from "@repo/indexer";
 import { ProcessorOffsetEntity } from "@repo/processor";
 import type { DataSource } from "typeorm";
 import { createIndexerStatusRoutes } from "../src/indexer-status-routes.js";
@@ -29,7 +33,9 @@ function getAvailablePort(): Promise<number> {
     server.listen(0, "127.0.0.1", () => {
       const address = server.address();
       if (!address || typeof address === "string") {
-        server.close(() => reject(new Error("Unable to resolve ephemeral port")));
+        server.close(() =>
+          reject(new Error("Unable to resolve ephemeral port")),
+        );
         return;
       }
       const { port } = address;
@@ -74,7 +80,7 @@ describe("indexer and processor status endpoints", () => {
     const processorPort = await getAvailablePort();
     dataSource = createInMemoryDataSource("public");
     repository = new EventsRepository(dataSource, "public", {
-      knownEventTypes: ["proposalCreated"],
+      knownEventTypes: ["proposalCreated", "unrelatedEvent"],
     });
     await repository.initialize();
     await dataSource.synchronize();
@@ -92,6 +98,19 @@ describe("indexer and processor status endpoints", () => {
               transactionInfo: {
                 hash: "tx-status-test",
                 zkappAccountUpdateIds: [1],
+              },
+            },
+          ],
+        },
+        {
+          blockInfo: { height: 122 },
+          eventData: [
+            {
+              accountUpdateId: "2",
+              data: ["1", "33", "44"],
+              transactionInfo: {
+                hash: "tx-unrelated-status-test",
+                zkappAccountUpdateIds: [2],
               },
             },
           ],
@@ -126,12 +145,15 @@ describe("indexer and processor status endpoints", () => {
       registerRoutes: createProcessorStatusRoutes({
         dataSource,
         processorName: "proposal-processor",
+        eventTypes: ["proposalCreated"],
       }),
     });
     await indexerServer.start();
     await processorServer.start();
 
-    const indexerResponse = await fetch(`http://127.0.0.1:${indexerPort}/status`);
+    const indexerResponse = await fetch(
+      `http://127.0.0.1:${indexerPort}/status`,
+    );
     assert.equal(indexerResponse.status, 200);
     const indexerPayload = (await indexerResponse.json()) as {
       ok: boolean;
@@ -144,7 +166,9 @@ describe("indexer and processor status endpoints", () => {
       remainingPendingBlocks: number;
       remainingCanonicalBlocks: number;
     };
-    const processorResponse = await fetch(`http://127.0.0.1:${processorPort}/status`);
+    const processorResponse = await fetch(
+      `http://127.0.0.1:${processorPort}/status`,
+    );
     assert.equal(processorResponse.status, 200);
     const processorPayload = (await processorResponse.json()) as {
       ok: boolean;

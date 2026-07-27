@@ -13,8 +13,14 @@ export const initialTreasuryState: TreasuryState = {
   loading: true,
   error: null,
   health: {
-    apiStatus: "unknown",
-    indexerStatus: "unknown",
+    nodeBlockHeight: null,
+    nodeFresh: false,
+    archiveBlockHeight: null,
+    archiveFresh: false,
+    indexerBlockHeight: null,
+    indexerFresh: false,
+    processorRemainingEvents: null,
+    processorFresh: false,
     updatedAt: null,
   },
 };

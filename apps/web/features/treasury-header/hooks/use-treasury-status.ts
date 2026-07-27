@@ -10,21 +10,18 @@ import {
 } from "../../treasury/lib/treasury-lifecycle";
 import { useTreasuryStore } from "../../treasury/store/treasury-store";
 
-interface HealthzResponse {
-  ok?: boolean;
-}
-
 interface IndexerStatusResponse {
   archive?: {
-    canonicalMaxBlockHeight?: number | null;
     pendingMaxBlockHeight?: number | null;
   };
-  remainingCanonicalBlocks?: number | null;
-  remainingPendingBlocks?: number | null;
+  pendingCursor?: number | null;
+}
+
+interface ProcessorStatusResponse {
+  remainingEvents?: number | null;
 }
 
 export function useTreasuryStatus(): void {
-  const apiUrl = useEndpointSettingsStore((state) => state.value.apiUrl);
   const hydrated = useEndpointSettingsStore((state) => state.hydrated);
   const minaNodeUrl = useEndpointSettingsStore(
     (state) => state.value.minaNodeUrl,
@@ -32,12 +29,19 @@ export function useTreasuryStatus(): void {
   const indexerApiUrl = useEndpointSettingsStore(
     (state) => state.value.indexerApiUrl,
   );
+  const processorApiUrl = useEndpointSettingsStore(
+    (state) => state.value.processorApiUrl,
+  );
   const setTreasuryState = useTreasuryStore((state) => state.setTreasuryState);
   const lastCheckedAt = useMinaBlockStore((state) => state.lastCheckedAt);
+  const latestBlockHeight = useMinaBlockStore(
+    (state) => state.latestBlockHeight,
+  );
+  const minaBlockError = useMinaBlockStore((state) => state.error);
   const refreshToken = useMinaBlockStore((state) => state.refreshToken);
 
   useEffect(() => {
-    if (!hydrated || !apiUrl || !indexerApiUrl) {
+    if (!hydrated) {
       return;
     }
 
@@ -55,8 +59,8 @@ export function useTreasuryStatus(): void {
           minaNodeUrl && treasuryOwnerAddress,
         );
         console.log("[treasury-status] refreshing", {
-          apiUrl,
           indexerApiUrl,
+          processorApiUrl,
           minaNodeUrl,
           refreshToken,
           lastCheckedAt,
@@ -80,13 +84,17 @@ export function useTreasuryStatus(): void {
           : "";
         const resolvedTreasuryOwnerAddress = treasuryOwnerAddress ?? "";
         const [
-          healthzResult,
           indexerStatusResult,
+          processorStatusResult,
           currentLifecycleSnapshotResult,
           treasuryPausedResult,
         ] = await Promise.allSettled([
-          fetch(resolveEndpointUrl(indexerApiUrl, "/healthz")),
-          fetch(resolveEndpointUrl(indexerApiUrl, "/status")),
+          indexerApiUrl
+            ? fetch(resolveEndpointUrl(indexerApiUrl, "/status"))
+            : Promise.resolve(null),
+          processorApiUrl
+            ? fetch(resolveEndpointUrl(processorApiUrl, "/status"))
+            : Promise.resolve(null),
           shouldFetchOnChainTreasuryState
             ? fetchCurrentTreasuryLifecycleSnapshot(
                 resolvedMinaNodeUrl,
@@ -102,11 +110,13 @@ export function useTreasuryStatus(): void {
             : Promise.resolve(false),
         ]);
 
-        const healthzResponse =
-          healthzResult.status === "fulfilled" ? healthzResult.value : null;
         const indexerStatusResponse =
           indexerStatusResult.status === "fulfilled"
             ? indexerStatusResult.value
+            : null;
+        const processorStatusResponse =
+          processorStatusResult.status === "fulfilled"
+            ? processorStatusResult.value
             : null;
         const currentLifecycleSnapshot =
           currentLifecycleSnapshotResult.status === "fulfilled"
@@ -128,23 +138,34 @@ export function useTreasuryStatus(): void {
           });
         }
 
-        const healthzPayload =
-          healthzResponse && healthzResponse.ok
-            ? ((await healthzResponse.json()) as HealthzResponse)
-            : null;
         const indexerPayload =
           indexerStatusResponse && indexerStatusResponse.ok
             ? ((await indexerStatusResponse.json()) as IndexerStatusResponse)
             : null;
-        const remainingBlocks = indexerPayload
-          ? Number(indexerPayload.remainingCanonicalBlocks ?? 0) +
-            Number(indexerPayload.remainingPendingBlocks ?? 0)
-          : null;
+        const processorPayload =
+          processorStatusResponse && processorStatusResponse.ok
+            ? ((await processorStatusResponse.json()) as ProcessorStatusResponse)
+            : null;
+        const archiveBlockHeight =
+          indexerPayload?.archive?.pendingMaxBlockHeight;
+        const indexerBlockHeight = indexerPayload?.pendingCursor;
+        const processorRemainingEvents = processorPayload?.remainingEvents;
+        const previousHealth = useTreasuryStore.getState().health;
         console.log("[treasury-status] lifecycle snapshot", {
           snapshot: currentLifecycleSnapshot,
-          remainingBlocks,
+          nodeBlockHeight: latestBlockHeight,
+          archiveBlockHeight,
+          indexerBlockHeight,
+          processorRemainingEvents,
           treasuryPaused,
         });
+
+        const hasArchiveBlockHeight = Number.isFinite(archiveBlockHeight);
+        const hasIndexerBlockHeight = Number.isFinite(indexerBlockHeight);
+        const hasProcessorRemainingEvents = Number.isFinite(
+          processorRemainingEvents,
+        );
+        const hasNodeBlockHeight = Number.isFinite(latestBlockHeight);
 
         if (!cancelled) {
           setTreasuryState({
@@ -165,22 +186,22 @@ export function useTreasuryStatus(): void {
                 }
               : {}),
             health: {
-              apiStatus: healthzResponse
-                ? healthzResponse.ok && healthzPayload?.ok !== false
-                  ? "healthy"
-                  : "down"
-                : "unknown",
-              indexerStatus:
-                remainingBlocks === null
-                  ? "unknown"
-                  : remainingBlocks > 0
-                    ? "degraded"
-                    : "healthy",
-              latestLiveSlot:
-                indexerPayload?.archive?.pendingMaxBlockHeight ?? null,
-              latestIndexedSlot:
-                indexerPayload?.archive?.canonicalMaxBlockHeight ?? null,
-              slotLag: remainingBlocks ?? undefined,
+              nodeBlockHeight: hasNodeBlockHeight
+                ? latestBlockHeight
+                : previousHealth.nodeBlockHeight,
+              nodeFresh: hasNodeBlockHeight && !minaBlockError,
+              archiveBlockHeight: hasArchiveBlockHeight
+                ? Number(archiveBlockHeight)
+                : previousHealth.archiveBlockHeight,
+              archiveFresh: hasArchiveBlockHeight,
+              indexerBlockHeight: hasIndexerBlockHeight
+                ? Number(indexerBlockHeight)
+                : previousHealth.indexerBlockHeight,
+              indexerFresh: hasIndexerBlockHeight,
+              processorRemainingEvents: hasProcessorRemainingEvents
+                ? Number(processorRemainingEvents)
+                : previousHealth.processorRemainingEvents,
+              processorFresh: hasProcessorRemainingEvents,
               updatedAt: new Date().toLocaleTimeString(),
             },
           });
@@ -188,10 +209,14 @@ export function useTreasuryStatus(): void {
       } catch (error) {
         console.error("[treasury-status] refresh failed", error);
         if (!cancelled) {
+          const previousHealth = useTreasuryStore.getState().health;
           setTreasuryState({
             health: {
-              apiStatus: "down",
-              indexerStatus: "unknown",
+              ...previousHealth,
+              nodeFresh: false,
+              archiveFresh: false,
+              indexerFresh: false,
+              processorFresh: false,
               updatedAt: new Date().toLocaleTimeString(),
             },
           });
@@ -205,11 +230,13 @@ export function useTreasuryStatus(): void {
       cancelled = true;
     };
   }, [
-    apiUrl,
     hydrated,
     indexerApiUrl,
     lastCheckedAt,
+    latestBlockHeight,
+    minaBlockError,
     minaNodeUrl,
+    processorApiUrl,
     refreshToken,
     setTreasuryState,
   ]);

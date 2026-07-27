@@ -853,6 +853,7 @@ describe("lightnet e2e: proposal lifecycle API monitoring", {
             createProcessorStatusRoutes({
               dataSource,
               processorName: PROCESSOR_NAME,
+              eventTypes: [...TRACKED_EVENT_TYPES],
             })(app);
             createProcessorCrudRoutes({
               dataSource,

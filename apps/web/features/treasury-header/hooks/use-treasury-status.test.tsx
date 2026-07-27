@@ -45,6 +45,10 @@ describe("useTreasuryStatus", () => {
   });
 
   it("loads health and lifecycle context for the footer", async () => {
+    useMinaBlockStore.getState().registerBlock({
+      height: 102,
+      hash: "3Nnode",
+    });
     vi.mocked(fetchCurrentTreasuryLifecycleSnapshot).mockResolvedValue({
       currentGlobalSlot: 18460115,
       treasuryDeployedAtSlot: 18403000,
@@ -57,7 +61,6 @@ describe("useTreasuryStatus", () => {
 
     const fetchMock = vi
       .spyOn(globalThis, "fetch")
-      .mockResolvedValueOnce(new Response(JSON.stringify({ ok: true })))
       .mockResolvedValueOnce(
         new Response(
           JSON.stringify({
@@ -65,8 +68,18 @@ describe("useTreasuryStatus", () => {
               canonicalMaxBlockHeight: 100,
               pendingMaxBlockHeight: 102,
             },
+            pendingCursor: 101,
             remainingCanonicalBlocks: 0,
             remainingPendingBlocks: 2,
+          }),
+        ),
+      )
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            ok: true,
+            processorName: "proposal-processor",
+            remainingEvents: 3,
           }),
         ),
       );
@@ -95,8 +108,16 @@ describe("useTreasuryStatus", () => {
     expect(useTreasuryStore.getState().currentGlobalSlot).toBe(18460115);
     expect(useTreasuryStore.getState().treasuryDeployedAtSlot).toBe(18403000);
     expect(useTreasuryStore.getState().paused).toBe(true);
-    expect(useTreasuryStore.getState().health.apiStatus).toBe("healthy");
-    expect(useTreasuryStore.getState().health.indexerStatus).toBe("degraded");
+    expect(useTreasuryStore.getState().health).toMatchObject({
+      nodeBlockHeight: 102,
+      nodeFresh: true,
+      archiveBlockHeight: 102,
+      archiveFresh: true,
+      indexerBlockHeight: 101,
+      indexerFresh: true,
+      processorRemainingEvents: 3,
+      processorFresh: true,
+    });
   });
 
   it("preserves lifecycle state when a background refresh fails", async () => {
@@ -108,6 +129,21 @@ describe("useTreasuryStatus", () => {
       treasuryDeployedAtSlot: 18403000,
       lifecycleStarted: true,
       paused: true,
+      health: {
+        nodeBlockHeight: 102,
+        nodeFresh: true,
+        archiveBlockHeight: 101,
+        archiveFresh: true,
+        indexerBlockHeight: 100,
+        indexerFresh: true,
+        processorRemainingEvents: 0,
+        processorFresh: true,
+        updatedAt: "before",
+      },
+    });
+    useMinaBlockStore.getState().registerBlock({
+      height: 102,
+      hash: "3Nnode",
     });
     vi.mocked(fetchCurrentTreasuryLifecycleSnapshot).mockRejectedValue(
       new Error("node unavailable"),
@@ -115,25 +151,14 @@ describe("useTreasuryStatus", () => {
     vi.mocked(fetchTreasuryPausedState).mockRejectedValue(
       new Error("node unavailable"),
     );
-    vi.spyOn(globalThis, "fetch")
-      .mockResolvedValueOnce(new Response(JSON.stringify({ ok: true })))
-      .mockResolvedValueOnce(
-        new Response(
-          JSON.stringify({
-            archive: {
-              canonicalMaxBlockHeight: 100,
-              pendingMaxBlockHeight: 102,
-            },
-            remainingCanonicalBlocks: 0,
-            remainingPendingBlocks: 0,
-          }),
-        ),
-      );
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response("unavailable", { status: 503 }),
+    );
 
     renderHook(() => useTreasuryStatus());
 
     await waitFor(() => {
-      expect(useTreasuryStore.getState().health.apiStatus).toBe("healthy");
+      expect(useTreasuryStore.getState().health.updatedAt).not.toBe("before");
     });
 
     expect(useTreasuryStore.getState().currentLifecycleId).toBe(7);
@@ -143,5 +168,15 @@ describe("useTreasuryStatus", () => {
     expect(useTreasuryStore.getState().treasuryDeployedAtSlot).toBe(18403000);
     expect(useTreasuryStore.getState().lifecycleStarted).toBe(true);
     expect(useTreasuryStore.getState().paused).toBe(true);
+    expect(useTreasuryStore.getState().health).toMatchObject({
+      nodeBlockHeight: 102,
+      nodeFresh: true,
+      archiveBlockHeight: 101,
+      archiveFresh: false,
+      indexerBlockHeight: 100,
+      indexerFresh: false,
+      processorRemainingEvents: 0,
+      processorFresh: false,
+    });
   });
 });

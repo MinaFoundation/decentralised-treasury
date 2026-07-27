@@ -189,6 +189,7 @@ services:
       dockerfile: devops/docker/Dockerfile
       target: web
       args:
+        BUILD_SHA: ${BUILD_SHA:-unknown}
         NEXT_PUBLIC_TREASURY_API_URL: ${NEXT_PUBLIC_TREASURY_API_URL:-http://127.0.0.1:3100/api}
         NEXT_PUBLIC_INDEXER_API_URL: ${NEXT_PUBLIC_INDEXER_API_URL:-http://127.0.0.1:3100/indexer}
         NEXT_PUBLIC_PROCESSOR_API_URL: ${NEXT_PUBLIC_PROCESSOR_API_URL:-http://127.0.0.1:3100/processor}

@@ -507,13 +507,14 @@ function DashboardWithFullHeader({
           className="max-w-none px-0"
           networkId="MAINNET"
           health={{
-            apiStatus: "healthy",
-            indexerStatus: "healthy",
-            latestLiveSlot: 18459301,
-            latestLiveBlock: 450920,
-            latestIndexedSlot: 18459298,
-            latestIndexedBlock: 450919,
-            slotLag: 3,
+            nodeBlockHeight: 450920,
+            nodeFresh: true,
+            archiveBlockHeight: 450920,
+            archiveFresh: true,
+            indexerBlockHeight: 450920,
+            indexerFresh: true,
+            processorRemainingEvents: 0,
+            processorFresh: true,
             updatedAt: "just now",
           }}
         />
