@@ -81,6 +81,152 @@ interface ExecuteFlowSession {
   treasuryOwnerContractAddress: string;
 }
 
+const PROPOSAL_DETAIL_SKELETON_LINE_WIDTHS = [
+  "w-full",
+  "w-[94%]",
+  "w-[88%]",
+  "w-[97%]",
+  "w-[76%]",
+] as const;
+
+function ProposalDetailPanelSkeleton({
+  rows = 3,
+}: {
+  rows?: number;
+}): JSX.Element {
+  return (
+    <section className="space-y-2">
+      <div className="space-y-1.5">
+        <Skeleton className="h-6 w-28" />
+        <Skeleton className="h-4 w-[min(100%,19rem)]" />
+      </div>
+      <div className="space-y-4 rounded-xl border border-border/70 bg-background px-5 py-5">
+        <div className="flex items-center justify-between gap-4">
+          <Skeleton className="h-3 w-24" />
+          <Skeleton className="h-6 w-20 rounded-full" />
+        </div>
+        <Skeleton className="h-2.5 w-full rounded-full" />
+        <div className="grid grid-cols-3 gap-3">
+          <Skeleton className="h-8 rounded-md" />
+          <Skeleton className="h-8 rounded-md" />
+          <Skeleton className="h-8 rounded-md" />
+        </div>
+        <div className="space-y-3 border-t border-border/60 pt-4">
+          {Array.from({ length: rows }, (_, index) => (
+            <div
+              key={index}
+              className="flex items-center justify-between gap-4 border-b border-border/50 pb-3 last:border-0 last:pb-0"
+            >
+              <Skeleton className="h-4 w-24" />
+              <Skeleton className="h-4 w-20" />
+            </div>
+          ))}
+        </div>
+        <Skeleton className="h-10 w-full rounded-md" />
+      </div>
+    </section>
+  );
+}
+
+function ProposalDetailTableSkeleton(): JSX.Element {
+  return (
+    <section className="space-y-2">
+      <div className="space-y-1.5">
+        <Skeleton className="h-6 w-36" />
+        <Skeleton className="h-4 w-[min(100%,22rem)]" />
+      </div>
+      <div className="overflow-hidden rounded-xl border border-border/70 bg-background">
+        <div className="grid grid-cols-4 gap-4 border-b bg-muted/20 px-6 py-3">
+          {Array.from({ length: 4 }, (_, index) => (
+            <Skeleton
+              key={index}
+              className={index === 0 ? "h-3 w-20" : "h-3 w-14"}
+            />
+          ))}
+        </div>
+        {Array.from({ length: 3 }, (_, rowIndex) => (
+          <div
+            key={rowIndex}
+            className="grid grid-cols-4 gap-4 border-b border-border/50 px-6 py-4 last:border-0"
+          >
+            <Skeleton className="h-4 w-[85%]" />
+            <Skeleton className="h-4 w-[65%]" />
+            <Skeleton className="h-4 w-[70%]" />
+            <Skeleton className="h-4 w-[55%]" />
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function ProposalDetailPageSkeleton(): JSX.Element {
+  return (
+    <div
+      className="space-y-6"
+      role="status"
+      aria-live="polite"
+      aria-busy="true"
+      data-component="proposal-detail-loading"
+    >
+      <span className="sr-only">Loading proposal details</span>
+      <div
+        className="grid items-start gap-6 lg:grid-cols-[1.75fr,0.78fr]"
+        aria-hidden="true"
+      >
+        <section className="min-w-0 space-y-4 lg:border-r lg:border-border/60 lg:pr-6">
+          <div className="flex min-h-[3.25rem] items-center justify-between gap-4 px-1 py-0.5">
+            <Skeleton className="h-5 w-40" />
+            <Skeleton className="h-7 w-32 rounded-full" />
+          </div>
+          <section className="space-y-4 rounded-2xl border border-primary/15 bg-primary/[0.025] px-5 py-4">
+            <Skeleton className="h-9 w-[min(86%,34rem)]" />
+            <div className="border-t border-primary/10 pt-4">
+              <Skeleton className="mb-4 h-6 w-20" />
+              <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+                {Array.from({ length: 8 }, (_, index) => (
+                  <div key={index} className="space-y-2">
+                    <Skeleton className="h-3 w-20" />
+                    <Skeleton
+                      className={index > 5 ? "h-4 w-full" : "h-4 w-[80%]"}
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+          </section>
+          <div className="min-h-[28rem] space-y-7 py-2 sm:min-h-[34rem]">
+            <div className="space-y-3">
+              <Skeleton className="h-7 w-[min(72%,28rem)]" />
+              <Skeleton className="h-4 w-[min(48%,18rem)]" />
+            </div>
+            {Array.from({ length: 3 }, (_, paragraphIndex) => (
+              <div key={paragraphIndex} className="space-y-2.5">
+                {paragraphIndex > 0 ? (
+                  <Skeleton className="mb-3 h-5 w-40" />
+                ) : null}
+                {PROPOSAL_DETAIL_SKELETON_LINE_WIDTHS.map(
+                  (width, lineIndex) => (
+                    <Skeleton key={lineIndex} className={`h-4 ${width}`} />
+                  ),
+                )}
+              </div>
+            ))}
+          </div>
+        </section>
+        <aside className="space-y-4">
+          <ProposalDetailPanelSkeleton rows={4} />
+          <ProposalDetailPanelSkeleton rows={3} />
+        </aside>
+      </div>
+      <div aria-hidden="true" className="space-y-6">
+        <ProposalDetailTableSkeleton />
+        <ProposalDetailTableSkeleton />
+      </div>
+    </div>
+  );
+}
+
 function logWalletSubmissionTransaction(
   label: string,
   transactionJson: string,
@@ -711,12 +857,7 @@ export function ProposalDetailPageContainer({
     !votesInitialized ||
     !executionsInitialized
   ) {
-    return (
-      <section className="rounded-2xl border border-border/70 bg-card p-6 shadow-sm">
-        <Skeleton className="h-9 w-28" />
-        <Skeleton className="mt-4 h-[42rem] w-full" />
-      </section>
-    );
+    return <ProposalDetailPageSkeleton />;
   }
 
   if (!presentedProposal) {
