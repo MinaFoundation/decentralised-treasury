@@ -34,7 +34,9 @@ function createProposalVotingRequirements(
   requiredApprovalBp: string,
 ): Pick<
   TreasuryProposalTableEntry,
-  "stakingEpochDataLedgerTotalCurrency" | "requiredParticipationBp" | "requiredApprovalBp"
+  | "stakingEpochDataLedgerTotalCurrency"
+  | "requiredParticipationBp"
+  | "requiredApprovalBp"
 > {
   return {
     stakingEpochDataLedgerTotalCurrency,
@@ -282,6 +284,9 @@ export default {
     onProposalClick: {
       action: "proposal row clicked",
     },
+    onLifecycleChange: {
+      action: "lifecycle changed",
+    },
   },
 };
 
@@ -289,7 +294,10 @@ export const DefaultTable = {
   args: {
     entries: proposalEntries,
     columns: NON_STATUS_COLUMNS,
-    description: "Proposal discovery and decision support for the selected lifecycle.",
+    largeTitle: true,
+    lifecycleOptions: Array.from({ length: 13 }, (_, index) => 12 - index),
+    description:
+      "Proposal discovery and decision support for the selected lifecycle.",
   } satisfies TreasuryProposalsTableProps,
   render: (args: TreasuryProposalsTableProps) => (
     <TableFrame>
@@ -303,7 +311,8 @@ export const LoadingTable = {
     entries: proposalEntries,
     columns: NON_STATUS_COLUMNS,
     loading: true,
-    description: "Proposal discovery and decision support for the selected lifecycle.",
+    description:
+      "Proposal discovery and decision support for the selected lifecycle.",
   } satisfies TreasuryProposalsTableProps,
   render: (args: TreasuryProposalsTableProps) => (
     <TableFrame>
@@ -316,7 +325,8 @@ export const EmptyTable = {
   args: {
     entries: [],
     columns: NON_STATUS_COLUMNS,
-    description: "Proposal discovery and decision support for the selected lifecycle.",
+    description:
+      "Proposal discovery and decision support for the selected lifecycle.",
   } satisfies TreasuryProposalsTableProps,
   render: (args: TreasuryProposalsTableProps) => (
     <TableFrame>
@@ -342,7 +352,8 @@ export const CompactColumnsTable = {
   args: {
     entries: proposalEntries,
     columns: ["title", "createdAt"],
-    description: "Compact lifecycle view with only the most important proposal columns.",
+    description:
+      "Compact lifecycle view with only the most important proposal columns.",
   } satisfies TreasuryProposalsTableProps,
   render: (args: TreasuryProposalsTableProps) => (
     <TableFrame>
@@ -354,7 +365,8 @@ export const CompactColumnsTable = {
 export const ProposalPeriodTable = {
   args: {
     entries: proposalPeriodEntries,
-    description: "Proposal intake focused on submitted drafts and review readiness.",
+    description:
+      "Proposal intake focused on submitted drafts and review readiness.",
   } satisfies TreasuryProposalsTableProps,
   render: (args: TreasuryProposalsTableProps) => (
     <TableFrame>
@@ -366,7 +378,8 @@ export const ProposalPeriodTable = {
 export const ExplorationPeriodTable = {
   args: {
     entries: proposalEntries.filter((entry) => entry.period === "Exploration"),
-    description: "Exploration review focused on active candidates before formal voting opens.",
+    description:
+      "Exploration review focused on active candidates before formal voting opens.",
   } satisfies TreasuryProposalsTableProps,
   render: (args: TreasuryProposalsTableProps) => (
     <TableFrame>
@@ -390,7 +403,8 @@ export const VotingPeriodTable = {
 export const CooldownPeriodTable = {
   args: {
     entries: proposalEntries.filter((entry) => entry.period === "Cooldown"),
-    description: "Post-vote results view that keeps the final vote split visible.",
+    description:
+      "Post-vote results view that keeps the final vote split visible.",
   } satisfies TreasuryProposalsTableProps,
   render: (args: TreasuryProposalsTableProps) => (
     <TableFrame>

@@ -6,6 +6,7 @@ import { withMinimumLoadingDuration } from "../../app-shell/lib/minimum-loading-
 import { useAppShellStore } from "../../app-shell/store/app-shell-store";
 import { useEndpointSettingsState } from "../../endpoint-settings/store/endpoint-settings-store.selectors";
 import { useMinaBlockStore } from "../../mina-blocks/store/mina-block-store";
+import { buildTreasuryLifecycleOptions } from "../../treasury/lib/treasury-lifecycle";
 import { useTreasuryState } from "../../treasury/store/treasury-store.selectors";
 import {
   fetchProposalItemsPage,
@@ -137,6 +138,16 @@ export function ProposalsPageContainer({
       ),
     [entries, treasury.currentLifecycleId, treasury.currentPeriod],
   );
+  const lifecycleOptions = useMemo(
+    () =>
+      treasury.currentLifecycleId === undefined
+        ? undefined
+        : buildTreasuryLifecycleOptions(
+            treasury.currentLifecycleId,
+            treasury.currentLifecycleId + 1,
+          ),
+    [treasury.currentLifecycleId],
+  );
 
   const handleProposalClick = (proposal: (typeof entries)[number]) => {
     const nextProposalId = encodeURIComponent(
@@ -189,6 +200,18 @@ export function ProposalsPageContainer({
           "createdAt",
         ]}
         title="Proposals"
+        largeTitle
+        lifecycleId={lifecycleId}
+        lifecycleOptions={lifecycleOptions}
+        onLifecycleChange={(nextLifecycleId) => {
+          setPage(1);
+          router.push(
+            nextLifecycleId === undefined
+              ? "/proposals"
+              : `/proposals?lifecycleId=${nextLifecycleId}`,
+            { scroll: false },
+          );
+        }}
         description={
           lifecycleId === undefined
             ? "Browse indexed treasury proposals and open a dedicated proposal detail page for the selected record."

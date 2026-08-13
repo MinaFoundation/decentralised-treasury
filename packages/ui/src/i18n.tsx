@@ -124,6 +124,7 @@ export const defaultTreasuryIntlMessages: Record<string, string> = {
   "ui.lifecycle.selectorSearchLabel": "Search lifecycles",
   "ui.lifecycle.selectorSearchPlaceholder": "Search lifecycles",
   "ui.lifecycle.selectorNoResults": "No lifecycles found",
+  "ui.lifecycle.selectorAll": "All lifecycles",
   "ui.lifecycle.selectorCurrent": "Current",
   "ui.lifecycle.selectorSectionCurrent": "Current",
   "ui.lifecycle.selectorSectionHistorical": "Historical",

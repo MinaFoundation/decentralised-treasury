@@ -93,13 +93,17 @@ describe("TreasuryProposalsTable", () => {
     }).format(new Date("2026-03-03T14:18:00.000Z"));
 
     expect(screen.queryByText("3 total entries")).toBeNull();
-    expect(screen.getByText("B62qgammaTreasuryProposalAddress0003")).toBeTruthy();
+    expect(
+      screen.getByText("B62qgammaTreasuryProposalAddress0003"),
+    ).toBeTruthy();
     expect(screen.getByText("12")).toBeTruthy();
     expect(screen.getByText(expectedLocalizedCreatedAt)).toBeTruthy();
     expect(screen.getByText("#450003")).toBeTruthy();
     expect(screen.getByText("Page 1 of 1")).toBeTruthy();
     expect(screen.getByText("Showing 1-3 of 3")).toBeTruthy();
-    const titles = screen.getAllByRole("cell").map((cell: HTMLElement) => cell.textContent ?? "");
+    const titles = screen
+      .getAllByRole("cell")
+      .map((cell: HTMLElement) => cell.textContent ?? "");
     expect(titles.join(" ")).toContain("Gamma proposal");
   });
 
@@ -115,12 +119,45 @@ describe("TreasuryProposalsTable", () => {
     expect(screen.getByText("Showing 1-1 of 1")).toBeTruthy();
   });
 
+  it("shows all lifecycles first and reports lifecycle filter changes", () => {
+    const onLifecycleChange = vi.fn();
+
+    render(
+      <TreasuryProposalsTable
+        entries={entries}
+        largeTitle
+        lifecycleId={2}
+        lifecycleOptions={[3, 2, 1, 0]}
+        onLifecycleChange={onLifecycleChange}
+      />,
+    );
+
+    const selector = screen.getByRole("combobox", {
+      name: "Select lifecycle",
+    }) as HTMLSelectElement;
+    expect(selector.value).toBe("2");
+    expect(
+      Array.from(selector.options).map((option) => option.textContent),
+    ).toEqual([
+      "All lifecycles",
+      "Lifecycle 3",
+      "Lifecycle 2",
+      "Lifecycle 1",
+      "Lifecycle 0",
+    ]);
+
+    fireEvent.change(selector, { target: { value: "" } });
+    expect(onLifecycleChange).toHaveBeenCalledWith(undefined);
+  });
+
   it("sorts by requested amount when column header is clicked", () => {
     render(<TreasuryProposalsTable entries={entries} />);
 
     fireEvent.click(screen.getByRole("button", { name: /requested/i }));
 
-    const amounts = screen.getAllByText(/MINA$/).map((cell: HTMLElement) => cell.textContent);
+    const amounts = screen
+      .getAllByText(/MINA$/)
+      .map((cell: HTMLElement) => cell.textContent);
     expect(amounts[0]).toBe("100 MINA");
 
     fireEvent.click(screen.getByRole("button", { name: /requested/i }));
@@ -200,15 +237,21 @@ describe("TreasuryProposalsTable", () => {
       />,
     );
 
-    const amounts = screen.getAllByText(/MINA$/).map((cell: HTMLElement) => cell.textContent);
+    const amounts = screen
+      .getAllByText(/MINA$/)
+      .map((cell: HTMLElement) => cell.textContent);
     expect(amounts[0]).toBe("300 MINA");
   });
 
   it("renders loading rows with stable table structure", () => {
     render(<TreasuryProposalsTable entries={[]} loading />);
 
-    expect(document.querySelectorAll(".animate-pulse").length).toBeGreaterThan(0);
-    expect(screen.queryByText("No proposals match the current filter.")).toBeNull();
+    expect(document.querySelectorAll(".animate-pulse").length).toBeGreaterThan(
+      0,
+    );
+    expect(
+      screen.queryByText("No proposals match the current filter."),
+    ).toBeNull();
   });
 
   it("derives early lifecycle statuses only in the standalone proposals table", () => {
@@ -536,7 +579,9 @@ describe("TreasuryProposalsTable", () => {
       target: { value: "does-not-exist" },
     });
 
-    expect(screen.getByText("No proposals match the current filter.")).toBeTruthy();
+    expect(
+      screen.getByText("No proposals match the current filter."),
+    ).toBeTruthy();
     expect(screen.queryByText(/Page \d+ of \d+/)).toBeNull();
   });
 
