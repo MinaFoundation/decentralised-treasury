@@ -525,11 +525,62 @@ mkdir -p "$SQLITE_DATA_HOST_PATH"
 chown -R 1000:1000 "$SQLITE_DATA_HOST_PATH"
 ```
 
+### Automated Proving (`proving` Profile)
+
+Tracing alone isn't enough to tally votes — each lifecycle also needs an
+*exhausted* proof, which means running the actual SNARK circuit
+(`prove-digest` → `prove-merge` → `prove-exhaust`) against Redis and one or
+more BullMQ workers. This is opt-in, since it starts Redis and adds real
+compute cost: bring the stack up with `pnpm testnet:up:proving` (or add
+`--profile proving` to `docker compose ... up` yourself) instead of the plain
+`pnpm testnet:up`.
+
+With the profile enabled, Compose additionally runs:
+
+- `redis` — a private `redis:7-alpine` instance, not published on the host.
+- `proving-worker` — `PROVING_WORKER_REPLICAS` (default 3) replicas of
+  `worker start`, all bound to the same fixed queue name
+  (`PROVING_QUEUE_NAME`, default `staking-ledger-to-voting-ledger`). This
+  replica count is the "cluster": BullMQ hands queued proving jobs to
+  whichever replicas are connected. A single queue name is safe to reuse
+  across every lifecycle because `prove-digest` obliterates the queue before
+  enqueueing a lifecycle's jobs and blocks until they finish, so lifecycles
+  are always proved one at a time regardless of replica count.
+- `proving-scheduler` — another plain bash poll loop
+  (`devops/docker/proving-scheduler-entrypoint.sh`), analogous to
+  `voting-ledger-scheduler` but for proving instead of tracing. Every
+  `PROVING_SCHEDULER_POLL_INTERVAL_SECONDS` (default 30s) it scans for the
+  **oldest** lifecycle with a `<lifecycleId>.sqlite.done` marker (written by
+  `voting-ledger-scheduler`) that doesn't yet have a matching
+  `<lifecycleId>.sqlite.proven` marker, and runs `prove-digest`, `prove-merge`,
+  and `prove-exhaust` for it, writing the merged and exhausted proof JSON to
+  `PROVING_OUTPUT_DIRECTORY` (default `<SQLITE_DATA_DIRECTORY>/proofs`).
+  Unlike `voting-ledger-scheduler`, this **does** work the full backlog
+  oldest-first rather than only the newest lifecycle — skipping an older,
+  not-yet-proven lifecycle would leave its votes permanently untallyable.
+
+Check `docker compose ... logs -f proving-scheduler` to follow progress, and
+`<SQLITE_DATA_HOST_PATH>/proofs/<lifecycleId>-exhausted.json` /
+`<SQLITE_DATA_HOST_PATH>/<lifecycleId>.sqlite.proven` to confirm a given
+lifecycle is proved. As with `voting-ledger-scheduler`, a failure is logged
+and the lifecycle is retried on the next poll cycle rather than skipped; to
+reprove a specific lifecycle by hand, run:
+
+```bash
+docker exec proving-scheduler /bin/sh \
+  devops/docker/proving-scheduler-entrypoint.sh process-lifecycle 17
+```
+
+`PROOFS_ENABLED` defaults to `true` for `proving-worker` specifically
+(diverging from the stack-wide default of `false`), since the only reason to
+run this service is to produce real proofs.
+
 The steps below remain useful for one-off runs, debugging a specific lifecycle,
 or networks where nothing populates `STAKING_LEDGERS_HOST_PATH` automatically
-(for example `local-blockchain`). Use a staking ledger JSON for the target
-lifecycle and network. For a local Mina node, `devops/TESTNET_MINA_NODE.md` is
-the source of truth for ledger export.
+(for example `local-blockchain`), or where the `proving` profile isn't
+enabled. Use a staking ledger JSON for the target lifecycle and network. For a
+local Mina node, `devops/TESTNET_MINA_NODE.md` is the source of truth for
+ledger export.
 
 Populate lifecycle SQLite:
 

@@ -28,9 +28,13 @@ The Compose stack runs the application services only:
 - Postgres
 - one-shot API migration init
 - Caddy reverse proxy
+- staking-ledger-to-voting-ledger witness tracing (`voting-ledger-scheduler`)
 
-The Compose stack does not run a Mina node, archive node, Redis, SDK tracing
-pipeline, or proof workers. Those run outside the app stack.
+The Compose stack does not run a Mina node or archive node — those run outside
+the app stack. Redis and the staking-ledger-to-voting-ledger proof workers
+(`redis`, `proving-worker`, `proving-scheduler`) are also outside the default
+stack, but available opt-in behind the `proving` Compose profile — see
+"Automated Proving" in `devops/TESTNET.md`.
 
 ## Security Defaults
 
@@ -117,6 +121,14 @@ pnpm testnet:down
 pnpm testnet:reset
 pnpm testnet:logs
 pnpm testnet:config
+```
+
+Add the opt-in `proving` profile (Redis + proving-worker cluster +
+proving-scheduler — see "Automated Proving" in `devops/TESTNET.md`):
+
+```bash
+pnpm testnet:up:proving
+pnpm testnet:up:proving:build
 ```
 
 Local blockchain simulator family:

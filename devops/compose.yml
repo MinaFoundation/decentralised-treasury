@@ -181,6 +181,85 @@ services:
         condition: service_completed_successfully
     restart: always
 
+  redis:
+    image: redis:7-alpine
+    profiles:
+      - proving
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    security_opt:
+      - "no-new-privileges:true"
+    restart: always
+
+  proving-worker:
+    <<: *app-image
+    profiles:
+      - proving
+    # One replica of `worker start`, bound to a fixed queue name shared
+    # across every lifecycle (see proving-scheduler-entrypoint.sh for why a
+    # fixed name is safe). Replica count is the "cluster": BullMQ hands
+    # queued proving jobs to whichever replicas are connected.
+    command:
+      [
+        "pnpm",
+        "run",
+        "cli",
+        "--",
+        "worker",
+        "start",
+        "--queue-name",
+        "${PROVING_QUEUE_NAME:-staking-ledger-to-voting-ledger}",
+        "--redis-host",
+        "redis",
+        "--redis-port",
+        "6379",
+      ]
+    environment:
+      # Defaults to true (unlike the stack-wide PROOFS_ENABLED default of
+      # false) since the only reason to run this service is to produce real
+      # proofs.
+      PROOFS_ENABLED: ${PROOFS_ENABLED:-true}
+    deploy:
+      replicas: ${PROVING_WORKER_REPLICAS:-3}
+    volumes:
+      - proving-worker-cache:/app/apps/cli/cache
+    depends_on:
+      redis:
+        condition: service_healthy
+    restart: always
+
+  proving-scheduler:
+    <<: *app-image
+    profiles:
+      - proving
+    # Bash poll loop, not a long-lived Node process: every cycle it shells
+    # out to the existing `staking-ledger-to-voting-ledger` CLI commands
+    # (prove-digest/prove-merge/prove-exhaust), the same way
+    # devops/TESTNET.md documents doing this by hand. Works the full backlog
+    # oldest-first - see devops/docker/proving-scheduler-entrypoint.sh. To
+    # (re)prove a specific lifecycle by hand, use `docker exec` against this
+    # same container, e.g.:
+    #   docker exec proving-scheduler /bin/sh devops/docker/proving-scheduler-entrypoint.sh process-lifecycle 17
+    command: ["/bin/sh", "devops/docker/proving-scheduler-entrypoint.sh"]
+    environment:
+      PROVING_QUEUE_NAME: ${PROVING_QUEUE_NAME:-staking-ledger-to-voting-ledger}
+      REDIS_HOST: redis
+      REDIS_PORT: "6379"
+      SQLITE_DATA_DIRECTORY: ${SQLITE_DATA_DIRECTORY:-/data/sqlite}
+      PROVING_OUTPUT_DIRECTORY: ${PROVING_OUTPUT_DIRECTORY:-}
+      PROVING_SCHEDULER_POLL_INTERVAL_SECONDS: ${PROVING_SCHEDULER_POLL_INTERVAL_SECONDS:-30}
+    volumes:
+      - ${SQLITE_DATA_HOST_PATH:-./.data/sqlite}:${SQLITE_DATA_DIRECTORY:-/data/sqlite}
+    depends_on:
+      api-migrate:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+    restart: always
+
   web:
     <<: *app-image
     image: decentralized-treasury:devops-web
@@ -371,3 +450,4 @@ volumes:
   caddy-data:
   caddy-config:
   postgres-data:
+  proving-worker-cache:
