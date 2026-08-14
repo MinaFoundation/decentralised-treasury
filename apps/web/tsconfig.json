@@ -5,7 +5,10 @@
       {
         "name": "next"
       }
-    ]
+    ],
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
+    "useDefineForClassFields": false
   },
   "include": [
     "**/*.ts",

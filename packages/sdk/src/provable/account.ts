@@ -43,14 +43,16 @@ export class Timing extends Struct({
     });
   }
   public static toHashInput(timing: Timing) {
+    // non-null: o1js CircuitValue wrappers here (UInt32/UInt64) always encode
+    // to exactly one Field, so toFields()[0] is never actually undefined.
     return (
       [
         packed(timing.isTimed.toField(), 1),
-        packed(timing.initialMinimumBalance.toFields()[0], 64),
-        packed(timing.cliffTime.toFields()[0], 32),
-        packed(timing.cliffAmount.toFields()[0], 64),
-        packed(timing.vestingPeriod.toFields()[0], 32),
-        packed(timing.vestingIncrement.toFields()[0], 64),
+        packed(timing.initialMinimumBalance.toFields()[0]!, 64),
+        packed(timing.cliffTime.toFields()[0]!, 32),
+        packed(timing.cliffAmount.toFields()[0]!, 64),
+        packed(timing.vestingPeriod.toFields()[0]!, 32),
+        packed(timing.vestingIncrement.toFields()[0]!, 64),
       ]
         // .reverse()
         .reduce(append, { fieldElements: [], packeds: [] })
@@ -157,7 +159,7 @@ export class Permissions extends Struct({
         Permission.toHashInput(permissions.setDelegate),
         Permission.toHashInput(permissions.setPermissions),
         Permission.toHashInput(permissions.setVerificationKey[0] as Permission),
-        packed((permissions.setVerificationKey[1] as UInt32).toFields()[0], 32),
+        packed((permissions.setVerificationKey[1] as UInt32).toFields()[0]!, 32),
         Permission.toHashInput(permissions.setZkappUri),
         Permission.toHashInput(permissions.editActionState),
         Permission.toHashInput(permissions.setTokenSymbol),
@@ -195,9 +197,9 @@ export class Zkapp extends Struct({
     const hashInput = [
       field(zkapp.zkappUri),
       packed(zkapp.provedState.toField(), 1),
-      packed(zkapp.lastActionSlot.toFields()[0], 32),
+      packed(zkapp.lastActionSlot, 32),
       ...zkapp.actionState.map((action) => field(action)),
-      packed(zkapp.zkappVersion.toFields()[0], 32),
+      packed(zkapp.zkappVersion, 32),
       field(zkapp.verificationKey.hash),
       ...zkapp.appState.map((state) => field(state)),
     ].reduce(append, { fieldElements: [], packeds: [] });
@@ -287,18 +289,19 @@ export class Account extends Struct({
   }
 
   public static toHashInput(account: Account) {
+    // non-null: TokenId/UInt64/UInt32 always encode to exactly one Field.
     return [
       append(field(account.pk.x), packed(account.pk.isOdd.toField(), 1)),
-      field(account.tokenId.toFields()[0]),
+      field(account.tokenId.toFields()[0]!),
       packed(account.tokenSymbol.field, 48),
-      packed(account.balance.toFields()[0], 64),
-      packed(account.nonce.toFields()[0], 32),
-      field(account.receiptChainHash.toFields()[0]),
+      packed(account.balance.toFields()[0]!, 64),
+      packed(account.nonce.toFields()[0]!, 32),
+      field(account.receiptChainHash),
       append(
         field(account.delegate.x),
         packed(account.delegate.isOdd.toField(), 1),
       ),
-      field(account.votingFor.toFields()[0]),
+      field(account.votingFor),
       Timing.toHashInput(account.timing),
       Permissions.toHashInput(account.permissions),
       field(Zkapp.toHashInput(account.zkapp)),

@@ -245,7 +245,9 @@ export class TreasuryOwnerSmartContract extends TokenContract {
     ];
 
     proposalUpdate.account.verificationKey.set(
-      TreasuryProposalSmartContract._verificationKey,
+      // non-null: TreasuryProposalSmartContract.compile() runs before any
+      // account update that references it, populating this cache.
+      TreasuryProposalSmartContract._verificationKey!,
     );
 
     proposalUpdate.account.permissions.set(Permissions.default());
@@ -365,7 +367,7 @@ export class TreasuryOwnerSmartContract extends TokenContract {
         proposalPublicKey,
         this.deriveTokenId(),
       );
-      const actionState = actionStates[actionStateIndex];
+      const actionState = actionStates[actionStateIndex]!;
 
       actionStateUpdate.account.actionState.requireEquals(actionState.hash);
       actionState.found.assertTrue("Action state not found in the merkle list");
@@ -383,7 +385,7 @@ export class TreasuryOwnerSmartContract extends TokenContract {
         compareIndex++
       ) {
         actionState.hash
-          .equals(actionStates[compareIndex].hash)
+          .equals(actionStates[compareIndex]!.hash)
           .not()
           .assertTrue("Action state hashes must be unique");
       }

@@ -128,7 +128,8 @@ export class MultisigSignatures extends Struct({
       .assertTrue(MultisigSignaturesErrors.INVALID_MULTISIG_COMMITMENT);
 
     const signaturesValid = this.signatures.map((signature, i) => {
-      return signature.verify(multisigParticipants[i], [data]);
+      // non-null: both arrays are fixed at MULTISIG_PARTICIPANTS_COUNT length.
+      return signature.verify(multisigParticipants[i]!, [data]);
     });
 
     const validSignaturesCount = signaturesValid.reduce(

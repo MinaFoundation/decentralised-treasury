@@ -449,7 +449,8 @@ export const VoteReducer = ZkProgram({
 
         // iterate over the vote actions in the batch.
         for (let i = 0; i < VOTE_ACTION_BATCH_SIZE; i++) {
-          const voteAction = voteActions[i];
+          // non-null: voteActions is a Provable.Array fixed at VOTE_ACTION_BATCH_SIZE.
+          const voteAction = voteActions[i]!;
           Vote.assertValid(voteAction.vote);
 
           // if its a dummy action (used to fill the static sized batch),
