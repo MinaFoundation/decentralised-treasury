@@ -1,7 +1,9 @@
 name: decentralized-treasury
 
 x-app-image: &app-image
-  image: decentralized-treasury:devops
+  # Override APP_IMAGE to run a published multi-arch tag instead of building
+  # locally (see devops/PUBLISHING.md).
+  image: ${APP_IMAGE:-decentralized-treasury:devops}
   build:
     context: ..
     dockerfile: devops/docker/Dockerfile
@@ -262,41 +264,20 @@ services:
 
   web:
     <<: *app-image
-    image: decentralized-treasury:devops-web
+    image: ${WEB_IMAGE:-decentralized-treasury:devops-web}
+    # No NEXT_PUBLIC_* build args: the image is deployment-agnostic and takes
+    # every browser-facing value from `environment:` below at container start.
     build:
       context: ..
       dockerfile: devops/docker/Dockerfile
       target: web
       args:
         BUILD_SHA: ${BUILD_SHA:-unknown}
-        NEXT_PUBLIC_TREASURY_API_URL: ${NEXT_PUBLIC_TREASURY_API_URL:-http://127.0.0.1:3100/api}
-        NEXT_PUBLIC_INDEXER_API_URL: ${NEXT_PUBLIC_INDEXER_API_URL:-http://127.0.0.1:3100/indexer}
-        NEXT_PUBLIC_PROCESSOR_API_URL: ${NEXT_PUBLIC_PROCESSOR_API_URL:-http://127.0.0.1:3100/processor}
-        NEXT_PUBLIC_MINA_NODE_URL: ${NEXT_PUBLIC_MINA_NODE_URL:-http://127.0.0.1:3100/mina/graphql}
-        NEXT_PUBLIC_TREASURY_OWNER_CONTRACT_ADDRESS: ${NEXT_PUBLIC_TREASURY_OWNER_CONTRACT_ADDRESS:-${TREASURY_OWNER_CONTRACT_ADDRESS:-B62qpExe8CAaGkR4HRxyXvkziQpE6Aq3U71MJLHivP8pCsiDk1BbU9Z}}
-        NEXT_PUBLIC_LIFECYCLE_PERIOD_DURATION: ${NEXT_PUBLIC_LIFECYCLE_PERIOD_DURATION:-7140}
-        NEXT_PUBLIC_SLOT_DURATION_MS: ${NEXT_PUBLIC_SLOT_DURATION_MS:-180000}
-        NEXT_PUBLIC_PROOFS_ENABLED: ${NEXT_PUBLIC_PROOFS_ENABLED:-false}
-        NEXT_PUBLIC_NETWORK_ID: ${NEXT_PUBLIC_NETWORK_ID:-MAINNET}
-        NEXT_PUBLIC_VOTE_REDUCER_VERIFICATION_KEY_JSON: ${NEXT_PUBLIC_VOTE_REDUCER_VERIFICATION_KEY_JSON:-}
-        NEXT_PUBLIC_STAKING_LEDGER_TO_VOTING_LEDGER_VERIFICATION_KEY_JSON: ${NEXT_PUBLIC_STAKING_LEDGER_TO_VOTING_LEDGER_VERIFICATION_KEY_JSON:-}
-        NEXT_PUBLIC_TREASURY_PROPOSAL_VERIFICATION_KEY_JSON: ${NEXT_PUBLIC_TREASURY_PROPOSAL_VERIFICATION_KEY_JSON:-}
-        NEXT_PUBLIC_EMPTY_VOTING_LEDGER_ROOT: ${NEXT_PUBLIC_EMPTY_VOTING_LEDGER_ROOT:-}
-        NEXT_PUBLIC_EMPTY_NULLIFIER_ROOT: ${NEXT_PUBLIC_EMPTY_NULLIFIER_ROOT:-}
-    command:
-      [
-        "pnpm",
-        "--dir",
-        "apps/web",
-        "run",
-        "start",
-        "--hostname",
-        "0.0.0.0",
-        "--port",
-        "${WEB_PORT:-3100}",
-      ]
+    # Runs the image's own CMD (the Next.js standalone server), which binds to
+    # PORT/HOSTNAME rather than command-line flags.
     restart: always
     environment:
+      PORT: ${WEB_PORT:-3100}
       NEXT_PUBLIC_TREASURY_API_URL: ${NEXT_PUBLIC_TREASURY_API_URL:-http://127.0.0.1:3100/api}
       NEXT_PUBLIC_INDEXER_API_URL: ${NEXT_PUBLIC_INDEXER_API_URL:-http://127.0.0.1:3100/indexer}
       NEXT_PUBLIC_PROCESSOR_API_URL: ${NEXT_PUBLIC_PROCESSOR_API_URL:-http://127.0.0.1:3100/processor}

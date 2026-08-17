@@ -9,7 +9,10 @@ ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
 ENV NODE_NO_WARNINGS=1
 ENV REDISMS_DISABLE_POSTINSTALL=true
-ENV NEXT_PUBLIC_BUILD_SHA=$BUILD_SHA
+# Not NEXT_PUBLIC_-prefixed on purpose: the web app resolves the revision from
+# this name at runtime, and a NEXT_PUBLIC_ variable present during `next build`
+# would be inlined into the client bundle instead.
+ENV BUILD_SHA=$BUILD_SHA
 
 RUN apt-get update \
   && apt-get install -y --no-install-recommends \
@@ -47,40 +50,47 @@ COPY --chown=node:node . .
 
 EXPOSE 3100 4000 4001 4002 4003 8080 8282
 
-# Only the `web` service targets this stage (see devops/compose.yml). Every
-# other service targets `base` and never pays for the Next.js build below.
-FROM base AS web
+# Compiles the Next.js bundle. Deliberately runs with no NEXT_PUBLIC_* variables
+# set: any that were present here would be inlined into the client bundle by
+# `next build` and pin the image to a single deployment. The browser instead
+# receives its configuration at container start - see
+# apps/web/features/runtime-config.
+FROM base AS web-build
 
 RUN mkdir -p apps/web/.next
 
-ARG NEXT_PUBLIC_TREASURY_API_URL=http://127.0.0.1:3100/api
-ARG NEXT_PUBLIC_INDEXER_API_URL=http://127.0.0.1:3100/indexer
-ARG NEXT_PUBLIC_PROCESSOR_API_URL=http://127.0.0.1:3100/processor
-ARG NEXT_PUBLIC_MINA_NODE_URL=http://127.0.0.1:3100/mina/graphql
-ARG NEXT_PUBLIC_TREASURY_OWNER_CONTRACT_ADDRESS=B62qpExe8CAaGkR4HRxyXvkziQpE6Aq3U71MJLHivP8pCsiDk1BbU9Z
-ARG NEXT_PUBLIC_LIFECYCLE_PERIOD_DURATION=7140
-ARG NEXT_PUBLIC_SLOT_DURATION_MS=180000
-ARG NEXT_PUBLIC_PROOFS_ENABLED=false
-ARG NEXT_PUBLIC_NETWORK_ID=MAINNET
-ARG NEXT_PUBLIC_VOTE_REDUCER_VERIFICATION_KEY_JSON=
-ARG NEXT_PUBLIC_STAKING_LEDGER_TO_VOTING_LEDGER_VERIFICATION_KEY_JSON=
-ARG NEXT_PUBLIC_TREASURY_PROPOSAL_VERIFICATION_KEY_JSON=
-ARG NEXT_PUBLIC_EMPTY_VOTING_LEDGER_ROOT=
-ARG NEXT_PUBLIC_EMPTY_NULLIFIER_ROOT=
-ENV NEXT_PUBLIC_TREASURY_API_URL=${NEXT_PUBLIC_TREASURY_API_URL} \
-  NEXT_PUBLIC_INDEXER_API_URL=${NEXT_PUBLIC_INDEXER_API_URL} \
-  NEXT_PUBLIC_PROCESSOR_API_URL=${NEXT_PUBLIC_PROCESSOR_API_URL} \
-  NEXT_PUBLIC_MINA_NODE_URL=${NEXT_PUBLIC_MINA_NODE_URL} \
-  NEXT_PUBLIC_TREASURY_OWNER_CONTRACT_ADDRESS=${NEXT_PUBLIC_TREASURY_OWNER_CONTRACT_ADDRESS} \
-  NEXT_PUBLIC_LIFECYCLE_PERIOD_DURATION=${NEXT_PUBLIC_LIFECYCLE_PERIOD_DURATION} \
-  NEXT_PUBLIC_SLOT_DURATION_MS=${NEXT_PUBLIC_SLOT_DURATION_MS} \
-  NEXT_PUBLIC_PROOFS_ENABLED=${NEXT_PUBLIC_PROOFS_ENABLED} \
-  NEXT_PUBLIC_NETWORK_ID=${NEXT_PUBLIC_NETWORK_ID} \
-  NEXT_PUBLIC_VOTE_REDUCER_VERIFICATION_KEY_JSON=${NEXT_PUBLIC_VOTE_REDUCER_VERIFICATION_KEY_JSON} \
-  NEXT_PUBLIC_STAKING_LEDGER_TO_VOTING_LEDGER_VERIFICATION_KEY_JSON=${NEXT_PUBLIC_STAKING_LEDGER_TO_VOTING_LEDGER_VERIFICATION_KEY_JSON} \
-  NEXT_PUBLIC_TREASURY_PROPOSAL_VERIFICATION_KEY_JSON=${NEXT_PUBLIC_TREASURY_PROPOSAL_VERIFICATION_KEY_JSON} \
-  NEXT_PUBLIC_EMPTY_VOTING_LEDGER_ROOT=${NEXT_PUBLIC_EMPTY_VOTING_LEDGER_ROOT} \
-  NEXT_PUBLIC_EMPTY_NULLIFIER_ROOT=${NEXT_PUBLIC_EMPTY_NULLIFIER_ROOT}
-
 RUN --mount=type=cache,target=/app/apps/web/.next/cache,uid=1000,gid=1000 \
   pnpm --dir apps/web run build
+
+# The published web image: only the traced standalone server, the static assets
+# and the public directory. No pnpm workspace, no source tree, no build
+# toolchain. Configure it entirely through environment variables at `docker run`
+# time (see devops/PUBLISHING.md).
+FROM node:24.6.0-bookworm-slim AS web
+
+ARG BUILD_SHA=unknown
+
+LABEL org.opencontainers.image.revision=$BUILD_SHA
+LABEL org.opencontainers.image.title="Mina Decentralized Treasury web"
+LABEL org.opencontainers.image.description="Runtime-configurable Next.js UI for the Mina decentralized treasury."
+
+ENV NODE_ENV=production
+ENV NODE_NO_WARNINGS=1
+ENV BUILD_SHA=$BUILD_SHA
+# Read by the Next.js standalone server itself.
+ENV PORT=3100
+ENV HOSTNAME=0.0.0.0
+
+WORKDIR /app
+
+USER node
+
+# `output: "standalone"` traces from the workspace root, so this lands as
+# /app/node_modules plus /app/apps/web/server.js.
+COPY --from=web-build --chown=node:node /app/apps/web/.next/standalone ./
+COPY --from=web-build --chown=node:node /app/apps/web/.next/static ./apps/web/.next/static
+COPY --from=web-build --chown=node:node /app/apps/web/public ./apps/web/public
+
+EXPOSE 3100
+
+CMD ["node", "apps/web/server.js"]
