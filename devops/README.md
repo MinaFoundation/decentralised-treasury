@@ -104,6 +104,11 @@ The CLI uses host-facing URLs. Compose containers use
 `host.docker.internal` when the Mina daemon and archive node run on the Docker
 host. The browser uses full URLs through the local Caddy web origin.
 
+The `NEXT_PUBLIC_*` values reach the browser at container start rather than
+being compiled in, so changing one no longer needs an image rebuild - restart
+the web service and the new value is served. See [PUBLISHING.md](PUBLISHING.md)
+for the full list and for building images another operator can run.
+
 `.env.compose.example` is kept for manual Compose experiments that use a single
 env file. Do not use it as the primary testnet runbook unless you intentionally
 want to bypass the generated family env layout.

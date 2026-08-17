@@ -80,8 +80,11 @@ build_image() {
 
   if [ "$PUSH" = "true" ]; then
     args+=(--push)
+    # The first publish logs "buildcache: not found" for the import; that is
+    # only a cold cache and does not fail the build. ignore-error keeps a
+    # failed cache *export* from failing an otherwise successful publish.
     args+=(--cache-from "type=registry,ref=$NAMESPACE/${repos[0]}:buildcache")
-    args+=(--cache-to "type=registry,ref=$NAMESPACE/${repos[0]}:buildcache,mode=max")
+    args+=(--cache-to "type=registry,ref=$NAMESPACE/${repos[0]}:buildcache,mode=max,ignore-error=true")
   fi
 
   echo
