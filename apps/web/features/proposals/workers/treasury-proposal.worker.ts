@@ -1,5 +1,7 @@
 /// <reference lib="webworker" />
 
+import { installRuntimeConfig } from "../../runtime-config/lib/install-runtime-config";
+import type { TreasuryRuntimeConfig } from "../../runtime-config/lib/runtime-config.types";
 import type { SerializedProposalCompileArtifacts } from "../lib/proposal-prover-runtime";
 import type {
   ProposalProverWorkerRequest,
@@ -29,6 +31,25 @@ async function getProposalProverRuntime(): Promise<ProposalProverRuntime> {
   ensureWorkerWindowAlias();
   proposalProverRuntimePromise ??= import("../lib/proposal-prover-runtime");
   return proposalProverRuntimePromise;
+}
+
+/**
+ * Adopts the config the main thread resolved, before anything that reads
+ * configuration is imported.
+ *
+ * The worker's global scope is not the page's, so the inline bootstrap script
+ * the server renders never ran here. Without this the prover would fall back to
+ * build-time `NEXT_PUBLIC_*` values, which a published image does not carry -
+ * surfacing as "Missing required browser prover config" for whichever field the
+ * validator happens to check first.
+ *
+ * Runs on every message: the prover runtime module is imported lazily and only
+ * once, so the config must already be in place the first time any handler
+ * reaches it, whichever request that turns out to be.
+ */
+function adoptRuntimeConfig(runtimeConfig: TreasuryRuntimeConfig): void {
+  ensureWorkerWindowAlias();
+  installRuntimeConfig(runtimeConfig);
 }
 
 function getErrorMessage(
@@ -125,6 +146,7 @@ function postResponse(response: ProposalProverWorkerResponse): void {
 
 self.onmessage = async (event: MessageEvent<ProposalProverWorkerRequest>) => {
   const message = event.data;
+  adoptRuntimeConfig(message.runtimeConfig);
   console.info("[proposal-prover][worker] received request", {
     id: message.id,
     type: message.type,

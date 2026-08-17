@@ -1,3 +1,4 @@
+import type { TreasuryRuntimeConfig } from "../../runtime-config/lib/runtime-config.types";
 import type {
   PreparedCreateProposalTransaction,
   PreparedExecuteProposalTransaction,
@@ -16,42 +17,56 @@ export interface ProposalProverWorkerStatus {
   error: string | null;
 }
 
-export interface CompileProposalContractsRequest {
+/**
+ * The envelope every request carries.
+ *
+ * `runtimeConfig` rides along on each message rather than being sent once at
+ * worker startup. A worker has its own global scope, so the bootstrap script
+ * the server renders into the document never runs there; carrying the config
+ * per message keeps the worker correct without depending on message ordering
+ * or on state surviving a worker restart.
+ */
+export interface ProposalProverWorkerRequestEnvelope {
   id: string;
+  runtimeConfig: TreasuryRuntimeConfig;
+}
+
+export interface CompileProposalContractsRequest
+  extends ProposalProverWorkerRequestEnvelope {
   type: "compile";
   proofsEnabled: boolean;
 }
 
-export interface ProveTransactionJsonRequest {
-  id: string;
+export interface ProveTransactionJsonRequest
+  extends ProposalProverWorkerRequestEnvelope {
   type: "proveTransactionJson";
   transactionJson: string;
   proofsEnabled: boolean;
 }
 
-export interface BuildAndProveCreateProposalRequest {
-  id: string;
+export interface BuildAndProveCreateProposalRequest
+  extends ProposalProverWorkerRequestEnvelope {
   type: "buildAndProveCreateProposal";
   input: PrepareCreateProposalTransactionInput;
   proofsEnabled: boolean;
 }
 
-export interface BuildAndProveVoteProposalRequest {
-  id: string;
+export interface BuildAndProveVoteProposalRequest
+  extends ProposalProverWorkerRequestEnvelope {
   type: "buildAndProveVoteProposal";
   input: PrepareVoteProposalTransactionInput;
   proofsEnabled: boolean;
 }
 
-export interface BuildAndProveExecuteProposalRequest {
-  id: string;
+export interface BuildAndProveExecuteProposalRequest
+  extends ProposalProverWorkerRequestEnvelope {
   type: "buildAndProveExecuteProposal";
   input: PrepareExecuteProposalTransactionInput;
   proofsEnabled: boolean;
 }
 
-export interface GetProposalProverStatusRequest {
-  id: string;
+export interface GetProposalProverStatusRequest
+  extends ProposalProverWorkerRequestEnvelope {
   type: "getStatus";
 }
 
@@ -63,13 +78,19 @@ export type ProposalProverWorkerRequest =
   | BuildAndProveExecuteProposalRequest
   | GetProposalProverStatusRequest;
 
-export type ProposalProverWorkerRequestWithoutId =
-  | Omit<CompileProposalContractsRequest, "id">
-  | Omit<ProveTransactionJsonRequest, "id">
-  | Omit<BuildAndProveCreateProposalRequest, "id">
-  | Omit<BuildAndProveVoteProposalRequest, "id">
-  | Omit<BuildAndProveExecuteProposalRequest, "id">
-  | Omit<GetProposalProverStatusRequest, "id">;
+type WithoutEnvelope<Request extends ProposalProverWorkerRequestEnvelope> =
+  Omit<Request, keyof ProposalProverWorkerRequestEnvelope>;
+
+/**
+ * What a caller passes to `sendRequest`; the hook fills in the envelope.
+ */
+export type ProposalProverWorkerRequestInput =
+  | WithoutEnvelope<CompileProposalContractsRequest>
+  | WithoutEnvelope<ProveTransactionJsonRequest>
+  | WithoutEnvelope<BuildAndProveCreateProposalRequest>
+  | WithoutEnvelope<BuildAndProveVoteProposalRequest>
+  | WithoutEnvelope<BuildAndProveExecuteProposalRequest>
+  | WithoutEnvelope<GetProposalProverStatusRequest>;
 
 export interface ProposalProverWorkerSuccessResponse {
   id: string;
