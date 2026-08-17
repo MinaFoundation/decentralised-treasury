@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import { resolveEndpointUrl } from "../../endpoint-settings/lib/endpoint-url";
 import { useEndpointSettingsStore } from "../../endpoint-settings/store/endpoint-settings-store";
 import { useMinaBlockStore } from "../../mina-blocks/store/mina-block-store";
+import { getRuntimeConfig } from "../../runtime-config/lib/get-runtime-config";
 import {
   fetchCurrentTreasuryLifecycleSnapshot,
   fetchTreasuryPausedState,
@@ -49,10 +50,10 @@ export function useTreasuryStatus(): void {
 
     const load = async () => {
       try {
-        const treasuryOwnerAddress =
-          process.env.NEXT_PUBLIC_TREASURY_OWNER_CONTRACT_ADDRESS;
+        const runtimeConfig = getRuntimeConfig();
+        const treasuryOwnerAddress = runtimeConfig.treasuryOwnerContractAddress;
         const lifecyclePeriodDuration = Number.parseInt(
-          process.env.NEXT_PUBLIC_LIFECYCLE_PERIOD_DURATION ?? "",
+          runtimeConfig.lifecyclePeriodDuration ?? "",
           10,
         );
         const shouldFetchOnChainTreasuryState = Boolean(

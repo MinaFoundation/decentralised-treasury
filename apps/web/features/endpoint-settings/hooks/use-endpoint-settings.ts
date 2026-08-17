@@ -1,7 +1,10 @@
 "use client";
 
 import { useEffect } from "react";
-import { useEndpointSettingsStore } from "../store/endpoint-settings-store";
+import {
+  createDefaultEndpointSettings,
+  useEndpointSettingsStore,
+} from "../store/endpoint-settings-store";
 
 const STORAGE_KEY = "treasury-header-settings";
 const LEGACY_LOCAL_API_URLS = new Set([
@@ -69,26 +72,32 @@ export function useEndpointSettings() {
       return;
     }
 
+    // Re-derived here rather than reused from the store so the deployment's
+    // configuration is read after the runtime config script has certainly run,
+    // instead of whenever the store module happened to evaluate. Every consumer
+    // waits on `hydrated`, so this is the value they actually see.
+    const defaults = createDefaultEndpointSettings();
+
     try {
       const storedValue = window.localStorage.getItem(STORAGE_KEY);
       if (!storedValue) {
-        hydrateSettings(settings);
+        hydrateSettings(defaults);
         return;
       }
 
       hydrateSettings(
         migrateLocalProxySettings(
           {
-            ...settings,
-            ...(JSON.parse(storedValue) as Partial<typeof settings>),
+            ...defaults,
+            ...(JSON.parse(storedValue) as Partial<typeof defaults>),
           },
-          settings,
+          defaults,
         ),
       );
     } catch {
-      hydrateSettings(settings);
+      hydrateSettings(defaults);
     }
-  }, [hydrateSettings, hydrated, settings]);
+  }, [hydrateSettings, hydrated]);
 
   const saveSettings = (nextSettings: typeof settings) => {
     updateSettings(nextSettings);

@@ -15,6 +15,7 @@ import {
 import { Skeleton } from "@repo/ui/components/ui/skeleton";
 import { useAppShellStore } from "../../app-shell/store/app-shell-store";
 import { useEndpointSettingsState } from "../../endpoint-settings/store/endpoint-settings-store.selectors";
+import { getRuntimeConfig } from "../../runtime-config/lib/get-runtime-config";
 import { useProposalDrafts } from "../hooks/use-proposal-drafts";
 import { useProposalProverWorker } from "../hooks/use-proposal-prover-worker";
 import { signWithAuroWalletAndSubmitZkapp } from "../lib/auro-wallet-zkapp-submission";
@@ -93,7 +94,7 @@ function logWalletSubmissionTransaction(
 }
 
 function resolveProofsEnabled(): boolean {
-  const rawValue = process.env.NEXT_PUBLIC_PROOFS_ENABLED;
+  const rawValue = getRuntimeConfig().proofsEnabled;
   const resolved = rawValue !== "false";
   console.info("[proposal-prover][config] create proposal proofs flag", {
     rawValue,
@@ -224,7 +225,7 @@ export function ProposalCreatePageContainer({
     treasury.currentPeriod,
   );
   const treasuryOwnerAddress =
-    process.env.NEXT_PUBLIC_TREASURY_OWNER_CONTRACT_ADDRESS ?? "";
+    getRuntimeConfig().treasuryOwnerContractAddress ?? "";
   const hasRequiredConfig =
     settings.hydrated &&
     Boolean(settings.value.apiUrl) &&

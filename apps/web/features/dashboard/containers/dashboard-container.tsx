@@ -6,6 +6,7 @@ import { withMinimumLoadingDuration } from "../../app-shell/lib/minimum-loading-
 import { useAppShellStore } from "../../app-shell/store/app-shell-store";
 import { useEndpointSettingsState } from "../../endpoint-settings/store/endpoint-settings-store.selectors";
 import { useMinaBlockStore } from "../../mina-blocks/store/mina-block-store";
+import { getRuntimeConfig } from "../../runtime-config/lib/get-runtime-config";
 import {
   buildTreasuryLifecycleOptions,
   buildTreasuryLifecyclePeriodMetadata,
@@ -152,7 +153,7 @@ export function DashboardContainer({
   const [sortDirection, setSortDirection] =
     useState<TreasuryProposalTableSortDirection>(dashboardSortConfig.direction);
   const slotDurationMs = Number.parseInt(
-    process.env.NEXT_PUBLIC_SLOT_DURATION_MS ?? "",
+    getRuntimeConfig().slotDurationMs ?? "",
     10,
   );
 
@@ -186,7 +187,7 @@ export function DashboardContainer({
     }
 
     const lifecyclePeriodDuration = Number.parseInt(
-      process.env.NEXT_PUBLIC_LIFECYCLE_PERIOD_DURATION ?? "",
+      getRuntimeConfig().lifecyclePeriodDuration ?? "",
       10,
     );
     if (

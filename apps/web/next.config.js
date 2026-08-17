@@ -9,6 +9,13 @@ const sdkSourceDir = path.resolve(appDir, "../../packages/sdk/src");
 const tscIncludeDirs = [webSourceDir, uiSourceDir, sdkSourceDir];
 
 const nextConfig = {
+  // Emits `.next/standalone` with only the traced runtime dependencies, so the
+  // published image can drop the pnpm workspace, the source tree, and the
+  // native build toolchain.
+  output: "standalone",
+  // The workspace root, not `apps/web`: tracing has to reach the hoisted
+  // `node_modules` that pnpm keeps above the app.
+  outputFileTracingRoot: path.resolve(appDir, "../.."),
   async headers() {
     return [
       {

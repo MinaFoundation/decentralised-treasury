@@ -2,6 +2,7 @@ import {
   assertZkappUriWithinByteLimit,
   hashMarkdownContentToZkappUri,
 } from "@repo/sdk/src/utils/proposal-content-hash.js";
+import { getRuntimeConfig } from "../../runtime-config/lib/get-runtime-config";
 
 const MINA_DECIMALS = 1_000_000_000n;
 
@@ -277,18 +278,16 @@ function parseJsonStringValue(value: string): unknown {
 }
 
 function getConfiguredProposalCompileArtifacts(): SerializedProposalCompileArtifacts {
-  const lifecyclePeriodDuration =
-    process.env.NEXT_PUBLIC_LIFECYCLE_PERIOD_DURATION;
+  const runtimeConfig = getRuntimeConfig();
+  const lifecyclePeriodDuration = runtimeConfig.lifecyclePeriodDuration;
   const voteReducerVerificationKeyJson =
-    process.env.NEXT_PUBLIC_VOTE_REDUCER_VERIFICATION_KEY_JSON;
+    runtimeConfig.voteReducerVerificationKeyJson;
   const stakingLedgerToVotingLedgerVerificationKeyJson =
-    process.env
-      .NEXT_PUBLIC_STAKING_LEDGER_TO_VOTING_LEDGER_VERIFICATION_KEY_JSON;
+    runtimeConfig.stakingLedgerToVotingLedgerVerificationKeyJson;
   const treasuryProposalVerificationKeyJson =
-    process.env.NEXT_PUBLIC_TREASURY_PROPOSAL_VERIFICATION_KEY_JSON;
-  const emptyNullifierRoot = process.env.NEXT_PUBLIC_EMPTY_NULLIFIER_ROOT;
-  const emptyVotingLedgerRoot =
-    process.env.NEXT_PUBLIC_EMPTY_VOTING_LEDGER_ROOT;
+    runtimeConfig.treasuryProposalVerificationKeyJson;
+  const emptyNullifierRoot = runtimeConfig.emptyNullifierRoot;
+  const emptyVotingLedgerRoot = runtimeConfig.emptyVotingLedgerRoot;
 
   const missingName =
     typeof lifecyclePeriodDuration !== "string" ||
@@ -313,7 +312,7 @@ function getConfiguredProposalCompileArtifacts(): SerializedProposalCompileArtif
 
   if (missingName) {
     throw new Error(
-      `Missing required browser prover config: ${missingName}. Run the treasury-owner CLI compile command and copy the emitted browserEnv values into apps/web/.env.dev, apps/web/.env.testnet, or apps/web/.env.local-blockchain.`,
+      `Missing required browser prover config: ${missingName}. Run the treasury-owner CLI compile command and copy the emitted browserEnv values into apps/web/.env.dev, apps/web/.env.testnet, or apps/web/.env.local-blockchain - or, when running a published image, into the web container's environment.`,
     );
   }
 
@@ -1078,7 +1077,7 @@ export async function proveTransactionJsonInCurrentThread(
   void options;
   const proofsEnabled = true;
   console.info("[proposal-prover][config] runtime prove proofs flag", {
-    rawValue: process.env.NEXT_PUBLIC_PROOFS_ENABLED,
+    rawValue: getRuntimeConfig().proofsEnabled,
     resolved: proofsEnabled,
   });
   await compileProposalContractsInCurrentThread({ proofsEnabled });
