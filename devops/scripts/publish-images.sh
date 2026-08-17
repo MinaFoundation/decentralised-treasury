@@ -10,7 +10,8 @@
 #
 #   dt-web            the slim Next.js standalone UI (Dockerfile target `web`)
 #   dt-api, dt-api-migrate, dt-indexer, dt-indexer-api,
-#   dt-processor, dt-processor-api
+#   dt-processor, dt-processor-api, dt-voting-ledger-scheduler,
+#   dt-proving-worker, dt-proving-scheduler
 #                     one identical services image (Dockerfile target `base`),
 #                     pushed under each name because compose distinguishes the
 #                     services only by the command it runs
@@ -40,6 +41,13 @@ SERVICES_REPOS=(
   "dt-indexer-api"
   "dt-processor"
   "dt-processor-api"
+  # Same image again: these three differ only in the command the orchestrator
+  # runs - the two scheduler entrypoints under devops/docker and the `cli
+  # worker start` invocation. Published under their own names so a Helm chart,
+  # which addresses one image per workload, can reference them.
+  "dt-voting-ledger-scheduler"
+  "dt-proving-worker"
+  "dt-proving-scheduler"
 )
 
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
