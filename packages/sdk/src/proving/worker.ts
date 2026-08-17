@@ -58,6 +58,18 @@ export class Worker {
       {
         connection: this.connection,
         concurrency: 1,
+        // Derived from maxTaskDuration rather than left at BullMQ's 30s
+        // default, which is shorter than the 60s a task is already allowed to
+        // run for. Proving routinely takes longer than 30s, so every such job
+        // outlived its lock: BullMQ declared it stalled and requeued it, a
+        // second worker re-proved it, and the first failed on completion with
+        // "Missing lock for job <id>". The lock has to outlive the work it
+        // protects, so it is deliberately tied to the same number.
+        lockDuration: this.maxTaskDuration * 2,
+        // A stall now means something genuinely went wrong rather than a job
+        // simply taking its allotted time, but one blip should still not send
+        // an otherwise healthy proof to the failed set.
+        maxStalledCount: 3,
       },
     );
   }
