@@ -302,9 +302,15 @@ export class ProposalVoteDispatchedEventHandler implements EventProcessorHandler
 
     const blockHeight = this.resolveEventBlockHeight(event);
     if (!proposal) {
-      throw new Error(
-        `[proposal-processor] proposal row missing for proposalPublicKey=${payload.proposalPublicKey}; cannot project vote`,
+      // The proposalCreated event for this vote was never indexed, so there is
+      // no row to project onto and never will be. Skip the event rather than
+      // throwing: handler dispatch shares a transaction with the offset upsert,
+      // so throwing rolls the whole batch back and the processor re-fetches the
+      // same page forever, blocking every later event behind it.
+      console.warn(
+        `[proposal-processor] proposal row missing for proposalPublicKey=${payload.proposalPublicKey}; skipping vote event id=${event.id}`,
       );
+      return true;
     }
 
     const voteWeight = await this.getVoteWeightFromLedger(

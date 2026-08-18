@@ -144,7 +144,14 @@ export class ProposalExecutedEventHandler implements EventProcessorHandler {
       proposalPublicKey: payload.proposalPublicKey,
     });
     if (!proposal) {
-      return false;
+      // Same reasoning as the vote handler: the proposalCreated event was never
+      // indexed, so this execution cannot be projected. Returning false would
+      // send the event round every other handler and then leave it unhandled,
+      // which the processor turns into a throw and a full batch rollback.
+      console.warn(
+        `[proposal-processor] proposal row missing for proposalPublicKey=${payload.proposalPublicKey}; skipping execution event id=${event.id}`,
+      );
+      return true;
     }
     const proposalAmount = BigInt(proposal.amount);
     const bondAmount = proposalAmount / BigInt(BOND_AMOUNT_DIVISOR);
