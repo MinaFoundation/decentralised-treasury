@@ -299,9 +299,13 @@ export abstract class BaseStakingLedger implements StakingLedger {
       zkapp: value.zkapp
         ? new Zkapp({
             appState: value.zkapp.app_state.map((state: any) => Field(state)),
-            verificationKey: await VerificationKey.fromData(
-              value.zkapp.verification_key,
-            ),
+            // A zkApp account can carry app state without a verification key -
+            // the field is absent, not null, for ~18% of devnet accounts. Match
+            // Zkapp.empty() rather than handing undefined to fromData, which
+            // fails deep inside o1js with "Cannot read properties of undefined".
+            verificationKey: value.zkapp.verification_key
+              ? await VerificationKey.fromData(value.zkapp.verification_key)
+              : VerificationKey.dummySync(),
             zkappVersion: Field(value.zkapp.zkapp_version),
             actionState: value.zkapp.action_state.map((action: any) =>
               Field(action),
