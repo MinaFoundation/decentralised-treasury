@@ -5,11 +5,15 @@ import {
   MultisigSignature,
   MultisigSignatures,
 } from "@repo/sdk/src/provable/contracts/treasury-pause-controller/multisig-signatures.js";
+import { signFieldWithLedger } from "../ledger/ledger-signing.js";
 import { parseIntOption } from "./option-parsers.js";
+
+type SignerMode = "in-memory" | "ledger";
 
 interface BaseSignOptions {
   multisigParticipantsPublicKeys: PublicKey[];
-  multisigSignerPrivateKey: PrivateKey;
+  multisigSignerPrivateKey?: PrivateKey;
+  signer: SignerMode;
   nonce: number;
 }
 
@@ -62,29 +66,48 @@ function parseSignerPrivateKey(value: string): PrivateKey {
   return PrivateKey.fromBase58(value);
 }
 
-function buildSignaturesResult(
+function ledgerSignerPublicKey(): PublicKey {
+  const value = process.env.LEDGER_SIGNER_PUBLIC_KEY?.trim();
+  if (!value) {
+    throw new Error(
+      "LEDGER_SIGNER_PUBLIC_KEY is required when --signer=ledger.",
+    );
+  }
+  return PublicKey.fromBase58(value);
+}
+
+async function buildSignaturesResult(
   type: string,
   options: BaseSignOptions,
   dataHash: Field,
   extra: Partial<MultisigSignCommandResult> = {},
-): MultisigSignCommandResult {
+): Promise<MultisigSignCommandResult> {
   const participantPublicKeyStrings =
     options.multisigParticipantsPublicKeys.map((pk) => pk.toBase58());
 
-  const signerPublicKey = options.multisigSignerPrivateKey
-    .toPublicKey()
-    .toBase58();
-  const signerParticipantIndex =
-    participantPublicKeyStrings.indexOf(signerPublicKey);
+  const signerPublicKey =
+    options.signer === "ledger"
+      ? ledgerSignerPublicKey()
+      : options.multisigSignerPrivateKey?.toPublicKey();
+  if (!signerPublicKey) {
+    throw new Error(
+      "--multisig-signer-private-key is required when --signer=in-memory.",
+    );
+  }
+  const signerPublicKeyBase58 = signerPublicKey.toBase58();
+  const signerParticipantIndex = participantPublicKeyStrings.indexOf(
+    signerPublicKeyBase58,
+  );
   if (signerParticipantIndex < 0) {
     throw new Error(
-      `Signer public key ${signerPublicKey} is not part of --multisig-participants-public-keys`,
+      `Signer public key ${signerPublicKeyBase58} is not part of --multisig-participants-public-keys`,
     );
   }
 
-  const signature = MultisigSignature.create(options.multisigSignerPrivateKey, [
-    dataHash,
-  ]);
+  const signature =
+    options.signer === "ledger"
+      ? await signFieldWithLedger(dataHash)
+      : MultisigSignature.create(options.multisigSignerPrivateKey!, [dataHash]);
 
   const multisigCommitment = MultisigSignatures.createCommitment(
     options.multisigParticipantsPublicKeys,
@@ -96,7 +119,7 @@ function buildSignaturesResult(
     dataHash: dataHash.toString(),
     multisigCommitment,
     multisigParticipantsPublicKeys: participantPublicKeyStrings,
-    signerPublicKey,
+    signerPublicKey: signerPublicKeyBase58,
     signerParticipantIndex,
     signature: signature.toBase58(),
     validSignaturesCount: 1,
@@ -110,7 +133,9 @@ export async function signPauseTreasury(
   const nonce = UInt32.from(options.nonce);
   const dataHash = MultisigSignature.dataPauseTreasury(nonce);
   console.log(
-    JSON.stringify(buildSignaturesResult("pause-treasury", options, dataHash)),
+    JSON.stringify(
+      await buildSignaturesResult("pause-treasury", options, dataHash),
+    ),
   );
 }
 
@@ -121,7 +146,7 @@ export async function signUnpauseTreasury(
   const dataHash = MultisigSignature.dataUnpauseTreasury(nonce);
   console.log(
     JSON.stringify(
-      buildSignaturesResult("unpause-treasury", options, dataHash),
+      await buildSignaturesResult("unpause-treasury", options, dataHash),
     ),
   );
 }
@@ -136,7 +161,7 @@ export async function signTogglePauseProposal(
   );
   console.log(
     JSON.stringify(
-      buildSignaturesResult("toggle-pause-proposal", options, dataHash, {
+      await buildSignaturesResult("toggle-pause-proposal", options, dataHash, {
         proposalPublicKey: options.proposalPublicKey.toBase58(),
       }),
     ),
@@ -160,7 +185,7 @@ export async function signRotateMultisigKeys(
   );
   console.log(
     JSON.stringify(
-      buildSignaturesResult("rotate-multisig-keys", options, dataHash, {
+      await buildSignaturesResult("rotate-multisig-keys", options, dataHash, {
         previousMultisigCommitment: previousMultisigCommitment.toString(),
         newMultisigCommitment: newMultisigCommitment.toString(),
       }),
@@ -176,6 +201,12 @@ export default function multisigSignCommandFactory(program: Command) {
   const baseOptions = (subcommand: Command) =>
     subcommand
       .addOption(
+        new Option("--signer <signer>", "Signing implementation")
+          .choices(["in-memory", "ledger"])
+          .default("in-memory")
+          .env("SIGNER"),
+      )
+      .addOption(
         new Option(
           "--multisig-participants-public-keys <multisig-participants-public-keys>",
           `Comma separated list of ${MULTISIG_PARTICIPANTS_COUNT} multisig participant public keys`,
@@ -190,8 +221,7 @@ export default function multisigSignCommandFactory(program: Command) {
           "Single signer private key for partial multisig signature generation",
         )
           .env("MULTISIG_SIGNER_PRIVATE_KEY")
-          .argParser(parseSignerPrivateKey)
-          .makeOptionMandatory(),
+          .argParser(parseSignerPrivateKey),
       )
       .addOption(
         new Option("--nonce <nonce>", "Pause controller nonce")

@@ -13,10 +13,13 @@
     "test:watch": "vitest"
   },
   "dependencies": {
+    "@ledgerhq/hw-transport-webhid": "6.36.0",
     "@repo/indexer": "workspace:^",
     "@repo/processor": "workspace:^",
     "@repo/sdk": "workspace:*",
     "@repo/ui": "workspace:*",
+    "@zondax/ledger-mina-js": "0.2.0",
+    "buffer": "^6.0.3",
     "next": "^15.4.2",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",

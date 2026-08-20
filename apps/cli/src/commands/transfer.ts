@@ -1,7 +1,17 @@
 import { Command, Option } from "commander";
-import { AccountUpdate, fetchAccount, Mina, PrivateKey, PublicKey, UInt64 } from "o1js";
+import {
+  AccountUpdate,
+  fetchAccount,
+  Mina,
+  PrivateKey,
+  PublicKey,
+  UInt64,
+} from "o1js";
 import { parseBooleanOption, parseIntOption } from "./option-parsers.js";
 import { configureMinaNetwork } from "./mina-instance.js";
+import { signTxWithLedger } from "../ledger/ledger-signing.js";
+
+type SignerMode = "in-memory" | "ledger";
 
 function parsePrivateKey(value: string): PrivateKey {
   return PrivateKey.fromBase58(value);
@@ -13,8 +23,11 @@ function parsePublicKey(value: string): PublicKey {
 
 interface TransferCommandOptions {
   minaNodeUrl: string;
-  senderPrivateKey: PrivateKey;
+  signer: SignerMode;
+  senderPrivateKey?: PrivateKey;
+  senderPublicKey?: PublicKey;
   fundingPrivateKey?: PrivateKey;
+  fundingPublicKey?: PublicKey;
   recipientPublicKey: PublicKey;
   amount: UInt64;
   fee?: UInt64;
@@ -31,7 +44,9 @@ interface AccountSnapshot {
   error?: string;
 }
 
-async function readAccountSnapshot(publicKey: PublicKey): Promise<AccountSnapshot> {
+async function readAccountSnapshot(
+  publicKey: PublicKey,
+): Promise<AccountSnapshot> {
   const { account, error } = await fetchAccount({ publicKey });
   return {
     publicKey: publicKey.toBase58(),
@@ -45,16 +60,36 @@ async function readAccountSnapshot(publicKey: PublicKey): Promise<AccountSnapsho
 export async function transfer(options: TransferCommandOptions): Promise<void> {
   configureMinaNetwork(options.minaNodeUrl);
 
-  const senderPublicKey = options.senderPrivateKey.toPublicKey();
-  const fundingPrivateKey = options.fundingPrivateKey ?? options.senderPrivateKey;
-  const fundingPublicKey = fundingPrivateKey.toPublicKey();
-  const [senderSnapshot, fundingSnapshot, recipientSnapshot] = await Promise.all([
-    readAccountSnapshot(senderPublicKey),
-    senderPublicKey.equals(fundingPublicKey).toBoolean()
-      ? Promise.resolve<AccountSnapshot | null>(null)
-      : readAccountSnapshot(fundingPublicKey),
-    readAccountSnapshot(options.recipientPublicKey),
-  ]);
+  const senderPublicKey =
+    options.signer === "ledger"
+      ? options.senderPublicKey
+      : options.senderPrivateKey?.toPublicKey();
+  if (!senderPublicKey) {
+    throw new Error(
+      options.signer === "ledger"
+        ? "--sender-public-key is required when --signer=ledger."
+        : "--sender-private-key is required when --signer=in-memory.",
+    );
+  }
+  const fundingPrivateKey =
+    options.fundingPrivateKey ?? options.senderPrivateKey;
+  const fundingPublicKey =
+    options.signer === "ledger"
+      ? (options.fundingPublicKey ?? senderPublicKey)
+      : fundingPrivateKey?.toPublicKey();
+  if (!fundingPublicKey) {
+    throw new Error(
+      "--funding-private-key is invalid without an in-memory sender private key.",
+    );
+  }
+  const [senderSnapshot, fundingSnapshot, recipientSnapshot] =
+    await Promise.all([
+      readAccountSnapshot(senderPublicKey),
+      senderPublicKey.equals(fundingPublicKey).toBoolean()
+        ? Promise.resolve<AccountSnapshot | null>(null)
+        : readAccountSnapshot(fundingPublicKey),
+      readAccountSnapshot(options.recipientPublicKey),
+    ]);
 
   if (!senderSnapshot.found) {
     throw new Error(
@@ -86,16 +121,18 @@ export async function transfer(options: TransferCommandOptions): Promise<void> {
     },
   );
 
-  const signers = [options.senderPrivateKey];
-  if (!senderPublicKey.equals(fundingPublicKey).toBoolean()) {
-    signers.push(fundingPrivateKey);
-  }
-
-  transaction.sign(signers);
+  const signedTransaction =
+    options.signer === "ledger"
+      ? await signTxWithLedger(transaction)
+      : transaction.sign(
+          senderPublicKey.equals(fundingPublicKey).toBoolean()
+            ? [options.senderPrivateKey!]
+            : [options.senderPrivateKey!, fundingPrivateKey!],
+        );
 
   let pendingTransaction;
   try {
-    pendingTransaction = await transaction.send();
+    pendingTransaction = await signedTransaction.send();
   } catch (error) {
     console.error(
       JSON.stringify(
@@ -137,15 +174,31 @@ export default function transferCommandFactory(program: Command) {
     .command("transfer")
     .description("Transfer MINA from a funding account to a recipient")
     .addOption(
+      new Option("--signer <signer>", "Signing implementation")
+        .choices(["in-memory", "ledger"])
+        .default("in-memory")
+        .env("SIGNER"),
+    )
+    .addOption(
       new Option("--mina-node-url <mina-node-url>", "Mina GraphQL URL")
         .env("MINA_NODE_URL")
         .default("http://127.0.0.1:8080/graphql"),
     )
     .addOption(
-      new Option("--sender-private-key <sender-private-key>", "Sender private key")
+      new Option(
+        "--sender-private-key <sender-private-key>",
+        "Sender private key",
+      )
         .env("SENDER_PRIVATE_KEY")
-        .argParser(parsePrivateKey)
-        .makeOptionMandatory(),
+        .argParser(parsePrivateKey),
+    )
+    .addOption(
+      new Option(
+        "--sender-public-key <sender-public-key>",
+        "Ledger sender public key",
+      )
+        .env("SENDER_PUBLIC_KEY")
+        .argParser(parsePublicKey),
     )
     .addOption(
       new Option(
@@ -154,6 +207,14 @@ export default function transferCommandFactory(program: Command) {
       )
         .env("FUNDING_PRIVATE_KEY")
         .argParser(parsePrivateKey),
+    )
+    .addOption(
+      new Option(
+        "--funding-public-key <funding-public-key>",
+        "Ledger funding public key (defaults to sender public key)",
+      )
+        .env("FUNDING_PUBLIC_KEY")
+        .argParser(parsePublicKey),
     )
     .addOption(
       new Option(

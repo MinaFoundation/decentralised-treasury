@@ -9,15 +9,21 @@
     "dev": "NODE_NO_WARNINGS=1 node --loader ts-node/esm src/cli.ts",
     "mina-treasury": "node ./bin/mina-treasury.cjs",
     "check-types": "tsc --noEmit",
-    "test": "node --loader ts-node/esm --test"
+    "test": "node --loader ts-node/esm --test",
+    "test:ledger:software": "LEDGER_TEST_MODE=software node --loader ts-node/esm --test test/ledger/ledger-local-blockchain.test.ts",
+    "test:ledger:mocker": "LEDGER_TEST_MODE=mocker node --loader ts-node/esm --test test/ledger/ledger-local-blockchain.test.ts",
+    "test:ledger:device": "LEDGER_TEST_MODE=device node --loader ts-node/esm --test test/ledger/ledger-local-blockchain.test.ts"
   },
   "dependencies": {
+    "@ledgerhq/hw-transport-node-hid": "6.33.0",
     "@keyv/sqlite": "^4.0.8",
     "@repo/sdk": "workspace:*",
+    "@zondax/ledger-mina-js": "0.2.0",
     "commander": "^14.0.0",
     "tar": "^7.5.13"
   },
   "devDependencies": {
+    "@ledgerhq/hw-transport-mocker": "6.31.0",
     "@types/node": "^22.15.3",
     "redis-memory-server": "^0.16.0",
     "ts-node": "^10.9.2",
