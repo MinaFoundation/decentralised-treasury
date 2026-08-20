@@ -58,7 +58,16 @@ function responseError(
 
 function activeNetworkId(): NetworkId {
   const networkId = Mina.getNetworkId();
-  return networkId === "mainnet" ? "mainnet" : networkId;
+  if (
+    networkId !== "mainnet" &&
+    networkId !== "testnet" &&
+    networkId !== "devnet"
+  ) {
+    throw new Error(
+      `Ledger field signing does not support Mina network ID ${networkId}`,
+    );
+  }
+  return networkId;
 }
 
 function ledgerNetworkId(networkId: NetworkId): number {
