@@ -127,9 +127,6 @@ importers:
       '@types/node':
         specifier: ^22.15.3
         version: 22.19.16
-      mina-signer:
-        specifier: 4.1.0
-        version: 4.1.0
       redis-memory-server:
         specifier: ^0.16.0
         version: 0.16.0
