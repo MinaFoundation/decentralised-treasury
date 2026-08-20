@@ -1,0 +1,25 @@
+work_unit:
+  id: "WU-CAB8FAE2F2"
+  stable_key: "work-unit:semantic:primitives-tests"
+  role: "semantic"
+  pass: "PASS_1"
+  revision: "1e27b1aea88f5ea2764db96e4b337b24fe6dbeb3"
+  primary_paths: []
+  read_only_context_paths:
+    - "packages/sdk/src/provable/account.ts"
+    - "packages/sdk/src/provable/hashing-helpers.ts"
+    - "packages/sdk/src/provable/merkle-tree/prefixed-merkle-tree.ts"
+    - "packages/sdk/src/provable/voting-account.ts"
+    - "packages/sdk/src/provable/events/treasury-proposal-events.ts"
+    - "packages/sdk/test/provable"
+    - "packages/sdk/test/integration/treasury-owner.test.ts"
+    - "evidence/reconnaissance/WU-BECB8661B0.yaml"
+    - "evidence/reconnaissance/WU-7B45F56E9E.yaml"
+    - "evidence/reconnaissance/WU-8B484B3509.yaml"
+  owned_record_ids: []
+  owned_stable_key_prefixes: ["behavior:primitives-tests:", "flow:primitives-tests:", "clause:primitives-tests:", "invariant:primitives-tests:", "finding:primitives-tests:"]
+  questions:
+    - "What serialization, parsing, hashing, Merkle, event-schema, and helper contracts are statically present?"
+    - "Which implementation semantics are or are not covered by each existing test case and negative partition?"
+  output: "evidence/semantic/WU-CAB8FAE2F2.yaml"
+  status: "COMPLETE"

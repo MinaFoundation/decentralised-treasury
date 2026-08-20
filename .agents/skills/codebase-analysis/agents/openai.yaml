@@ -1,0 +1,6 @@
+interface:
+  display_name: "Codebase analysis"
+  short_description: "Read-only two-pass static and whole-system security review"
+  default_prompt: "Use $codebase-analysis to perform a strictly read-only two-pass static analysis with the mandatory zkSecurity-inspired whole-system review method. Use ASD-STE100 Simplified Technical English style for author-facing YAML prose and Markdown. Produce an author-comprehensible YAML and Markdown/Mermaid overview, threat and assumption model, RFC/audit traceability, and business/implementation/security gaps. Do not run target TypeScript, tests, verifiers, or proofs."
+policy:
+  allow_implicit_invocation: false

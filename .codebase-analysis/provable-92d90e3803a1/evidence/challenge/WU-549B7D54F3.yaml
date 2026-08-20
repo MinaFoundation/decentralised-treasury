@@ -1,0 +1,318 @@
+bundle:
+  schema_version: 1
+  work_unit: "WU-549B7D54F3"
+  revision: "1e27b1aea88f5ea2764db96e4b337b24fe6dbeb3"
+  scope_hash: "f40d76b91ec3cd8805ecdc7bebba8d43b8f317842639a7799738c37569119ab1"
+  role: "challenge"
+  source_hashes:
+    "packages/sdk/src/provable/contracts/treasury-owner.ts": "7c66014cee7f7a5e559b29f3b7c2790ed19c38c9a91b886c15cbbef3328d17dc"
+    "packages/sdk/src/provable/contracts/treasury-constants.ts": "c4ef6c551437e01ebe6294c51923dfedff4a198735766a37029249482d9247a6"
+    "packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts": "95e5656d3a0d0c09a88ac9befa743517c53a98983bd1cf74b042e87bc9faf7af"
+    "packages/sdk/src/provable/contracts/treasury-pause-controller/treasury-pause-controller.ts": "f7139183b963aa496dd36df00017885c9ab6275f11accca35bfd9054260e5104"
+    "packages/sdk/src/provable/contracts/treasury-pause-controller/multisig-signatures.ts": "48a7c4cd41c1e9764df1329966c37f325817fa43074140c145f4f6c1ae2aa372"
+    "packages/sdk/src/provable/events/treasury-proposal-events.ts": "421e00244121b82a603b71b722ef35419794d0d603a264270a47a44d05a2c01d"
+    "packages/sdk/test/integration/treasury-owner.test.ts": "f73f778dcb2ac226c416ebfdf69117af3262fcc37f36877ea3fb7d1bd7e0f4e0"
+    "packages/sdk/test/provable/contracts/treasury-proposal/treasury-proposal.test.ts": "89444ba4edfc6bf48fae0c0ef4f8b183c9c2d35f24e38e78622334adb3bed6bb"
+    "packages/sdk/test/provable/contracts/treasury-pause-controller/treasury-pause-controller.test.ts": "5e4031821bafa39daf9b1b28d2aeba4daf92e1611f78e571035974ab63fbb1e5"
+    "packages/sdk/test/provable/contracts/treasury-pause-controller/multisig-signatures.test.ts": "d51e8afe43141a84650ddcff49d736a308007fb04da1ae22b72d3a65783648b2"
+    "packages/sdk/test/provable/events/treasury-proposal-events.test.ts": "2b5204f4acf2dca9135642a242e18bf5535f46fa41526b43fb19b228d6f63f79"
+  upstream_artifact_hashes:
+    "context/RFC_EXTRACT.md": "84a7528617db2baebfd1d5a0170b11cf639bd52fb61f05c69c555ac5255c46a0"
+    "context/ZKSECURITY_AUDIT_INDEX.md": "8768353f7bdab76dd93067ddb5df8c749bb37e974232dfcfc397dabcd2ae60cb"
+    "evidence/reconnaissance/WU-7B45F56E9E.yaml": "47a6afc2afc3104c88812a8bafb3edc0a74ebca0bd4db2cb28dfac763b0b8dc0"
+    "evidence/reconnaissance/WU-8B484B3509.yaml": "760c8855016860d8d9afd5ad97ec62b886dca9b9aba02f098039fff8132dc076"
+    "evidence/reconnaissance/WU-BECB8661B0.yaml": "4f7822bd725e831ef99654298d5b13cb66493b8e8378c2109c684488e0c56f7d"
+    "evidence/semantic/WU-5BF98E0171.yaml": "7684fcb0e4cd1abd0d6e977d9266d0c9faddcce746e3aab25921c26407a0ae8d"
+    "evidence/semantic/WU-CAB8FAE2F2.yaml": "4b6ddddb8dcddc1e7a878f7d15193036126632ce689b4bb8a66cb648d7d9ae7f"
+    "evidence/semantic/WU-FC6BF1E259.yaml": "3f3edda56abd322ca26550c075624c322459acb111952929fa728f179e6d9fb7"
+  ownership:
+    primary_paths: []
+    record_ids: []
+    stable_key_prefixes:
+      - "finding:challenge:business:"
+      - "gap:challenge:business:"
+      - "unresolved:challenge:business:"
+      - "evidence:challenge:business:"
+  assumptions:
+    - "This is a static challenge of the pinned revision. No target TypeScript, test, build, compiler, proof, verifier, transaction, or chain was executed."
+    - "The RFC is versioned intent evidence and does not ratify provisional parameters, optional features, or disputed policy."
+    - "The prior audit is historical evidence for its audited revision. A matching current source shape supports only a static disposition, not runtime or deployed assurance."
+    - "Mina transaction rollback, UInt arithmetic, account-update authorization, slot-range inclusivity, and deployed permission semantics remain external dependency or deployment assumptions."
+  observations:
+    - topic: "End-to-end lifecycle"
+      classification: "CONFIRMED_STATIC_WITH_UNRESOLVED_BOUNDARY"
+      conclusion: "The source implements deployment-relative PROPOSAL, EXPLORATION, VOTING, and COOLDOWN windows of equal duration; create and vote are window-bounded, tally is open-ended from cooldown, and execution is open-ended from the next lifecycle's proposal period."
+      existing_stable_keys:
+        - "behavior:treasury-contracts:owner:derive-lifecycle-range"
+        - "flow:treasury-contracts:tally-finalization"
+        - "flow:treasury-contracts:partial-payout"
+        - "gap:business-context:lifecycle-inclusion-boundary"
+        - "unresolved:treasury-contracts:lifecycle-inclusion-semantics"
+      amendment_recommendation: "Retain the existing lifecycle records and add an explicit adjacent-boundary review: each finite upper bound equals the next period's lower bound, so exact boundary ownership depends on the external inclusivity semantics of requireBetween. Do not create a duplicate finding until that dependency contract is pinned."
+      evidence_stable_keys: ["evidence:challenge:business:lifecycle-and-execution"]
+    - topic: "Proposal creation, bond identity, and custody"
+      classification: "CONFIRMED_STATIC_DUPLICATE_OF_PRIOR_AUDIT_AND_EXISTING_GAP"
+      conclusion: "Creation labels the signed sender as proposer, while transaction construction may debit a different bond payer. The owner pools the bond in its native balance, proposal state stores no proposer or bond owner, and successful payout includes the bond in the recipient's cap."
+      existing_stable_keys:
+        - "finding:prior-audit:bond-paid-to-recipient"
+        - "gap:business-context:successful-bond-recipient"
+        - "gap:treasury-contracts:bond-owner-and-beneficiary-policy"
+      amendment_recommendation: "Do not add a duplicate finding. Expand the existing gap to state that bond principal is not separately escrowed or attributable after creation, so rejection, cancellation, success, and accounting policy cannot be enforced per proposer from current state."
+      evidence_stable_keys: ["evidence:challenge:business:proposal-bond-and-content", "evidence:challenge:business:owner-tests"]
+    - topic: "Vote authorization and tally eligibility"
+      classification: "CONFIRMED_STATIC_WITH_EXISTING_OWNERS"
+      conclusion: "Vote dispatch authenticates both transaction sender and supplied voter key, but balance eligibility, duplicate-weight handling, DUMMY semantics, nullification, action-history completeness, and tally weights are downstream proof concerns."
+      existing_stable_keys:
+        - "behavior:treasury-contracts:owner:dispatch-vote"
+        - "finding:prior-audit:dummy-public-vote"
+        - "finding:zk-programs:vote-reducer:public-dummy-consumes-nullifier"
+        - "unresolved:zk-programs:five-action-state-liveness"
+      amendment_recommendation: "Preserve these as separate dispatch-authentication, vote-domain, and proof-completeness conclusions. The challenge found no additional business finding at this boundary."
+      evidence_stable_keys: ["evidence:challenge:business:vote-and-tally"]
+    - topic: "Tally failure policy"
+      classification: "CONFIRMED_STATIC_CANDIDATE_REQUIRING_HUMAN_POLICY"
+      conclusion: "The calculator returns REJECTED when quorum is missed or no directional vote exists, but tally asserts those predicates before status storage. A complete proof package in either case leaves the proposal UNKNOWN because the transaction rejects."
+      existing_stable_keys:
+        - "finding:treasury-contracts:failed-quorum-not-finalized"
+        - "gap:treasury-contracts:quorum-failure-terminal-policy"
+        - "unresolved:business-context:passing-criteria-decision"
+      amendment_recommendation: "Confirm the static inconsistency, but keep defect status conditional on an author decision about whether low-quorum and abstain-only outcomes are terminal rejection, retryable unknown, or a distinct state. Add the bond consequence to the existing gap because the pooled bond has no rejection disposition path."
+      evidence_stable_keys: ["evidence:challenge:business:vote-and-tally"]
+    - topic: "Dynamic threshold snapshot"
+      classification: "CONFIRMED_STATIC_EXTENSION_OF_PRIOR_AUDIT_OBSERVATION"
+      conclusion: "The same historical staking snapshot supplies both voting supply and the Treasury Owner account balance used in proposal-amount/treasury-balance threshold curves. Deposits or payouts after that snapshot therefore do not change the acceptance ratio for the proposal."
+      existing_stable_keys:
+        - "finding:prior-audit:stale-staking-epoch-snapshot"
+        - "gap:treasury-contracts:treasury-parameters-authority"
+      amendment_recommendation: "Do not create a second stale-snapshot finding. Expand the existing records to cover economic-threshold staleness, not only voter delegation UX, and ask whether the denominator is intentionally the historical treasury balance or a different committed balance."
+      evidence_stable_keys: ["evidence:challenge:business:vote-and-tally"]
+    - topic: "Payout agency and conservation"
+      classification: "CONFIRMED_STATIC_WITH_HUMAN_DECISION"
+      conclusion: "Any signed sender may choose payout timing and chunk size, while recipient commitment and per-proposal amount-plus-bond cap prevent redirection or per-proposal overpayment. Owner balance availability remains a transaction-time precondition."
+      existing_stable_keys:
+        - "finding:prior-audit:anyone-can-execute-for-recipient"
+        - "flow:treasury-contracts:partial-payout"
+        - "invariant:treasury-contracts:assets:payout-recipient-and-cap"
+        - "unresolved:treasury-contracts:transaction-atomicity-and-balance"
+      amendment_recommendation: "Retain permissionless execution as an acknowledged policy choice unless a current decision grants timing agency to the recipient. Link it to the new aggregate-liability and proposal-completion gaps below."
+      evidence_stable_keys: ["evidence:challenge:business:lifecycle-and-execution"]
+    - topic: "Proposal-specific pause"
+      classification: "CONFIRMED_STATIC_DUPLICATE_OF_PRIOR_AUDIT_AND_EXISTING_FINDINGS"
+      conclusion: "Multisig authorization signs a toggle without target Bool; proposal status maps every non-PAUSED value to PAUSED and PAUSED to UNKNOWN; the event copies an unsigned caller Bool. Authorization intent, resulting state, finality, and observability are therefore not one bound transition."
+      existing_stable_keys:
+        - "finding:prior-audit:toggle-without-intended-state"
+        - "finding:prior-audit:pause-destroys-proposal-finality"
+        - "finding:treasury-contracts:proposal-pause-erases-terminal-status"
+        - "finding:treasury-contracts:proposal-pause-event-unbound"
+        - "gap:treasury-contracts:explicit-proposal-pause-intent"
+      amendment_recommendation: "Do not duplicate. Preserve one root-cause chain from missing target-state binding through status destruction and false event projection; human review must decide whether emergency action pauses, cancels, resets, or later restores an exact outcome."
+      evidence_stable_keys: ["evidence:challenge:business:pause-and-authority"]
+    - topic: "Global pause and authority recovery"
+      classification: "CONFIRMED_STATIC_CANDIDATES"
+      conclusion: "Global pause/unpause uses explicit operation prefixes, three valid signature positions, and a controller-local nonce. Current source still permits initialization with more than five keys, does not constrain participant distinctness, accepts an arbitrary next commitment, omits deployment/network domain, and emits no controller event."
+      existing_stable_keys:
+        - "finding:treasury-contracts:pause-init-more-than-five-bricks-authority"
+        - "finding:treasury-contracts:multisig-nondistinct-participants"
+        - "finding:treasury-contracts:rotation-allows-unrecoverable-commitment"
+        - "finding:prior-audit:pause-signature-domain-weak"
+        - "gap:treasury-contracts:emergency-observability-and-recovery"
+      amendment_recommendation: "Keep the more-than-five predicate mismatch and arbitrary commitment as confirmed static findings. Keep threshold reduction conditional on repeated-key signature semantics but high-confidence as a missing distinctness check. Preserve cross-domain replay as prior-audit-derived and deployment-conditional."
+      evidence_stable_keys: ["evidence:challenge:business:pause-and-authority"]
+    - topic: "Test oracles"
+      classification: "CONFIRMED_TEST_EXPECTATION_GAP"
+      conclusion: "The active owner integration path covers one proposal, two directional votes, one approved tally, and one full payout. It does not encode concurrent approved claims, exact lifecycle boundaries, low-quorum persistence, content-reference integrity, payout expiry/completion, proposal-pause state/event parity, or aggregate solvency ordering."
+      existing_stable_keys:
+        - "gap:treasury-contracts:test-owner-adverse-partitions"
+        - "finding:primitives-tests:integration-suite-order-and-pausing-gap"
+        - "finding:primitives-tests:event-oracle-incomplete"
+      amendment_recommendation: "Add the named cross-proposal and content partitions to the existing owner adverse-partition gap rather than creating another generic missing-tests record."
+      evidence_stable_keys: ["evidence:challenge:business:owner-tests"]
+  proposed_records:
+    findings: []
+    gaps:
+      - stable_key: "gap:challenge:business:treasury-liability-reservation-and-ordering"
+        title: "Parallel approved proposal liabilities have no reservation or ordering policy"
+        gap_kinds: ["MISSING_INTENT", "INCOMPLETE_FAILURE_POLICY", "UNRESOLVED_AUTHORITY"]
+        materiality: "HIGH"
+        affected_actor_ids: []
+        affected_asset_ids: []
+        requirement_stable_keys:
+          - "requirement:rfc-6924:post-cooldown-execution"
+          - "requirement:rfc-6924:treasury-spend-mina-and-custom-token"
+        implementation_stable_keys:
+          - "flow:treasury-contracts:proposal-creation"
+          - "flow:treasury-contracts:tally-finalization"
+          - "flow:treasury-contracts:partial-payout"
+        test_ids: []
+        finding_ids: []
+        business_consequence: "Each proposal enforces only its own recipient and cap. The Treasury Owner records no aggregate reserved liability, and approval does not reserve funds. When several approved proposals exceed available balance, transaction inclusion order determines which recipients are paid first; later proposals can remain partially or wholly unfunded without an on-chain priority or recovery rule."
+        rollout_relevance: ["MVP", "SAFETY_PERFORMANCE", "DECENTRALISATION"]
+        author_question: "Should approval reserve treasury funds, should execution be first-inclusion-wins, and what priority, pro-rata, refill, expiry, or cancellation policy governs simultaneously approved claims?"
+        semantic_status: "UNRESOLVED"
+        anchors:
+          - { path: "packages/sdk/src/provable/contracts/treasury-owner.ts", symbol: "TreasuryOwnerSmartContract state/createProposal/executeProposal", start_line: 86, end_line: 87 }
+          - { path: "packages/sdk/src/provable/contracts/treasury-owner.ts", symbol: "createProposal", start_line: 191, end_line: 271 }
+          - { path: "packages/sdk/src/provable/contracts/treasury-owner.ts", symbol: "executeProposal", start_line: 421, end_line: 462 }
+          - { path: "packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts", symbol: "execute", start_line: 353, end_line: 384 }
+        assertions:
+          - stable_key: "assertion:gap:challenge:business:treasury-liability-reservation-and-ordering:implemented"
+            text: "The Treasury Owner has no per-proposal or aggregate liability state, proposal approval does not reserve balance, and execution subtracts the requested chunk from the current owner balance."
+            evidence_class: "IMPLEMENTED_STATIC"
+            confidence: "HIGH"
+            evidence_stable_keys: ["evidence:challenge:business:lifecycle-and-execution"]
+          - stable_key: "assertion:gap:challenge:business:treasury-liability-reservation-and-ordering:policy"
+            text: "No supplied authority defines ordering or recovery when valid approved proposal liabilities exceed available treasury funds."
+            evidence_class: "UNRESOLVED"
+            confidence: "HIGH"
+            evidence_stable_keys: ["evidence:business-context:rfc-6924"]
+            limitation: "A production treasury funding or claims policy was not supplied."
+          - stable_key: "assertion:gap:challenge:business:treasury-liability-reservation-and-ordering:test"
+            text: "The pinned owner integration expectation creates and executes only one proposal and therefore does not specify cross-proposal contention."
+            evidence_class: "TEST_EXPECTATION"
+            confidence: "HIGH"
+            evidence_stable_keys: ["evidence:challenge:business:owner-tests"]
+      - stable_key: "gap:challenge:business:proposal-expiry-completion-and-payout-observability"
+        title: "Approved proposal claims lack expiry and an explicit completion state"
+        gap_kinds: ["MISSING_INTENT", "INCOMPLETE_FAILURE_POLICY", "UNRESOLVED_AUTHORITY"]
+        materiality: "MEDIUM"
+        affected_actor_ids: []
+        affected_asset_ids: []
+        requirement_stable_keys: ["requirement:rfc-6924:post-cooldown-execution"]
+        implementation_stable_keys:
+          - "behavior:treasury-contracts:owner:execute-proposal"
+          - "behavior:treasury-contracts:proposal:execute"
+          - "input-output:treasury-contracts:events:proposal-execution"
+        test_ids: []
+        finding_stable_keys: ["finding:treasury-contracts:zero-payout-no-progress"]
+        business_consequence: "Execution remains available without an upper lifecycle bound, full payout leaves status APPROVED, and the execution event omits recipient, cumulative paid amount, remaining entitlement, and completion. Stale liabilities therefore remain represented as active approvals, and operators must reconstruct completion from proposal state and prior events."
+        rollout_relevance: ["MVP", "SAFETY_PERFORMANCE"]
+        author_question: "Should approved proposals expire, be cancellable, or transition to a PAID/COMPLETED state after full payout, and which cumulative values must events expose?"
+        semantic_status: "UNRESOLVED"
+        anchors:
+          - { path: "packages/sdk/src/provable/contracts/treasury-owner.ts", symbol: "executeProposal", start_line: 421, end_line: 462 }
+          - { path: "packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts", symbol: "execute", start_line: 353, end_line: 384 }
+          - { path: "packages/sdk/src/provable/events/treasury-proposal-events.ts", symbol: "ProposalExecutedEvent", start_line: 52, end_line: 59 }
+        assertions:
+          - stable_key: "assertion:gap:challenge:business:proposal-expiry-completion-and-payout-observability:implemented"
+            text: "The execution lifecycle has no upper bound, execute only increments paidOutAmount, and neither proposal status nor the event records a terminal paid state."
+            evidence_class: "IMPLEMENTED_STATIC"
+            confidence: "HIGH"
+            evidence_stable_keys: ["evidence:challenge:business:lifecycle-and-execution"]
+          - stable_key: "assertion:gap:challenge:business:proposal-expiry-completion-and-payout-observability:test"
+            text: "The sole owner execution expectation performs one full payout but does not assert paidOutAmount, status after payout, event contents, replay after completion, or expiry."
+            evidence_class: "TEST_EXPECTATION"
+            confidence: "HIGH"
+            evidence_stable_keys: ["evidence:challenge:business:owner-tests"]
+      - stable_key: "gap:challenge:business:proposal-content-integrity-and-availability"
+        title: "Proposal content governance relies on an off-chain URI without a supplied immutability or availability policy"
+        gap_kinds: ["OFFCHAIN_TRUST", "MISSING_BINDING", "UNRESOLVED_AUTHORITY"]
+        materiality: "MEDIUM"
+        affected_actor_ids: []
+        affected_asset_ids: []
+        requirement_stable_keys: ["requirement:rfc-6924:proposal-content-reference"]
+        implementation_stable_keys: ["behavior:treasury-contracts:owner:create-proposal"]
+        test_ids: []
+        finding_ids: []
+        business_consequence: "The on-chain proposal commits the ZkappUri representation and emits its hash, but scoped code cannot establish that bytes served by a referenced URL are immutable, available throughout deliberation, or the exact content voters reviewed. Amount and recipient remain separately bound, yet explanatory scope and commitments can become unavailable or change off-chain."
+        rollout_relevance: ["MVP", "SAFETY_PERFORMANCE"]
+        author_question: "Must every proposal bind a content-addressed document hash in addition to a locator, what availability period is required, and are any proposal-period content amendments allowed and versioned?"
+        semantic_status: "UNRESOLVED"
+        anchors:
+          - { path: "packages/sdk/src/provable/contracts/treasury-owner.ts", symbol: "createProposal", start_line: 191, end_line: 271 }
+          - { path: "packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts", symbol: "Proposal/TreasuryProposalSmartContract", start_line: 46, end_line: 60 }
+          - { path: "packages/sdk/src/provable/events/treasury-proposal-events.ts", symbol: "ProposalCreatedEvent", start_line: 17, end_line: 27 }
+        assertions:
+          - stable_key: "assertion:gap:challenge:business:proposal-content-integrity-and-availability:implemented"
+            text: "Creation stores Types.ZkappUri and emits proposal.zkAppUri.hash; no scoped behavior retrieves, hashes, validates, or preserves the referenced document bytes."
+            evidence_class: "IMPLEMENTED_STATIC"
+            confidence: "HIGH"
+            evidence_stable_keys: ["evidence:challenge:business:proposal-bond-and-content"]
+          - stable_key: "assertion:gap:challenge:business:proposal-content-integrity-and-availability:intent"
+            text: "The RFC requires a Markdown content reference and permits examples such as a URL or hash, but the supplied context does not settle immutable-content and availability requirements for production."
+            evidence_class: "DOCUMENTED_INTENT"
+            confidence: "HIGH"
+            evidence_stable_keys: ["evidence:business-context:rfc-6924"]
+    unresolved: []
+    evidence:
+      - stable_key: "evidence:challenge:business:proposal-bond-and-content"
+        evidence_class: "IMPLEMENTED_STATIC"
+        description: "Proposal creation, pooled bond credit, proposal state initialization, URI commitment, and creation event attribution."
+        anchors:
+          - { path: "packages/sdk/src/provable/contracts/treasury-owner.ts", symbol: "createProposal", start_line: 191, end_line: 271 }
+          - { path: "packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts", symbol: "Proposal/proposal state", start_line: 46, end_line: 79 }
+          - { path: "packages/sdk/src/provable/events/treasury-proposal-events.ts", symbol: "ProposalCreatedEvent", start_line: 17, end_line: 27 }
+        source_sha256: "7c66014cee7f7a5e559b29f3b7c2790ed19c38c9a91b886c15cbbef3328d17dc"
+        tool: { name: "manual-static-reading", version: "", command: "nl/sed/rg/shasum" }
+        limitations: ["The evidence spans three separately hash-pinned inputs; source_sha256 identifies the primary owner anchor.", "External content bytes and account-permission runtime behavior are outside static scope."]
+      - stable_key: "evidence:challenge:business:vote-and-tally"
+        evidence_class: "IMPLEMENTED_STATIC"
+        description: "Vote authorization, proof/history binding, historical treasury-balance threshold, quorum assertions, and status persistence."
+        anchors:
+          - { path: "packages/sdk/src/provable/contracts/treasury-owner.ts", symbol: "vote/tallyVotes", start_line: 274, end_line: 419 }
+          - { path: "packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts", symbol: "calculateAcceptanceCriteria/calculateApprovalStatus/tallyVotes", start_line: 98, end_line: 351 }
+        source_sha256: "95e5656d3a0d0c09a88ac9befa743517c53a98983bd1cf74b042e87bc9faf7af"
+        tool: { name: "manual-static-reading", version: "", command: "nl/sed/rg/shasum" }
+        limitations: ["The evidence spans two separately hash-pinned inputs; source_sha256 identifies the proposal anchor.", "Proof, action-state, and arithmetic behavior was not executed."]
+      - stable_key: "evidence:challenge:business:lifecycle-and-execution"
+        evidence_class: "IMPLEMENTED_STATIC"
+        description: "Lifecycle range construction, open-ended execution gate, owner debit, recipient/cap enforcement, per-proposal paid amount, and execution event schema."
+        anchors:
+          - { path: "packages/sdk/src/provable/contracts/treasury-owner.ts", symbol: "state/getLifecyclePeriodSlotRange/executeProposal", start_line: 86, end_line: 87 }
+          - { path: "packages/sdk/src/provable/contracts/treasury-owner.ts", symbol: "getLifecyclePeriodSlotRange/requireLifecyclePeriod", start_line: 121, end_line: 184 }
+          - { path: "packages/sdk/src/provable/contracts/treasury-owner.ts", symbol: "executeProposal", start_line: 421, end_line: 462 }
+          - { path: "packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts", symbol: "execute", start_line: 353, end_line: 384 }
+          - { path: "packages/sdk/src/provable/events/treasury-proposal-events.ts", symbol: "ProposalExecutedEvent", start_line: 52, end_line: 59 }
+        source_sha256: "7c66014cee7f7a5e559b29f3b7c2790ed19c38c9a91b886c15cbbef3328d17dc"
+        tool: { name: "manual-static-reading", version: "", command: "nl/sed/rg/shasum" }
+        limitations: ["The evidence spans three separately hash-pinned inputs; source_sha256 identifies the primary owner anchor.", "Slot inclusivity, transaction ordering, rollback, and current balance sufficiency are external/runtime semantics."]
+      - stable_key: "evidence:challenge:business:pause-and-authority"
+        evidence_class: "IMPLEMENTED_STATIC"
+        description: "Proposal toggle intent/state/event mismatch plus global pause, participant commitment, threshold, nonce, rotation, and signature-domain fields."
+        anchors:
+          - { path: "packages/sdk/src/provable/contracts/treasury-owner.ts", symbol: "togglePauseProposal/requireNotPaused", start_line: 464, end_line: 503 }
+          - { path: "packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts", symbol: "togglePause", start_line: 386, end_line: 397 }
+          - { path: "packages/sdk/src/provable/contracts/treasury-pause-controller/treasury-pause-controller.ts", symbol: "TreasuryPauseControllerSmartContract", start_line: 29, end_line: 216 }
+          - { path: "packages/sdk/src/provable/contracts/treasury-pause-controller/multisig-signatures.ts", symbol: "MultisigSignature/MultisigSignatures", start_line: 22, end_line: 145 }
+          - { path: "packages/sdk/src/provable/events/treasury-proposal-events.ts", symbol: "ProposalPauseToggledEvent", start_line: 61, end_line: 68 }
+        source_sha256: "f7139183b963aa496dd36df00017885c9ab6275f11accca35bfd9054260e5104"
+        tool: { name: "manual-static-reading", version: "", command: "nl/sed/rg/shasum" }
+        limitations: ["The evidence spans five separately hash-pinned inputs; source_sha256 identifies the controller anchor.", "Signature execution, replay across deployments, and recovery ceremonies were not executed."]
+      - stable_key: "evidence:challenge:business:owner-tests"
+        evidence_class: "TEST_EXPECTATION"
+        description: "Single-proposal owner integration path and focused threshold/pause/event test expectations used to identify cross-flow oracle gaps."
+        anchors:
+          - { path: "packages/sdk/test/integration/treasury-owner.test.ts", symbol: "proposal creation through full execution", start_line: 269, end_line: 764 }
+          - { path: "packages/sdk/test/provable/contracts/treasury-proposal/treasury-proposal.test.ts", symbol: "acceptance-criteria examples", start_line: 6, end_line: 84 }
+          - { path: "packages/sdk/test/provable/contracts/treasury-pause-controller/treasury-pause-controller.test.ts", symbol: "pause controller suite", start_line: 21, end_line: 659 }
+          - { path: "packages/sdk/test/provable/contracts/treasury-pause-controller/multisig-signatures.test.ts", symbol: "multisig suite", start_line: 13, end_line: 611 }
+          - { path: "packages/sdk/test/provable/events/treasury-proposal-events.test.ts", symbol: "event schema suite", start_line: 41, end_line: 212 }
+        source_sha256: "f73f778dcb2ac226c416ebfdf69117af3262fcc37f36877ea3fb7d1bd7e0f4e0"
+        tool: { name: "manual-static-reading", version: "", command: "nl/sed/rg/shasum" }
+        limitations: ["The evidence spans five separately hash-pinned test inputs; source_sha256 identifies the owner integration anchor.", "Tests were read but not executed; no case is treated as passed."]
+  proposed_relations: []
+  conflicts:
+    - "RFC successful-bond return language conflicts with pooled bond custody and recipient-bound amount-plus-bond payout; no supplied final decision authorizes the deviation."
+    - "The approval calculator returns REJECTED for failed quorum/zero directional votes, while the state transition rejects before persisting that result."
+    - "Proposal-specific pause authorization, status transition, and event payload express three different notions of pause intent."
+    - "The source permits persistent, parallel, partial proposal claims, while no supplied business authority defines reservation, priority, expiry, or completion."
+  unresolved:
+    - "Exact lifecycle boundary ownership remains dependent on pinned o1js slot-precondition and range-inclusivity semantics."
+    - "No final decision source establishes bond payer/beneficiary, low-quorum terminal state, permissionless execution agency, parallel-claim priority, proposal expiry/completion, or immutable content-reference policy."
+    - "Static source cannot establish current deployed balances, permissions, keys, transaction ordering, rollback, proof soundness, content availability, or event-consumer behavior."
+  coverage:
+    expected_paths: 11
+    accounted_paths: 11
+    expected_symbols: 15
+    accounted_symbols: 15
+    reconstructed_flows: 7
+    challenged_existing_record_groups: 9
+    proposed_findings: 0
+    proposed_gaps: 3
+    proposed_unresolved_records: 0
+    proposed_evidence: 5
+    source_hashes_rechecked: 11
+    upstream_artifact_hashes_rechecked: 8
+    limitations:
+      - "This bundle intentionally proposes no duplicate finding for prior-audit or semantic-worker conclusions."
+      - "Business-policy gaps are not presented as confirmed exploitable defects."
+      - "All dynamic, deployed, proof, and runtime behavior remains unresolved."

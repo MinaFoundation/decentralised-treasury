@@ -1,0 +1,15 @@
+work_unit:
+  id: "WU-549B7D54F3"
+  stable_key: "work-unit:challenge:business-coherence"
+  role: "challenge"
+  pass: "PASS_1"
+  revision: "1e27b1aea88f5ea2764db96e4b337b24fe6dbeb3"
+  primary_paths: []
+  read_only_context_paths: ["SCOPE.yaml", "context/RFC_EXTRACT.md", "context/ZKSECURITY_AUDIT_INDEX.md", "evidence/reconnaissance", "evidence/semantic"]
+  owned_record_ids: []
+  owned_stable_key_prefixes: ["finding:challenge:business:", "gap:challenge:business:", "unresolved:challenge:business:"]
+  questions:
+    - "Are lifecycle, proposal, vote, tally, payout, bond, pause, and authority semantics coherent end to end?"
+    - "Which apparent deviations are defects, provisional policy choices, or unresolved author decisions?"
+  output: "evidence/challenge/WU-549B7D54F3.yaml"
+  status: "COMPLETE"

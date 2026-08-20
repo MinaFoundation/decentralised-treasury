@@ -1,0 +1,109 @@
+schema_version: 1
+scope_hash: f40d76b91ec3cd8805ecdc7bebba8d43b8f317842639a7799738c37569119ab1
+permitted_repository_write_root: .codebase-analysis/provable-92d90e3803a1
+source_mutation_detected: false
+inputs:
+  - path: packages/sdk/package.json
+    sha256: d73ba980798af63c8ac79b897ae548bd706e480286ac9f617c68f2144f394eba
+  - path: packages/sdk/src/logging/logger.ts
+    sha256: ad0ff96d55f18ddf13a2a7d2fe7e5fd974a8acfd320c65a501cc3a4412b1b944
+  - path: packages/sdk/src/ledgers/nullifier-ledger/nullifier-ledger.ts
+    sha256: 0b8a9038005b7aee785f75d4e0bb4fdf4cb5f945c639f35528596003ac9c36e4
+  - path: packages/sdk/src/ledgers/staking-ledger/staking-ledger.ts
+    sha256: df9be11132c6cb968fe1b9857b53137d629f7d213141652bc90981b5c7c04d69
+  - path: packages/sdk/src/ledgers/voting-ledger/voting-ledger.ts
+    sha256: 8405cbfde9370f4cc424efcdb32477949bf5fcf38db24926cfd0bd1f40898c52
+  - path: packages/sdk/src/provable/account.ts
+    sha256: 00eabfcee24eb10380d0ffeb1e60a08a85aa650cc8a3e9140718cecbf6fd0563
+  - path: packages/sdk/src/provable/contracts/treasury-constants.ts
+    sha256: c4ef6c551437e01ebe6294c51923dfedff4a198735766a37029249482d9247a6
+  - path: packages/sdk/src/provable/contracts/treasury-owner.ts
+    sha256: 7c66014cee7f7a5e559b29f3b7c2790ed19c38c9a91b886c15cbbef3328d17dc
+  - path: packages/sdk/src/provable/contracts/treasury-pause-controller/multisig-signatures.ts
+    sha256: 48a7c4cd41c1e9764df1329966c37f325817fa43074140c145f4f6c1ae2aa372
+  - path: packages/sdk/src/provable/contracts/treasury-pause-controller/treasury-pause-controller.ts
+    sha256: f7139183b963aa496dd36df00017885c9ab6275f11accca35bfd9054260e5104
+  - path: packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts
+    sha256: 95e5656d3a0d0c09a88ac9befa743517c53a98983bd1cf74b042e87bc9faf7af
+  - path: packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts
+    sha256: 37c1f07a5fad41f036f999792b44bf13d4f9af280cb1439bed6a8411dfaa81cd
+  - path: packages/sdk/src/provable/events/treasury-proposal-events.ts
+    sha256: 421e00244121b82a603b71b722ef35419794d0d603a264270a47a44d05a2c01d
+  - path: packages/sdk/src/provable/hashing-helpers.ts
+    sha256: 8ef43c9c685339f97a667002c2f6f349071eaa53ba753c7008dc46be23396869
+  - path: packages/sdk/src/provable/merkle-tree/prefixed-merkle-tree.ts
+    sha256: 870ca739cc8406070367beb86367efa64101647d130f0892b636555cbd2a5c6c
+  - path: packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts
+    sha256: 4dcfc5e1f1edcc7e26cfb960f3892208efe16056a2579b14e12e2a79f0e28197
+  - path: packages/sdk/src/provable/voting-account.ts
+    sha256: fe383ead1055910ace4062c56cf4c7773dead3d95733f972ef6e49b2de515454
+  - path: packages/sdk/src/storage/in-memory/in-memory-merkle-tree-storage.ts
+    sha256: b4d3fc976ee94a108773f8839c03e8775843ab86a9ced5d730b84f9e12a7589b
+  - path: packages/sdk/src/storage/keyv/keyv-merkle-tree-storage.ts
+    sha256: da9b8eac67d45d4a73ecbc53865986ab50bfdc34bd2a3eded3e3701b868f6d70
+  - path: packages/sdk/src/storage/merkle-tree-storage.ts
+    sha256: ce5610141a8d1c7d4a5e8b83ae90dc17f6ae64e5da11e29907cdadd5c1a69539
+  - path: packages/sdk/src/utils/context-provider.ts
+    sha256: cbbde1f3561ca2ee39bc7026241a09fa2659629542c527cc49271da5e924b6d4
+  - path: packages/sdk/src/utils/public-key.ts
+    sha256: 4a174b2a1bc5d07a9f3f8680e47cde35d3b654eeaf924f82e0aae8cf162a9383
+  - path: packages/sdk/test/integration/treasury-owner.test.ts
+    sha256: f73f778dcb2ac226c416ebfdf69117af3262fcc37f36877ea3fb7d1bd7e0f4e0
+  - path: packages/sdk/test/provable/context/contracts/mina-local.ts
+    sha256: 1f1bc37d6f2fe73405b8b6d6a5044ef60de9210cebc0fc5599f0501eeae037f7
+  - path: packages/sdk/test/provable/context/contracts/multisig-signatures-context.ts
+    sha256: d7ab8c5b956860cd6be820f4109fccf5b5418e17ddc6c49f8297f290d031bfe3
+  - path: packages/sdk/test/provable/context/contracts/treasury-pause-controller-context.ts
+    sha256: c19bf32ccf5beaef34b5493c1fb459a2d9e5c4cccbba7c07c6dcebc570f7e0dc
+  - path: packages/sdk/test/provable/context/contracts/treasury-proposal-context.ts
+    sha256: 26867da6fe78c507f120849a85c6752ad3b463124cc59393d8adc37b7e8d6463
+  - path: packages/sdk/test/provable/context/contracts/vote-reducer-context.ts
+    sha256: 01d905c373575a62eb1274650fbff25a240626f993ae6127f54e2621346d49f0
+  - path: packages/sdk/test/provable/context/proofs-enabled.ts
+    sha256: 8811666fcffeca3ff5a2bc4d6dbe93b208dcd242b97860390abba0f7551ce2bd
+  - path: packages/sdk/test/provable/context/staking-ledger-to-voting-ledger-context.ts
+    sha256: 4195f6ebbcbee51ca421f319cd5a399d54e9f252ff76334024914f83d8afdfec
+  - path: packages/sdk/test/provable/contracts/treasury-pause-controller/multisig-signatures.test.ts
+    sha256: d51e8afe43141a84650ddcff49d736a308007fb04da1ae22b72d3a65783648b2
+  - path: packages/sdk/test/provable/contracts/treasury-pause-controller/treasury-pause-controller.test.ts
+    sha256: 5e4031821bafa39daf9b1b28d2aeba4daf92e1611f78e571035974ab63fbb1e5
+  - path: packages/sdk/test/provable/contracts/treasury-proposal/treasury-proposal.test.ts
+    sha256: 89444ba4edfc6bf48fae0c0ef4f8b183c9c2d35f24e38e78622334adb3bed6bb
+  - path: packages/sdk/test/provable/contracts/treasury-proposal/vote-reducer.test.ts
+    sha256: 7f957b454de0f6e1545fa2dc0367b53e0908bde826eb76db4099d36f4f4e8f8a
+  - path: packages/sdk/test/provable/events/treasury-proposal-events.test.ts
+    sha256: 2b5204f4acf2dca9135642a242e18bf5535f46fa41526b43fb19b228d6f63f79
+  - path: packages/sdk/test/provable/merkle-tree/prefixed-merkle-tree.test.ts
+    sha256: a26229c7a3247fc649d1fc8cb2212f978cc108e222ecb0f17045327285221845
+  - path: packages/sdk/test/provable/staking-ledger-to-voting-ledger.test.ts
+    sha256: 988d911b4336e64ccd70009cddcb514bc93b693a1df203c6d1a15dbb98e6af0c
+  - path: packages/sdk/tsconfig.json
+    sha256: 8206b547d254f2bfd7a1c89d09c5e8b2e650e2e5e52f73047c0b30285f206877
+checks:
+  - phase: PHASE_0
+    completed_utc: 2026-08-14T07:18:44Z
+    result: MATCH
+  - phase: PHASE_0_SCOPE_EXPANSION
+    completed_utc: 2026-08-14T07:25:00Z
+    result: MATCH
+  - phase: PASS_1_TEST_SCOPE_PROMOTION
+    completed_utc: 2026-08-14T07:35:00Z
+    result: MATCH
+  - phase: BRIDGE_PHASE_4
+    completed_utc: 2026-08-14T08:25:50Z
+    result: MATCH
+  - phase: PASS_2_CONTEXTUAL_REVIEW
+    completed_utc: 2026-08-14T08:43:29Z
+    result: MATCH
+  - phase: PASS_2_ORTHOGONAL_CHALLENGE
+    completed_utc: 2026-08-14T11:31:53Z
+    result: MATCH
+  - phase: TRACEABILITY_CORRECTION
+    completed_utc: 2026-08-14T11:31:53Z
+    result: MATCH
+  - phase: CONSOLIDATE_AND_PUBLISH
+    completed_utc: 2026-08-14T11:31:53Z
+    result: MATCH
+  - phase: PUBLICATION_LANGUAGE_REFRESH
+    completed_utc: 2026-08-14T11:31:53Z
+    result: MATCH

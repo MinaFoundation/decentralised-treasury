@@ -1,0 +1,4752 @@
+---
+schema_version: '1.0'
+bundle:
+  schema_version: 1
+  work_unit: WU-24D8731474
+  id: COR-WU-24D8731474
+  work_unit_id: WU-24D8731474
+  stable_key: correction:phase-6:source-flow-accountability
+  kind: MACHINE_APPLICABLE_CORRECTION_PATCH
+  phase: 6
+  pass: PASS_2
+  revision: 1e27b1aea88f5ea2764db96e4b337b24fe6dbeb3
+  scope_hash: f40d76b91ec3cd8805ecdc7bebba8d43b8f317842639a7799738c37569119ab1
+  pass_2_sha256: 645101d2946d908ab1e200b78048e56957cdd63daa1f872c81897d1e83618897
+  role: architecture
+  status: COMPLETE
+  base_model: model/pass-2-contextual-corrected.yaml
+  output: evidence/corrections/WU-24D8731474.yaml
+  input_sha256:
+    work_unit: aefe2fec7c102ce7febd5f5c0b0cddc174a00b98a63c539dbf8b82829e10ebe8
+    scope: 9344afe7d4f90951790c715b8f7ef9992aad0364510f045fedd6ea640df2ec35
+    base_model: 645101d2946d908ab1e200b78048e56957cdd63daa1f872c81897d1e83618897
+    context: b08ad4cfef37e8a2f19bb2dd46d69763312a48e00e6204e7f8ec30a291afdfd1
+    qa_review: 678be159482c197f710c3d3adb7e77c431525ea2aeecf889704b65957814868a
+    business_review: d06b37ab5d30376f4f17b0ba05b012d4ecaa0df3e7934604ba8642c6ebb876a3
+    security_review: 98d991197f219c75ff7f1ce4fc8bff189bc5ced612c8a063bf68c46bddef6af6
+correction_review:
+  status: COMPLETE
+  reviewed_inputs:
+  - work-units/WU-24D8731474.yaml
+  - SCOPE.yaml
+  - model/pass-2-contextual-corrected.yaml
+  - model/context.yaml
+  - evidence/contextual/WU-367D918B22.yaml
+  - evidence/contextual/WU-2AD6BF0460.yaml
+  - evidence/contextual/WU-B16DF0D533.yaml
+  domains:
+  - source_significance_and_parent_hierarchy
+  - source_coverage
+  - flow_owner_and_step_attribution
+  allowed_changed_fields:
+    sources:
+    - significance
+    - rationale
+    - parent_ids
+    flows:
+    - owner_component_id
+    - steps[].component_id
+    - steps[].behavior_id
+    coverage_source:
+    - by_significance
+    - scope_role_counts
+    - analyzed_primary_and_expanded_inputs
+    - read_only_context_inputs
+    - current_source_records
+    - current_kind_file_records
+    - current_kind_configuration_records
+    - current_non_file_non_configuration_records
+  semantic_assertion_changes: 0
+  effective_conclusion_changes: 0
+  flow_operation_or_outcome_changes: 0
+  runtime_claims_added: 0
+  review_conclusion: The patch repairs structural accountability only. Intended, expected,
+    and implemented behavior remain separate, and all runtime/proof/deployment limitations
+    remain unresolved.
+changes:
+- group: sources
+  record_id: SRC-1EF7A669E0
+  old:
+    significance: OUT_OF_SCOPE
+    rationale: Integration expectation context.
+  set:
+    significance: MEANINGFUL
+    rationale: Treasury Owner integration suite is an EXPANDED_SCOPE test input analyzed
+      as TEST_EXPECTATION evidence only; it was not executed and no pass/fail result
+      is claimed.
+  rationale: The scope manifest promotes this test file to EXPANDED_SCOPE; source
+    significance must represent analyzed expectation evidence without implying execution.
+  evidence_ids:
+  - EVD-B5183C166D
+  source_references:
+  - packages/sdk/test/integration/treasury-owner.test.ts#L269-L764
+  - packages/sdk/test/provable/contracts/treasury-proposal/treasury-proposal.test.ts#L6-L84
+  - packages/sdk/test/provable/contracts/treasury-pause-controller/treasury-pause-controller.test.ts#L21-L659
+  - packages/sdk/test/provable/contracts/treasury-pause-controller/multisig-signatures.test.ts#L13-L611
+  - packages/sdk/test/provable/events/treasury-proposal-events.test.ts#L41-L212
+- group: sources
+  record_id: SRC-C1BC86B768
+  old:
+    significance: OUT_OF_SCOPE
+    rationale: Multisig expectation cases.
+  set:
+    significance: MEANINGFUL
+    rationale: multisig-signature suite is an EXPANDED_SCOPE test input analyzed as
+      TEST_EXPECTATION evidence only; it was not executed and no pass/fail result
+      is claimed.
+  rationale: The scope manifest promotes this test file to EXPANDED_SCOPE; source
+    significance must represent analyzed expectation evidence without implying execution.
+  evidence_ids:
+  - EVD-E0EADE8F80
+  source_references:
+  - packages/sdk/test/provable/contracts/treasury-pause-controller/multisig-signatures.test.ts#L13-L611
+- group: sources
+  record_id: SRC-ADD1EE03C0
+  old:
+    significance: OUT_OF_SCOPE
+    rationale: Pause-controller expectation cases.
+  set:
+    significance: MEANINGFUL
+    rationale: pause-controller suite is an EXPANDED_SCOPE test input analyzed as
+      TEST_EXPECTATION evidence only; it was not executed and no pass/fail result
+      is claimed.
+  rationale: The scope manifest promotes this test file to EXPANDED_SCOPE; source
+    significance must represent analyzed expectation evidence without implying execution.
+  evidence_ids:
+  - EVD-06EBF778A2
+  source_references:
+  - packages/sdk/test/provable/contracts/treasury-pause-controller/treasury-pause-controller.test.ts#L19-L659
+- group: sources
+  record_id: SRC-262AA2E950
+  old:
+    significance: OUT_OF_SCOPE
+    rationale: Acceptance-criteria expectation cases.
+  set:
+    significance: MEANINGFUL
+    rationale: proposal-threshold suite is an EXPANDED_SCOPE test input analyzed as
+      TEST_EXPECTATION evidence only; it was not executed and no pass/fail result
+      is claimed.
+  rationale: The scope manifest promotes this test file to EXPANDED_SCOPE; source
+    significance must represent analyzed expectation evidence without implying execution.
+  evidence_ids:
+  - EVD-F464BA8D69
+  source_references:
+  - packages/sdk/test/provable/contracts/treasury-proposal/treasury-proposal.test.ts#L6-L84
+- group: sources
+  record_id: SRC-C34C2E3EFB
+  old:
+    significance: OUT_OF_SCOPE
+    rationale: Vote-reducer expectation cases.
+  set:
+    significance: MEANINGFUL
+    rationale: vote-reducer suite is an EXPANDED_SCOPE test input analyzed as TEST_EXPECTATION
+      evidence only; it was not executed and no pass/fail result is claimed.
+  rationale: The scope manifest promotes this test file to EXPANDED_SCOPE; source
+    significance must represent analyzed expectation evidence without implying execution.
+  evidence_ids:
+  - EVD-79E3305BF5
+  source_references:
+  - packages/sdk/test/provable/contracts/treasury-proposal/vote-reducer.test.ts#L18-L1517
+- group: sources
+  record_id: SRC-C2638DBE31
+  old:
+    significance: OUT_OF_SCOPE
+    rationale: Event schema expectation cases.
+  set:
+    significance: MEANINGFUL
+    rationale: event-schema suite is an EXPANDED_SCOPE test input analyzed as TEST_EXPECTATION
+      evidence only; it was not executed and no pass/fail result is claimed.
+  rationale: The scope manifest promotes this test file to EXPANDED_SCOPE; source
+    significance must represent analyzed expectation evidence without implying execution.
+  evidence_ids:
+  - EVD-02AE7D74CF
+  source_references:
+  - packages/sdk/test/provable/events/treasury-proposal-events.test.ts#L26-L212
+- group: sources
+  record_id: SRC-0F15479FFF
+  old:
+    significance: OUT_OF_SCOPE
+    rationale: Prefixed Merkle expectation case.
+  set:
+    significance: MEANINGFUL
+    rationale: prefixed-Merkle suite is an EXPANDED_SCOPE test input analyzed as TEST_EXPECTATION
+      evidence only; it was not executed and no pass/fail result is claimed.
+  rationale: The scope manifest promotes this test file to EXPANDED_SCOPE; source
+    significance must represent analyzed expectation evidence without implying execution.
+  evidence_ids:
+  - EVD-2C1DE8596E
+  source_references:
+  - packages/sdk/test/provable/merkle-tree/prefixed-merkle-tree.test.ts#L10-L43
+- group: sources
+  record_id: SRC-35F79F4F5A
+  old:
+    significance: OUT_OF_SCOPE
+    rationale: Staking-to-voting expectation cases.
+  set:
+    significance: MEANINGFUL
+    rationale: staking-to-voting suite is an EXPANDED_SCOPE test input analyzed as
+      TEST_EXPECTATION evidence only; it was not executed and no pass/fail result
+      is claimed.
+  rationale: The scope manifest promotes this test file to EXPANDED_SCOPE; source
+    significance must represent analyzed expectation evidence without implying execution.
+  evidence_ids:
+  - EVD-26877CBE71
+  source_references:
+  - packages/sdk/test/provable/staking-ledger-to-voting-ledger.test.ts#L11-L134
+- group: sources
+  record_id: SRC-07F3F99EA2
+  absent_before:
+  - parent_ids
+  old: {}
+  set:
+    parent_ids:
+    - SRC-4A1F6AB356
+  rationale: The unique current kind=file record with the identical repository path
+    is the mechanically determined canonical inventory parent; this restores hierarchy
+    only.
+  evidence_ids:
+  - EVD-F211A2464E
+  source_references:
+  - packages/sdk/src/provable/account.ts#Zkapp.empty
+  - packages/sdk/src/provable/account.ts#<file>
+- group: sources
+  record_id: SRC-0F89247D4C
+  absent_before:
+  - parent_ids
+  old: {}
+  set:
+    parent_ids:
+    - SRC-4A1F6AB356
+  rationale: The unique current kind=file record with the identical repository path
+    is the mechanically determined canonical inventory parent; this restores hierarchy
+    only.
+  evidence_ids:
+  - EVD-F211A2464E
+  source_references:
+  - packages/sdk/src/provable/account.ts#Account.fromJSON
+  - packages/sdk/src/provable/account.ts#<file>
+- group: sources
+  record_id: SRC-0F9F473E1A
+  absent_before:
+  - parent_ids
+  old: {}
+  set:
+    parent_ids:
+    - SRC-4A1F6AB356
+  rationale: The unique current kind=file record with the identical repository path
+    is the mechanically determined canonical inventory parent; this restores hierarchy
+    only.
+  evidence_ids:
+  - EVD-F211A2464E
+  source_references:
+  - packages/sdk/src/provable/account.ts#Permission.toHashInput
+  - packages/sdk/src/provable/account.ts#<file>
+- group: sources
+  record_id: SRC-1334DB0EF2
+  absent_before:
+  - parent_ids
+  old: {}
+  set:
+    parent_ids:
+    - SRC-4A1F6AB356
+  rationale: The unique current kind=file record with the identical repository path
+    is the mechanically determined canonical inventory parent; this restores hierarchy
+    only.
+  evidence_ids:
+  - EVD-F211A2464E
+  source_references:
+  - packages/sdk/src/provable/account.ts#Timing
+  - packages/sdk/src/provable/account.ts#<file>
+- group: sources
+  record_id: SRC-187FEAE564
+  absent_before:
+  - parent_ids
+  old: {}
+  set:
+    parent_ids:
+    - SRC-4A1F6AB356
+  rationale: The unique current kind=file record with the identical repository path
+    is the mechanically determined canonical inventory parent; this restores hierarchy
+    only.
+  evidence_ids:
+  - EVD-F211A2464E
+  source_references:
+  - packages/sdk/src/provable/account.ts#Timing.empty
+  - packages/sdk/src/provable/account.ts#<file>
+- group: sources
+  record_id: SRC-24943B1683
+  absent_before:
+  - parent_ids
+  old: {}
+  set:
+    parent_ids:
+    - SRC-4A1F6AB356
+  rationale: The unique current kind=file record with the identical repository path
+    is the mechanically determined canonical inventory parent; this restores hierarchy
+    only.
+  evidence_ids:
+  - EVD-F211A2464E
+  source_references:
+  - packages/sdk/src/provable/account.ts#Account.isEmpty
+  - packages/sdk/src/provable/account.ts#<file>
+- group: sources
+  record_id: SRC-3431C447F9
+  absent_before:
+  - parent_ids
+  old: {}
+  set:
+    parent_ids:
+    - SRC-4A1F6AB356
+  rationale: The unique current kind=file record with the identical repository path
+    is the mechanically determined canonical inventory parent; this restores hierarchy
+    only.
+  evidence_ids:
+  - EVD-F211A2464E
+  source_references:
+  - packages/sdk/src/provable/account.ts#fieldElements
+  - packages/sdk/src/provable/account.ts#<file>
+- group: sources
+  record_id: SRC-38C308D79B
+  absent_before:
+  - parent_ids
+  old: {}
+  set:
+    parent_ids:
+    - SRC-4A1F6AB356
+  rationale: The unique current kind=file record with the identical repository path
+    is the mechanically determined canonical inventory parent; this restores hierarchy
+    only.
+  evidence_ids:
+  - EVD-F211A2464E
+  source_references:
+  - packages/sdk/src/provable/account.ts#field
+  - packages/sdk/src/provable/account.ts#<file>
+- group: sources
+  record_id: SRC-3C7346B340
+  absent_before:
+  - parent_ids
+  old: {}
+  set:
+    parent_ids:
+    - SRC-4A1F6AB356
+  rationale: The unique current kind=file record with the identical repository path
+    is the mechanically determined canonical inventory parent; this restores hierarchy
+    only.
+  evidence_ids:
+  - EVD-F211A2464E
+  source_references:
+  - packages/sdk/src/provable/account.ts#Permissions
+  - packages/sdk/src/provable/account.ts#<file>
+- group: sources
+  record_id: SRC-45A43C9D6D
+  absent_before:
+  - parent_ids
+  old: {}
+  set:
+    parent_ids:
+    - SRC-4A1F6AB356
+  rationale: The unique current kind=file record with the identical repository path
+    is the mechanically determined canonical inventory parent; this restores hierarchy
+    only.
+  evidence_ids:
+  - EVD-F211A2464E
+  source_references:
+  - packages/sdk/src/provable/account.ts#Permission
+  - packages/sdk/src/provable/account.ts#<file>
+- group: sources
+  record_id: SRC-45E1BC61FF
+  absent_before:
+  - parent_ids
+  old: {}
+  set:
+    parent_ids:
+    - SRC-4A1F6AB356
+  rationale: The unique current kind=file record with the identical repository path
+    is the mechanically determined canonical inventory parent; this restores hierarchy
+    only.
+  evidence_ids:
+  - EVD-F211A2464E
+  source_references:
+  - packages/sdk/src/provable/account.ts#Permission.signature
+  - packages/sdk/src/provable/account.ts#<file>
+- group: sources
+  record_id: SRC-568C6E623C
+  absent_before:
+  - parent_ids
+  old: {}
+  set:
+    parent_ids:
+    - SRC-4A1F6AB356
+  rationale: The unique current kind=file record with the identical repository path
+    is the mechanically determined canonical inventory parent; this restores hierarchy
+    only.
+  evidence_ids:
+  - EVD-F211A2464E
+  source_references:
+  - packages/sdk/src/provable/account.ts#Permissions.toHashInput
+  - packages/sdk/src/provable/account.ts#<file>
+- group: sources
+  record_id: SRC-57EB81A0AD
+  absent_before:
+  - parent_ids
+  old: {}
+  set:
+    parent_ids:
+    - SRC-4A1F6AB356
+  rationale: The unique current kind=file record with the identical repository path
+    is the mechanically determined canonical inventory parent; this restores hierarchy
+    only.
+  evidence_ids:
+  - EVD-F211A2464E
+  source_references:
+  - packages/sdk/src/provable/account.ts#Account.empty
+  - packages/sdk/src/provable/account.ts#<file>
+- group: sources
+  record_id: SRC-5E22DE33D1
+  absent_before:
+  - parent_ids
+  old: {}
+  set:
+    parent_ids:
+    - SRC-4A1F6AB356
+  rationale: The unique current kind=file record with the identical repository path
+    is the mechanically determined canonical inventory parent; this restores hierarchy
+    only.
+  evidence_ids:
+  - EVD-F211A2464E
+  source_references:
+  - packages/sdk/src/provable/account.ts#Zkapp.toHashInput
+  - packages/sdk/src/provable/account.ts#<file>
+- group: sources
+  record_id: SRC-67903B0F3E
+  absent_before:
+  - parent_ids
+  old: {}
+  set:
+    parent_ids:
+    - SRC-4A1F6AB356
+  rationale: The unique current kind=file record with the identical repository path
+    is the mechanically determined canonical inventory parent; this restores hierarchy
+    only.
+  evidence_ids:
+  - EVD-F211A2464E
+  source_references:
+  - packages/sdk/src/provable/account.ts#Permission.fromString
+  - packages/sdk/src/provable/account.ts#<file>
+- group: sources
+  record_id: SRC-70E1518866
+  absent_before:
+  - parent_ids
+  old: {}
+  set:
+    parent_ids:
+    - SRC-4A1F6AB356
+  rationale: The unique current kind=file record with the identical repository path
+    is the mechanically determined canonical inventory parent; this restores hierarchy
+    only.
+  evidence_ids:
+  - EVD-F211A2464E
+  source_references:
+  - packages/sdk/src/provable/account.ts#EMPTY_ZKAPP_URI_HASH
+  - packages/sdk/src/provable/account.ts#<file>
+- group: sources
+  record_id: SRC-79483DC31E
+  absent_before:
+  - parent_ids
+  old: {}
+  set:
+    parent_ids:
+    - SRC-4A1F6AB356
+  rationale: The unique current kind=file record with the identical repository path
+    is the mechanically determined canonical inventory parent; this restores hierarchy
+    only.
+  evidence_ids:
+  - EVD-F211A2464E
+  source_references:
+  - packages/sdk/src/provable/account.ts#packeds
+  - packages/sdk/src/provable/account.ts#<file>
+- group: sources
+  record_id: SRC-7C1E69AAD0
+  absent_before:
+  - parent_ids
+  old: {}
+  set:
+    parent_ids:
+    - SRC-4A1F6AB356
+  rationale: The unique current kind=file record with the identical repository path
+    is the mechanically determined canonical inventory parent; this restores hierarchy
+    only.
+  evidence_ids:
+  - EVD-F211A2464E
+  source_references:
+  - packages/sdk/src/provable/account.ts#Account.toHashInput
+  - packages/sdk/src/provable/account.ts#<file>
+- group: sources
+  record_id: SRC-8100F2717B
+  absent_before:
+  - parent_ids
+  old: {}
+  set:
+    parent_ids:
+    - SRC-4A1F6AB356
+  rationale: The unique current kind=file record with the identical repository path
+    is the mechanically determined canonical inventory parent; this restores hierarchy
+    only.
+  evidence_ids:
+  - EVD-F211A2464E
+  source_references:
+  - packages/sdk/src/provable/account.ts#append
+  - packages/sdk/src/provable/account.ts#<file>
+- group: sources
+  record_id: SRC-85FEEA33F9
+  absent_before:
+  - parent_ids
+  old: {}
+  set:
+    parent_ids:
+    - SRC-4A1F6AB356
+  rationale: The unique current kind=file record with the identical repository path
+    is the mechanically determined canonical inventory parent; this restores hierarchy
+    only.
+  evidence_ids:
+  - EVD-F211A2464E
+  source_references:
+  - packages/sdk/src/provable/account.ts#pow2
+  - packages/sdk/src/provable/account.ts#<file>
+- group: sources
+  record_id: SRC-945F1D9F09
+  absent_before:
+  - parent_ids
+  old: {}
+  set:
+    parent_ids:
+    - SRC-4A1F6AB356
+  rationale: The unique current kind=file record with the identical repository path
+    is the mechanically determined canonical inventory parent; this restores hierarchy
+    only.
+  evidence_ids:
+  - EVD-F211A2464E
+  source_references:
+  - packages/sdk/src/provable/account.ts#Permission.none
+  - packages/sdk/src/provable/account.ts#<file>
+- group: sources
+  record_id: SRC-9B22D9FDCB
+  absent_before:
+  - parent_ids
+  old: {}
+  set:
+    parent_ids:
+    - SRC-4A1F6AB356
+  rationale: The unique current kind=file record with the identical repository path
+    is the mechanically determined canonical inventory parent; this restores hierarchy
+    only.
+  evidence_ids:
+  - EVD-F211A2464E
+  source_references:
+  - packages/sdk/src/provable/account.ts#Permission.impossible
+  - packages/sdk/src/provable/account.ts#<file>
+- group: sources
+  record_id: SRC-9BF0E32BE7
+  absent_before:
+  - parent_ids
+  old: {}
+  set:
+    parent_ids:
+    - SRC-4A1F6AB356
+  rationale: The unique current kind=file record with the identical repository path
+    is the mechanically determined canonical inventory parent; this restores hierarchy
+    only.
+  evidence_ids:
+  - EVD-F211A2464E
+  source_references:
+  - packages/sdk/src/provable/account.ts#Permission.proof
+  - packages/sdk/src/provable/account.ts#<file>
+- group: sources
+  record_id: SRC-B40E56FDF7
+  absent_before:
+  - parent_ids
+  old: {}
+  set:
+    parent_ids:
+    - SRC-4A1F6AB356
+  rationale: The unique current kind=file record with the identical repository path
+    is the mechanically determined canonical inventory parent; this restores hierarchy
+    only.
+  evidence_ids:
+  - EVD-F211A2464E
+  source_references:
+  - packages/sdk/src/provable/account.ts#packed
+  - packages/sdk/src/provable/account.ts#<file>
+- group: sources
+  record_id: SRC-B8831BD476
+  absent_before:
+  - parent_ids
+  old: {}
+  set:
+    parent_ids:
+    - SRC-4A1F6AB356
+  rationale: The unique current kind=file record with the identical repository path
+    is the mechanically determined canonical inventory parent; this restores hierarchy
+    only.
+  evidence_ids:
+  - EVD-F211A2464E
+  source_references:
+  - packages/sdk/src/provable/account.ts#Timing.toHashInput
+  - packages/sdk/src/provable/account.ts#<file>
+- group: sources
+  record_id: SRC-D93A7361B9
+  absent_before:
+  - parent_ids
+  old: {}
+  set:
+    parent_ids:
+    - SRC-4A1F6AB356
+  rationale: The unique current kind=file record with the identical repository path
+    is the mechanically determined canonical inventory parent; this restores hierarchy
+    only.
+  evidence_ids:
+  - EVD-F211A2464E
+  source_references:
+  - packages/sdk/src/provable/account.ts#Account
+  - packages/sdk/src/provable/account.ts#<file>
+- group: sources
+  record_id: SRC-DE70D7F2E2
+  absent_before:
+  - parent_ids
+  old: {}
+  set:
+    parent_ids:
+    - SRC-4A1F6AB356
+  rationale: The unique current kind=file record with the identical repository path
+    is the mechanically determined canonical inventory parent; this restores hierarchy
+    only.
+  evidence_ids:
+  - EVD-F211A2464E
+  source_references:
+  - packages/sdk/src/provable/account.ts#Zkapp
+  - packages/sdk/src/provable/account.ts#<file>
+- group: sources
+  record_id: SRC-E10737417B
+  absent_before:
+  - parent_ids
+  old: {}
+  set:
+    parent_ids:
+    - SRC-4A1F6AB356
+  rationale: The unique current kind=file record with the identical repository path
+    is the mechanically determined canonical inventory parent; this restores hierarchy
+    only.
+  evidence_ids:
+  - EVD-F211A2464E
+  source_references:
+  - packages/sdk/src/provable/account.ts#zkappAccountHashPrefix
+  - packages/sdk/src/provable/account.ts#<file>
+- group: sources
+  record_id: SRC-E8CC1DDE1F
+  absent_before:
+  - parent_ids
+  old: {}
+  set:
+    parent_ids:
+    - SRC-4A1F6AB356
+  rationale: The unique current kind=file record with the identical repository path
+    is the mechanically determined canonical inventory parent; this restores hierarchy
+    only.
+  evidence_ids:
+  - EVD-F211A2464E
+  source_references:
+  - packages/sdk/src/provable/account.ts#RandomOracleInput
+  - packages/sdk/src/provable/account.ts#<file>
+- group: sources
+  record_id: SRC-FCF3FA163F
+  absent_before:
+  - parent_ids
+  old: {}
+  set:
+    parent_ids:
+    - SRC-4A1F6AB356
+  rationale: The unique current kind=file record with the identical repository path
+    is the mechanically determined canonical inventory parent; this restores hierarchy
+    only.
+  evidence_ids:
+  - EVD-F211A2464E
+  source_references:
+  - packages/sdk/src/provable/account.ts#packToFields
+  - packages/sdk/src/provable/account.ts#<file>
+- group: sources
+  record_id: SRC-FE6F299992
+  absent_before:
+  - parent_ids
+  old: {}
+  set:
+    parent_ids:
+    - SRC-4A1F6AB356
+  rationale: The unique current kind=file record with the identical repository path
+    is the mechanically determined canonical inventory parent; this restores hierarchy
+    only.
+  evidence_ids:
+  - EVD-F211A2464E
+  source_references:
+  - packages/sdk/src/provable/account.ts#Permission.either
+  - packages/sdk/src/provable/account.ts#<file>
+- group: sources
+  record_id: SRC-04DB1C07BB
+  absent_before:
+  - parent_ids
+  old: {}
+  set:
+    parent_ids:
+    - SRC-639D488B2F
+  rationale: The unique current kind=file record with the identical repository path
+    is the mechanically determined canonical inventory parent; this restores hierarchy
+    only.
+  evidence_ids:
+  - EVD-47E6A272E4
+  source_references:
+  - packages/sdk/src/provable/contracts/treasury-constants.ts#BASIS_POINTS
+  - packages/sdk/src/provable/contracts/treasury-constants.ts#<file>
+- group: sources
+  record_id: SRC-79F62F7E42
+  absent_before:
+  - parent_ids
+  old: {}
+  set:
+    parent_ids:
+    - SRC-639D488B2F
+  rationale: The unique current kind=file record with the identical repository path
+    is the mechanically determined canonical inventory parent; this restores hierarchy
+    only.
+  evidence_ids:
+  - EVD-47E6A272E4
+  source_references:
+  - packages/sdk/src/provable/contracts/treasury-constants.ts#MIN_PARTICIPATION_BP
+  - packages/sdk/src/provable/contracts/treasury-constants.ts#<file>
+- group: sources
+  record_id: SRC-90B6ECF482
+  absent_before:
+  - parent_ids
+  old: {}
+  set:
+    parent_ids:
+    - SRC-639D488B2F
+  rationale: The unique current kind=file record with the identical repository path
+    is the mechanically determined canonical inventory parent; this restores hierarchy
+    only.
+  evidence_ids:
+  - EVD-47E6A272E4
+  source_references:
+  - packages/sdk/src/provable/contracts/treasury-constants.ts#MAX_APPROVAL_BP
+  - packages/sdk/src/provable/contracts/treasury-constants.ts#<file>
+- group: sources
+  record_id: SRC-9257510B9C
+  absent_before:
+  - parent_ids
+  old: {}
+  set:
+    parent_ids:
+    - SRC-639D488B2F
+  rationale: The unique current kind=file record with the identical repository path
+    is the mechanically determined canonical inventory parent; this restores hierarchy
+    only.
+  evidence_ids:
+  - EVD-47E6A272E4
+  source_references:
+  - packages/sdk/src/provable/contracts/treasury-constants.ts#CURVE_CONSTANT_PARTICIPATION_BP
+  - packages/sdk/src/provable/contracts/treasury-constants.ts#<file>
+- group: sources
+  record_id: SRC-BAA2394059
+  absent_before:
+  - parent_ids
+  old: {}
+  set:
+    parent_ids:
+    - SRC-639D488B2F
+  rationale: The unique current kind=file record with the identical repository path
+    is the mechanically determined canonical inventory parent; this restores hierarchy
+    only.
+  evidence_ids:
+  - EVD-47E6A272E4
+  source_references:
+  - packages/sdk/src/provable/contracts/treasury-constants.ts#BOND_AMOUNT_DIVISOR
+  - packages/sdk/src/provable/contracts/treasury-constants.ts#<file>
+- group: sources
+  record_id: SRC-CCF87852C0
+  absent_before:
+  - parent_ids
+  old: {}
+  set:
+    parent_ids:
+    - SRC-639D488B2F
+  rationale: The unique current kind=file record with the identical repository path
+    is the mechanically determined canonical inventory parent; this restores hierarchy
+    only.
+  evidence_ids:
+  - EVD-47E6A272E4
+  source_references:
+  - packages/sdk/src/provable/contracts/treasury-constants.ts#MIN_APPROVAL_BP
+  - packages/sdk/src/provable/contracts/treasury-constants.ts#<file>
+- group: sources
+  record_id: SRC-E01D3F1BC2
+  absent_before:
+  - parent_ids
+  old: {}
+  set:
+    parent_ids:
+    - SRC-639D488B2F
+  rationale: The unique current kind=file record with the identical repository path
+    is the mechanically determined canonical inventory parent; this restores hierarchy
+    only.
+  evidence_ids:
+  - EVD-47E6A272E4
+  source_references:
+  - packages/sdk/src/provable/contracts/treasury-constants.ts#MAX_PARTICIPATION_BP
+  - packages/sdk/src/provable/contracts/treasury-constants.ts#<file>
+- group: sources
+  record_id: SRC-FBC1497F0F
+  absent_before:
+  - parent_ids
+  old: {}
+  set:
+    parent_ids:
+    - SRC-639D488B2F
+  rationale: The unique current kind=file record with the identical repository path
+    is the mechanically determined canonical inventory parent; this restores hierarchy
+    only.
+  evidence_ids:
+  - EVD-47E6A272E4
+  source_references:
+  - packages/sdk/src/provable/contracts/treasury-constants.ts#CURVE_CONSTANT_APPROVAL_BP
+  - packages/sdk/src/provable/contracts/treasury-constants.ts#<file>
+- group: sources
+  record_id: SRC-008F80D01D
+  absent_before:
+  - parent_ids
+  old: {}
+  set:
+    parent_ids:
+    - SRC-5ACF00A9FC
+  rationale: The unique current kind=file record with the identical repository path
+    is the mechanically determined canonical inventory parent; this restores hierarchy
+    only.
+  evidence_ids:
+  - EVD-2E424CAB76
+  source_references:
+  - packages/sdk/src/provable/contracts/treasury-owner.ts#TreasuryOwnerSmartContract
+  - packages/sdk/src/provable/contracts/treasury-owner.ts#<file>
+- group: sources
+  record_id: SRC-0F80A1A6A6
+  absent_before:
+  - parent_ids
+  old: {}
+  set:
+    parent_ids:
+    - SRC-5ACF00A9FC
+  rationale: The unique current kind=file record with the identical repository path
+    is the mechanically determined canonical inventory parent; this restores hierarchy
+    only.
+  evidence_ids:
+  - EVD-2E424CAB76
+  source_references:
+  - packages/sdk/src/provable/contracts/treasury-owner.ts#TreasuryOwnerSmartContract.approveBase
+  - packages/sdk/src/provable/contracts/treasury-owner.ts#<file>
+- group: sources
+  record_id: SRC-12BDF4F609
+  absent_before:
+  - parent_ids
+  old: {}
+  set:
+    parent_ids:
+    - SRC-5ACF00A9FC
+  rationale: The unique current kind=file record with the identical repository path
+    is the mechanically determined canonical inventory parent; this restores hierarchy
+    only.
+  evidence_ids:
+  - EVD-2E424CAB76
+  source_references:
+  - packages/sdk/src/provable/contracts/treasury-owner.ts#TreasuryOwnerSmartContract.getLifecyclePeriodSlotRange
+  - packages/sdk/src/provable/contracts/treasury-owner.ts#<file>
+- group: sources
+  record_id: SRC-30817C480C
+  absent_before:
+  - parent_ids
+  old: {}
+  set:
+    parent_ids:
+    - SRC-5ACF00A9FC
+  rationale: The unique current kind=file record with the identical repository path
+    is the mechanically determined canonical inventory parent; this restores hierarchy
+    only.
+  evidence_ids:
+  - EVD-2E424CAB76
+  source_references:
+  - packages/sdk/src/provable/contracts/treasury-owner.ts#TreasuryOwnerSmartContract.receive
+  - packages/sdk/src/provable/contracts/treasury-owner.ts#<file>
+- group: sources
+  record_id: SRC-351B6C703D
+  absent_before:
+  - parent_ids
+  old: {}
+  set:
+    parent_ids:
+    - SRC-5ACF00A9FC
+  rationale: The unique current kind=file record with the identical repository path
+    is the mechanically determined canonical inventory parent; this restores hierarchy
+    only.
+  evidence_ids:
+  - EVD-2E424CAB76
+  source_references:
+  - packages/sdk/src/provable/contracts/treasury-owner.ts#TreasuryOwnerSmartContract.createProposal
+  - packages/sdk/src/provable/contracts/treasury-owner.ts#<file>
+- group: sources
+  record_id: SRC-40D554F54E
+  absent_before:
+  - parent_ids
+  old: {}
+  set:
+    parent_ids:
+    - SRC-5ACF00A9FC
+  rationale: The unique current kind=file record with the identical repository path
+    is the mechanically determined canonical inventory parent; this restores hierarchy
+    only.
+  evidence_ids:
+  - EVD-2E424CAB76
+  source_references:
+  - packages/sdk/src/provable/contracts/treasury-owner.ts#LIFECYCLE_PERIOD_DURATION
+  - packages/sdk/src/provable/contracts/treasury-owner.ts#<file>
+- group: sources
+  record_id: SRC-4841EF8C1F
+  absent_before:
+  - parent_ids
+  old: {}
+  set:
+    parent_ids:
+    - SRC-5ACF00A9FC
+  rationale: The unique current kind=file record with the identical repository path
+    is the mechanically determined canonical inventory parent; this restores hierarchy
+    only.
+  evidence_ids:
+  - EVD-2E424CAB76
+  source_references:
+  - packages/sdk/src/provable/contracts/treasury-owner.ts#TreasuryOwnerSmartContract.executeProposal
+  - packages/sdk/src/provable/contracts/treasury-owner.ts#<file>
+- group: sources
+  record_id: SRC-492377CBA9
+  absent_before:
+  - parent_ids
+  old: {}
+  set:
+    parent_ids:
+    - SRC-5ACF00A9FC
+  rationale: The unique current kind=file record with the identical repository path
+    is the mechanically determined canonical inventory parent; this restores hierarchy
+    only.
+  evidence_ids:
+  - EVD-2E424CAB76
+  source_references:
+  - packages/sdk/src/provable/contracts/treasury-owner.ts#TreasuryOwnerSmartContract.togglePauseProposal
+  - packages/sdk/src/provable/contracts/treasury-owner.ts#<file>
+- group: sources
+  record_id: SRC-688DA8E143
+  absent_before:
+  - parent_ids
+  old: {}
+  set:
+    parent_ids:
+    - SRC-5ACF00A9FC
+  rationale: The unique current kind=file record with the identical repository path
+    is the mechanically determined canonical inventory parent; this restores hierarchy
+    only.
+  evidence_ids:
+  - EVD-2E424CAB76
+  source_references:
+  - packages/sdk/src/provable/contracts/treasury-owner.ts#TreasuryOwnerSmartContract.deploy
+  - packages/sdk/src/provable/contracts/treasury-owner.ts#<file>
+- group: sources
+  record_id: SRC-6AFE4B0C96
+  absent_before:
+  - parent_ids
+  old: {}
+  set:
+    parent_ids:
+    - SRC-5ACF00A9FC
+  rationale: The unique current kind=file record with the identical repository path
+    is the mechanically determined canonical inventory parent; this restores hierarchy
+    only.
+  evidence_ids:
+  - EVD-2E424CAB76
+  source_references:
+  - packages/sdk/src/provable/contracts/treasury-owner.ts#TreasuryOwnerSmartContract.requireLifecyclePeriod
+  - packages/sdk/src/provable/contracts/treasury-owner.ts#<file>
+- group: sources
+  record_id: SRC-87551E689A
+  absent_before:
+  - parent_ids
+  old: {}
+  set:
+    parent_ids:
+    - SRC-5ACF00A9FC
+  rationale: The unique current kind=file record with the identical repository path
+    is the mechanically determined canonical inventory parent; this restores hierarchy
+    only.
+  evidence_ids:
+  - EVD-2E424CAB76
+  source_references:
+  - packages/sdk/src/provable/contracts/treasury-owner.ts#TreasuryOwnerSmartContract.approveBase.forEachUpdate
+    callback
+  - packages/sdk/src/provable/contracts/treasury-owner.ts#<file>
+- group: sources
+  record_id: SRC-AE207F44F6
+  absent_before:
+  - parent_ids
+  old: {}
+  set:
+    parent_ids:
+    - SRC-5ACF00A9FC
+  rationale: The unique current kind=file record with the identical repository path
+    is the mechanically determined canonical inventory parent; this restores hierarchy
+    only.
+  evidence_ids:
+  - EVD-2E424CAB76
+  source_references:
+  - packages/sdk/src/provable/contracts/treasury-owner.ts#TreasuryOwnerSmartContract.requireLifecyclePeriodGreaterThanOrEqual
+  - packages/sdk/src/provable/contracts/treasury-owner.ts#<file>
+- group: sources
+  record_id: SRC-C72FDD0898
+  absent_before:
+  - parent_ids
+  old: {}
+  set:
+    parent_ids:
+    - SRC-5ACF00A9FC
+  rationale: The unique current kind=file record with the identical repository path
+    is the mechanically determined canonical inventory parent; this restores hierarchy
+    only.
+  evidence_ids:
+  - EVD-2E424CAB76
+  source_references:
+  - packages/sdk/src/provable/contracts/treasury-owner.ts#LifecyclePeriod
+  - packages/sdk/src/provable/contracts/treasury-owner.ts#<file>
+- group: sources
+  record_id: SRC-D7A7455C04
+  absent_before:
+  - parent_ids
+  old: {}
+  set:
+    parent_ids:
+    - SRC-5ACF00A9FC
+  rationale: The unique current kind=file record with the identical repository path
+    is the mechanically determined canonical inventory parent; this restores hierarchy
+    only.
+  evidence_ids:
+  - EVD-2E424CAB76
+  source_references:
+  - packages/sdk/src/provable/contracts/treasury-owner.ts#TreasuryOwnerSmartContract.requireNotPaused
+  - packages/sdk/src/provable/contracts/treasury-owner.ts#<file>
+- group: sources
+  record_id: SRC-DCF3E95D83
+  absent_before:
+  - parent_ids
+  old: {}
+  set:
+    parent_ids:
+    - SRC-5ACF00A9FC
+  rationale: The unique current kind=file record with the identical repository path
+    is the mechanically determined canonical inventory parent; this restores hierarchy
+    only.
+  evidence_ids:
+  - EVD-2E424CAB76
+  source_references:
+  - packages/sdk/src/provable/contracts/treasury-owner.ts#TreasuryOwnerSmartContract.snapshotStakingEpochData
+  - packages/sdk/src/provable/contracts/treasury-owner.ts#<file>
+- group: sources
+  record_id: SRC-E1AE28F131
+  absent_before:
+  - parent_ids
+  old: {}
+  set:
+    parent_ids:
+    - SRC-5ACF00A9FC
+  rationale: The unique current kind=file record with the identical repository path
+    is the mechanically determined canonical inventory parent; this restores hierarchy
+    only.
+  evidence_ids:
+  - EVD-2E424CAB76
+  source_references:
+  - packages/sdk/src/provable/contracts/treasury-owner.ts#TreasuryOwnerSmartContract.tallyVotes
+  - packages/sdk/src/provable/contracts/treasury-owner.ts#<file>
+- group: sources
+  record_id: SRC-F19A19448E
+  absent_before:
+  - parent_ids
+  old: {}
+  set:
+    parent_ids:
+    - SRC-5ACF00A9FC
+  rationale: The unique current kind=file record with the identical repository path
+    is the mechanically determined canonical inventory parent; this restores hierarchy
+    only.
+  evidence_ids:
+  - EVD-2E424CAB76
+  source_references:
+  - packages/sdk/src/provable/contracts/treasury-owner.ts#TreasuryOwnerSmartContract.vote
+  - packages/sdk/src/provable/contracts/treasury-owner.ts#<file>
+- group: sources
+  record_id: SRC-05A9B464F2
+  absent_before:
+  - parent_ids
+  old: {}
+  set:
+    parent_ids:
+    - SRC-DF069048A5
+  rationale: The unique current kind=file record with the identical repository path
+    is the mechanically determined canonical inventory parent; this restores hierarchy
+    only.
+  evidence_ids:
+  - EVD-278D27A176
+  source_references:
+  - packages/sdk/src/provable/contracts/treasury-pause-controller/multisig-signatures.ts#MultisigSignaturesErrors
+  - packages/sdk/src/provable/contracts/treasury-pause-controller/multisig-signatures.ts#<file>
+- group: sources
+  record_id: SRC-0D73B2B857
+  absent_before:
+  - parent_ids
+  old: {}
+  set:
+    parent_ids:
+    - SRC-DF069048A5
+  rationale: The unique current kind=file record with the identical repository path
+    is the mechanically determined canonical inventory parent; this restores hierarchy
+    only.
+  evidence_ids:
+  - EVD-278D27A176
+  source_references:
+  - packages/sdk/src/provable/contracts/treasury-pause-controller/multisig-signatures.ts#MultisigSignature.dataTogglePauseProposal
+  - packages/sdk/src/provable/contracts/treasury-pause-controller/multisig-signatures.ts#<file>
+- group: sources
+  record_id: SRC-38B9E1E7F7
+  absent_before:
+  - parent_ids
+  old: {}
+  set:
+    parent_ids:
+    - SRC-DF069048A5
+  rationale: The unique current kind=file record with the identical repository path
+    is the mechanically determined canonical inventory parent; this restores hierarchy
+    only.
+  evidence_ids:
+  - EVD-278D27A176
+  source_references:
+  - packages/sdk/src/provable/contracts/treasury-pause-controller/multisig-signatures.ts#MultisigSignatures.createCommitment
+  - packages/sdk/src/provable/contracts/treasury-pause-controller/multisig-signatures.ts#<file>
+- group: sources
+  record_id: SRC-65269DAE97
+  absent_before:
+  - parent_ids
+  old: {}
+  set:
+    parent_ids:
+    - SRC-DF069048A5
+  rationale: The unique current kind=file record with the identical repository path
+    is the mechanically determined canonical inventory parent; this restores hierarchy
+    only.
+  evidence_ids:
+  - EVD-278D27A176
+  source_references:
+  - packages/sdk/src/provable/contracts/treasury-pause-controller/multisig-signatures.ts#MultisigSignature.dataRotateMultisigKeys
+  - packages/sdk/src/provable/contracts/treasury-pause-controller/multisig-signatures.ts#<file>
+- group: sources
+  record_id: SRC-68B94B75EF
+  absent_before:
+  - parent_ids
+  old: {}
+  set:
+    parent_ids:
+    - SRC-DF069048A5
+  rationale: The unique current kind=file record with the identical repository path
+    is the mechanically determined canonical inventory parent; this restores hierarchy
+    only.
+  evidence_ids:
+  - EVD-278D27A176
+  source_references:
+  - packages/sdk/src/provable/contracts/treasury-pause-controller/multisig-signatures.ts#multisigPrefix
+  - packages/sdk/src/provable/contracts/treasury-pause-controller/multisig-signatures.ts#<file>
+- group: sources
+  record_id: SRC-6CB5D699BA
+  absent_before:
+  - parent_ids
+  old: {}
+  set:
+    parent_ids:
+    - SRC-DF069048A5
+  rationale: The unique current kind=file record with the identical repository path
+    is the mechanically determined canonical inventory parent; this restores hierarchy
+    only.
+  evidence_ids:
+  - EVD-278D27A176
+  source_references:
+  - packages/sdk/src/provable/contracts/treasury-pause-controller/multisig-signatures.ts#MultisigSignature.dataPauseTreasury
+  - packages/sdk/src/provable/contracts/treasury-pause-controller/multisig-signatures.ts#<file>
+- group: sources
+  record_id: SRC-7F5A9C36BC
+  absent_before:
+  - parent_ids
+  old: {}
+  set:
+    parent_ids:
+    - SRC-DF069048A5
+  rationale: The unique current kind=file record with the identical repository path
+    is the mechanically determined canonical inventory parent; this restores hierarchy
+    only.
+  evidence_ids:
+  - EVD-278D27A176
+  source_references:
+  - packages/sdk/src/provable/contracts/treasury-pause-controller/multisig-signatures.ts#MULTISIG_PARTICIPANTS_COUNT
+  - packages/sdk/src/provable/contracts/treasury-pause-controller/multisig-signatures.ts#<file>
+- group: sources
+  record_id: SRC-9054CBEF0C
+  absent_before:
+  - parent_ids
+  old: {}
+  set:
+    parent_ids:
+    - SRC-DF069048A5
+  rationale: The unique current kind=file record with the identical repository path
+    is the mechanically determined canonical inventory parent; this restores hierarchy
+    only.
+  evidence_ids:
+  - EVD-278D27A176
+  source_references:
+  - packages/sdk/src/provable/contracts/treasury-pause-controller/multisig-signatures.ts#MultisigSignatures
+  - packages/sdk/src/provable/contracts/treasury-pause-controller/multisig-signatures.ts#<file>
+- group: sources
+  record_id: SRC-E877A2A261
+  absent_before:
+  - parent_ids
+  old: {}
+  set:
+    parent_ids:
+    - SRC-DF069048A5
+  rationale: The unique current kind=file record with the identical repository path
+    is the mechanically determined canonical inventory parent; this restores hierarchy
+    only.
+  evidence_ids:
+  - EVD-278D27A176
+  source_references:
+  - packages/sdk/src/provable/contracts/treasury-pause-controller/multisig-signatures.ts#MultisigSignature
+  - packages/sdk/src/provable/contracts/treasury-pause-controller/multisig-signatures.ts#<file>
+- group: sources
+  record_id: SRC-F22A9269B6
+  absent_before:
+  - parent_ids
+  old: {}
+  set:
+    parent_ids:
+    - SRC-DF069048A5
+  rationale: The unique current kind=file record with the identical repository path
+    is the mechanically determined canonical inventory parent; this restores hierarchy
+    only.
+  evidence_ids:
+  - EVD-278D27A176
+  source_references:
+  - packages/sdk/src/provable/contracts/treasury-pause-controller/multisig-signatures.ts#MIN_VALID_MULTISIG_SIGNATURES_COUNT
+  - packages/sdk/src/provable/contracts/treasury-pause-controller/multisig-signatures.ts#<file>
+- group: sources
+  record_id: SRC-F23C9BD13F
+  absent_before:
+  - parent_ids
+  old: {}
+  set:
+    parent_ids:
+    - SRC-DF069048A5
+  rationale: The unique current kind=file record with the identical repository path
+    is the mechanically determined canonical inventory parent; this restores hierarchy
+    only.
+  evidence_ids:
+  - EVD-278D27A176
+  source_references:
+  - packages/sdk/src/provable/contracts/treasury-pause-controller/multisig-signatures.ts#MultisigSignatures.verify
+  - packages/sdk/src/provable/contracts/treasury-pause-controller/multisig-signatures.ts#<file>
+- group: sources
+  record_id: SRC-F715F80B03
+  absent_before:
+  - parent_ids
+  old: {}
+  set:
+    parent_ids:
+    - SRC-DF069048A5
+  rationale: The unique current kind=file record with the identical repository path
+    is the mechanically determined canonical inventory parent; this restores hierarchy
+    only.
+  evidence_ids:
+  - EVD-278D27A176
+  source_references:
+  - packages/sdk/src/provable/contracts/treasury-pause-controller/multisig-signatures.ts#MultisigSignature.dataUnpauseTreasury
+  - packages/sdk/src/provable/contracts/treasury-pause-controller/multisig-signatures.ts#<file>
+- group: sources
+  record_id: SRC-04E6AD40FC
+  absent_before:
+  - parent_ids
+  old: {}
+  set:
+    parent_ids:
+    - SRC-B0C4273C06
+  rationale: The unique current kind=file record with the identical repository path
+    is the mechanically determined canonical inventory parent; this restores hierarchy
+    only.
+  evidence_ids:
+  - EVD-72A633D2CC
+  source_references:
+  - packages/sdk/src/provable/contracts/treasury-pause-controller/treasury-pause-controller.ts#TreasuryPauseControllerSmartContract
+  - packages/sdk/src/provable/contracts/treasury-pause-controller/treasury-pause-controller.ts#<file>
+- group: sources
+  record_id: SRC-41765008CC
+  absent_before:
+  - parent_ids
+  old: {}
+  set:
+    parent_ids:
+    - SRC-B0C4273C06
+  rationale: The unique current kind=file record with the identical repository path
+    is the mechanically determined canonical inventory parent; this restores hierarchy
+    only.
+  evidence_ids:
+  - EVD-72A633D2CC
+  source_references:
+  - packages/sdk/src/provable/contracts/treasury-pause-controller/treasury-pause-controller.ts#TreasuryPauseControllerErrors
+  - packages/sdk/src/provable/contracts/treasury-pause-controller/treasury-pause-controller.ts#<file>
+- group: sources
+  record_id: SRC-4C7356FD2E
+  absent_before:
+  - parent_ids
+  old: {}
+  set:
+    parent_ids:
+    - SRC-B0C4273C06
+  rationale: The unique current kind=file record with the identical repository path
+    is the mechanically determined canonical inventory parent; this restores hierarchy
+    only.
+  evidence_ids:
+  - EVD-72A633D2CC
+  source_references:
+  - packages/sdk/src/provable/contracts/treasury-pause-controller/treasury-pause-controller.ts#TreasuryPauseControllerSmartContract.togglePauseProposal
+  - packages/sdk/src/provable/contracts/treasury-pause-controller/treasury-pause-controller.ts#<file>
+- group: sources
+  record_id: SRC-5538E0F5FD
+  absent_before:
+  - parent_ids
+  old: {}
+  set:
+    parent_ids:
+    - SRC-B0C4273C06
+  rationale: The unique current kind=file record with the identical repository path
+    is the mechanically determined canonical inventory parent; this restores hierarchy
+    only.
+  evidence_ids:
+  - EVD-72A633D2CC
+  source_references:
+  - packages/sdk/src/provable/contracts/treasury-pause-controller/treasury-pause-controller.ts#TreasuryPauseControllerSmartContract.verifySignatures
+  - packages/sdk/src/provable/contracts/treasury-pause-controller/treasury-pause-controller.ts#<file>
+- group: sources
+  record_id: SRC-56925144B3
+  absent_before:
+  - parent_ids
+  old: {}
+  set:
+    parent_ids:
+    - SRC-B0C4273C06
+  rationale: The unique current kind=file record with the identical repository path
+    is the mechanically determined canonical inventory parent; this restores hierarchy
+    only.
+  evidence_ids:
+  - EVD-72A633D2CC
+  source_references:
+  - packages/sdk/src/provable/contracts/treasury-pause-controller/treasury-pause-controller.ts#TreasuryPauseControllerSmartContract.rotateMultisigKeys
+  - packages/sdk/src/provable/contracts/treasury-pause-controller/treasury-pause-controller.ts#<file>
+- group: sources
+  record_id: SRC-58D63B5BBC
+  absent_before:
+  - parent_ids
+  old: {}
+  set:
+    parent_ids:
+    - SRC-B0C4273C06
+  rationale: The unique current kind=file record with the identical repository path
+    is the mechanically determined canonical inventory parent; this restores hierarchy
+    only.
+  evidence_ids:
+  - EVD-72A633D2CC
+  source_references:
+  - packages/sdk/src/provable/contracts/treasury-pause-controller/treasury-pause-controller.ts#TreasuryPauseControllerSmartContract.requireAndIncrementNonce
+  - packages/sdk/src/provable/contracts/treasury-pause-controller/treasury-pause-controller.ts#<file>
+- group: sources
+  record_id: SRC-94E5F4EED8
+  absent_before:
+  - parent_ids
+  old: {}
+  set:
+    parent_ids:
+    - SRC-B0C4273C06
+  rationale: The unique current kind=file record with the identical repository path
+    is the mechanically determined canonical inventory parent; this restores hierarchy
+    only.
+  evidence_ids:
+  - EVD-72A633D2CC
+  source_references:
+  - packages/sdk/src/provable/contracts/treasury-pause-controller/treasury-pause-controller.ts#TreasuryPauseControllerSmartContract.pauseTreasury
+  - packages/sdk/src/provable/contracts/treasury-pause-controller/treasury-pause-controller.ts#<file>
+- group: sources
+  record_id: SRC-DA6D1A8620
+  absent_before:
+  - parent_ids
+  old: {}
+  set:
+    parent_ids:
+    - SRC-B0C4273C06
+  rationale: The unique current kind=file record with the identical repository path
+    is the mechanically determined canonical inventory parent; this restores hierarchy
+    only.
+  evidence_ids:
+  - EVD-72A633D2CC
+  source_references:
+  - packages/sdk/src/provable/contracts/treasury-pause-controller/treasury-pause-controller.ts#TreasuryPauseControllerSmartContract.init
+  - packages/sdk/src/provable/contracts/treasury-pause-controller/treasury-pause-controller.ts#<file>
+- group: sources
+  record_id: SRC-DC00324323
+  absent_before:
+  - parent_ids
+  old: {}
+  set:
+    parent_ids:
+    - SRC-B0C4273C06
+  rationale: The unique current kind=file record with the identical repository path
+    is the mechanically determined canonical inventory parent; this restores hierarchy
+    only.
+  evidence_ids:
+  - EVD-72A633D2CC
+  source_references:
+  - packages/sdk/src/provable/contracts/treasury-pause-controller/treasury-pause-controller.ts#TreasuryPauseControllerSmartContract.requireNotPaused
+  - packages/sdk/src/provable/contracts/treasury-pause-controller/treasury-pause-controller.ts#<file>
+- group: sources
+  record_id: SRC-DDE1ECE701
+  absent_before:
+  - parent_ids
+  old: {}
+  set:
+    parent_ids:
+    - SRC-B0C4273C06
+  rationale: The unique current kind=file record with the identical repository path
+    is the mechanically determined canonical inventory parent; this restores hierarchy
+    only.
+  evidence_ids:
+  - EVD-72A633D2CC
+  source_references:
+  - packages/sdk/src/provable/contracts/treasury-pause-controller/treasury-pause-controller.ts#TreasuryPauseControllerSmartContract.verifySignatures.Provable.witness
+    callback
+  - packages/sdk/src/provable/contracts/treasury-pause-controller/treasury-pause-controller.ts#<file>
+- group: sources
+  record_id: SRC-EC4689A9AB
+  absent_before:
+  - parent_ids
+  old: {}
+  set:
+    parent_ids:
+    - SRC-B0C4273C06
+  rationale: The unique current kind=file record with the identical repository path
+    is the mechanically determined canonical inventory parent; this restores hierarchy
+    only.
+  evidence_ids:
+  - EVD-72A633D2CC
+  source_references:
+  - packages/sdk/src/provable/contracts/treasury-pause-controller/treasury-pause-controller.ts#TreasuryPauseControllerSmartContract.unpauseTreasury
+  - packages/sdk/src/provable/contracts/treasury-pause-controller/treasury-pause-controller.ts#<file>
+- group: sources
+  record_id: SRC-122FE249FF
+  absent_before:
+  - parent_ids
+  old: {}
+  set:
+    parent_ids:
+    - SRC-9EBB65D4B9
+  rationale: The unique current kind=file record with the identical repository path
+    is the mechanically determined canonical inventory parent; this restores hierarchy
+    only.
+  evidence_ids:
+  - EVD-11DB5D89B4
+  source_references:
+  - packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts#ProposalStatus
+  - packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts#<file>
+- group: sources
+  record_id: SRC-29A70B91E1
+  absent_before:
+  - parent_ids
+  old: {}
+  set:
+    parent_ids:
+    - SRC-9EBB65D4B9
+  rationale: The unique current kind=file record with the identical repository path
+    is the mechanically determined canonical inventory parent; this restores hierarchy
+    only.
+  evidence_ids:
+  - EVD-11DB5D89B4
+  source_references:
+  - packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts#TreasuryProposalSmartContract.execute
+  - packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts#<file>
+- group: sources
+  record_id: SRC-465E46FE9F
+  absent_before:
+  - parent_ids
+  old: {}
+  set:
+    parent_ids:
+    - SRC-9EBB65D4B9
+  rationale: The unique current kind=file record with the identical repository path
+    is the mechanically determined canonical inventory parent; this restores hierarchy
+    only.
+  evidence_ids:
+  - EVD-11DB5D89B4
+  source_references:
+  - packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts#TreasuryProposalSmartContract.minUInt128
+  - packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts#<file>
+- group: sources
+  record_id: SRC-4DEDC3563D
+  absent_before:
+  - parent_ids
+  old: {}
+  set:
+    parent_ids:
+    - SRC-9EBB65D4B9
+  rationale: The unique current kind=file record with the identical repository path
+    is the mechanically determined canonical inventory parent; this restores hierarchy
+    only.
+  evidence_ids:
+  - EVD-11DB5D89B4
+  source_references:
+  - packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts#TreasuryProposalSmartContract.requireNotPaused
+  - packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts#<file>
+- group: sources
+  record_id: SRC-51A1A1915D
+  absent_before:
+  - parent_ids
+  old: {}
+  set:
+    parent_ids:
+    - SRC-9EBB65D4B9
+  rationale: The unique current kind=file record with the identical repository path
+    is the mechanically determined canonical inventory parent; this restores hierarchy
+    only.
+  evidence_ids:
+  - EVD-11DB5D89B4
+  source_references:
+  - packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts#TreasuryProposalSmartContract.calculateAcceptanceCriteria
+  - packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts#<file>
+- group: sources
+  record_id: SRC-7AC4F27851
+  absent_before:
+  - parent_ids
+  old: {}
+  set:
+    parent_ids:
+    - SRC-9EBB65D4B9
+  rationale: The unique current kind=file record with the identical repository path
+    is the mechanically determined canonical inventory parent; this restores hierarchy
+    only.
+  evidence_ids:
+  - EVD-11DB5D89B4
+  source_references:
+  - packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts#TreasuryProposalSmartContract.calculateApprovalStatus
+  - packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts#<file>
+- group: sources
+  record_id: SRC-A61270D4E0
+  absent_before:
+  - parent_ids
+  old: {}
+  set:
+    parent_ids:
+    - SRC-9EBB65D4B9
+  rationale: The unique current kind=file record with the identical repository path
+    is the mechanically determined canonical inventory parent; this restores hierarchy
+    only.
+  evidence_ids:
+  - EVD-11DB5D89B4
+  source_references:
+  - packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts#TreasuryProposalSmartContract.vote
+  - packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts#<file>
+- group: sources
+  record_id: SRC-B3817BB7DA
+  absent_before:
+  - parent_ids
+  old: {}
+  set:
+    parent_ids:
+    - SRC-9EBB65D4B9
+  rationale: The unique current kind=file record with the identical repository path
+    is the mechanically determined canonical inventory parent; this restores hierarchy
+    only.
+  evidence_ids:
+  - EVD-11DB5D89B4
+  source_references:
+  - packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts#TreasuryProposalSmartContract
+  - packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts#<file>
+- group: sources
+  record_id: SRC-CD18923C4E
+  absent_before:
+  - parent_ids
+  old: {}
+  set:
+    parent_ids:
+    - SRC-9EBB65D4B9
+  rationale: The unique current kind=file record with the identical repository path
+    is the mechanically determined canonical inventory parent; this restores hierarchy
+    only.
+  evidence_ids:
+  - EVD-11DB5D89B4
+  source_references:
+  - packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts#TreasuryProposalSmartContract.togglePause
+  - packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts#<file>
+- group: sources
+  record_id: SRC-CEB1FB851F
+  absent_before:
+  - parent_ids
+  old: {}
+  set:
+    parent_ids:
+    - SRC-9EBB65D4B9
+  rationale: The unique current kind=file record with the identical repository path
+    is the mechanically determined canonical inventory parent; this restores hierarchy
+    only.
+  evidence_ids:
+  - EVD-11DB5D89B4
+  source_references:
+  - packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts#Proposal
+  - packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts#<file>
+- group: sources
+  record_id: SRC-EA498F083F
+  absent_before:
+  - parent_ids
+  old: {}
+  set:
+    parent_ids:
+    - SRC-9EBB65D4B9
+  rationale: The unique current kind=file record with the identical repository path
+    is the mechanically determined canonical inventory parent; this restores hierarchy
+    only.
+  evidence_ids:
+  - EVD-11DB5D89B4
+  source_references:
+  - packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts#TreasuryProposalSmartContract.tallyVotes
+  - packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts#<file>
+- group: sources
+  record_id: SRC-FA5A1743BB
+  absent_before:
+  - parent_ids
+  old: {}
+  set:
+    parent_ids:
+    - SRC-9EBB65D4B9
+  rationale: The unique current kind=file record with the identical repository path
+    is the mechanically determined canonical inventory parent; this restores hierarchy
+    only.
+  evidence_ids:
+  - EVD-11DB5D89B4
+  source_references:
+  - packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts#TreasuryProposalSmartContract.getLifecycleId
+  - packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts#<file>
+- group: sources
+  record_id: SRC-015C879D05
+  absent_before:
+  - parent_ids
+  old: {}
+  set:
+    parent_ids:
+    - SRC-045B6CA381
+  rationale: The unique current kind=file record with the identical repository path
+    is the mechanically determined canonical inventory parent; this restores hierarchy
+    only.
+  evidence_ids:
+  - EVD-B3695707DC
+  source_references:
+  - packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts#Vote
+  - packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts#<file>
+- group: sources
+  record_id: SRC-01BE8E9649
+  absent_before:
+  - parent_ids
+  old: {}
+  set:
+    parent_ids:
+    - SRC-045B6CA381
+  rationale: The unique current kind=file record with the identical repository path
+    is the mechanically determined canonical inventory parent; this restores hierarchy
+    only.
+  evidence_ids:
+  - EVD-B3695707DC
+  source_references:
+  - packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts#VoteAction
+  - packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts#<file>
+- group: sources
+  record_id: SRC-040232D633
+  absent_before:
+  - parent_ids
+  old: {}
+  set:
+    parent_ids:
+    - SRC-045B6CA381
+  rationale: The unique current kind=file record with the identical repository path
+    is the mechanically determined canonical inventory parent; this restores hierarchy
+    only.
+  evidence_ids:
+  - EVD-B3695707DC
+  source_references:
+  - packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts#VoteAction.isDummy
+  - packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts#<file>
+- group: sources
+  record_id: SRC-126097B13F
+  absent_before:
+  - parent_ids
+  old: {}
+  set:
+    parent_ids:
+    - SRC-045B6CA381
+  rationale: The unique current kind=file record with the identical repository path
+    is the mechanically determined canonical inventory parent; this restores hierarchy
+    only.
+  evidence_ids:
+  - EVD-B3695707DC
+  source_references:
+  - packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts#VoteReducer.reduceBatch.witness
+    nullifier witness
+  - packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts#<file>
+- group: sources
+  record_id: SRC-1BC19AE437
+  absent_before:
+  - parent_ids
+  old: {}
+  set:
+    parent_ids:
+    - SRC-045B6CA381
+  rationale: The unique current kind=file record with the identical repository path
+    is the mechanically determined canonical inventory parent; this restores hierarchy
+    only.
+  evidence_ids:
+  - EVD-B3695707DC
+  source_references:
+  - packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts#voteReducerErrors
+  - packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts#<file>
+- group: sources
+  record_id: SRC-23454E2E1D
+  absent_before:
+  - parent_ids
+  old: {}
+  set:
+    parent_ids:
+    - SRC-045B6CA381
+  rationale: The unique current kind=file record with the identical repository path
+    is the mechanically determined canonical inventory parent; this restores hierarchy
+    only.
+  evidence_ids:
+  - EVD-B3695707DC
+  source_references:
+  - packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts#VoteReducer
+  - packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts#<file>
+- group: sources
+  record_id: SRC-2C20496856
+  absent_before:
+  - parent_ids
+  old: {}
+  set:
+    parent_ids:
+    - SRC-045B6CA381
+  rationale: The unique current kind=file record with the identical repository path
+    is the mechanically determined canonical inventory parent; this restores hierarchy
+    only.
+  evidence_ids:
+  - EVD-B3695707DC
+  source_references:
+  - packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts#ActionStateHistory.clone
+  - packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts#<file>
+- group: sources
+  record_id: SRC-39F727925D
+  absent_before:
+  - parent_ids
+  old: {}
+  set:
+    parent_ids:
+    - SRC-045B6CA381
+  rationale: The unique current kind=file record with the identical repository path
+    is the mechanically determined canonical inventory parent; this restores hierarchy
+    only.
+  evidence_ids:
+  - EVD-B3695707DC
+  source_references:
+  - packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts#VoteReducerPublicOutput
+  - packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts#<file>
+- group: sources
+  record_id: SRC-466C586464
+  absent_before:
+  - parent_ids
+  old: {}
+  set:
+    parent_ids:
+    - SRC-045B6CA381
+  rationale: The unique current kind=file record with the identical repository path
+    is the mechanically determined canonical inventory parent; this restores hierarchy
+    only.
+  evidence_ids:
+  - EVD-B3695707DC
+  source_references:
+  - packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts#ActionStateHistory.equals
+  - packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts#<file>
+- group: sources
+  record_id: SRC-63ECB369CC
+  absent_before:
+  - parent_ids
+  old: {}
+  set:
+    parent_ids:
+    - SRC-045B6CA381
+  rationale: The unique current kind=file record with the identical repository path
+    is the mechanically determined canonical inventory parent; this restores hierarchy
+    only.
+  evidence_ids:
+  - EVD-B3695707DC
+  source_references:
+  - packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts#VoteReducer.reduceBatch.host
+    setNullifier
+  - packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts#<file>
+- group: sources
+  record_id: SRC-6B14F11264
+  absent_before:
+  - parent_ids
+  old: {}
+  set:
+    parent_ids:
+    - SRC-045B6CA381
+  rationale: The unique current kind=file record with the identical repository path
+    is the mechanically determined canonical inventory parent; this restores hierarchy
+    only.
+  evidence_ids:
+  - EVD-B3695707DC
+  source_references:
+  - packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts#VoteReducer.reduceBatch
+  - packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts#<file>
+- group: sources
+  record_id: SRC-6CA8735DE0
+  absent_before:
+  - parent_ids
+  old: {}
+  set:
+    parent_ids:
+    - SRC-045B6CA381
+  rationale: The unique current kind=file record with the identical repository path
+    is the mechanically determined canonical inventory parent; this restores hierarchy
+    only.
+  evidence_ids:
+  - EVD-B3695707DC
+  source_references:
+  - packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts#Vote.assertValid
+  - packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts#<file>
+- group: sources
+  record_id: SRC-74D21E1351
+  absent_before:
+  - parent_ids
+  old: {}
+  set:
+    parent_ids:
+    - SRC-045B6CA381
+  rationale: The unique current kind=file record with the identical repository path
+    is the mechanically determined canonical inventory parent; this restores hierarchy
+    only.
+  evidence_ids:
+  - EVD-B3695707DC
+  source_references:
+  - packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts#VoteReducerContext
+  - packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts#<file>
+- group: sources
+  record_id: SRC-7EE4AE72A5
+  absent_before:
+  - parent_ids
+  old: {}
+  set:
+    parent_ids:
+    - SRC-045B6CA381
+  rationale: The unique current kind=file record with the identical repository path
+    is the mechanically determined canonical inventory parent; this restores hierarchy
+    only.
+  evidence_ids:
+  - EVD-B3695707DC
+  source_references:
+  - packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts#VoteReducer.merge
+  - packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts#<file>
+- group: sources
+  record_id: SRC-949BB849C3
+  absent_before:
+  - parent_ids
+  old: {}
+  set:
+    parent_ids:
+    - SRC-045B6CA381
+  rationale: The unique current kind=file record with the identical repository path
+    is the mechanically determined canonical inventory parent; this restores hierarchy
+    only.
+  evidence_ids:
+  - EVD-B3695707DC
+  source_references:
+  - packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts#VoteReducerProof
+  - packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts#<file>
+- group: sources
+  record_id: SRC-9D775A684E
+  absent_before:
+  - parent_ids
+  old: {}
+  set:
+    parent_ids:
+    - SRC-045B6CA381
+  rationale: The unique current kind=file record with the identical repository path
+    is the mechanically determined canonical inventory parent; this restores hierarchy
+    only.
+  evidence_ids:
+  - EVD-B3695707DC
+  source_references:
+  - packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts#voteReducerContext
+  - packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts#<file>
+- group: sources
+  record_id: SRC-A2902A0DBA
+  absent_before:
+  - parent_ids
+  old: {}
+  set:
+    parent_ids:
+    - SRC-045B6CA381
+  rationale: The unique current kind=file record with the identical repository path
+    is the mechanically determined canonical inventory parent; this restores hierarchy
+    only.
+  evidence_ids:
+  - EVD-B3695707DC
+  source_references:
+  - packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts#ActionStateHistory
+  - packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts#<file>
+- group: sources
+  record_id: SRC-B29B602415
+  absent_before:
+  - parent_ids
+  old: {}
+  set:
+    parent_ids:
+    - SRC-045B6CA381
+  rationale: The unique current kind=file record with the identical repository path
+    is the mechanically determined canonical inventory parent; this restores hierarchy
+    only.
+  evidence_ids:
+  - EVD-B3695707DC
+  source_references:
+  - packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts#VoteReducerPublicInput.clone
+  - packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts#<file>
+- group: sources
+  record_id: SRC-B47703A648
+  absent_before:
+  - parent_ids
+  old: {}
+  set:
+    parent_ids:
+    - SRC-045B6CA381
+  rationale: The unique current kind=file record with the identical repository path
+    is the mechanically determined canonical inventory parent; this restores hierarchy
+    only.
+  evidence_ids:
+  - EVD-B3695707DC
+  source_references:
+  - packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts#VoteAction.fromJSON
+  - packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts#<file>
+- group: sources
+  record_id: SRC-B9EE6175FD
+  absent_before:
+  - parent_ids
+  old: {}
+  set:
+    parent_ids:
+    - SRC-045B6CA381
+  rationale: The unique current kind=file record with the identical repository path
+    is the mechanically determined canonical inventory parent; this restores hierarchy
+    only.
+  evidence_ids:
+  - EVD-B3695707DC
+  source_references:
+  - packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts#VoteReducer.reduceBatch.witness
+    voting account
+  - packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts#<file>
+- group: sources
+  record_id: SRC-BA93692A73
+  absent_before:
+  - parent_ids
+  old: {}
+  set:
+    parent_ids:
+    - SRC-045B6CA381
+  rationale: The unique current kind=file record with the identical repository path
+    is the mechanically determined canonical inventory parent; this restores hierarchy
+    only.
+  evidence_ids:
+  - EVD-B3695707DC
+  source_references:
+  - packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts#VoteReducerPublicInput
+  - packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts#<file>
+- group: sources
+  record_id: SRC-BBDD6E8489
+  absent_before:
+  - parent_ids
+  old: {}
+  set:
+    parent_ids:
+    - SRC-045B6CA381
+  rationale: The unique current kind=file record with the identical repository path
+    is the mechanically determined canonical inventory parent; this restores hierarchy
+    only.
+  evidence_ids:
+  - EVD-B3695707DC
+  source_references:
+  - packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts#ActionStateHistoryTarget.clone
+  - packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts#<file>
+- group: sources
+  record_id: SRC-BF1DB14E0D
+  absent_before:
+  - parent_ids
+  old: {}
+  set:
+    parent_ids:
+    - SRC-045B6CA381
+  rationale: The unique current kind=file record with the identical repository path
+    is the mechanically determined canonical inventory parent; this restores hierarchy
+    only.
+  evidence_ids:
+  - EVD-B3695707DC
+  source_references:
+  - packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts#VoteAction.dummy
+  - packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts#<file>
+- group: sources
+  record_id: SRC-D0397DB68F
+  absent_before:
+  - parent_ids
+  old: {}
+  set:
+    parent_ids:
+    - SRC-045B6CA381
+  rationale: The unique current kind=file record with the identical repository path
+    is the mechanically determined canonical inventory parent; this restores hierarchy
+    only.
+  evidence_ids:
+  - EVD-B3695707DC
+  source_references:
+  - packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts#ActionStateHistory.fromTarget
+  - packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts#<file>
+- group: sources
+  record_id: SRC-D4A738CF5D
+  absent_before:
+  - parent_ids
+  old: {}
+  set:
+    parent_ids:
+    - SRC-045B6CA381
+  rationale: The unique current kind=file record with the identical repository path
+    is the mechanically determined canonical inventory parent; this restores hierarchy
+    only.
+  evidence_ids:
+  - EVD-B3695707DC
+  source_references:
+  - packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts#VoteReducer.reduceBatch.witness
+    nullifier
+  - packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts#<file>
+- group: sources
+  record_id: SRC-D87915BAE8
+  absent_before:
+  - parent_ids
+  old: {}
+  set:
+    parent_ids:
+    - SRC-045B6CA381
+  rationale: The unique current kind=file record with the identical repository path
+    is the mechanically determined canonical inventory parent; this restores hierarchy
+    only.
+  evidence_ids:
+  - EVD-B3695707DC
+  source_references:
+  - packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts#VOTE_ACTION_BATCH_SIZE
+  - packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts#<file>
+- group: sources
+  record_id: SRC-EB1EA77DF8
+  absent_before:
+  - parent_ids
+  old: {}
+  set:
+    parent_ids:
+    - SRC-045B6CA381
+  rationale: The unique current kind=file record with the identical repository path
+    is the mechanically determined canonical inventory parent; this restores hierarchy
+    only.
+  evidence_ids:
+  - EVD-B3695707DC
+  source_references:
+  - packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts#SideLoadedVoteReducerProof
+  - packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts#<file>
+- group: sources
+  record_id: SRC-F010EA9E05
+  absent_before:
+  - parent_ids
+  old: {}
+  set:
+    parent_ids:
+    - SRC-045B6CA381
+  rationale: The unique current kind=file record with the identical repository path
+    is the mechanically determined canonical inventory parent; this restores hierarchy
+    only.
+  evidence_ids:
+  - EVD-B3695707DC
+  source_references:
+  - packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts#ActionStateHistoryTarget
+  - packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts#<file>
+- group: sources
+  record_id: SRC-FE44227B4A
+  absent_before:
+  - parent_ids
+  old: {}
+  set:
+    parent_ids:
+    - SRC-045B6CA381
+  rationale: The unique current kind=file record with the identical repository path
+    is the mechanically determined canonical inventory parent; this restores hierarchy
+    only.
+  evidence_ids:
+  - EVD-B3695707DC
+  source_references:
+  - packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts#VoteReducer.reduceBatch.host
+    setLeaf
+  - packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts#<file>
+- group: sources
+  record_id: SRC-FEF5013B9A
+  absent_before:
+  - parent_ids
+  old: {}
+  set:
+    parent_ids:
+    - SRC-045B6CA381
+  rationale: The unique current kind=file record with the identical repository path
+    is the mechanically determined canonical inventory parent; this restores hierarchy
+    only.
+  evidence_ids:
+  - EVD-B3695707DC
+  source_references:
+  - packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts#VoteReducer.reduceBatch.witness
+    voting witness
+  - packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts#<file>
+- group: sources
+  record_id: SRC-02E1E322D0
+  absent_before:
+  - parent_ids
+  old: {}
+  set:
+    parent_ids:
+    - SRC-58ADF841FC
+  rationale: The unique current kind=file record with the identical repository path
+    is the mechanically determined canonical inventory parent; this restores hierarchy
+    only.
+  evidence_ids:
+  - EVD-79C55B331E
+  source_references:
+  - packages/sdk/src/provable/events/treasury-proposal-events.ts#ProposalPauseToggledEvent
+  - packages/sdk/src/provable/events/treasury-proposal-events.ts#<file>
+- group: sources
+  record_id: SRC-161B336885
+  absent_before:
+  - parent_ids
+  old: {}
+  set:
+    parent_ids:
+    - SRC-58ADF841FC
+  rationale: The unique current kind=file record with the identical repository path
+    is the mechanically determined canonical inventory parent; this restores hierarchy
+    only.
+  evidence_ids:
+  - EVD-79C55B331E
+  source_references:
+  - packages/sdk/src/provable/events/treasury-proposal-events.ts#PROPOSAL_VOTE_DISPATCHED_EVENT_NAME
+  - packages/sdk/src/provable/events/treasury-proposal-events.ts#<file>
+- group: sources
+  record_id: SRC-1C3F8CB902
+  absent_before:
+  - parent_ids
+  old: {}
+  set:
+    parent_ids:
+    - SRC-58ADF841FC
+  rationale: The unique current kind=file record with the identical repository path
+    is the mechanically determined canonical inventory parent; this restores hierarchy
+    only.
+  evidence_ids:
+  - EVD-79C55B331E
+  source_references:
+  - packages/sdk/src/provable/events/treasury-proposal-events.ts#PROPOSAL_VOTES_TALLIED_EVENT_NAME
+  - packages/sdk/src/provable/events/treasury-proposal-events.ts#<file>
+- group: sources
+  record_id: SRC-2B003844F0
+  absent_before:
+  - parent_ids
+  old: {}
+  set:
+    parent_ids:
+    - SRC-58ADF841FC
+  rationale: The unique current kind=file record with the identical repository path
+    is the mechanically determined canonical inventory parent; this restores hierarchy
+    only.
+  evidence_ids:
+  - EVD-79C55B331E
+  source_references:
+  - packages/sdk/src/provable/events/treasury-proposal-events.ts#ProposalVotesTalliedEvent
+  - packages/sdk/src/provable/events/treasury-proposal-events.ts#<file>
+- group: sources
+  record_id: SRC-3531A8B065
+  absent_before:
+  - parent_ids
+  old: {}
+  set:
+    parent_ids:
+    - SRC-58ADF841FC
+  rationale: The unique current kind=file record with the identical repository path
+    is the mechanically determined canonical inventory parent; this restores hierarchy
+    only.
+  evidence_ids:
+  - EVD-79C55B331E
+  source_references:
+  - packages/sdk/src/provable/events/treasury-proposal-events.ts#ProposalCreatedEvent
+  - packages/sdk/src/provable/events/treasury-proposal-events.ts#<file>
+- group: sources
+  record_id: SRC-A312EFDDC4
+  absent_before:
+  - parent_ids
+  old: {}
+  set:
+    parent_ids:
+    - SRC-58ADF841FC
+  rationale: The unique current kind=file record with the identical repository path
+    is the mechanically determined canonical inventory parent; this restores hierarchy
+    only.
+  evidence_ids:
+  - EVD-79C55B331E
+  source_references:
+  - packages/sdk/src/provable/events/treasury-proposal-events.ts#ProposalExecutedEvent
+  - packages/sdk/src/provable/events/treasury-proposal-events.ts#<file>
+- group: sources
+  record_id: SRC-A855A82000
+  absent_before:
+  - parent_ids
+  old: {}
+  set:
+    parent_ids:
+    - SRC-58ADF841FC
+  rationale: The unique current kind=file record with the identical repository path
+    is the mechanically determined canonical inventory parent; this restores hierarchy
+    only.
+  evidence_ids:
+  - EVD-79C55B331E
+  source_references:
+  - packages/sdk/src/provable/events/treasury-proposal-events.ts#PROPOSAL_PAUSE_TOGGLED_EVENT_NAME
+  - packages/sdk/src/provable/events/treasury-proposal-events.ts#<file>
+- group: sources
+  record_id: SRC-B8DC3ADE9E
+  absent_before:
+  - parent_ids
+  old: {}
+  set:
+    parent_ids:
+    - SRC-58ADF841FC
+  rationale: The unique current kind=file record with the identical repository path
+    is the mechanically determined canonical inventory parent; this restores hierarchy
+    only.
+  evidence_ids:
+  - EVD-79C55B331E
+  source_references:
+  - packages/sdk/src/provable/events/treasury-proposal-events.ts#ProposalVoteDispatchedEvent
+  - packages/sdk/src/provable/events/treasury-proposal-events.ts#<file>
+- group: sources
+  record_id: SRC-CEC6396D04
+  absent_before:
+  - parent_ids
+  old: {}
+  set:
+    parent_ids:
+    - SRC-58ADF841FC
+  rationale: The unique current kind=file record with the identical repository path
+    is the mechanically determined canonical inventory parent; this restores hierarchy
+    only.
+  evidence_ids:
+  - EVD-79C55B331E
+  source_references:
+  - packages/sdk/src/provable/events/treasury-proposal-events.ts#PROPOSAL_EXECUTED_EVENT_NAME
+  - packages/sdk/src/provable/events/treasury-proposal-events.ts#<file>
+- group: sources
+  record_id: SRC-DCBF4DB281
+  absent_before:
+  - parent_ids
+  old: {}
+  set:
+    parent_ids:
+    - SRC-58ADF841FC
+  rationale: The unique current kind=file record with the identical repository path
+    is the mechanically determined canonical inventory parent; this restores hierarchy
+    only.
+  evidence_ids:
+  - EVD-79C55B331E
+  source_references:
+  - packages/sdk/src/provable/events/treasury-proposal-events.ts#PROPOSAL_CREATED_EVENT_NAME
+  - packages/sdk/src/provable/events/treasury-proposal-events.ts#<file>
+- group: sources
+  record_id: SRC-728A95CE05
+  absent_before:
+  - parent_ids
+  old: {}
+  set:
+    parent_ids:
+    - SRC-F3FE44D20B
+  rationale: The unique current kind=file record with the identical repository path
+    is the mechanically determined canonical inventory parent; this restores hierarchy
+    only.
+  evidence_ids:
+  - EVD-8BB7BC9739
+  source_references:
+  - packages/sdk/src/provable/hashing-helpers.ts#salt
+  - packages/sdk/src/provable/hashing-helpers.ts#<file>
+- group: sources
+  record_id: SRC-855665073E
+  absent_before:
+  - parent_ids
+  old: {}
+  set:
+    parent_ids:
+    - SRC-F3FE44D20B
+  rationale: The unique current kind=file record with the identical repository path
+    is the mechanically determined canonical inventory parent; this restores hierarchy
+    only.
+  evidence_ids:
+  - EVD-8BB7BC9739
+  source_references:
+  - packages/sdk/src/provable/hashing-helpers.ts#emptyHashWithPrefix
+  - packages/sdk/src/provable/hashing-helpers.ts#<file>
+- group: sources
+  record_id: SRC-89AF626C99
+  absent_before:
+  - parent_ids
+  old: {}
+  set:
+    parent_ids:
+    - SRC-F3FE44D20B
+  rationale: The unique current kind=file record with the identical repository path
+    is the mechanically determined canonical inventory parent; this restores hierarchy
+    only.
+  evidence_ids:
+  - EVD-8BB7BC9739
+  source_references:
+  - packages/sdk/src/provable/hashing-helpers.ts#getActionHash
+  - packages/sdk/src/provable/hashing-helpers.ts#<file>
+- group: sources
+  record_id: SRC-8DEF0BF06A
+  absent_before:
+  - parent_ids
+  old: {}
+  set:
+    parent_ids:
+    - SRC-F3FE44D20B
+  rationale: The unique current kind=file record with the identical repository path
+    is the mechanically determined canonical inventory parent; this restores hierarchy
+    only.
+  evidence_ids:
+  - EVD-8BB7BC9739
+  source_references:
+  - packages/sdk/src/provable/hashing-helpers.ts#hashWithPrefix
+  - packages/sdk/src/provable/hashing-helpers.ts#<file>
+- group: sources
+  record_id: SRC-BB296DA79A
+  absent_before:
+  - parent_ids
+  old: {}
+  set:
+    parent_ids:
+    - SRC-F3FE44D20B
+  rationale: The unique current kind=file record with the identical repository path
+    is the mechanically determined canonical inventory parent; this restores hierarchy
+    only.
+  evidence_ids:
+  - EVD-8BB7BC9739
+  source_references:
+  - packages/sdk/src/provable/hashing-helpers.ts#appendActionToHashList
+  - packages/sdk/src/provable/hashing-helpers.ts#<file>
+- group: sources
+  record_id: SRC-C2D706CEAF
+  absent_before:
+  - parent_ids
+  old: {}
+  set:
+    parent_ids:
+    - SRC-F3FE44D20B
+  rationale: The unique current kind=file record with the identical repository path
+    is the mechanically determined canonical inventory parent; this restores hierarchy
+    only.
+  evidence_ids:
+  - EVD-8BB7BC9739
+  source_references:
+  - packages/sdk/src/provable/hashing-helpers.ts#sequenceEventsPrefix
+  - packages/sdk/src/provable/hashing-helpers.ts#<file>
+- group: sources
+  record_id: SRC-C3129875A5
+  absent_before:
+  - parent_ids
+  old: {}
+  set:
+    parent_ids:
+    - SRC-F3FE44D20B
+  rationale: The unique current kind=file record with the identical repository path
+    is the mechanically determined canonical inventory parent; this restores hierarchy
+    only.
+  evidence_ids:
+  - EVD-8BB7BC9739
+  source_references:
+  - packages/sdk/src/provable/hashing-helpers.ts#eventPrefix
+  - packages/sdk/src/provable/hashing-helpers.ts#<file>
+- group: sources
+  record_id: SRC-F4A95CB279
+  absent_before:
+  - parent_ids
+  old: {}
+  set:
+    parent_ids:
+    - SRC-F3FE44D20B
+  rationale: The unique current kind=file record with the identical repository path
+    is the mechanically determined canonical inventory parent; this restores hierarchy
+    only.
+  evidence_ids:
+  - EVD-8BB7BC9739
+  source_references:
+  - packages/sdk/src/provable/hashing-helpers.ts#actionsEmptyHash
+  - packages/sdk/src/provable/hashing-helpers.ts#<file>
+- group: sources
+  record_id: SRC-F51F3D8862
+  absent_before:
+  - parent_ids
+  old: {}
+  set:
+    parent_ids:
+    - SRC-F3FE44D20B
+  rationale: The unique current kind=file record with the identical repository path
+    is the mechanically determined canonical inventory parent; this restores hierarchy
+    only.
+  evidence_ids:
+  - EVD-8BB7BC9739
+  source_references:
+  - packages/sdk/src/provable/hashing-helpers.ts#initialState
+  - packages/sdk/src/provable/hashing-helpers.ts#<file>
+- group: sources
+  record_id: SRC-0DF28CA67B
+  absent_before:
+  - parent_ids
+  old: {}
+  set:
+    parent_ids:
+    - SRC-9140D57A6C
+  rationale: The unique current kind=file record with the identical repository path
+    is the mechanically determined canonical inventory parent; this restores hierarchy
+    only.
+  evidence_ids:
+  - EVD-472E3A66BD
+  source_references:
+  - packages/sdk/src/provable/merkle-tree/prefixed-merkle-tree.ts#PrefixedMerkleTree.constructor
+  - packages/sdk/src/provable/merkle-tree/prefixed-merkle-tree.ts#<file>
+- group: sources
+  record_id: SRC-112DCFB4F9
+  absent_before:
+  - parent_ids
+  old: {}
+  set:
+    parent_ids:
+    - SRC-9140D57A6C
+  rationale: The unique current kind=file record with the identical repository path
+    is the mechanically determined canonical inventory parent; this restores hierarchy
+    only.
+  evidence_ids:
+  - EVD-472E3A66BD
+  source_references:
+  - packages/sdk/src/provable/merkle-tree/prefixed-merkle-tree.ts#BasePrefixedMerkleWitness.constructor
+  - packages/sdk/src/provable/merkle-tree/prefixed-merkle-tree.ts#<file>
+- group: sources
+  record_id: SRC-1CA600641B
+  absent_before:
+  - parent_ids
+  old: {}
+  set:
+    parent_ids:
+    - SRC-9140D57A6C
+  rationale: The unique current kind=file record with the identical repository path
+    is the mechanically determined canonical inventory parent; this restores hierarchy
+    only.
+  evidence_ids:
+  - EVD-472E3A66BD
+  source_references:
+  - packages/sdk/src/provable/merkle-tree/prefixed-merkle-tree.ts#PrefixedMerkleWitness36
+  - packages/sdk/src/provable/merkle-tree/prefixed-merkle-tree.ts#<file>
+- group: sources
+  record_id: SRC-2850B5373B
+  absent_before:
+  - parent_ids
+  old: {}
+  set:
+    parent_ids:
+    - SRC-9140D57A6C
+  rationale: The unique current kind=file record with the identical repository path
+    is the mechanically determined canonical inventory parent; this restores hierarchy
+    only.
+  evidence_ids:
+  - EVD-472E3A66BD
+  source_references:
+  - packages/sdk/src/provable/merkle-tree/prefixed-merkle-tree.ts#PrefixedMerkleTree.getWitness
+  - packages/sdk/src/provable/merkle-tree/prefixed-merkle-tree.ts#<file>
+- group: sources
+  record_id: SRC-30F8A81F19
+  absent_before:
+  - parent_ids
+  old: {}
+  set:
+    parent_ids:
+    - SRC-9140D57A6C
+  rationale: The unique current kind=file record with the identical repository path
+    is the mechanically determined canonical inventory parent; this restores hierarchy
+    only.
+  evidence_ids:
+  - EVD-472E3A66BD
+  source_references:
+  - packages/sdk/src/provable/merkle-tree/prefixed-merkle-tree.ts#PrefixedMerkleTree.setLeaf
+  - packages/sdk/src/provable/merkle-tree/prefixed-merkle-tree.ts#<file>
+- group: sources
+  record_id: SRC-3890CC35F2
+  absent_before:
+  - parent_ids
+  old: {}
+  set:
+    parent_ids:
+    - SRC-9140D57A6C
+  rationale: The unique current kind=file record with the identical repository path
+    is the mechanically determined canonical inventory parent; this restores hierarchy
+    only.
+  evidence_ids:
+  - EVD-472E3A66BD
+  source_references:
+  - packages/sdk/src/provable/merkle-tree/prefixed-merkle-tree.ts#conditionalSwap
+  - packages/sdk/src/provable/merkle-tree/prefixed-merkle-tree.ts#<file>
+- group: sources
+  record_id: SRC-412C147142
+  absent_before:
+  - parent_ids
+  old: {}
+  set:
+    parent_ids:
+    - SRC-9140D57A6C
+  rationale: The unique current kind=file record with the identical repository path
+    is the mechanically determined canonical inventory parent; this restores hierarchy
+    only.
+  evidence_ids:
+  - EVD-472E3A66BD
+  source_references:
+  - packages/sdk/src/provable/merkle-tree/prefixed-merkle-tree.ts#Witness
+  - packages/sdk/src/provable/merkle-tree/prefixed-merkle-tree.ts#<file>
+- group: sources
+  record_id: SRC-41A4005E12
+  absent_before:
+  - parent_ids
+  old: {}
+  set:
+    parent_ids:
+    - SRC-9140D57A6C
+  rationale: The unique current kind=file record with the identical repository path
+    is the mechanically determined canonical inventory parent; this restores hierarchy
+    only.
+  evidence_ids:
+  - EVD-472E3A66BD
+  source_references:
+  - packages/sdk/src/provable/merkle-tree/prefixed-merkle-tree.ts#PrefixedMerkleTree.setNode
+  - packages/sdk/src/provable/merkle-tree/prefixed-merkle-tree.ts#<file>
+- group: sources
+  record_id: SRC-5603A63D46
+  absent_before:
+  - parent_ids
+  old: {}
+  set:
+    parent_ids:
+    - SRC-9140D57A6C
+  rationale: The unique current kind=file record with the identical repository path
+    is the mechanically determined canonical inventory parent; this restores hierarchy
+    only.
+  evidence_ids:
+  - EVD-472E3A66BD
+  source_references:
+  - packages/sdk/src/provable/merkle-tree/prefixed-merkle-tree.ts#BasePrefixedMerkleWitness.height
+  - packages/sdk/src/provable/merkle-tree/prefixed-merkle-tree.ts#<file>
+- group: sources
+  record_id: SRC-646FFA8DE7
+  absent_before:
+  - parent_ids
+  old: {}
+  set:
+    parent_ids:
+    - SRC-9140D57A6C
+  rationale: The unique current kind=file record with the identical repository path
+    is the mechanically determined canonical inventory parent; this restores hierarchy
+    only.
+  evidence_ids:
+  - EVD-472E3A66BD
+  source_references:
+  - packages/sdk/src/provable/merkle-tree/prefixed-merkle-tree.ts#PrefixedMerkleTree
+  - packages/sdk/src/provable/merkle-tree/prefixed-merkle-tree.ts#<file>
+- group: sources
+  record_id: SRC-7B0FE5A1B4
+  absent_before:
+  - parent_ids
+  old: {}
+  set:
+    parent_ids:
+    - SRC-9140D57A6C
+  rationale: The unique current kind=file record with the identical repository path
+    is the mechanically determined canonical inventory parent; this restores hierarchy
+    only.
+  evidence_ids:
+  - EVD-472E3A66BD
+  source_references:
+  - packages/sdk/src/provable/merkle-tree/prefixed-merkle-tree.ts#PrefixedMerkleWitness255
+  - packages/sdk/src/provable/merkle-tree/prefixed-merkle-tree.ts#<file>
+- group: sources
+  record_id: SRC-88994FE351
+  absent_before:
+  - parent_ids
+  old: {}
+  set:
+    parent_ids:
+    - SRC-9140D57A6C
+  rationale: The unique current kind=file record with the identical repository path
+    is the mechanically determined canonical inventory parent; this restores hierarchy
+    only.
+  evidence_ids:
+  - EVD-472E3A66BD
+  source_references:
+  - packages/sdk/src/provable/merkle-tree/prefixed-merkle-tree.ts#PrefixedMerkleTree.leafCount
+  - packages/sdk/src/provable/merkle-tree/prefixed-merkle-tree.ts#<file>
+- group: sources
+  record_id: SRC-8914030316
+  absent_before:
+  - parent_ids
+  old: {}
+  set:
+    parent_ids:
+    - SRC-9140D57A6C
+  rationale: The unique current kind=file record with the identical repository path
+    is the mechanically determined canonical inventory parent; this restores hierarchy
+    only.
+  evidence_ids:
+  - EVD-472E3A66BD
+  source_references:
+  - packages/sdk/src/provable/merkle-tree/prefixed-merkle-tree.ts#BasePrefixedMerkleWitness.calculateIndex
+  - packages/sdk/src/provable/merkle-tree/prefixed-merkle-tree.ts#<file>
+- group: sources
+  record_id: SRC-A71B08F9A1
+  absent_before:
+  - parent_ids
+  old: {}
+  set:
+    parent_ids:
+    - SRC-9140D57A6C
+  rationale: The unique current kind=file record with the identical repository path
+    is the mechanically determined canonical inventory parent; this restores hierarchy
+    only.
+  evidence_ids:
+  - EVD-472E3A66BD
+  source_references:
+  - packages/sdk/src/provable/merkle-tree/prefixed-merkle-tree.ts#PrefixedMerkleWitness
+  - packages/sdk/src/provable/merkle-tree/prefixed-merkle-tree.ts#<file>
+- group: sources
+  record_id: SRC-A79CC74BB5
+  absent_before:
+  - parent_ids
+  old: {}
+  set:
+    parent_ids:
+    - SRC-9140D57A6C
+  rationale: The unique current kind=file record with the identical repository path
+    is the mechanically determined canonical inventory parent; this restores hierarchy
+    only.
+  evidence_ids:
+  - EVD-472E3A66BD
+  source_references:
+  - packages/sdk/src/provable/merkle-tree/prefixed-merkle-tree.ts#BasePrefixedMerkleWitness.calculateRoot
+  - packages/sdk/src/provable/merkle-tree/prefixed-merkle-tree.ts#<file>
+- group: sources
+  record_id: SRC-AA657CB6E6
+  absent_before:
+  - parent_ids
+  old: {}
+  set:
+    parent_ids:
+    - SRC-9140D57A6C
+  rationale: The unique current kind=file record with the identical repository path
+    is the mechanically determined canonical inventory parent; this restores hierarchy
+    only.
+  evidence_ids:
+  - EVD-472E3A66BD
+  source_references:
+  - packages/sdk/src/provable/merkle-tree/prefixed-merkle-tree.ts#BasePrefixedMerkleWitness
+  - packages/sdk/src/provable/merkle-tree/prefixed-merkle-tree.ts#<file>
+- group: sources
+  record_id: SRC-C3526BB353
+  absent_before:
+  - parent_ids
+  old: {}
+  set:
+    parent_ids:
+    - SRC-9140D57A6C
+  rationale: The unique current kind=file record with the identical repository path
+    is the mechanically determined canonical inventory parent; this restores hierarchy
+    only.
+  evidence_ids:
+  - EVD-472E3A66BD
+  source_references:
+  - packages/sdk/src/provable/merkle-tree/prefixed-merkle-tree.ts#PrefixedMerkleTree.getLeaf
+  - packages/sdk/src/provable/merkle-tree/prefixed-merkle-tree.ts#<file>
+- group: sources
+  record_id: SRC-C3FC483AB2
+  absent_before:
+  - parent_ids
+  old: {}
+  set:
+    parent_ids:
+    - SRC-9140D57A6C
+  rationale: The unique current kind=file record with the identical repository path
+    is the mechanically determined canonical inventory parent; this restores hierarchy
+    only.
+  evidence_ids:
+  - EVD-472E3A66BD
+  source_references:
+  - packages/sdk/src/provable/merkle-tree/prefixed-merkle-tree.ts#PrefixedMerkleTree.fill
+  - packages/sdk/src/provable/merkle-tree/prefixed-merkle-tree.ts#<file>
+- group: sources
+  record_id: SRC-E32C04FA23
+  absent_before:
+  - parent_ids
+  old: {}
+  set:
+    parent_ids:
+    - SRC-9140D57A6C
+  rationale: The unique current kind=file record with the identical repository path
+    is the mechanically determined canonical inventory parent; this restores hierarchy
+    only.
+  evidence_ids:
+  - EVD-472E3A66BD
+  source_references:
+  - packages/sdk/src/provable/merkle-tree/prefixed-merkle-tree.ts#PrefixedMerkleTree.getRoot
+  - packages/sdk/src/provable/merkle-tree/prefixed-merkle-tree.ts#<file>
+- group: sources
+  record_id: SRC-E6002FE709
+  absent_before:
+  - parent_ids
+  old: {}
+  set:
+    parent_ids:
+    - SRC-9140D57A6C
+  rationale: The unique current kind=file record with the identical repository path
+    is the mechanically determined canonical inventory parent; this restores hierarchy
+    only.
+  evidence_ids:
+  - EVD-472E3A66BD
+  source_references:
+  - packages/sdk/src/provable/merkle-tree/prefixed-merkle-tree.ts#PrefixedMerkleTree.getNode
+  - packages/sdk/src/provable/merkle-tree/prefixed-merkle-tree.ts#<file>
+- group: sources
+  record_id: SRC-00BC4BE27D
+  absent_before:
+  - parent_ids
+  old: {}
+  set:
+    parent_ids:
+    - SRC-C64523D77B
+  rationale: The unique current kind=file record with the identical repository path
+    is the mechanically determined canonical inventory parent; this restores hierarchy
+    only.
+  evidence_ids:
+  - EVD-A80CE1BF98
+  source_references:
+  - packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts#StakingLedgerToVotingLedger.exhaust
+  - packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts#<file>
+- group: sources
+  record_id: SRC-0573DF638C
+  absent_before:
+  - parent_ids
+  old: {}
+  set:
+    parent_ids:
+    - SRC-C64523D77B
+  rationale: The unique current kind=file record with the identical repository path
+    is the mechanically determined canonical inventory parent; this restores hierarchy
+    only.
+  evidence_ids:
+  - EVD-A80CE1BF98
+  source_references:
+  - packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts#StakingLedgerToVotingLedger.exhaust.witness
+    next account
+  - packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts#<file>
+- group: sources
+  record_id: SRC-080F2D7050
+  absent_before:
+  - parent_ids
+  old: {}
+  set:
+    parent_ids:
+    - SRC-C64523D77B
+  rationale: The unique current kind=file record with the identical repository path
+    is the mechanically determined canonical inventory parent; this restores hierarchy
+    only.
+  evidence_ids:
+  - EVD-A80CE1BF98
+  source_references:
+  - packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts#StakingLedgerToVotingLedger.digest.witness
+    staking account path
+  - packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts#<file>
+- group: sources
+  record_id: SRC-10C7E429B1
+  absent_before:
+  - parent_ids
+  old: {}
+  set:
+    parent_ids:
+    - SRC-C64523D77B
+  rationale: The unique current kind=file record with the identical repository path
+    is the mechanically determined canonical inventory parent; this restores hierarchy
+    only.
+  evidence_ids:
+  - EVD-A80CE1BF98
+  source_references:
+  - packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts#StakingLedgerToVotingLedger.digest.witness
+    voting account
+  - packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts#<file>
+- group: sources
+  record_id: SRC-2A81374266
+  absent_before:
+  - parent_ids
+  old: {}
+  set:
+    parent_ids:
+    - SRC-C64523D77B
+  rationale: The unique current kind=file record with the identical repository path
+    is the mechanically determined canonical inventory parent; this restores hierarchy
+    only.
+  evidence_ids:
+  - EVD-A80CE1BF98
+  source_references:
+  - packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts#StakingLedgerToVotingLedger.digest
+  - packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts#<file>
+- group: sources
+  record_id: SRC-31AFC1E24F
+  absent_before:
+  - parent_ids
+  old: {}
+  set:
+    parent_ids:
+    - SRC-C64523D77B
+  rationale: The unique current kind=file record with the identical repository path
+    is the mechanically determined canonical inventory parent; this restores hierarchy
+    only.
+  evidence_ids:
+  - EVD-A80CE1BF98
+  source_references:
+  - packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts#StakingLedgerToVotingLedger.merge
+  - packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts#<file>
+- group: sources
+  record_id: SRC-51B37E4133
+  absent_before:
+  - parent_ids
+  old: {}
+  set:
+    parent_ids:
+    - SRC-C64523D77B
+  rationale: The unique current kind=file record with the identical repository path
+    is the mechanically determined canonical inventory parent; this restores hierarchy
+    only.
+  evidence_ids:
+  - EVD-A80CE1BF98
+  source_references:
+  - packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts#StakingLedgerToVotingLedgerContext
+  - packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts#<file>
+- group: sources
+  record_id: SRC-5680BF6561
+  absent_before:
+  - parent_ids
+  old: {}
+  set:
+    parent_ids:
+    - SRC-C64523D77B
+  rationale: The unique current kind=file record with the identical repository path
+    is the mechanically determined canonical inventory parent; this restores hierarchy
+    only.
+  evidence_ids:
+  - EVD-A80CE1BF98
+  source_references:
+  - packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts#AccountBatch
+  - packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts#<file>
+- group: sources
+  record_id: SRC-68A630FC9E
+  absent_before:
+  - parent_ids
+  old: {}
+  set:
+    parent_ids:
+    - SRC-C64523D77B
+  rationale: The unique current kind=file record with the identical repository path
+    is the mechanically determined canonical inventory parent; this restores hierarchy
+    only.
+  evidence_ids:
+  - EVD-A80CE1BF98
+  source_references:
+  - packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts#ACCOUNT_BATCH_SIZE
+  - packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts#<file>
+- group: sources
+  record_id: SRC-6F6EA833D3
+  absent_before:
+  - parent_ids
+  old: {}
+  set:
+    parent_ids:
+    - SRC-C64523D77B
+  rationale: The unique current kind=file record with the identical repository path
+    is the mechanically determined canonical inventory parent; this restores hierarchy
+    only.
+  evidence_ids:
+  - EVD-A80CE1BF98
+  source_references:
+  - packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts#StakingLedgerToVotingLedger.digest.host
+    voting ledger persistence
+  - packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts#<file>
+- group: sources
+  record_id: SRC-71500385F9
+  absent_before:
+  - parent_ids
+  old: {}
+  set:
+    parent_ids:
+    - SRC-C64523D77B
+  rationale: The unique current kind=file record with the identical repository path
+    is the mechanically determined canonical inventory parent; this restores hierarchy
+    only.
+  evidence_ids:
+  - EVD-A80CE1BF98
+  source_references:
+  - packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts#StakingLedgerToVotingLedgerTrace
+  - packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts#<file>
+- group: sources
+  record_id: SRC-75A56FCCF2
+  absent_before:
+  - parent_ids
+  old: {}
+  set:
+    parent_ids:
+    - SRC-C64523D77B
+  rationale: The unique current kind=file record with the identical repository path
+    is the mechanically determined canonical inventory parent; this restores hierarchy
+    only.
+  evidence_ids:
+  - EVD-A80CE1BF98
+  source_references:
+  - packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts#StakingLedgerToVotingLedgerProof
+  - packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts#<file>
+- group: sources
+  record_id: SRC-75E82A715B
+  absent_before:
+  - parent_ids
+  old: {}
+  set:
+    parent_ids:
+    - SRC-C64523D77B
+  rationale: The unique current kind=file record with the identical repository path
+    is the mechanically determined canonical inventory parent; this restores hierarchy
+    only.
+  evidence_ids:
+  - EVD-A80CE1BF98
+  source_references:
+  - packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts#StakingLedgerToVotingLedgerProgramOutput
+  - packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts#<file>
+- group: sources
+  record_id: SRC-8D8DE1AE8F
+  absent_before:
+  - parent_ids
+  old: {}
+  set:
+    parent_ids:
+    - SRC-C64523D77B
+  rationale: The unique current kind=file record with the identical repository path
+    is the mechanically determined canonical inventory parent; this restores hierarchy
+    only.
+  evidence_ids:
+  - EVD-A80CE1BF98
+  source_references:
+  - packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts#StakingLedgerToVotingLedger
+  - packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts#<file>
+- group: sources
+  record_id: SRC-93B83B469C
+  absent_before:
+  - parent_ids
+  old: {}
+  set:
+    parent_ids:
+    - SRC-C64523D77B
+  rationale: The unique current kind=file record with the identical repository path
+    is the mechanically determined canonical inventory parent; this restores hierarchy
+    only.
+  evidence_ids:
+  - EVD-A80CE1BF98
+  source_references:
+  - packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts#StakingLedgerToVotingLedgerErrors
+  - packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts#<file>
+- group: sources
+  record_id: SRC-AAEEE853B7
+  absent_before:
+  - parent_ids
+  old: {}
+  set:
+    parent_ids:
+    - SRC-C64523D77B
+  rationale: The unique current kind=file record with the identical repository path
+    is the mechanically determined canonical inventory parent; this restores hierarchy
+    only.
+  evidence_ids:
+  - EVD-A80CE1BF98
+  source_references:
+  - packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts#stakingLedgerToVotingLedgerContext
+  - packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts#<file>
+- group: sources
+  record_id: SRC-C2BE9449DA
+  absent_before:
+  - parent_ids
+  old: {}
+  set:
+    parent_ids:
+    - SRC-C64523D77B
+  rationale: The unique current kind=file record with the identical repository path
+    is the mechanically determined canonical inventory parent; this restores hierarchy
+    only.
+  evidence_ids:
+  - EVD-A80CE1BF98
+  source_references:
+  - packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts#SideLoadedStakingLedgerToVotingLedgerProof
+  - packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts#<file>
+- group: sources
+  record_id: SRC-CA806E1097
+  absent_before:
+  - parent_ids
+  old: {}
+  set:
+    parent_ids:
+    - SRC-C64523D77B
+  rationale: The unique current kind=file record with the identical repository path
+    is the mechanically determined canonical inventory parent; this restores hierarchy
+    only.
+  evidence_ids:
+  - EVD-A80CE1BF98
+  source_references:
+  - packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts#StakingLedgerToVotingLedger.digest.witness
+    voting path
+  - packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts#<file>
+- group: sources
+  record_id: SRC-E055672925
+  absent_before:
+  - parent_ids
+  old: {}
+  set:
+    parent_ids:
+    - SRC-C64523D77B
+  rationale: The unique current kind=file record with the identical repository path
+    is the mechanically determined canonical inventory parent; this restores hierarchy
+    only.
+  evidence_ids:
+  - EVD-A80CE1BF98
+  source_references:
+  - packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts#StakingLedgerToVotingLedgerProgramInput
+  - packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts#<file>
+- group: sources
+  record_id: SRC-4E5D79143E
+  absent_before:
+  - parent_ids
+  old: {}
+  set:
+    parent_ids:
+    - SRC-457F3C87C6
+  rationale: The unique current kind=file record with the identical repository path
+    is the mechanically determined canonical inventory parent; this restores hierarchy
+    only.
+  evidence_ids:
+  - EVD-FE84EB4EF2
+  source_references:
+  - packages/sdk/src/provable/voting-account.ts#VotingAccount
+  - packages/sdk/src/provable/voting-account.ts#<file>
+- group: sources
+  record_id: SRC-DE59844631
+  absent_before:
+  - parent_ids
+  old: {}
+  set:
+    parent_ids:
+    - SRC-457F3C87C6
+  rationale: The unique current kind=file record with the identical repository path
+    is the mechanically determined canonical inventory parent; this restores hierarchy
+    only.
+  evidence_ids:
+  - EVD-FE84EB4EF2
+  source_references:
+  - packages/sdk/src/provable/voting-account.ts#VotingAccount.isEmpty
+  - packages/sdk/src/provable/voting-account.ts#<file>
+- group: sources
+  record_id: SRC-EE43A212D5
+  absent_before:
+  - parent_ids
+  old: {}
+  set:
+    parent_ids:
+    - SRC-457F3C87C6
+  rationale: The unique current kind=file record with the identical repository path
+    is the mechanically determined canonical inventory parent; this restores hierarchy
+    only.
+  evidence_ids:
+  - EVD-FE84EB4EF2
+  source_references:
+  - packages/sdk/src/provable/voting-account.ts#VotingAccount.toHashInput
+  - packages/sdk/src/provable/voting-account.ts#<file>
+- group: flows
+  record_id: FLW-802D71B91D
+  absent_before:
+  - owner_component_id
+  - steps[0].component_id
+  - steps[0].behavior_id
+  - steps[1].component_id
+  - steps[1].behavior_id
+  - steps[2].component_id
+  - steps[2].behavior_id
+  - steps[3].component_id
+  - steps[3].behavior_id
+  old:
+    steps:
+    - sequence: 1
+      operation: start from public index, staking root, and voting root
+    - sequence: 2
+      operation: for five consecutive accounts prove staking membership
+    - sequence: 3
+      operation: prove delegate voting leaf/index and add balance
+    - sequence: 4
+      operation: return terminal index/root; perform host voting-ledger writes
+  set:
+    owner_component_id: CMP-874E479BA1
+    steps:
+    - sequence: 1
+      operation: start from public index, staking root, and voting root
+      component_id: CMP-874E479BA1
+      behavior_id: BHV-C4F9C6CEE0
+    - sequence: 2
+      operation: for five consecutive accounts prove staking membership
+      component_id: CMP-874E479BA1
+      behavior_id: BHV-C4F9C6CEE0
+    - sequence: 3
+      operation: prove delegate voting leaf/index and add balance
+      component_id: CMP-874E479BA1
+      behavior_id: BHV-C01A568AAE
+    - sequence: 4
+      operation: return terminal index/root; perform host voting-ledger writes
+      component_id: CMP-874E479BA1
+      behavior_id: BHV-C4F9C6CEE0
+  rationale: Current canonical component and behavior records with matching source
+    anchors identify the flow owner and the dominant implementation behavior for each
+    unchanged step; no operation, outcome, assertion, status, or effective conclusion
+    is changed.
+  evidence_ids:
+  - EVD-B30136F272
+  - EVD-177476A23F
+  - EVD-C70801D35C
+  source_references:
+  - packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts#L195-L337
+  - packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts#L195-L338
+  - packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts#L239-L302
+  - ".codebase-analysis/provable-92d90e3803a1/context/RFC_EXTRACT.md#L7-L10"
+- group: flows
+  record_id: FLW-FB5CAECCAD
+  absent_before:
+  - owner_component_id
+  - steps[0].component_id
+  - steps[0].behavior_id
+  - steps[1].component_id
+  - steps[1].behavior_id
+  - steps[2].component_id
+  - steps[2].behavior_id
+  - steps[3].component_id
+  - steps[3].behavior_id
+  old:
+    steps:
+    - sequence: 1
+      operation: snapshot staking epoch ledger hash and total currency
+    - sequence: 2
+      operation: require proposal period and global unpaused state
+    - sequence: 3
+      operation: credit bond and construct signed derived-token proposal account update
+    - sequence: 4
+      operation: write proposal app state, verification key, permissions, URI; emit
+        event
+  set:
+    owner_component_id: CMP-E155326DD2
+    steps:
+    - sequence: 1
+      operation: snapshot staking epoch ledger hash and total currency
+      component_id: CMP-E155326DD2
+      behavior_id: BHV-5B1BD6B386
+    - sequence: 2
+      operation: require proposal period and global unpaused state
+      component_id: CMP-E155326DD2
+      behavior_id: BHV-5095682725
+    - sequence: 3
+      operation: credit bond and construct signed derived-token proposal account update
+      component_id: CMP-E155326DD2
+      behavior_id: BHV-80247CE73D
+    - sequence: 4
+      operation: write proposal app state, verification key, permissions, URI; emit
+        event
+      component_id: CMP-E155326DD2
+      behavior_id: BHV-80247CE73D
+  rationale: Current canonical component and behavior records with matching source
+    anchors identify the flow owner and the dominant implementation behavior for each
+    unchanged step; no operation, outcome, assertion, status, or effective conclusion
+    is changed.
+  evidence_ids:
+  - EVD-9E30964FCB
+  - EVD-65B65019A1
+  - EVD-FB46967B48
+  - EVD-D0A9652ECB
+  - EVD-9B18A655A2
+  - EVD-E95EC38949
+  - EVD-9FC5B7AF30
+  source_references:
+  - packages/sdk/src/provable/contracts/treasury-owner.ts#L97-L108
+  - packages/sdk/src/provable/contracts/treasury-owner.ts#L121-L184
+  - packages/sdk/src/provable/contracts/treasury-owner.ts#L191-L272
+  - ".codebase-analysis/provable-92d90e3803a1/context/ZKSECURITY_AUDIT_INDEX.md#L1-L20"
+  - packages/sdk/src/provable/contracts/treasury-owner.ts#L51-L184
+  - packages/sdk/test/integration/treasury-owner.test.ts#L269-L427
+- group: flows
+  record_id: FLW-FD2B1F4966
+  absent_before:
+  - owner_component_id
+  - steps[0].component_id
+  - steps[0].behavior_id
+  - steps[1].component_id
+  - steps[1].behavior_id
+  - steps[2].component_id
+  - steps[2].behavior_id
+  - steps[3].component_id
+  - steps[3].behavior_id
+  - steps[4].component_id
+  - steps[4].behavior_id
+  old:
+    steps:
+    - sequence: 1
+      operation: derive operation-specific prefixed data hash
+    - sequence: 2
+      operation: witness exactly five participants and bind ordered commitment
+    - sequence: 3
+      operation: verify at least three signatures
+    - sequence: 4
+      operation: require and increment account nonce
+    - sequence: 5
+      operation: apply local state effect when applicable
+  set:
+    owner_component_id: CMP-B6BB8BE661
+    steps:
+    - sequence: 1
+      operation: derive operation-specific prefixed data hash
+      component_id: CMP-7DB1B15B38
+      behavior_id: BHV-8ED0438CC8
+    - sequence: 2
+      operation: witness exactly five participants and bind ordered commitment
+      component_id: CMP-B6BB8BE661
+      behavior_id: BHV-F898CD867A
+    - sequence: 3
+      operation: verify at least three signatures
+      component_id: CMP-B6BB8BE661
+      behavior_id: BHV-F898CD867A
+    - sequence: 4
+      operation: require and increment account nonce
+      component_id: CMP-B6BB8BE661
+      behavior_id: BHV-1FC418499A
+    - sequence: 5
+      operation: apply local state effect when applicable
+      component_id: CMP-B6BB8BE661
+      behavior_id: BHV-DDC0A35072
+  rationale: Current canonical component and behavior records with matching source
+    anchors identify the flow owner and the dominant implementation behavior for each
+    unchanged step; no operation, outcome, assertion, status, or effective conclusion
+    is changed.
+  evidence_ids:
+  - EVD-05AEF87762
+  - EVD-98C59C67BD
+  - EVD-278D27A176
+  - EVD-B5B808B00F
+  - EVD-E1F14754F0
+  - EVD-97F3268F92
+  - EVD-5E0A5DD24E
+  - EVD-337E2C2D56
+  - EVD-AEB7ADB95E
+  source_references:
+  - packages/sdk/src/provable/contracts/treasury-pause-controller/multisig-signatures.ts#L22-L91
+  - packages/sdk/src/provable/contracts/treasury-pause-controller/treasury-pause-controller.ts#L97-L119
+  - packages/sdk/src/provable/contracts/treasury-pause-controller/multisig-signatures.ts#L97-L145
+  - packages/sdk/src/provable/contracts/treasury-pause-controller/multisig-signatures.ts#L118-L145
+  - packages/sdk/src/provable/contracts/treasury-pause-controller/treasury-pause-controller.ts#L87-L95
+  - packages/sdk/src/provable/contracts/treasury-pause-controller/treasury-pause-controller.ts#L147-L193
+  - packages/sdk/src/provable/contracts/treasury-pause-controller/treasury-pause-controller.ts#L87-L193
+  - packages/sdk/test/provable/contracts/treasury-pause-controller/multisig-signatures.test.ts#L13-L611
+  - packages/sdk/test/provable/contracts/treasury-pause-controller/treasury-pause-controller.test.ts#L21-L659
+- group: flows
+  record_id: FLW-BEFDEF1197
+  absent_before:
+  - owner_component_id
+  - steps[0].component_id
+  - steps[0].behavior_id
+  - steps[1].component_id
+  - steps[1].behavior_id
+  - steps[2].component_id
+  - steps[2].behavior_id
+  - steps[3].component_id
+  - steps[3].behavior_id
+  old:
+    steps:
+    - sequence: 1
+      operation: require not paused and APPROVED
+    - sequence: 2
+      operation: compute amount plus bond less prior payouts
+    - sequence: 3
+      operation: bind recipient key to recipientHash
+    - sequence: 4
+      operation: credit recipient update and increment paidOutAmount
+  set:
+    owner_component_id: CMP-5CAF19BDCD
+    steps:
+    - sequence: 1
+      operation: require not paused and APPROVED
+      component_id: CMP-5CAF19BDCD
+      behavior_id: BHV-F2207732B4
+    - sequence: 2
+      operation: compute amount plus bond less prior payouts
+      component_id: CMP-5CAF19BDCD
+      behavior_id: BHV-F2207732B4
+    - sequence: 3
+      operation: bind recipient key to recipientHash
+      component_id: CMP-5CAF19BDCD
+      behavior_id: BHV-F2207732B4
+    - sequence: 4
+      operation: credit recipient update and increment paidOutAmount
+      component_id: CMP-5CAF19BDCD
+      behavior_id: BHV-F2207732B4
+  rationale: Current canonical component and behavior records with matching source
+    anchors identify the flow owner and the dominant implementation behavior for each
+    unchanged step; no operation, outcome, assertion, status, or effective conclusion
+    is changed.
+  evidence_ids:
+  - EVD-DD1C7DA36F
+  source_references:
+  - packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts#L353-L384
+- group: flows
+  record_id: FLW-E60ABD1745
+  absent_before:
+  - owner_component_id
+  - steps[0].component_id
+  - steps[0].behavior_id
+  - steps[1].component_id
+  - steps[1].behavior_id
+  - steps[2].component_id
+  - steps[2].behavior_id
+  - steps[3].component_id
+  - steps[3].behavior_id
+  old:
+    steps:
+    - sequence: 1
+      operation: require UNKNOWN and verify both side-loaded proofs
+    - sequence: 2
+      operation: bind initial roots/index, voting root, staking snapshot, and exhaustion
+    - sequence: 3
+      operation: prove Treasury Owner default-token account membership in snapshot
+    - sequence: 4
+      operation: compute participation/approval and store result
+  set:
+    owner_component_id: CMP-5CAF19BDCD
+    steps:
+    - sequence: 1
+      operation: require UNKNOWN and verify both side-loaded proofs
+      component_id: CMP-5CAF19BDCD
+      behavior_id: BHV-1136BD4D08
+    - sequence: 2
+      operation: bind initial roots/index, voting root, staking snapshot, and exhaustion
+      component_id: CMP-5CAF19BDCD
+      behavior_id: BHV-1136BD4D08
+    - sequence: 3
+      operation: prove Treasury Owner default-token account membership in snapshot
+      component_id: CMP-5CAF19BDCD
+      behavior_id: BHV-1136BD4D08
+    - sequence: 4
+      operation: compute participation/approval and store result
+      component_id: CMP-5CAF19BDCD
+      behavior_id: BHV-A302A43C9F
+  rationale: Current canonical component and behavior records with matching source
+    anchors identify the flow owner and the dominant implementation behavior for each
+    unchanged step; no operation, outcome, assertion, status, or effective conclusion
+    is changed.
+  evidence_ids:
+  - EVD-79754810F6
+  - EVD-5AED8D6498
+  - EVD-CFF488F119
+  source_references:
+  - packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts#L213-L351
+  - packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts#L164-L211
+  - packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts#L213-L384
+- group: flows
+  record_id: FLW-9BA4D696D1
+  absent_before:
+  - owner_component_id
+  - steps[0].component_id
+  - steps[0].behavior_id
+  - steps[1].component_id
+  - steps[1].behavior_id
+  - steps[2].component_id
+  - steps[2].behavior_id
+  - steps[3].component_id
+  - steps[3].behavior_id
+  old:
+    steps:
+    - sequence: 1
+      operation: start from public action/nullifier roots and target action-state
+        hashes
+    - sequence: 2
+      operation: for each of five actions prove voter leaf/index and nullifier leaf/index
+    - sequence: 3
+      operation: roll nullifier root, tallies, action hash, and found flags
+    - sequence: 4
+      operation: return public terminal state; perform host nullifier writes
+  set:
+    owner_component_id: CMP-0F476A460D
+    steps:
+    - sequence: 1
+      operation: start from public action/nullifier roots and target action-state
+        hashes
+      component_id: CMP-0F476A460D
+      behavior_id: BHV-50C1B246E0
+    - sequence: 2
+      operation: for each of five actions prove voter leaf/index and nullifier leaf/index
+      component_id: CMP-0F476A460D
+      behavior_id: BHV-E79288F8DA
+    - sequence: 3
+      operation: roll nullifier root, tallies, action hash, and found flags
+      component_id: CMP-0F476A460D
+      behavior_id: BHV-50C1B246E0
+    - sequence: 4
+      operation: return public terminal state; perform host nullifier writes
+      component_id: CMP-0F476A460D
+      behavior_id: BHV-50C1B246E0
+  rationale: Current canonical component and behavior records with matching source
+    anchors identify the flow owner and the dominant implementation behavior for each
+    unchanged step; no operation, outcome, assertion, status, or effective conclusion
+    is changed.
+  evidence_ids:
+  - EVD-810D58B5D2
+  - EVD-D70E747767
+  source_references:
+  - packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts#L426-L639
+  - packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts#L459-L505
+- group: flows
+  record_id: FLW-2F560AE009
+  absent_before:
+  - owner_component_id
+  - steps[0].component_id
+  - steps[0].behavior_id
+  - steps[1].component_id
+  - steps[1].behavior_id
+  - steps[2].component_id
+  - steps[2].behavior_id
+  old:
+    steps:
+    - sequence: 1
+      operation: Producer constructs one of five shared Structs.
+      inputs:
+      - operation values
+      outputs:
+      - typed event
+      reads: []
+      writes: []
+      effects: []
+      failure_edges:
+      - producer may supply semantically wrong but type-valid value
+    - sequence: 2
+      operation: Struct fields are encoded under the fixed event name.
+      inputs:
+      - typed event
+      outputs:
+      - field sequence
+      reads: []
+      writes: []
+      effects:
+      - event emission in production
+      failure_edges: []
+    - sequence: 3
+      operation: Consumer decodes fields using the same Struct.
+      inputs:
+      - field sequence
+      outputs:
+      - decoded payload
+      reads: []
+      writes: []
+      effects: []
+      failure_edges:
+      - schema/version mismatch
+  set:
+    owner_component_id: CMP-834A30297A
+    steps:
+    - sequence: 1
+      operation: Producer constructs one of five shared Structs.
+      inputs:
+      - operation values
+      outputs:
+      - typed event
+      reads: []
+      writes: []
+      effects: []
+      failure_edges:
+      - producer may supply semantically wrong but type-valid value
+      component_id: CMP-834A30297A
+      behavior_id: BHV-761186E23C
+    - sequence: 2
+      operation: Struct fields are encoded under the fixed event name.
+      inputs:
+      - typed event
+      outputs:
+      - field sequence
+      reads: []
+      writes: []
+      effects:
+      - event emission in production
+      failure_edges: []
+      component_id: CMP-834A30297A
+      behavior_id: BHV-761186E23C
+    - sequence: 3
+      operation: Consumer decodes fields using the same Struct.
+      inputs:
+      - field sequence
+      outputs:
+      - decoded payload
+      reads: []
+      writes: []
+      effects: []
+      failure_edges:
+      - schema/version mismatch
+      component_id: CMP-834A30297A
+      behavior_id: BHV-761186E23C
+  rationale: Current canonical component and behavior records with matching source
+    anchors identify the flow owner and the dominant implementation behavior for each
+    unchanged step; no operation, outcome, assertion, status, or effective conclusion
+    is changed.
+  evidence_ids:
+  - EVD-02AE7D74CF
+  - EVD-79C55B331E
+  source_references:
+  - packages/sdk/src/provable/events/treasury-proposal-events.ts#L4-L68
+  - packages/sdk/test/provable/events/treasury-proposal-events.test.ts#L26-L212
+- group: flows
+  record_id: FLW-5C8E5E0DE3
+  absent_before:
+  - owner_component_id
+  - steps[0].component_id
+  - steps[0].behavior_id
+  - steps[1].component_id
+  - steps[1].behavior_id
+  - steps[2].component_id
+  - steps[2].behavior_id
+  old:
+    steps:
+    - sequence: 1
+      operation: Decode/special-case public key and Poseidon-hash its fields.
+      inputs:
+      - base58 public key
+      outputs:
+      - bigint index
+      reads: []
+      writes: []
+      effects: []
+      failure_edges:
+      - invalid base58
+    - sequence: 2
+      operation: Encode VotingAccount balance or Bool nullifier under its leaf prefix.
+      inputs:
+      - typed leaf
+      outputs:
+      - leaf Field
+      reads: []
+      writes: []
+      effects: []
+      failure_edges: []
+    - sequence: 3
+      operation: Read witness or mutate prefixed tree at derived index.
+      inputs:
+      - index
+      - leaf
+      outputs:
+      - witness/root
+      reads:
+      - storage nodes
+      writes:
+      - leaf/ancestors when updating
+      effects:
+      - host storage mutation
+      failure_edges:
+      - storage failure
+  set:
+    owner_component_id: CMP-7CC27EFA43
+    steps:
+    - sequence: 1
+      operation: Decode/special-case public key and Poseidon-hash its fields.
+      inputs:
+      - base58 public key
+      outputs:
+      - bigint index
+      reads: []
+      writes: []
+      effects: []
+      failure_edges:
+      - invalid base58
+      component_id: CMP-7CC27EFA43
+      behavior_id: BHV-08FB416CF3
+    - sequence: 2
+      operation: Encode VotingAccount balance or Bool nullifier under its leaf prefix.
+      inputs:
+      - typed leaf
+      outputs:
+      - leaf Field
+      reads: []
+      writes: []
+      effects: []
+      failure_edges: []
+      component_id: CMP-31D3990A1F
+      behavior_id: BHV-CB4CCBE337
+    - sequence: 3
+      operation: Read witness or mutate prefixed tree at derived index.
+      inputs:
+      - index
+      - leaf
+      outputs:
+      - witness/root
+      reads:
+      - storage nodes
+      writes:
+      - leaf/ancestors when updating
+      effects:
+      - host storage mutation
+      failure_edges:
+      - storage failure
+      component_id: CMP-2890255AE1
+      behavior_id: BHV-4EC84F351D
+  rationale: Current canonical component and behavior records with matching source
+    anchors identify the flow owner and the dominant implementation behavior for each
+    unchanged step; no operation, outcome, assertion, status, or effective conclusion
+    is changed.
+  evidence_ids:
+  - EVD-6201011AC1
+  - EVD-8BB7BC9739
+  - EVD-472E3A66BD
+  source_references:
+  - packages/sdk/src/utils/public-key.ts#L3-L10
+  - packages/sdk/src/ledgers/voting-ledger/voting-ledger.ts#L281-L335
+  - packages/sdk/src/ledgers/nullifier-ledger/nullifier-ledger.ts#L277-L324
+  - packages/sdk/src/provable/hashing-helpers.ts#L4-L36
+  - packages/sdk/src/provable/merkle-tree/prefixed-merkle-tree.ts#L99-L130
+  - packages/sdk/src/ledgers/staking-ledger/staking-ledger.ts#L54-L144
+  - packages/sdk/src/provable/merkle-tree/prefixed-merkle-tree.ts#L31-L266
+- group: flows
+  record_id: FLW-A565B35EC6
+  absent_before:
+  - owner_component_id
+  - steps[0].component_id
+  - steps[0].behavior_id
+  - steps[1].component_id
+  - steps[1].behavior_id
+  - steps[2].component_id
+  - steps[2].behavior_id
+  old:
+    steps:
+    - sequence: 1
+      operation: Construct/receive Account and derive Account.toHashInput.
+      inputs:
+      - Account
+      outputs:
+      - RandomOracleInput
+      reads: []
+      writes: []
+      effects: []
+      failure_edges:
+      - invalid external encoding
+    - sequence: 2
+      operation: Pack bounded chunks and hash with MinaAccount prefix.
+      inputs:
+      - RandomOracleInput
+      outputs:
+      - leaf Field
+      reads: []
+      writes: []
+      effects: []
+      failure_edges:
+      - packing/prefix incompatibility
+    - sequence: 3
+      operation: Persist leaf and recompute prefixed ancestors.
+      inputs:
+      - index
+      - leaf Field
+      outputs:
+      - root
+      reads:
+      - sibling nodes
+      writes:
+      - leaf and ancestors
+      effects:
+      - storage mutation
+      failure_edges:
+      - out-of-range or partial persistence
+  set:
+    owner_component_id: CMP-49180D7623
+    steps:
+    - sequence: 1
+      operation: Construct/receive Account and derive Account.toHashInput.
+      inputs:
+      - Account
+      outputs:
+      - RandomOracleInput
+      reads: []
+      writes: []
+      effects: []
+      failure_edges:
+      - invalid external encoding
+      component_id: CMP-49180D7623
+      behavior_id: BHV-44F30E27C0
+    - sequence: 2
+      operation: Pack bounded chunks and hash with MinaAccount prefix.
+      inputs:
+      - RandomOracleInput
+      outputs:
+      - leaf Field
+      reads: []
+      writes: []
+      effects: []
+      failure_edges:
+      - packing/prefix incompatibility
+      component_id: CMP-49180D7623
+      behavior_id: BHV-0EED4FB2BD
+    - sequence: 3
+      operation: Persist leaf and recompute prefixed ancestors.
+      inputs:
+      - index
+      - leaf Field
+      outputs:
+      - root
+      reads:
+      - sibling nodes
+      writes:
+      - leaf and ancestors
+      effects:
+      - storage mutation
+      failure_edges:
+      - out-of-range or partial persistence
+      component_id: CMP-2890255AE1
+      behavior_id: BHV-4EC84F351D
+  rationale: Current canonical component and behavior records with matching source
+    anchors identify the flow owner and the dominant implementation behavior for each
+    unchanged step; no operation, outcome, assertion, status, or effective conclusion
+    is changed.
+  evidence_ids:
+  - EVD-03D20507BE
+  - EVD-6201011AC1
+  - EVD-472E3A66BD
+  source_references:
+  - packages/sdk/src/provable/account.ts#L289-L392
+  - packages/sdk/src/ledgers/staking-ledger/staking-ledger.ts#L105-L144
+  - packages/sdk/src/provable/account.ts#L247-L308
+  - packages/sdk/src/provable/account.ts#L319-L392
+  - packages/sdk/src/provable/merkle-tree/prefixed-merkle-tree.ts#L99-L130
+  - packages/sdk/src/provable/account.ts#L22-L392
+  - packages/sdk/src/ledgers/staking-ledger/staking-ledger.ts#L54-L144
+  - packages/sdk/src/ledgers/voting-ledger/voting-ledger.ts#L281-L335
+  - packages/sdk/src/ledgers/nullifier-ledger/nullifier-ledger.ts#L277-L324
+  - packages/sdk/src/utils/public-key.ts#L3-L10
+  - packages/sdk/src/provable/merkle-tree/prefixed-merkle-tree.ts#L31-L266
+- group: flows
+  record_id: FLW-21AF7F4E4D
+  absent_before:
+  - owner_component_id
+  - steps[0].component_id
+  - steps[1].component_id
+  - steps[2].component_id
+  old:
+    steps:
+    - sequence: 1
+      operation: Controller witnesses exactly five host-static keys and binds their
+        ordered commitment.
+      behavior_id: BHV-F898CD867A
+    - sequence: 2
+      operation: Three valid signature slots authorize operation-prefixed data.
+      behavior_id: BHV-8ED0438CC8
+    - sequence: 3
+      operation: Controller requires/increments nonce and explicitly writes paused
+        Bool.
+      behavior_id: BHV-DDC0A35072
+  set:
+    owner_component_id: CMP-B6BB8BE661
+    steps:
+    - sequence: 1
+      operation: Controller witnesses exactly five host-static keys and binds their
+        ordered commitment.
+      behavior_id: BHV-F898CD867A
+      component_id: CMP-B6BB8BE661
+    - sequence: 2
+      operation: Three valid signature slots authorize operation-prefixed data.
+      behavior_id: BHV-8ED0438CC8
+      component_id: CMP-B6BB8BE661
+    - sequence: 3
+      operation: Controller requires/increments nonce and explicitly writes paused
+        Bool.
+      behavior_id: BHV-DDC0A35072
+      component_id: CMP-B6BB8BE661
+  rationale: Current canonical component and behavior records with matching source
+    anchors identify the flow owner and the dominant implementation behavior for each
+    unchanged step; no operation, outcome, assertion, status, or effective conclusion
+    is changed.
+  evidence_ids:
+  - EVD-337E2C2D56
+  - EVD-E1F14754F0
+  - EVD-B5B808B00F
+  - EVD-97F3268F92
+  - EVD-278D27A176
+  - EVD-AEB7ADB95E
+  source_references:
+  - packages/sdk/src/provable/contracts/treasury-pause-controller/treasury-pause-controller.ts#L97-L119
+  - packages/sdk/src/provable/contracts/treasury-pause-controller/multisig-signatures.ts#L97-L145
+  - packages/sdk/src/provable/contracts/treasury-pause-controller/multisig-signatures.ts#L118-L145
+  - packages/sdk/src/provable/contracts/treasury-pause-controller/multisig-signatures.ts#L22-L91
+  - packages/sdk/src/provable/contracts/treasury-pause-controller/treasury-pause-controller.ts#L147-L193
+  - packages/sdk/test/provable/contracts/treasury-pause-controller/multisig-signatures.test.ts#L13-L611
+  - packages/sdk/test/provable/contracts/treasury-pause-controller/treasury-pause-controller.test.ts#L21-L659
+- group: flows
+  record_id: FLW-745B097927
+  absent_before:
+  - owner_component_id
+  - steps[0].component_id
+  - steps[1].component_id
+  - steps[2].component_id
+  old:
+    steps:
+    - sequence: 1
+      operation: Signatures bind current commitment, next commitment, and current
+        nonce.
+      behavior_id: BHV-8ED0438CC8
+    - sequence: 2
+      operation: Controller verifies current participant preimage and consumes nonce.
+      behavior_id: BHV-F898CD867A
+    - sequence: 3
+      operation: Controller stores arbitrary next commitment; operator must update
+        the static preimage out of band.
+      behavior_id: BHV-0D6A8D760E
+  set:
+    owner_component_id: CMP-B6BB8BE661
+    steps:
+    - sequence: 1
+      operation: Signatures bind current commitment, next commitment, and current
+        nonce.
+      behavior_id: BHV-8ED0438CC8
+      component_id: CMP-B6BB8BE661
+    - sequence: 2
+      operation: Controller verifies current participant preimage and consumes nonce.
+      behavior_id: BHV-F898CD867A
+      component_id: CMP-B6BB8BE661
+    - sequence: 3
+      operation: Controller stores arbitrary next commitment; operator must update
+        the static preimage out of band.
+      behavior_id: BHV-0D6A8D760E
+      component_id: CMP-B6BB8BE661
+  rationale: Current canonical component and behavior records with matching source
+    anchors identify the flow owner and the dominant implementation behavior for each
+    unchanged step; no operation, outcome, assertion, status, or effective conclusion
+    is changed.
+  evidence_ids:
+  - EVD-CF08ADCD5E
+  - EVD-8F785412DE
+  - EVD-278D27A176
+  - EVD-B5B808B00F
+  - EVD-E1F14754F0
+  - EVD-97F3268F92
+  - EVD-AEB7ADB95E
+  - EVD-4D735E6477
+  source_references:
+  - packages/sdk/src/provable/contracts/treasury-pause-controller/multisig-signatures.ts#L22-L91
+  - packages/sdk/src/provable/contracts/treasury-pause-controller/treasury-pause-controller.ts#L97-L119
+  - packages/sdk/src/provable/contracts/treasury-pause-controller/multisig-signatures.ts#L97-L145
+  - packages/sdk/src/provable/contracts/treasury-pause-controller/multisig-signatures.ts#L118-L145
+  - packages/sdk/src/provable/contracts/treasury-pause-controller/treasury-pause-controller.ts#L121-L145
+  - packages/sdk/test/provable/contracts/treasury-pause-controller/multisig-signatures.test.ts#L13-L611
+  - packages/sdk/test/provable/contracts/treasury-pause-controller/treasury-pause-controller.test.ts#L21-L659
+- group: flows
+  record_id: FLW-9D28A6D299
+  absent_before:
+  - owner_component_id
+  - steps[0].component_id
+  - steps[1].component_id
+  - steps[2].component_id
+  - steps[3].component_id
+  old:
+    steps:
+    - sequence: 1
+      operation: Owner enforces global pause and next-lifecycle timing.
+      behavior_id: BHV-5D3FCC7B93
+    - sequence: 2
+      operation: Owner debits requested amount.
+      behavior_id: BHV-5D3FCC7B93
+    - sequence: 3
+      operation: Proposal enforces APPROVED, recipient hash, and remaining amount-plus-bond
+        cap.
+      behavior_id: BHV-F2207732B4
+    - sequence: 4
+      operation: Proposal credits recipient and advances paidOutAmount; Owner emits
+        execution event.
+      behavior_id: BHV-F2207732B4
+  set:
+    owner_component_id: CMP-E155326DD2
+    steps:
+    - sequence: 1
+      operation: Owner enforces global pause and next-lifecycle timing.
+      behavior_id: BHV-5D3FCC7B93
+      component_id: CMP-E155326DD2
+    - sequence: 2
+      operation: Owner debits requested amount.
+      behavior_id: BHV-5D3FCC7B93
+      component_id: CMP-E155326DD2
+    - sequence: 3
+      operation: Proposal enforces APPROVED, recipient hash, and remaining amount-plus-bond
+        cap.
+      behavior_id: BHV-F2207732B4
+      component_id: CMP-5CAF19BDCD
+    - sequence: 4
+      operation: Proposal credits recipient and advances paidOutAmount; Owner emits
+        execution event.
+      behavior_id: BHV-F2207732B4
+      component_id: CMP-5CAF19BDCD
+  rationale: Current canonical component and behavior records with matching source
+    anchors identify the flow owner and the dominant implementation behavior for each
+    unchanged step; no operation, outcome, assertion, status, or effective conclusion
+    is changed.
+  evidence_ids:
+  - EVD-0E9360A4D5
+  - EVD-DD1C7DA36F
+  - EVD-10A0E2F6D5
+  - EVD-F2FC321D60
+  source_references:
+  - packages/sdk/src/provable/contracts/treasury-owner.ts#L421-L462
+  - packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts#L353-L384
+  - packages/sdk/test/integration/treasury-owner.test.ts#L704-L764
+- group: flows
+  record_id: FLW-6394A1B72B
+  absent_before:
+  - owner_component_id
+  - steps[0].component_id
+  - steps[1].component_id
+  - steps[2].component_id
+  - steps[3].component_id
+  - steps[4].component_id
+  old:
+    steps:
+    - sequence: 1
+      operation: Owner snapshots staking epoch hash and total currency.
+      behavior_id: BHV-5B1BD6B386
+    - sequence: 2
+      operation: Owner enforces proposal period and global unpaused state.
+      behavior_id: BHV-5095682725
+    - sequence: 3
+      operation: Containing transaction debits a bond source while Owner credits amount/10.
+      behavior_id: BHV-80247CE73D
+    - sequence: 4
+      operation: Signed proposal token account receives committed proposal state,
+        key, permissions, and URI.
+      behavior_id: BHV-80247CE73D
+    - sequence: 5
+      operation: Owner emits creation event with sender labeled as proposer.
+      behavior_id: BHV-5CBB373BE5
+  set:
+    owner_component_id: CMP-E155326DD2
+    steps:
+    - sequence: 1
+      operation: Owner snapshots staking epoch hash and total currency.
+      behavior_id: BHV-5B1BD6B386
+      component_id: CMP-E155326DD2
+    - sequence: 2
+      operation: Owner enforces proposal period and global unpaused state.
+      behavior_id: BHV-5095682725
+      component_id: CMP-E155326DD2
+    - sequence: 3
+      operation: Containing transaction debits a bond source while Owner credits amount/10.
+      behavior_id: BHV-80247CE73D
+      component_id: CMP-E155326DD2
+    - sequence: 4
+      operation: Signed proposal token account receives committed proposal state,
+        key, permissions, and URI.
+      behavior_id: BHV-80247CE73D
+      component_id: CMP-E155326DD2
+    - sequence: 5
+      operation: Owner emits creation event with sender labeled as proposer.
+      behavior_id: BHV-5CBB373BE5
+      component_id: CMP-834A30297A
+  rationale: Current canonical component and behavior records with matching source
+    anchors identify the flow owner and the dominant implementation behavior for each
+    unchanged step; no operation, outcome, assertion, status, or effective conclusion
+    is changed.
+  evidence_ids:
+  - EVD-E95EC38949
+  - EVD-9FC5B7AF30
+  - EVD-65B65019A1
+  - EVD-FB46967B48
+  - EVD-D0A9652ECB
+  - EVD-9B18A655A2
+  - EVD-9E30964FCB
+  - EVD-9352FDFD17
+  - EVD-0E9360A4D5
+  - EVD-DC4A9BA7C7
+  source_references:
+  - packages/sdk/src/provable/contracts/treasury-owner.ts#L97-L108
+  - packages/sdk/src/provable/contracts/treasury-owner.ts#L121-L184
+  - packages/sdk/src/provable/contracts/treasury-owner.ts#L191-L272
+  - packages/sdk/src/provable/events/treasury-proposal-events.ts#L4-L68
+  - packages/sdk/test/integration/treasury-owner.test.ts#L269-L427
+  - ".codebase-analysis/provable-92d90e3803a1/context/ZKSECURITY_AUDIT_INDEX.md#L1-L20"
+  - packages/sdk/src/provable/contracts/treasury-owner.ts#L51-L184
+  - packages/sdk/src/provable/contracts/treasury-owner.ts#L421-L462
+  - packages/sdk/test/provable/events/treasury-proposal-events.test.ts#L41-L212
+- group: flows
+  record_id: FLW-5AA543472A
+  absent_before:
+  - owner_component_id
+  - steps[0].component_id
+  - steps[1].component_id
+  - steps[2].component_id
+  old:
+    steps:
+    - sequence: 1
+      operation: Controller validates proposal-key-plus-nonce toggle and consumes
+        nonce.
+      behavior_id: BHV-10BA9AD71E
+    - sequence: 2
+      operation: Proposal toggles shared status without desired-state input.
+      behavior_id: BHV-8B6F3A639B
+    - sequence: 3
+      operation: Owner emits the caller-provided paused Bool.
+      behavior_id: BHV-8FA351E512
+  set:
+    owner_component_id: CMP-B6BB8BE661
+    steps:
+    - sequence: 1
+      operation: Controller validates proposal-key-plus-nonce toggle and consumes
+        nonce.
+      behavior_id: BHV-10BA9AD71E
+      component_id: CMP-B6BB8BE661
+    - sequence: 2
+      operation: Proposal toggles shared status without desired-state input.
+      behavior_id: BHV-8B6F3A639B
+      component_id: CMP-5CAF19BDCD
+    - sequence: 3
+      operation: Owner emits the caller-provided paused Bool.
+      behavior_id: BHV-8FA351E512
+      component_id: CMP-E155326DD2
+  rationale: Current canonical component and behavior records with matching source
+    anchors identify the flow owner and the dominant implementation behavior for each
+    unchanged step; no operation, outcome, assertion, status, or effective conclusion
+    is changed.
+  evidence_ids:
+  - EVD-4908C76CF8
+  - EVD-3FE5CD8A8A
+  - EVD-6665BB19D1
+  - EVD-278D27A176
+  - EVD-B42086D92E
+  - EVD-DC4A9BA7C7
+  - EVD-0E83AEA025
+  - EVD-11885CB1CE
+  source_references:
+  - packages/sdk/src/provable/contracts/treasury-pause-controller/treasury-pause-controller.ts#L195-L216
+  - packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts#L386-L397
+  - packages/sdk/src/provable/contracts/treasury-owner.ts#L464-L496
+  - packages/sdk/src/provable/contracts/treasury-pause-controller/multisig-signatures.ts#L22-L91
+  - packages/sdk/test/provable/events/treasury-proposal-events.test.ts#L41-L212
+- group: flows
+  record_id: FLW-5E24C8B8E4
+  absent_before:
+  - owner_component_id
+  - steps[0].component_id
+  - steps[1].component_id
+  - steps[2].component_id
+  - steps[3].component_id
+  old:
+    steps:
+    - sequence: 1
+      operation: Owner verifies both proofs and cooldown/global pause gates.
+      behavior_id: BHV-4866A87097
+    - sequence: 2
+      operation: Owner binds five action-history targets to current, found, non-initial,
+        unique proposal action states.
+      behavior_id: BHV-4866A87097
+    - sequence: 3
+      operation: Proposal re-verifies proofs and binds roots, indices, exhaustion,
+        action head, and Treasury Owner account snapshot.
+      behavior_id: BHV-1136BD4D08
+    - sequence: 4
+      operation: Proposal derives dynamic thresholds and stores outcome; Owner emits
+        weights and result.
+      behavior_id: BHV-A302A43C9F
+  set:
+    owner_component_id: CMP-E155326DD2
+    steps:
+    - sequence: 1
+      operation: Owner verifies both proofs and cooldown/global pause gates.
+      behavior_id: BHV-4866A87097
+      component_id: CMP-E155326DD2
+    - sequence: 2
+      operation: Owner binds five action-history targets to current, found, non-initial,
+        unique proposal action states.
+      behavior_id: BHV-4866A87097
+      component_id: CMP-E155326DD2
+    - sequence: 3
+      operation: Proposal re-verifies proofs and binds roots, indices, exhaustion,
+        action head, and Treasury Owner account snapshot.
+      behavior_id: BHV-1136BD4D08
+      component_id: CMP-5CAF19BDCD
+    - sequence: 4
+      operation: Proposal derives dynamic thresholds and stores outcome; Owner emits
+        weights and result.
+      behavior_id: BHV-A302A43C9F
+      component_id: CMP-5CAF19BDCD
+  rationale: Current canonical component and behavior records with matching source
+    anchors identify the flow owner and the dominant implementation behavior for each
+    unchanged step; no operation, outcome, assertion, status, or effective conclusion
+    is changed.
+  evidence_ids:
+  - EVD-5AED8D6498
+  - EVD-7E5AFA1EA1
+  - EVD-AA3D8A203C
+  - EVD-01AF09A7B3
+  - EVD-CFF488F119
+  - EVD-79754810F6
+  source_references:
+  - packages/sdk/src/provable/contracts/treasury-owner.ts#L320-L419
+  - packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts#L213-L351
+  - packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts#L164-L211
+  - packages/sdk/test/integration/treasury-owner.test.ts#L568-L702
+  - packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts#L213-L384
+- group: flows
+  record_id: FLW-A6B92A4E6D
+  absent_before:
+  - owner_component_id
+  - steps[0].component_id
+  - steps[1].component_id
+  - steps[2].component_id
+  old:
+    steps:
+    - sequence: 1
+      operation: Owner binds sender signature, pause state, lifecycle, and vote enum.
+      behavior_id: BHV-8E9F5C3ECE
+    - sequence: 2
+      operation: Proposal requires non-PAUSED and dispatches VoteAction.
+      behavior_id: BHV-9E1B7D1BA1
+    - sequence: 3
+      operation: Owner emits event and requires the voter key signature through a
+        signed account update.
+      behavior_id: BHV-8E9F5C3ECE
+  set:
+    owner_component_id: CMP-E155326DD2
+    steps:
+    - sequence: 1
+      operation: Owner binds sender signature, pause state, lifecycle, and vote enum.
+      behavior_id: BHV-8E9F5C3ECE
+      component_id: CMP-E155326DD2
+    - sequence: 2
+      operation: Proposal requires non-PAUSED and dispatches VoteAction.
+      behavior_id: BHV-9E1B7D1BA1
+      component_id: CMP-5CAF19BDCD
+    - sequence: 3
+      operation: Owner emits event and requires the voter key signature through a
+        signed account update.
+      behavior_id: BHV-8E9F5C3ECE
+      component_id: CMP-E155326DD2
+  rationale: Current canonical component and behavior records with matching source
+    anchors identify the flow owner and the dominant implementation behavior for each
+    unchanged step; no operation, outcome, assertion, status, or effective conclusion
+    is changed.
+  evidence_ids:
+  - EVD-2598ABF031
+  - EVD-9D0B8E0BBB
+  - EVD-FB81E8BDF9
+  - EVD-A4CE32FE5A
+  - EVD-763D14DE77
+  - EVD-7847A27B4A
+  source_references:
+  - packages/sdk/src/provable/contracts/treasury-owner.ts#L274-L318
+  - packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts#L81-L96
+  - packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts#L45-L114
+  - packages/sdk/test/integration/treasury-owner.test.ts#L493-L564
+- group: flows
+  record_id: FLW-53B4410963
+  absent_before:
+  - owner_component_id
+  - steps[0].component_id
+  - steps[0].behavior_id
+  - steps[1].component_id
+  - steps[1].behavior_id
+  - steps[2].component_id
+  - steps[2].behavior_id
+  old:
+    steps:
+    - sequence: 1
+      operation: Merge adjacent digest/merged proofs using fixed root, index adjacency,
+        and voting-root handoff.
+      reads:
+      - SelfProofs
+      writes:
+      - merged proof output
+      failure_edges:
+      - proof/continuity mismatch
+    - sequence: 2
+      operation: Verify the aggregate proof and bind outer public input to its input.
+      reads:
+      - aggregate proof
+      writes: []
+      failure_edges:
+      - verification/input mismatch
+    - sequence: 3
+      operation: Witness Account.empty at terminal index plus one under the staking
+        root.
+      reads:
+      - host staking path
+      writes:
+      - exhausted=true output
+      failure_edges:
+      - root/index mismatch
+  set:
+    owner_component_id: CMP-874E479BA1
+    steps:
+    - sequence: 1
+      operation: Merge adjacent digest/merged proofs using fixed root, index adjacency,
+        and voting-root handoff.
+      reads:
+      - SelfProofs
+      writes:
+      - merged proof output
+      failure_edges:
+      - proof/continuity mismatch
+      component_id: CMP-874E479BA1
+      behavior_id: BHV-17E3A4CB8C
+    - sequence: 2
+      operation: Verify the aggregate proof and bind outer public input to its input.
+      reads:
+      - aggregate proof
+      writes: []
+      failure_edges:
+      - verification/input mismatch
+      component_id: CMP-874E479BA1
+      behavior_id: BHV-17E3A4CB8C
+    - sequence: 3
+      operation: Witness Account.empty at terminal index plus one under the staking
+        root.
+      reads:
+      - host staking path
+      writes:
+      - exhausted=true output
+      failure_edges:
+      - root/index mismatch
+      component_id: CMP-874E479BA1
+      behavior_id: BHV-E7ECC5B6FC
+  rationale: Current canonical component and behavior records with matching source
+    anchors identify the flow owner and the dominant implementation behavior for each
+    unchanged step; no operation, outcome, assertion, status, or effective conclusion
+    is changed.
+  evidence_ids:
+  - EVD-B7C40C0F6F
+  - EVD-C71179133B
+  - EVD-67B2EF1C35
+  - EVD-2720E90D33
+  - EVD-7BD50662A0
+  source_references:
+  - packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts#L148-L190
+  - packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts#L148-L191
+  - packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts#L83-L143
+  - packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts#L83-L144
+  - packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts#L213-L337
+  - packages/sdk/src/provable/contracts/treasury-owner.ts#L320-L400
+- group: flows
+  record_id: FLW-7DA083B071
+  absent_before:
+  - owner_component_id
+  - steps[0].component_id
+  - steps[0].behavior_id
+  - steps[1].component_id
+  - steps[1].behavior_id
+  - steps[2].component_id
+  - steps[2].behavior_id
+  - steps[3].component_id
+  - steps[3].behavior_id
+  old:
+    steps:
+    - sequence: 1
+      operation: For each account, witness height-36 path and bind account hash to
+        current consecutive index under fixed root.
+      reads:
+      - private Account
+      - host staking path
+      writes: []
+      failure_edges:
+      - staking root/index mismatch
+    - sequence: 2
+      operation: Select account.delegate; witness delegate voting account/path and
+        bind old leaf to rolling root plus Poseidon(delegate) index.
+      reads:
+      - Account.delegate
+      - host voting ledger
+      writes: []
+      failure_edges:
+      - voting root/index mismatch
+    - sequence: 3
+      operation: Add account.balance, derive updated voting root, and invoke host
+        record/tree writes.
+      reads:
+      - balances
+      writes:
+      - rolling voting root
+      - host voting ledger
+      failure_edges:
+      - UInt64 arithmetic
+      - partial host write
+    - sequence: 4
+      operation: Increment index and repeat exactly five times.
+      reads:
+      - index
+      writes:
+      - index
+      failure_edges:
+      - UInt64 arithmetic
+  set:
+    owner_component_id: CMP-874E479BA1
+    steps:
+    - sequence: 1
+      operation: For each account, witness height-36 path and bind account hash to
+        current consecutive index under fixed root.
+      reads:
+      - private Account
+      - host staking path
+      writes: []
+      failure_edges:
+      - staking root/index mismatch
+      component_id: CMP-874E479BA1
+      behavior_id: BHV-C4F9C6CEE0
+    - sequence: 2
+      operation: Select account.delegate; witness delegate voting account/path and
+        bind old leaf to rolling root plus Poseidon(delegate) index.
+      reads:
+      - Account.delegate
+      - host voting ledger
+      writes: []
+      failure_edges:
+      - voting root/index mismatch
+      component_id: CMP-874E479BA1
+      behavior_id: BHV-C01A568AAE
+    - sequence: 3
+      operation: Add account.balance, derive updated voting root, and invoke host
+        record/tree writes.
+      reads:
+      - balances
+      writes:
+      - rolling voting root
+      - host voting ledger
+      failure_edges:
+      - UInt64 arithmetic
+      - partial host write
+      component_id: CMP-874E479BA1
+      behavior_id: BHV-C01A568AAE
+    - sequence: 4
+      operation: Increment index and repeat exactly five times.
+      reads:
+      - index
+      writes:
+      - index
+      failure_edges:
+      - UInt64 arithmetic
+      component_id: CMP-874E479BA1
+      behavior_id: BHV-C4F9C6CEE0
+  rationale: Current canonical component and behavior records with matching source
+    anchors identify the flow owner and the dominant implementation behavior for each
+    unchanged step; no operation, outcome, assertion, status, or effective conclusion
+    is changed.
+  evidence_ids:
+  - EVD-177476A23F
+  - EVD-B30136F272
+  - EVD-C70801D35C
+  source_references:
+  - packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts#L195-L337
+  - packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts#L195-L338
+  - packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts#L239-L302
+  - ".codebase-analysis/provable-92d90e3803a1/context/RFC_EXTRACT.md#L7-L10"
+- group: flows
+  record_id: FLW-9BB4E99B75
+  absent_before:
+  - owner_component_id
+  - steps[0].component_id
+  - steps[0].behavior_id
+  - steps[1].component_id
+  - steps[1].behavior_id
+  - steps[2].component_id
+  - steps[2].behavior_id
+  old:
+    steps:
+    - sequence: 1
+      operation: Verify both proofs and bind caller input to proof1 input by Poseidon
+        hash.
+      reads:
+      - proof1
+      - proof2
+      - publicInput
+      writes: []
+      failure_edges:
+      - verification/input mismatch
+    - sequence: 2
+      operation: Bind common voting root and action/nullifier adjacency.
+      reads:
+      - proof inputs/outputs
+      writes: []
+      failure_edges:
+      - continuity mismatch
+    - sequence: 3
+      operation: Bind target hashes, sum UInt64 tallies, and combine found flags.
+      reads:
+      - proof outputs
+      writes:
+      - merged output
+      failure_edges:
+      - history mismatch
+      - UInt64 arithmetic
+  set:
+    owner_component_id: CMP-0F476A460D
+    steps:
+    - sequence: 1
+      operation: Verify both proofs and bind caller input to proof1 input by Poseidon
+        hash.
+      reads:
+      - proof1
+      - proof2
+      - publicInput
+      writes: []
+      failure_edges:
+      - verification/input mismatch
+      component_id: CMP-0F476A460D
+      behavior_id: BHV-67153EA362
+    - sequence: 2
+      operation: Bind common voting root and action/nullifier adjacency.
+      reads:
+      - proof inputs/outputs
+      writes: []
+      failure_edges:
+      - continuity mismatch
+      component_id: CMP-0F476A460D
+      behavior_id: BHV-67153EA362
+    - sequence: 3
+      operation: Bind target hashes, sum UInt64 tallies, and combine found flags.
+      reads:
+      - proof outputs
+      writes:
+      - merged output
+      failure_edges:
+      - history mismatch
+      - UInt64 arithmetic
+      component_id: CMP-0F476A460D
+      behavior_id: BHV-67153EA362
+  rationale: Current canonical component and behavior records with matching source
+    anchors identify the flow owner and the dominant implementation behavior for each
+    unchanged step; no operation, outcome, assertion, status, or effective conclusion
+    is changed.
+  evidence_ids:
+  - EVD-4F2874E860
+  - EVD-CF0DB0323E
+  source_references:
+  - packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts#L333-L417
+- group: flows
+  record_id: FLW-BFD5C6D535
+  absent_before:
+  - owner_component_id
+  - steps[0].component_id
+  - steps[0].behavior_id
+  - steps[1].component_id
+  - steps[1].behavior_id
+  - steps[2].component_id
+  - steps[2].behavior_id
+  - steps[3].component_id
+  - steps[3].behavior_id
+  - steps[4].component_id
+  - steps[4].behavior_id
+  - steps[5].component_id
+  - steps[5].behavior_id
+  old:
+    steps:
+    - sequence: 1
+      operation: Initialize rolling roots, zero tallies, and false target flags from
+        public input.
+      reads:
+      - publicInput
+      writes:
+      - local rolling values
+      failure_edges: []
+    - sequence: 2
+      operation: For each action, validate enum and classify exact dummy padding.
+      reads:
+      - voteAction
+      writes:
+      - isDummyVoteAction
+      failure_edges:
+      - invalid vote
+    - sequence: 3
+      operation: Witness voting account/path and constrain root plus Poseidon(publicKey)
+        index.
+      reads:
+      - host voting ledger
+      writes: []
+      failure_edges:
+      - wrong root/index
+      - host error
+    - sequence: 4
+      operation: Witness nullifier/path, constrain rolling root/index, and compute
+        conditional true leaf.
+      reads:
+      - host nullifier ledger
+      - toNullifierRoot
+      writes:
+      - toNullifierRoot
+      failure_edges:
+      - wrong root/index
+      - host error
+    - sequence: 5
+      operation: Attempt host nullifier record/tree persistence for non-dummy action.
+      reads:
+      - isDummyVoteAction
+      writes:
+      - host nullifier state
+      failure_edges:
+      - partial write
+      - host error
+    - sequence: 6
+      operation: Add selected weight, append action commitment, and update target
+        flags.
+      reads:
+      - vote
+      - balance
+      - prior nullifier
+      writes:
+      - tallies
+      - toActionsHash
+      - history
+      failure_edges:
+      - UInt64 arithmetic
+  set:
+    owner_component_id: CMP-0F476A460D
+    steps:
+    - sequence: 1
+      operation: Initialize rolling roots, zero tallies, and false target flags from
+        public input.
+      reads:
+      - publicInput
+      writes:
+      - local rolling values
+      failure_edges: []
+      component_id: CMP-0F476A460D
+      behavior_id: BHV-50C1B246E0
+    - sequence: 2
+      operation: For each action, validate enum and classify exact dummy padding.
+      reads:
+      - voteAction
+      writes:
+      - isDummyVoteAction
+      failure_edges:
+      - invalid vote
+      component_id: CMP-0F476A460D
+      behavior_id: BHV-CEE91EC6D9
+    - sequence: 3
+      operation: Witness voting account/path and constrain root plus Poseidon(publicKey)
+        index.
+      reads:
+      - host voting ledger
+      writes: []
+      failure_edges:
+      - wrong root/index
+      - host error
+      component_id: CMP-0F476A460D
+      behavior_id: BHV-E79288F8DA
+    - sequence: 4
+      operation: Witness nullifier/path, constrain rolling root/index, and compute
+        conditional true leaf.
+      reads:
+      - host nullifier ledger
+      - toNullifierRoot
+      writes:
+      - toNullifierRoot
+      failure_edges:
+      - wrong root/index
+      - host error
+      component_id: CMP-0F476A460D
+      behavior_id: BHV-141ED40E5D
+    - sequence: 5
+      operation: Attempt host nullifier record/tree persistence for non-dummy action.
+      reads:
+      - isDummyVoteAction
+      writes:
+      - host nullifier state
+      failure_edges:
+      - partial write
+      - host error
+      component_id: CMP-0F476A460D
+      behavior_id: BHV-141ED40E5D
+    - sequence: 6
+      operation: Add selected weight, append action commitment, and update target
+        flags.
+      reads:
+      - vote
+      - balance
+      - prior nullifier
+      writes:
+      - tallies
+      - toActionsHash
+      - history
+      failure_edges:
+      - UInt64 arithmetic
+      component_id: CMP-0F476A460D
+      behavior_id: BHV-3946C60752
+  rationale: Current canonical component and behavior records with matching source
+    anchors identify the flow owner and the dominant implementation behavior for each
+    unchanged step; no operation, outcome, assertion, status, or effective conclusion
+    is changed.
+  evidence_ids:
+  - EVD-D70E747767
+  - EVD-810D58B5D2
+  - EVD-D43C7ED7D0
+  - EVD-C70801D35C
+  - EVD-3CEBE6B022
+  source_references:
+  - packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts#L426-L639
+  - packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts#L45-L96
+  - packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts#L459-L505
+  - packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts#L507-L581
+  - packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts#L601-L626
+  - packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts#L30-L315
+  - ".codebase-analysis/provable-92d90e3803a1/context/RFC_EXTRACT.md#L7-L10"
+  - packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts#L243-L266
+  - packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts#L371-L404
+coverage_changes:
+- path: coverage.source.by_significance
+  old:
+    MEANINGFUL: 189
+    INERT_OR_TYPE_ONLY: 5
+    OUT_OF_SCOPE: 26
+  set:
+    MEANINGFUL: 197
+    INERT_OR_TYPE_ONLY: 5
+    OUT_OF_SCOPE: 18
+  rationale: Eight EXPANDED_SCOPE test file records move from OUT_OF_SCOPE to MEANINGFUL;
+    no other source significance changes.
+- path: coverage.source.scope_role_counts
+  absent_before: true
+  set:
+    PRIMARY: 12
+    EXPANDED_SCOPE: 8
+    READ_ONLY_CONTEXT: 18
+  rationale: 'The scope manifest contains three distinct universes that must remain
+    explicit: 12 PRIMARY, 8 EXPANDED_SCOPE, and 18 READ_ONLY_CONTEXT inputs.'
+- path: coverage.source.analyzed_primary_and_expanded_inputs
+  absent_before: true
+  set: 20
+  rationale: Validator-defined analyzed source/test inputs are PRIMARY plus EXPANDED_SCOPE
+    only.
+- path: coverage.source.read_only_context_inputs
+  absent_before: true
+  set: 18
+  rationale: READ_ONLY_CONTEXT inputs are hash-accounted context and are not conflated
+    with the 20 analyzed PRIMARY plus EXPANDED_SCOPE files.
+- path: coverage.source.current_source_records
+  absent_before: true
+  set: 220
+  rationale: The corrected model contains 220 CURRENT source inventory records across
+    all kinds.
+- path: coverage.source.current_kind_file_records
+  absent_before: true
+  set: 35
+  rationale: The corrected model contains 35 CURRENT kind=file inventory records,
+    including context file records beyond the validator-defined analyzed universe.
+- path: coverage.source.current_kind_configuration_records
+  absent_before: true
+  set: 3
+  rationale: The corrected model contains 3 CURRENT kind=configuration inventory records.
+- path: coverage.source.current_non_file_non_configuration_records
+  absent_before: true
+  set: 182
+  rationale: The corrected model contains 182 CURRENT symbol/site records requiring
+    canonical file parents.
+unresolved:
+- matter: runtime_and_proof_assurance
+  affected_ids: []
+  status: INTENTIONALLY_UNRESOLVED
+  reason: No target TypeScript, repository tests, builds, proof compilation, proof
+    generation, proof verification, or deployed behavior was executed.
+validation:
+  status: PASS
+  yaml_generation: PASS
+  input_hashes_match_work_unit: true
+  canonical_id_resolution:
+    changed_record_ids: 210
+    unknown_changed_record_ids: 0
+    unknown_set_component_ids: 0
+    unknown_set_behavior_ids: 0
+    unknown_evidence_ids: 0
+  old_value_checks:
+    record_old_values_deep_equal: true
+    new_record_fields_confirmed_absent: true
+    new_coverage_fields_confirmed_absent: true
+  counts:
+    total_record_changes: 210
+    promoted_expanded_scope_test_files: 8
+    source_parent_assignments: 182
+    flow_records_attributed: 20
+    flow_steps_attributed: 75
+    owner_component_ids_added: 20
+    step_component_ids_added: 75
+    step_behavior_ids_added: 50
+    step_behavior_ids_preserved: 25
+    coverage_changes: 8
+    analyzed_primary_and_expanded_inputs: 20
+    read_only_context_inputs: 18
+    current_source_records: 220
+    current_kind_file_records: 35
+    current_kind_configuration_records: 3
+    current_non_file_non_configuration_records: 182
+  source_parent_validation:
+    same_path_unique_parent_assignments: 182
+    unresolved_assignments: 0
+  semantic_immutability:
+    before_sha256: e1e5a420da801340d0e3f0a4da1b8d347b28904754a8f3e3ef5801a3915f3cce
+    simulated_after_sha256: e1e5a420da801340d0e3f0a4da1b8d347b28904754a8f3e3ef5801a3915f3cce
+    deep_equal: true
+    assertion_or_effective_conclusion_delta: 0
+  execution_constraints:
+    target_typescript_executed: false
+    repository_tests_executed: false
+    repository_builds_executed: false
+    proofs_compiled_generated_or_verified: false

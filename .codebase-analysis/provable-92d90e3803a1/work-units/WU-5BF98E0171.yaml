@@ -1,0 +1,22 @@
+work_unit:
+  id: "WU-5BF98E0171"
+  stable_key: "work-unit:semantic:zk-programs"
+  role: "semantic"
+  pass: "PASS_1"
+  revision: "1e27b1aea88f5ea2764db96e4b337b24fe6dbeb3"
+  primary_paths: []
+  read_only_context_paths:
+    - "packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts"
+    - "packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts"
+    - "packages/sdk/src/provable/account.ts"
+    - "packages/sdk/src/provable/voting-account.ts"
+    - "packages/sdk/src/provable/merkle-tree/prefixed-merkle-tree.ts"
+    - "evidence/reconnaissance/WU-BECB8661B0.yaml"
+    - "evidence/reconnaissance/WU-8B484B3509.yaml"
+  owned_record_ids: []
+  owned_stable_key_prefixes: ["behavior:zk-programs:", "flow:zk-programs:", "clause:zk-programs:", "invariant:zk-programs:", "finding:zk-programs:"]
+  questions:
+    - "What relations are actually constrained by each proof method, and what remains host-only?"
+    - "What continuity, commitment, replay, range, batching, liveness, and producer-consumer properties are statically visible?"
+  output: "evidence/semantic/WU-5BF98E0171.yaml"
+  status: "COMPLETE"

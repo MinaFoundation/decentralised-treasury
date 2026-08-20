@@ -1,0 +1,113 @@
+schema_version: 1
+run_id: codebase-analysis-provable-92d90e3803a1
+revision: 1e27b1aea88f5ea2764db96e4b337b24fe6dbeb3
+scope_hash: f40d76b91ec3cd8805ecdc7bebba8d43b8f317842639a7799738c37569119ab1
+phase: COMPLETE
+status: COMPLETE
+completed_phases:
+  - PHASE_0
+  - PASS_1_RECONNAISSANCE
+  - PASS_1_LOCAL_SEMANTICS
+  - PASS_1_CHALLENGE
+  - BRIDGE_PHASE_4
+  - PASS_2_CONTEXTUAL_REVIEW
+  - PASS_2_ORTHOGONAL_CHALLENGE
+  - TRACEABILITY_CORRECTION
+  - CONSOLIDATE_AND_PUBLISH
+stale_work_units: []
+stale_artifacts:
+  - path: model/pass-2-contextual.yaml
+    reason: Interim Phase-5 merge predates corrected non-self context references,
+      current gap references, and publication-only consolidation metadata.
+      Preserved as run history; do not publish from it.
+topology:
+  worker_count: 3
+  hard_max_active_agents_including_orchestrator: 4
+  active_work_units: []
+counts:
+  reconnaissance_bundles: 3
+  primary_files: 12
+  context_files: 26
+  source_records_proposed: 220
+  test_cases_mapped: 95
+  rfc_requirements_proposed: 30
+  prior_audit_findings_extracted: 28
+  semantic_bundles: 3
+  challenge_bundles: 3
+  pass_1_current_semantic_records: 679
+  contextual_records_assigned: 679
+  contextual_records_reviewed: 679
+  contextual_dispositions:
+    CONFIRMED: 470
+    REFINED: 145
+    UNRESOLVED: 64
+  phase_6_review_bundles: 3
+  phase_7_correction_bundles: 4
+  phase_7_corrected_records: 503
+  phase_7_corrected_fields: 1015
+  final_current_semantic_records: 679
+  final_components: 11
+  final_behaviors: 50
+  final_flows: 20
+  final_invariants: 43
+  final_test_suites: 8
+  final_test_cases: 95
+  current_actionable_findings: 38
+  resolved_or_remediated_findings: 11
+  open_or_unresolved_gaps: 37
+  explicit_unresolved_records: 19
+  publication_markdown_files: 51
+conflicts:
+  - kind: PHASE_6_DISSENT_PRESERVED
+    status: AUTHOR_REVIEW_REQUIRED
+    summary: The orthogonal reviewers preserved policy unknowns, assurance limits,
+      and the security reviewer severity dissent instead of silently rewriting
+      Pass-2 records.
+    record_ids:
+      - FND-4C6DF9502F
+      - GAP-FE43BADC05
+      - THR-B55C2C8D2F
+      - ASM-03D9CA273D
+scope_expansion:
+  reason: Direct ledger interfaces were added as dependency context; eight test
+    files were promoted to immutable expanded scope before Pass 1 freeze so
+    semantic test coverage can reconcile.
+  added_context_files: 4
+  promoted_test_files: 8
+source_change_detection: MATCH
+model_snapshots:
+  pass_1_sha256: 1baa122bc91838a651da0116040b290de56f49b90e1c8688ba3712e0db7c6213
+  context_sha256: b08ad4cfef37e8a2f19bb2dd46d69763312a48e00e6204e7f8ec30a291afdfd1
+  corrected_pass_2_path: model/pass-2-contextual-corrected.yaml
+  corrected_pass_2_sha256: 645101d2946d908ab1e200b78048e56957cdd63daa1f872c81897d1e83618897
+  final_model_path: model/codebase.yaml
+  final_model_sha256: 3437d2a4e6fba61d096de77fed7631c66cd3b6ef671ae709aed760be224be8a4
+  phase_6_review_bundle_count: 3
+next_action: Review publication/AUTHOR_REVIEW.md, resolve the prioritized policy
+  and assurance questions, and use the YAML model as the traceable baseline for
+  separately authorized tests and runtime assurance.
+publication:
+  path: publication
+  markdown_files: 51
+  language_standard: ASD-STE100 Simplified Technical English, Issue 9
+  style_status: APPLIED_WITH_EXCEPTIONS
+  style_certification: NOT_CERTIFIED
+  authored_reader_prose_checks: NO_VIOLATIONS
+  canonical_projection_exception_occurrences: 314
+  canonical_projection_distinct_sentences: 120
+  generator: .agents/skills/codebase-analysis/scripts/generate-publication.mts
+  comprehensive_specification: publication/SPECIFICATION.md
+  executive_summary: publication/SUMMARY.md
+  author_review: publication/AUTHOR_REVIEW.md
+  local_server_command: node
+    .agents/skills/codebase-analysis/scripts/preview-publication.mts
+    .codebase-analysis/provable-92d90e3803a1/publication
+  vscode_preview: "Open a Markdown page and run Markdown: Open Preview; Mermaid is
+    supported natively in current VS Code."
+validation:
+  artifact_validator: .agents/skills/codebase-analysis/scripts/validate-run.test.mts
+  exact_command: CODEBASE_ANALYSIS_RUN=../../.codebase-analysis/provable-92d90e3803a1
+    NODE_NO_WARNINGS=1 node --loader ts-node/esm --test --test-reporter tap
+    ../../.agents/skills/codebase-analysis/scripts/validate-run.test.mts
+  result_authority: MANIFEST.yaml
+completed_utc: 2026-08-14T11:31:53Z

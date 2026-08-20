@@ -1,0 +1,17 @@
+work_unit:
+  id: "WU-BECB8661B0"
+  stable_key: "work-unit:business:remote-authorities"
+  role: "business"
+  pass: "PASS_1"
+  revision: "1e27b1aea88f5ea2764db96e4b337b24fe6dbeb3"
+  primary_paths: []
+  read_only_context_paths:
+    - ".codebase-analysis/provable-92d90e3803a1/context/RFC_EXTRACT.md"
+    - ".codebase-analysis/provable-92d90e3803a1/context/ZKSECURITY_AUDIT_INDEX.md"
+  owned_record_ids: []
+  owned_stable_key_prefixes: ["requirement:", "business-rule:", "finding:prior-audit:"]
+  questions:
+    - "Which RFC statements are current, optional, deferred, disputed, or parameterized?"
+    - "How do all 28 audit items map to the current revision?"
+  output: "evidence/reconnaissance/WU-BECB8661B0.yaml"
+  status: "COMPLETE"

@@ -1,0 +1,23 @@
+work_unit:
+  id: "WU-8AE64E3FB2"
+  stable_key: "work-unit:phase-7:validator-schema-closure"
+  role: "challenge"
+  pass: "PASS_2"
+  revision: "1e27b1aea88f5ea2764db96e4b337b24fe6dbeb3"
+  scope_hash: "f40d76b91ec3cd8805ecdc7bebba8d43b8f317842639a7799738c37569119ab1"
+  pass_1_sha256: "1baa122bc91838a651da0116040b290de56f49b90e1c8688ba3712e0db7c6213"
+  context_sha256: "b08ad4cfef37e8a2f19bb2dd46d69763312a48e00e6204e7f8ec30a291afdfd1"
+  pass_2_sha256: "645101d2946d908ab1e200b78048e56957cdd63daa1f872c81897d1e83618897"
+  primary_paths: []
+  read_only_context_paths: []
+  owned_record_ids: []
+  owned_stable_key_prefixes: []
+  correction_domains:
+    - "assumption_affected_record_field_normalization"
+    - "relation_type_field_normalization"
+  inputs:
+    model: "model/phase-6-integrated.yaml"
+    validator_evidence: "artifact-only validation failure; target code was not executed"
+    scope: "SCOPE.yaml"
+  output: "evidence/corrections/WU-8AE64E3FB2.yaml"
+  status: "COMPLETE"

@@ -1,0 +1,2076 @@
+bundle:
+  schema_version: 1
+  work_unit: WU-C72BE604E8
+  revision: 1e27b1aea88f5ea2764db96e4b337b24fe6dbeb3
+  scope_hash: f40d76b91ec3cd8805ecdc7bebba8d43b8f317842639a7799738c37569119ab1
+  pass_1_sha256: 1baa122bc91838a651da0116040b290de56f49b90e1c8688ba3712e0db7c6213
+  context_sha256: b08ad4cfef37e8a2f19bb2dd46d69763312a48e00e6204e7f8ec30a291afdfd1
+  role: contextual
+  ownership:
+    primary_paths: []
+    record_ids:
+      - API-1889CE2CD1
+      - API-2E2E88515C
+      - API-3E2D8706B3
+      - API-58119694A5
+      - API-5E63FB46F2
+      - API-702CAD321E
+      - API-91F8CB9F4E
+      - API-98891BC765
+      - API-C8E2E47556
+      - API-E777547D48
+      - API-FD2A8AB499
+      - API-FD75421927
+      - BHV-08FB416CF3
+      - BHV-0D6A8D760E
+      - BHV-0EED4FB2BD
+      - BHV-10BA9AD71E
+      - BHV-1136BD4D08
+      - BHV-141ED40E5D
+      - BHV-17E3A4CB8C
+      - BHV-1FC418499A
+      - BHV-3493B522BB
+      - BHV-3946C60752
+      - BHV-44F30E27C0
+      - BHV-4866A87097
+      - BHV-4EC84F351D
+      - BHV-5095682725
+      - BHV-50C1B246E0
+      - BHV-5B1BD6B386
+      - BHV-5CBB373BE5
+      - BHV-5D3FCC7B93
+      - BHV-6214513169
+      - BHV-67153EA362
+      - BHV-761186E23C
+      - BHV-80247CE73D
+      - BHV-872BB5A5F8
+      - BHV-8786B10BA6
+      - BHV-8B6F3A639B
+      - BHV-8E9F5C3ECE
+      - BHV-8ED0438CC8
+      - BHV-8FA351E512
+      - BHV-9B695F3AF8
+      - BHV-9E1B7D1BA1
+      - BHV-9E36CCC678
+      - BHV-A302A43C9F
+      - BHV-ABB579E6D2
+      - BHV-B377C55F96
+      - BHV-B919E9DAF9
+      - BHV-BAB5A8FD7C
+      - BHV-C0141CC000
+      - BHV-C01A568AAE
+      - BHV-C4F9C6CEE0
+      - BHV-C881A8957C
+      - BHV-CB4CCBE337
+      - BHV-CC8CE33239
+      - BHV-CEE91EC6D9
+      - BHV-CFC00681B8
+      - BHV-DAE783F632
+      - BHV-DDC0A35072
+      - BHV-E79288F8DA
+      - BHV-E7ECC5B6FC
+      - BHV-F2207732B4
+      - BHV-F898CD867A
+      - BR-214DBEB50D
+      - BR-3A3926003F
+      - BR-4CC5D3E076
+      - BR-8EBBA5B636
+      - BR-B122F86EA0
+      - BR-BE13F1CD73
+      - BR-BEF061F449
+      - CMP-0F476A460D
+      - CMP-2890255AE1
+      - CMP-31D3990A1F
+      - CMP-49180D7623
+      - CMP-5CAF19BDCD
+      - CMP-7CC27EFA43
+      - CMP-7DB1B15B38
+      - CMP-834A30297A
+      - CMP-874E479BA1
+      - CMP-B6BB8BE661
+      - CMP-E155326DD2
+      - FLW-21AF7F4E4D
+      - FLW-2F560AE009
+      - FLW-53B4410963
+      - FLW-5AA543472A
+      - FLW-5C8E5E0DE3
+      - FLW-5E24C8B8E4
+      - FLW-6394A1B72B
+      - FLW-745B097927
+      - FLW-7DA083B071
+      - FLW-802D71B91D
+      - FLW-9BA4D696D1
+      - FLW-9BB4E99B75
+      - FLW-9D28A6D299
+      - FLW-A565B35EC6
+      - FLW-A6B92A4E6D
+      - FLW-BEFDEF1197
+      - FLW-BFD5C6D535
+      - FLW-E60ABD1745
+      - FLW-FB5CAECCAD
+      - FLW-FD2B1F4966
+      - REQ-12FA8872CA
+      - REQ-15F6A20397
+      - REQ-1E02AF2B34
+      - REQ-1EEDB7A733
+      - REQ-1EEFCCC541
+      - REQ-230AF0D420
+      - REQ-3E7C685492
+      - REQ-4F1B35FCAA
+      - REQ-529C5F460D
+      - REQ-583E087F5C
+      - REQ-632DB8C787
+      - REQ-740285CD08
+      - REQ-74C4827C5B
+      - REQ-80815948D4
+      - REQ-8671471176
+      - REQ-87F314C527
+      - REQ-8AC636D92F
+      - REQ-8BFD766005
+      - REQ-948F2AA498
+      - REQ-989D12F5D3
+      - REQ-998DF345BB
+      - REQ-9DEF6918CA
+      - REQ-AFB190A0FA
+      - REQ-B3FFF31BC9
+      - REQ-B5E5D97336
+      - REQ-D100BF5A33
+      - REQ-E7F4E1ECAD
+      - REQ-EAE9049742
+      - REQ-F8D28DBFF5
+      - REQ-FBC7A8913A
+  assumptions: []
+  observations:
+    - Reviewed exactly 130 owned CURRENT Pass-1 records against complete context, user evidence, raw source anchors, and static test expectations.
+    - Intent, expectation, implementation, and unresolved runtime or deployment behavior remain distinct.
+    - No disposition claims tests passed, proofs are sound, or deployment is correct.
+  proposed_records: {}
+  proposed_relations: []
+  limitations:
+    - Static review only; target code, tests, builds, proofs, compilers, chains, and application modules were not executed.
+    - The prior audit applies to revision f2c93cfdb27836b156769ca4eaeca7d5f01fa8b5 and does not certify the analyzed revision.
+    - Protocol slot semantics, atomicity, proof backend, cryptography, deployment, host persistence, capacity, and liveness remain unresolved where identified.
+contextual_reviews:
+  - record_id: API-1889CE2CD1
+    disposition: CONFIRMED
+    pass_1_record_ids:
+      - API-1889CE2CD1
+    context_ids:
+      - CMP-7CC27EFA43
+    user_context_evidence_ids: []
+    reviewer_work_unit_id: WU-C72BE604E8
+    rationale: The Pass-1 apis interpretation for Account model module exports remains consistent with raw anchors and complete context; confirmation is static and does not claim runtime, deployment, or proof-system assurance.
+    assumptions_added: []
+    assumptions_removed: []
+    global_consequences:
+      - The interpretation remains subject to composed trust, configuration, and availability boundaries.
+    replacement_ids: []
+  - record_id: API-2E2E88515C
+    disposition: CONFIRMED
+    pass_1_record_ids:
+      - API-2E2E88515C
+    context_ids:
+      - CMP-7CC27EFA43
+    user_context_evidence_ids: []
+    reviewer_work_unit_id: WU-C72BE604E8
+    rationale: The Pass-1 apis interpretation for VoteReducer ZkProgram remains consistent with raw anchors and complete context; confirmation is static and does not claim runtime, deployment, or proof-system assurance.
+    assumptions_added: []
+    assumptions_removed: []
+    global_consequences:
+      - The interpretation remains subject to composed trust, configuration, and availability boundaries.
+    replacement_ids: []
+  - record_id: API-3E2D8706B3
+    disposition: CONFIRMED
+    pass_1_record_ids:
+      - API-3E2D8706B3
+    context_ids:
+      - CMP-7CC27EFA43
+    user_context_evidence_ids: []
+    reviewer_work_unit_id: WU-C72BE604E8
+    rationale: The Pass-1 apis interpretation for TreasuryOwnerSmartContract callable surface remains consistent with raw anchors and complete context; confirmation is static and does not claim runtime, deployment, or proof-system assurance.
+    assumptions_added: []
+    assumptions_removed: []
+    global_consequences:
+      - The interpretation remains subject to composed trust, configuration, and availability boundaries.
+    replacement_ids: []
+  - record_id: API-58119694A5
+    disposition: CONFIRMED
+    pass_1_record_ids:
+      - API-58119694A5
+    context_ids:
+      - CMP-7CC27EFA43
+    user_context_evidence_ids: []
+    reviewer_work_unit_id: WU-C72BE604E8
+    rationale: The Pass-1 apis interpretation for Multisig message and verification surface remains consistent with raw anchors and complete context; confirmation is static and does not claim runtime, deployment, or proof-system assurance.
+    assumptions_added: []
+    assumptions_removed: []
+    global_consequences:
+      - The interpretation remains subject to composed trust, configuration, and availability boundaries.
+    replacement_ids: []
+  - record_id: API-5E63FB46F2
+    disposition: CONFIRMED
+    pass_1_record_ids:
+      - API-5E63FB46F2
+    context_ids:
+      - CMP-7CC27EFA43
+    user_context_evidence_ids: []
+    reviewer_work_unit_id: WU-C72BE604E8
+    rationale: The Pass-1 apis interpretation for Treasury event schemas remains consistent with raw anchors and complete context; confirmation is static and does not claim runtime, deployment, or proof-system assurance.
+    assumptions_added: []
+    assumptions_removed: []
+    global_consequences:
+      - The interpretation remains subject to composed trust, configuration, and availability boundaries.
+    replacement_ids: []
+  - record_id: API-702CAD321E
+    disposition: CONFIRMED
+    pass_1_record_ids:
+      - API-702CAD321E
+    context_ids:
+      - CMP-7CC27EFA43
+    user_context_evidence_ids: []
+    reviewer_work_unit_id: WU-C72BE604E8
+    rationale: The Pass-1 apis interpretation for StakingLedgerToVotingLedger ZkProgram remains consistent with raw anchors and complete context; confirmation is static and does not claim runtime, deployment, or proof-system assurance.
+    assumptions_added: []
+    assumptions_removed: []
+    global_consequences:
+      - The interpretation remains subject to composed trust, configuration, and availability boundaries.
+    replacement_ids: []
+  - record_id: API-91F8CB9F4E
+    disposition: CONFIRMED
+    pass_1_record_ids:
+      - API-91F8CB9F4E
+    context_ids:
+      - CMP-7CC27EFA43
+    user_context_evidence_ids: []
+    reviewer_work_unit_id: WU-C72BE604E8
+    rationale: The Pass-1 apis interpretation for VotingAccount schema remains consistent with raw anchors and complete context; confirmation is static and does not claim runtime, deployment, or proof-system assurance.
+    assumptions_added: []
+    assumptions_removed: []
+    global_consequences:
+      - The interpretation remains subject to composed trust, configuration, and availability boundaries.
+    replacement_ids: []
+  - record_id: API-98891BC765
+    disposition: CONFIRMED
+    pass_1_record_ids:
+      - API-98891BC765
+    context_ids:
+      - CMP-7CC27EFA43
+    user_context_evidence_ids: []
+    reviewer_work_unit_id: WU-C72BE604E8
+    rationale: The Pass-1 apis interpretation for Prefixed Merkle API remains consistent with raw anchors and complete context; confirmation is static and does not claim runtime, deployment, or proof-system assurance.
+    assumptions_added: []
+    assumptions_removed: []
+    global_consequences:
+      - The interpretation remains subject to composed trust, configuration, and availability boundaries.
+    replacement_ids: []
+  - record_id: API-C8E2E47556
+    disposition: CONFIRMED
+    pass_1_record_ids:
+      - API-C8E2E47556
+    context_ids:
+      - CMP-7CC27EFA43
+    user_context_evidence_ids: []
+    reviewer_work_unit_id: WU-C72BE604E8
+    rationale: The Pass-1 apis interpretation for Prefixed hashing and action-list API remains consistent with raw anchors and complete context; confirmation is static and does not claim runtime, deployment, or proof-system assurance.
+    assumptions_added: []
+    assumptions_removed: []
+    global_consequences:
+      - The interpretation remains subject to composed trust, configuration, and availability boundaries.
+    replacement_ids: []
+  - record_id: API-E777547D48
+    disposition: CONFIRMED
+    pass_1_record_ids:
+      - API-E777547D48
+    context_ids:
+      - CMP-7CC27EFA43
+    user_context_evidence_ids: []
+    reviewer_work_unit_id: WU-C72BE604E8
+    rationale: The Pass-1 apis interpretation for Treasury parameter constants remains consistent with raw anchors and complete context; confirmation is static and does not claim runtime, deployment, or proof-system assurance.
+    assumptions_added: []
+    assumptions_removed: []
+    global_consequences:
+      - The interpretation remains subject to composed trust, configuration, and availability boundaries.
+    replacement_ids: []
+  - record_id: API-FD2A8AB499
+    disposition: CONFIRMED
+    pass_1_record_ids:
+      - API-FD2A8AB499
+    context_ids:
+      - CMP-7CC27EFA43
+    user_context_evidence_ids: []
+    reviewer_work_unit_id: WU-C72BE604E8
+    rationale: The Pass-1 apis interpretation for TreasuryPauseControllerSmartContract callable surface remains consistent with raw anchors and complete context; confirmation is static and does not claim runtime, deployment, or proof-system assurance.
+    assumptions_added: []
+    assumptions_removed: []
+    global_consequences:
+      - The interpretation remains subject to composed trust, configuration, and availability boundaries.
+    replacement_ids: []
+  - record_id: API-FD75421927
+    disposition: CONFIRMED
+    pass_1_record_ids:
+      - API-FD75421927
+    context_ids:
+      - CMP-7CC27EFA43
+    user_context_evidence_ids: []
+    reviewer_work_unit_id: WU-C72BE604E8
+    rationale: The Pass-1 apis interpretation for TreasuryProposalSmartContract callable surface remains consistent with raw anchors and complete context; confirmation is static and does not claim runtime, deployment, or proof-system assurance.
+    assumptions_added: []
+    assumptions_removed: []
+    global_consequences:
+      - The interpretation remains subject to composed trust, configuration, and availability boundaries.
+    replacement_ids: []
+  - record_id: BHV-08FB416CF3
+    disposition: CONFIRMED
+    pass_1_record_ids:
+      - BHV-08FB416CF3
+    context_ids:
+      - CMP-7CC27EFA43
+    user_context_evidence_ids: []
+    reviewer_work_unit_id: WU-C72BE604E8
+    rationale: The Pass-1 behaviors interpretation for Derive voting/nullifier Merkle position from a public key remains consistent with raw anchors and complete context; confirmation is static and does not claim runtime, deployment, or proof-system assurance.
+    assumptions_added: []
+    assumptions_removed: []
+    global_consequences:
+      - The interpretation remains subject to composed trust, configuration, and availability boundaries.
+    replacement_ids: []
+  - record_id: BHV-0D6A8D760E
+    disposition: REFINED
+    pass_1_record_ids:
+      - BHV-0D6A8D760E
+    context_ids:
+      - FLW-745B097927
+      - ASM-E6AE27B10D
+    user_context_evidence_ids: []
+    reviewer_work_unit_id: WU-C72BE604E8
+    rationale: The local interpretation for Rotate multisig commitment remains source-supported, but complete context adds cross-component policy, trust, lifecycle, or liveness qualifications represented by the linked context records.
+    assumptions_added: []
+    assumptions_removed: []
+    global_consequences:
+      - The qualification must remain visible in system flows, traceability, security reasoning, and author review.
+    replacement_ids: []
+  - record_id: BHV-0EED4FB2BD
+    disposition: CONFIRMED
+    pass_1_record_ids:
+      - BHV-0EED4FB2BD
+    context_ids:
+      - CMP-49180D7623
+    user_context_evidence_ids: []
+    reviewer_work_unit_id: WU-C72BE604E8
+    rationale: The Pass-1 behaviors interpretation for Pack bounded chunks into field elements remains consistent with raw anchors and complete context; confirmation is static and does not claim runtime, deployment, or proof-system assurance.
+    assumptions_added: []
+    assumptions_removed: []
+    global_consequences:
+      - The interpretation remains subject to composed trust, configuration, and availability boundaries.
+    replacement_ids: []
+  - record_id: BHV-10BA9AD71E
+    disposition: REFINED
+    pass_1_record_ids:
+      - BHV-10BA9AD71E
+    context_ids:
+      - FLW-5AA543472A
+      - FND-BFFEA51091
+    user_context_evidence_ids: []
+    reviewer_work_unit_id: WU-C72BE604E8
+    rationale: The local interpretation for Authorize proposal-specific toggle remains source-supported, but complete context adds cross-component policy, trust, lifecycle, or liveness qualifications represented by the linked context records.
+    assumptions_added: []
+    assumptions_removed: []
+    global_consequences:
+      - The qualification must remain visible in system flows, traceability, security reasoning, and author review.
+    replacement_ids: []
+  - record_id: BHV-1136BD4D08
+    disposition: REFINED
+    pass_1_record_ids:
+      - BHV-1136BD4D08
+    context_ids:
+      - FLW-5E24C8B8E4
+      - FND-B5948FE3CF
+    user_context_evidence_ids: []
+    reviewer_work_unit_id: WU-C72BE604E8
+    rationale: Proof bindings are present, but failed participation or abstain-only tallies abort and remain UNKNOWN instead of storing REJECTED.
+    assumptions_added: []
+    assumptions_removed: []
+    global_consequences:
+      - The qualification must remain visible in system flows, traceability, security reasoning, and author review.
+    replacement_ids: []
+  - record_id: BHV-141ED40E5D
+    disposition: CONFIRMED
+    pass_1_record_ids:
+      - BHV-141ED40E5D
+    context_ids:
+      - CMP-0F476A460D
+    user_context_evidence_ids: []
+    reviewer_work_unit_id: WU-C72BE604E8
+    rationale: The Pass-1 behaviors interpretation for Roll the voter nullifier and select vote weight remains consistent with raw anchors and complete context; confirmation is static and does not claim runtime, deployment, or proof-system assurance.
+    assumptions_added: []
+    assumptions_removed: []
+    global_consequences:
+      - The interpretation remains subject to composed trust, configuration, and availability boundaries.
+    replacement_ids: []
+  - record_id: BHV-17E3A4CB8C
+    disposition: CONFIRMED
+    pass_1_record_ids:
+      - BHV-17E3A4CB8C
+    context_ids:
+      - CMP-874E479BA1
+    user_context_evidence_ids: []
+    reviewer_work_unit_id: WU-C72BE604E8
+    rationale: The Pass-1 behaviors interpretation for Merge adjacent staking transformation proofs remains consistent with raw anchors and complete context; confirmation is static and does not claim runtime, deployment, or proof-system assurance.
+    assumptions_added: []
+    assumptions_removed: []
+    global_consequences:
+      - The interpretation remains subject to composed trust, configuration, and availability boundaries.
+    replacement_ids: []
+  - record_id: BHV-1FC418499A
+    disposition: REFINED
+    pass_1_record_ids:
+      - BHV-1FC418499A
+    context_ids:
+      - THR-77C87EDE62
+      - GAP-22CD8BD355
+    user_context_evidence_ids: []
+    reviewer_work_unit_id: WU-C72BE604E8
+    rationale: The local interpretation for Require and increment controller nonce remains source-supported, but complete context adds cross-component policy, trust, lifecycle, or liveness qualifications represented by the linked context records.
+    assumptions_added: []
+    assumptions_removed: []
+    global_consequences:
+      - The qualification must remain visible in system flows, traceability, security reasoning, and author review.
+    replacement_ids: []
+  - record_id: BHV-3493B522BB
+    disposition: CONFIRMED
+    pass_1_record_ids:
+      - BHV-3493B522BB
+    context_ids:
+      - CMP-2890255AE1
+    user_context_evidence_ids: []
+    reviewer_work_unit_id: WU-C72BE604E8
+    rationale: The Pass-1 behaviors interpretation for Persist Merkle nodes as namespaced Field strings remains consistent with raw anchors and complete context; confirmation is static and does not claim runtime, deployment, or proof-system assurance.
+    assumptions_added: []
+    assumptions_removed: []
+    global_consequences:
+      - The interpretation remains subject to composed trust, configuration, and availability boundaries.
+    replacement_ids: []
+  - record_id: BHV-3946C60752
+    disposition: CONFIRMED
+    pass_1_record_ids:
+      - BHV-3946C60752
+    context_ids:
+      - CMP-0F476A460D
+    user_context_evidence_ids: []
+    reviewer_work_unit_id: WU-C72BE604E8
+    rationale: The Pass-1 behaviors interpretation for Commit non-dummy actions and discover action-state targets remains consistent with raw anchors and complete context; confirmation is static and does not claim runtime, deployment, or proof-system assurance.
+    assumptions_added: []
+    assumptions_removed: []
+    global_consequences:
+      - The interpretation remains subject to composed trust, configuration, and availability boundaries.
+    replacement_ids: []
+  - record_id: BHV-44F30E27C0
+    disposition: CONFIRMED
+    pass_1_record_ids:
+      - BHV-44F30E27C0
+    context_ids:
+      - CMP-49180D7623
+    user_context_evidence_ids: []
+    reviewer_work_unit_id: WU-C72BE604E8
+    rationale: The Pass-1 behaviors interpretation for Construct and hash the canonical empty-account representation remains consistent with raw anchors and complete context; confirmation is static and does not claim runtime, deployment, or proof-system assurance.
+    assumptions_added: []
+    assumptions_removed: []
+    global_consequences:
+      - The interpretation remains subject to composed trust, configuration, and availability boundaries.
+    replacement_ids: []
+  - record_id: BHV-4866A87097
+    disposition: REFINED
+    pass_1_record_ids:
+      - BHV-4866A87097
+    context_ids:
+      - INV-222CED01FB
+      - UNR-13C729A54A
+    user_context_evidence_ids: []
+    reviewer_work_unit_id: WU-C72BE604E8
+    rationale: The local interpretation for Verify proofs, bind action history, and tally proposal remains source-supported, but complete context adds cross-component policy, trust, lifecycle, or liveness qualifications represented by the linked context records.
+    assumptions_added: []
+    assumptions_removed: []
+    global_consequences:
+      - The qualification must remain visible in system flows, traceability, security reasoning, and author review.
+    replacement_ids: []
+  - record_id: BHV-4EC84F351D
+    disposition: CONFIRMED
+    pass_1_record_ids:
+      - BHV-4EC84F351D
+    context_ids:
+      - CMP-2890255AE1
+    user_context_evidence_ids: []
+    reviewer_work_unit_id: WU-C72BE604E8
+    rationale: The Pass-1 behaviors interpretation for Set a Merkle leaf and recompute ancestors remains consistent with raw anchors and complete context; confirmation is static and does not claim runtime, deployment, or proof-system assurance.
+    assumptions_added: []
+    assumptions_removed: []
+    global_consequences:
+      - The interpretation remains subject to composed trust, configuration, and availability boundaries.
+    replacement_ids: []
+  - record_id: BHV-5095682725
+    disposition: CONFIRMED
+    pass_1_record_ids:
+      - BHV-5095682725
+    context_ids:
+      - CMP-E155326DD2
+    user_context_evidence_ids: []
+    reviewer_work_unit_id: WU-C72BE604E8
+    rationale: The Pass-1 behaviors interpretation for Derive and enforce lifecycle slot range remains consistent with raw anchors and complete context; confirmation is static and does not claim runtime, deployment, or proof-system assurance.
+    assumptions_added: []
+    assumptions_removed: []
+    global_consequences:
+      - The interpretation remains subject to composed trust, configuration, and availability boundaries.
+    replacement_ids: []
+  - record_id: BHV-50C1B246E0
+    disposition: CONFIRMED
+    pass_1_record_ids:
+      - BHV-50C1B246E0
+    context_ids:
+      - CMP-0F476A460D
+    user_context_evidence_ids: []
+    reviewer_work_unit_id: WU-C72BE604E8
+    rationale: The Pass-1 behaviors interpretation for Reduce a fixed five-action vote batch remains consistent with raw anchors and complete context; confirmation is static and does not claim runtime, deployment, or proof-system assurance.
+    assumptions_added: []
+    assumptions_removed: []
+    global_consequences:
+      - The interpretation remains subject to composed trust, configuration, and availability boundaries.
+    replacement_ids: []
+  - record_id: BHV-5B1BD6B386
+    disposition: REFINED
+    pass_1_record_ids:
+      - BHV-5B1BD6B386
+    context_ids:
+      - REQ-529C5F460D
+      - ASM-B549EC8751
+    user_context_evidence_ids:
+      - EVD-0554D3710D
+      - EVD-FB46967B48
+    reviewer_work_unit_id: WU-C72BE604E8
+    rationale: Current stakingEpochData selection is source-visible; the prior audit flags possible staleness and no current authority selects current versus next epoch.
+    assumptions_added: []
+    assumptions_removed: []
+    global_consequences:
+      - The qualification must remain visible in system flows, traceability, security reasoning, and author review.
+    replacement_ids: []
+    conflicting_evidence_ids:
+      - EVD-65B65019A1
+      - EVD-FB46967B48
+  - record_id: BHV-5CBB373BE5
+    disposition: CONFIRMED
+    pass_1_record_ids:
+      - BHV-5CBB373BE5
+    context_ids:
+      - CMP-834A30297A
+    user_context_evidence_ids: []
+    reviewer_work_unit_id: WU-C72BE604E8
+    rationale: The Pass-1 behaviors interpretation for Emit proposal lifecycle event schemas remains consistent with raw anchors and complete context; confirmation is static and does not claim runtime, deployment, or proof-system assurance.
+    assumptions_added: []
+    assumptions_removed: []
+    global_consequences:
+      - The interpretation remains subject to composed trust, configuration, and availability boundaries.
+    replacement_ids: []
+  - record_id: BHV-5D3FCC7B93
+    disposition: REFINED
+    pass_1_record_ids:
+      - BHV-5D3FCC7B93
+    context_ids:
+      - FLW-9D28A6D299
+      - GAP-7BAF881BED
+      - GAP-B798CE8DB1
+    user_context_evidence_ids: []
+    reviewer_work_unit_id: WU-C72BE604E8
+    rationale: The local interpretation for Execute bounded recipient payout remains source-supported, but complete context adds cross-component policy, trust, lifecycle, or liveness qualifications represented by the linked context records.
+    assumptions_added: []
+    assumptions_removed: []
+    global_consequences:
+      - The qualification must remain visible in system flows, traceability, security reasoning, and author review.
+    replacement_ids: []
+  - record_id: BHV-6214513169
+    disposition: CONFIRMED
+    pass_1_record_ids:
+      - BHV-6214513169
+    context_ids:
+      - CMP-49180D7623
+    user_context_evidence_ids: []
+    reviewer_work_unit_id: WU-C72BE604E8
+    rationale: The Pass-1 behaviors interpretation for Parse and encode Mina permissions remains consistent with raw anchors and complete context; confirmation is static and does not claim runtime, deployment, or proof-system assurance.
+    assumptions_added: []
+    assumptions_removed: []
+    global_consequences:
+      - The interpretation remains subject to composed trust, configuration, and availability boundaries.
+    replacement_ids: []
+  - record_id: BHV-67153EA362
+    disposition: CONFIRMED
+    pass_1_record_ids:
+      - BHV-67153EA362
+    context_ids:
+      - CMP-0F476A460D
+    user_context_evidence_ids: []
+    reviewer_work_unit_id: WU-C72BE604E8
+    rationale: The Pass-1 behaviors interpretation for Merge adjacent vote-reduction proofs remains consistent with raw anchors and complete context; confirmation is static and does not claim runtime, deployment, or proof-system assurance.
+    assumptions_added: []
+    assumptions_removed: []
+    global_consequences:
+      - The interpretation remains subject to composed trust, configuration, and availability boundaries.
+    replacement_ids: []
+  - record_id: BHV-761186E23C
+    disposition: CONFIRMED
+    pass_1_record_ids:
+      - BHV-761186E23C
+    context_ids:
+      - CMP-834A30297A
+    user_context_evidence_ids: []
+    reviewer_work_unit_id: WU-C72BE604E8
+    rationale: The Pass-1 behaviors interpretation for Encode shared treasury event payloads remains consistent with raw anchors and complete context; confirmation is static and does not claim runtime, deployment, or proof-system assurance.
+    assumptions_added: []
+    assumptions_removed: []
+    global_consequences:
+      - The interpretation remains subject to composed trust, configuration, and availability boundaries.
+    replacement_ids: []
+  - record_id: BHV-80247CE73D
+    disposition: REFINED
+    pass_1_record_ids:
+      - BHV-80247CE73D
+    context_ids:
+      - FLW-6394A1B72B
+      - GAP-9398E85581
+      - GAP-F83C6F5411
+    user_context_evidence_ids: []
+    reviewer_work_unit_id: WU-C72BE604E8
+    rationale: The local interpretation for Create proposal and collect ten-percent bond remains source-supported, but complete context adds cross-component policy, trust, lifecycle, or liveness qualifications represented by the linked context records.
+    assumptions_added: []
+    assumptions_removed: []
+    global_consequences:
+      - The qualification must remain visible in system flows, traceability, security reasoning, and author review.
+    replacement_ids: []
+  - record_id: BHV-872BB5A5F8
+    disposition: CONFIRMED
+    pass_1_record_ids:
+      - BHV-872BB5A5F8
+    context_ids:
+      - CMP-E155326DD2
+    user_context_evidence_ids: []
+    reviewer_work_unit_id: WU-C72BE604E8
+    rationale: The Pass-1 behaviors interpretation for Apply global pause and derived-token child-update boundaries remains consistent with raw anchors and complete context; confirmation is static and does not claim runtime, deployment, or proof-system assurance.
+    assumptions_added: []
+    assumptions_removed: []
+    global_consequences:
+      - The interpretation remains subject to composed trust, configuration, and availability boundaries.
+    replacement_ids: []
+  - record_id: BHV-8786B10BA6
+    disposition: REFINED
+    pass_1_record_ids:
+      - BHV-8786B10BA6
+    context_ids:
+      - INV-0697F6A5B4
+      - THR-0DEBF32E0A
+    user_context_evidence_ids: []
+    reviewer_work_unit_id: WU-C72BE604E8
+    rationale: The local interpretation for Initialize emergency controller remains source-supported, but complete context adds cross-component policy, trust, lifecycle, or liveness qualifications represented by the linked context records.
+    assumptions_added: []
+    assumptions_removed: []
+    global_consequences:
+      - The qualification must remain visible in system flows, traceability, security reasoning, and author review.
+    replacement_ids: []
+  - record_id: BHV-8B6F3A639B
+    disposition: REFINED
+    pass_1_record_ids:
+      - BHV-8B6F3A639B
+    context_ids:
+      - FLW-5AA543472A
+      - THR-A943E3380A
+    user_context_evidence_ids: []
+    reviewer_work_unit_id: WU-C72BE604E8
+    rationale: Using one Field for governance result and pause means pausing a finalized proposal destroys APPROVED or REJECTED and unpause returns UNKNOWN.
+    assumptions_added: []
+    assumptions_removed: []
+    global_consequences:
+      - The qualification must remain visible in system flows, traceability, security reasoning, and author review.
+    replacement_ids: []
+  - record_id: BHV-8E9F5C3ECE
+    disposition: CONFIRMED
+    pass_1_record_ids:
+      - BHV-8E9F5C3ECE
+    context_ids:
+      - CMP-E155326DD2
+    user_context_evidence_ids: []
+    reviewer_work_unit_id: WU-C72BE604E8
+    rationale: The Pass-1 behaviors interpretation for Dispatch signed voter action remains consistent with raw anchors and complete context; confirmation is static and does not claim runtime, deployment, or proof-system assurance.
+    assumptions_added: []
+    assumptions_removed: []
+    global_consequences:
+      - The interpretation remains subject to composed trust, configuration, and availability boundaries.
+    replacement_ids: []
+  - record_id: BHV-8ED0438CC8
+    disposition: CONFIRMED
+    pass_1_record_ids:
+      - BHV-8ED0438CC8
+    context_ids:
+      - CMP-B6BB8BE661
+    user_context_evidence_ids: []
+    reviewer_work_unit_id: WU-C72BE604E8
+    rationale: The Pass-1 behaviors interpretation for Construct operation-prefixed signature data remains consistent with raw anchors and complete context; confirmation is static and does not claim runtime, deployment, or proof-system assurance.
+    assumptions_added: []
+    assumptions_removed: []
+    global_consequences:
+      - The interpretation remains subject to composed trust, configuration, and availability boundaries.
+    replacement_ids: []
+  - record_id: BHV-8FA351E512
+    disposition: REFINED
+    pass_1_record_ids:
+      - BHV-8FA351E512
+    context_ids:
+      - FLW-5AA543472A
+      - INV-015B387636
+    user_context_evidence_ids: []
+    reviewer_work_unit_id: WU-C72BE604E8
+    rationale: The signed authorization, blind state toggle, and caller-supplied event Bool have different semantics, so event state can conflict with constrained proposal state.
+    assumptions_added: []
+    assumptions_removed: []
+    global_consequences:
+      - The qualification must remain visible in system flows, traceability, security reasoning, and author review.
+    replacement_ids: []
+    conflicting_evidence_ids:
+      - EVD-4908C76CF8
+      - EVD-6665BB19D1
+  - record_id: BHV-9B695F3AF8
+    disposition: CONFIRMED
+    pass_1_record_ids:
+      - BHV-9B695F3AF8
+    context_ids:
+      - CMP-49180D7623
+    user_context_evidence_ids: []
+    reviewer_work_unit_id: WU-C72BE604E8
+    rationale: The Pass-1 behaviors interpretation for Deserialize account JSON with empty-delegate adaptation remains consistent with raw anchors and complete context; confirmation is static and does not claim runtime, deployment, or proof-system assurance.
+    assumptions_added: []
+    assumptions_removed: []
+    global_consequences:
+      - The interpretation remains subject to composed trust, configuration, and availability boundaries.
+    replacement_ids: []
+  - record_id: BHV-9E1B7D1BA1
+    disposition: CONFIRMED
+    pass_1_record_ids:
+      - BHV-9E1B7D1BA1
+    context_ids:
+      - CMP-5CAF19BDCD
+    user_context_evidence_ids: []
+    reviewer_work_unit_id: WU-C72BE604E8
+    rationale: The Pass-1 behaviors interpretation for Expose lifecycle and dispatch vote action remains consistent with raw anchors and complete context; confirmation is static and does not claim runtime, deployment, or proof-system assurance.
+    assumptions_added: []
+    assumptions_removed: []
+    global_consequences:
+      - The interpretation remains subject to composed trust, configuration, and availability boundaries.
+    replacement_ids: []
+  - record_id: BHV-9E36CCC678
+    disposition: CONFIRMED
+    pass_1_record_ids:
+      - BHV-9E36CCC678
+    context_ids:
+      - CMP-E155326DD2
+    user_context_evidence_ids: []
+    reviewer_work_unit_id: WU-C72BE604E8
+    rationale: The Pass-1 behaviors interpretation for Receive treasury funds remains consistent with raw anchors and complete context; confirmation is static and does not claim runtime, deployment, or proof-system assurance.
+    assumptions_added: []
+    assumptions_removed: []
+    global_consequences:
+      - The interpretation remains subject to composed trust, configuration, and availability boundaries.
+    replacement_ids: []
+  - record_id: BHV-A302A43C9F
+    disposition: CONFIRMED
+    pass_1_record_ids:
+      - BHV-A302A43C9F
+    context_ids:
+      - CMP-5CAF19BDCD
+    user_context_evidence_ids: []
+    reviewer_work_unit_id: WU-C72BE604E8
+    rationale: The Pass-1 behaviors interpretation for Calculate participation and vote result remains consistent with raw anchors and complete context; confirmation is static and does not claim runtime, deployment, or proof-system assurance.
+    assumptions_added: []
+    assumptions_removed: []
+    global_consequences:
+      - The interpretation remains subject to composed trust, configuration, and availability boundaries.
+    replacement_ids: []
+  - record_id: BHV-ABB579E6D2
+    disposition: CONFIRMED
+    pass_1_record_ids:
+      - BHV-ABB579E6D2
+    context_ids:
+      - CMP-0F476A460D
+    user_context_evidence_ids: []
+    reviewer_work_unit_id: WU-C72BE604E8
+    rationale: The Pass-1 behaviors interpretation for Deserialize VoteAction with empty fallback remains consistent with raw anchors and complete context; confirmation is static and does not claim runtime, deployment, or proof-system assurance.
+    assumptions_added: []
+    assumptions_removed: []
+    global_consequences:
+      - The interpretation remains subject to composed trust, configuration, and availability boundaries.
+    replacement_ids: []
+  - record_id: BHV-B377C55F96
+    disposition: REFINED
+    pass_1_record_ids:
+      - BHV-B377C55F96
+    context_ids:
+      - REQ-15F6A20397
+      - REQ-74C4827C5B
+      - GAP-1DC17F1884
+    user_context_evidence_ids: []
+    reviewer_work_unit_id: WU-C72BE604E8
+    rationale: The local interpretation for Calculate amount-sensitive quorum and approval thresholds remains source-supported, but complete context adds cross-component policy, trust, lifecycle, or liveness qualifications represented by the linked context records.
+    assumptions_added: []
+    assumptions_removed: []
+    global_consequences:
+      - The qualification must remain visible in system flows, traceability, security reasoning, and author review.
+    replacement_ids: []
+  - record_id: BHV-B919E9DAF9
+    disposition: CONFIRMED
+    pass_1_record_ids:
+      - BHV-B919E9DAF9
+    context_ids:
+      - CMP-49180D7623
+    user_context_evidence_ids: []
+    reviewer_work_unit_id: WU-C72BE604E8
+    rationale: The Pass-1 behaviors interpretation for Represent a voting account as a balance remains consistent with raw anchors and complete context; confirmation is static and does not claim runtime, deployment, or proof-system assurance.
+    assumptions_added: []
+    assumptions_removed: []
+    global_consequences:
+      - The interpretation remains subject to composed trust, configuration, and availability boundaries.
+    replacement_ids: []
+  - record_id: BHV-BAB5A8FD7C
+    disposition: CONFIRMED
+    pass_1_record_ids:
+      - BHV-BAB5A8FD7C
+    context_ids:
+      - CMP-E155326DD2
+    user_context_evidence_ids: []
+    reviewer_work_unit_id: WU-C72BE604E8
+    rationale: The Pass-1 behaviors interpretation for Bind both proof products at proposal tally remains consistent with raw anchors and complete context; confirmation is static and does not claim runtime, deployment, or proof-system assurance.
+    assumptions_added: []
+    assumptions_removed: []
+    global_consequences:
+      - The interpretation remains subject to composed trust, configuration, and availability boundaries.
+    replacement_ids: []
+  - record_id: BHV-C0141CC000
+    disposition: CONFIRMED
+    pass_1_record_ids:
+      - BHV-C0141CC000
+    context_ids:
+      - CMP-E155326DD2
+    user_context_evidence_ids: []
+    reviewer_work_unit_id: WU-C72BE604E8
+    rationale: The Pass-1 behaviors interpretation for Deploy Treasury Owner with static configuration remains consistent with raw anchors and complete context; confirmation is static and does not claim runtime, deployment, or proof-system assurance.
+    assumptions_added: []
+    assumptions_removed: []
+    global_consequences:
+      - The interpretation remains subject to composed trust, configuration, and availability boundaries.
+    replacement_ids: []
+  - record_id: BHV-C01A568AAE
+    disposition: REFINED
+    pass_1_record_ids:
+      - BHV-C01A568AAE
+    context_ids:
+      - REQ-D100BF5A33
+      - INV-2A14CD3045
+    user_context_evidence_ids: &a1
+      - EVD-0D50A0B3BE
+      - EVD-C70801D35C
+    reviewer_work_unit_id: WU-C72BE604E8
+    rationale: Every proven account balance is aggregated at Account.delegate, but token-account, empty-delegate, self-delegate, and eligibility rules are not settled.
+    assumptions_added: []
+    assumptions_removed: []
+    global_consequences:
+      - The qualification must remain visible in system flows, traceability, security reasoning, and author review.
+    replacement_ids: []
+  - record_id: BHV-C4F9C6CEE0
+    disposition: REFINED
+    pass_1_record_ids:
+      - BHV-C4F9C6CEE0
+    context_ids:
+      - BHV-C01A568AAE
+      - INV-2A14CD3045
+      - ASM-73AF207816
+    user_context_evidence_ids: []
+    reviewer_work_unit_id: WU-C72BE604E8
+    rationale: The local interpretation for Transform five consecutive staking accounts remains source-supported, but complete context adds cross-component policy, trust, lifecycle, or liveness qualifications represented by the linked context records.
+    assumptions_added: []
+    assumptions_removed: []
+    global_consequences:
+      - The qualification must remain visible in system flows, traceability, security reasoning, and author review.
+    replacement_ids: []
+  - record_id: BHV-C881A8957C
+    disposition: CONFIRMED
+    pass_1_record_ids:
+      - BHV-C881A8957C
+    context_ids:
+      - CMP-2890255AE1
+    user_context_evidence_ids: []
+    reviewer_work_unit_id: WU-C72BE604E8
+    rationale: The Pass-1 behaviors interpretation for Construct default nodes and read a prefixed Merkle tree remains consistent with raw anchors and complete context; confirmation is static and does not claim runtime, deployment, or proof-system assurance.
+    assumptions_added: []
+    assumptions_removed: []
+    global_consequences:
+      - The interpretation remains subject to composed trust, configuration, and availability boundaries.
+    replacement_ids: []
+  - record_id: BHV-CB4CCBE337
+    disposition: CONFIRMED
+    pass_1_record_ids:
+      - BHV-CB4CCBE337
+    context_ids:
+      - CMP-31D3990A1F
+    user_context_evidence_ids: []
+    reviewer_work_unit_id: WU-C72BE604E8
+    rationale: The Pass-1 behaviors interpretation for Hash prefixed values and append an action remains consistent with raw anchors and complete context; confirmation is static and does not claim runtime, deployment, or proof-system assurance.
+    assumptions_added: []
+    assumptions_removed: []
+    global_consequences:
+      - The interpretation remains subject to composed trust, configuration, and availability boundaries.
+    replacement_ids: []
+  - record_id: BHV-CC8CE33239
+    disposition: CONFIRMED
+    pass_1_record_ids:
+      - BHV-CC8CE33239
+    context_ids:
+      - CMP-2890255AE1
+    user_context_evidence_ids: []
+    reviewer_work_unit_id: WU-C72BE604E8
+    rationale: The Pass-1 behaviors interpretation for Overlay Merkle node mutations in memory remains consistent with raw anchors and complete context; confirmation is static and does not claim runtime, deployment, or proof-system assurance.
+    assumptions_added: []
+    assumptions_removed: []
+    global_consequences:
+      - The interpretation remains subject to composed trust, configuration, and availability boundaries.
+    replacement_ids: []
+  - record_id: BHV-CEE91EC6D9
+    disposition: REFINED
+    pass_1_record_ids:
+      - BHV-CEE91EC6D9
+    context_ids:
+      - REQ-AFB190A0FA
+      - GAP-F47532E2A5
+    user_context_evidence_ids: *a1
+    reviewer_work_unit_id: WU-C72BE604E8
+    rationale: The local interpretation for Classify valid and dummy vote actions remains source-supported, but complete context adds cross-component policy, trust, lifecycle, or liveness qualifications represented by the linked context records.
+    assumptions_added: []
+    assumptions_removed: []
+    global_consequences:
+      - The qualification must remain visible in system flows, traceability, security reasoning, and author review.
+    replacement_ids: []
+  - record_id: BHV-CFC00681B8
+    disposition: CONFIRMED
+    pass_1_record_ids:
+      - BHV-CFC00681B8
+    context_ids:
+      - CMP-2890255AE1
+    user_context_evidence_ids: []
+    reviewer_work_unit_id: WU-C72BE604E8
+    rationale: The Pass-1 behaviors interpretation for Fill consecutive Merkle leaves remains consistent with raw anchors and complete context; confirmation is static and does not claim runtime, deployment, or proof-system assurance.
+    assumptions_added: []
+    assumptions_removed: []
+    global_consequences:
+      - The interpretation remains subject to composed trust, configuration, and availability boundaries.
+    replacement_ids: []
+  - record_id: BHV-DAE783F632
+    disposition: CONFIRMED
+    pass_1_record_ids:
+      - BHV-DAE783F632
+    context_ids:
+      - CMP-2890255AE1
+    user_context_evidence_ids: []
+    reviewer_work_unit_id: WU-C72BE604E8
+    rationale: The Pass-1 behaviors interpretation for Create and evaluate Merkle witnesses remains consistent with raw anchors and complete context; confirmation is static and does not claim runtime, deployment, or proof-system assurance.
+    assumptions_added: []
+    assumptions_removed: []
+    global_consequences:
+      - The interpretation remains subject to composed trust, configuration, and availability boundaries.
+    replacement_ids: []
+  - record_id: BHV-DDC0A35072
+    disposition: CONFIRMED
+    pass_1_record_ids:
+      - BHV-DDC0A35072
+    context_ids:
+      - CMP-B6BB8BE661
+    user_context_evidence_ids: []
+    reviewer_work_unit_id: WU-C72BE604E8
+    rationale: The Pass-1 behaviors interpretation for Set global treasury pause state remains consistent with raw anchors and complete context; confirmation is static and does not claim runtime, deployment, or proof-system assurance.
+    assumptions_added: []
+    assumptions_removed: []
+    global_consequences:
+      - The interpretation remains subject to composed trust, configuration, and availability boundaries.
+    replacement_ids: []
+  - record_id: BHV-E79288F8DA
+    disposition: CONFIRMED
+    pass_1_record_ids:
+      - BHV-E79288F8DA
+    context_ids:
+      - CMP-0F476A460D
+    user_context_evidence_ids: []
+    reviewer_work_unit_id: WU-C72BE604E8
+    rationale: The Pass-1 behaviors interpretation for Bind a vote to a voting-ledger weight remains consistent with raw anchors and complete context; confirmation is static and does not claim runtime, deployment, or proof-system assurance.
+    assumptions_added: []
+    assumptions_removed: []
+    global_consequences:
+      - The interpretation remains subject to composed trust, configuration, and availability boundaries.
+    replacement_ids: []
+  - record_id: BHV-E7ECC5B6FC
+    disposition: REFINED
+    pass_1_record_ids:
+      - BHV-E7ECC5B6FC
+    context_ids:
+      - INV-016B52DE5B
+      - FND-CA0F83CE86
+    user_context_evidence_ids: []
+    reviewer_work_unit_id: WU-C72BE604E8
+    rationale: Immediate-next Account.empty proves global exhaustion only under an external dense-ledger and no-holes assumption.
+    assumptions_added: []
+    assumptions_removed: []
+    global_consequences:
+      - The qualification must remain visible in system flows, traceability, security reasoning, and author review.
+    replacement_ids: []
+  - record_id: BHV-F2207732B4
+    disposition: CONFIRMED
+    pass_1_record_ids:
+      - BHV-F2207732B4
+    context_ids:
+      - CMP-5CAF19BDCD
+    user_context_evidence_ids: []
+    reviewer_work_unit_id: WU-C72BE604E8
+    rationale: The Pass-1 behaviors interpretation for Enforce approved recipient payout cap remains consistent with raw anchors and complete context; confirmation is static and does not claim runtime, deployment, or proof-system assurance.
+    assumptions_added: []
+    assumptions_removed: []
+    global_consequences:
+      - The interpretation remains subject to composed trust, configuration, and availability boundaries.
+    replacement_ids: []
+  - record_id: BHV-F898CD867A
+    disposition: REFINED
+    pass_1_record_ids:
+      - BHV-F898CD867A
+    context_ids:
+      - INV-1E832E77A4
+      - THR-77C87EDE62
+    user_context_evidence_ids: []
+    reviewer_work_unit_id: WU-C72BE604E8
+    rationale: Three valid positions are required, but participant distinctness and non-emptiness are not constrained.
+    assumptions_added: []
+    assumptions_removed: []
+    global_consequences:
+      - The qualification must remain visible in system flows, traceability, security reasoning, and author review.
+    replacement_ids: []
+  - record_id: BR-214DBEB50D
+    disposition: CONFIRMED
+    pass_1_record_ids:
+      - BR-214DBEB50D
+    context_ids:
+      - BR-214DBEB50D
+      - BHV-5095682725
+    user_context_evidence_ids: *a1
+    reviewer_work_unit_id: WU-C72BE604E8
+    rationale: The Pass-1 business rules interpretation for Execution is blocked during cooldown remains consistent with raw anchors and complete context; confirmation is static and does not claim runtime, deployment, or proof-system assurance.
+    assumptions_added: []
+    assumptions_removed: []
+    global_consequences:
+      - The interpretation remains subject to composed trust, configuration, and availability boundaries.
+    replacement_ids: []
+  - record_id: BR-3A3926003F
+    disposition: REFINED
+    pass_1_record_ids:
+      - BR-3A3926003F
+    context_ids:
+      - BR-3A3926003F
+      - BHV-141ED40E5D
+    user_context_evidence_ids: *a1
+    reviewer_work_unit_id: WU-C72BE604E8
+    rationale: The local interpretation for Snapshot voting power is single-use per proposal remains source-supported, but complete context adds cross-component policy, trust, lifecycle, or liveness qualifications represented by the linked context records.
+    assumptions_added: []
+    assumptions_removed: []
+    global_consequences:
+      - The qualification must remain visible in system flows, traceability, security reasoning, and author review.
+    replacement_ids: []
+  - record_id: BR-4CC5D3E076
+    disposition: CONFIRMED
+    pass_1_record_ids:
+      - BR-4CC5D3E076
+    context_ids:
+      - BR-4CC5D3E076
+      - BHV-A302A43C9F
+    user_context_evidence_ids: *a1
+    reviewer_work_unit_id: WU-C72BE604E8
+    rationale: The Pass-1 business rules interpretation for Abstain counts for participation only remains consistent with raw anchors and complete context; confirmation is static and does not claim runtime, deployment, or proof-system assurance.
+    assumptions_added: []
+    assumptions_removed: []
+    global_consequences:
+      - The interpretation remains subject to composed trust, configuration, and availability boundaries.
+    replacement_ids: []
+  - record_id: BR-8EBBA5B636
+    disposition: REFINED
+    pass_1_record_ids:
+      - BR-8EBBA5B636
+    context_ids:
+      - BR-8EBBA5B636
+      - BHV-5B1BD6B386
+    user_context_evidence_ids: *a1
+    reviewer_work_unit_id: WU-C72BE604E8
+    rationale: The local interpretation for Voting weight is snapshot-derived remains source-supported, but complete context adds cross-component policy, trust, lifecycle, or liveness qualifications represented by the linked context records.
+    assumptions_added: []
+    assumptions_removed: []
+    global_consequences:
+      - The qualification must remain visible in system flows, traceability, security reasoning, and author review.
+    replacement_ids: []
+  - record_id: BR-B122F86EA0
+    disposition: REFINED
+    pass_1_record_ids:
+      - BR-B122F86EA0
+    context_ids:
+      - BR-B122F86EA0
+      - FLW-9D28A6D299
+    user_context_evidence_ids: *a1
+    reviewer_work_unit_id: WU-C72BE604E8
+    rationale: The local interpretation for Treasury payout follows proposal approval remains source-supported, but complete context adds cross-component policy, trust, lifecycle, or liveness qualifications represented by the linked context records.
+    assumptions_added: []
+    assumptions_removed: []
+    global_consequences:
+      - The qualification must remain visible in system flows, traceability, security reasoning, and author review.
+    replacement_ids: []
+  - record_id: BR-BE13F1CD73
+    disposition: UNRESOLVED
+    pass_1_record_ids:
+      - BR-BE13F1CD73
+    context_ids:
+      - GAP-A25D114C6F
+      - ASM-503E6DE8AD
+    user_context_evidence_ids: *a1
+    reviewer_work_unit_id: WU-C72BE604E8
+    rationale: The intent or local observation for Participation infrastructure remains open remains valid, but complete context and raw evidence cannot resolve its operational, deployment, protocol, or policy boundary.
+    assumptions_added: []
+    assumptions_removed: []
+    global_consequences:
+      - The qualification must remain visible in system flows, traceability, security reasoning, and author review.
+    replacement_ids: []
+  - record_id: BR-BEF061F449
+    disposition: REFINED
+    pass_1_record_ids:
+      - BR-BEF061F449
+    context_ids:
+      - BHV-F2207732B4
+      - GAP-F83C6F5411
+    user_context_evidence_ids: *a1
+    reviewer_work_unit_id: WU-C72BE604E8
+    rationale: RFC successful-bond return remains intent, but source stores no proposer and binds amount plus bond to the recipient.
+    assumptions_added: []
+    assumptions_removed: []
+    global_consequences:
+      - The qualification must remain visible in system flows, traceability, security reasoning, and author review.
+    replacement_ids: []
+    conflicting_evidence_ids:
+      - EVD-C70801D35C
+      - EVD-DD1C7DA36F
+  - record_id: CMP-0F476A460D
+    disposition: CONFIRMED
+    pass_1_record_ids:
+      - CMP-0F476A460D
+    context_ids:
+      - CMP-0F476A460D
+      - SEC-F88596C819
+    user_context_evidence_ids: []
+    reviewer_work_unit_id: WU-C72BE604E8
+    rationale: The Pass-1 components interpretation for Vote Reducer ZkProgram remains consistent with raw anchors and complete context; confirmation is static and does not claim runtime, deployment, or proof-system assurance.
+    assumptions_added: []
+    assumptions_removed: []
+    global_consequences:
+      - The interpretation remains subject to composed trust, configuration, and availability boundaries.
+    replacement_ids: []
+  - record_id: CMP-2890255AE1
+    disposition: CONFIRMED
+    pass_1_record_ids:
+      - CMP-2890255AE1
+    context_ids:
+      - CMP-2890255AE1
+      - CMP-7CC27EFA43
+    user_context_evidence_ids: []
+    reviewer_work_unit_id: WU-C72BE604E8
+    rationale: The Pass-1 components interpretation for Prefixed Merkle trees and witnesses remains consistent with raw anchors and complete context; confirmation is static and does not claim runtime, deployment, or proof-system assurance.
+    assumptions_added: []
+    assumptions_removed: []
+    global_consequences:
+      - The interpretation remains subject to composed trust, configuration, and availability boundaries.
+    replacement_ids: []
+  - record_id: CMP-31D3990A1F
+    disposition: CONFIRMED
+    pass_1_record_ids:
+      - CMP-31D3990A1F
+    context_ids:
+      - CMP-31D3990A1F
+      - CMP-7CC27EFA43
+    user_context_evidence_ids: []
+    reviewer_work_unit_id: WU-C72BE604E8
+    rationale: The Pass-1 components interpretation for Prefixed hashing and action chaining remains consistent with raw anchors and complete context; confirmation is static and does not claim runtime, deployment, or proof-system assurance.
+    assumptions_added: []
+    assumptions_removed: []
+    global_consequences:
+      - The interpretation remains subject to composed trust, configuration, and availability boundaries.
+    replacement_ids: []
+  - record_id: CMP-49180D7623
+    disposition: CONFIRMED
+    pass_1_record_ids:
+      - CMP-49180D7623
+    context_ids:
+      - CMP-49180D7623
+      - CMP-7CC27EFA43
+    user_context_evidence_ids: []
+    reviewer_work_unit_id: WU-C72BE604E8
+    rationale: The Pass-1 components interpretation for Mina account/hash model remains consistent with raw anchors and complete context; confirmation is static and does not claim runtime, deployment, or proof-system assurance.
+    assumptions_added: []
+    assumptions_removed: []
+    global_consequences:
+      - The interpretation remains subject to composed trust, configuration, and availability boundaries.
+    replacement_ids: []
+  - record_id: CMP-5CAF19BDCD
+    disposition: CONFIRMED
+    pass_1_record_ids:
+      - CMP-5CAF19BDCD
+    context_ids:
+      - CMP-5CAF19BDCD
+      - SEC-BC2C476AE2
+    user_context_evidence_ids: []
+    reviewer_work_unit_id: WU-C72BE604E8
+    rationale: The Pass-1 components interpretation for Treasury Proposal smart contract remains consistent with raw anchors and complete context; confirmation is static and does not claim runtime, deployment, or proof-system assurance.
+    assumptions_added: []
+    assumptions_removed: []
+    global_consequences:
+      - The interpretation remains subject to composed trust, configuration, and availability boundaries.
+    replacement_ids: []
+  - record_id: CMP-7CC27EFA43
+    disposition: CONFIRMED
+    pass_1_record_ids:
+      - CMP-7CC27EFA43
+    context_ids:
+      - CMP-7CC27EFA43
+      - SEC-B560A051DA
+    user_context_evidence_ids: []
+    reviewer_work_unit_id: WU-C72BE604E8
+    rationale: The Pass-1 components interpretation for Provable ledger and hashing support remains consistent with raw anchors and complete context; confirmation is static and does not claim runtime, deployment, or proof-system assurance.
+    assumptions_added: []
+    assumptions_removed: []
+    global_consequences:
+      - The interpretation remains subject to composed trust, configuration, and availability boundaries.
+    replacement_ids: []
+  - record_id: CMP-7DB1B15B38
+    disposition: CONFIRMED
+    pass_1_record_ids:
+      - CMP-7DB1B15B38
+    context_ids:
+      - CMP-7DB1B15B38
+      - CMP-B6BB8BE661
+    user_context_evidence_ids: []
+    reviewer_work_unit_id: WU-C72BE604E8
+    rationale: The Pass-1 components interpretation for Pause-controller multisig messages remains consistent with raw anchors and complete context; confirmation is static and does not claim runtime, deployment, or proof-system assurance.
+    assumptions_added: []
+    assumptions_removed: []
+    global_consequences:
+      - The interpretation remains subject to composed trust, configuration, and availability boundaries.
+    replacement_ids: []
+  - record_id: CMP-834A30297A
+    disposition: CONFIRMED
+    pass_1_record_ids:
+      - CMP-834A30297A
+    context_ids:
+      - CMP-834A30297A
+      - SEC-DD3B44137C
+    user_context_evidence_ids: []
+    reviewer_work_unit_id: WU-C72BE604E8
+    rationale: The Pass-1 components interpretation for Treasury event schemas remains consistent with raw anchors and complete context; confirmation is static and does not claim runtime, deployment, or proof-system assurance.
+    assumptions_added: []
+    assumptions_removed: []
+    global_consequences:
+      - The interpretation remains subject to composed trust, configuration, and availability boundaries.
+    replacement_ids: []
+  - record_id: CMP-874E479BA1
+    disposition: CONFIRMED
+    pass_1_record_ids:
+      - CMP-874E479BA1
+    context_ids:
+      - CMP-874E479BA1
+      - SEC-F88596C819
+    user_context_evidence_ids: []
+    reviewer_work_unit_id: WU-C72BE604E8
+    rationale: The Pass-1 components interpretation for Staking-ledger-to-voting-ledger ZkProgram remains consistent with raw anchors and complete context; confirmation is static and does not claim runtime, deployment, or proof-system assurance.
+    assumptions_added: []
+    assumptions_removed: []
+    global_consequences:
+      - The interpretation remains subject to composed trust, configuration, and availability boundaries.
+    replacement_ids: []
+  - record_id: CMP-B6BB8BE661
+    disposition: CONFIRMED
+    pass_1_record_ids:
+      - CMP-B6BB8BE661
+    context_ids:
+      - CMP-B6BB8BE661
+      - SEC-10182FB352
+    user_context_evidence_ids: []
+    reviewer_work_unit_id: WU-C72BE604E8
+    rationale: The Pass-1 components interpretation for Treasury Pause Controller smart contract remains consistent with raw anchors and complete context; confirmation is static and does not claim runtime, deployment, or proof-system assurance.
+    assumptions_added: []
+    assumptions_removed: []
+    global_consequences:
+      - The interpretation remains subject to composed trust, configuration, and availability boundaries.
+    replacement_ids: []
+  - record_id: CMP-E155326DD2
+    disposition: CONFIRMED
+    pass_1_record_ids:
+      - CMP-E155326DD2
+    context_ids:
+      - CMP-E155326DD2
+      - SEC-FB542C27D2
+    user_context_evidence_ids: []
+    reviewer_work_unit_id: WU-C72BE604E8
+    rationale: The Pass-1 components interpretation for Treasury Owner smart contract remains consistent with raw anchors and complete context; confirmation is static and does not claim runtime, deployment, or proof-system assurance.
+    assumptions_added: []
+    assumptions_removed: []
+    global_consequences:
+      - The interpretation remains subject to composed trust, configuration, and availability boundaries.
+    replacement_ids: []
+  - record_id: FLW-21AF7F4E4D
+    disposition: REFINED
+    pass_1_record_ids:
+      - FLW-21AF7F4E4D
+    context_ids:
+      - REQ-8BFD766005
+      - SEC-10182FB352
+      - GAP-22CD8BD355
+    user_context_evidence_ids: []
+    reviewer_work_unit_id: WU-C72BE604E8
+    rationale: Global pause authorization lacks deployment-domain binding and an on-chain event and relies on distinct recoverable signers.
+    assumptions_added: []
+    assumptions_removed: []
+    global_consequences:
+      - The qualification must remain visible in system flows, traceability, security reasoning, and author review.
+    replacement_ids: []
+  - record_id: FLW-2F560AE009
+    disposition: CONFIRMED
+    pass_1_record_ids:
+      - FLW-2F560AE009
+    context_ids:
+      - CMP-834A30297A
+    user_context_evidence_ids: []
+    reviewer_work_unit_id: WU-C72BE604E8
+    rationale: The Pass-1 flows interpretation for Treasury event producer-to-consumer schema remains consistent with raw anchors and complete context; confirmation is static and does not claim runtime, deployment, or proof-system assurance.
+    assumptions_added: []
+    assumptions_removed: []
+    global_consequences:
+      - The interpretation remains subject to composed trust, configuration, and availability boundaries.
+    replacement_ids: []
+  - record_id: FLW-53B4410963
+    disposition: REFINED
+    pass_1_record_ids:
+      - FLW-53B4410963
+    context_ids:
+      - INV-016B52DE5B
+      - FND-CA0F83CE86
+    user_context_evidence_ids: []
+    reviewer_work_unit_id: WU-C72BE604E8
+    rationale: Recursive adjacency is constrained, but terminal completeness still relies on a dense staking-ledger representation.
+    assumptions_added: []
+    assumptions_removed: []
+    global_consequences:
+      - The qualification must remain visible in system flows, traceability, security reasoning, and author review.
+    replacement_ids: []
+  - record_id: FLW-5AA543472A
+    disposition: REFINED
+    pass_1_record_ids:
+      - FLW-5AA543472A
+    context_ids:
+      - INV-015B387636
+      - THR-A943E3380A
+    user_context_evidence_ids: []
+    reviewer_work_unit_id: WU-C72BE604E8
+    rationale: Authorization is a blind toggle, terminal status can be lost, and the emitted Bool can disagree with state.
+    assumptions_added: []
+    assumptions_removed: []
+    global_consequences:
+      - The qualification must remain visible in system flows, traceability, security reasoning, and author review.
+    replacement_ids: []
+  - record_id: FLW-5C8E5E0DE3
+    disposition: CONFIRMED
+    pass_1_record_ids:
+      - FLW-5C8E5E0DE3
+    context_ids:
+      - CMP-7CC27EFA43
+    user_context_evidence_ids: []
+    reviewer_work_unit_id: WU-C72BE604E8
+    rationale: The Pass-1 flows interpretation for Public key to voting/nullifier root remains consistent with raw anchors and complete context; confirmation is static and does not claim runtime, deployment, or proof-system assurance.
+    assumptions_added: []
+    assumptions_removed: []
+    global_consequences:
+      - The interpretation remains subject to composed trust, configuration, and availability boundaries.
+    replacement_ids: []
+  - record_id: FLW-5E24C8B8E4
+    disposition: REFINED
+    pass_1_record_ids:
+      - FLW-5E24C8B8E4
+    context_ids:
+      - FND-B5948FE3CF
+      - UNR-13C729A54A
+    user_context_evidence_ids: []
+    reviewer_work_unit_id: WU-C72BE604E8
+    rationale: The local interpretation for Proof-backed tally finalization remains source-supported, but complete context adds cross-component policy, trust, lifecycle, or liveness qualifications represented by the linked context records.
+    assumptions_added: []
+    assumptions_removed: []
+    global_consequences:
+      - The qualification must remain visible in system flows, traceability, security reasoning, and author review.
+    replacement_ids: []
+  - record_id: FLW-6394A1B72B
+    disposition: REFINED
+    pass_1_record_ids:
+      - FLW-6394A1B72B
+    context_ids:
+      - REQ-989D12F5D3
+      - GAP-9398E85581
+      - GAP-F83C6F5411
+    user_context_evidence_ids: []
+    reviewer_work_unit_id: WU-C72BE604E8
+    rationale: The local interpretation for Proposal creation and bond custody remains source-supported, but complete context adds cross-component policy, trust, lifecycle, or liveness qualifications represented by the linked context records.
+    assumptions_added: []
+    assumptions_removed: []
+    global_consequences:
+      - The qualification must remain visible in system flows, traceability, security reasoning, and author review.
+    replacement_ids: []
+  - record_id: FLW-745B097927
+    disposition: REFINED
+    pass_1_record_ids:
+      - FLW-745B097927
+    context_ids:
+      - ASM-E6AE27B10D
+      - THR-0DEBF32E0A
+    user_context_evidence_ids: []
+    reviewer_work_unit_id: WU-C72BE604E8
+    rationale: The local interpretation for Emergency participant commitment rotation remains source-supported, but complete context adds cross-component policy, trust, lifecycle, or liveness qualifications represented by the linked context records.
+    assumptions_added: []
+    assumptions_removed: []
+    global_consequences:
+      - The qualification must remain visible in system flows, traceability, security reasoning, and author review.
+    replacement_ids: []
+  - record_id: FLW-7DA083B071
+    disposition: REFINED
+    pass_1_record_ids:
+      - FLW-7DA083B071
+    context_ids:
+      - INV-2A14CD3045
+      - ASM-73AF207816
+    user_context_evidence_ids: []
+    reviewer_work_unit_id: WU-C72BE604E8
+    rationale: The local interpretation for Staking-to-voting digest batch remains source-supported, but complete context adds cross-component policy, trust, lifecycle, or liveness qualifications represented by the linked context records.
+    assumptions_added: []
+    assumptions_removed: []
+    global_consequences:
+      - The qualification must remain visible in system flows, traceability, security reasoning, and author review.
+    replacement_ids: []
+  - record_id: FLW-802D71B91D
+    disposition: CONFIRMED
+    pass_1_record_ids:
+      - FLW-802D71B91D
+    context_ids:
+      - CMP-7CC27EFA43
+    user_context_evidence_ids: []
+    reviewer_work_unit_id: WU-C72BE604E8
+    rationale: The Pass-1 flows interpretation for Staking-transformation digest proof statement remains consistent with raw anchors and complete context; confirmation is static and does not claim runtime, deployment, or proof-system assurance.
+    assumptions_added: []
+    assumptions_removed: []
+    global_consequences:
+      - The interpretation remains subject to composed trust, configuration, and availability boundaries.
+    replacement_ids: []
+  - record_id: FLW-9BA4D696D1
+    disposition: CONFIRMED
+    pass_1_record_ids:
+      - FLW-9BA4D696D1
+    context_ids:
+      - CMP-7CC27EFA43
+    user_context_evidence_ids: []
+    reviewer_work_unit_id: WU-C72BE604E8
+    rationale: The Pass-1 flows interpretation for Vote-reduction proof statement remains consistent with raw anchors and complete context; confirmation is static and does not claim runtime, deployment, or proof-system assurance.
+    assumptions_added: []
+    assumptions_removed: []
+    global_consequences:
+      - The interpretation remains subject to composed trust, configuration, and availability boundaries.
+    replacement_ids: []
+  - record_id: FLW-9BB4E99B75
+    disposition: CONFIRMED
+    pass_1_record_ids:
+      - FLW-9BB4E99B75
+    context_ids:
+      - CMP-7CC27EFA43
+    user_context_evidence_ids: []
+    reviewer_work_unit_id: WU-C72BE604E8
+    rationale: The Pass-1 flows interpretation for Recursive vote-proof aggregation remains consistent with raw anchors and complete context; confirmation is static and does not claim runtime, deployment, or proof-system assurance.
+    assumptions_added: []
+    assumptions_removed: []
+    global_consequences:
+      - The interpretation remains subject to composed trust, configuration, and availability boundaries.
+    replacement_ids: []
+  - record_id: FLW-9D28A6D299
+    disposition: REFINED
+    pass_1_record_ids:
+      - FLW-9D28A6D299
+    context_ids:
+      - GAP-7BAF881BED
+      - GAP-B798CE8DB1
+    user_context_evidence_ids: []
+    reviewer_work_unit_id: WU-C72BE604E8
+    rationale: Recipient-bound payout is source-visible, but claims are unreserved, caller ordered, unexpired, and lack a completion state.
+    assumptions_added: []
+    assumptions_removed: []
+    global_consequences:
+      - The qualification must remain visible in system flows, traceability, security reasoning, and author review.
+    replacement_ids: []
+  - record_id: FLW-A565B35EC6
+    disposition: CONFIRMED
+    pass_1_record_ids:
+      - FLW-A565B35EC6
+    context_ids:
+      - CMP-49180D7623
+    user_context_evidence_ids: []
+    reviewer_work_unit_id: WU-C72BE604E8
+    rationale: The Pass-1 flows interpretation for Mina account to staking-ledger root remains consistent with raw anchors and complete context; confirmation is static and does not claim runtime, deployment, or proof-system assurance.
+    assumptions_added: []
+    assumptions_removed: []
+    global_consequences:
+      - The interpretation remains subject to composed trust, configuration, and availability boundaries.
+    replacement_ids: []
+  - record_id: FLW-A6B92A4E6D
+    disposition: CONFIRMED
+    pass_1_record_ids:
+      - FLW-A6B92A4E6D
+    context_ids:
+      - CMP-7CC27EFA43
+    user_context_evidence_ids: []
+    reviewer_work_unit_id: WU-C72BE604E8
+    rationale: The Pass-1 flows interpretation for Vote authorization and action dispatch remains consistent with raw anchors and complete context; confirmation is static and does not claim runtime, deployment, or proof-system assurance.
+    assumptions_added: []
+    assumptions_removed: []
+    global_consequences:
+      - The interpretation remains subject to composed trust, configuration, and availability boundaries.
+    replacement_ids: []
+  - record_id: FLW-BEFDEF1197
+    disposition: REFINED
+    pass_1_record_ids:
+      - FLW-BEFDEF1197
+    context_ids:
+      - GAP-B798CE8DB1
+      - GAP-F83C6F5411
+    user_context_evidence_ids: []
+    reviewer_work_unit_id: WU-C72BE604E8
+    rationale: The local interpretation for Proposal-local payout remains source-supported, but complete context adds cross-component policy, trust, lifecycle, or liveness qualifications represented by the linked context records.
+    assumptions_added: []
+    assumptions_removed: []
+    global_consequences:
+      - The qualification must remain visible in system flows, traceability, security reasoning, and author review.
+    replacement_ids: []
+  - record_id: FLW-BFD5C6D535
+    disposition: CONFIRMED
+    pass_1_record_ids:
+      - FLW-BFD5C6D535
+    context_ids:
+      - CMP-7CC27EFA43
+    user_context_evidence_ids: []
+    reviewer_work_unit_id: WU-C72BE604E8
+    rationale: The Pass-1 flows interpretation for Vote reduction batch remains consistent with raw anchors and complete context; confirmation is static and does not claim runtime, deployment, or proof-system assurance.
+    assumptions_added: []
+    assumptions_removed: []
+    global_consequences:
+      - The interpretation remains subject to composed trust, configuration, and availability boundaries.
+    replacement_ids: []
+  - record_id: FLW-E60ABD1745
+    disposition: REFINED
+    pass_1_record_ids:
+      - FLW-E60ABD1745
+    context_ids:
+      - FND-B5948FE3CF
+      - ASM-FF091135AE
+    user_context_evidence_ids: []
+    reviewer_work_unit_id: WU-C72BE604E8
+    rationale: The local interpretation for Proposal-local tally remains source-supported, but complete context adds cross-component policy, trust, lifecycle, or liveness qualifications represented by the linked context records.
+    assumptions_added: []
+    assumptions_removed: []
+    global_consequences:
+      - The qualification must remain visible in system flows, traceability, security reasoning, and author review.
+    replacement_ids: []
+  - record_id: FLW-FB5CAECCAD
+    disposition: CONFIRMED
+    pass_1_record_ids:
+      - FLW-FB5CAECCAD
+    context_ids:
+      - CMP-7CC27EFA43
+    user_context_evidence_ids: []
+    reviewer_work_unit_id: WU-C72BE604E8
+    rationale: The Pass-1 flows interpretation for Owner-side proposal creation remains consistent with raw anchors and complete context; confirmation is static and does not claim runtime, deployment, or proof-system assurance.
+    assumptions_added: []
+    assumptions_removed: []
+    global_consequences:
+      - The interpretation remains subject to composed trust, configuration, and availability boundaries.
+    replacement_ids: []
+  - record_id: FLW-FD2B1F4966
+    disposition: REFINED
+    pass_1_record_ids:
+      - FLW-FD2B1F4966
+    context_ids:
+      - THR-77C87EDE62
+      - THR-0DEBF32E0A
+    user_context_evidence_ids: []
+    reviewer_work_unit_id: WU-C72BE604E8
+    rationale: The local interpretation for Pause-controller command authorization remains source-supported, but complete context adds cross-component policy, trust, lifecycle, or liveness qualifications represented by the linked context records.
+    assumptions_added: []
+    assumptions_removed: []
+    global_consequences:
+      - The qualification must remain visible in system flows, traceability, security reasoning, and author review.
+    replacement_ids: []
+  - record_id: REQ-12FA8872CA
+    disposition: UNRESOLVED
+    pass_1_record_ids:
+      - REQ-12FA8872CA
+    context_ids:
+      - REQ-12FA8872CA
+      - GAP-BCB6F29C25
+    user_context_evidence_ids:
+      - EVD-0D50A0B3BE
+      - EVD-C70801D35C
+      - EVD-0554D3710D
+      - EVD-FB46967B48
+    reviewer_work_unit_id: WU-C72BE604E8
+    rationale: The intent or local observation for Independent audit and devnet testing before mainnet remains valid, but complete context and raw evidence cannot resolve its operational, deployment, protocol, or policy boundary.
+    assumptions_added: []
+    assumptions_removed: []
+    global_consequences:
+      - The qualification must remain visible in system flows, traceability, security reasoning, and author review.
+    replacement_ids: []
+  - record_id: REQ-15F6A20397
+    disposition: REFINED
+    pass_1_record_ids:
+      - REQ-15F6A20397
+    context_ids:
+      - REQ-15F6A20397
+      - BHV-B377C55F96
+    user_context_evidence_ids: *a1
+    reviewer_work_unit_id: WU-C72BE604E8
+    rationale: The local interpretation for Quorum criterion remains source-supported, but complete context adds cross-component policy, trust, lifecycle, or liveness qualifications represented by the linked context records.
+    assumptions_added: []
+    assumptions_removed: []
+    global_consequences:
+      - The qualification must remain visible in system flows, traceability, security reasoning, and author review.
+    replacement_ids: []
+  - record_id: REQ-1E02AF2B34
+    disposition: CONFIRMED
+    pass_1_record_ids:
+      - REQ-1E02AF2B34
+    context_ids:
+      - REQ-1E02AF2B34
+      - EVD-C70801D35C
+    user_context_evidence_ids: *a1
+    reviewer_work_unit_id: WU-C72BE604E8
+    rationale: The Pass-1 requirements interpretation for Treasury verification-key upgrade remains consistent with raw anchors and complete context; confirmation is static and does not claim runtime, deployment, or proof-system assurance.
+    assumptions_added: []
+    assumptions_removed: []
+    global_consequences:
+      - The interpretation remains subject to composed trust, configuration, and availability boundaries.
+    replacement_ids: []
+  - record_id: REQ-1EEDB7A733
+    disposition: REFINED
+    pass_1_record_ids:
+      - REQ-1EEDB7A733
+    context_ids:
+      - REQ-1EEDB7A733
+      - CMP-E155326DD2
+    user_context_evidence_ids: *a1
+    reviewer_work_unit_id: WU-C72BE604E8
+    rationale: The local interpretation for Provable proposal, voting, execution, and accounting remains source-supported, but complete context adds cross-component policy, trust, lifecycle, or liveness qualifications represented by the linked context records.
+    assumptions_added: []
+    assumptions_removed: []
+    global_consequences:
+      - The qualification must remain visible in system flows, traceability, security reasoning, and author review.
+    replacement_ids: []
+  - record_id: REQ-1EEFCCC541
+    disposition: UNRESOLVED
+    pass_1_record_ids:
+      - REQ-1EEFCCC541
+    context_ids:
+      - REQ-1EEFCCC541
+      - ASM-912B3DBDF6
+    user_context_evidence_ids: *a1
+    reviewer_work_unit_id: WU-C72BE604E8
+    rationale: The intent or local observation for Existing-protocol compatibility remains valid, but complete context and raw evidence cannot resolve its operational, deployment, protocol, or policy boundary.
+    assumptions_added: []
+    assumptions_removed: []
+    global_consequences:
+      - The qualification must remain visible in system flows, traceability, security reasoning, and author review.
+    replacement_ids: []
+  - record_id: REQ-230AF0D420
+    disposition: CONFIRMED
+    pass_1_record_ids:
+      - REQ-230AF0D420
+    context_ids:
+      - REQ-230AF0D420
+      - EVD-C70801D35C
+    user_context_evidence_ids: *a1
+    reviewer_work_unit_id: WU-C72BE604E8
+    rationale: The Pass-1 requirements interpretation for Independent voting-delegate override remains consistent with raw anchors and complete context; confirmation is static and does not claim runtime, deployment, or proof-system assurance.
+    assumptions_added: []
+    assumptions_removed: []
+    global_consequences:
+      - The interpretation remains subject to composed trust, configuration, and availability boundaries.
+    replacement_ids: []
+  - record_id: REQ-3E7C685492
+    disposition: CONFIRMED
+    pass_1_record_ids:
+      - REQ-3E7C685492
+    context_ids:
+      - REQ-3E7C685492
+      - EVD-C70801D35C
+    user_context_evidence_ids: *a1
+    reviewer_work_unit_id: WU-C72BE604E8
+    rationale: The Pass-1 requirements interpretation for Multiple sub-treasuries remains consistent with raw anchors and complete context; confirmation is static and does not claim runtime, deployment, or proof-system assurance.
+    assumptions_added: []
+    assumptions_removed: []
+    global_consequences:
+      - The interpretation remains subject to composed trust, configuration, and availability boundaries.
+    replacement_ids: []
+  - record_id: REQ-4F1B35FCAA
+    disposition: REFINED
+    pass_1_record_ids:
+      - REQ-4F1B35FCAA
+    context_ids:
+      - REQ-4F1B35FCAA
+      - GAP-817200738F
+    user_context_evidence_ids: *a1
+    reviewer_work_unit_id: WU-C72BE604E8
+    rationale: The local interpretation for Proposal content reference remains source-supported, but complete context adds cross-component policy, trust, lifecycle, or liveness qualifications represented by the linked context records.
+    assumptions_added: []
+    assumptions_removed: []
+    global_consequences:
+      - The qualification must remain visible in system flows, traceability, security reasoning, and author review.
+    replacement_ids: []
+  - record_id: REQ-529C5F460D
+    disposition: REFINED
+    pass_1_record_ids:
+      - REQ-529C5F460D
+    context_ids:
+      - REQ-529C5F460D
+      - BHV-5B1BD6B386
+    user_context_evidence_ids: *a1
+    reviewer_work_unit_id: WU-C72BE604E8
+    rationale: The local interpretation for Historical staking-ledger voting weight remains source-supported, but complete context adds cross-component policy, trust, lifecycle, or liveness qualifications represented by the linked context records.
+    assumptions_added: []
+    assumptions_removed: []
+    global_consequences:
+      - The qualification must remain visible in system flows, traceability, security reasoning, and author review.
+    replacement_ids: []
+  - record_id: REQ-583E087F5C
+    disposition: UNRESOLVED
+    pass_1_record_ids:
+      - REQ-583E087F5C
+    context_ids:
+      - REQ-583E087F5C
+      - GAP-A25D114C6F
+    user_context_evidence_ids: *a1
+    reviewer_work_unit_id: WU-C72BE604E8
+    rationale: The intent or local observation for Permissionless self-hostable infrastructure remains valid, but complete context and raw evidence cannot resolve its operational, deployment, protocol, or policy boundary.
+    assumptions_added: []
+    assumptions_removed: []
+    global_consequences:
+      - The qualification must remain visible in system flows, traceability, security reasoning, and author review.
+    replacement_ids: []
+  - record_id: REQ-632DB8C787
+    disposition: REFINED
+    pass_1_record_ids:
+      - REQ-632DB8C787
+    context_ids:
+      - REQ-632DB8C787
+      - FLW-A6B92A4E6D
+    user_context_evidence_ids: *a1
+    reviewer_work_unit_id: WU-C72BE604E8
+    rationale: The local interpretation for Voting period remains source-supported, but complete context adds cross-component policy, trust, lifecycle, or liveness qualifications represented by the linked context records.
+    assumptions_added: []
+    assumptions_removed: []
+    global_consequences:
+      - The qualification must remain visible in system flows, traceability, security reasoning, and author review.
+    replacement_ids: []
+  - record_id: REQ-740285CD08
+    disposition: REFINED
+    pass_1_record_ids:
+      - REQ-740285CD08
+    context_ids:
+      - REQ-740285CD08
+      - FLW-6394A1B72B
+    user_context_evidence_ids: *a1
+    reviewer_work_unit_id: WU-C72BE604E8
+    rationale: The local interpretation for Proposal-submission period remains source-supported, but complete context adds cross-component policy, trust, lifecycle, or liveness qualifications represented by the linked context records.
+    assumptions_added: []
+    assumptions_removed: []
+    global_consequences:
+      - The qualification must remain visible in system flows, traceability, security reasoning, and author review.
+    replacement_ids: []
+  - record_id: REQ-74C4827C5B
+    disposition: REFINED
+    pass_1_record_ids:
+      - REQ-74C4827C5B
+    context_ids:
+      - REQ-74C4827C5B
+      - BHV-B377C55F96
+    user_context_evidence_ids: *a1
+    reviewer_work_unit_id: WU-C72BE604E8
+    rationale: The local interpretation for Approval-majority criterion remains source-supported, but complete context adds cross-component policy, trust, lifecycle, or liveness qualifications represented by the linked context records.
+    assumptions_added: []
+    assumptions_removed: []
+    global_consequences:
+      - The qualification must remain visible in system flows, traceability, security reasoning, and author review.
+    replacement_ids: []
+  - record_id: REQ-80815948D4
+    disposition: REFINED
+    pass_1_record_ids:
+      - REQ-80815948D4
+    context_ids:
+      - REQ-80815948D4
+      - BHV-5095682725
+    user_context_evidence_ids: *a1
+    reviewer_work_unit_id: WU-C72BE604E8
+    rationale: The local interpretation for Lifecycle synchronization and configuration remains source-supported, but complete context adds cross-component policy, trust, lifecycle, or liveness qualifications represented by the linked context records.
+    assumptions_added: []
+    assumptions_removed: []
+    global_consequences:
+      - The qualification must remain visible in system flows, traceability, security reasoning, and author review.
+    replacement_ids: []
+  - record_id: REQ-8671471176
+    disposition: REFINED
+    pass_1_record_ids:
+      - REQ-8671471176
+    context_ids:
+      - REQ-8671471176
+      - FLW-A6B92A4E6D
+    user_context_evidence_ids: *a1
+    reviewer_work_unit_id: WU-C72BE604E8
+    rationale: The local interpretation for Lightweight vote dispatch and deferred tally remains source-supported, but complete context adds cross-component policy, trust, lifecycle, or liveness qualifications represented by the linked context records.
+    assumptions_added: []
+    assumptions_removed: []
+    global_consequences:
+      - The qualification must remain visible in system flows, traceability, security reasoning, and author review.
+    replacement_ids: []
+  - record_id: REQ-87F314C527
+    disposition: REFINED
+    pass_1_record_ids:
+      - REQ-87F314C527
+    context_ids:
+      - REQ-87F314C527
+      - FLW-9D28A6D299
+    user_context_evidence_ids: *a1
+    reviewer_work_unit_id: WU-C72BE604E8
+    rationale: The local interpretation for Treasury spend proposal remains source-supported, but complete context adds cross-component policy, trust, lifecycle, or liveness qualifications represented by the linked context records.
+    assumptions_added: []
+    assumptions_removed: []
+    global_consequences:
+      - The qualification must remain visible in system flows, traceability, security reasoning, and author review.
+    replacement_ids: []
+  - record_id: REQ-8AC636D92F
+    disposition: REFINED
+    pass_1_record_ids:
+      - REQ-8AC636D92F
+    context_ids:
+      - REQ-8AC636D92F
+      - CMP-E155326DD2
+    user_context_evidence_ids: *a1
+    reviewer_work_unit_id: WU-C72BE604E8
+    rationale: The local interpretation for Community-controlled on-chain treasury remains source-supported, but complete context adds cross-component policy, trust, lifecycle, or liveness qualifications represented by the linked context records.
+    assumptions_added: []
+    assumptions_removed: []
+    global_consequences:
+      - The qualification must remain visible in system flows, traceability, security reasoning, and author review.
+    replacement_ids: []
+  - record_id: REQ-8BFD766005
+    disposition: REFINED
+    pass_1_record_ids:
+      - REQ-8BFD766005
+    context_ids:
+      - CMP-B6BB8BE661
+      - FLW-21AF7F4E4D
+      - FLW-5AA543472A
+      - GAP-22CD8BD355
+    user_context_evidence_ids: *a1
+    reviewer_work_unit_id: WU-C72BE604E8
+    rationale: The local interpretation for Break-glass multisig intervention remains source-supported, but complete context adds cross-component policy, trust, lifecycle, or liveness qualifications represented by the linked context records.
+    assumptions_added: []
+    assumptions_removed: []
+    global_consequences:
+      - The qualification must remain visible in system flows, traceability, security reasoning, and author review.
+    replacement_ids: []
+  - record_id: REQ-948F2AA498
+    disposition: CONFIRMED
+    pass_1_record_ids:
+      - REQ-948F2AA498
+    context_ids:
+      - REQ-948F2AA498
+      - EVD-C70801D35C
+    user_context_evidence_ids: *a1
+    reviewer_work_unit_id: WU-C72BE604E8
+    rationale: The Pass-1 requirements interpretation for Progressive treasury funding remains consistent with raw anchors and complete context; confirmation is static and does not claim runtime, deployment, or proof-system assurance.
+    assumptions_added: []
+    assumptions_removed: []
+    global_consequences:
+      - The interpretation remains subject to composed trust, configuration, and availability boundaries.
+    replacement_ids: []
+  - record_id: REQ-989D12F5D3
+    disposition: REFINED
+    pass_1_record_ids:
+      - REQ-989D12F5D3
+    context_ids:
+      - REQ-989D12F5D3
+      - BHV-80247CE73D
+    user_context_evidence_ids: *a1
+    reviewer_work_unit_id: WU-C72BE604E8
+    rationale: The local interpretation for Configurable proposer bond remains source-supported, but complete context adds cross-component policy, trust, lifecycle, or liveness qualifications represented by the linked context records.
+    assumptions_added: []
+    assumptions_removed: []
+    global_consequences:
+      - The qualification must remain visible in system flows, traceability, security reasoning, and author review.
+    replacement_ids: []
+  - record_id: REQ-998DF345BB
+    disposition: REFINED
+    pass_1_record_ids:
+      - REQ-998DF345BB
+    context_ids:
+      - BHV-F2207732B4
+      - BR-BEF061F449
+      - GAP-F83C6F5411
+    user_context_evidence_ids: *a1
+    reviewer_work_unit_id: WU-C72BE604E8
+    rationale: The local interpretation for Bond return or loss remains source-supported, but complete context adds cross-component policy, trust, lifecycle, or liveness qualifications represented by the linked context records.
+    assumptions_added: []
+    assumptions_removed: []
+    global_consequences:
+      - The qualification must remain visible in system flows, traceability, security reasoning, and author review.
+    replacement_ids: []
+  - record_id: REQ-9DEF6918CA
+    disposition: UNRESOLVED
+    pass_1_record_ids:
+      - REQ-9DEF6918CA
+    context_ids:
+      - REQ-9DEF6918CA
+      - BHV-C01A568AAE
+    user_context_evidence_ids: *a1
+    reviewer_work_unit_id: WU-C72BE604E8
+    rationale: The intent or local observation for Direct voting without delegation remains valid, but complete context and raw evidence cannot resolve its operational, deployment, protocol, or policy boundary.
+    assumptions_added: []
+    assumptions_removed: []
+    global_consequences:
+      - The qualification must remain visible in system flows, traceability, security reasoning, and author review.
+    replacement_ids: []
+  - record_id: REQ-AFB190A0FA
+    disposition: REFINED
+    pass_1_record_ids:
+      - REQ-AFB190A0FA
+    context_ids:
+      - REQ-AFB190A0FA
+      - BHV-A302A43C9F
+    user_context_evidence_ids: *a1
+    reviewer_work_unit_id: WU-C72BE604E8
+    rationale: The local interpretation for Yay, nay, and abstain semantics remains source-supported, but complete context adds cross-component policy, trust, lifecycle, or liveness qualifications represented by the linked context records.
+    assumptions_added: []
+    assumptions_removed: []
+    global_consequences:
+      - The qualification must remain visible in system flows, traceability, security reasoning, and author review.
+    replacement_ids: []
+  - record_id: REQ-B3FFF31BC9
+    disposition: REFINED
+    pass_1_record_ids:
+      - REQ-B3FFF31BC9
+    context_ids:
+      - FLW-9D28A6D299
+      - GAP-B798CE8DB1
+      - GAP-7BAF881BED
+    user_context_evidence_ids: *a1
+    reviewer_work_unit_id: WU-C72BE604E8
+    rationale: The local interpretation for Post-cooldown approved execution remains source-supported, but complete context adds cross-component policy, trust, lifecycle, or liveness qualifications represented by the linked context records.
+    assumptions_added: []
+    assumptions_removed: []
+    global_consequences:
+      - The qualification must remain visible in system flows, traceability, security reasoning, and author review.
+    replacement_ids: []
+  - record_id: REQ-B5E5D97336
+    disposition: REFINED
+    pass_1_record_ids:
+      - REQ-B5E5D97336
+    context_ids:
+      - REQ-B5E5D97336
+      - BHV-141ED40E5D
+    user_context_evidence_ids: *a1
+    reviewer_work_unit_id: WU-C72BE604E8
+    rationale: The local interpretation for One voting-weight contribution per proposal remains source-supported, but complete context adds cross-component policy, trust, lifecycle, or liveness qualifications represented by the linked context records.
+    assumptions_added: []
+    assumptions_removed: []
+    global_consequences:
+      - The qualification must remain visible in system flows, traceability, security reasoning, and author review.
+    replacement_ids: []
+  - record_id: REQ-D100BF5A33
+    disposition: REFINED
+    pass_1_record_ids:
+      - REQ-D100BF5A33
+    context_ids:
+      - REQ-D100BF5A33
+      - BHV-C01A568AAE
+    user_context_evidence_ids: *a1
+    reviewer_work_unit_id: WU-C72BE604E8
+    rationale: The local interpretation for Staking-delegate voting remains source-supported, but complete context adds cross-component policy, trust, lifecycle, or liveness qualifications represented by the linked context records.
+    assumptions_added: []
+    assumptions_removed: []
+    global_consequences:
+      - The qualification must remain visible in system flows, traceability, security reasoning, and author review.
+    replacement_ids: []
+  - record_id: REQ-E7F4E1ECAD
+    disposition: CONFIRMED
+    pass_1_record_ids:
+      - REQ-E7F4E1ECAD
+    context_ids:
+      - REQ-E7F4E1ECAD
+      - EVD-C70801D35C
+    user_context_evidence_ids: *a1
+    reviewer_work_unit_id: WU-C72BE604E8
+    rationale: The Pass-1 requirements interpretation for Dynamic or moving quorum remains consistent with raw anchors and complete context; confirmation is static and does not claim runtime, deployment, or proof-system assurance.
+    assumptions_added: []
+    assumptions_removed: []
+    global_consequences:
+      - The interpretation remains subject to composed trust, configuration, and availability boundaries.
+    replacement_ids: []
+  - record_id: REQ-EAE9049742
+    disposition: REFINED
+    pass_1_record_ids:
+      - REQ-EAE9049742
+    context_ids:
+      - REQ-EAE9049742
+      - BHV-5095682725
+    user_context_evidence_ids: *a1
+    reviewer_work_unit_id: WU-C72BE604E8
+    rationale: The local interpretation for Exploration period without voting remains source-supported, but complete context adds cross-component policy, trust, lifecycle, or liveness qualifications represented by the linked context records.
+    assumptions_added: []
+    assumptions_removed: []
+    global_consequences:
+      - The qualification must remain visible in system flows, traceability, security reasoning, and author review.
+    replacement_ids: []
+  - record_id: REQ-F8D28DBFF5
+    disposition: REFINED
+    pass_1_record_ids:
+      - REQ-F8D28DBFF5
+    context_ids:
+      - REQ-F8D28DBFF5
+      - FLW-9D28A6D299
+    user_context_evidence_ids: *a1
+    reviewer_work_unit_id: WU-C72BE604E8
+    rationale: The local interpretation for Cooldown permits tally but prevents execution remains source-supported, but complete context adds cross-component policy, trust, lifecycle, or liveness qualifications represented by the linked context records.
+    assumptions_added: []
+    assumptions_removed: []
+    global_consequences:
+      - The qualification must remain visible in system flows, traceability, security reasoning, and author review.
+    replacement_ids: []
+  - record_id: REQ-FBC7A8913A
+    disposition: CONFIRMED
+    pass_1_record_ids:
+      - REQ-FBC7A8913A
+    context_ids:
+      - REQ-FBC7A8913A
+      - EVD-C70801D35C
+    user_context_evidence_ids: *a1
+    reviewer_work_unit_id: WU-C72BE604E8
+    rationale: The Pass-1 requirements interpretation for Self-override of delegation remains consistent with raw anchors and complete context; confirmation is static and does not claim runtime, deployment, or proof-system assurance.
+    assumptions_added: []
+    assumptions_removed: []
+    global_consequences:
+      - The interpretation remains subject to composed trust, configuration, and availability boundaries.
+    replacement_ids: []

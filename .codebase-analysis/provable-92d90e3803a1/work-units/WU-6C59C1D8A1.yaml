@@ -1,0 +1,15 @@
+work_unit:
+  id: "WU-6C59C1D8A1"
+  stable_key: "work-unit:security:whole-protocol"
+  role: "security"
+  pass: "PASS_1"
+  revision: "1e27b1aea88f5ea2764db96e4b337b24fe6dbeb3"
+  primary_paths: []
+  read_only_context_paths: ["SCOPE.yaml", "context/RFC_EXTRACT.md", "context/ZKSECURITY_AUDIT_INDEX.md", "evidence/reconnaissance", "evidence/semantic"]
+  owned_record_ids: []
+  owned_stable_key_prefixes: ["security-objective:", "threat:", "assumption:security:", "finding:security:", "gap:security:", "unresolved:security:"]
+  questions:
+    - "What assets, actors, trust zones, privileges, adverse sequences, and composed failure hypotheses exist across the whole treasury protocol?"
+    - "What is the source-bound disposition for every required known failure class?"
+  output: "evidence/challenge/WU-6C59C1D8A1.yaml"
+  status: "COMPLETE"

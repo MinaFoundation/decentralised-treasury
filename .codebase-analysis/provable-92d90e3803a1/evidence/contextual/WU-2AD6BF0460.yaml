@@ -1,0 +1,522 @@
+bundle:
+  schema_version: 1
+  work_unit: WU-2AD6BF0460
+  revision: 1e27b1aea88f5ea2764db96e4b337b24fe6dbeb3
+  scope_hash: f40d76b91ec3cd8805ecdc7bebba8d43b8f317842639a7799738c37569119ab1
+  pass_1_sha256: 1baa122bc91838a651da0116040b290de56f49b90e1c8688ba3712e0db7c6213
+  context_sha256: b08ad4cfef37e8a2f19bb2dd46d69763312a48e00e6204e7f8ec30a291afdfd1
+  pass_2_corrected_sha256: 645101d2946d908ab1e200b78048e56957cdd63daa1f872c81897d1e83618897
+  role: phase_6_business_coherence
+  ownership:
+    output: evidence/contextual/WU-2AD6BF0460.yaml
+    canonical_ids_allocated: false
+    source_or_model_mutations: false
+  input_integrity:
+    algorithm: sha256
+    scoped_input_count: 38
+    verified_before_review: true
+    verified_before_completion: true
+    mismatches: []
+    recomputed_scope_hash: f40d76b91ec3cd8805ecdc7bebba8d43b8f317842639a7799738c37569119ab1
+  source_hashes:
+    - {path: packages/sdk/package.json, sha256: d73ba980798af63c8ac79b897ae548bd706e480286ac9f617c68f2144f394eba}
+    - {path: packages/sdk/src/logging/logger.ts, sha256: ad0ff96d55f18ddf13a2a7d2fe7e5fd974a8acfd320c65a501cc3a4412b1b944}
+    - {path: packages/sdk/src/ledgers/nullifier-ledger/nullifier-ledger.ts, sha256: 0b8a9038005b7aee785f75d4e0bb4fdf4cb5f945c639f35528596003ac9c36e4}
+    - {path: packages/sdk/src/ledgers/staking-ledger/staking-ledger.ts, sha256: df9be11132c6cb968fe1b9857b53137d629f7d213141652bc90981b5c7c04d69}
+    - {path: packages/sdk/src/ledgers/voting-ledger/voting-ledger.ts, sha256: 8405cbfde9370f4cc424efcdb32477949bf5fcf38db24926cfd0bd1f40898c52}
+    - {path: packages/sdk/src/provable/account.ts, sha256: 00eabfcee24eb10380d0ffeb1e60a08a85aa650cc8a3e9140718cecbf6fd0563}
+    - {path: packages/sdk/src/provable/contracts/treasury-constants.ts, sha256: c4ef6c551437e01ebe6294c51923dfedff4a198735766a37029249482d9247a6}
+    - {path: packages/sdk/src/provable/contracts/treasury-owner.ts, sha256: 7c66014cee7f7a5e559b29f3b7c2790ed19c38c9a91b886c15cbbef3328d17dc}
+    - {path: packages/sdk/src/provable/contracts/treasury-pause-controller/multisig-signatures.ts, sha256: 48a7c4cd41c1e9764df1329966c37f325817fa43074140c145f4f6c1ae2aa372}
+    - {path: packages/sdk/src/provable/contracts/treasury-pause-controller/treasury-pause-controller.ts, sha256: f7139183b963aa496dd36df00017885c9ab6275f11accca35bfd9054260e5104}
+    - {path: packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts, sha256: 95e5656d3a0d0c09a88ac9befa743517c53a98983bd1cf74b042e87bc9faf7af}
+    - {path: packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts, sha256: 37c1f07a5fad41f036f999792b44bf13d4f9af280cb1439bed6a8411dfaa81cd}
+    - {path: packages/sdk/src/provable/events/treasury-proposal-events.ts, sha256: 421e00244121b82a603b71b722ef35419794d0d603a264270a47a44d05a2c01d}
+    - {path: packages/sdk/src/provable/hashing-helpers.ts, sha256: 8ef43c9c685339f97a667002c2f6f349071eaa53ba753c7008dc46be23396869}
+    - {path: packages/sdk/src/provable/merkle-tree/prefixed-merkle-tree.ts, sha256: 870ca739cc8406070367beb86367efa64101647d130f0892b636555cbd2a5c6c}
+    - {path: packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts, sha256: 4dcfc5e1f1edcc7e26cfb960f3892208efe16056a2579b14e12e2a79f0e28197}
+    - {path: packages/sdk/src/provable/voting-account.ts, sha256: fe383ead1055910ace4062c56cf4c7773dead3d95733f972ef6e49b2de515454}
+    - {path: packages/sdk/src/storage/in-memory/in-memory-merkle-tree-storage.ts, sha256: b4d3fc976ee94a108773f8839c03e8775843ab86a9ced5d730b84f9e12a7589b}
+    - {path: packages/sdk/src/storage/keyv/keyv-merkle-tree-storage.ts, sha256: da9b8eac67d45d4a73ecbc53865986ab50bfdc34bd2a3eded3e3701b868f6d70}
+    - {path: packages/sdk/src/storage/merkle-tree-storage.ts, sha256: ce5610141a8d1c7d4a5e8b83ae90dc17f6ae64e5da11e29907cdadd5c1a69539}
+    - {path: packages/sdk/src/utils/context-provider.ts, sha256: cbbde1f3561ca2ee39bc7026241a09fa2659629542c527cc49271da5e924b6d4}
+    - {path: packages/sdk/src/utils/public-key.ts, sha256: 4a174b2a1bc5d07a9f3f8680e47cde35d3b654eeaf924f82e0aae8cf162a9383}
+    - {path: packages/sdk/test/integration/treasury-owner.test.ts, sha256: f73f778dcb2ac226c416ebfdf69117af3262fcc37f36877ea3fb7d1bd7e0f4e0}
+    - {path: packages/sdk/test/provable/context/contracts/mina-local.ts, sha256: 1f1bc37d6f2fe73405b8b6d6a5044ef60de9210cebc0fc5599f0501eeae037f7}
+    - {path: packages/sdk/test/provable/context/contracts/multisig-signatures-context.ts, sha256: d7ab8c5b956860cd6be820f4109fccf5b5418e17ddc6c49f8297f290d031bfe3}
+    - {path: packages/sdk/test/provable/context/contracts/treasury-pause-controller-context.ts, sha256: c19bf32ccf5beaef34b5493c1fb459a2d9e5c4cccbba7c07c6dcebc570f7e0dc}
+    - {path: packages/sdk/test/provable/context/contracts/treasury-proposal-context.ts, sha256: 26867da6fe78c507f120849a85c6752ad3b463124cc59393d8adc37b7e8d6463}
+    - {path: packages/sdk/test/provable/context/contracts/vote-reducer-context.ts, sha256: 01d905c373575a62eb1274650fbff25a240626f993ae6127f54e2621346d49f0}
+    - {path: packages/sdk/test/provable/context/proofs-enabled.ts, sha256: 8811666fcffeca3ff5a2bc4d6dbe93b208dcd242b97860390abba0f7551ce2bd}
+    - {path: packages/sdk/test/provable/context/staking-ledger-to-voting-ledger-context.ts, sha256: 4195f6ebbcbee51ca421f319cd5a399d54e9f252ff76334024914f83d8afdfec}
+    - {path: packages/sdk/test/provable/contracts/treasury-pause-controller/multisig-signatures.test.ts, sha256: d51e8afe43141a84650ddcff49d736a308007fb04da1ae22b72d3a65783648b2}
+    - {path: packages/sdk/test/provable/contracts/treasury-pause-controller/treasury-pause-controller.test.ts, sha256: 5e4031821bafa39daf9b1b28d2aeba4daf92e1611f78e571035974ab63fbb1e5}
+    - {path: packages/sdk/test/provable/contracts/treasury-proposal/treasury-proposal.test.ts, sha256: 89444ba4edfc6bf48fae0c0ef4f8b183c9c2d35f24e38e78622334adb3bed6bb}
+    - {path: packages/sdk/test/provable/contracts/treasury-proposal/vote-reducer.test.ts, sha256: 7f957b454de0f6e1545fa2dc0367b53e0908bde826eb76db4099d36f4f4e8f8a}
+    - {path: packages/sdk/test/provable/events/treasury-proposal-events.test.ts, sha256: 2b5204f4acf2dca9135642a242e18bf5535f46fa41526b43fb19b228d6f63f79}
+    - {path: packages/sdk/test/provable/merkle-tree/prefixed-merkle-tree.test.ts, sha256: a26229c7a3247fc649d1fc8cb2212f978cc108e222ecb0f17045327285221845}
+    - {path: packages/sdk/test/provable/staking-ledger-to-voting-ledger.test.ts, sha256: 988d911b4336e64ccd70009cddcb514bc93b693a1df203c6d1a15dbb98e6af0c}
+    - {path: packages/sdk/tsconfig.json, sha256: 8206b547d254f2bfd7a1c89d09c5e8b2e650e2e5e52f73047c0b30285f206877}
+
+phase_6_review:
+  role: system_and_business_coherence_reviewer
+  overall_disposition: REFINED_WITH_AUTHOR_DECISIONS_REQUIRED
+  reviewed_universe:
+    canonical_model: model/pass-2-contextual-corrected.yaml
+    stale_model_excluded: model/pass-2-contextual.yaml
+    semantic_records_reviewed: 679
+    contextual_dispositions: {confirmed: 470, refined: 145, unresolved: 64}
+    current_sets:
+      requirements: {count: 30, sorted_id_sha256: 93a9f830d05a4ec2bd554c391b498fc60588c84cf793a04cf4ed565740fa767c}
+      business_rules: {count: 7, sorted_id_sha256: 51c27a98bdff55b72a8143ee192b8f11c27f84e6e2a1019984ec2a5d77fdcf31}
+      components: {count: 11, sorted_id_sha256: 672044250825a37af894ad1cd6f5183d33f15a29958278d940287c4068ced8b2}
+      apis: {count: 12, sorted_id_sha256: 29ad9886e134b3f26bdd8fcb8ddaf70b2b8fd90d047f918add490d2dec5a4218}
+      behaviors: {count: 50, sorted_id_sha256: c51a1c9f46d17d3c443b43ce0bfad55b6edf578a156c03f0db957c916dfc4cfd}
+      flows: {count: 20, sorted_id_sha256: ed2b5a9a5452523a0efcf685550c5389134b0e0b6b799bedb3e3d1e702f67914}
+      findings: {count: 49, sorted_id_sha256: e35253abb0d33c5d98dc313b17bebf757591f9ffe0cfa81d46079de278c5d540}
+      assumptions: {count: 28, sorted_id_sha256: 7cef37229a273523b68789af148ceb8fd0b96d7479ca3fe16831ccec2e20d361}
+      gaps: {count: 37, sorted_id_sha256: 6e410011195dc6bd169d27ded6982eca380fadb8e7d5a4a1d77513bbbdb45935}
+    prior_audit_provenance: {count: 28, remediated_statically: 11, still_applicable: 17}
+    evidence_bundles_read: {reconnaissance: 3, semantic: 3, challenge: 3, contextual: 3}
+
+  business_reconstruction:
+    - stable_key: "phase6:reconstruction:mission-authority"
+      conclusion: >-
+        The intended mission is a community-controlled, fully on-chain treasury. The scoped implementation is a Treasury Owner, per-proposal child accounts, one shared Pause Controller, two recursive programs, host ledgers, and event consumers. RFC text is versioned and partly provisional, tests are expectation evidence, prior audit claims are revision-bounded, and current pinned source is the authority for implemented static behavior.
+      record_ids: [REQ-8AC636D92F, REQ-1EEDB7A733, CMP-49180D7623, CMP-834A30297A, CMP-31D3990A1F, CMP-7DB1B15B38, CMP-2890255AE1, CMP-7CC27EFA43, CMP-874E479BA1, CMP-E155326DD2, CMP-B6BB8BE661, CMP-5CAF19BDCD, CMP-0F476A460D]
+      evidence_refs: [EVD-C70801D35C, EVD-0D50A0B3BE]
+      anchors: ["packages/sdk/src/provable/contracts/treasury-owner.ts:70", "packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts:62"]
+      consequence: Publication must distinguish mission coverage from production/deployment assurance.
+      author_question: Which RFC decisions are ratified production policy rather than provisional design?
+    - stable_key: "phase6:reconstruction:actors-assets"
+      conclusion: >-
+        Relevant actors are transaction sender/proposer label, potentially distinct bond payer, voter or delegate, permissionless tally and payout senders, emergency signer slots, deployment operator, prover/host operator, and indexer/UI. Assets are treasury and bond funds, proposal content/status/entitlement, historical snapshot and voting weights, action/nullifier chains, emergency keys/nonces, and off-chain roots/traces.
+      record_ids: [FLW-6394A1B72B, FLW-A6B92A4E6D, FLW-5E24C8B8E4, FLW-9D28A6D299, FLW-21AF7F4E4D, FLW-745B097927, SEC-B560A051DA]
+      evidence_refs: [EVD-71674CDE0D, EVD-BA7944FE2E, EVD-72A633D2CC, EVD-5963C00DAB]
+      anchors: ["packages/sdk/src/provable/contracts/treasury-owner.ts:191", "packages/sdk/src/provable/contracts/treasury-owner.ts:320", "packages/sdk/src/provable/contracts/treasury-owner.ts:421"]
+      consequence: Sender, proposer, bond payer, recipient, and beneficiary cannot be treated as synonymous identities.
+      author_question: Which identities must be stored or event-bound for attribution and recovery?
+    - stable_key: "phase6:reconstruction:authority-lifecycle"
+      conclusion: >-
+        Source constructs proposal, exploration, voting, cooldown, and next-lifecycle ranges from deployment-relative 7140-slot periods. Creation and voting are bounded; tally is allowed from cooldown onward with no upper bound, and payout is allowed from the next lifecycle onward with no upper bound. Exact inclusion-slot semantics remain external.
+      record_ids: [REQ-740285CD08, REQ-EAE9049742, REQ-632DB8C787, REQ-F8D28DBFF5, REQ-B3FFF31BC9, BHV-5095682725, FLW-6394A1B72B, FLW-A6B92A4E6D, FLW-5E24C8B8E4, FLW-9D28A6D299, FND-1FBF087284]
+      evidence_refs: [EVD-BA7944FE2E, EVD-B5183C166D]
+      anchors: ["packages/sdk/src/provable/contracts/treasury-owner.ts:121", "packages/sdk/src/provable/contracts/treasury-owner.ts:184", "packages/sdk/src/provable/contracts/treasury-owner.ts:320", "packages/sdk/src/provable/contracts/treasury-owner.ts:421"]
+      consequence: The happy path is ordered, but neither finalization nor claims expire merely because later lifecycles begin.
+      author_question: Are tally and execution intentionally open-ended, and which slot boundary is authoritative?
+
+  requirement_reconciliation:
+    reviewed_count: 30
+    static_behavior_present_but_policy_or_assurance_qualified:
+      count: 23
+      record_ids: [REQ-998DF345BB, REQ-8BFD766005, REQ-8AC636D92F, REQ-F8D28DBFF5, REQ-9DEF6918CA, REQ-EAE9049742, REQ-529C5F460D, REQ-8671471176, REQ-80815948D4, REQ-74C4827C5B, REQ-1EEFCCC541, REQ-B5E5D97336, REQ-583E087F5C, REQ-B3FFF31BC9, REQ-4F1B35FCAA, REQ-740285CD08, REQ-989D12F5D3, REQ-1EEDB7A733, REQ-15F6A20397, REQ-D100BF5A33, REQ-87F314C527, REQ-632DB8C787, REQ-AFB190A0FA]
+      evidence_refs: [EVD-71674CDE0D, EVD-BA7944FE2E, EVD-CFF488F119, EVD-5AED8D6498, EVD-5963C00DAB, EVD-72A633D2CC]
+      conclusion: >-
+        Each has at least a source-visible implementation mapping, but several remain partial or divergent because policy, authority, external Mina semantics, deployment, availability, or liveness is unresolved. Static presence is not a fulfillment or runtime claim.
+      consequence: Publishing all 23 merely as UNRESOLVED hides useful implementation traceability and conflates policy with absence.
+      author_question: Will authors populate behavior/flow/test mappings and assign PARTIAL or IMPLEMENTED_STATIC separately from production assurance?
+    external_assurance_requirement:
+      count: 1
+      record_ids: [REQ-12FA8872CA]
+      evidence_refs: [EVD-0D50A0B3BE]
+      conclusion: Independent audit and devnet testing is not established by scoped source or by reading the prior audit.
+      consequence: This must remain an external rollout gate.
+      author_question: What artifacts and revision constitute completion of the audit/devnet gate?
+    optional_or_deferred_not_current_defects:
+      count: 6
+      record_ids: [REQ-E7F4E1ECAD, REQ-948F2AA498, REQ-FBC7A8913A, REQ-3E7C685492, REQ-1E02AF2B34, REQ-230AF0D420]
+      evidence_refs: [EVD-C70801D35C]
+      conclusion: RFC context marks these dynamic-quorum, progressive-funding, delegation-override, sub-treasury, and upgrade features optional or later-phase.
+      consequence: Their absence must not inflate MVP defect counts.
+      author_question: Which, if any, are promoted into the release scope?
+    traceability_amendment_candidate:
+      stable_key: "phase6:amendment:requirements:static-mapping"
+      record_ids: [REQ-8AC636D92F, REQ-1EEDB7A733, REQ-F8D28DBFF5, REQ-529C5F460D, REQ-8671471176, REQ-B3FFF31BC9, REQ-87F314C527]
+      evidence_refs: [EVD-71674CDE0D, EVD-BA7944FE2E, EVD-B5183C166D]
+      proposed_change: Populate requirement implementation_ids and test_ids from current canonical behaviors/flows/tests; keep independent semantic and rollout status fields.
+      rationale: All 30 current requirement records have empty implementation_ids and test_ids even where canonical behaviors, flows, and pinned tests provide direct mappings.
+
+  business_rule_reconciliation:
+    reviewed_count: 7
+    conclusion: >-
+      Lifecycle gating, snapshot tallying, single-weight reduction, threshold calculation, and recipient/cap enforcement map to source. The successful-bond-return rule conflicts with recipient payout, and permissionless participation remains partly an infrastructure/deployment claim.
+    record_ids: [BR-4CC5D3E076, BR-214DBEB50D, BR-BE13F1CD73, BR-B122F86EA0, BR-8EBBA5B636, BR-BEF061F449, BR-3A3926003F]
+    evidence_refs: [EVD-71674CDE0D, EVD-CFF488F119, EVD-DD1C7DA36F, EVD-5963C00DAB]
+    anchors: ["packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts:164", "packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts:353"]
+    consequence: Business rules should not be published as uniformly satisfied.
+    author_question: Should the bond rule be amended to recipient payout or should implementation return it to the proposer/bond payer?
+
+  flow_reconciliation:
+    reviewed_count: 20
+    principal_flows:
+      record_ids: [FLW-6394A1B72B, FLW-A6B92A4E6D, FLW-5E24C8B8E4, FLW-9D28A6D299, FLW-21AF7F4E4D, FLW-5AA543472A, FLW-745B097927]
+      evidence_refs: [EVD-71674CDE0D, EVD-BA7944FE2E, EVD-72A633D2CC, EVD-B5183C166D]
+      conclusion: The approved single-proposal create-to-payout sequence is statically coherent; failed quorum, parallel claims, proposal pause/finality, rotation recovery, and completion are not coherent terminal policies.
+      consequence: The happy path cannot stand in for all outcome partitions.
+      author_question: Which failure, concurrency, and recovery paths are release-blocking acceptance criteria?
+    supporting_flows:
+      record_ids: [FLW-802D71B91D, FLW-FB5CAECCAD, FLW-FD2B1F4966, FLW-BEFDEF1197, FLW-E60ABD1745, FLW-9BA4D696D1, FLW-2F560AE009, FLW-5C8E5E0DE3, FLW-A565B35EC6, FLW-53B4410963, FLW-7DA083B071, FLW-9BB4E99B75, FLW-BFD5C6D535]
+      evidence_refs: [EVD-A80CE1BF98, EVD-00FCEA5808, EVD-D43C7ED7D0, EVD-8BB47110D1]
+      conclusion: Local proof and helper flows compose through pinned roots, indices, action hashes, nullifiers, and side-loaded proof outputs, subject to dense-ledger, host-atomicity, capacity, and external proof-system assumptions.
+      consequence: Static composition does not establish end-to-end completeness or liveness.
+      author_question: What authoritative terminal count, host transaction contract, and capacity budget complete the composition?
+
+  confirmations:
+    - stable_key: "phase6:confirmation:approved-happy-path"
+      conclusion: >-
+        Creation binds amount, recipient, URI representation, lifecycle, and snapshot; signed voters dispatch actions; proof-backed tally can set APPROVED after quorum and directional approval; payout is delayed until the next lifecycle and is recipient/cap bound.
+      evidence_class: IMPLEMENTED_STATIC
+      confidence: HIGH
+      record_ids: [BHV-80247CE73D, BHV-8E9F5C3ECE, BHV-4866A87097, BHV-1136BD4D08, BHV-F2207732B4, FLW-6394A1B72B, FLW-A6B92A4E6D, FLW-5E24C8B8E4, FLW-9D28A6D299]
+      evidence_refs: [EVD-71674CDE0D, EVD-5AED8D6498, EVD-BA7944FE2E]
+      anchors: ["packages/sdk/src/provable/contracts/treasury-owner.ts:191", "packages/sdk/src/provable/contracts/treasury-owner.ts:274", "packages/sdk/src/provable/contracts/treasury-owner.ts:320", "packages/sdk/src/provable/contracts/treasury-owner.ts:421"]
+      consequence: Core intended sequencing has a concrete static implementation.
+      author_question: Is the open-ended tally and payout tail intentional?
+    - stable_key: "phase6:confirmation:test-expectation-boundary"
+      conclusion: >-
+        The active owner integration test expresses one sequential approved path ending in full amount-plus-bond recipient payout. Its integrated pause/unpause cases are commented; focused tests cover threshold examples, controller methods, and event encoding, not cross-system adverse outcomes.
+      evidence_class: TEST_EXPECTATION
+      confidence: HIGH
+      record_ids: [GAP-ADD703D733, FLW-6394A1B72B, FLW-5E24C8B8E4, FLW-9D28A6D299]
+      evidence_refs: [EVD-B5183C166D]
+      anchors: ["packages/sdk/test/integration/treasury-owner.test.ts:269", "packages/sdk/test/integration/treasury-owner.test.ts:429", "packages/sdk/test/integration/treasury-owner.test.ts:671", "packages/sdk/test/integration/treasury-owner.test.ts:704"]
+      consequence: Tests cannot be cited as evidence that principal adverse partitions pass.
+      author_question: Which adverse and boundary oracles are mandatory before rollout?
+    - stable_key: "phase6:confirmation:local-payout-guards"
+      conclusion: Proposal-local execution requires APPROVED, matches recipient hash, and limits cumulative payment to amount plus the 10% bond.
+      evidence_class: IMPLEMENTED_STATIC
+      confidence: HIGH
+      record_ids: [BHV-5D3FCC7B93, BHV-F2207732B4, FLW-BEFDEF1197, FLW-9D28A6D299]
+      evidence_refs: [EVD-DD1C7DA36F, EVD-94B958AAA8]
+      anchors: ["packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts:353", "packages/sdk/src/provable/contracts/treasury-owner.ts:421"]
+      consequence: Permissionless callers cannot redirect a valid payout through these parameters alone.
+      author_question: Is permissionless execution the ratified agency model?
+    - stable_key: "phase6:confirmation:snapshot-and-nullifier-bindings"
+      conclusion: >-
+        Tally statically binds proposal snapshot root, genesis and terminal flags, voting root, action-state history, and per-voter nullifiers; duplicate real voter actions contribute zero after the first accepted weight.
+      evidence_class: IMPLEMENTED_STATIC
+      confidence: HIGH
+      record_ids: [REQ-529C5F460D, REQ-B5E5D97336, BHV-CEE91EC6D9, BHV-141ED40E5D, FLW-E60ABD1745, FLW-9BA4D696D1]
+      evidence_refs: [EVD-00FCEA5808, EVD-A80CE1BF98]
+      anchors: ["packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts:213", "packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts:365"]
+      consequence: The remaining voting question is eligible supply/completeness, not absence of a snapshot or nullifier chain.
+      author_question: What exact account predicate and terminal snapshot boundary are authoritative?
+    - stable_key: "phase6:confirmation:global-pause"
+      conclusion: Global pause is checked by create, vote, tally, and execute, while emergency proposal toggle is separately authorized and does not require the global treasury to be unpaused.
+      evidence_class: IMPLEMENTED_STATIC
+      confidence: HIGH
+      record_ids: [BHV-8FA351E512, FLW-21AF7F4E4D, FLW-5AA543472A]
+      evidence_refs: [EVD-72A633D2CC, EVD-4908C76CF8]
+      anchors: ["packages/sdk/src/provable/contracts/treasury-owner.ts:191", "packages/sdk/src/provable/contracts/treasury-owner.ts:274", "packages/sdk/src/provable/contracts/treasury-owner.ts:320", "packages/sdk/src/provable/contracts/treasury-owner.ts:421", "packages/sdk/src/provable/contracts/treasury-owner.ts:464"]
+      consequence: Global emergency stopping is broadly composed, but proposal-local state restoration remains independently unsafe/undefined.
+      author_question: Should proposal commands remain callable while globally paused?
+    - stable_key: "phase6:confirmation:prior-audit-provenance"
+      conclusion: Eleven prior-audit items have current static remediation evidence and are historical provenance only; seventeen remain applicable but several are the same root causes represented by current findings/gaps.
+      evidence_class: NORMATIVE_EXPECTATION
+      confidence: HIGH
+      record_ids: [FND-67861A5343, FND-CD3FC08B49, FND-1979AEB628, FND-ECA97458D5, FND-5F15694229, FND-756A14D862, FND-E5DB7A78F8, FND-8467BE9FD1, FND-3471621CD6, FND-9AA5203528, FND-E393B29703, FND-A5A4858953, FND-7BE7D38B6B, FND-1B33097A18, FND-F3C6E62E0B, FND-BF3449506D, FND-7D495DBE3F, FND-30B94DCCE0, FND-3B35F91A1C, FND-1FBF087284, FND-C0656D649D, FND-8DB62F78C9, FND-D0ABA9650D, FND-D889112D27, FND-077D28F305, FND-4234CF9EC6, FND-88B3C09521, FND-8B2DE6F23F]
+      evidence_refs: [EVD-0D50A0B3BE]
+      anchors: [".codebase-analysis/provable-92d90e3803a1/context/ZKSECURITY_AUDIT_INDEX.md:1"]
+      consequence: Publication must not rank remediated history or double-rank applicable audit/current aliases.
+      author_question: Will the final checklist group audit lineage under each current root cause?
+
+  qualifications:
+    - stable_key: "phase6:qualification:lifecycle-wording"
+      conclusion: The phrase "cooldown permits tally" is incomplete because source permits tally from cooldown onward indefinitely; similarly approved execution begins next lifecycle and has no upper bound.
+      evidence_class: IMPLEMENTED_STATIC
+      confidence: HIGH
+      record_ids: [REQ-F8D28DBFF5, REQ-B3FFF31BC9, BHV-5095682725, GAP-B798CE8DB1]
+      evidence_refs: [EVD-BA7944FE2E]
+      anchors: ["packages/sdk/src/provable/contracts/treasury-owner.ts:121", "packages/sdk/src/provable/contracts/treasury-owner.ts:421"]
+      consequence: Publication should not imply a bounded cooldown finalization or payout window.
+      author_question: Should either operation have an expiry bound?
+    - stable_key: "phase6:qualification:permissionless-payout"
+      conclusion: >-
+        Permissionless payout is a caller-agency choice, not by itself redirection: recipient and cap are bound. Fee sponsorship, timing control, zero-amount calls, and the absence of recipient consent remain distinct policy/operability questions.
+      evidence_class: INFERENCE
+      confidence: HIGH
+      record_ids: [FND-A5A4858953, FND-EE80C71EE3, BHV-F2207732B4, FLW-9D28A6D299]
+      evidence_refs: [EVD-94B958AAA8, EVD-DD1C7DA36F]
+      anchors: ["packages/sdk/src/provable/contracts/treasury-owner.ts:421", "packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts:353"]
+      consequence: The author must decide agency without overstating a theft path.
+      author_question: Must payout require recipient/proposer authorization, positive amount, or an executor incentive?
+    - stable_key: "phase6:qualification:voting-snapshot"
+      conclusion: Historical snapshot binding is present, but the transform currently aggregates every membership-proven account balance by delegate with no authoritative eligible-account predicate.
+      evidence_class: IMPLEMENTED_STATIC
+      confidence: HIGH
+      record_ids: [REQ-529C5F460D, REQ-D100BF5A33, BHV-C01A568AAE, GAP-FE43BADC05, FND-4C6DF9502F, FND-F3C6E62E0B]
+      evidence_refs: [EVD-5963C00DAB, EVD-A80CE1BF98]
+      anchors: ["packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts:239", "packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts:291"]
+      consequence: A correctly bound snapshot can still encode the wrong electorate or delegate identity.
+      author_question: Which Mina account/token/timed/zkApp/delegate cases count and to whom?
+    - stable_key: "phase6:qualification:content"
+      conclusion: The proposal stores a ZkappUri representation and emits its hash, but scoped code cannot establish byte immutability, availability, or voter-viewed content.
+      evidence_class: IMPLEMENTED_STATIC
+      confidence: HIGH
+      record_ids: [REQ-4F1B35FCAA, BHV-80247CE73D, GAP-817200738F]
+      evidence_refs: [EVD-71674CDE0D]
+      anchors: ["packages/sdk/src/provable/contracts/treasury-owner.ts:191", "packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts:46"]
+      consequence: Amount and recipient remain bound while explanatory content may be mutable or unavailable off-chain.
+      author_question: Is content addressing mandatory, for how long, and can content be amended?
+    - stable_key: "phase6:qualification:runtime-boundary"
+      conclusion: Proof soundness, Mina precondition/inclusion behavior, deployed verification keys/permissions, host atomicity, indexer reconciliation, and throughput were not dynamically established.
+      evidence_class: UNRESOLVED
+      confidence: HIGH
+      record_ids: [ASM-BD7E733FE5, ASM-D691B96D3B, ASM-FF091135AE, ASM-C0AB78216E, GAP-A25D114C6F, GAP-8826CA0D4C]
+      evidence_refs: [EVD-A80CE1BF98, EVD-00FCEA5808, EVD-B5183C166D]
+      anchors: ["packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts:304", "packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts:570"]
+      consequence: No static record should be phrased as a runtime, deployed, or cryptographic guarantee.
+      author_question: Which later-assurance artifact owns each external premise?
+
+  contradictions_or_dissent:
+    - stable_key: "phase6:dissent:quorum-terminal"
+      conclusion: calculateApprovalStatus returns REJECTED for insufficient participation/directional votes, but tally asserts both true before writing status; a complete low-quorum or abstain-only tally therefore aborts and remains UNKNOWN.
+      evidence_class: IMPLEMENTED_STATIC
+      confidence: HIGH
+      record_ids: [BHV-A302A43C9F, BHV-1136BD4D08, FND-B5948FE3CF, GAP-2124E32D06, ASM-B549EC8751]
+      evidence_refs: [EVD-CFF488F119, EVD-5AED8D6498]
+      anchors: ["packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts:164", "packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts:332"]
+      consequence: UNKNOWN conflates never tallied with completely tallied but below quorum.
+      author_question: Should low quorum persist REJECTED, remain retryable UNKNOWN, or use a separate terminal state?
+    - stable_key: "phase6:dissent:proposal-pause-finality"
+      conclusion: Proposal pause is stored in the same status field as outcome; pausing APPROVED/REJECTED overwrites finality and unpausing always restores UNKNOWN. The signed toggle has no intended Bool, while the owner event Bool is caller-supplied rather than derived from resulting state.
+      evidence_class: IMPLEMENTED_STATIC
+      confidence: HIGH
+      record_ids: [BHV-8B6F3A639B, BHV-8FA351E512, FND-BFFEA51091, FND-1D115F22E4, FND-8DB62F78C9, FND-8B2DE6F23F, GAP-22CD8BD355]
+      evidence_refs: [EVD-278D27A176, EVD-6665BB19D1, EVD-4908C76CF8]
+      anchors: ["packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts:386", "packages/sdk/src/provable/contracts/treasury-owner.ts:464"]
+      consequence: Emergency action can erase an approved claim or rejection and emit a state claim that does not prove the post-state.
+      author_question: Should pause be a separate Bool with explicit target and exact final-status restoration?
+    - stable_key: "phase6:dissent:bond-destination"
+      conclusion: Any distinct signed account may fund the pooled bond, proposer identity is not stored, and successful payout binds amount plus bond to the recipient; this conflicts with RFC/BR return-to-proposer wording.
+      evidence_class: IMPLEMENTED_STATIC
+      confidence: HIGH
+      record_ids: [REQ-998DF345BB, REQ-989D12F5D3, BR-BEF061F449, FLW-6394A1B72B, FLW-9D28A6D299, FND-7BE7D38B6B, GAP-F83C6F5411]
+      evidence_refs: [EVD-9E30964FCB, EVD-DD1C7DA36F, EVD-94B958AAA8]
+      anchors: ["packages/sdk/src/provable/contracts/treasury-owner.ts:191", "packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts:353", "packages/sdk/test/integration/treasury-owner.test.ts:388"]
+      consequence: Distinct proposer, bond payer, and recipient have no coherent refund/forfeit attribution.
+      author_question: Who funds, owns, receives, or forfeits the bond on every terminal outcome?
+    - stable_key: "phase6:dissent:parallel-liabilities"
+      conclusion: Proposal approval reserves no treasury balance and Owner tracks no aggregate liabilities; simultaneous approved claims are satisfied according to transaction inclusion/current balance rather than an explicit treasury priority.
+      evidence_class: INFERENCE
+      confidence: HIGH
+      record_ids: [REQ-87F314C527, REQ-B3FFF31BC9, FLW-5E24C8B8E4, FLW-9D28A6D299, GAP-7BAF881BED]
+      evidence_refs: [EVD-BA7944FE2E, EVD-B5183C166D]
+      anchors: ["packages/sdk/src/provable/contracts/treasury-owner.ts:86", "packages/sdk/src/provable/contracts/treasury-owner.ts:421"]
+      consequence: First-inclusion wins can leave earlier or later approved beneficiaries unfunded with no recovery rule.
+      author_question: Reserve on approval, accept first-inclusion, or define priority/pro-rata/refill/expiry/cancellation?
+    - stable_key: "phase6:dissent:completion-observability"
+      conclusion: Full payout leaves status APPROVED, execution has no upper bound, zero payments can repeat, and events omit recipient, cumulative paid, remaining entitlement, and completion.
+      evidence_class: IMPLEMENTED_STATIC
+      confidence: HIGH
+      record_ids: [BHV-5D3FCC7B93, FND-EE80C71EE3, GAP-B798CE8DB1, FLW-2F560AE009, FLW-9D28A6D299]
+      evidence_refs: [EVD-BA7944FE2E, EVD-B5183C166D]
+      anchors: ["packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts:353", "packages/sdk/src/provable/events/treasury-proposal-events.ts:52"]
+      consequence: Stale approvals look active and indexers must reconstruct completion from state plus event history.
+      author_question: Add expiry/cancellation/COMPLETED state, require positive payout, and expand cumulative event fields?
+    - stable_key: "phase6:dissent:rotation-recovery"
+      conclusion: Deployment accepts at least five participants but proof authorization requires exactly five static slots; rotation stores an arbitrary new commitment without binding a validated five-key preimage. Slot threshold also does not itself prove five distinct identities, and commands omit deployment-domain binding.
+      evidence_class: IMPLEMENTED_STATIC
+      confidence: HIGH
+      record_ids: [FND-BBC3A2316C, FND-E683792BE2, FND-10A2C953A0, FND-D0ABA9650D, FND-4B4F5D76C9, GAP-52A3FE4758, ASM-A4087EF988]
+      evidence_refs: [EVD-72A633D2CC, EVD-278D27A176, EVD-B5183C166D]
+      anchors: ["packages/sdk/src/provable/contracts/treasury-pause-controller/treasury-pause-controller.ts:45", "packages/sdk/src/provable/contracts/treasury-pause-controller/treasury-pause-controller.ts:170", "packages/sdk/src/provable/contracts/treasury-pause-controller/multisig-signatures.ts:93"]
+      consequence: Misdeployment or bad rotation can permanently remove emergency authority or permit nominal threshold concentration.
+      author_question: Require exactly five distinct keys, domain-separated messages, validated rotation preimage, recovery path, and rotation events?
+    - stable_key: "phase6:dissent:capacity-liveness"
+      conclusion: Base methods process five accounts/actions and every snapshot account/action feeds recursive proof work; no scoped capacity, retry, deadline, or job-isolation contract shows that finalization completes within governance time.
+      evidence_class: UNRESOLVED
+      confidence: HIGH
+      record_ids: [GAP-A25D114C6F, GAP-8826CA0D4C, FND-077D28F305, REQ-583E087F5C]
+      evidence_refs: [EVD-D43C7ED7D0, EVD-8BB47110D1, EVD-5963C00DAB]
+      anchors: ["packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts:35", "packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts:302"]
+      consequence: A permissionless design can still be operationally centralized or unable to tally at scale.
+      author_question: What maximum volumes, proof budget, deadline, redundancy, retry, and recovery SLO are required?
+    - stable_key: "phase6:dissent:dense-ledger-completeness"
+      conclusion: Exhaustion proves only that the immediate next leaf is empty; without an authoritative dense-ledger or committed terminal-count rule, later non-empty accounts could be omitted from eligible supply.
+      evidence_class: UNRESOLVED
+      confidence: HIGH
+      record_ids: [BHV-E7ECC5B6FC, FND-CA0F83CE86, GAP-EF32A38D1C, ASM-35D9BB50D0]
+      evidence_refs: [EVD-A80CE1BF98, EVD-00FCEA5808]
+      anchors: ["packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts:83", "packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts:266"]
+      consequence: Quorum and approval may depend on an unbound representation premise.
+      author_question: Cite a versioned Mina density guarantee or bind account count/terminal index directly?
+
+  audit_reconciliation:
+    reviewed_count: 28
+    audited_revision: f2c93cfdb27836b156769ca4eaeca7d5f01fa8b5
+    current_revision: 1e27b1aea88f5ea2764db96e4b337b24fe6dbeb3
+    remediated_statically_not_actionable:
+      count: 11
+      record_ids: [FND-67861A5343, FND-CD3FC08B49, FND-1979AEB628, FND-ECA97458D5, FND-5F15694229, FND-756A14D862, FND-E5DB7A78F8, FND-8467BE9FD1, FND-3471621CD6, FND-9AA5203528, FND-E393B29703]
+      evidence_refs: [EVD-0D50A0B3BE]
+      conclusion: Retain as historical provenance and regression targets; exclude from current actionable severity ranking.
+    still_applicable:
+      count: 17
+      record_ids: [FND-A5A4858953, FND-7BE7D38B6B, FND-1B33097A18, FND-F3C6E62E0B, FND-BF3449506D, FND-7D495DBE3F, FND-30B94DCCE0, FND-3B35F91A1C, FND-1FBF087284, FND-C0656D649D, FND-8DB62F78C9, FND-D0ABA9650D, FND-D889112D27, FND-077D28F305, FND-4234CF9EC6, FND-88B3C09521, FND-8B2DE6F23F]
+      evidence_refs: [EVD-0D50A0B3BE, EVD-94B958AAA8, EVD-72A633D2CC]
+      conclusion: Preserve current applicability but group aliases under current root causes for bond, eligibility, DUMMY, slot semantics, pause/finality, signature domain, capacity, isNew, and permissionless agency.
+    consequence: Audit counts remain transparent without presenting 28 fresh defects or double-counting 17 current aliases.
+    author_question: Will the publication show audited-revision disposition and current root-cause lineage beside each audit item?
+
+  assumption_reconciliation:
+    reviewed_count: 28
+    record_ids: [ASM-B2699C5369, ASM-73AF207816, ASM-557C7137A0, ASM-0DCB6712DD, ASM-0E591EC647, ASM-35D9BB50D0, ASM-53F278775C, ASM-031E77BE7F, ASM-82EB259917, ASM-912B3DBDF6, ASM-E0E1752AF7]
+    evidence_refs: [EVD-A80CE1BF98, EVD-00FCEA5808, EVD-BA7944FE2E, EVD-0D50A0B3BE]
+    duplicate_lineage_groups:
+      - record_ids: [ASM-B2699C5369, ASM-73AF207816]
+        evidence_refs: [EVD-A80CE1BF98]
+        topic: host transaction and recovery semantics
+      - record_ids: [ASM-557C7137A0, ASM-0DCB6712DD]
+        evidence_refs: [EVD-BA7944FE2E]
+        topic: slot precondition and inclusion semantics
+      - record_ids: [ASM-0E591EC647, ASM-35D9BB50D0]
+        evidence_refs: [EVD-A80CE1BF98]
+        topic: dense staking-ledger premise
+      - record_ids: [ASM-53F278775C, ASM-031E77BE7F, ASM-82EB259917]
+        evidence_refs: [EVD-A80CE1BF98, EVD-00FCEA5808]
+        topic: deployment empty roots and key material
+      - record_ids: [ASM-912B3DBDF6, ASM-E0E1752AF7]
+        evidence_refs: [EVD-0D50A0B3BE]
+        topic: custom o1js fork semantics
+    conclusion: These are legitimate premises but duplicate lineage should be grouped or superseded, not counted as independent unknowns.
+    consequence: Assumption counts otherwise overstate distinct external premises.
+    author_question: Which record in each group is canonical and which should be lineage-only?
+
+  author_priorities:
+    - priority: P0
+      title: Ratify solvency and concurrent approved-liability policy
+      record_ids: [GAP-7BAF881BED, REQ-87F314C527, REQ-B3FFF31BC9, FLW-9D28A6D299]
+      evidence_refs: [EVD-BA7944FE2E, EVD-B5183C166D]
+      rationale: Valid parallel claims can exceed current balance and inclusion order silently determines beneficiaries.
+      question: Reserve funds at approval, accept first-inclusion-wins, or define priority/pro-rata/refill/expiry/cancellation?
+    - priority: P0
+      title: Separate proposal pause from final outcome and bind explicit target state
+      record_ids: [GAP-22CD8BD355, FND-BFFEA51091, FND-1D115F22E4, FND-8DB62F78C9, FND-8B2DE6F23F]
+      evidence_refs: [EVD-278D27A176, EVD-6665BB19D1, EVD-4908C76CF8]
+      rationale: Current emergency action can erase finality and emit an unbound state claim.
+      question: Use a separate pause Bool, explicit pause/unpause message, and exact preserved status?
+    - priority: P0
+      title: Define electorate and snapshot terminal completeness
+      record_ids: [GAP-FE43BADC05, GAP-EF32A38D1C, FND-4C6DF9502F, FND-CA0F83CE86, REQ-529C5F460D]
+      evidence_refs: [EVD-5963C00DAB, EVD-A80CE1BF98, EVD-00FCEA5808]
+      rationale: Quorum can be wrong despite valid proofs if account eligibility or terminal coverage is wrong.
+      question: What account predicate, delegate semantics, and authoritative account-count/density rule bind the electorate?
+    - priority: P0
+      title: Ratify governance constants and failed-quorum terminal policy
+      record_ids: [GAP-1DC17F1884, GAP-2124E32D06, FND-B5948FE3CF, REQ-15F6A20397, REQ-74C4827C5B, REQ-80815948D4]
+      evidence_refs: [EVD-47E6A272E4, EVD-CFF488F119, EVD-5AED8D6498]
+      rationale: Unratified constants directly choose outcomes, while failed quorum has contradictory calculator/state semantics.
+      question: Which values are production policy, and what terminal state records low-quorum or abstain-only tallies?
+    - priority: P0
+      title: Establish proof capacity and host recovery SLO
+      record_ids: [GAP-A25D114C6F, GAP-8826CA0D4C, FND-077D28F305, REQ-583E087F5C]
+      evidence_refs: [EVD-D43C7ED7D0, EVD-8BB47110D1]
+      rationale: Five-element base batches and unscoped mutable ledgers create an unmeasured finalization/liveness dependency.
+      question: What volumes, deadlines, prover redundancy, atomic job isolation, retry, and recovery are required and measured?
+    - priority: P1
+      title: Set bond payer, custody, refund, and forfeiture policy
+      record_ids: [GAP-F83C6F5411, FND-7BE7D38B6B, REQ-998DF345BB, REQ-989D12F5D3]
+      evidence_refs: [EVD-9E30964FCB, EVD-DD1C7DA36F]
+      rationale: Implemented recipient payout conflicts with return-to-proposer intent and proposer/bond-payer identity is not bound.
+      question: Who owns the bond through approval, rejection, cancellation, expiry, and partial payout?
+    - priority: P1
+      title: Define claim completion, expiry, and observable event state
+      record_ids: [GAP-B798CE8DB1, FND-EE80C71EE3, FLW-2F560AE009, FLW-9D28A6D299]
+      evidence_refs: [EVD-BA7944FE2E, EVD-B5183C166D]
+      rationale: Approved claims never become completed or expire and event consumers lack cumulative entitlement fields.
+      question: Which terminal state, expiry/cancel rule, positive-amount guard, and event fields are required?
+    - priority: P1
+      title: Require immutable and available proposal content
+      record_ids: [GAP-817200738F, REQ-4F1B35FCAA, BHV-80247CE73D]
+      evidence_refs: [EVD-71674CDE0D]
+      rationale: URI representation commitment does not alone establish the bytes voters reviewed or future availability.
+      question: Require content addressing, byte hash, availability period, and versioned amendments?
+    - priority: P1
+      title: Harden emergency authority rotation and recovery
+      record_ids: [GAP-52A3FE4758, FND-BBC3A2316C, FND-E683792BE2, FND-10A2C953A0, FND-D0ABA9650D]
+      evidence_refs: [EVD-72A633D2CC, EVD-278D27A176, EVD-B5183C166D]
+      rationale: Key-count, distinctness, commitment-preimage, domain, event, and recovery gaps can brick or concentrate emergency authority.
+      question: How are exactly five distinct keys validated, rotated, recovered, domain-bound, and observed?
+    - priority: P2
+      title: Ratify permissionless payout agency
+      record_ids: [FND-A5A4858953, BHV-F2207732B4, FLW-9D28A6D299]
+      evidence_refs: [EVD-94B958AAA8, EVD-DD1C7DA36F]
+      rationale: Recipient/cap safety is present, but fee/timing/control policy remains a deliberate governance choice.
+      question: Keep permissionless execution or require recipient/proposer authorization and/or executor incentive?
+
+  publication_corrections:
+    - stable_key: "phase6:publication:epistemic-columns"
+      record_ids: [REQ-8AC636D92F, REQ-1EEDB7A733, GAP-ADD703D733, ASM-FF091135AE]
+      evidence_refs: [EVD-C70801D35C, EVD-B5183C166D]
+      correction: Show separate columns for documented intent, test expectation, implemented static behavior, inference, and unknown; never collapse them into "implemented" or "verified".
+    - stable_key: "phase6:publication:requirement-traceability"
+      record_ids: [REQ-8AC636D92F, REQ-F8D28DBFF5, REQ-529C5F460D, REQ-B3FFF31BC9, REQ-87F314C527]
+      evidence_refs: [EVD-71674CDE0D, EVD-BA7944FE2E, EVD-B5183C166D]
+      correction: Populate static behavior/flow/test mappings and keep policy/deployment assurance separate; empty mapping arrays should not create many independent medium implementation gaps.
+    - stable_key: "phase6:publication:gap-deduplication"
+      record_ids: [GAP-935AA6FD0D, GAP-0B47B1BC29, GAP-721B65BE75, GAP-B9423A0E57, GAP-4B6AF1A2C6, GAP-B1C8C1A4E1, GAP-9CA1247303, GAP-1DC17F1884, GAP-A25D114C6F, GAP-8826CA0D4C, GAP-B798CE8DB1, GAP-817200738F]
+      evidence_refs: [EVD-47E6A272E4, EVD-BA7944FE2E, EVD-71674CDE0D]
+      correction: Group generic traceability gaps as lineage under their substantive authority, capacity, host, completion, content, or minimum-value root cause; do not independently rank them.
+    - stable_key: "phase6:publication:audit-disposition"
+      record_ids: [FND-67861A5343, FND-A5A4858953, FND-8DB62F78C9]
+      evidence_refs: [EVD-0D50A0B3BE]
+      correction: Display audited revision and current disposition; exclude all REMEDIATED_STATICALLY items from the current action list and group STILL_APPLICABLE aliases with current root causes.
+    - stable_key: "phase6:publication:lifecycle-and-status"
+      record_ids: [BHV-5095682725, BHV-8B6F3A639B, FND-B5948FE3CF, GAP-B798CE8DB1]
+      evidence_refs: [EVD-BA7944FE2E, EVD-CFF488F119, EVD-5AED8D6498, EVD-6665BB19D1]
+      correction: Publish exact inclusive lower bounds/open-ended upper bounds and distinguish UNKNOWN, low-quorum, REJECTED, APPROVED, PAUSED, and completed/expired unknowns.
+    - stable_key: "phase6:publication:architecture-boundary"
+      record_ids: [GAP-A25D114C6F, GAP-8826CA0D4C, ASM-BD7E733FE5, ASM-C0AB78216E]
+      evidence_refs: [EVD-A80CE1BF98, EVD-00FCEA5808]
+      correction: Mark host ledger transactions, proof throughput, deployment keys/permissions, Mina semantics, and event reconciliation as external assurance boundaries, not source guarantees.
+
+  proposed_amendments:
+    - stable_key: "phase6:amendment:requirement-status-taxonomy"
+      record_ids: [REQ-8AC636D92F, REQ-1EEDB7A733, REQ-12FA8872CA]
+      evidence_refs: [EVD-C70801D35C, EVD-B5183C166D]
+      candidate: Add separate static_mapping_status, policy_authority_status, test_expectation_status, and deployment_assurance_status.
+    - stable_key: "phase6:amendment:gap-lineage"
+      record_ids: [GAP-1DC17F1884, GAP-7BAF881BED, GAP-B798CE8DB1, GAP-817200738F, GAP-A25D114C6F, GAP-8826CA0D4C]
+      evidence_refs: [EVD-47E6A272E4, EVD-BA7944FE2E, EVD-71674CDE0D]
+      candidate: Add canonical lineage/supersedes links from generic traceability records to substantive root-cause gaps; retain provenance without duplicate action ranking.
+    - stable_key: "phase6:amendment:assumption-lineage"
+      record_ids: [ASM-B2699C5369, ASM-73AF207816, ASM-0E591EC647, ASM-35D9BB50D0, ASM-912B3DBDF6, ASM-E0E1752AF7]
+      evidence_refs: [EVD-A80CE1BF98, EVD-0D50A0B3BE]
+      candidate: Select one current premise per duplicate group and retain the other identifiers as provenance aliases.
+
+  later_assurance:
+    - stable_key: "phase6:assurance:adverse-system-tests"
+      record_ids: [GAP-ADD703D733, GAP-7BAF881BED, GAP-22CD8BD355, GAP-B798CE8DB1]
+      evidence_refs: [EVD-B5183C166D]
+      required: Execute independent boundary/adverse tests for lifecycle equality, global/proposal pause, low quorum, abstain-only, rejection, retally, concurrent proposals, partial/full/zero/over-cap/wrong-recipient payout, completion, and event-state parity.
+    - stable_key: "phase6:assurance:proof-completeness"
+      record_ids: [GAP-EF32A38D1C, GAP-FE43BADC05, FND-CA0F83CE86]
+      evidence_refs: [EVD-A80CE1BF98, EVD-00FCEA5808]
+      required: Validate authoritative Mina account eligibility and terminal-count semantics, then independently review/verify the constraints and proof composition.
+    - stable_key: "phase6:assurance:capacity-recovery"
+      record_ids: [GAP-A25D114C6F, GAP-8826CA0D4C, REQ-583E087F5C]
+      evidence_refs: [EVD-D43C7ED7D0, EVD-8BB47110D1]
+      required: Benchmark production-sized snapshots/actions and demonstrate job-scoped atomic ledgers, idempotent retry, redundant proving, failure recovery, and deadline SLOs.
+    - stable_key: "phase6:assurance:deployment-manifest"
+      record_ids: [ASM-FF091135AE, ASM-D691B96D3B, ASM-82EB259917, ASM-E0E1752AF7]
+      evidence_refs: [EVD-0D50A0B3BE]
+      required: Pin network, custom o1js revision, verification keys, contract addresses, permissions, empty roots, participant keys, policy constants, and reproducible build/deploy ceremony.
+    - stable_key: "phase6:assurance:indexer-content"
+      record_ids: [GAP-817200738F, GAP-B798CE8DB1, ASM-C0AB78216E]
+      evidence_refs: [EVD-71674CDE0D, EVD-BA7944FE2E]
+      required: Demonstrate content hash/availability guarantees and reconcile indexer-visible events to authoritative state through pause, payout, reorg, completion, and recovery.
+
+  limitations:
+    - static_only: No target TypeScript, test, compiler, proof, chain, database, or PROOFS_ENABLED path was executed.
+      record_ids: [ASM-E0E1752AF7, ASM-FF091135AE]
+      evidence_refs: [EVD-0D50A0B3BE]
+    - cryptographic_boundary: No constraint system, proof soundness, deployed verification key, or recursive runtime behavior was established.
+      record_ids: [GAP-EF32A38D1C, ASM-D691B96D3B]
+      evidence_refs: [EVD-A80CE1BF98, EVD-00FCEA5808]
+    - external_context_boundary: RFC is provisional in disputed areas; prior audit applies to a different revision; no final treasury policy, Mina dense-ledger rule, deployment manifest, content-availability policy, or production SLO was supplied.
+      record_ids: [GAP-1DC17F1884, GAP-EF32A38D1C, GAP-817200738F, GAP-A25D114C6F]
+      evidence_refs: [EVD-C70801D35C, EVD-0D50A0B3BE]
+    - severity_boundary: Priorities are author-review ordering under stated prerequisites, not runtime exploitability or deployed-loss claims.
+      record_ids: [GAP-7BAF881BED, GAP-22CD8BD355, GAP-FE43BADC05, GAP-A25D114C6F]
+      evidence_refs: [EVD-BA7944FE2E, EVD-72A633D2CC, EVD-5963C00DAB]

@@ -1,0 +1,1337 @@
+bundle:
+  schema_version: 1
+  work_unit: "WU-8B484B3509"
+  revision: "1e27b1aea88f5ea2764db96e4b337b24fe6dbeb3"
+  scope_hash: "f40d76b91ec3cd8805ecdc7bebba8d43b8f317842639a7799738c37569119ab1"
+  role: "platform"
+  source_hashes:
+    packages/sdk/package.json: "d73ba980798af63c8ac79b897ae548bd706e480286ac9f617c68f2144f394eba"
+    packages/sdk/tsconfig.json: "8206b547d254f2bfd7a1c89d09c5e8b2e650e2e5e52f73047c0b30285f206877"
+    packages/sdk/src/logging/logger.ts: "ad0ff96d55f18ddf13a2a7d2fe7e5fd974a8acfd320c65a501cc3a4412b1b944"
+    packages/sdk/src/ledgers/nullifier-ledger/nullifier-ledger.ts: "0b8a9038005b7aee785f75d4e0bb4fdf4cb5f945c639f35528596003ac9c36e4"
+    packages/sdk/src/ledgers/staking-ledger/staking-ledger.ts: "df9be11132c6cb968fe1b9857b53137d629f7d213141652bc90981b5c7c04d69"
+    packages/sdk/src/ledgers/voting-ledger/voting-ledger.ts: "8405cbfde9370f4cc424efcdb32477949bf5fcf38db24926cfd0bd1f40898c52"
+    packages/sdk/src/utils/context-provider.ts: "cbbde1f3561ca2ee39bc7026241a09fa2659629542c527cc49271da5e924b6d4"
+    packages/sdk/src/storage/merkle-tree-storage.ts: "ce5610141a8d1c7d4a5e8b83ae90dc17f6ae64e5da11e29907cdadd5c1a69539"
+    packages/sdk/src/utils/public-key.ts: "4a174b2a1bc5d07a9f3f8680e47cde35d3b654eeaf924f82e0aae8cf162a9383"
+    packages/sdk/src/storage/in-memory/in-memory-merkle-tree-storage.ts: "b4d3fc976ee94a108773f8839c03e8775843ab86a9ced5d730b84f9e12a7589b"
+    packages/sdk/src/storage/keyv/keyv-merkle-tree-storage.ts: "da9b8eac67d45d4a73ecbc53865986ab50bfdc34bd2a3eded3e3701b868f6d70"
+    packages/sdk/src/provable/account.ts: "00eabfcee24eb10380d0ffeb1e60a08a85aa650cc8a3e9140718cecbf6fd0563"
+    packages/sdk/src/provable/contracts/treasury-constants.ts: "c4ef6c551437e01ebe6294c51923dfedff4a198735766a37029249482d9247a6"
+    packages/sdk/src/provable/contracts/treasury-owner.ts: "7c66014cee7f7a5e559b29f3b7c2790ed19c38c9a91b886c15cbbef3328d17dc"
+    packages/sdk/src/provable/contracts/treasury-pause-controller/multisig-signatures.ts: "48a7c4cd41c1e9764df1329966c37f325817fa43074140c145f4f6c1ae2aa372"
+    packages/sdk/src/provable/contracts/treasury-pause-controller/treasury-pause-controller.ts: "f7139183b963aa496dd36df00017885c9ab6275f11accca35bfd9054260e5104"
+    packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts: "95e5656d3a0d0c09a88ac9befa743517c53a98983bd1cf74b042e87bc9faf7af"
+    packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts: "37c1f07a5fad41f036f999792b44bf13d4f9af280cb1439bed6a8411dfaa81cd"
+    packages/sdk/src/provable/events/treasury-proposal-events.ts: "421e00244121b82a603b71b722ef35419794d0d603a264270a47a44d05a2c01d"
+    packages/sdk/src/provable/hashing-helpers.ts: "8ef43c9c685339f97a667002c2f6f349071eaa53ba753c7008dc46be23396869"
+    packages/sdk/src/provable/merkle-tree/prefixed-merkle-tree.ts: "870ca739cc8406070367beb86367efa64101647d130f0892b636555cbd2a5c6c"
+    packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts: "4dcfc5e1f1edcc7e26cfb960f3892208efe16056a2579b14e12e2a79f0e28197"
+    packages/sdk/src/provable/voting-account.ts: "fe383ead1055910ace4062c56cf4c7773dead3d95733f972ef6e49b2de515454"
+  ownership:
+    primary_paths: []
+    record_ids: []
+    stable_key_prefixes:
+      - "component:platform:"
+      - "zk-statement:"
+      - "assumption:platform:"
+  assumptions:
+    - "This is a static source review. No application code, test, build, proof, verifier, or chain was executed."
+    - "The semantics of o1js and the repository's custom o1js fork are external dependency assumptions except where directly expressed by scoped source."
+    - "The direct base ledger interfaces, prefix construction, tree heights, and public-key indexing are pinned context; concrete persistent/recording/replayable ledger subclasses remain outside the pinned file ledger."
+  observations:
+    - "The scoped protocol consists of a token-owning treasury contract, one proposal contract per proposal under the treasury token, and a shared pause controller, plus two recursive proof programs used during tallying."
+    - "The Treasury Owner is the orchestration and custody boundary: it receives funds and bonds, deploys proposal accounts, gates lifecycle slots and global pause state, verifies side-loaded proofs, approves child account updates, debits payouts, and emits public events."
+    - "The Treasury Proposal stores the recipient commitment, amount, lifecycle snapshot, result status, and cumulative payout; it also hosts the vote reducer action queue."
+    - "The Pause Controller commits to five off-chain participant keys, requires three valid signatures, and uses the contract account nonce to prevent same-controller replay."
+    - "Both ZkPrograms depend on mutable host-side ledger objects supplied through global ContextProvider instances. Constraint outputs bind Merkle roots and indices, but host persistence completion and atomicity are not proved."
+    - "The current source contains static remediations for several prior-audit themes: initial staking index and empty voting root are checked by the proposal; action history is linked to toActionsHash and all five unique on-chain action states; Treasury Owner account tokenId is constrained. These are current-source observations, not a claim that the audit findings are fully remediated."
+  proposed_records:
+    components:
+      - stable_key: "component:platform:treasury-owner-smart-contract"
+        title: "Treasury Owner smart contract"
+        kind: "SMART_CONTRACT"
+        summary: "TokenContract custody and orchestration boundary for proposal creation, voting, tallying, payouts, global pause checks, and proposal pause delegation."
+        anchors:
+          - { path: "packages/sdk/src/provable/contracts/treasury-owner.ts", symbol: "TreasuryOwnerSmartContract", start_line: 65, end_line: 512 }
+        state:
+          - "treasuryDeployedAtSlot: UInt32"
+          - "pauseControllerPublicKey: PublicKey"
+          - "native balance and derived-token authority inherited from TokenContract"
+        permissions:
+          - "allImpossible baseline; editState/access/send/receive require proof; incrementNonce permits proof or signature; verification-key change is impossible during the current protocol version"
+        assertions:
+          - text: "The contract statically owns the treasury lifecycle and child-proposal account-update boundary."
+            evidence_class: "IMPLEMENTED_STATIC"
+            confidence: "HIGH"
+            evidence_refs: ["evidence:treasury-owner:class-and-methods"]
+      - stable_key: "component:platform:treasury-proposal-smart-contract"
+        title: "Treasury Proposal smart contract"
+        kind: "SMART_CONTRACT"
+        summary: "Per-proposal state machine, vote action queue, proof-consumption boundary, threshold computation, and cumulative recipient payout controller."
+        anchors:
+          - { path: "packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts", symbol: "TreasuryProposalSmartContract", start_line: 61, end_line: 398 }
+        state:
+          - "recipientHash, amount, lifecycleId"
+          - "stakingEpochDataLedgerHash, stakingEpochDataLedgerTotalCurrency"
+          - "status, paidOutAmount"
+        assertions:
+          - text: "The proposal consumes both proof outputs, binds them to its snapshot and action state, computes a final status, and controls destination and cumulative payout."
+            evidence_class: "IMPLEMENTED_STATIC"
+            confidence: "HIGH"
+            evidence_refs: ["evidence:proposal:tally-and-execute"]
+      - stable_key: "component:platform:treasury-pause-controller-smart-contract"
+        title: "Treasury Pause Controller smart contract"
+        kind: "SMART_CONTRACT"
+        summary: "Five-participant, three-signature emergency authorization boundary for treasury pause, unpause, proposal pause toggling, and key commitment rotation."
+        anchors:
+          - { path: "packages/sdk/src/provable/contracts/treasury-pause-controller/treasury-pause-controller.ts", symbol: "TreasuryPauseControllerSmartContract", start_line: 29, end_line: 217 }
+        assertions:
+          - text: "The controller binds witnessed participant keys to an on-chain commitment and consumes its nonce on each authorized state-changing command."
+            evidence_class: "IMPLEMENTED_STATIC"
+            confidence: "HIGH"
+            evidence_refs: ["evidence:pause-controller:authorization"]
+      - stable_key: "component:platform:vote-reducer-zkprogram"
+        title: "Vote Reducer ZkProgram"
+        kind: "ZK_PROGRAM"
+        summary: "Reduces fixed batches of proposal vote actions into weighted tallies, a rolling nullifier root, a rolling action hash, and five target-action-state discovery flags; recursively merges adjacent proofs."
+        anchors:
+          - { path: "packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts", symbol: "VoteReducer", start_line: 320, end_line: 642 }
+        assertions:
+          - text: "The program exposes reduceBatch and merge proof methods with up to two recursive proofs verified by its side-loaded wrapper."
+            evidence_class: "IMPLEMENTED_STATIC"
+            confidence: "HIGH"
+            evidence_refs: ["evidence:vote-reducer:program"]
+      - stable_key: "component:platform:staking-ledger-to-voting-ledger-zkprogram"
+        title: "Staking-ledger-to-voting-ledger ZkProgram"
+        kind: "ZK_PROGRAM"
+        summary: "Transforms consecutive staking-ledger accounts into delegate voting balances in batches of five, recursively merges adjacent ranges, and proves exhaustion by an empty next account."
+        anchors:
+          - { path: "packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts", symbol: "StakingLedgerToVotingLedger", start_line: 75, end_line: 340 }
+        assertions:
+          - text: "The program exposes digest, merge, and exhaust methods and publishes the final index, voting-ledger root, and exhaustion flag."
+            evidence_class: "IMPLEMENTED_STATIC"
+            confidence: "HIGH"
+            evidence_refs: ["evidence:staking-transform:program"]
+      - stable_key: "component:platform:provable-ledger-and-hash-support"
+        title: "Provable ledger and hashing support"
+        kind: "LIBRARY_BOUNDARY"
+        summary: "Mina account serialization, prefixed Merkle roots/witnesses, action hashing, voting account representation, and mutable host storage adapters used by both proof programs."
+        anchors:
+          - { path: "packages/sdk/src/provable/account.ts", symbol: "Account.toHashInput", start_line: 289, end_line: 308 }
+          - { path: "packages/sdk/src/provable/merkle-tree/prefixed-merkle-tree.ts", symbol: "BasePrefixedMerkleWitness", start_line: 179, end_line: 237 }
+          - { path: "packages/sdk/src/provable/hashing-helpers.ts", symbol: "appendActionToHashList", start_line: 27, end_line: 36 }
+        assertions:
+          - text: "The proof statements rely on repository-specific serialization and prefix sequences matching the Mina ledger representations and off-chain storage."
+            evidence_class: "IMPLEMENTED_STATIC"
+            confidence: "MEDIUM"
+            evidence_refs: ["evidence:support:hash-and-merkle"]
+    behaviors:
+      - stable_key: "behavior:component:platform:treasury-owner-smart-contract:deploy-and-lock-permissions"
+        title: "Deploy owner with pinned configuration"
+        trigger: "deployment"
+        preconditions: ["static treasuryDeployedAtSlot and pauseControllerPublicKey have been assigned by deployment code"]
+        normal_outcome: "sets account permissions and both state fields"
+        failure_outcomes: ["unset or incorrect static configuration can deploy unusable or misbound state"]
+        anchors: [{ path: "packages/sdk/src/provable/contracts/treasury-owner.ts", symbol: "TreasuryOwnerSmartContract.deploy", start_line: 110, end_line: 119 }]
+        assertions: [{ text: "Deployment copies mutable class-static configuration into on-chain state.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_refs: ["evidence:treasury-owner:deploy"] }]
+      - stable_key: "behavior:component:platform:treasury-owner-smart-contract:lifecycle-slot-gate"
+        title: "Gate operations by lifecycle slot range"
+        trigger: "proposal creation, vote, tally, or execution"
+        normal_outcome: "derives the requested lifecycle period from deployment slot, lifecycle ID, four periods, and a fixed duration; requires the network slot in range"
+        failure_outcomes: ["operation rejects outside its computed range", "boundary-slot inclusion semantics remain dependency-defined"]
+        anchors: [{ path: "packages/sdk/src/provable/contracts/treasury-owner.ts", symbol: "requireLifecyclePeriod", start_line: 121, end_line: 184 }]
+        assertions: [{ text: "Tally has no upper bound after cooldown and execution targets the proposal period of the next lifecycle.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_refs: ["evidence:treasury-owner:lifecycle"] }]
+      - stable_key: "behavior:component:platform:treasury-owner-smart-contract:create-proposal"
+        title: "Create a proposal account and collect a bond"
+        trigger: "signed sender calls createProposal during the proposal period"
+        preconditions: ["treasury globally unpaused", "proposal account signature", "proposal lifecycle window"]
+        normal_outcome: "snapshots staking epoch data, credits amount/10 to owner balance, initializes proposal app state and verification key, approves child update, emits proposalCreated"
+        failure_outcomes: ["any signature, pause, lifecycle, account update, or balance constraint failure rejects atomically on-chain"]
+        anchors: [{ path: "packages/sdk/src/provable/contracts/treasury-owner.ts", symbol: "createProposal", start_line: 191, end_line: 272 }]
+        assertions: [{ text: "Recipient identity is stored as a Poseidon hash while the event reveals the recipient public key.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_refs: ["evidence:treasury-owner:create"] }]
+      - stable_key: "behavior:component:platform:treasury-owner-smart-contract:dispatch-vote"
+        title: "Authorize and dispatch a vote action"
+        trigger: "signed sender calls vote in the proposal's voting period"
+        preconditions: ["treasury globally unpaused", "vote enum including DUMMY is valid", "the supplied voter public key signs an account update"]
+        normal_outcome: "dispatches VoteAction to proposal reducer, emits event, and approves proposal update"
+        failure_outcomes: ["invalid vote, wrong period, pause, or missing voter signature rejects"]
+        anchors: [{ path: "packages/sdk/src/provable/contracts/treasury-owner.ts", symbol: "vote", start_line: 274, end_line: 318 }]
+        assertions: [{ text: "The transaction sender and voter may differ, but the voter key must sign through AccountUpdate.createSigned(publicKey).", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_refs: ["evidence:treasury-owner:vote"] }]
+      - stable_key: "behavior:component:platform:treasury-owner-smart-contract:tally-votes"
+        title: "Verify proofs and request proposal tally"
+        trigger: "signed sender calls tallyVotes at or after cooldown"
+        preconditions: ["treasury globally unpaused", "both side-loaded proofs verify", "five target action-state hashes are current-account precondition matches, found, non-initial, and pairwise unique"]
+        normal_outcome: "delegates tally to proposal, emits weights/result, approves proposal update"
+        failure_outcomes: ["proof, lifecycle, action-history, account, threshold, or proposal-status constraints reject"]
+        anchors: [{ path: "packages/sdk/src/provable/contracts/treasury-owner.ts", symbol: "tallyVotes", start_line: 320, end_line: 419 }]
+        assertions: [{ text: "The owner re-verifies both proofs at the top-level transaction boundary before nested proposal verification.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_refs: ["evidence:treasury-owner:tally"] }]
+      - stable_key: "behavior:component:platform:treasury-owner-smart-contract:execute-payout"
+        title: "Debit treasury and execute a proposal payout"
+        trigger: "any signed sender calls executeProposal in or after the next lifecycle"
+        preconditions: ["treasury globally unpaused", "proposal approved", "recipient commitment matches", "requested amount does not exceed proposal amount plus bond minus cumulative payout"]
+        normal_outcome: "debits owner, credits intended recipient through proposal-approved update, increments paidOutAmount, emits event"
+        failure_outcomes: ["insufficient owner balance or any proposal constraint rejects"]
+        anchors: [{ path: "packages/sdk/src/provable/contracts/treasury-owner.ts", symbol: "executeProposal", start_line: 421, end_line: 462 }]
+        assertions: [{ text: "Execution supports partial payouts and does not require the recipient to initiate the transaction.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_refs: ["evidence:treasury-owner:execute", "evidence:proposal:execute"] }]
+      - stable_key: "behavior:component:platform:treasury-owner-smart-contract:toggle-proposal-pause"
+        title: "Authorize and toggle proposal pause"
+        trigger: "signed sender supplies multisig signatures and controller nonce"
+        normal_outcome: "pause controller validates a toggle command, proposal toggles status, owner emits caller-supplied paused flag"
+        failure_outcomes: ["multisig, nonce, proposal authorization, or account-update constraints reject"]
+        anchors: [{ path: "packages/sdk/src/provable/contracts/treasury-owner.ts", symbol: "togglePauseProposal", start_line: 464, end_line: 496 }]
+        assertions: [{ text: "The paused argument is used only in the event and is neither included in the signed message nor used to select proposal state.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_refs: ["evidence:treasury-owner:toggle", "evidence:pause-controller:toggle"] }]
+      - stable_key: "behavior:component:platform:treasury-owner-smart-contract:restrict-token-child-updates"
+        title: "Reject external use of the treasury token"
+        trigger: "TokenContract approval of an account-update forest"
+        normal_outcome: "asserts usesToken is false for every update"
+        anchors: [{ path: "packages/sdk/src/provable/contracts/treasury-owner.ts", symbol: "approveBase", start_line: 505, end_line: 511 }]
+        assertions: [{ text: "The base approval hook rejects updates classified as using the derived token.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_refs: ["evidence:treasury-owner:approve-base"] }]
+      - stable_key: "behavior:component:platform:treasury-proposal-smart-contract:dispatch-vote-action"
+        title: "Dispatch vote action while proposal is not paused"
+        trigger: "Treasury Owner calls proposal.vote"
+        preconditions: ["proposal status is not PAUSED"]
+        normal_outcome: "appends VoteAction to Reducer action state"
+        anchors: [{ path: "packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts", symbol: "vote", start_line: 81, end_line: 96 }]
+        assertions: [{ text: "This method does not independently authenticate Treasury Owner; authorization depends on proposal account permissions and transaction composition.", evidence_class: "IMPLEMENTED_STATIC", confidence: "MEDIUM", evidence_refs: ["evidence:proposal:vote"] }]
+      - stable_key: "behavior:component:platform:treasury-proposal-smart-contract:compute-thresholds"
+        title: "Compute amount-sensitive participation and approval thresholds"
+        trigger: "tally"
+        normal_outcome: "caps proposal/treasury ratio at 100%, evaluates two curves, and derives required participation from snapshotted total currency"
+        failure_outcomes: ["zero treasury balance causes division failure under UInt semantics"]
+        anchors: [{ path: "packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts", symbol: "calculateAcceptanceCriteria", start_line: 98, end_line: 162 }]
+        assertions: [{ text: "Thresholds increase between configured minimum and maximum basis points as proposal size grows relative to the treasury snapshot balance.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_refs: ["evidence:proposal:thresholds"] }]
+      - stable_key: "behavior:component:platform:treasury-proposal-smart-contract:finalize-tally"
+        title: "Bind proof results and set proposal status"
+        trigger: "Treasury Owner calls proposal.tallyVotes"
+        preconditions: ["status UNKNOWN", "both proofs verify under configured keys", "vote reduction begins at initial action/nullifier roots", "staking transform begins at index zero and empty voting root, matches snapshot root, and is exhausted", "Treasury Owner default-token account membership is proven"]
+        normal_outcome: "computes approval status and stores APPROVED or REJECTED"
+        failure_outcomes: ["participation not met or no yay/nay votes causes assertion failure before REJECTED can be stored"]
+        anchors: [{ path: "packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts", symbol: "tallyVotes", start_line: 213, end_line: 351 }]
+        assertions: [{ text: "The proposal binds votingLedgerRoot to the staking-transform output and binds its stored staking snapshot to the staking-transform public input.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_refs: ["evidence:proposal:tally-and-execute"] }]
+      - stable_key: "behavior:component:platform:treasury-proposal-smart-contract:bounded-partial-payout"
+        title: "Credit only committed recipient up to proposal plus bond"
+        trigger: "Treasury Owner calls proposal.execute"
+        preconditions: ["status APPROVED", "recipient hash matches", "amountToPayOut <= amount + amount/10 - paidOutAmount"]
+        normal_outcome: "credits recipient and increments paidOutAmount"
+        boundary_outcomes: ["zero payout succeeds without advancing paidOutAmount", "full cumulative amount exhausts future positive payouts"]
+        anchors: [{ path: "packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts", symbol: "execute", start_line: 353, end_line: 384 }]
+        assertions: [{ text: "The proposal credits the bond component to the recipient rather than remembering or refunding the proposer.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_refs: ["evidence:proposal:execute"] }]
+      - stable_key: "behavior:component:platform:treasury-proposal-smart-contract:toggle-status-pause"
+        title: "Toggle proposal between PAUSED and UNKNOWN"
+        trigger: "Treasury Owner invokes togglePause"
+        normal_outcome: "PAUSED becomes UNKNOWN; every other status becomes PAUSED"
+        failure_outcomes: ["no preservation of APPROVED or REJECTED status across pause"]
+        anchors: [{ path: "packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts", symbol: "togglePause", start_line: 386, end_line: 397 }]
+        assertions: [{ text: "Pausing a finalized proposal and then unpausing it destroys its previous final status.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_refs: ["evidence:proposal:toggle"] }]
+      - stable_key: "behavior:component:platform:treasury-pause-controller-smart-contract:initialize-multisig"
+        title: "Initialize participant commitment and unpaused state"
+        trigger: "contract initialization"
+        preconditions: ["the static participant array has at least five entries"]
+        normal_outcome: "commits the entire supplied array but proof-time verification later requires exactly five; sets paused false and proof-oriented permissions"
+        anchors: [{ path: "packages/sdk/src/provable/contracts/treasury-pause-controller/treasury-pause-controller.ts", symbol: "init", start_line: 55, end_line: 85 }]
+        assertions: [{ text: "Initialization checks only a lower bound while verifySignatures requires exactly five participants, so more than five creates an unusable commitment/configuration pair.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_refs: ["evidence:pause-controller:init", "evidence:pause-controller:authorization"] }]
+      - stable_key: "behavior:component:platform:treasury-pause-controller-smart-contract:verify-three-of-five"
+        title: "Verify three of five committed participant signatures"
+        trigger: "pause, unpause, proposal toggle, or key rotation"
+        preconditions: ["host witnesses exactly five participant keys whose ordered commitment matches state"]
+        normal_outcome: "verifies one signature per ordered participant slot and requires at least three valid signatures"
+        anchors: [{ path: "packages/sdk/src/provable/contracts/treasury-pause-controller/multisig-signatures.ts", symbol: "MultisigSignatures.verify", start_line: 118, end_line: 145 }]
+        assertions: [{ text: "Duplicate participant keys are not rejected; distinct signature slots can therefore count signatures under repeated keys if deployment/rotation accepts such a list.", evidence_class: "IMPLEMENTED_STATIC", confidence: "MEDIUM", evidence_refs: ["evidence:multisig:verify"] }]
+      - stable_key: "behavior:component:platform:treasury-pause-controller-smart-contract:consume-nonce-and-set-pause"
+        title: "Consume controller nonce for pause commands"
+        trigger: "authorized pause, unpause, proposal toggle, or rotation"
+        normal_outcome: "requires supplied nonce equal account nonce and marks incrementNonce true; pause/unpause set explicit global state"
+        anchors: [{ path: "packages/sdk/src/provable/contracts/treasury-pause-controller/treasury-pause-controller.ts", symbol: "requireAndIncrementNonce", start_line: 87, end_line: 95 }]
+        assertions: [{ text: "Replay protection is scoped to the controller account nonce; the signed hashes do not include controller address or network/domain identifier.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_refs: ["evidence:multisig:messages", "evidence:pause-controller:authorization"] }]
+      - stable_key: "behavior:component:platform:treasury-pause-controller-smart-contract:rotate-key-commitment"
+        title: "Rotate participant commitment"
+        trigger: "three-of-five signatures under current commitment"
+        normal_outcome: "sets caller-supplied new commitment after signing old commitment, new commitment, and nonce"
+        failure_outcomes: ["new commitment need not correspond to five distinct/recoverable keys and can permanently disable emergency control"]
+        anchors: [{ path: "packages/sdk/src/provable/contracts/treasury-pause-controller/treasury-pause-controller.ts", symbol: "rotateMultisigKeys", start_line: 121, end_line: 145 }]
+        assertions: [{ text: "The next participant list is not supplied or validated in-circuit; only its Field commitment is stored.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_refs: ["evidence:pause-controller:rotate"] }]
+      - stable_key: "behavior:component:platform:vote-reducer-zkprogram:reduce-five-actions"
+        title: "Reduce five vote actions"
+        trigger: "VoteReducer.reduceBatch proof construction"
+        normal_outcome: "validates enum, proves voting-account and nullifier paths keyed by public key hash, rolls nullifier/action roots, accumulates weights, and marks target action states found"
+        host_effects: ["reads voting/nullifier ledgers", "writes nullifier records and Merkle leaves through two separate host callbacks"]
+        anchors: [{ path: "packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts", symbol: "VoteReducer.reduceBatch", start_line: 426, end_line: 639 }]
+        assertions: [{ text: "Previously nullified votes are assigned zero weight; the program does not assert the prior nullifier is false despite the error constant/comment wording.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_refs: ["evidence:vote-reducer:reduce"] }]
+      - stable_key: "behavior:component:platform:vote-reducer-zkprogram:merge-adjacent-reductions"
+        title: "Merge adjacent vote reductions"
+        trigger: "VoteReducer.merge"
+        preconditions: ["both proofs verify", "merged public input hashes to proof1 input", "same voting root", "proof1 output roots continue into proof2 input", "target action hashes match"]
+        normal_outcome: "uses proof2 terminal roots, adds tallies, and OR-combines found flags"
+        anchors: [{ path: "packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts", symbol: "VoteReducer.merge", start_line: 333, end_line: 417 }]
+        assertions: [{ text: "The merge continuity binds action and nullifier roots but relies on UInt64 addition constraints for aggregate tally range safety.", evidence_class: "IMPLEMENTED_STATIC", confidence: "MEDIUM", evidence_refs: ["evidence:vote-reducer:merge"] }]
+      - stable_key: "behavior:component:platform:staking-ledger-to-voting-ledger-zkprogram:digest-five-accounts"
+        title: "Digest five consecutive staking accounts"
+        trigger: "StakingLedgerToVotingLedger.digest"
+        normal_outcome: "proves each account at current index under one staking root, adds its balance to its delegate's voting leaf, advances index, and returns the rolling voting root"
+        host_effects: ["reads staking and voting Merkle witnesses/accounts", "writes voting account and Merkle leaf in one host callback"]
+        anchors: [{ path: "packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts", symbol: "StakingLedgerToVotingLedger.digest", start_line: 195, end_line: 338 }]
+        assertions: [{ text: "All accounts, including accounts with empty delegate, are accumulated; tokenId is not used to classify eligible staking accounts.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_refs: ["evidence:staking-transform:digest"] }]
+      - stable_key: "behavior:component:platform:staking-ledger-to-voting-ledger-zkprogram:merge-adjacent-digests"
+        title: "Merge adjacent staking transformations"
+        trigger: "StakingLedgerToVotingLedger.merge"
+        preconditions: ["both proofs verify", "public input equals proof1 input by hash", "same staking root", "proof1 final index plus one equals proof2 initial index", "proof1 voting root equals proof2 initial voting root"]
+        normal_outcome: "returns proof2 terminal index/root with exhausted false"
+        anchors: [{ path: "packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts", symbol: "StakingLedgerToVotingLedger.merge", start_line: 148, end_line: 191 }]
+        assertions: [{ text: "Recursive adjacency and both ledger-root continuities are explicit constraints.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_refs: ["evidence:staking-transform:merge"] }]
+      - stable_key: "behavior:component:platform:staking-ledger-to-voting-ledger-zkprogram:prove-exhaustion"
+        title: "Prove next staking index is empty"
+        trigger: "StakingLedgerToVotingLedger.exhaust"
+        preconditions: ["previous proof verifies", "public input equals previous proof input by hash", "the leaf at previous output index plus one hashes as Account.empty under the staking root"]
+        normal_outcome: "copies previous output and sets exhausted true"
+        anchors: [{ path: "packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts", symbol: "StakingLedgerToVotingLedger.exhaust", start_line: 83, end_line: 144 }]
+        assertions: [{ text: "Exhaustion proves one empty successor leaf, so completeness relies on a contiguous-ledger/no-holes assumption.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_refs: ["evidence:staking-transform:exhaust"] }]
+    flows:
+      - stable_key: "flow:component:platform:treasury-owner-smart-contract:proposal-creation-local"
+        flow_scope: "LOCAL"
+        title: "Owner-side proposal creation"
+        trigger: "createProposal"
+        steps:
+          - { sequence: 1, operation: "snapshot staking epoch ledger hash and total currency" }
+          - { sequence: 2, operation: "require proposal period and global unpaused state" }
+          - { sequence: 3, operation: "credit bond and construct signed derived-token proposal account update" }
+          - { sequence: 4, operation: "write proposal app state, verification key, permissions, URI; emit event" }
+        terminal_outcomes: ["proposal account update approved", "transaction rejected"]
+        assertions: [{ text: "This local view ends at outbound proposal account-update approval; the orchestrator must compose the cross-contract flow.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_refs: ["evidence:treasury-owner:create"] }]
+      - stable_key: "flow:component:platform:treasury-proposal-smart-contract:tally-local"
+        flow_scope: "LOCAL"
+        title: "Proposal-local tally"
+        trigger: "tallyVotes"
+        steps:
+          - { sequence: 1, operation: "require UNKNOWN and verify both side-loaded proofs" }
+          - { sequence: 2, operation: "bind initial roots/index, voting root, staking snapshot, and exhaustion" }
+          - { sequence: 3, operation: "prove Treasury Owner default-token account membership in snapshot" }
+          - { sequence: 4, operation: "compute participation/approval and store result" }
+        terminal_outcomes: ["APPROVED", "REJECTED only when participation and non-abstain-vote assertions pass", "constraint rejection"]
+        assertions: [{ text: "Proposal-local finalization depends on external verification keys and empty roots supplied as mutable class statics.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_refs: ["evidence:proposal:tally-and-execute"] }]
+      - stable_key: "flow:component:platform:treasury-proposal-smart-contract:payout-local"
+        flow_scope: "LOCAL"
+        title: "Proposal-local payout"
+        trigger: "execute"
+        steps:
+          - { sequence: 1, operation: "require not paused and APPROVED" }
+          - { sequence: 2, operation: "compute amount plus bond less prior payouts" }
+          - { sequence: 3, operation: "bind recipient key to recipientHash" }
+          - { sequence: 4, operation: "credit recipient update and increment paidOutAmount" }
+        terminal_outcomes: ["partial/full payout approved", "constraint rejection"]
+        assertions: [{ text: "No explicit positive-amount condition exists.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_refs: ["evidence:proposal:execute"] }]
+      - stable_key: "flow:component:platform:treasury-pause-controller-smart-contract:authorized-command-local"
+        flow_scope: "LOCAL"
+        title: "Pause-controller command authorization"
+        trigger: "pause/unpause/toggle/rotate"
+        steps:
+          - { sequence: 1, operation: "derive operation-specific prefixed data hash" }
+          - { sequence: 2, operation: "witness exactly five participants and bind ordered commitment" }
+          - { sequence: 3, operation: "verify at least three signatures" }
+          - { sequence: 4, operation: "require and increment account nonce" }
+          - { sequence: 5, operation: "apply local state effect when applicable" }
+        terminal_outcomes: ["authorized command", "constraint rejection"]
+        assertions: [{ text: "Command domain separation distinguishes operation types but omits contract/network domain identifiers.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_refs: ["evidence:multisig:messages", "evidence:pause-controller:authorization"] }]
+      - stable_key: "flow:component:platform:vote-reducer-zkprogram:reduce-local"
+        flow_scope: "LOCAL"
+        title: "Vote-reduction proof statement"
+        trigger: "reduceBatch"
+        steps:
+          - { sequence: 1, operation: "start from public action/nullifier roots and target action-state hashes" }
+          - { sequence: 2, operation: "for each of five actions prove voter leaf/index and nullifier leaf/index" }
+          - { sequence: 3, operation: "roll nullifier root, tallies, action hash, and found flags" }
+          - { sequence: 4, operation: "return public terminal state; perform host nullifier writes" }
+        terminal_outcomes: ["batch proof public output", "witness/constraint failure", "host mutation failure during proof construction"]
+        assertions: [{ text: "Host nullifier writes are operational side effects and are not themselves guaranteed by proof verification.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_refs: ["evidence:vote-reducer:reduce"] }]
+      - stable_key: "flow:component:platform:staking-ledger-to-voting-ledger-zkprogram:digest-local"
+        flow_scope: "LOCAL"
+        title: "Staking-transformation digest proof statement"
+        trigger: "digest"
+        steps:
+          - { sequence: 1, operation: "start from public index, staking root, and voting root" }
+          - { sequence: 2, operation: "for five consecutive accounts prove staking membership" }
+          - { sequence: 3, operation: "prove delegate voting leaf/index and add balance" }
+          - { sequence: 4, operation: "return terminal index/root; perform host voting-ledger writes" }
+        terminal_outcomes: ["digest proof output", "witness/constraint failure", "partial host mutation"]
+        assertions: [{ text: "The proof binds the mathematical root transition, not transactional durability of the host ledger writes.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_refs: ["evidence:staking-transform:digest"] }]
+    invariants:
+      - stable_key: "invariant:component:platform:treasury-owner-smart-contract:lifecycle-slot-derived-from-deployment"
+        category: "LIFECYCLE"
+        statement: "Every gated lifecycle slot range is derived from on-chain deployment slot, lifecycle ID, four periods, and lifecyclePeriodDuration."
+        semantic_status: "EXPLICIT"
+        enforcement_sites: ["behavior:component:platform:treasury-owner-smart-contract:lifecycle-slot-gate"]
+        assertions: [{ text: "Slot arithmetic is explicit; exact endpoint inclusion remains an o1js/network assumption.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_refs: ["evidence:treasury-owner:lifecycle"] }]
+      - stable_key: "invariant:component:platform:treasury-owner-smart-contract:global-pause-guards-business-actions"
+        category: "AUTHORIZATION"
+        statement: "Proposal creation, voting, tallying, and payout require the configured pause controller to report unpaused."
+        semantic_status: "EXPLICIT"
+        violation_paths: ["proposal-specific pause toggle deliberately remains callable"]
+        assertions: [{ text: "Each principal owner method calls requireNotPaused before material effects.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_refs: ["evidence:treasury-owner:class-and-methods"] }]
+      - stable_key: "invariant:component:platform:treasury-proposal-smart-contract:payout-recipient-and-cap"
+        category: "CONSERVATION"
+        statement: "Positive cumulative proposal payouts cannot exceed amount plus integer-divided bond and must credit a key matching recipientHash."
+        semantic_status: "EXPLICIT"
+        assertions: [{ text: "paidOutAmount and recipientHash constraints enforce the cap and destination in proposal.execute.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_refs: ["evidence:proposal:execute"] }]
+      - stable_key: "invariant:component:platform:treasury-proposal-smart-contract:tally-once-unless-paused"
+        category: "LIFECYCLE"
+        statement: "Tally requires UNKNOWN and normally stores a terminal result, but proposal pause toggling can reset a finalized status to UNKNOWN."
+        semantic_status: "CONFLICTING"
+        assertions: [{ text: "The tally-once guard is locally explicit but not preserved by the pause transition.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_refs: ["evidence:proposal:tally-and-execute", "evidence:proposal:toggle"] }]
+      - stable_key: "invariant:component:platform:treasury-pause-controller-smart-contract:three-of-five-current-commitment"
+        category: "AUTHORIZATION"
+        statement: "Every emergency command requires at least three signature slots valid under the ordered five-key list committed in state."
+        semantic_status: "EXPLICIT"
+        assertions: [{ text: "Commitment equality and signature count are constrained; participant distinctness is not.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_refs: ["evidence:multisig:verify"] }]
+      - stable_key: "invariant:component:platform:treasury-pause-controller-smart-contract:nonce-replay-protection"
+        category: "UNIQUENESS_REPLAY"
+        statement: "A controller nonce value can authorize at most one accepted command on that account under sequential ledger semantics."
+        semantic_status: "EXPLICIT"
+        assertions: [{ text: "Each command requires account.nonce and sets incrementNonce.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_refs: ["evidence:pause-controller:authorization"] }]
+      - stable_key: "invariant:component:platform:vote-reducer-zkprogram:voter-leaf-key-binding"
+        category: "COMMITMENT_BINDING"
+        statement: "Each voting-account and nullifier Merkle path index equals Poseidon(voteAction.publicKey)."
+        semantic_status: "EXPLICIT"
+        assertions: [{ text: "Both 255-height witness indices are constrained to the action public-key hash.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_refs: ["evidence:vote-reducer:reduce"] }]
+      - stable_key: "invariant:component:platform:vote-reducer-zkprogram:rolling-nullifier-root"
+        category: "UNIQUENESS_REPLAY"
+        statement: "Every non-dummy action rolls the nullifier leaf for its voter to true; later actions at the same key receive zero weight."
+        semantic_status: "EXPLICIT"
+        assertions: [{ text: "A prior true nullifier is allowed but yields zero voting weight.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_refs: ["evidence:vote-reducer:reduce"] }]
+      - stable_key: "invariant:component:platform:vote-reducer-zkprogram:recursive-root-continuity"
+        category: "PROOF_CONTINUITY"
+        statement: "Merged vote proofs share voting root and connect action/nullifier terminal roots to the next proof inputs."
+        semantic_status: "EXPLICIT"
+        assertions: [{ text: "The merge directly asserts all three root continuities and verifies both proofs.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_refs: ["evidence:vote-reducer:merge"] }]
+      - stable_key: "invariant:component:platform:vote-reducer-zkprogram:action-history-bound-to-onchain-state"
+        category: "COMMITMENT_BINDING"
+        statement: "The final action hash equals target actionStateOne and all five unique target hashes are found in the proof and required as proposal account action-state preconditions."
+        semantic_status: "EXPLICIT"
+        assertions: [{ text: "Binding is split between the ZkProgram output, proposal.tallyVotes, and owner.tallyVotes transaction composition.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_refs: ["evidence:vote-reducer:reduce", "evidence:proposal:tally-and-execute", "evidence:treasury-owner:tally"] }]
+      - stable_key: "invariant:component:platform:staking-ledger-to-voting-ledger-zkprogram:consecutive-staking-indices"
+        category: "PROOF_CONTINUITY"
+        statement: "Digest steps increment index by one and merged proofs require output1.index + 1 = input2.index."
+        semantic_status: "EXPLICIT"
+        assertions: [{ text: "Proposal tally separately requires the initial public index to be zero.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_refs: ["evidence:staking-transform:digest", "evidence:staking-transform:merge", "evidence:proposal:tally-and-execute"] }]
+      - stable_key: "invariant:component:platform:staking-ledger-to-voting-ledger-zkprogram:staking-root-fixed"
+        category: "COMMITMENT_BINDING"
+        statement: "Every digested account and exhaustion witness is proven against one staking root, which proposal tally binds to its snapshotted stakingEpochDataLedgerHash."
+        semantic_status: "EXPLICIT"
+        assertions: [{ text: "Digest/merge/exhaust preserve the root, and the proposal binds the initial root to state.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_refs: ["evidence:staking-transform:program", "evidence:proposal:tally-and-execute"] }]
+      - stable_key: "invariant:component:platform:staking-ledger-to-voting-ledger-zkprogram:voting-root-rolls-by-delegate"
+        category: "CONSERVATION"
+        statement: "For each accepted staking account, the rolling voting root updates the leaf at Poseidon(delegate) by adding the staking account balance."
+        semantic_status: "EXPLICIT"
+        assertions: [{ text: "Eligibility of empty-delegate/token accounts is not constrained, so conservation is conditional on account classification assumptions.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_refs: ["evidence:staking-transform:digest"] }]
+      - stable_key: "invariant:component:platform:provable-ledger-and-hash-support:host-state-matches-public-roots"
+        category: "DEPENDENCY"
+        statement: "Host voting/nullifier storage must remain synchronized with the rolling public roots used for subsequent witnesses."
+        semantic_status: "CANDIDATE"
+        assertions: [{ text: "The programs mutate host storage during witness callbacks, but no transaction/rollback primitive is visible in the scoped support boundary.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_refs: ["evidence:staking-transform:digest", "evidence:vote-reducer:reduce", "evidence:storage:interfaces"] }]
+    inputs_outputs:
+      - stable_key: "input-output:vote-reducer:public-input-from-actions-hash"
+        name: "fromActionsHash"
+        direction: "INPUT"
+        visibility: "PUBLIC"
+        execution_domain: "CONSTRAINT"
+        type_schema: "Field"
+        validation: "rolled through non-dummy action hashing; proposal tally requires Reducer.initialActionState"
+        anchors: [{ path: "packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts", symbol: "VoteReducerPublicInput.fromActionsHash", start_line: 272, end_line: 277 }]
+        assertions: [{ text: "The batch starts action reduction at this public hash.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_refs: ["evidence:vote-reducer:types"] }]
+      - stable_key: "input-output:vote-reducer:public-input-voting-ledger-root"
+        name: "votingLedgerRoot"
+        direction: "INPUT"
+        visibility: "PUBLIC"
+        execution_domain: "CONSTRAINT"
+        type_schema: "Field"
+        validation: "every voting-account witness root equals it; proposal binds it to staking-transform output"
+        anchors: [{ path: "packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts", symbol: "VoteReducerPublicInput.votingLedgerRoot", start_line: 272, end_line: 277 }]
+        assertions: [{ text: "This root selects the voting weight ledger for the reduction.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_refs: ["evidence:vote-reducer:types"] }]
+      - stable_key: "input-output:vote-reducer:public-input-from-nullifier-root"
+        name: "fromNullifierRoot"
+        direction: "INPUT"
+        visibility: "PUBLIC"
+        execution_domain: "CONSTRAINT"
+        type_schema: "Field"
+        validation: "rolls through each action; proposal binds initial value to configured empty root"
+        anchors: [{ path: "packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts", symbol: "VoteReducerPublicInput.fromNullifierRoot", start_line: 272, end_line: 277 }]
+        assertions: [{ text: "This root selects prior voter-nullification state.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_refs: ["evidence:vote-reducer:types"] }]
+      - stable_key: "input-output:vote-reducer:public-input-action-state-targets"
+        name: "actionStateHistoryTarget[1..5]"
+        direction: "INPUT"
+        visibility: "PUBLIC"
+        execution_domain: "CONSTRAINT"
+        type_schema: "five Fields"
+        validation: "found flags updated when rolling action hash equals each target; hashes compared across merges and against on-chain action states at tally"
+        anchors: [{ path: "packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts", symbol: "ActionStateHistoryTarget", start_line: 116, end_line: 132 }]
+        assertions: [{ text: "Five target hashes represent the proposal account's action-state history slots.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_refs: ["evidence:vote-reducer:types"] }]
+      - stable_key: "input-output:vote-reducer:private-vote-actions"
+        name: "voteActions[0..4].vote/publicKey"
+        direction: "INPUT"
+        visibility: "PRIVATE"
+        execution_domain: "BOTH"
+        type_schema: "Provable.Array(VoteAction, 5)"
+        validation: "vote enum; dummy requires DUMMY plus PublicKey.empty; public-key hash binds both Merkle indices"
+        anchors: [{ path: "packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts", symbol: "VoteAction", start_line: 48, end_line: 114 }]
+        assertions: [{ text: "Non-dummy actions are incorporated into action hash and nullifier transition.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_refs: ["evidence:vote-reducer:types", "evidence:vote-reducer:reduce"] }]
+      - stable_key: "input-output:vote-reducer:public-output-terminal-roots"
+        name: "toActionsHash/toNullifierRoot"
+        direction: "OUTPUT"
+        visibility: "PUBLIC"
+        execution_domain: "CONSTRAINT"
+        type_schema: "two Fields"
+        validation: "computed rolling transitions; recursive merge continuity; proposal binds action hash to actionStateOne"
+        anchors: [{ path: "packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts", symbol: "VoteReducerPublicOutput", start_line: 294, end_line: 304 }]
+        assertions: [{ text: "The terminal roots are proof outputs and recursive continuity points.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_refs: ["evidence:vote-reducer:types"] }]
+      - stable_key: "input-output:vote-reducer:public-output-tallies"
+        name: "yay/nay/abstain"
+        direction: "OUTPUT"
+        visibility: "PUBLIC"
+        execution_domain: "CONSTRAINT"
+        type_schema: "three UInt64"
+        validation: "each weight is selected from constrained voting account balance; merges add UInt64 outputs"
+        anchors: [{ path: "packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts", symbol: "VoteReducerPublicOutput", start_line: 297, end_line: 304 }]
+        assertions: [{ text: "Previously-nullified and dummy action weights contribute zero.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_refs: ["evidence:vote-reducer:reduce"] }]
+      - stable_key: "input-output:vote-reducer:public-output-action-history"
+        name: "actionStateHistory[1..5].hash/found"
+        direction: "OUTPUT"
+        visibility: "PUBLIC"
+        execution_domain: "CONSTRAINT"
+        type_schema: "five {hash: Field, found: Bool} entries"
+        validation: "target hashes copied; found becomes true on equality with rolling action hash; merge constrains hashes and ORs flags"
+        anchors: [{ path: "packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts", symbol: "ActionStateHistory", start_line: 137, end_line: 267 }]
+        assertions: [{ text: "Owner tally requires all five found flags true and hashes pairwise unique/non-initial.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_refs: ["evidence:treasury-owner:tally"] }]
+      - stable_key: "input-output:vote-reducer:host-voting-ledger"
+        name: "host voting account and PrefixedMerkleWitness255"
+        direction: "INPUT"
+        visibility: "HOST_ONLY"
+        execution_domain: "HOST"
+        type_schema: "VotingLedger access through ContextProvider"
+        validation: "witnessed values become private circuit values whose root/index are constrained"
+        anchors: [{ path: "packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts", symbol: "VoteReducerContext.votingLedger", start_line: 33, end_line: 43 }]
+        assertions: [{ text: "Host retrieval correctness is checked indirectly through Merkle constraints.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_refs: ["evidence:vote-reducer:reduce"] }]
+      - stable_key: "input-output:vote-reducer:host-nullifier-ledger"
+        name: "host nullifier value/witness and persistence writes"
+        direction: "INOUT"
+        visibility: "HOST_ONLY"
+        execution_domain: "HOST"
+        type_schema: "NullifierLedger access through ContextProvider"
+        validation: "value/witness feed constraints; two writes return ignored Field(0) witnesses"
+        failure_behavior: "storage mutation may partially complete or diverge from proof artifact"
+        anchors: [{ path: "packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts", symbol: "VoteReducerContext.nullifierLedger", start_line: 33, end_line: 43 }]
+        assertions: [{ text: "The existence and durability of host writes are not public proof outputs.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_refs: ["evidence:vote-reducer:reduce"] }]
+      - stable_key: "input-output:staking-transform:public-input-index"
+        name: "index"
+        direction: "INPUT"
+        visibility: "PUBLIC"
+        execution_domain: "CONSTRAINT"
+        type_schema: "UInt64"
+        validation: "witness path index per step; proposal tally requires initial index zero"
+        anchors: [{ path: "packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts", symbol: "StakingLedgerToVotingLedgerProgramInput.index", start_line: 53, end_line: 57 }]
+        assertions: [{ text: "Index identifies the first staking account in a digest range.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_refs: ["evidence:staking-transform:types"] }]
+      - stable_key: "input-output:staking-transform:public-input-staking-root"
+        name: "stakingLedgerRoot"
+        direction: "INPUT"
+        visibility: "PUBLIC"
+        execution_domain: "CONSTRAINT"
+        type_schema: "Field"
+        validation: "every account and exhaustion witness root equals it; proposal binds it to snapshot"
+        anchors: [{ path: "packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts", symbol: "StakingLedgerToVotingLedgerProgramInput.stakingLedgerRoot", start_line: 53, end_line: 57 }]
+        assertions: [{ text: "This immutable root defines the staking snapshot transformed by the proof.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_refs: ["evidence:staking-transform:types"] }]
+      - stable_key: "input-output:staking-transform:public-input-voting-root"
+        name: "votingLedgerRoot"
+        direction: "INPUT"
+        visibility: "PUBLIC"
+        execution_domain: "CONSTRAINT"
+        type_schema: "Field"
+        validation: "rolling root starting point; proposal requires configured empty root"
+        anchors: [{ path: "packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts", symbol: "StakingLedgerToVotingLedgerProgramInput.votingLedgerRoot", start_line: 53, end_line: 57 }]
+        assertions: [{ text: "The initial root determines whether the transformation starts from an empty voting ledger.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_refs: ["evidence:staking-transform:types"] }]
+      - stable_key: "input-output:staking-transform:private-accounts"
+        name: "accounts[0..4]"
+        direction: "INPUT"
+        visibility: "PRIVATE"
+        execution_domain: "BOTH"
+        type_schema: "Provable.Array(Account, 5)"
+        validation: "full Mina account serialization and prefixed Merkle membership at consecutive indices"
+        anchors: [{ path: "packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts", symbol: "AccountBatch", start_line: 43, end_line: 44 }]
+        assertions: [{ text: "Each private account contributes its balance to the voting leaf selected by account.delegate.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_refs: ["evidence:staking-transform:digest"] }]
+      - stable_key: "input-output:staking-transform:public-output-index"
+        name: "output.index"
+        direction: "OUTPUT"
+        visibility: "PUBLIC"
+        execution_domain: "CONSTRAINT"
+        type_schema: "UInt64"
+        validation: "digest returns input index plus four; merge uses second terminal index; exhaust checks next index"
+        anchors: [{ path: "packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts", symbol: "StakingLedgerToVotingLedgerProgramOutput.index", start_line: 59, end_line: 63 }]
+        assertions: [{ text: "The output index denotes the last digested staking account.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_refs: ["evidence:staking-transform:types"] }]
+      - stable_key: "input-output:staking-transform:public-output-voting-root"
+        name: "output.votingLedgerRoot"
+        direction: "OUTPUT"
+        visibility: "PUBLIC"
+        execution_domain: "CONSTRAINT"
+        type_schema: "Field"
+        validation: "rolling delegate-balance root; merge continuity; proposal binds vote reducer to it"
+        anchors: [{ path: "packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts", symbol: "StakingLedgerToVotingLedgerProgramOutput.votingLedgerRoot", start_line: 59, end_line: 63 }]
+        assertions: [{ text: "This output is the voting snapshot consumed by the vote reducer.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_refs: ["evidence:staking-transform:types"] }]
+      - stable_key: "input-output:staking-transform:public-output-exhausted"
+        name: "output.exhausted"
+        direction: "OUTPUT"
+        visibility: "PUBLIC"
+        execution_domain: "CONSTRAINT"
+        type_schema: "Bool"
+        validation: "digest/merge false; exhaust true only after next empty account witness; proposal asserts true"
+        anchors: [{ path: "packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts", symbol: "StakingLedgerToVotingLedgerProgramOutput.exhausted", start_line: 59, end_line: 63 }]
+        assertions: [{ text: "The flag is meaningful only under the contiguous-ledger assumption.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_refs: ["evidence:staking-transform:exhaust"] }]
+      - stable_key: "input-output:staking-transform:host-ledgers"
+        name: "host staking witnesses and voting accounts/witnesses/writes"
+        direction: "INOUT"
+        visibility: "HOST_ONLY"
+        execution_domain: "HOST"
+        type_schema: "StakingLedger and VotingLedger through ContextProvider"
+        validation: "witnessed values feed root/index constraints; voting persistence has no proved completion bit"
+        anchors: [{ path: "packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts", symbol: "StakingLedgerToVotingLedgerContext", start_line: 35, end_line: 41 }]
+        assertions: [{ text: "The host context is global mutable process state and must be set consistently before proof construction.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_refs: ["evidence:context-provider", "evidence:staking-transform:digest"] }]
+    relations:
+      - stable_key: "relation:treasury-owner:verifies:vote-reducer-proof"
+        relation_type: "VERIFIES"
+        from_stable_key: "component:platform:treasury-owner-smart-contract"
+        to_stable_key: "zk-statement:vote-reducer:recursive-reduction"
+        anchors: [{ path: "packages/sdk/src/provable/contracts/treasury-owner.ts", symbol: "tallyVotes", start_line: 335, end_line: 342 }]
+      - stable_key: "relation:treasury-owner:verifies:staking-transform-proof"
+        relation_type: "VERIFIES"
+        from_stable_key: "component:platform:treasury-owner-smart-contract"
+        to_stable_key: "zk-statement:staking-ledger-to-voting-ledger:recursive-transformation"
+        anchors: [{ path: "packages/sdk/src/provable/contracts/treasury-owner.ts", symbol: "tallyVotes", start_line: 335, end_line: 342 }]
+      - stable_key: "relation:proposal:verifies:vote-reducer-proof"
+        relation_type: "VERIFIES"
+        from_stable_key: "component:platform:treasury-proposal-smart-contract"
+        to_stable_key: "zk-statement:vote-reducer:recursive-reduction"
+        anchors: [{ path: "packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts", symbol: "tallyVotes", start_line: 227, end_line: 233 }]
+      - stable_key: "relation:proposal:verifies:staking-transform-proof"
+        relation_type: "VERIFIES"
+        from_stable_key: "component:platform:treasury-proposal-smart-contract"
+        to_stable_key: "zk-statement:staking-ledger-to-voting-ledger:recursive-transformation"
+        anchors: [{ path: "packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts", symbol: "tallyVotes", start_line: 227, end_line: 233 }]
+      - stable_key: "relation:vote-reducer:bound-by-constraint:voting-root"
+        relation_type: "BOUND_BY_CONSTRAINT"
+        from_stable_key: "input-output:vote-reducer:host-voting-ledger"
+        to_stable_key: "input-output:vote-reducer:public-input-voting-ledger-root"
+        anchors: [{ path: "packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts", symbol: "reduceBatch", start_line: 470, end_line: 505 }]
+      - stable_key: "relation:vote-reducer:bound-by-constraint:nullifier-root"
+        relation_type: "BOUND_BY_CONSTRAINT"
+        from_stable_key: "input-output:vote-reducer:host-nullifier-ledger"
+        to_stable_key: "input-output:vote-reducer:public-input-from-nullifier-root"
+        anchors: [{ path: "packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts", symbol: "reduceBatch", start_line: 507, end_line: 554 }]
+      - stable_key: "relation:vote-reducer:host-write:not-proved"
+        relation_type: "MAY_FLOW_TO"
+        from_stable_key: "component:platform:vote-reducer-zkprogram"
+        to_stable_key: "input-output:vote-reducer:host-nullifier-ledger"
+        precision: "Host callbacks mutate storage during witness generation; verifier acceptance does not prove these mutations occurred."
+        anchors: [{ path: "packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts", symbol: "reduceBatch", start_line: 556, end_line: 574 }]
+      - stable_key: "relation:staking-transform:bound-by-constraint:staking-root"
+        relation_type: "BOUND_BY_CONSTRAINT"
+        from_stable_key: "input-output:staking-transform:private-accounts"
+        to_stable_key: "input-output:staking-transform:public-input-staking-root"
+        anchors: [{ path: "packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts", symbol: "digest", start_line: 207, end_line: 237 }]
+      - stable_key: "relation:staking-transform:bound-by-constraint:voting-root"
+        relation_type: "BOUND_BY_CONSTRAINT"
+        from_stable_key: "input-output:staking-transform:host-ledgers"
+        to_stable_key: "input-output:staking-transform:public-output-voting-root"
+        anchors: [{ path: "packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts", symbol: "digest", start_line: 245, end_line: 302 }]
+      - stable_key: "relation:staking-transform:host-write:not-proved"
+        relation_type: "MAY_FLOW_TO"
+        from_stable_key: "component:platform:staking-ledger-to-voting-ledger-zkprogram"
+        to_stable_key: "input-output:staking-transform:host-ledgers"
+        precision: "Host writes support later witness generation but are not themselves a public or constrained proof effect."
+        anchors: [{ path: "packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts", symbol: "digest", start_line: 304, end_line: 320 }]
+      - stable_key: "relation:proposal:binds:proof-ledger-roots"
+        relation_type: "BOUND_BY_CONSTRAINT"
+        from_stable_key: "zk-statement:staking-ledger-to-voting-ledger:recursive-transformation"
+        to_stable_key: "zk-statement:vote-reducer:recursive-reduction"
+        anchors: [{ path: "packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts", symbol: "tallyVotes", start_line: 261, end_line: 283 }]
+    zk_statements:
+      - stable_key: "zk-statement:vote-reducer:recursive-reduction"
+        title: "Recursive vote action reduction"
+        intended_relation: "Given public starting action/nullifier roots, one voting-ledger root, and five target action-state hashes, and private batches of vote actions plus Merkle witnesses, prove valid keyed ledger transitions and vote-weight accumulation; recursively bind adjacent ranges and publish terminal roots, tallies, and target discovery flags."
+        pseudocode:
+          - "reduce(P, actions[5]): for each action, constrain vote enum; constrain voting leaf/root/index; constrain nullifier leaf/root/index; set non-dummy nullifier true; add zero for dummy/already-nullified else voting balance; append non-dummy action hash; mark target hashes encountered; return terminal roots/tallies/history."
+          - "merge(P, proof1, proof2): verify both; require P == proof1.input; require same voting root; require proof1 terminal action/nullifier roots == proof2 starting roots; require target hashes equal; add tallies and OR found flags; return proof2 terminal roots."
+        public_instance:
+          - "fromActionsHash"
+          - "votingLedgerRoot"
+          - "fromNullifierRoot"
+          - "actionStateHistoryTarget.actionStateOne..Five"
+        public_output:
+          - "toActionsHash"
+          - "toNullifierRoot"
+          - "yay, nay, abstain"
+          - "actionStateHistory hashes/found flags"
+        private_witness:
+          - "five VoteAction values per reduceBatch"
+          - "VotingAccount values and PrefixedMerkleWitness255 paths"
+          - "Bool nullifier values and PrefixedMerkleWitness255 paths"
+          - "two prior proofs per merge"
+        constraint_sites:
+          - { path: "packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts", start_line: 340, end_line: 415, purpose: "recursive proof and continuity constraints" }
+          - { path: "packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts", start_line: 451, end_line: 627, purpose: "batch enum, membership, index, nullifier, tally, action-hash, and target constraints" }
+        public_input_io_refs:
+          - "input-output:vote-reducer:public-input-from-actions-hash"
+          - "input-output:vote-reducer:public-input-voting-ledger-root"
+          - "input-output:vote-reducer:public-input-from-nullifier-root"
+          - "input-output:vote-reducer:public-input-action-state-targets"
+        public_output_io_refs:
+          - "input-output:vote-reducer:public-output-terminal-roots"
+          - "input-output:vote-reducer:public-output-tallies"
+          - "input-output:vote-reducer:public-output-action-history"
+        private_input_io_refs: ["input-output:vote-reducer:private-vote-actions"]
+        values:
+          - { name: "fromActionsHash", visibility: "PUBLIC", execution_domain: "CONSTRAINT", io_ref: "input-output:vote-reducer:public-input-from-actions-hash", encoding: { semantic_type: "Mina action-state hash", field_or_byte_representation: "Field", range_or_canonicality_checks: ["Field canonicality delegated to o1js"] }, binding: { status: "BOUND", relationship_refs: ["relation:proposal:binds:proof-ledger-roots"] } }
+          - { name: "votingLedgerRoot", visibility: "PUBLIC", execution_domain: "CONSTRAINT", io_ref: "input-output:vote-reducer:public-input-voting-ledger-root", encoding: { semantic_type: "prefixed Merkle root", field_or_byte_representation: "Field", range_or_canonicality_checks: [] }, binding: { status: "BOUND", relationship_refs: ["relation:vote-reducer:bound-by-constraint:voting-root", "relation:proposal:binds:proof-ledger-roots"] } }
+          - { name: "fromNullifierRoot", visibility: "PUBLIC", execution_domain: "CONSTRAINT", io_ref: "input-output:vote-reducer:public-input-from-nullifier-root", encoding: { semantic_type: "prefixed nullifier Merkle root", field_or_byte_representation: "Field", range_or_canonicality_checks: [] }, binding: { status: "BOUND", relationship_refs: ["relation:vote-reducer:bound-by-constraint:nullifier-root"] } }
+          - { name: "actionStateHistoryTarget[1..5]", visibility: "PUBLIC", execution_domain: "CONSTRAINT", io_ref: "input-output:vote-reducer:public-input-action-state-targets", encoding: { semantic_type: "five Mina action-state hashes", field_or_byte_representation: "five Fields", range_or_canonicality_checks: [] }, binding: { status: "BOUND", relationship_refs: [] } }
+          - { name: "voteActions[0..4].vote", visibility: "PRIVATE", execution_domain: "BOTH", io_ref: "input-output:vote-reducer:private-vote-actions", encoding: { semantic_type: "DUMMY/YAY/NAY/ABSTRAIN", field_or_byte_representation: "Field", range_or_canonicality_checks: ["explicit membership in 0,1,2,3"] }, binding: { status: "BOUND", relationship_refs: [] } }
+          - { name: "voteActions[0..4].publicKey", visibility: "PRIVATE", execution_domain: "BOTH", io_ref: "input-output:vote-reducer:private-vote-actions", encoding: { semantic_type: "Mina public key", field_or_byte_representation: "x Field plus parity Bool", range_or_canonicality_checks: ["PublicKey type"] }, binding: { status: "BOUND", relationship_refs: ["relation:vote-reducer:bound-by-constraint:voting-root", "relation:vote-reducer:bound-by-constraint:nullifier-root"] } }
+          - { name: "witnessedVotingAccount", visibility: "PRIVATE", execution_domain: "BOTH", io_ref: "input-output:vote-reducer:host-voting-ledger", encoding: { semantic_type: "voting weight", field_or_byte_representation: "UInt64 balance", range_or_canonicality_checks: ["UInt64"] }, binding: { status: "BOUND", relationship_refs: ["relation:vote-reducer:bound-by-constraint:voting-root"] } }
+          - { name: "witnessedVoteNullifier", visibility: "PRIVATE", execution_domain: "BOTH", io_ref: "input-output:vote-reducer:host-nullifier-ledger", encoding: { semantic_type: "prior-vote marker", field_or_byte_representation: "Bool", range_or_canonicality_checks: ["Bool"] }, binding: { status: "BOUND", relationship_refs: ["relation:vote-reducer:bound-by-constraint:nullifier-root"] } }
+          - { name: "toActionsHash/toNullifierRoot", visibility: "PUBLIC", execution_domain: "CONSTRAINT", io_ref: "input-output:vote-reducer:public-output-terminal-roots", encoding: { semantic_type: "terminal action/nullifier roots", field_or_byte_representation: "two Fields", range_or_canonicality_checks: [] }, binding: { status: "BOUND", relationship_refs: [] } }
+          - { name: "yay/nay/abstain", visibility: "PUBLIC", execution_domain: "CONSTRAINT", io_ref: "input-output:vote-reducer:public-output-tallies", encoding: { semantic_type: "vote weights", field_or_byte_representation: "three UInt64", range_or_canonicality_checks: ["UInt64 checked arithmetic assumed from o1js"] }, binding: { status: "BOUND", relationship_refs: [] } }
+          - { name: "actionStateHistory[1..5]", visibility: "PUBLIC", execution_domain: "CONSTRAINT", io_ref: "input-output:vote-reducer:public-output-action-history", encoding: { semantic_type: "target hash discovery", field_or_byte_representation: "five Field/Bool pairs", range_or_canonicality_checks: ["Bool found flags"] }, binding: { status: "BOUND", relationship_refs: [] } }
+          - { name: "hostNullifierPersistence", visibility: "HOST_ONLY", execution_domain: "HOST", io_ref: "input-output:vote-reducer:host-nullifier-ledger", encoding: { semantic_type: "mutable record/tree write", field_or_byte_representation: "external storage", range_or_canonicality_checks: [] }, binding: { status: "HOST_EFFECT_NOT_PROVEN", relationship_refs: ["relation:vote-reducer:host-write:not-proved"] } }
+        host_effects:
+          - effect: "setNullifier(publicKey, true)"
+            anchors: [{ path: "packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts", start_line: 556, end_line: 564 }]
+            relationship_refs: ["relation:vote-reducer:host-write:not-proved"]
+            binding_status: "HOST_EFFECT_NOT_PROVEN"
+          - effect: "setLeaf(publicKey, true)"
+            anchors: [{ path: "packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts", start_line: 566, end_line: 574 }]
+            relationship_refs: ["relation:vote-reducer:host-write:not-proved"]
+            binding_status: "HOST_EFFECT_NOT_PROVEN"
+        proving_boundary: "Off-chain process with voteReducerContext containing voting and nullifier ledgers."
+        verifying_boundary: "Both TreasuryOwner.tallyVotes and TreasuryProposal.tallyVotes verify the side-loaded proof under TreasuryProposalSmartContract.voteReducerVerificationKey."
+        recursion:
+          previous_proof_refs: ["VoteReducer SelfProof proof1", "VoteReducer SelfProof proof2"]
+          public_input_continuity: ["publicInput equals proof1 input by Poseidon hash", "same voting root", "proof1 action/nullifier outputs equal proof2 inputs", "target hashes equal"]
+          verification_key_assumptions: ["configured side-loaded verification key corresponds to this exact compiled program/revision"]
+        proof_modes:
+          configured_modes: ["repository tests expose a PROOFS_ENABLED mode, but no mode was executed or analyzed as runtime evidence"]
+          statically_observed_differences: ["none in this target source; proof wrapper and verify calls are unconditional"]
+        limitations:
+          - "Static inspection does not establish circuit soundness, cryptographic soundness, or verification-key correctness."
+          - "Mutable host nullifier persistence is not proved and may diverge on failure/retry."
+          - "Concrete voting/nullifier persistence subclasses remain outside the pinned scope ledger."
+      - stable_key: "zk-statement:staking-ledger-to-voting-ledger:recursive-transformation"
+        title: "Recursive staking-ledger to voting-ledger transformation"
+        intended_relation: "Given public starting index, staking snapshot root, and starting voting root, and private batches of Mina accounts plus Merkle witnesses, prove each consecutive staking account's balance is added to the voting leaf keyed by its delegate; recursively bind adjacent ranges and prove exhaustion when the next staking leaf is empty."
+        pseudocode:
+          - "digest(P, accounts[5]): for i=0..4 prove account_i at P.index+i under fixed staking root; witness delegate voting account/path; constrain path index = Poseidon(delegate); constrain old voting root; add account.balance; roll voting root; host-write updated voting account; return last index/root/exhausted=false."
+          - "merge(P, proof1, proof2): verify both; require P == proof1.input; require same staking root; require proof1.lastIndex+1 == proof2.startIndex; require proof1.votingRoot == proof2.startVotingRoot; return proof2 terminal index/root."
+          - "exhaust(P, proof): verify proof and P == proof.input; prove Account.empty at proof.output.index+1 under staking root; return proof output with exhausted=true."
+        public_instance: ["index", "stakingLedgerRoot", "votingLedgerRoot"]
+        public_output: ["index", "votingLedgerRoot", "exhausted"]
+        private_witness:
+          - "five full Account values per digest"
+          - "PrefixedMerkleWitness36 staking paths"
+          - "VotingAccount values and PrefixedMerkleWitness255 voting paths"
+          - "one or two previous proofs for exhaust/merge"
+        constraint_sites:
+          - { path: "packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts", start_line: 83, end_line: 143, purpose: "exhaustion and prior-proof/input binding" }
+          - { path: "packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts", start_line: 148, end_line: 190, purpose: "recursive adjacency and root continuity" }
+          - { path: "packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts", start_line: 195, end_line: 337, purpose: "account membership, delegate index, and voting-root transitions" }
+        public_input_io_refs:
+          - "input-output:staking-transform:public-input-index"
+          - "input-output:staking-transform:public-input-staking-root"
+          - "input-output:staking-transform:public-input-voting-root"
+        public_output_io_refs:
+          - "input-output:staking-transform:public-output-index"
+          - "input-output:staking-transform:public-output-voting-root"
+          - "input-output:staking-transform:public-output-exhausted"
+        private_input_io_refs: ["input-output:staking-transform:private-accounts"]
+        values:
+          - { name: "startIndex", visibility: "PUBLIC", execution_domain: "CONSTRAINT", io_ref: "input-output:staking-transform:public-input-index", encoding: { semantic_type: "staking leaf index", field_or_byte_representation: "UInt64", range_or_canonicality_checks: ["UInt64", "proposal requires zero start"] }, binding: { status: "BOUND", relationship_refs: [] } }
+          - { name: "stakingLedgerRoot", visibility: "PUBLIC", execution_domain: "CONSTRAINT", io_ref: "input-output:staking-transform:public-input-staking-root", encoding: { semantic_type: "Mina account-ledger root", field_or_byte_representation: "Field", range_or_canonicality_checks: [] }, binding: { status: "BOUND", relationship_refs: ["relation:staking-transform:bound-by-constraint:staking-root"] } }
+          - { name: "startVotingLedgerRoot", visibility: "PUBLIC", execution_domain: "CONSTRAINT", io_ref: "input-output:staking-transform:public-input-voting-root", encoding: { semantic_type: "prefixed delegate-balance tree root", field_or_byte_representation: "Field", range_or_canonicality_checks: [] }, binding: { status: "BOUND", relationship_refs: ["relation:staking-transform:bound-by-constraint:voting-root"] } }
+          - { name: "accounts[0..4]", visibility: "PRIVATE", execution_domain: "BOTH", io_ref: "input-output:staking-transform:private-accounts", encoding: { semantic_type: "Mina ledger Account", field_or_byte_representation: "repository Account.toHashInput/packToFields", range_or_canonicality_checks: ["typed Bool/UInt/PublicKey fields", "serialization equivalence to network ledger is an assumption"] }, binding: { status: "BOUND", relationship_refs: ["relation:staking-transform:bound-by-constraint:staking-root"] } }
+          - { name: "stakingWitnesses[0..4]", visibility: "PRIVATE", execution_domain: "BOTH", io_ref: "input-output:staking-transform:host-ledgers", encoding: { semantic_type: "height-36 prefixed Merkle paths", field_or_byte_representation: "35 sibling Fields and direction Bools each", range_or_canonicality_checks: ["static height 36"] }, binding: { status: "BOUND", relationship_refs: ["relation:staking-transform:bound-by-constraint:staking-root"] } }
+          - { name: "delegateVotingAccounts[0..4]", visibility: "PRIVATE", execution_domain: "BOTH", io_ref: "input-output:staking-transform:host-ledgers", encoding: { semantic_type: "delegate balance", field_or_byte_representation: "UInt64", range_or_canonicality_checks: ["UInt64"] }, binding: { status: "BOUND", relationship_refs: ["relation:staking-transform:bound-by-constraint:voting-root"] } }
+          - { name: "votingWitnesses[0..4]", visibility: "PRIVATE", execution_domain: "BOTH", io_ref: "input-output:staking-transform:host-ledgers", encoding: { semantic_type: "height-255 prefixed Merkle paths", field_or_byte_representation: "254 sibling Fields and direction Bools each", range_or_canonicality_checks: ["index constrained to Poseidon(delegate)"] }, binding: { status: "BOUND", relationship_refs: ["relation:staking-transform:bound-by-constraint:voting-root"] } }
+          - { name: "terminalIndex", visibility: "PUBLIC", execution_domain: "CONSTRAINT", io_ref: "input-output:staking-transform:public-output-index", encoding: { semantic_type: "last transformed index", field_or_byte_representation: "UInt64", range_or_canonicality_checks: ["UInt64"] }, binding: { status: "BOUND", relationship_refs: [] } }
+          - { name: "terminalVotingLedgerRoot", visibility: "PUBLIC", execution_domain: "CONSTRAINT", io_ref: "input-output:staking-transform:public-output-voting-root", encoding: { semantic_type: "transformed voting root", field_or_byte_representation: "Field", range_or_canonicality_checks: [] }, binding: { status: "BOUND", relationship_refs: ["relation:staking-transform:bound-by-constraint:voting-root", "relation:proposal:binds:proof-ledger-roots"] } }
+          - { name: "exhausted", visibility: "PUBLIC", execution_domain: "CONSTRAINT", io_ref: "input-output:staking-transform:public-output-exhausted", encoding: { semantic_type: "next leaf emptiness result", field_or_byte_representation: "Bool", range_or_canonicality_checks: ["Bool"] }, binding: { status: "BOUND", relationship_refs: [] } }
+          - { name: "hostVotingLedgerPersistence", visibility: "HOST_ONLY", execution_domain: "HOST", io_ref: "input-output:staking-transform:host-ledgers", encoding: { semantic_type: "mutable account/tree writes", field_or_byte_representation: "external storage", range_or_canonicality_checks: [] }, binding: { status: "HOST_EFFECT_NOT_PROVEN", relationship_refs: ["relation:staking-transform:host-write:not-proved"] } }
+        host_effects:
+          - effect: "setVotingAccount(delegate, updatedVotingAccount) followed by setLeaf(delegate, updatedVotingAccount)"
+            anchors: [{ path: "packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts", start_line: 304, end_line: 320 }]
+            relationship_refs: ["relation:staking-transform:host-write:not-proved"]
+            binding_status: "HOST_EFFECT_NOT_PROVEN"
+        proving_boundary: "Off-chain process with stakingLedgerToVotingLedgerContext containing staking and voting ledgers."
+        verifying_boundary: "Both TreasuryOwner.tallyVotes and TreasuryProposal.tallyVotes verify the side-loaded proof under TreasuryProposalSmartContract.stakingLedgerToVotingLedgerVerificationKey; proposal additionally constrains start index/root and exhausted."
+        recursion:
+          previous_proof_refs: ["SelfProof in exhaust", "SelfProof proof1/proof2 in merge"]
+          public_input_continuity: ["publicInput equals prior/first proof input by Poseidon hash", "fixed staking root", "adjacent indices", "rolling voting root"]
+          verification_key_assumptions: ["configured side-loaded verification key corresponds to this exact compiled program/revision"]
+        proof_modes:
+          configured_modes: ["repository scripts define proofs-enabled tests, but no runtime mode was executed"]
+          statically_observed_differences: ["none in target source; proof wrapper and verify calls are unconditional"]
+        limitations:
+          - "Static inspection does not establish circuit or cryptographic soundness."
+          - "The proof's account serialization and hash prefixes must exactly match the network ledger."
+          - "Exhaustion assumes no non-empty account exists after the first empty leaf."
+          - "Host voting-ledger persistence is neither transactional nor proved."
+          - "Concrete staking/voting persistence subclasses remain outside the pinned scope ledger."
+    assumptions:
+      - stable_key: "assumption:platform:o1js-fork-semantics"
+        title: "Custom o1js fork preserves assumed circuit and account-update semantics"
+        category: "DEPENDENCY"
+        source: "IMPLEMENTATION_DEPENDENCY"
+        semantic_status: "RELIED_UPON"
+        affected_stable_keys: ["component:platform:treasury-owner-smart-contract", "component:platform:treasury-proposal-smart-contract", "component:platform:treasury-pause-controller-smart-contract", "component:platform:vote-reducer-zkprogram", "component:platform:staking-ledger-to-voting-ledger-zkprogram"]
+        failure_consequence: "proof constraints, permission checks, slot boundaries, or account-update authorization may differ from the static interpretation"
+        author_question: "Which exact o1js commit and Mina protocol version are deployment/audit baselines?"
+        anchors: [{ path: "packages/sdk/package.json", symbol: "devDependencies.o1js", start_line: 48, end_line: 58 }]
+        assertions: [{ text: "The SDK depends on a GitHub feature/mesa-support fork rather than a registry-pinned release.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_refs: ["evidence:configuration:o1js"] }]
+      - stable_key: "assumption:platform:verification-keys-match-current-programs"
+        title: "Configured verification keys match current ZkPrograms"
+        category: "CONFIGURATION"
+        source: "IMPLEMENTATION_DEPENDENCY"
+        semantic_status: "RELIED_UPON"
+        affected_stable_keys: ["zk-statement:vote-reducer:recursive-reduction", "zk-statement:staking-ledger-to-voting-ledger:recursive-transformation"]
+        failure_consequence: "valid current proofs reject, or an unintended program may be accepted if a wrong key is configured"
+        author_question: "Where are the deployment-time verification-key hashes bound to this revision and reviewed?"
+        anchors: [{ path: "packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts", symbol: "TreasuryProposalSmartContract verification key statics", start_line: 61, end_line: 66 }]
+        assertions: [{ text: "Both keys are mutable class statics, not proposal state fields.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_refs: ["evidence:proposal:configuration"] }]
+      - stable_key: "assumption:platform:empty-roots-match-host-ledgers"
+        title: "Configured empty voting and nullifier roots match host tree construction"
+        category: "CONFIGURATION"
+        source: "IMPLEMENTATION_DEPENDENCY"
+        semantic_status: "RELIED_UPON"
+        affected_stable_keys: ["zk-statement:vote-reducer:recursive-reduction", "zk-statement:staking-ledger-to-voting-ledger:recursive-transformation"]
+        failure_consequence: "tally cannot accept generated proofs or may anchor to an unintended initial state"
+        author_question: "Are empty-root values derived from the same prefixes, heights, and empty leaves at deployment?"
+        anchors: [{ path: "packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts", symbol: "TreasuryProposalSmartContract empty root statics", start_line: 64, end_line: 66 }]
+        assertions: [{ text: "Proposal tally constrains proof starting roots against these statics.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_refs: ["evidence:proposal:tally-and-execute"] }]
+      - stable_key: "assumption:platform:deployment-statics-initialized"
+        title: "Owner deployment statics are initialized correctly"
+        category: "DEPLOYMENT"
+        source: "IMPLEMENTATION_DEPENDENCY"
+        semantic_status: "RELIED_UPON"
+        affected_stable_keys: ["component:platform:treasury-owner-smart-contract"]
+        failure_consequence: "lifecycle windows or pause-controller binding may be permanently incorrect under locked permissions"
+        author_question: "What deployment manifest proves treasuryDeployedAtSlot, pauseControllerPublicKey, proposal verification key, and permissions are mutually consistent?"
+        anchors: [{ path: "packages/sdk/src/provable/contracts/treasury-owner.ts", symbol: "TreasuryOwnerSmartContract static deployment fields", start_line: 64, end_line: 84 }]
+        assertions: [{ text: "The source contains TODOs about correct starting permissions and assigns values from mutable class statics.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_refs: ["evidence:treasury-owner:deploy"] }]
+      - stable_key: "assumption:platform:host-context-set-and-isolated"
+        title: "Global proof contexts are set, isolated, and revision-consistent"
+        category: "OPERATOR"
+        source: "IMPLEMENTATION_DEPENDENCY"
+        semantic_status: "RELIED_UPON"
+        affected_stable_keys: ["component:platform:vote-reducer-zkprogram", "component:platform:staking-ledger-to-voting-ledger-zkprogram"]
+        failure_consequence: "proof construction throws, uses another lifecycle's ledgers, or mutates the wrong host state"
+        author_question: "How does the prover isolate ContextProvider instances across concurrent lifecycle/proposal jobs?"
+        anchors: [{ path: "packages/sdk/src/utils/context-provider.ts", symbol: "ContextProvider", start_line: 1, end_line: 14 }]
+        assertions: [{ text: "ContextProvider stores one mutable process-global context without lifecycle or concurrency guard.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_refs: ["evidence:context-provider"] }]
+      - stable_key: "assumption:platform:host-ledger-writes-atomic-and-recoverable"
+        title: "Host ledger writes are atomic and recoverable"
+        category: "AVAILABILITY"
+        source: "INFERRED"
+        semantic_status: "UNRESOLVED"
+        affected_stable_keys: ["zk-statement:vote-reducer:recursive-reduction", "zk-statement:staking-ledger-to-voting-ledger:recursive-transformation"]
+        failure_consequence: "a failed proof job can leave host state ahead of the persisted trace and prevent deterministic restart"
+        author_question: "What transaction/rollback boundary couples proof traces, record storage, and Merkle-tree writes?"
+        anchors: [{ path: "packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts", symbol: "digest host persistence TODO", start_line: 304, end_line: 320 }]
+        assertions: [{ text: "The source explicitly notes crash recovery can leave voting tree state one step forward.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_refs: ["evidence:staking-transform:digest"] }]
+      - stable_key: "assumption:platform:staking-ledger-is-contiguous"
+        title: "Staking ledger has no non-empty leaves after its first empty leaf"
+        category: "PROTOCOL"
+        source: "INFERRED"
+        semantic_status: "RELIED_UPON"
+        affected_stable_keys: ["zk-statement:staking-ledger-to-voting-ledger:recursive-transformation"]
+        failure_consequence: "exhausted may be true despite omitted later accounts, producing an incomplete voting ledger"
+        author_question: "Is ledger compaction/no-holes guaranteed by the exact Mina ledger representation consumed here?"
+        anchors: [{ path: "packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts", symbol: "exhaust", start_line: 107, end_line: 141 }]
+        assertions: [{ text: "Exhaust checks only output.index+1 for Account.empty.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_refs: ["evidence:staking-transform:exhaust"] }]
+      - stable_key: "assumption:platform:account-serialization-matches-mina"
+        title: "Repository Account hashing exactly matches Mina staking-ledger hashing"
+        category: "PROTOCOL"
+        source: "IMPLEMENTATION_DEPENDENCY"
+        semantic_status: "RELIED_UPON"
+        affected_stable_keys: ["zk-statement:staking-ledger-to-voting-ledger:recursive-transformation", "behavior:component:platform:treasury-proposal-smart-contract:finalize-tally"]
+        failure_consequence: "valid network accounts cannot be proven or unintended representations collide under integration assumptions"
+        author_question: "Which protocol-version vectors establish Account.toHashInput, empty account constants, prefixes, and packing equivalence?"
+        anchors: [{ path: "packages/sdk/src/provable/account.ts", symbol: "Account.toHashInput", start_line: 211, end_line: 308 }]
+        assertions: [{ text: "The repository manually models Mina account fields, permissions, zkApp state, packing, and hard-coded empty values.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_refs: ["evidence:account:serialization"] }]
+      - stable_key: "assumption:platform:multisig-participant-list-available-and-distinct"
+        title: "Current multisig participant preimage is available and contains five distinct keys"
+        category: "OPERATOR"
+        source: "INFERRED"
+        semantic_status: "RELIED_UPON"
+        affected_stable_keys: ["component:platform:treasury-pause-controller-smart-contract"]
+        failure_consequence: "emergency actions may become unavailable or threshold security may be lower than three independent participants"
+        author_question: "Where is the ordered current participant list durably published, validated for distinctness, and updated atomically with commitment rotation?"
+        anchors: [{ path: "packages/sdk/src/provable/contracts/treasury-pause-controller/treasury-pause-controller.ts", symbol: "multisigParticipants", start_line: 29, end_line: 35 }]
+        assertions: [{ text: "The participant list is host-static; only its commitment is state, and distinctness is not constrained.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_refs: ["evidence:pause-controller:authorization", "evidence:multisig:verify"] }]
+      - stable_key: "assumption:platform:slot-precondition-enforces-intended-inclusion-time"
+        title: "Network slot precondition enforces intended lifecycle inclusion time"
+        category: "PROTOCOL"
+        source: "IMPLEMENTATION_DEPENDENCY"
+        semantic_status: "UNRESOLVED"
+        affected_stable_keys: ["behavior:component:platform:treasury-owner-smart-contract:lifecycle-slot-gate"]
+        failure_consequence: "transactions constructed near lifecycle boundaries may be included in an unintended phase"
+        author_question: "Does globalSlotSinceGenesis.requireBetween bind the inclusion slot with the intended inclusive/exclusive endpoints on the deployed Mina version?"
+        anchors: [{ path: "packages/sdk/src/provable/contracts/treasury-owner.ts", symbol: "requireLifecyclePeriod", start_line: 162, end_line: 184 }]
+        assertions: [{ text: "The target source supplies fromSlot/toSlot to an external o1js network precondition API.", evidence_class: "IMPLEMENTED_STATIC", confidence: "MEDIUM", evidence_refs: ["evidence:treasury-owner:lifecycle"] }]
+    findings:
+      - stable_key: "finding:component:platform:treasury-proposal-smart-contract:pause-destroys-final-status"
+        rule_id: "CORRECTNESS.STATE.PAUSE_PRESERVES_FINALITY"
+        category: "security"
+        severity: "MEDIUM"
+        confidence: "HIGH"
+        title: "Proposal pause toggling destroys finalized status"
+        prerequisites: ["multisig authorizes two proposal toggles after APPROVED or REJECTED"]
+        root_cause: "Proposal stores pause and governance result in one Field and maps every non-PAUSED state to PAUSED, then maps PAUSED only to UNKNOWN."
+        impact: "An approved or rejected proposal loses its final outcome after pause/unpause; it may become tallyable again and approved execution is temporarily/permanently disrupted."
+        recommendation: "Store pause as an independent Bool or preserve/restore the exact pre-pause status; prohibit invalid transitions and add explicit desired state."
+        scope_limitations: ["Static review does not establish whether operations intentionally permit governance reset under emergency authority."]
+        anchors: [{ path: "packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts", symbol: "togglePause", start_line: 386, end_line: 397 }]
+        affected_stable_keys: ["invariant:component:platform:treasury-proposal-smart-contract:tally-once-unless-paused"]
+        assertions: [{ text: "APPROVED and REJECTED both transition to PAUSED and subsequently to UNKNOWN.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_refs: ["evidence:proposal:toggle"] }]
+      - stable_key: "finding:component:platform:treasury-owner-smart-contract:pause-event-state-unbound"
+        rule_id: "CORRECTNESS.EVENT.MATCHES_STATE"
+        category: "reliability"
+        severity: "LOW"
+        confidence: "HIGH"
+        title: "Proposal pause event can report a state different from the committed toggle"
+        prerequisites: ["caller supplies paused argument inconsistent with pre-state/toggle result"]
+        root_cause: "paused is not signed, checked, or passed to proposal.togglePause; it is copied directly into the event."
+        impact: "Indexers and operators can observe a false pause state, and signatures authorize a toggle rather than an explicit target state."
+        recommendation: "Sign and enforce an explicit desired paused Bool, or derive emitted state from constrained pre/post state."
+        scope_limitations: []
+        anchors: [{ path: "packages/sdk/src/provable/contracts/treasury-owner.ts", symbol: "togglePauseProposal", start_line: 464, end_line: 496 }]
+        assertions: [{ text: "Caller-controlled paused affects only ProposalPauseToggledEvent.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_refs: ["evidence:treasury-owner:toggle"] }]
+      - stable_key: "finding:component:platform:treasury-pause-controller-smart-contract:weak-signature-domain"
+        rule_id: "SECURITY.AUTH.SIGNATURE_DOMAIN_BINDING"
+        category: "security"
+        severity: "LOW"
+        confidence: "HIGH"
+        title: "Emergency signatures omit contract and network domain"
+        prerequisites: ["another controller/network shares participant keys, operation prefix, and nonce; for proposal toggle, the same proposal key is addressable"]
+        root_cause: "Signed payloads include operation prefix and nonce, but no pause-controller public key, treasury-owner key/token ID, chain/network identifier, or protocol/version domain."
+        impact: "A signature set may be replayable across deployments/domains that align on included fields."
+        recommendation: "Bind every emergency message to network/chain, controller address, treasury instance/token, protocol version, operation, full parameters, desired state, and nonce."
+        scope_limitations: ["Cross-network transaction and signature encoding semantics are external to this scope."]
+        anchors: [{ path: "packages/sdk/src/provable/contracts/treasury-pause-controller/multisig-signatures.ts", symbol: "MultisigSignature data methods", start_line: 22, end_line: 91 }]
+        assertions: [{ text: "Only prefixes, operation parameters, commitments, and nonce are hashed.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_refs: ["evidence:multisig:messages"] }]
+      - stable_key: "finding:component:platform:treasury-pause-controller-smart-contract:init-length-mismatch"
+        rule_id: "CORRECTNESS.CONFIG.EXACT_PARTICIPANT_COUNT"
+        category: "correctness"
+        severity: "MEDIUM"
+        confidence: "HIGH"
+        title: "Initialization accepts more participants than verification can witness"
+        prerequisites: ["deployment supplies more than five participants"]
+        root_cause: "init rejects only length < 5 and commits the entire list, while verifySignatures requires length === 5 and witnesses a fixed array of five."
+        impact: "A successfully initialized controller can be permanently unable to authorize pause, unpause, proposal toggle, or key rotation."
+        recommendation: "Require exactly five participants at initialization and validate distinct, non-empty keys; test the stored commitment against proof-time representation before locking permissions."
+        scope_limitations: []
+        anchors:
+          - { path: "packages/sdk/src/provable/contracts/treasury-pause-controller/treasury-pause-controller.ts", symbol: "init", start_line: 64, end_line: 84 }
+          - { path: "packages/sdk/src/provable/contracts/treasury-pause-controller/treasury-pause-controller.ts", symbol: "verifySignatures", start_line: 103, end_line: 118 }
+        assertions: [{ text: "The two length predicates are statically inconsistent.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_refs: ["evidence:pause-controller:init", "evidence:pause-controller:authorization"] }]
+      - stable_key: "finding:component:platform:treasury-pause-controller-smart-contract:duplicate-participants-reduce-threshold"
+        rule_id: "SECURITY.AUTH.DISTINCT_SIGNERS"
+        category: "security"
+        severity: "MEDIUM"
+        confidence: "MEDIUM"
+        title: "Participant distinctness is not enforced"
+        prerequisites: ["initial or rotated commitment represents repeated public keys", "signature representation permits the same valid signature in repeated slots"]
+        root_cause: "Commitment and verification preserve list order but do not assert pairwise-distinct non-empty participant keys."
+        impact: "The nominal three-of-five threshold can represent fewer than three independent signers, or a malformed rotation can reduce recovery resilience."
+        recommendation: "Constrain or deployment-validate pairwise distinct, non-empty keys and bind rotation to the validated participant preimage."
+        scope_limitations: ["The practical reuse behavior of signature objects is not dynamically verified."]
+        anchors: [{ path: "packages/sdk/src/provable/contracts/treasury-pause-controller/multisig-signatures.ts", symbol: "MultisigSignatures.verify", start_line: 105, end_line: 145 }]
+        assertions: [{ text: "No distinctness check exists before counting per-slot valid signatures.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_refs: ["evidence:multisig:verify"] }]
+      - stable_key: "finding:component:platform:staking-ledger-to-voting-ledger-zkprogram:token-account-balance-included"
+        rule_id: "CORRECTNESS.LEDGER.ELIGIBLE_ACCOUNT_CLASS"
+        category: "security"
+        severity: "LOW"
+        confidence: "HIGH"
+        title: "Staking transformation does not constrain eligible account token class"
+        prerequisites: ["staking snapshot contains custom-token or otherwise ineligible accounts with empty/meaningful delegate and balance"]
+        root_cause: "digest uses account.delegate and account.balance for every proven account; account.tokenId is never checked and a TODO explicitly defers token-account classification."
+        impact: "Ineligible balances may be aggregated into a voting account, potentially at PublicKey.empty, changing voting weights."
+        recommendation: "Define eligible account classes from protocol rules and constrain tokenId/delegate semantics; explicitly skip or separately account for ineligible entries."
+        scope_limitations: ["Actual staking-ledger inclusion rules and token-account representation are outside the pinned scope."]
+        anchors: [{ path: "packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts", symbol: "digest", start_line: 239, end_line: 299 }]
+        assertions: [{ text: "tokenId is part of the hashed Account but not used as an eligibility predicate.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_refs: ["evidence:staking-transform:digest"] }]
+      - stable_key: "finding:component:platform:provable-ledger-and-hash-support:nontransactional-host-effects"
+        rule_id: "RELIABILITY.PROVER.HOST_STATE_ATOMICITY"
+        category: "reliability"
+        severity: "MEDIUM"
+        confidence: "HIGH"
+        title: "Proof construction mutates host ledgers without a visible transaction boundary"
+        prerequisites: ["storage/proof construction fails after one or more host writes", "job retries from an earlier trace"]
+        root_cause: "witness callbacks directly call multiple mutable ledger methods; the scoped Merkle storage interface exposes no commit/rollback transaction, and source notes crash inconsistency."
+        impact: "Host state can advance beyond durable trace state, making restart nondeterministic, rejecting later witnesses, or requiring manual repair. Verification of an existing proof does not repair the host state."
+        recommendation: "Use copy-on-write/batched transactional state tied to trace commit, make proof jobs idempotent, and persist roots plus operation logs before promoting host state."
+        scope_limitations: ["Higher-level worker orchestration may add transactions outside this pinned scope and must be traced before confirming system-level impact."]
+        anchors:
+          - { path: "packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts", symbol: "digest host writes", start_line: 304, end_line: 320 }
+          - { path: "packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts", symbol: "reduceBatch host writes", start_line: 556, end_line: 574 }
+          - { path: "packages/sdk/src/storage/merkle-tree-storage.ts", symbol: "MerkleTreeStorage", start_line: 1, end_line: 9 }
+        assertions: [{ text: "The visible storage APIs provide individual async mutations only.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_refs: ["evidence:staking-transform:digest", "evidence:vote-reducer:reduce", "evidence:storage:interfaces"] }]
+      - stable_key: "finding:component:platform:treasury-proposal-smart-contract:insufficient-participation-cannot-finalize-rejected"
+        rule_id: "CORRECTNESS.LIFECYCLE.REJECTION_FINALIZATION"
+        category: "correctness"
+        severity: "MEDIUM"
+        confidence: "HIGH"
+        title: "Low-participation proposals cannot be finalized as rejected"
+        prerequisites: ["total yay+nay+abstain is below required participation, or no yay/nay vote exists"]
+        root_cause: "calculateApprovalStatus produces REJECTED, but tallyVotes asserts participationMet and hasApprovalVotes before storing voteResult."
+        impact: "The proposal remains UNKNOWN indefinitely instead of reaching an auditable terminal rejection state; later pause and operational flows cannot distinguish failed quorum from untallied."
+        recommendation: "Store REJECTED for all validly complete tallies that fail quorum/approval, and reserve assertion failure for invalid proofs or incomplete action coverage."
+        scope_limitations: ["The intended business rule must be confirmed against RFC decisions; rejection-by-nonparticipation is inferred."]
+        anchors: [{ path: "packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts", symbol: "tallyVotes", start_line: 331, end_line: 350 }]
+        assertions: [{ text: "Both failed-quorum and zero yay/nay paths abort before status.set(REJECTED).", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_refs: ["evidence:proposal:thresholds", "evidence:proposal:tally-and-execute"] }]
+      - stable_key: "finding:component:platform:treasury-proposal-smart-contract:zero-payout-repeatable"
+        rule_id: "CORRECTNESS.PAYOUT.POSITIVE_PROGRESS"
+        category: "reliability"
+        severity: "LOW"
+        confidence: "HIGH"
+        title: "Zero-value proposal executions are repeatable without progress"
+        prerequisites: ["proposal is APPROVED", "caller submits amountToPayOut = 0"]
+        root_cause: "execute checks only remainingAmount >= amountToPayOut and does not require a positive amount or terminal completion flag."
+        impact: "Any signer can repeatedly emit proposalExecuted events and approved account updates without changing paidOutAmount, degrading event/audit semantics."
+        recommendation: "Require amountToPayOut > 0 and expose/emit cumulative and remaining payout; optionally mark terminal execution when exhausted."
+        scope_limitations: ["Transaction fees may economically limit spam but do not restore semantic correctness."]
+        anchors:
+          - { path: "packages/sdk/src/provable/contracts/treasury-owner.ts", symbol: "executeProposal", start_line: 421, end_line: 462 }
+          - { path: "packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts", symbol: "execute", start_line: 353, end_line: 384 }
+        assertions: [{ text: "UInt64 zero satisfies the remaining cap and leaves paidOutAmount unchanged.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_refs: ["evidence:treasury-owner:execute", "evidence:proposal:execute"] }]
+      - stable_key: "finding:component:platform:treasury-proposal-smart-contract:zero-treasury-balance-division"
+        rule_id: "RELIABILITY.ARITHMETIC.NONZERO_DENOMINATOR"
+        category: "reliability"
+        severity: "LOW"
+        confidence: "HIGH"
+        title: "Acceptance-curve denominator assumes positive treasury snapshot balance"
+        prerequisites: ["snapshotted Treasury Owner balance is zero"]
+        root_cause: "proposalAmount * BASIS_POINTS is divided by treasuryBalance without a nonzero precondition or defined zero-balance policy."
+        impact: "Tally proof construction/verification constraints cannot complete for an otherwise created proposal when treasury balance is zero."
+        recommendation: "Reject proposal creation against zero treasury balance or define and constrain an explicit zero-balance threshold policy."
+        scope_limitations: ["Exact UInt128 division failure semantics are delegated to o1js."]
+        anchors: [{ path: "packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts", symbol: "calculateAcceptanceCriteria", start_line: 102, end_line: 126 }]
+        assertions: [{ text: "No zero check precedes division by treasuryBalance.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_refs: ["evidence:proposal:thresholds"] }]
+    gaps:
+      - stable_key: "gap:component:platform:treasury-proposal-smart-contract:bond-beneficiary"
+        title: "Bond refund/beneficiary policy is not represented independently from recipient payout"
+        gap_kinds: ["IMPLEMENTATION_DIVERGENCE", "MISSING_INTENT"]
+        materiality: "MEDIUM"
+        implementation_stable_keys: ["behavior:component:platform:treasury-owner-smart-contract:create-proposal", "behavior:component:platform:treasury-proposal-smart-contract:bounded-partial-payout"]
+        business_consequence: "The owner collects amount/10 from proposal creation and an approved proposal can pay amount plus amount/10 only to the proposal recipient; proposer identity is event-only and not state-bound for refund."
+        rollout_relevance: ["MVP", "SAFETY_PERFORMANCE"]
+        author_question: "Is the bond intentionally awarded to the proposal recipient on approval, or should it be refunded/burned/frozen according to proposer and outcome?"
+        semantic_status: "OPEN"
+        assertions: [{ text: "No proposer key is stored in proposal state and execute binds the entire amount-plus-bond cap to recipientHash.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_refs: ["evidence:treasury-owner:create", "evidence:proposal:execute"] }]
+      - stable_key: "gap:component:platform:treasury-pause-controller-smart-contract:explicit-target-pause-state"
+        title: "Proposal pause authorization lacks explicit target-state semantics"
+        gap_kinds: ["MISSING_BINDING", "INCOMPLETE_FAILURE_POLICY"]
+        materiality: "MEDIUM"
+        implementation_stable_keys: ["behavior:component:platform:treasury-owner-smart-contract:toggle-proposal-pause", "behavior:component:platform:treasury-proposal-smart-contract:toggle-status-pause"]
+        business_consequence: "Operators cannot sign an idempotent pause/unpause intent for a proposal; concurrent or stale state can invert the desired outcome and emitted state can disagree."
+        rollout_relevance: ["MVP", "SAFETY_PERFORMANCE"]
+        author_question: "Should proposal emergency control use explicit pause/unpause commands and preserve governance status?"
+        semantic_status: "OPEN"
+        assertions: [{ text: "The signed command and proposal effect are both toggles; paused is event-only.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_refs: ["evidence:treasury-owner:toggle", "evidence:pause-controller:toggle", "evidence:proposal:toggle"] }]
+      - stable_key: "gap:component:platform:provable-ledger-and-hash-support:proof-host-state-recovery"
+        title: "Proof-host ledger transaction and recovery policy is not visible"
+        gap_kinds: ["OFFCHAIN_TRUST", "INCOMPLETE_FAILURE_POLICY", "LIVENESS_OR_SCALE_GAP"]
+        materiality: "HIGH"
+        implementation_stable_keys: ["zk-statement:vote-reducer:recursive-reduction", "zk-statement:staking-ledger-to-voting-ledger:recursive-transformation"]
+        business_consequence: "Crash/retry behavior may prevent reproducible proof generation or require trusted manual state repair."
+        rollout_relevance: ["MVP", "SAFETY_PERFORMANCE"]
+        author_question: "Which higher-level trace/worker layer makes host mutations atomic, idempotent, proposal-scoped, and recoverable?"
+        semantic_status: "UNRESOLVED"
+        assertions: [{ text: "No transaction/recovery contract is present in the pinned provable/storage context.", evidence_class: "UNRESOLVED", confidence: "MEDIUM", evidence_refs: ["evidence:storage:interfaces"], limitation: "Higher-level worker code is outside scope." }]
+      - stable_key: "gap:component:platform:staking-ledger-to-voting-ledger-zkprogram:eligibility-definition"
+        title: "Eligible staking-account definition is unresolved"
+        gap_kinds: ["MISSING_INTENT", "PARTIAL_IMPLEMENTATION", "UNRESOLVED_AUTHORITY"]
+        materiality: "HIGH"
+        implementation_stable_keys: ["behavior:component:platform:staking-ledger-to-voting-ledger-zkprogram:digest-five-accounts"]
+        business_consequence: "Voting weights depend on whether custom-token, empty-delegate, zkApp, timed, and other account classes should count and to whom."
+        rollout_relevance: ["MVP"]
+        author_question: "What exact Mina account classes contribute voting weight, and how are empty/self/delegated addresses treated?"
+        semantic_status: "UNRESOLVED"
+        assertions: [{ text: "The source contains an explicit TODO and currently accumulates all account balances by delegate.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_refs: ["evidence:staking-transform:digest"] }]
+    unresolved:
+      - stable_key: "unresolved:platform:concrete-ledger-backends-outside-pinned-scope"
+        kind: "EXTERNAL"
+        reason: "The base ledger interfaces, prefixes, tree heights, and public-key index mapping are pinned; concrete persistent, recording, and replayable subclasses are not, so durability, replay, and concurrency behavior cannot be claimed as covered."
+        required_context: ["packages/sdk/src/ledgers/**/persistent-*.ts", "packages/sdk/src/ledgers/**/recording-*.ts", "packages/sdk/src/ledgers/**/replayable-*.ts", "their storage adapters"]
+        semantic_status: "OPEN"
+        assertions: [{ text: "The proof programs call pinned base interfaces, but runtime instances and their consistency guarantees are selected outside this scope.", evidence_class: "UNRESOLVED", confidence: "HIGH", limitation: "Concrete implementations are not pinned in the scope ledger." }]
+      - stable_key: "unresolved:platform:proof-enabled-disabled-runtime-equivalence"
+        kind: "DYNAMIC"
+        reason: "Target source has unconditional proof operations, while repository scripts expose proofs-enabled tests; this static workflow cannot establish runtime equivalence between mocked and real proof modes."
+        required_context: ["separate authorized runtime/proof assurance workflow"]
+        semantic_status: "OPEN"
+        assertions: [{ text: "No proof mode was executed, compiled, or verified by this analysis.", evidence_class: "UNRESOLVED", confidence: "HIGH", limitation: "Absolute static-only boundary." }]
+      - stable_key: "unresolved:platform:circuit-and-cryptographic-soundness"
+        kind: "DYNAMIC"
+        reason: "Static source mapping identifies bindings but cannot prove absence of underconstraints, backend/compiler defects, hash security failures, or side-loaded verification-key mismatch."
+        required_context: ["independent circuit review", "compiler/backend assurance", "deployment key manifest", "authorized runtime proof tests"]
+        semantic_status: "OPEN"
+        assertions: [{ text: "All ZK soundness conclusions remain candidates/unresolved beyond source-visible constraints.", evidence_class: "UNRESOLVED", confidence: "HIGH", limitation: "No verifier execution or formal proof." }]
+      - stable_key: "unresolved:platform:account-action-state-precondition-semantics"
+        kind: "EXTERNAL"
+        reason: "Owner tally creates five account updates each requiring a different action-state hash; correctness depends on Mina/o1js actionState precondition semantics for the five-state history."
+        required_context: ["exact o1js fork implementation", "Mina protocol action-state account precondition specification"]
+        semantic_status: "OPEN"
+        assertions: [{ text: "The intended binding is visible, but external semantics determine whether all five preconditions can be jointly satisfied as intended.", evidence_class: "UNRESOLVED", confidence: "MEDIUM", limitation: "Dependency implementation outside scope." }]
+      - stable_key: "unresolved:platform:permissions-and-child-call-authorization"
+        kind: "EXTERNAL"
+        reason: "Proposal accounts are initialized with Permissions.default and public methods do not encode an owner key; their effective authorization relies on o1js account-update proof/signature composition and derived-token approval semantics."
+        required_context: ["o1js Permissions.default for pinned fork", "deployed proposal permission state", "transaction composition review"]
+        semantic_status: "OPEN"
+        assertions: [{ text: "Static source constructs proposal updates under the owner-derived token and approves them, but the exact external-call authorization boundary is dependency-defined.", evidence_class: "UNRESOLVED", confidence: "MEDIUM", limitation: "o1js fork and deployment state outside static scope." }]
+    evidence:
+      - stable_key: "evidence:treasury-owner:class-and-methods"
+        evidence_class: "IMPLEMENTED_STATIC"
+        description: "Treasury Owner class, permissions, state, events, and principal methods."
+        anchors: [{ path: "packages/sdk/src/provable/contracts/treasury-owner.ts", symbol: "TreasuryOwnerSmartContract", start_line: 65, end_line: 512 }]
+        source_sha256: "7c66014cee7f7a5e559b29f3b7c2790ed19c38c9a91b886c15cbbef3328d17dc"
+        tool: { name: "manual-static-reading", version: "", command: "" }
+      - stable_key: "evidence:treasury-owner:deploy"
+        evidence_class: "IMPLEMENTED_STATIC"
+        description: "Owner deployment copies static configuration and permissions into account/state."
+        anchors: [{ path: "packages/sdk/src/provable/contracts/treasury-owner.ts", symbol: "deploy", start_line: 64, end_line: 119 }]
+        source_sha256: "7c66014cee7f7a5e559b29f3b7c2790ed19c38c9a91b886c15cbbef3328d17dc"
+        tool: { name: "manual-static-reading", version: "", command: "" }
+      - stable_key: "evidence:treasury-owner:lifecycle"
+        evidence_class: "IMPLEMENTED_STATIC"
+        description: "Lifecycle constants, slot derivation, and network slot precondition."
+        anchors: [{ path: "packages/sdk/src/provable/contracts/treasury-owner.ts", symbol: "requireLifecyclePeriod", start_line: 51, end_line: 184 }]
+        source_sha256: "7c66014cee7f7a5e559b29f3b7c2790ed19c38c9a91b886c15cbbef3328d17dc"
+        tool: { name: "manual-static-reading", version: "", command: "" }
+      - stable_key: "evidence:treasury-owner:create"
+        evidence_class: "IMPLEMENTED_STATIC"
+        description: "Proposal creation, bond credit, app-state initialization, verification key, permissions, and event."
+        anchors: [{ path: "packages/sdk/src/provable/contracts/treasury-owner.ts", symbol: "createProposal", start_line: 191, end_line: 272 }]
+        source_sha256: "7c66014cee7f7a5e559b29f3b7c2790ed19c38c9a91b886c15cbbef3328d17dc"
+        tool: { name: "manual-static-reading", version: "", command: "" }
+      - stable_key: "evidence:treasury-owner:vote"
+        evidence_class: "IMPLEMENTED_STATIC"
+        description: "Vote dispatch, sender/voter signatures, lifecycle and pause gates."
+        anchors: [{ path: "packages/sdk/src/provable/contracts/treasury-owner.ts", symbol: "vote", start_line: 274, end_line: 318 }]
+        source_sha256: "7c66014cee7f7a5e559b29f3b7c2790ed19c38c9a91b886c15cbbef3328d17dc"
+        tool: { name: "manual-static-reading", version: "", command: "" }
+      - stable_key: "evidence:treasury-owner:tally"
+        evidence_class: "IMPLEMENTED_STATIC"
+        description: "Top-level proof verification, lifecycle gate, five action-state bindings, nested tally, event."
+        anchors: [{ path: "packages/sdk/src/provable/contracts/treasury-owner.ts", symbol: "tallyVotes", start_line: 320, end_line: 419 }]
+        source_sha256: "7c66014cee7f7a5e559b29f3b7c2790ed19c38c9a91b886c15cbbef3328d17dc"
+        tool: { name: "manual-static-reading", version: "", command: "" }
+      - stable_key: "evidence:treasury-owner:execute"
+        evidence_class: "IMPLEMENTED_STATIC"
+        description: "Owner payout debit, next-lifecycle gate, nested proposal execute, event."
+        anchors: [{ path: "packages/sdk/src/provable/contracts/treasury-owner.ts", symbol: "executeProposal", start_line: 421, end_line: 462 }]
+        source_sha256: "7c66014cee7f7a5e559b29f3b7c2790ed19c38c9a91b886c15cbbef3328d17dc"
+        tool: { name: "manual-static-reading", version: "", command: "" }
+      - stable_key: "evidence:treasury-owner:toggle"
+        evidence_class: "IMPLEMENTED_STATIC"
+        description: "Owner proposal pause orchestration and caller-supplied event flag."
+        anchors: [{ path: "packages/sdk/src/provable/contracts/treasury-owner.ts", symbol: "togglePauseProposal", start_line: 464, end_line: 496 }]
+        source_sha256: "7c66014cee7f7a5e559b29f3b7c2790ed19c38c9a91b886c15cbbef3328d17dc"
+        tool: { name: "manual-static-reading", version: "", command: "" }
+      - stable_key: "evidence:treasury-owner:approve-base"
+        evidence_class: "IMPLEMENTED_STATIC"
+        description: "Derived-token account-update restriction."
+        anchors: [{ path: "packages/sdk/src/provable/contracts/treasury-owner.ts", symbol: "approveBase", start_line: 505, end_line: 511 }]
+        source_sha256: "7c66014cee7f7a5e559b29f3b7c2790ed19c38c9a91b886c15cbbef3328d17dc"
+        tool: { name: "manual-static-reading", version: "", command: "" }
+      - stable_key: "evidence:proposal:configuration"
+        evidence_class: "IMPLEMENTED_STATIC"
+        description: "Proposal verification-key, permission mode, and empty-root static configuration."
+        anchors: [{ path: "packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts", symbol: "TreasuryProposalSmartContract statics", start_line: 59, end_line: 68 }]
+        source_sha256: "95e5656d3a0d0c09a88ac9befa743517c53a98983bd1cf74b042e87bc9faf7af"
+        tool: { name: "manual-static-reading", version: "", command: "" }
+      - stable_key: "evidence:proposal:vote"
+        evidence_class: "IMPLEMENTED_STATIC"
+        description: "Proposal not-paused guard, lifecycle getter, and reducer dispatch."
+        anchors: [{ path: "packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts", symbol: "vote", start_line: 81, end_line: 96 }]
+        source_sha256: "95e5656d3a0d0c09a88ac9befa743517c53a98983bd1cf74b042e87bc9faf7af"
+        tool: { name: "manual-static-reading", version: "", command: "" }
+      - stable_key: "evidence:proposal:thresholds"
+        evidence_class: "IMPLEMENTED_STATIC"
+        description: "Acceptance curve and approval-status arithmetic."
+        anchors: [{ path: "packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts", symbol: "calculateAcceptanceCriteria/calculateApprovalStatus", start_line: 98, end_line: 211 }]
+        source_sha256: "95e5656d3a0d0c09a88ac9befa743517c53a98983bd1cf74b042e87bc9faf7af"
+        tool: { name: "manual-static-reading", version: "", command: "" }
+      - stable_key: "evidence:proposal:tally-and-execute"
+        evidence_class: "IMPLEMENTED_STATIC"
+        description: "Proof input/output binding, Treasury Owner account snapshot proof, status update, and payout checks."
+        anchors: [{ path: "packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts", symbol: "tallyVotes/execute", start_line: 213, end_line: 384 }]
+        source_sha256: "95e5656d3a0d0c09a88ac9befa743517c53a98983bd1cf74b042e87bc9faf7af"
+        tool: { name: "manual-static-reading", version: "", command: "" }
+      - stable_key: "evidence:proposal:toggle"
+        evidence_class: "IMPLEMENTED_STATIC"
+        description: "Proposal status pause toggle transition."
+        anchors: [{ path: "packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts", symbol: "togglePause", start_line: 386, end_line: 397 }]
+        source_sha256: "95e5656d3a0d0c09a88ac9befa743517c53a98983bd1cf74b042e87bc9faf7af"
+        tool: { name: "manual-static-reading", version: "", command: "" }
+      - stable_key: "evidence:multisig:messages"
+        evidence_class: "IMPLEMENTED_STATIC"
+        description: "Operation-specific signature data hashes and included fields."
+        anchors: [{ path: "packages/sdk/src/provable/contracts/treasury-pause-controller/multisig-signatures.ts", symbol: "MultisigSignature", start_line: 22, end_line: 91 }]
+        source_sha256: "48a7c4cd41c1e9764df1329966c37f325817fa43074140c145f4f6c1ae2aa372"
+        tool: { name: "manual-static-reading", version: "", command: "" }
+      - stable_key: "evidence:multisig:verify"
+        evidence_class: "IMPLEMENTED_STATIC"
+        description: "Participant commitment and three-of-five per-slot signature count."
+        anchors: [{ path: "packages/sdk/src/provable/contracts/treasury-pause-controller/multisig-signatures.ts", symbol: "MultisigSignatures.verify", start_line: 97, end_line: 145 }]
+        source_sha256: "48a7c4cd41c1e9764df1329966c37f325817fa43074140c145f4f6c1ae2aa372"
+        tool: { name: "manual-static-reading", version: "", command: "" }
+      - stable_key: "evidence:pause-controller:init"
+        evidence_class: "IMPLEMENTED_STATIC"
+        description: "Pause controller permission, participant-count, commitment, and state initialization."
+        anchors: [{ path: "packages/sdk/src/provable/contracts/treasury-pause-controller/treasury-pause-controller.ts", symbol: "init", start_line: 29, end_line: 85 }]
+        source_sha256: "f7139183b963aa496dd36df00017885c9ab6275f11accca35bfd9054260e5104"
+        tool: { name: "manual-static-reading", version: "", command: "" }
+      - stable_key: "evidence:pause-controller:authorization"
+        evidence_class: "IMPLEMENTED_STATIC"
+        description: "Witnessed participant list, commitment/signature verification, nonce increment, and pause commands."
+        anchors: [{ path: "packages/sdk/src/provable/contracts/treasury-pause-controller/treasury-pause-controller.ts", symbol: "verifySignatures/pauseTreasury/unpauseTreasury", start_line: 87, end_line: 193 }]
+        source_sha256: "f7139183b963aa496dd36df00017885c9ab6275f11accca35bfd9054260e5104"
+        tool: { name: "manual-static-reading", version: "", command: "" }
+      - stable_key: "evidence:pause-controller:rotate"
+        evidence_class: "IMPLEMENTED_STATIC"
+        description: "Multisig commitment rotation."
+        anchors: [{ path: "packages/sdk/src/provable/contracts/treasury-pause-controller/treasury-pause-controller.ts", symbol: "rotateMultisigKeys", start_line: 121, end_line: 145 }]
+        source_sha256: "f7139183b963aa496dd36df00017885c9ab6275f11accca35bfd9054260e5104"
+        tool: { name: "manual-static-reading", version: "", command: "" }
+      - stable_key: "evidence:pause-controller:toggle"
+        evidence_class: "IMPLEMENTED_STATIC"
+        description: "Proposal toggle authorization data and nonce consumption."
+        anchors: [{ path: "packages/sdk/src/provable/contracts/treasury-pause-controller/treasury-pause-controller.ts", symbol: "togglePauseProposal", start_line: 195, end_line: 216 }]
+        source_sha256: "f7139183b963aa496dd36df00017885c9ab6275f11accca35bfd9054260e5104"
+        tool: { name: "manual-static-reading", version: "", command: "" }
+      - stable_key: "evidence:vote-reducer:types"
+        evidence_class: "IMPLEMENTED_STATIC"
+        description: "Vote enum/action, action-history, and public input/output structures."
+        anchors: [{ path: "packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts", symbol: "VoteReducer types", start_line: 30, end_line: 315 }]
+        source_sha256: "37c1f07a5fad41f036f999792b44bf13d4f9af280cb1439bed6a8411dfaa81cd"
+        tool: { name: "manual-static-reading", version: "", command: "" }
+      - stable_key: "evidence:vote-reducer:program"
+        evidence_class: "IMPLEMENTED_STATIC"
+        description: "Vote Reducer ZkProgram methods and side-loaded proof boundary."
+        anchors: [{ path: "packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts", symbol: "VoteReducer", start_line: 317, end_line: 659 }]
+        source_sha256: "37c1f07a5fad41f036f999792b44bf13d4f9af280cb1439bed6a8411dfaa81cd"
+        tool: { name: "manual-static-reading", version: "", command: "" }
+      - stable_key: "evidence:vote-reducer:merge"
+        evidence_class: "IMPLEMENTED_STATIC"
+        description: "Vote proof verification, public-input equality, root continuity, target equality, and tally/history merge."
+        anchors: [{ path: "packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts", symbol: "VoteReducer.merge", start_line: 333, end_line: 417 }]
+        source_sha256: "37c1f07a5fad41f036f999792b44bf13d4f9af280cb1439bed6a8411dfaa81cd"
+        tool: { name: "manual-static-reading", version: "", command: "" }
+      - stable_key: "evidence:vote-reducer:reduce"
+        evidence_class: "IMPLEMENTED_STATIC"
+        description: "Vote batch witnesses, root/index constraints, host effects, tallies, action hashing, and target matching."
+        anchors: [{ path: "packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts", symbol: "VoteReducer.reduceBatch", start_line: 426, end_line: 639 }]
+        source_sha256: "37c1f07a5fad41f036f999792b44bf13d4f9af280cb1439bed6a8411dfaa81cd"
+        tool: { name: "manual-static-reading", version: "", command: "" }
+      - stable_key: "evidence:staking-transform:types"
+        evidence_class: "IMPLEMENTED_STATIC"
+        description: "Staking transformation context, batch size, and public input/output structures."
+        anchors: [{ path: "packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts", symbol: "program types", start_line: 35, end_line: 70 }]
+        source_sha256: "4dcfc5e1f1edcc7e26cfb960f3892208efe16056a2579b14e12e2a79f0e28197"
+        tool: { name: "manual-static-reading", version: "", command: "" }
+      - stable_key: "evidence:staking-transform:program"
+        evidence_class: "IMPLEMENTED_STATIC"
+        description: "Staking transformation ZkProgram and side-loaded proof boundary."
+        anchors: [{ path: "packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts", symbol: "StakingLedgerToVotingLedger", start_line: 72, end_line: 351 }]
+        source_sha256: "4dcfc5e1f1edcc7e26cfb960f3892208efe16056a2579b14e12e2a79f0e28197"
+        tool: { name: "manual-static-reading", version: "", command: "" }
+      - stable_key: "evidence:staking-transform:exhaust"
+        evidence_class: "IMPLEMENTED_STATIC"
+        description: "Prior proof/input equality and next-empty-leaf exhaustion proof."
+        anchors: [{ path: "packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts", symbol: "StakingLedgerToVotingLedger.exhaust", start_line: 83, end_line: 144 }]
+        source_sha256: "4dcfc5e1f1edcc7e26cfb960f3892208efe16056a2579b14e12e2a79f0e28197"
+        tool: { name: "manual-static-reading", version: "", command: "" }
+      - stable_key: "evidence:staking-transform:merge"
+        evidence_class: "IMPLEMENTED_STATIC"
+        description: "Recursive proof verification and staking/index/voting continuity."
+        anchors: [{ path: "packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts", symbol: "StakingLedgerToVotingLedger.merge", start_line: 148, end_line: 191 }]
+        source_sha256: "4dcfc5e1f1edcc7e26cfb960f3892208efe16056a2579b14e12e2a79f0e28197"
+        tool: { name: "manual-static-reading", version: "", command: "" }
+      - stable_key: "evidence:staking-transform:digest"
+        evidence_class: "IMPLEMENTED_STATIC"
+        description: "Consecutive account membership, delegate voting updates, and host persistence."
+        anchors: [{ path: "packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts", symbol: "StakingLedgerToVotingLedger.digest", start_line: 195, end_line: 338 }]
+        source_sha256: "4dcfc5e1f1edcc7e26cfb960f3892208efe16056a2579b14e12e2a79f0e28197"
+        tool: { name: "manual-static-reading", version: "", command: "" }
+      - stable_key: "evidence:account:serialization"
+        evidence_class: "IMPLEMENTED_STATIC"
+        description: "Manual Mina account representation, empty constants, permission hashing, packing, and account hash input."
+        anchors: [{ path: "packages/sdk/src/provable/account.ts", symbol: "Account/packToFields", start_line: 22, end_line: 392 }]
+        source_sha256: "00eabfcee24eb10380d0ffeb1e60a08a85aa650cc8a3e9140718cecbf6fd0563"
+        tool: { name: "manual-static-reading", version: "", command: "" }
+      - stable_key: "evidence:support:hash-and-merkle"
+        evidence_class: "IMPLEMENTED_STATIC"
+        description: "Prefix hashing, action hash list, Merkle root/index calculation, and voting account encoding."
+        anchors:
+          - { path: "packages/sdk/src/provable/hashing-helpers.ts", symbol: "hash helpers", start_line: 1, end_line: 36 }
+          - { path: "packages/sdk/src/provable/merkle-tree/prefixed-merkle-tree.ts", symbol: "BasePrefixedMerkleWitness", start_line: 179, end_line: 266 }
+          - { path: "packages/sdk/src/provable/voting-account.ts", symbol: "VotingAccount", start_line: 1, end_line: 17 }
+        source_sha256: "multiple:pinned-in-source_hashes"
+        tool: { name: "manual-static-reading", version: "", command: "" }
+      - stable_key: "evidence:context-provider"
+        evidence_class: "IMPLEMENTED_STATIC"
+        description: "Single mutable generic host context with throw-if-unset get and unrestricted set."
+        anchors: [{ path: "packages/sdk/src/utils/context-provider.ts", symbol: "ContextProvider", start_line: 1, end_line: 14 }]
+        source_sha256: "cbbde1f3561ca2ee39bc7026241a09fa2659629542c527cc49271da5e924b6d4"
+        tool: { name: "manual-static-reading", version: "", command: "" }
+      - stable_key: "evidence:storage:interfaces"
+        evidence_class: "IMPLEMENTED_STATIC"
+        description: "Merkle storage exposes individual async get/set/clear/close; in-memory overlay and Keyv adapter mutate individual nodes."
+        anchors:
+          - { path: "packages/sdk/src/storage/merkle-tree-storage.ts", symbol: "MerkleTreeStorage", start_line: 1, end_line: 9 }
+          - { path: "packages/sdk/src/storage/in-memory/in-memory-merkle-tree-storage.ts", symbol: "InMemoryMerkleTreeStorage", start_line: 6, end_line: 61 }
+          - { path: "packages/sdk/src/storage/keyv/keyv-merkle-tree-storage.ts", symbol: "KeyvMerkleTreeStorage", start_line: 15, end_line: 46 }
+        source_sha256: "multiple:pinned-in-source_hashes"
+        tool: { name: "manual-static-reading", version: "", command: "" }
+      - stable_key: "evidence:configuration:o1js"
+        evidence_class: "IMPLEMENTED_STATIC"
+        description: "SDK package uses a custom feature/mesa-support o1js Git dependency and exposes proof-enabled test scripts."
+        anchors: [{ path: "packages/sdk/package.json", symbol: "scripts/dependencies", start_line: 8, end_line: 59 }]
+        source_sha256: "d73ba980798af63c8ac79b897ae548bd706e480286ac9f617c68f2144f394eba"
+        tool: { name: "manual-static-reading", version: "", command: "" }
+      - stable_key: "evidence:ledgers:base-and-indexing"
+        evidence_class: "IMPLEMENTED_STATIC"
+        description: "Pinned staking/voting/nullifier base ledgers define tree heights, empty leaves, prefix sequences, public-key hashing, witness lookup, and Merkle leaf mutation."
+        anchors:
+          - { path: "packages/sdk/src/ledgers/staking-ledger/staking-ledger.ts", symbol: "BaseStakingLedger", start_line: 54, end_line: 144 }
+          - { path: "packages/sdk/src/ledgers/voting-ledger/voting-ledger.ts", symbol: "BaseVotingLedger", start_line: 11, end_line: 335 }
+          - { path: "packages/sdk/src/ledgers/nullifier-ledger/nullifier-ledger.ts", symbol: "BaseNullifierLedger", start_line: 10, end_line: 324 }
+          - { path: "packages/sdk/src/utils/public-key.ts", symbol: "publicKeyBase58ToBigInt", start_line: 1, end_line: 11 }
+        source_sha256: "multiple:pinned-in-source_hashes"
+        tool: { name: "manual-static-reading", version: "", command: "" }
+  proposed_relations: []
+  conflicts:
+    - "Proposal tally computes REJECTED for insufficient participation/no approval votes but asserts those conditions true before status assignment; intended terminal policy requires business-context adjudication."
+    - "Proposal pause is described as a pause flag concept, but implementation shares one status field and discards finalized state."
+    - "Pause controller initialization accepts >=5 participants while proof-time signature verification accepts exactly 5."
+  unresolved:
+    - "Concrete persistent/recording/replayable ledger backend closure is not pinned in SCOPE.yaml; base ledgers and index mapping are pinned."
+    - "Runtime proof-mode equivalence, circuit soundness, and verification-key correctness were not tested by design."
+    - "Deployment manifests, account permission values, and exact Mina/o1js protocol semantics remain external."
+  coverage:
+    expected_paths: 0
+    accounted_paths: 0
+    expected_symbols: 0
+    accounted_symbols: 0
+    context_paths_reviewed: 23
+    components_reconstructed: 6
+    smart_contracts_reconstructed: 3
+    zk_programs_reconstructed: 2
+    proof_methods_reconstructed: 5
+    proof_statements: 2
+    host_effect_sites: 3
+    limitations:
+      - "This platform work unit owns no primary source inventory records; file/symbol accountability belongs to the inventory work unit."
+      - "Only LOCAL flows are proposed; the root orchestrator owns cross-component flow composition."

@@ -1,0 +1,858 @@
+bundle:
+  schema_version: 1
+  work_unit: "WU-FC6BF1E259"
+  revision: "1e27b1aea88f5ea2764db96e4b337b24fe6dbeb3"
+  scope_hash: "f40d76b91ec3cd8805ecdc7bebba8d43b8f317842639a7799738c37569119ab1"
+  role: "semantic"
+  ownership:
+    primary_paths:
+      - "packages/sdk/src/provable/contracts/treasury-owner.ts"
+      - "packages/sdk/src/provable/contracts/treasury-constants.ts"
+      - "packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts"
+      - "packages/sdk/src/provable/contracts/treasury-pause-controller/treasury-pause-controller.ts"
+      - "packages/sdk/src/provable/contracts/treasury-pause-controller/multisig-signatures.ts"
+      - "packages/sdk/src/provable/events/treasury-proposal-events.ts"
+    record_ids: []
+    stable_key_prefixes:
+      - "behavior:treasury-contracts:"
+      - "flow:treasury-contracts:"
+      - "clause:treasury-contracts:"
+      - "invariant:treasury-contracts:"
+      - "finding:treasury-contracts:"
+  source_hashes:
+    "packages/sdk/src/provable/contracts/treasury-owner.ts": "7c66014cee7f7a5e559b29f3b7c2790ed19c38c9a91b886c15cbbef3328d17dc"
+    "packages/sdk/src/provable/contracts/treasury-constants.ts": "c4ef6c551437e01ebe6294c51923dfedff4a198735766a37029249482d9247a6"
+    "packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts": "95e5656d3a0d0c09a88ac9befa743517c53a98983bd1cf74b042e87bc9faf7af"
+    "packages/sdk/src/provable/contracts/treasury-pause-controller/treasury-pause-controller.ts": "f7139183b963aa496dd36df00017885c9ab6275f11accca35bfd9054260e5104"
+    "packages/sdk/src/provable/contracts/treasury-pause-controller/multisig-signatures.ts": "48a7c4cd41c1e9764df1329966c37f325817fa43074140c145f4f6c1ae2aa372"
+    "packages/sdk/src/provable/events/treasury-proposal-events.ts": "421e00244121b82a603b71b722ef35419794d0d603a264270a47a44d05a2c01d"
+    "packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts": "37c1f07a5fad41f036f999792b44bf13d4f9af280cb1439bed6a8411dfaa81cd"
+    "packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts": "4dcfc5e1f1edcc7e26cfb960f3892208efe16056a2579b14e12e2a79f0e28197"
+    "packages/sdk/src/provable/account.ts": "00eabfcee24eb10380d0ffeb1e60a08a85aa650cc8a3e9140718cecbf6fd0563"
+    "packages/sdk/src/provable/hashing-helpers.ts": "8ef43c9c685339f97a667002c2f6f349071eaa53ba753c7008dc46be23396869"
+    "packages/sdk/src/provable/merkle-tree/prefixed-merkle-tree.ts": "870ca739cc8406070367beb86367efa64101647d130f0892b636555cbd2a5c6c"
+    "packages/sdk/src/ledgers/staking-ledger/staking-ledger.ts": "df9be11132c6cb968fe1b9857b53137d629f7d213141652bc90981b5c7c04d69"
+    "packages/sdk/test/integration/treasury-owner.test.ts": "f73f778dcb2ac226c416ebfdf69117af3262fcc37f36877ea3fb7d1bd7e0f4e0"
+    "packages/sdk/test/provable/contracts/treasury-proposal/treasury-proposal.test.ts": "89444ba4edfc6bf48fae0c0ef4f8b183c9c2d35f24e38e78622334adb3bed6bb"
+    "packages/sdk/test/provable/contracts/treasury-pause-controller/treasury-pause-controller.test.ts": "5e4031821bafa39daf9b1b28d2aeba4daf92e1611f78e571035974ab63fbb1e5"
+    "packages/sdk/test/provable/contracts/treasury-pause-controller/multisig-signatures.test.ts": "d51e8afe43141a84650ddcff49d736a308007fb04da1ae22b72d3a65783648b2"
+    "packages/sdk/test/provable/events/treasury-proposal-events.test.ts": "2b5204f4acf2dca9135642a242e18bf5535f46fa41526b43fb19b228d6f63f79"
+  assumptions:
+    - "Static source establishes constraint construction and account-update composition, not deployed permission values, circuit soundness, transaction inclusion semantics, or runtime atomicity."
+    - "The RFC is versioned intent evidence; its provisional, optional, deferred, and contested items are not silently promoted to current requirements."
+    - "The prior audit is historical evidence for revision f2c93cfdb27836b156769ca4eaeca7d5f01fa8b5; current behavior is independently derived from pinned source."
+    - "Tests are expectation evidence only. No test, target module, build, proof, or chain was executed."
+    - "o1js behavior, Mina protocol semantics, verification keys, and deployment configuration remain dependency or deployment assumptions except where this source constructs explicit checks."
+  observations:
+    - "The Treasury Owner is the custody and orchestration boundary; proposal accounts are children under its derived token, while the Pause Controller is a separate multisig authorization boundary."
+    - "Implemented lifecycle order is proposal, exploration, voting, cooldown, followed by proposal execution no earlier than the next lifecycle; tally may occur without an upper bound from cooldown onward."
+    - "Proposal status conflates outcome and pause state. UNKNOWN, APPROVED, REJECTED, and PAUSED occupy one Field, so toggle pause is not status preserving."
+    - "The active tests emphasize one end-to-end approved proposal and extensive pause-controller/multisig negative cases. They do not cover owner lifecycle failures, rejected tallies, partial/zero payouts, proposal pause state truth, or signer-domain replay."
+    - "Event schemas round-trip in tests, but schema round-trip does not establish that event values match constrained state transitions."
+  proposed_records:
+    behaviors:
+      - stable_key: "behavior:treasury-contracts:owner:snapshot-staking-epoch"
+        title: "Snapshot current staking epoch ledger"
+        actor_trigger: "Treasury Owner during proposal creation"
+        preconditions: ["network stakingEpochData ledger fields are available as account preconditions"]
+        domain_inputs: []
+        normal_outcome: "Returns and constrains the current staking epoch ledger hash and total currency."
+        failure_outcomes: ["network-state precondition mismatch rejects the containing transaction"]
+        state_effects: []
+        ordering_replay: "Snapshot is taken before the proposal bond is credited."
+        anchors: [{ path: "packages/sdk/src/provable/contracts/treasury-owner.ts", symbol: "snapshotStakingEpochData", start_line: 97, end_line: 108 }]
+        semantic_status: "SUPPORTED_STATICALLY"
+        assertions:
+          - { text: "The implementation reads stakingEpochData, not nextEpochData.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_stable_keys: ["evidence:semantic-contracts:owner-snapshot"] }
+          - { text: "The prior audit characterized this selection as potentially stale for governance snapshot intent.", evidence_class: "EXTERNAL_STANDARD", confidence: "HIGH", evidence_stable_keys: ["evidence:business-context:zksecurity-audit-report"] }
+      - stable_key: "behavior:treasury-contracts:owner:deploy"
+        title: "Deploy Treasury Owner with static configuration"
+        actor_trigger: "deployment transaction"
+        preconditions: ["class-static deployment slot and pause-controller public key are assigned", "superclass deployment succeeds"]
+        domain_inputs: []
+        normal_outcome: "Applies locked permissions and stores deployment slot plus pause-controller key."
+        failure_outcomes: ["unset or wrong static values produce misconfigured state", "deployment/account permission failure rejects"]
+        state_effects: ["writes treasuryDeployedAtSlot", "writes pauseControllerPublicKey", "sets account permissions"]
+        anchors: [{ path: "packages/sdk/src/provable/contracts/treasury-owner.ts", symbol: "deploy", start_line: 64, end_line: 119 }]
+        semantic_status: "SUPPORTED_STATICALLY"
+        assertions: [{ text: "Deployment configuration is host-static and copied into on-chain state.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_stable_keys: ["evidence:semantic-contracts:owner-deploy"] }]
+      - stable_key: "behavior:treasury-contracts:owner:derive-lifecycle-range"
+        title: "Derive and enforce lifecycle slot range"
+        actor_trigger: "create, vote, tally, or execute calls a lifecycle guard"
+        preconditions: ["stored deployment slot exists", "UInt32 arithmetic remains valid"]
+        domain_inputs: ["period", "lifecycleId", "optional noUpperBoundToSlot"]
+        normal_outcome: "Computes fromSlot from four fixed periods of 7140 slots and requires globalSlotSinceGenesis between bounds."
+        failure_outcomes: ["outside-range precondition rejects", "overflow/dependency boundary rejects or remains protocol-defined"]
+        ordering_replay: "Finite periods use fromSlot through fromSlot+duration; tally and execution helpers may use UInt32.MAXINT as the upper bound."
+        anchors: [{ path: "packages/sdk/src/provable/contracts/treasury-owner.ts", symbol: "getLifecyclePeriodSlotRange/requireLifecyclePeriod", start_line: 121, end_line: 184 }]
+        semantic_status: "SUPPORTED_STATICALLY"
+        assertions: [{ text: "The lifecycle clock is deployment-relative and parameterized by lifecycleId.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_stable_keys: ["evidence:semantic-contracts:owner-lifecycle"] }]
+      - stable_key: "behavior:treasury-contracts:owner:receive"
+        title: "Receive treasury funds"
+        actor_trigger: "caller composes a balanced transaction invoking receive"
+        preconditions: ["an external debit or equivalent transaction balance source exists"]
+        domain_inputs: ["amount: UInt64"]
+        normal_outcome: "Adds amount to Treasury Owner balance."
+        failure_outcomes: ["unbalanced or unauthorized containing transaction rejects"]
+        state_effects: ["credits owner balance"]
+        anchors: [{ path: "packages/sdk/src/provable/contracts/treasury-owner.ts", symbol: "receive", start_line: 186, end_line: 189 }]
+        semantic_status: "SUPPORTED_STATICALLY"
+        assertions: [{ text: "The method credits owner balance but does not identify the external funding account.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_stable_keys: ["evidence:semantic-contracts:owner-receive"] }]
+      - stable_key: "behavior:treasury-contracts:owner:create-proposal"
+        title: "Create proposal and collect ten-percent bond"
+        actor_trigger: "signed sender calls createProposal"
+        preconditions: ["proposal period for lifecycleId", "global treasury unpaused", "proposal token account signature", "proposal verification key/configuration available", "containing transaction supplies the bond debit"]
+        domain_inputs: ["proposalPublicKey", "proposal amount/recipient/zkAppUri", "lifecycleId"]
+        normal_outcome: "Snapshots staking data, credits amount/10 to owner, initializes proposal app state and URI, approves proposal update, and emits proposalCreated."
+        failure_outcomes: ["period, pause, signature, balance, account-update, or configuration failure rejects atomically"]
+        state_effects: ["owner balance + bond", "proposal state initialized", "proposal account verification key and permissions set", "creation event emitted"]
+        permissions_assets: ["sender signature", "proposal account signature", "treasury balance", "proposal child token account"]
+        ordering_replay: "No explicit isNew predicate is present; reuse resistance relies on the proposal account signature and installed permissions/state preconditions."
+        integration_dependencies: ["network staking epoch state", "TreasuryProposal verification key", "o1js proposal account permissions", "off-chain bond debit construction"]
+        anchors: [{ path: "packages/sdk/src/provable/contracts/treasury-owner.ts", symbol: "createProposal", start_line: 191, end_line: 272 }]
+        semantic_status: "SUPPORTED_STATICALLY"
+        assertions:
+          - { text: "The implementation stores recipient hash, amount, lifecycle, snapshot, raw Field(0) status, and defaults the remaining app-state slots.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_stable_keys: ["evidence:semantic-contracts:owner-create"] }
+          - { text: "The integration test expects a separate bond-payer update and does not require the transaction sender to be that payer.", evidence_class: "TEST_EXPECTATION", confidence: "HIGH", evidence_stable_keys: ["evidence:semantic-contracts:test-owner-create"] }
+      - stable_key: "behavior:treasury-contracts:owner:dispatch-vote"
+        title: "Dispatch signed voter action"
+        actor_trigger: "transaction sender calls vote for a supplied voter public key"
+        preconditions: ["sender signature", "global treasury unpaused", "proposal voting period", "Vote.assertValid", "voter public-key account signature"]
+        domain_inputs: ["proposalPublicKey", "voter publicKey", "vote"]
+        normal_outcome: "Proposal dispatches VoteAction, owner emits proposalVoteDispatched, and a signed voter account update is included."
+        failure_outcomes: ["pause, period, invalid enum, missing voter signature, or child-update approval rejects"]
+        state_effects: ["proposal reducer action state advances", "vote event emitted", "a voter account may be created and incur account-creation cost"]
+        permissions_assets: ["sender and voter may differ", "voter identity must sign"]
+        ordering_replay: "Duplicate dispatch is allowed at this boundary; downstream nullifier logic determines voting weight."
+        anchors: [{ path: "packages/sdk/src/provable/contracts/treasury-owner.ts", symbol: "vote", start_line: 274, end_line: 318 }]
+        semantic_status: "SUPPORTED_STATICALLY"
+        assertions:
+          - { text: "DUMMY is accepted by Vote.assertValid; no positive voting-balance/spam predicate is enforced at dispatch.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_stable_keys: ["evidence:semantic-contracts:owner-vote", "evidence:semantic-contracts:vote-enum"] }
+          - { text: "Integration tests expect YAY and NAY dispatch plus rejection of a direct proposal call, but do not cover DUMMY, pause, lifecycle failure, or duplicate dispatch.", evidence_class: "TEST_EXPECTATION", confidence: "HIGH", evidence_stable_keys: ["evidence:semantic-contracts:test-owner-vote"] }
+      - stable_key: "behavior:treasury-contracts:owner:tally"
+        title: "Verify proofs, bind action history, and tally proposal"
+        actor_trigger: "signed sender calls tallyVotes"
+        preconditions: ["global treasury unpaused", "both side-loaded proofs verify against configured keys", "at or after cooldown", "five action-state entries are found, non-initial, pairwise unique, and each required equal to proposal account actionState", "proposal tally checks pass"]
+        domain_inputs: ["proposalPublicKey", "vote reducer proof", "staking-to-voting proof", "Treasury Owner account and staking witness"]
+        normal_outcome: "Proposal stores APPROVED or REJECTED, owner emits tally weights/result, and proposal update is approved."
+        failure_outcomes: ["proof, action-history, lifecycle, snapshot, threshold, account, or status constraint failure rejects"]
+        state_effects: ["proposal status changes", "five proposal account action-state precondition updates are approved", "tally event emitted"]
+        ordering_replay: "Proposal requires UNKNOWN status, but a pause/unpause cycle can restore UNKNOWN."
+        anchors: [{ path: "packages/sdk/src/provable/contracts/treasury-owner.ts", symbol: "tallyVotes", start_line: 320, end_line: 419 }]
+        semantic_status: "SUPPORTED_STATICALLY"
+        assertions:
+          - { text: "The owner verifies both proofs and constrains all five target action states before delegating to proposal tally.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_stable_keys: ["evidence:semantic-contracts:owner-tally"] }
+          - { text: "The integration test expects one approved tally only; no rejected, repeated, malformed-history, or lifecycle-negative owner case is active.", evidence_class: "TEST_EXPECTATION", confidence: "HIGH", evidence_stable_keys: ["evidence:semantic-contracts:test-owner-tally"] }
+      - stable_key: "behavior:treasury-contracts:owner:execute-proposal"
+        title: "Execute bounded recipient payout"
+        actor_trigger: "any signed transaction sender calls executeProposal"
+        preconditions: ["global treasury unpaused", "proposal period of lifecycleId+1 or later", "proposal APPROVED", "recipient hash matches", "amountToPayOut does not exceed remaining amount plus bond", "owner has sufficient balance"]
+        domain_inputs: ["proposalPublicKey", "recipient", "amountToPayOut"]
+        normal_outcome: "Debits owner, proposal credits recipient, increments cumulative paidOutAmount, and emits proposalExecuted."
+        failure_outcomes: ["pause, lifecycle, status, recipient, remaining cap, signature-mode, permission, or balance failure rejects"]
+        state_effects: ["owner balance decreases", "recipient balance increases", "proposal paidOutAmount increases", "execution event emitted"]
+        permissions_assets: ["recipient is destination-bound; caller need not be recipient"]
+        ordering_replay: "Partial payouts are repeatable until cap; zero payout does not advance the cap."
+        anchors: [{ path: "packages/sdk/src/provable/contracts/treasury-owner.ts", symbol: "executeProposal", start_line: 421, end_line: 462 }]
+        semantic_status: "SUPPORTED_STATICALLY"
+        assertions:
+          - { text: "The owner debits the caller-supplied amount before proposal checks, relying on transaction atomicity for rollback.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_stable_keys: ["evidence:semantic-contracts:owner-execute", "evidence:semantic-contracts:proposal-execute"] }
+          - { text: "The integration test expects one full amount-plus-bond payout to the recipient and matching owner debit.", evidence_class: "TEST_EXPECTATION", confidence: "HIGH", evidence_stable_keys: ["evidence:semantic-contracts:test-owner-execute"] }
+      - stable_key: "behavior:treasury-contracts:owner:toggle-proposal-pause"
+        title: "Authorize and toggle proposal pause status"
+        actor_trigger: "signed transaction sender supplies controller signatures, nonce, and an event paused flag"
+        preconditions: ["configured pause controller", "three valid participant-slot signatures", "controller nonce equality", "proposal child-update authorization"]
+        domain_inputs: ["proposalPublicKey", "signatures", "nonce", "paused"]
+        normal_outcome: "Controller consumes nonce, proposal toggles status, and owner emits caller-supplied pause event."
+        failure_outcomes: ["commitment, threshold, nonce, or proposal update failure rejects"]
+        state_effects: ["controller nonce increments", "proposal status toggles", "pause event emitted"]
+        ordering_replay: "Signed payload authorizes a toggle, not an idempotent target state; paused is not signed or applied."
+        anchors: [{ path: "packages/sdk/src/provable/contracts/treasury-owner.ts", symbol: "togglePauseProposal", start_line: 464, end_line: 496 }]
+        semantic_status: "SUPPORTED_STATICALLY"
+        assertions:
+          - { text: "The paused argument affects only the event payload.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_stable_keys: ["evidence:semantic-contracts:owner-toggle"] }
+          - { text: "Event tests validate serialization, not agreement between paused and committed state.", evidence_class: "TEST_EXPECTATION", confidence: "HIGH", evidence_stable_keys: ["evidence:semantic-contracts:test-events"] }
+      - stable_key: "behavior:treasury-contracts:owner:global-pause-and-token-boundary"
+        title: "Apply global pause and derived-token child-update boundaries"
+        actor_trigger: "business method guard or TokenContract approval"
+        preconditions: ["configured pause-controller key"]
+        domain_inputs: ["account-update forest for approveBase"]
+        normal_outcome: "Requires controller paused=false and rejects child updates marked as external token use."
+        failure_outcomes: ["paused state or usesToken=true rejects"]
+        anchors:
+          - { path: "packages/sdk/src/provable/contracts/treasury-owner.ts", symbol: "requireNotPaused", start_line: 498, end_line: 503 }
+          - { path: "packages/sdk/src/provable/contracts/treasury-owner.ts", symbol: "approveBase", start_line: 505, end_line: 511 }
+        semantic_status: "SUPPORTED_STATICALLY"
+        assertions: [{ text: "Create, vote, tally, and execute call the global pause guard; proposal-toggle does not.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_stable_keys: ["evidence:semantic-contracts:owner-pause-token"] }]
+      - stable_key: "behavior:treasury-contracts:proposal:dispatch-and-lifecycle-read"
+        title: "Expose lifecycle and dispatch vote action"
+        actor_trigger: "owner reads lifecycle or invokes proposal.vote"
+        preconditions: ["proposal state exists", "proposal is not PAUSED for vote"]
+        domain_inputs: ["VoteAction"]
+        normal_outcome: "Returns constrained lifecycleId or appends VoteAction to reducer."
+        failure_outcomes: ["PAUSED vote rejects", "state/account permission failure rejects"]
+        state_effects: ["vote action state advances"]
+        anchors: [{ path: "packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts", symbol: "requireNotPaused/getLifecycleId/vote", start_line: 81, end_line: 96 }]
+        semantic_status: "SUPPORTED_STATICALLY"
+        assertions: [{ text: "Proposal methods do not encode the owner public key; call authorization depends on child-token/account permission composition.", evidence_class: "IMPLEMENTED_STATIC", confidence: "MEDIUM", evidence_stable_keys: ["evidence:semantic-contracts:proposal-vote"] }]
+      - stable_key: "behavior:treasury-contracts:proposal:calculate-acceptance-criteria"
+        title: "Calculate amount-sensitive quorum and approval thresholds"
+        actor_trigger: "proposal tally"
+        preconditions: ["treasuryBalance is nonzero for division", "UInt128 operations remain valid"]
+        domain_inputs: ["proposalAmount", "treasuryBalance", "staking total currency"]
+        normal_outcome: "Caps amount/balance ratio at 100%, applies two rational curves, yields participation 20%-50% and approval 51%-70%, and computes required participation from total currency."
+        failure_outcomes: ["zero treasury balance or dependency arithmetic failure prevents result"]
+        anchors: [{ path: "packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts", symbol: "minUInt128/calculateAcceptanceCriteria", start_line: 98, end_line: 162 }]
+        semantic_status: "SUPPORTED_STATICALLY"
+        assertions:
+          - { text: "The constants are source TODO parameters rather than a supplied ratified policy record.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_stable_keys: ["evidence:semantic-contracts:constants", "evidence:semantic-contracts:proposal-thresholds"] }
+          - { text: "Tests expect exact basis-point outputs at 1, 10, 25, 50, 90, and 100 percent ratios only.", evidence_class: "TEST_EXPECTATION", confidence: "HIGH", evidence_stable_keys: ["evidence:semantic-contracts:test-proposal-thresholds"] }
+      - stable_key: "behavior:treasury-contracts:proposal:calculate-approval-status"
+        title: "Calculate participation and vote result"
+        actor_trigger: "proposal tally after proof bindings"
+        preconditions: ["UInt128 vote weights and thresholds"]
+        domain_inputs: ["yay", "nay", "abstain", "requiredParticipation", "requiredApprovalBp"]
+        normal_outcome: "Counts abstain toward participation, excludes it from approval denominator, safely substitutes denominator 1 when yay+nay=0, and returns APPROVED or REJECTED."
+        failure_outcomes: []
+        anchors: [{ path: "packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts", symbol: "calculateApprovalStatus", start_line: 164, end_line: 211 }]
+        semantic_status: "SUPPORTED_STATICALLY"
+        assertions: [{ text: "Approval uses greater-than-or-equal threshold comparisons and requires at least one yay or nay vote.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_stable_keys: ["evidence:semantic-contracts:proposal-approval"] }]
+      - stable_key: "behavior:treasury-contracts:proposal:tally"
+        title: "Bind proof outputs and finalize proposal tally"
+        actor_trigger: "Treasury Owner invokes tallyVotes"
+        preconditions: ["status UNKNOWN", "both proofs verify", "initial action/nullifier roots", "voting root equals transformation output", "transformation begins at index zero and empty voting root", "snapshot staking root and exhausted=true", "action output bound to history head", "owner account key/default token/witness/root", "participation met and at least one yay/nay"]
+        domain_inputs: ["two side-loaded proofs", "owner public key", "owner account", "staking witness"]
+        normal_outcome: "Computes amount-sensitive result and stores APPROVED or REJECTED."
+        failure_outcomes: ["any proof/binding/status/participation/approval-vote condition rejects; insufficient approval with valid participation stores REJECTED"]
+        state_effects: ["writes proposal status"]
+        ordering_replay: "Only UNKNOWN can tally, except pause/unpause can recreate UNKNOWN."
+        anchors: [{ path: "packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts", symbol: "tallyVotes", start_line: 213, end_line: 351 }]
+        semantic_status: "SUPPORTED_STATICALLY"
+        assertions:
+          - { text: "Current source includes the prior-audit initial-root/index, token-ID, and action-history linkage checks.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_stable_keys: ["evidence:semantic-contracts:proposal-tally"] }
+          - { text: "Although calculateApprovalStatus returns REJECTED for failed participation or no yay/nay, tally asserts both conditions before storing status.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_stable_keys: ["evidence:semantic-contracts:proposal-tally", "evidence:semantic-contracts:proposal-approval"] }
+      - stable_key: "behavior:treasury-contracts:proposal:execute"
+        title: "Enforce approved recipient payout cap"
+        actor_trigger: "Treasury Owner invokes proposal.execute"
+        preconditions: ["proposal not PAUSED", "status APPROVED", "recipient commitment matches", "amountToPayOut <= amount + floor(amount/10) - paidOutAmount"]
+        domain_inputs: ["amountToPayOut", "recipient"]
+        normal_outcome: "Credits recipient, increments paidOutAmount, and approves recipient account update."
+        failure_outcomes: ["status, recipient, underflow/cap, or account-update failure rejects"]
+        state_effects: ["recipient balance increases", "paidOutAmount increases"]
+        ordering_replay: "Partial payouts are permitted; zero is permitted; status remains APPROVED after full payout."
+        anchors: [{ path: "packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts", symbol: "execute", start_line: 353, end_line: 384 }]
+        semantic_status: "SUPPORTED_STATICALLY"
+        assertions: [{ text: "The complete payout cap, including the bond, is bound to recipientHash rather than proposer identity.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_stable_keys: ["evidence:semantic-contracts:proposal-execute"] }]
+      - stable_key: "behavior:treasury-contracts:proposal:toggle-pause"
+        title: "Toggle shared status between PAUSED and UNKNOWN"
+        actor_trigger: "Treasury Owner invokes proposal.togglePause after controller authorization"
+        preconditions: ["proposal account update authorized"]
+        domain_inputs: []
+        normal_outcome: "PAUSED becomes UNKNOWN; every other status becomes PAUSED."
+        failure_outcomes: []
+        state_effects: ["writes status"]
+        ordering_replay: "Two toggles map UNKNOWN->PAUSED->UNKNOWN, APPROVED->PAUSED->UNKNOWN, and REJECTED->PAUSED->UNKNOWN."
+        anchors: [{ path: "packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts", symbol: "togglePause", start_line: 386, end_line: 397 }]
+        semantic_status: "SUPPORTED_STATICALLY"
+        assertions: [{ text: "The implementation does not preserve a pre-pause terminal result.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_stable_keys: ["evidence:semantic-contracts:proposal-toggle"] }]
+      - stable_key: "behavior:treasury-contracts:pause-controller:initialize"
+        title: "Initialize emergency controller"
+        actor_trigger: "controller initialization"
+        preconditions: ["static multisig participant list length is at least five"]
+        domain_inputs: ["host-static participant keys"]
+        normal_outcome: "Locks permissions, commits the full ordered participant list, and starts unpaused."
+        failure_outcomes: ["fewer than five throws before initialization completes"]
+        state_effects: ["writes multisigCommitment", "writes paused=false", "sets permissions"]
+        anchors: [{ path: "packages/sdk/src/provable/contracts/treasury-pause-controller/treasury-pause-controller.ts", symbol: "init", start_line: 29, end_line: 85 }]
+        semantic_status: "SUPPORTED_STATICALLY"
+        assertions:
+          - { text: "Initialization accepts more than five keys, while verification later requires exactly five.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_stable_keys: ["evidence:semantic-contracts:pause-init", "evidence:semantic-contracts:pause-verify"] }
+          - { text: "Tests cover zero and exactly five participants but not more than five, duplicates, or empty keys.", evidence_class: "TEST_EXPECTATION", confidence: "HIGH", evidence_stable_keys: ["evidence:semantic-contracts:test-pause-controller"] }
+      - stable_key: "behavior:treasury-contracts:pause-controller:verify-command"
+        title: "Bind five witnessed participant slots and require three signatures"
+        actor_trigger: "pause, unpause, toggle, or rotation command"
+        preconditions: ["host-static list has exactly five keys", "its ordered Poseidon commitment equals state"]
+        domain_inputs: ["five signature slots", "operation data hash"]
+        normal_outcome: "Verifies each signature against the corresponding key slot and requires at least three valid slots."
+        failure_outcomes: ["wrong host list length throws", "commitment mismatch rejects", "fewer than three valid slots rejects"]
+        anchors:
+          - { path: "packages/sdk/src/provable/contracts/treasury-pause-controller/treasury-pause-controller.ts", symbol: "verifySignatures", start_line: 97, end_line: 119 }
+          - { path: "packages/sdk/src/provable/contracts/treasury-pause-controller/multisig-signatures.ts", symbol: "MultisigSignatures.verify", start_line: 97, end_line: 145 }
+        semantic_status: "SUPPORTED_STATICALLY"
+        assertions:
+          - { text: "The threshold counts valid positions; it does not assert that participant keys are distinct or non-empty.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_stable_keys: ["evidence:semantic-contracts:multisig-verify"] }
+          - { text: "Unit tests cover threshold, ordering, wrong data, wrong participants, and wrong commitment with distinct fixture participants.", evidence_class: "TEST_EXPECTATION", confidence: "HIGH", evidence_stable_keys: ["evidence:semantic-contracts:test-multisig"] }
+      - stable_key: "behavior:treasury-contracts:pause-controller:consume-nonce"
+        title: "Require and increment controller nonce"
+        actor_trigger: "authorized state-changing emergency command"
+        preconditions: ["account nonce equals supplied UInt32"]
+        domain_inputs: ["nonce"]
+        normal_outcome: "Sets incrementNonce=true in the controller account update."
+        failure_outcomes: ["wrong nonce precondition rejects containing transaction"]
+        state_effects: ["controller account nonce increments at transaction application"]
+        anchors: [{ path: "packages/sdk/src/provable/contracts/treasury-pause-controller/treasury-pause-controller.ts", symbol: "requireAndIncrementNonce", start_line: 87, end_line: 95 }]
+        semantic_status: "SUPPORTED_STATICALLY"
+        assertions: [{ text: "Nonce replay protection is controller-account-local.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_stable_keys: ["evidence:semantic-contracts:pause-nonce"] }]
+      - stable_key: "behavior:treasury-contracts:pause-controller:pause-unpause"
+        title: "Set global treasury pause state"
+        actor_trigger: "any transaction invokes pauseTreasury or unpauseTreasury with multisig authorization"
+        preconditions: ["operation-specific signature data", "three-of-five valid slots", "current nonce"]
+        domain_inputs: ["signatures", "nonce"]
+        normal_outcome: "Consumes nonce and explicitly writes paused=true or paused=false."
+        failure_outcomes: ["commitment, threshold, message, or nonce failure rejects without state change"]
+        state_effects: ["writes paused", "increments nonce"]
+        ordering_replay: "Separate operation prefixes prevent pause signatures from authorizing unpause on the same included domain."
+        anchors: [{ path: "packages/sdk/src/provable/contracts/treasury-pause-controller/treasury-pause-controller.ts", symbol: "pauseTreasury/unpauseTreasury", start_line: 147, end_line: 193 }]
+        semantic_status: "SUPPORTED_STATICALLY"
+        assertions:
+          - { text: "The methods are idempotent with respect to desired Bool state but still consume a nonce on repeated same-state commands.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_stable_keys: ["evidence:semantic-contracts:pause-commands"] }
+          - { text: "Unit tests expect atomic rejection for wrong nonce or insufficient signatures and success for pause/unpause.", evidence_class: "TEST_EXPECTATION", confidence: "HIGH", evidence_stable_keys: ["evidence:semantic-contracts:test-pause-controller"] }
+      - stable_key: "behavior:treasury-contracts:pause-controller:authorize-proposal-toggle"
+        title: "Authorize proposal-specific toggle"
+        actor_trigger: "Treasury Owner cross-call"
+        preconditions: ["signature payload hashes proposal key and nonce", "three valid slots", "current nonce"]
+        domain_inputs: ["proposalPublicKey", "signatures", "nonce"]
+        normal_outcome: "Consumes nonce without changing controller pause state."
+        failure_outcomes: ["signature/commitment/nonce failure rejects"]
+        anchors: [{ path: "packages/sdk/src/provable/contracts/treasury-pause-controller/treasury-pause-controller.ts", symbol: "togglePauseProposal", start_line: 195, end_line: 216 }]
+        semantic_status: "SUPPORTED_STATICALLY"
+        assertions: [{ text: "Authorization binds proposal key and nonce but not the intended target pause state.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_stable_keys: ["evidence:semantic-contracts:pause-toggle", "evidence:semantic-contracts:multisig-messages"] }]
+      - stable_key: "behavior:treasury-contracts:pause-controller:rotate-commitment"
+        title: "Rotate multisig commitment"
+        actor_trigger: "authorized caller submits next commitment"
+        preconditions: ["signatures bind old commitment, new commitment, and nonce", "old commitment equals state", "current nonce"]
+        domain_inputs: ["new commitment Field", "nonce", "signatures"]
+        normal_outcome: "Consumes nonce and replaces the stored commitment."
+        failure_outcomes: ["signature, old commitment, or nonce mismatch rejects"]
+        state_effects: ["writes commitment", "increments nonce"]
+        integration_dependencies: ["operators must replace the host-static participant preimage with the exact next five keys"]
+        anchors: [{ path: "packages/sdk/src/provable/contracts/treasury-pause-controller/treasury-pause-controller.ts", symbol: "rotateMultisigKeys", start_line: 121, end_line: 145 }]
+        semantic_status: "SUPPORTED_STATICALLY"
+        assertions:
+          - { text: "The contract accepts an arbitrary Field as next commitment without proving a five-key, distinct, non-empty preimage.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_stable_keys: ["evidence:semantic-contracts:pause-rotate"] }
+          - { text: "Tests expect old keys to fail and new host-static keys to succeed after a valid fixture rotation.", evidence_class: "TEST_EXPECTATION", confidence: "HIGH", evidence_stable_keys: ["evidence:semantic-contracts:test-pause-controller"] }
+      - stable_key: "behavior:treasury-contracts:multisig:construct-domain-messages"
+        title: "Construct operation-prefixed signature data"
+        actor_trigger: "off-chain signer or on-chain verifier prepares command hash"
+        preconditions: []
+        domain_inputs: ["operation-specific prefix", "nonce", "proposal key or old/new commitments where applicable"]
+        normal_outcome: "Returns prefixed Poseidon data hash."
+        failure_outcomes: []
+        ordering_replay: "Operation and nonce are bound; controller, treasury, token, network, protocol version, and proposal target Bool are omitted."
+        anchors: [{ path: "packages/sdk/src/provable/contracts/treasury-pause-controller/multisig-signatures.ts", symbol: "MultisigSignature data methods", start_line: 22, end_line: 91 }]
+        semantic_status: "SUPPORTED_STATICALLY"
+        assertions:
+          - { text: "Four operation prefixes separate toggle, pause, unpause, and rotation messages.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_stable_keys: ["evidence:semantic-contracts:multisig-messages"] }
+          - { text: "Tests expect deterministic hashes, cross-operation separation, and nonce sensitivity but do not test deployment/network domains.", evidence_class: "TEST_EXPECTATION", confidence: "HIGH", evidence_stable_keys: ["evidence:semantic-contracts:test-multisig"] }
+      - stable_key: "behavior:treasury-contracts:events:emit-observability-records"
+        title: "Emit proposal lifecycle event schemas"
+        actor_trigger: "owner creates, dispatches vote, tallies, executes, or toggles a proposal"
+        domain_inputs: ["event-specific actor, proposal, amount, vote, result, snapshot, or paused fields"]
+        normal_outcome: "Emits one of five named Struct payloads."
+        failure_outcomes: ["event/account-update constraint failure rejects containing transaction"]
+        state_effects: ["public event log entry"]
+        anchors: [{ path: "packages/sdk/src/provable/events/treasury-proposal-events.ts", symbol: "treasury proposal event schemas", start_line: 4, end_line: 68 }]
+        semantic_status: "SUPPORTED_STATICALLY"
+        assertions:
+          - { text: "Creation reveals the recipient and records proposerPublicKey equal to transaction sender; execution records amount and sender but not recipient or cumulative remainder.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_stable_keys: ["evidence:semantic-contracts:event-schemas", "evidence:semantic-contracts:owner-create", "evidence:semantic-contracts:owner-execute"] }
+          - { text: "Event tests expect field encoding round trips only.", evidence_class: "TEST_EXPECTATION", confidence: "HIGH", evidence_stable_keys: ["evidence:semantic-contracts:test-events"] }
+    flows:
+      - stable_key: "flow:treasury-contracts:proposal-creation"
+        title: "Proposal creation and bond custody"
+        flow_scope: "CROSS_COMPONENT"
+        trigger: "signed sender submits proposal-period transaction"
+        actors: ["transaction sender/proposer label", "bond payer", "Treasury Owner", "proposal account"]
+        steps:
+          - { sequence: 1, operation: "Owner snapshots staking epoch hash and total currency.", behavior_stable_key: "behavior:treasury-contracts:owner:snapshot-staking-epoch" }
+          - { sequence: 2, operation: "Owner enforces proposal period and global unpaused state.", behavior_stable_key: "behavior:treasury-contracts:owner:derive-lifecycle-range" }
+          - { sequence: 3, operation: "Containing transaction debits a bond source while Owner credits amount/10.", behavior_stable_key: "behavior:treasury-contracts:owner:create-proposal" }
+          - { sequence: 4, operation: "Signed proposal token account receives committed proposal state, key, permissions, and URI.", behavior_stable_key: "behavior:treasury-contracts:owner:create-proposal" }
+          - { sequence: 5, operation: "Owner emits creation event with sender labeled as proposer.", behavior_stable_key: "behavior:treasury-contracts:events:emit-observability-records" }
+        terminal_outcomes: ["proposal UNKNOWN and bond held by Owner", "atomic rejection"]
+        invariant_stable_keys: ["invariant:treasury-contracts:proposal:snapshot-immutability", "invariant:treasury-contracts:assets:proposal-bond-balance"]
+        trust_boundaries: ["off-chain transaction construction selects bond payer", "deployment supplies proposal verification key"]
+        assertions: [{ text: "Source does not bind bond payer identity to sender/proposer identity.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_stable_keys: ["evidence:semantic-contracts:owner-create", "evidence:semantic-contracts:test-owner-create"] }]
+      - stable_key: "flow:treasury-contracts:vote-dispatch"
+        title: "Vote authorization and action dispatch"
+        flow_scope: "CROSS_COMPONENT"
+        trigger: "sender submits a vote for a voter key"
+        actors: ["transaction sender", "voter key", "Treasury Owner", "proposal reducer"]
+        steps:
+          - { sequence: 1, operation: "Owner binds sender signature, pause state, lifecycle, and vote enum.", behavior_stable_key: "behavior:treasury-contracts:owner:dispatch-vote" }
+          - { sequence: 2, operation: "Proposal requires non-PAUSED and dispatches VoteAction.", behavior_stable_key: "behavior:treasury-contracts:proposal:dispatch-and-lifecycle-read" }
+          - { sequence: 3, operation: "Owner emits event and requires the voter key signature through a signed account update.", behavior_stable_key: "behavior:treasury-contracts:owner:dispatch-vote" }
+        terminal_outcomes: ["queued vote action", "atomic rejection"]
+        invariant_stable_keys: ["invariant:treasury-contracts:voting:voter-signature", "invariant:treasury-contracts:lifecycle:business-method-gates"]
+        trust_boundaries: ["downstream ZkProgram assigns weight and nullifies duplicates"]
+        assertions: [{ text: "Dispatch authenticity and tally eligibility are separate boundaries.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_stable_keys: ["evidence:semantic-contracts:owner-vote", "evidence:semantic-contracts:proposal-vote"] }]
+      - stable_key: "flow:treasury-contracts:tally-finalization"
+        title: "Proof-backed tally finalization"
+        flow_scope: "CROSS_COMPONENT"
+        trigger: "sender submits both proof objects and owner account witness after cooldown"
+        actors: ["tally submitter", "Treasury Owner", "proposal", "vote reducer prover", "staking transformation prover"]
+        steps:
+          - { sequence: 1, operation: "Owner verifies both proofs and cooldown/global pause gates.", behavior_stable_key: "behavior:treasury-contracts:owner:tally" }
+          - { sequence: 2, operation: "Owner binds five action-history targets to current, found, non-initial, unique proposal action states.", behavior_stable_key: "behavior:treasury-contracts:owner:tally" }
+          - { sequence: 3, operation: "Proposal re-verifies proofs and binds roots, indices, exhaustion, action head, and Treasury Owner account snapshot.", behavior_stable_key: "behavior:treasury-contracts:proposal:tally" }
+          - { sequence: 4, operation: "Proposal derives dynamic thresholds and stores outcome; Owner emits weights and result.", behavior_stable_key: "behavior:treasury-contracts:proposal:calculate-approval-status" }
+        terminal_outcomes: ["APPROVED", "REJECTED when participation and nonzero directional votes exist but approval fails", "UNKNOWN after rejected transaction"]
+        invariant_stable_keys: ["invariant:treasury-contracts:tally:proof-snapshot-continuity", "invariant:treasury-contracts:tally:action-history-current-unique", "invariant:treasury-contracts:tally:single-finalization"]
+        trust_boundaries: ["configured verification keys", "proof program correctness", "Mina account witness representation"]
+        assertions: [{ text: "Low participation and zero directional-vote cases abort before persisting REJECTED.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_stable_keys: ["evidence:semantic-contracts:proposal-tally"] }]
+      - stable_key: "flow:treasury-contracts:partial-payout"
+        title: "Approved partial payout"
+        flow_scope: "CROSS_COMPONENT"
+        trigger: "signed sender requests payout in or after next lifecycle"
+        actors: ["arbitrary sender", "Treasury Owner", "proposal", "recipient"]
+        steps:
+          - { sequence: 1, operation: "Owner enforces global pause and next-lifecycle timing.", behavior_stable_key: "behavior:treasury-contracts:owner:execute-proposal" }
+          - { sequence: 2, operation: "Owner debits requested amount.", behavior_stable_key: "behavior:treasury-contracts:owner:execute-proposal" }
+          - { sequence: 3, operation: "Proposal enforces APPROVED, recipient hash, and remaining amount-plus-bond cap.", behavior_stable_key: "behavior:treasury-contracts:proposal:execute" }
+          - { sequence: 4, operation: "Proposal credits recipient and advances paidOutAmount; Owner emits execution event.", behavior_stable_key: "behavior:treasury-contracts:proposal:execute" }
+        terminal_outcomes: ["partial or full recipient payment", "zero-value no-progress event", "atomic rejection"]
+        invariant_stable_keys: ["invariant:treasury-contracts:assets:payout-recipient-and-cap", "invariant:treasury-contracts:assets:payout-conservation"]
+        trust_boundaries: ["transaction rollback semantics", "owner available balance"]
+        assertions: [{ text: "Caller controls timing and chunk size but cannot redirect the constrained recipient.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_stable_keys: ["evidence:semantic-contracts:owner-execute", "evidence:semantic-contracts:proposal-execute"] }]
+      - stable_key: "flow:treasury-contracts:global-emergency-command"
+        title: "Global pause or unpause command"
+        flow_scope: "LOCAL"
+        trigger: "caller submits operation-specific signatures and current nonce"
+        actors: ["multisig participants", "transaction submitter", "Pause Controller"]
+        steps:
+          - { sequence: 1, operation: "Controller witnesses exactly five host-static keys and binds their ordered commitment.", behavior_stable_key: "behavior:treasury-contracts:pause-controller:verify-command" }
+          - { sequence: 2, operation: "Three valid signature slots authorize operation-prefixed data.", behavior_stable_key: "behavior:treasury-contracts:multisig:construct-domain-messages" }
+          - { sequence: 3, operation: "Controller requires/increments nonce and explicitly writes paused Bool.", behavior_stable_key: "behavior:treasury-contracts:pause-controller:pause-unpause" }
+        terminal_outcomes: ["globally paused", "globally unpaused", "atomic rejection"]
+        invariant_stable_keys: ["invariant:treasury-contracts:multisig:current-commitment-threshold", "invariant:treasury-contracts:multisig:nonce-replay"]
+        trust_boundaries: ["host-static participant list", "signature and hash dependency semantics"]
+        assertions: [{ text: "The controller exposes no event for global commands.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_stable_keys: ["evidence:semantic-contracts:pause-commands"] }]
+      - stable_key: "flow:treasury-contracts:proposal-emergency-toggle"
+        title: "Proposal-specific pause toggle"
+        flow_scope: "CROSS_COMPONENT"
+        trigger: "caller submits proposal key, multisig authorization, nonce, and event Bool"
+        actors: ["multisig participants", "transaction sender", "Pause Controller", "Treasury Owner", "proposal", "indexers"]
+        steps:
+          - { sequence: 1, operation: "Controller validates proposal-key-plus-nonce toggle and consumes nonce.", behavior_stable_key: "behavior:treasury-contracts:pause-controller:authorize-proposal-toggle" }
+          - { sequence: 2, operation: "Proposal toggles shared status without desired-state input.", behavior_stable_key: "behavior:treasury-contracts:proposal:toggle-pause" }
+          - { sequence: 3, operation: "Owner emits the caller-provided paused Bool.", behavior_stable_key: "behavior:treasury-contracts:owner:toggle-proposal-pause" }
+        terminal_outcomes: ["proposal PAUSED", "proposal UNKNOWN", "event may disagree with state", "atomic rejection"]
+        invariant_stable_keys: ["invariant:treasury-contracts:events:event-reflects-state", "invariant:treasury-contracts:proposal:terminal-status-preservation"]
+        trust_boundaries: ["indexers may treat event as state truth"]
+        assertions: [{ text: "The authorization, state effect, and event carry different pause semantics.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_stable_keys: ["evidence:semantic-contracts:owner-toggle", "evidence:semantic-contracts:pause-toggle", "evidence:semantic-contracts:proposal-toggle"] }]
+      - stable_key: "flow:treasury-contracts:key-rotation"
+        title: "Emergency participant commitment rotation"
+        flow_scope: "LOCAL"
+        trigger: "current participant set authorizes a new Field commitment"
+        actors: ["current participants", "operator maintaining host-static keys", "Pause Controller"]
+        steps:
+          - { sequence: 1, operation: "Signatures bind current commitment, next commitment, and current nonce.", behavior_stable_key: "behavior:treasury-contracts:multisig:construct-domain-messages" }
+          - { sequence: 2, operation: "Controller verifies current participant preimage and consumes nonce.", behavior_stable_key: "behavior:treasury-contracts:pause-controller:verify-command" }
+          - { sequence: 3, operation: "Controller stores arbitrary next commitment; operator must update the static preimage out of band.", behavior_stable_key: "behavior:treasury-contracts:pause-controller:rotate-commitment" }
+        terminal_outcomes: ["new authority active when host preimage matches", "controller authorization unavailable when preimage is missing/malformed", "atomic rejection"]
+        invariant_stable_keys: ["invariant:treasury-contracts:multisig:rotation-preimage-availability"]
+        trust_boundaries: ["out-of-band operator configuration", "no rotation event"]
+        assertions: [{ text: "Rotation correctness composes on-chain commitment state with off-chain availability of its exact five-key preimage.", evidence_class: "INFERRED_BUSINESS_RULE", confidence: "HIGH", evidence_stable_keys: ["evidence:semantic-contracts:pause-rotate", "evidence:semantic-contracts:pause-verify"] }]
+    clauses:
+      - { stable_key: "clause:treasury-contracts:owner:lifecycle-finite-or-open", kind: "BRANCH", trigger: "noUpperBoundToSlot", outcomes: ["false -> fromSlot+duration", "true -> UInt32.MAXINT"], effects: ["finite or open-ended lifecycle gate"], parent_behavior_stable_key: "behavior:treasury-contracts:owner:derive-lifecycle-range", static_feasibility: "BOTH", anchors: [{ path: "packages/sdk/src/provable/contracts/treasury-owner.ts", symbol: "getLifecyclePeriodSlotRange", start_line: 153, end_line: 157 }], assertions: [{ text: "The bound is selected with Provable.if.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_stable_keys: ["evidence:semantic-contracts:owner-lifecycle"] }] }
+      - { stable_key: "clause:treasury-contracts:owner:create-period", kind: "ASSERTION", trigger: "createProposal", outcomes: ["PROPOSAL period passes", "transaction rejects"], effects: [], parent_behavior_stable_key: "behavior:treasury-contracts:owner:create-proposal", static_feasibility: "BOTH", anchors: [{ path: "packages/sdk/src/provable/contracts/treasury-owner.ts", symbol: "createProposal", start_line: 199, end_line: 203 }], assertions: [{ text: "Proposal creation is period- and pause-gated.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_stable_keys: ["evidence:semantic-contracts:owner-create"] }] }
+      - { stable_key: "clause:treasury-contracts:owner:create-bond", kind: "MUTATION", trigger: "createProposal", outcomes: ["owner balance + floor(amount/10)"], effects: ["bond custody"], parent_behavior_stable_key: "behavior:treasury-contracts:owner:create-proposal", static_feasibility: "FEASIBLE", anchors: [{ path: "packages/sdk/src/provable/contracts/treasury-owner.ts", symbol: "createProposal bond", start_line: 204, end_line: 209 }], assertions: [{ text: "The corresponding payer debit is outside the method.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_stable_keys: ["evidence:semantic-contracts:owner-create"] }] }
+      - { stable_key: "clause:treasury-contracts:owner:create-raw-status", kind: "DEFAULT", trigger: "proposal app-state initialization", outcomes: ["status field receives Field(0)"], effects: ["UNKNOWN by numeric convention"], parent_behavior_stable_key: "behavior:treasury-contracts:owner:create-proposal", static_feasibility: "FEASIBLE", anchors: [{ path: "packages/sdk/src/provable/contracts/treasury-owner.ts", symbol: "createProposal appState", start_line: 217, end_line: 245 }], assertions: [{ text: "The initializer uses Field(0) rather than ProposalStatus.UNKNOWN and relies on remaining state defaults for paidOutAmount.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_stable_keys: ["evidence:semantic-contracts:owner-create"] }] }
+      - { stable_key: "clause:treasury-contracts:owner:vote-enum", kind: "ASSERTION", trigger: "vote", outcomes: ["YAY/NAY/ABSTRAIN/DUMMY accepted", "other Field rejected"], effects: [], parent_behavior_stable_key: "behavior:treasury-contracts:owner:dispatch-vote", static_feasibility: "BOTH", anchors: [{ path: "packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts", symbol: "Vote.assertValid", start_line: 48, end_line: 67 }], assertions: [{ text: "DUMMY is part of the externally accepted enum.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_stable_keys: ["evidence:semantic-contracts:vote-enum"] }] }
+      - { stable_key: "clause:treasury-contracts:owner:voter-signature", kind: "AUTHORIZATION", trigger: "vote", outcomes: ["voter signed update exists", "transaction rejects"], effects: ["may create voter account"], parent_behavior_stable_key: "behavior:treasury-contracts:owner:dispatch-vote", static_feasibility: "BOTH", anchors: [{ path: "packages/sdk/src/provable/contracts/treasury-owner.ts", symbol: "vote", start_line: 302, end_line: 317 }], assertions: [{ text: "The voter public key, rather than only transaction sender, must sign.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_stable_keys: ["evidence:semantic-contracts:owner-vote"] }] }
+      - { stable_key: "clause:treasury-contracts:owner:action-history-found", kind: "ASSERTION", trigger: "each of five tally action states", outcomes: ["found=true", "reject"], effects: [], parent_behavior_stable_key: "behavior:treasury-contracts:owner:tally", static_feasibility: "BOTH", anchors: [{ path: "packages/sdk/src/provable/contracts/treasury-owner.ts", symbol: "tallyVotes action history", start_line: 354, end_line: 379 }], assertions: [{ text: "Each target is also constrained as the current proposal actionState and non-initial.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_stable_keys: ["evidence:semantic-contracts:owner-tally"] }] }
+      - { stable_key: "clause:treasury-contracts:owner:action-history-unique", kind: "LOOP_PARTITION", trigger: "pairwise action-state comparisons", outcomes: ["all ten pairs differ", "reject on duplicate"], effects: [], parent_behavior_stable_key: "behavior:treasury-contracts:owner:tally", static_feasibility: "BOTH", anchors: [{ path: "packages/sdk/src/provable/contracts/treasury-owner.ts", symbol: "tallyVotes uniqueness loop", start_line: 380, end_line: 389 }], assertions: [{ text: "Exactly five target states are pairwise constrained unique.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_stable_keys: ["evidence:semantic-contracts:owner-tally"] }] }
+      - { stable_key: "clause:treasury-contracts:owner:execute-next-lifecycle", kind: "ORDERING", trigger: "executeProposal", outcomes: ["slot >= start of proposal lifecycle+1", "reject"], effects: [], parent_behavior_stable_key: "behavior:treasury-contracts:owner:execute-proposal", static_feasibility: "BOTH", anchors: [{ path: "packages/sdk/src/provable/contracts/treasury-owner.ts", symbol: "executeProposal lifecycle", start_line: 433, end_line: 440 }], assertions: [{ text: "Execution opens at the next lifecycle proposal period and has no upper bound.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_stable_keys: ["evidence:semantic-contracts:owner-execute"] }] }
+      - { stable_key: "clause:treasury-contracts:owner:signature-mode", kind: "CONFIGURATION", trigger: "executeProposal after proposal.execute", outcomes: ["permissionType signature -> require proposal signature", "permissionType proof -> no explicit signature"], effects: ["authorization mode branch"], parent_behavior_stable_key: "behavior:treasury-contracts:owner:execute-proposal", static_feasibility: "BOTH_STATIC_CONFIGS", anchors: [{ path: "packages/sdk/src/provable/contracts/treasury-owner.ts", symbol: "executeProposal permissionType", start_line: 446, end_line: 450 }], assertions: [{ text: "permissionType defaults to proof and is mutable class-static configuration.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_stable_keys: ["evidence:semantic-contracts:owner-execute", "evidence:semantic-contracts:proposal-config"] }] }
+      - { stable_key: "clause:treasury-contracts:owner:external-token-use", kind: "AUTHORIZATION", trigger: "approveBase iteration", outcomes: ["usesToken=false accepted", "usesToken=true rejected"], effects: ["derived-token update restriction"], parent_behavior_stable_key: "behavior:treasury-contracts:owner:global-pause-and-token-boundary", static_feasibility: "BOTH", anchors: [{ path: "packages/sdk/src/provable/contracts/treasury-owner.ts", symbol: "approveBase", start_line: 505, end_line: 511 }], assertions: [{ text: "The restriction is applied to every update in the forest.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_stable_keys: ["evidence:semantic-contracts:owner-pause-token"] }] }
+      - { stable_key: "clause:treasury-contracts:proposal:ratio-cap", kind: "BRANCH", trigger: "proposal/balance ratio", outcomes: ["ratio below 10000 retained", "ratio at/above 10000 capped"], effects: ["threshold curves capped at maxima"], parent_behavior_stable_key: "behavior:treasury-contracts:proposal:calculate-acceptance-criteria", static_feasibility: "BOTH", anchors: [{ path: "packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts", symbol: "calculateAcceptanceCriteria ratio", start_line: 111, end_line: 115 }], assertions: [{ text: "Proposal amounts above balance share the 100% threshold values.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_stable_keys: ["evidence:semantic-contracts:proposal-thresholds"] }] }
+      - { stable_key: "clause:treasury-contracts:proposal:zero-directional-votes", kind: "BRANCH", trigger: "yay+nay equals zero", outcomes: ["safe denominator 1, hasApprovalVotes=false", "use yay+nay denominator"], effects: ["avoid local division by zero"], parent_behavior_stable_key: "behavior:treasury-contracts:proposal:calculate-approval-status", static_feasibility: "BOTH", anchors: [{ path: "packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts", symbol: "calculateApprovalStatus", start_line: 180, end_line: 199 }], assertions: [{ text: "Abstain-only participation cannot approve and later causes tally rejection through hasApprovalVotes assertion.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_stable_keys: ["evidence:semantic-contracts:proposal-approval", "evidence:semantic-contracts:proposal-tally"] }] }
+      - { stable_key: "clause:treasury-contracts:proposal:tally-status-unknown", kind: "ASSERTION", trigger: "tally", outcomes: ["UNKNOWN continues", "other status rejects"], effects: ["single tally under ordinary state progression"], parent_behavior_stable_key: "behavior:treasury-contracts:proposal:tally", static_feasibility: "BOTH", anchors: [{ path: "packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts", symbol: "tallyVotes status", start_line: 222, end_line: 225 }], assertions: [{ text: "PAUSED, APPROVED, and REJECTED cannot tally directly.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_stable_keys: ["evidence:semantic-contracts:proposal-tally"] }] }
+      - { stable_key: "clause:treasury-contracts:proposal:tally-proof-bindings", kind: "PROOF", trigger: "tally", outcomes: ["all roots/index/exhaustion/action/account bindings pass", "reject"], effects: ["proof outputs eligible for threshold computation"], parent_behavior_stable_key: "behavior:treasury-contracts:proposal:tally", static_feasibility: "BOTH", anchors: [{ path: "packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts", symbol: "tallyVotes proof bindings", start_line: 227, end_line: 320 }], assertions: [{ text: "Initial action and nullifier roots, transformed voting root, index zero, empty initial root, staking snapshot, exhaustion, action history head, owner key, default token, and owner witness root are constrained.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_stable_keys: ["evidence:semantic-contracts:proposal-tally"] }] }
+      - { stable_key: "clause:treasury-contracts:proposal:tally-participation", kind: "ASSERTION", trigger: "computed approval status", outcomes: ["participation and directional votes present -> store result", "otherwise reject before status write"], effects: ["terminal status or retained UNKNOWN after atomic failure"], parent_behavior_stable_key: "behavior:treasury-contracts:proposal:tally", static_feasibility: "BOTH", anchors: [{ path: "packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts", symbol: "tallyVotes result", start_line: 331, end_line: 350 }], assertions: [{ text: "Failed quorum is not persisted as REJECTED by current tally.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_stable_keys: ["evidence:semantic-contracts:proposal-tally"] }] }
+      - { stable_key: "clause:treasury-contracts:proposal:payout-status", kind: "ASSERTION", trigger: "execute", outcomes: ["APPROVED continues", "reject"], effects: [], parent_behavior_stable_key: "behavior:treasury-contracts:proposal:execute", static_feasibility: "BOTH", anchors: [{ path: "packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts", symbol: "execute status", start_line: 353, end_line: 366 }], assertions: [{ text: "Execution also rejects PAUSED through requireNotPaused before APPROVED check.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_stable_keys: ["evidence:semantic-contracts:proposal-execute"] }] }
+      - { stable_key: "clause:treasury-contracts:proposal:payout-cap", kind: "ASSERTION", trigger: "execute", outcomes: ["amountToPayOut <= remaining", "reject"], effects: ["bounded cumulative payout"], parent_behavior_stable_key: "behavior:treasury-contracts:proposal:execute", static_feasibility: "BOTH", anchors: [{ path: "packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts", symbol: "execute cap", start_line: 359, end_line: 371 }], assertions: [{ text: "Zero satisfies the cap, including when remaining is zero.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_stable_keys: ["evidence:semantic-contracts:proposal-execute"] }] }
+      - { stable_key: "clause:treasury-contracts:proposal:recipient-binding", kind: "ASSERTION", trigger: "execute", outcomes: ["Poseidon(recipient)==recipientHash", "reject"], effects: ["recipient-only credit"], parent_behavior_stable_key: "behavior:treasury-contracts:proposal:execute", static_feasibility: "BOTH", anchors: [{ path: "packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts", symbol: "execute recipient", start_line: 373, end_line: 383 }], assertions: [{ text: "The caller is not compared with recipient.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_stable_keys: ["evidence:semantic-contracts:proposal-execute"] }] }
+      - { stable_key: "clause:treasury-contracts:proposal:pause-transition", kind: "BRANCH", trigger: "togglePause", outcomes: ["PAUSED -> UNKNOWN", "UNKNOWN/APPROVED/REJECTED/other -> PAUSED"], effects: ["status overwrite"], parent_behavior_stable_key: "behavior:treasury-contracts:proposal:toggle-pause", static_feasibility: "BOTH", anchors: [{ path: "packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts", symbol: "togglePause", start_line: 386, end_line: 397 }], assertions: [{ text: "The transition is not idempotent and cannot restore APPROVED or REJECTED.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_stable_keys: ["evidence:semantic-contracts:proposal-toggle"] }] }
+      - { stable_key: "clause:treasury-contracts:pause:init-count", kind: "THROW", trigger: "init participant count", outcomes: ["length <5 throws", "length >=5 commits"], effects: ["deployment admissibility"], parent_behavior_stable_key: "behavior:treasury-contracts:pause-controller:initialize", static_feasibility: "BOTH", anchors: [{ path: "packages/sdk/src/provable/contracts/treasury-pause-controller/treasury-pause-controller.ts", symbol: "init", start_line: 64, end_line: 75 }], assertions: [{ text: "The accepted set is broader than proof-time exact-five configuration.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_stable_keys: ["evidence:semantic-contracts:pause-init"] }] }
+      - { stable_key: "clause:treasury-contracts:pause:verify-count", kind: "THROW", trigger: "witness participant callback", outcomes: ["length exactly 5 returns list", "other length throws"], effects: ["proof construction availability"], parent_behavior_stable_key: "behavior:treasury-contracts:pause-controller:verify-command", static_feasibility: "BOTH", anchors: [{ path: "packages/sdk/src/provable/contracts/treasury-pause-controller/treasury-pause-controller.ts", symbol: "verifySignatures witness", start_line: 103, end_line: 118 }], assertions: [{ text: "Participant values are witnessed, then constrained by commitment verification.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_stable_keys: ["evidence:semantic-contracts:pause-verify"] }] }
+      - { stable_key: "clause:treasury-contracts:multisig:commitment", kind: "ASSERTION", trigger: "signature verification", outcomes: ["ordered participant hash equals state commitment", "reject"], effects: ["selects current signer set"], parent_behavior_stable_key: "behavior:treasury-contracts:pause-controller:verify-command", static_feasibility: "BOTH", anchors: [{ path: "packages/sdk/src/provable/contracts/treasury-pause-controller/multisig-signatures.ts", symbol: "MultisigSignatures.verify", start_line: 118, end_line: 129 }], assertions: [{ text: "Commitment is order-sensitive.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_stable_keys: ["evidence:semantic-contracts:multisig-verify"] }] }
+      - { stable_key: "clause:treasury-contracts:multisig:threshold", kind: "ASSERTION", trigger: "per-slot signature verification", outcomes: ["valid count >=3", "reject"], effects: ["authorizes command"], parent_behavior_stable_key: "behavior:treasury-contracts:pause-controller:verify-command", static_feasibility: "BOTH", anchors: [{ path: "packages/sdk/src/provable/contracts/treasury-pause-controller/multisig-signatures.ts", symbol: "MultisigSignatures.verify threshold", start_line: 130, end_line: 145 }], assertions: [{ text: "Threshold is over slots, not constrained-distinct identities.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_stable_keys: ["evidence:semantic-contracts:multisig-verify"] }] }
+      - { stable_key: "clause:treasury-contracts:pause:nonce", kind: "REPLAY", trigger: "authorized command", outcomes: ["supplied nonce equals account nonce and increments", "reject"], effects: ["same-controller replay prevention"], parent_behavior_stable_key: "behavior:treasury-contracts:pause-controller:consume-nonce", static_feasibility: "BOTH", anchors: [{ path: "packages/sdk/src/provable/contracts/treasury-pause-controller/treasury-pause-controller.ts", symbol: "requireAndIncrementNonce", start_line: 92, end_line: 95 }], assertions: [{ text: "Nonce does not distinguish another controller with the same nonce.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_stable_keys: ["evidence:semantic-contracts:pause-nonce", "evidence:semantic-contracts:multisig-messages"] }] }
+      - { stable_key: "clause:treasury-contracts:events:pause-value", kind: "EVENT", trigger: "proposal toggle", outcomes: ["emit caller paused Bool"], effects: ["indexer-visible state claim"], parent_behavior_stable_key: "behavior:treasury-contracts:owner:toggle-proposal-pause", static_feasibility: "FEASIBLE", anchors: [{ path: "packages/sdk/src/provable/contracts/treasury-owner.ts", symbol: "togglePauseProposal event", start_line: 486, end_line: 494 }], assertions: [{ text: "The emitted Bool is not derived from proposal pre/post status.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_stable_keys: ["evidence:semantic-contracts:owner-toggle"] }] }
+    invariants:
+      - { stable_key: "invariant:treasury-contracts:lifecycle:business-method-gates", category: "LIFECYCLE", statement: "Creation occurs in PROPOSAL, votes in VOTING, tally at/after COOLDOWN, and execution at/after next lifecycle PROPOSAL.", scope_stable_keys: ["behavior:treasury-contracts:owner:create-proposal", "behavior:treasury-contracts:owner:dispatch-vote", "behavior:treasury-contracts:owner:tally", "behavior:treasury-contracts:owner:execute-proposal"], enforcement_sites: ["treasury-owner.ts:201", "treasury-owner.ts:290", "treasury-owner.ts:346", "treasury-owner.ts:436"], violation_paths: ["Mina inclusion-slot interpretation or boundary semantics differ from assumed requireBetween behavior"], semantic_status: "EXPLICIT", assertions: [{ text: "Each principal method has the stated source-visible gate.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_stable_keys: ["evidence:semantic-contracts:owner-lifecycle"] }] }
+      - { stable_key: "invariant:treasury-contracts:pause:global-business-guard", category: "STATE", statement: "Create, vote, tally, and execute require controller paused=false.", scope_stable_keys: ["behavior:treasury-contracts:owner:global-pause-and-token-boundary"], enforcement_sites: ["treasury-owner.ts:202", "treasury-owner.ts:283", "treasury-owner.ts:329", "treasury-owner.ts:427"], violation_paths: ["proposal toggle remains available by design while global treasury is paused"], semantic_status: "EXPLICIT", assertions: [{ text: "The four business methods call requireNotPaused.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_stable_keys: ["evidence:semantic-contracts:owner-pause-token"] }] }
+      - { stable_key: "invariant:treasury-contracts:proposal:snapshot-immutability", category: "STATE", statement: "A proposal tally uses the staking root and total currency captured at proposal creation.", scope_stable_keys: ["behavior:treasury-contracts:owner:create-proposal", "behavior:treasury-contracts:proposal:tally"], enforcement_sites: ["treasury-owner.ts:217-245", "treasury-proposal.ts:235-329"], violation_paths: ["proposal account reset/reuse if permissions permit", "snapshot epoch selection differs from intended eligibility epoch"], semantic_status: "PARTIAL", assertions: [{ text: "Stored snapshot fields are required equal during tally; deployed permission/reuse semantics remain external.", evidence_class: "IMPLEMENTED_STATIC", confidence: "MEDIUM", evidence_stable_keys: ["evidence:semantic-contracts:owner-create", "evidence:semantic-contracts:proposal-tally"] }] }
+      - { stable_key: "invariant:treasury-contracts:assets:proposal-bond-balance", category: "CONSERVATION", statement: "Proposal creation credits exactly floor(amount/10) to Treasury Owner and the containing transaction must provide a balancing debit.", scope_stable_keys: ["flow:treasury-contracts:proposal-creation"], enforcement_sites: ["treasury-owner.ts:204-209"], violation_paths: ["bond payer identity is not bound to proposer/sender"], semantic_status: "PARTIAL", assertions: [{ text: "The method constrains the credit amount but not payer identity.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_stable_keys: ["evidence:semantic-contracts:owner-create", "evidence:semantic-contracts:test-owner-create"] }] }
+      - { stable_key: "invariant:treasury-contracts:voting:voter-signature", category: "AUTHORIZATION", statement: "Every dispatched vote requires a signature from the supplied voter public key.", scope_stable_keys: ["behavior:treasury-contracts:owner:dispatch-vote"], enforcement_sites: ["treasury-owner.ts:315"], violation_paths: ["o1js signed account-update semantics outside scope"], semantic_status: "EXPLICIT", assertions: [{ text: "AccountUpdate.createSigned(publicKey) creates the source-visible requirement.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_stable_keys: ["evidence:semantic-contracts:owner-vote"] }] }
+      - { stable_key: "invariant:treasury-contracts:tally:action-history-current-unique", category: "UNIQUENESS_REPLAY", statement: "All five declared target action states are found, non-initial, pairwise unique, and constrained to proposal account action state preconditions.", scope_stable_keys: ["behavior:treasury-contracts:owner:tally"], enforcement_sites: ["treasury-owner.ts:354-392"], violation_paths: ["protocol semantics of multiple actionState precondition account updates remain external"], semantic_status: "EXPLICIT", assertions: [{ text: "The owner contains all four classes of checks.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_stable_keys: ["evidence:semantic-contracts:owner-tally"] }] }
+      - { stable_key: "invariant:treasury-contracts:tally:proof-snapshot-continuity", category: "PROOF_CONTINUITY", statement: "Tally proof roots, start indices, exhaustion, action head, and Treasury Owner account witness are bound to proposal snapshot and configured empty roots.", scope_stable_keys: ["behavior:treasury-contracts:proposal:tally"], enforcement_sites: ["treasury-proposal.ts:227-320"], violation_paths: ["verification-key/configuration error", "circuit or dependency underconstraint", "deployed state mismatch"], semantic_status: "EXPLICIT", assertions: [{ text: "All listed source-visible equality/assertion checks are present.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_stable_keys: ["evidence:semantic-contracts:proposal-tally"] }] }
+      - { stable_key: "invariant:treasury-contracts:tally:single-finalization", category: "STATE", statement: "A proposal may be tallied only while status is UNKNOWN.", scope_stable_keys: ["behavior:treasury-contracts:proposal:tally"], enforcement_sites: ["treasury-proposal.ts:223-225"], violation_paths: ["APPROVED or REJECTED can be toggled to PAUSED and then UNKNOWN"], semantic_status: "CONFLICTING", assertions: [{ text: "The local tally guard is explicit, but the composed pause transition can reset terminal state.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_stable_keys: ["evidence:semantic-contracts:proposal-tally", "evidence:semantic-contracts:proposal-toggle"] }] }
+      - { stable_key: "invariant:treasury-contracts:proposal:terminal-status-preservation", category: "STATE", statement: "Emergency pause should not erase APPROVED or REJECTED unless governance reset is explicit intent.", scope_stable_keys: ["flow:treasury-contracts:proposal-emergency-toggle"], enforcement_sites: [], violation_paths: ["APPROVED->PAUSED->UNKNOWN", "REJECTED->PAUSED->UNKNOWN"], semantic_status: "CONFLICTING", assertions: [{ text: "Current implementation violates the inferred status-preservation property; authoritative reset intent is absent.", evidence_class: "INFERRED_BUSINESS_RULE", confidence: "HIGH", evidence_stable_keys: ["evidence:semantic-contracts:proposal-toggle"] }] }
+      - { stable_key: "invariant:treasury-contracts:assets:payout-recipient-and-cap", category: "CONSERVATION", statement: "Cumulative recipient credit cannot exceed amount + floor(amount/10), and every credit goes to the committed recipient.", scope_stable_keys: ["flow:treasury-contracts:partial-payout"], enforcement_sites: ["treasury-proposal.ts:362-383"], violation_paths: ["dependency arithmetic or transaction-composition failure"], semantic_status: "EXPLICIT", assertions: [{ text: "Remaining cap and recipient hash are constrained before credit and cumulative update.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_stable_keys: ["evidence:semantic-contracts:proposal-execute"] }] }
+      - { stable_key: "invariant:treasury-contracts:assets:payout-conservation", category: "CONSERVATION", statement: "The owner debit and recipient credit for a payout are equal within one atomic transaction.", scope_stable_keys: ["flow:treasury-contracts:partial-payout"], enforcement_sites: ["treasury-owner.ts:444-446", "treasury-proposal.ts:377-383"], violation_paths: ["child update authorization or rollback semantics differ from assumed o1js composition"], semantic_status: "CANDIDATE", assertions: [{ text: "Both source sites use amountToPayOut; atomic application is a protocol assumption.", evidence_class: "IMPLEMENTED_STATIC", confidence: "MEDIUM", evidence_stable_keys: ["evidence:semantic-contracts:owner-execute", "evidence:semantic-contracts:proposal-execute"] }] }
+      - { stable_key: "invariant:treasury-contracts:events:event-reflects-state", category: "IO_CONSISTENCY", statement: "Lifecycle events should report values constrained by the state/effect they describe.", scope_stable_keys: ["behavior:treasury-contracts:events:emit-observability-records"], enforcement_sites: [], violation_paths: ["proposal pause event accepts unconstrained caller paused Bool", "proposer label may differ from external bond payer"], semantic_status: "CONFLICTING", assertions: [{ text: "At least the proposal pause event can disagree with the committed post-state.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_stable_keys: ["evidence:semantic-contracts:owner-toggle"] }] }
+      - { stable_key: "invariant:treasury-contracts:multisig:current-commitment-threshold", category: "AUTHORIZATION", statement: "Emergency commands require at least three valid signature slots under the ordered participant list committed in controller state.", scope_stable_keys: ["behavior:treasury-contracts:pause-controller:verify-command"], enforcement_sites: ["multisig-signatures.ts:123-145"], violation_paths: ["repeated participant identities reduce independent signer count", "host list unavailable or mismatched"], semantic_status: "PARTIAL", assertions: [{ text: "Commitment and threshold are explicit, while participant distinctness is absent.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_stable_keys: ["evidence:semantic-contracts:multisig-verify"] }] }
+      - { stable_key: "invariant:treasury-contracts:multisig:nonce-replay", category: "UNIQUENESS_REPLAY", statement: "An accepted emergency command cannot be replayed against the same controller nonce.", scope_stable_keys: ["behavior:treasury-contracts:pause-controller:consume-nonce"], enforcement_sites: ["treasury-pause-controller.ts:92-95"], violation_paths: ["cross-controller/network domain with matching keys and nonce"], semantic_status: "PARTIAL", assertions: [{ text: "Same-controller replay is source-bound; deployment/network replay domains are omitted from signed data.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_stable_keys: ["evidence:semantic-contracts:pause-nonce", "evidence:semantic-contracts:multisig-messages"] }] }
+      - { stable_key: "invariant:treasury-contracts:multisig:rotation-preimage-availability", category: "DEPENDENCY", statement: "Every stored multisig commitment must have an available exact five-key host-static preimage controlled by the intended distinct participants.", scope_stable_keys: ["flow:treasury-contracts:key-rotation"], enforcement_sites: ["treasury-pause-controller.ts:103-118"], violation_paths: ["arbitrary/mistyped commitment", "operator does not update static participant list", "duplicate/empty participant set"], semantic_status: "CANDIDATE", assertions: [{ text: "The code relies on this property but does not validate it during rotation.", evidence_class: "INFERRED_BUSINESS_RULE", confidence: "HIGH", evidence_stable_keys: ["evidence:semantic-contracts:pause-rotate", "evidence:semantic-contracts:pause-verify"] }] }
+      - { stable_key: "invariant:treasury-contracts:configuration:verification-keys-and-empty-roots", category: "DEPENDENCY", statement: "Proposal and tally use verification keys and empty roots corresponding to the intended program versions and ledger formats.", scope_stable_keys: ["behavior:treasury-contracts:owner:create-proposal", "behavior:treasury-contracts:proposal:tally"], enforcement_sites: ["treasury-owner.ts:247-249", "treasury-proposal.ts:227-272"], violation_paths: ["unset/stale/wrong static configuration", "audit revision and deployed key drift"], semantic_status: "UNRESOLVED", assertions: [{ text: "Values are mutable class statics and deployment/key manifests are outside scope.", evidence_class: "UNRESOLVED", confidence: "HIGH", evidence_stable_keys: ["evidence:semantic-contracts:proposal-config"], limitation: "No deployment manifest or proof execution was supplied." }] }
+    inputs_outputs:
+      - { stable_key: "input-output:treasury-contracts:owner:proposal", title: "Proposal creation request", producer: "transaction caller", consumer: "TreasuryOwnerSmartContract.createProposal", direction: "INPUT", type_schema: "proposalPublicKey: PublicKey; Proposal{amount:UInt64,recipient:PublicKey,zkAppUri}; lifecycleId:UInt32", validation: ["lifecycle period", "global pause", "proposal account signature"], defaulting: [], encoding: "o1js fields; recipient stored as Poseidon hash; URI stored and hash emitted", trust: "untrusted transaction input", sensitivity: "public", cardinality_range: "one proposal per call; amount UInt64", failure_behavior: "transaction reject", anchors: [{ path: "packages/sdk/src/provable/contracts/treasury-owner.ts", symbol: "createProposal", start_line: 191, end_line: 272 }], assertions: [{ text: "No source-visible minimum amount or proposer/bond-payer identity equality check exists.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_stable_keys: ["evidence:semantic-contracts:owner-create"] }] }
+      - { stable_key: "input-output:treasury-contracts:owner:vote", title: "Vote dispatch request", producer: "transaction caller and voter signer", consumer: "TreasuryOwnerSmartContract.vote", direction: "INPUT", type_schema: "proposalPublicKey:PublicKey; publicKey:PublicKey; vote:Field enum", validation: ["Vote.assertValid", "voter signature", "voting period", "global unpaused"], defaulting: [], encoding: "VoteAction fields", trust: "untrusted input constrained at dispatch", sensitivity: "public", cardinality_range: "one action per call", failure_behavior: "transaction reject", anchors: [{ path: "packages/sdk/src/provable/contracts/treasury-owner.ts", symbol: "vote", start_line: 274, end_line: 318 }], assertions: [{ text: "Eligibility and weight are deferred to proof processing.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_stable_keys: ["evidence:semantic-contracts:owner-vote"] }] }
+      - { stable_key: "input-output:treasury-contracts:owner:tally-proofs", title: "Tally proof package", producer: "off-chain proof services", consumer: "Owner and Proposal tally methods", direction: "INPUT", type_schema: "SideLoadedVoteReducerProof; SideLoadedStakingLedgerToVotingLedgerProof; Account; PrefixedMerkleWitness36", validation: ["verification keys", "proof public bindings", "owner key/default token/witness", "action-state history"], defaulting: [], encoding: "o1js proof and provable structs", trust: "untrusted prover input", sensitivity: "public proof plus witnessed account", cardinality_range: "two proofs and one account witness per tally", failure_behavior: "constraint failure/reject", anchors: [{ path: "packages/sdk/src/provable/contracts/treasury-owner.ts", symbol: "tallyVotes", start_line: 320, end_line: 419 }, { path: "packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts", symbol: "tallyVotes", start_line: 213, end_line: 351 }], assertions: [{ text: "Both contract layers invoke proof verification.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_stable_keys: ["evidence:semantic-contracts:owner-tally", "evidence:semantic-contracts:proposal-tally"] }] }
+      - { stable_key: "input-output:treasury-contracts:owner:payout", title: "Payout request and effects", producer: "signed transaction sender", consumer: "Owner and Proposal execute methods", direction: "BIDIRECTIONAL", type_schema: "recipient:PublicKey; amountToPayOut:UInt64 -> owner debit, recipient credit, paidOutAmount", validation: ["timing", "pause", "APPROVED", "recipient hash", "remaining cap"], defaulting: [], encoding: "UInt64/PublicKey/account updates", trust: "untrusted caller amount and recipient constrained against state", sensitivity: "public", cardinality_range: "zero through remaining amount", failure_behavior: "atomic transaction reject", anchors: [{ path: "packages/sdk/src/provable/contracts/treasury-owner.ts", symbol: "executeProposal", start_line: 421, end_line: 462 }, { path: "packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts", symbol: "execute", start_line: 353, end_line: 384 }], assertions: [{ text: "Zero is within the accepted static range.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_stable_keys: ["evidence:semantic-contracts:proposal-execute"] }] }
+      - { stable_key: "input-output:treasury-contracts:pause:command", title: "Emergency command authorization", producer: "multisig participants and transaction submitter", consumer: "Pause Controller", direction: "INPUT", type_schema: "MultisigSignatures[5]; nonce:UInt32; operation parameters", validation: ["ordered participant commitment", "per-slot signature", "count>=3", "account nonce"], defaulting: ["empty signatures may occupy invalid slots"], encoding: "prefixed Poseidon hash signed as one Field", trust: "host-static signer list plus untrusted submitted signatures", sensitivity: "public", cardinality_range: "five slots, threshold three", failure_behavior: "throw during witness construction or constraint rejection", anchors: [{ path: "packages/sdk/src/provable/contracts/treasury-pause-controller/multisig-signatures.ts", symbol: "MultisigSignatures", start_line: 97, end_line: 145 }, { path: "packages/sdk/src/provable/contracts/treasury-pause-controller/treasury-pause-controller.ts", symbol: "verifySignatures", start_line: 97, end_line: 119 }], assertions: [{ text: "Signer-list availability is an off-chain input even though its commitment is on-chain state.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_stable_keys: ["evidence:semantic-contracts:pause-verify", "evidence:semantic-contracts:multisig-verify"] }] }
+      - { stable_key: "input-output:treasury-contracts:events:proposal-created", title: "proposalCreated event", producer: "Treasury Owner", consumer: "indexers/users", direction: "OUTPUT", type_schema: "proposalPublicKey,lifecycleId,amount,recipient,zkAppUriHash,snapshot hash/total,proposerPublicKey,senderPublicKey", validation: ["Struct field encoding"], defaulting: [], encoding: "o1js event Struct", trust: "on-chain event; semantic field truth depends on producer constraints", sensitivity: "public", cardinality_range: "one per successful create call", failure_behavior: "transaction reject if event construction fails", anchors: [{ path: "packages/sdk/src/provable/events/treasury-proposal-events.ts", symbol: "ProposalCreatedEvent", start_line: 12, end_line: 27 }], assertions: [{ text: "proposerPublicKey and senderPublicKey are populated identically; bond payer is not present.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_stable_keys: ["evidence:semantic-contracts:event-schemas", "evidence:semantic-contracts:owner-create"] }] }
+      - { stable_key: "input-output:treasury-contracts:events:proposal-vote", title: "proposalVoteDispatched event", producer: "Treasury Owner", consumer: "indexers/users", direction: "OUTPUT", type_schema: "proposalPublicKey,voterPublicKey,vote,senderPublicKey", validation: ["Vote checked before emit"], defaulting: [], encoding: "o1js event Struct", trust: "on-chain event", sensitivity: "public", cardinality_range: "one per successful vote call", failure_behavior: "transaction reject", anchors: [{ path: "packages/sdk/src/provable/events/treasury-proposal-events.ts", symbol: "ProposalVoteDispatchedEvent", start_line: 29, end_line: 37 }], assertions: [{ text: "The event distinguishes transaction sender from voter.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_stable_keys: ["evidence:semantic-contracts:event-schemas", "evidence:semantic-contracts:owner-vote"] }] }
+      - { stable_key: "input-output:treasury-contracts:events:proposal-tally", title: "proposalVotesTallied event", producer: "Treasury Owner", consumer: "indexers/users", direction: "OUTPUT", type_schema: "proposalPublicKey,lifecycleId,yay,nay,abstain,voteResult,senderPublicKey", validation: ["proof-derived weights/result"], defaulting: [], encoding: "o1js event Struct", trust: "on-chain event", sensitivity: "public", cardinality_range: "one per successful tally", failure_behavior: "no event on rejected tally transaction", anchors: [{ path: "packages/sdk/src/provable/events/treasury-proposal-events.ts", symbol: "ProposalVotesTalliedEvent", start_line: 39, end_line: 50 }], assertions: [{ text: "Failed participation is absent from event history because tally rejects before emit.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_stable_keys: ["evidence:semantic-contracts:owner-tally", "evidence:semantic-contracts:proposal-tally"] }] }
+      - { stable_key: "input-output:treasury-contracts:events:proposal-execution", title: "proposalExecuted event", producer: "Treasury Owner", consumer: "indexers/users", direction: "OUTPUT", type_schema: "proposalPublicKey,amountToPayOut,senderPublicKey", validation: ["emitted after nested execute call in transaction construction"], defaulting: [], encoding: "o1js event Struct", trust: "on-chain event", sensitivity: "public", cardinality_range: "one per successful execution including zero", failure_behavior: "transaction reject", anchors: [{ path: "packages/sdk/src/provable/events/treasury-proposal-events.ts", symbol: "ProposalExecutedEvent", start_line: 52, end_line: 59 }], assertions: [{ text: "Recipient, cumulative paid out, remaining cap, and completion status are omitted.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_stable_keys: ["evidence:semantic-contracts:event-schemas", "evidence:semantic-contracts:owner-execute"] }] }
+      - { stable_key: "input-output:treasury-contracts:events:proposal-pause", title: "proposalPauseToggled event", producer: "Treasury Owner caller input", consumer: "indexers/users", direction: "OUTPUT", type_schema: "proposalPublicKey,paused,senderPublicKey", validation: ["Struct encoding only for paused"], defaulting: [], encoding: "o1js event Struct", trust: "caller-supplied paused Bool not bound to proposal state", sensitivity: "public", cardinality_range: "one per successful toggle", failure_behavior: "transaction reject", anchors: [{ path: "packages/sdk/src/provable/events/treasury-proposal-events.ts", symbol: "ProposalPauseToggledEvent", start_line: 61, end_line: 68 }], assertions: [{ text: "The event Bool may contradict the status transition.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_stable_keys: ["evidence:semantic-contracts:owner-toggle", "evidence:semantic-contracts:event-schemas"] }] }
+    relations:
+      - { stable_key: "relation:treasury-contracts:owner:create:calls-snapshot", type: "CALLS", from_stable_key: "behavior:treasury-contracts:owner:create-proposal", to_stable_key: "behavior:treasury-contracts:owner:snapshot-staking-epoch", anchors: [{ path: "packages/sdk/src/provable/contracts/treasury-owner.ts", symbol: "createProposal", start_line: 199, end_line: 200 }] }
+      - { stable_key: "relation:treasury-contracts:owner:create:writes-proposal-state", type: "WRITES", from_stable_key: "behavior:treasury-contracts:owner:create-proposal", to: "TreasuryProposal appState", anchors: [{ path: "packages/sdk/src/provable/contracts/treasury-owner.ts", symbol: "createProposal appState", start_line: 210, end_line: 255 }] }
+      - { stable_key: "relation:treasury-contracts:owner:create:emits", type: "EMITS", from_stable_key: "behavior:treasury-contracts:owner:create-proposal", to_stable_key: "input-output:treasury-contracts:events:proposal-created", anchors: [{ path: "packages/sdk/src/provable/contracts/treasury-owner.ts", symbol: "createProposal event", start_line: 256, end_line: 271 }] }
+      - { stable_key: "relation:treasury-contracts:owner:vote:calls-proposal", type: "CALLS", from_stable_key: "behavior:treasury-contracts:owner:dispatch-vote", to_stable_key: "behavior:treasury-contracts:proposal:dispatch-and-lifecycle-read", anchors: [{ path: "packages/sdk/src/provable/contracts/treasury-owner.ts", symbol: "vote", start_line: 284, end_line: 300 }] }
+      - { stable_key: "relation:treasury-contracts:owner:vote:authorizes-voter", type: "AUTHORIZES", from_stable_key: "behavior:treasury-contracts:owner:dispatch-vote", to: "voter PublicKey account update", anchors: [{ path: "packages/sdk/src/provable/contracts/treasury-owner.ts", symbol: "vote", start_line: 312, end_line: 315 }] }
+      - { stable_key: "relation:treasury-contracts:owner:tally:verifies-vote-proof", type: "VERIFIES", from_stable_key: "behavior:treasury-contracts:owner:tally", to: "SideLoadedVoteReducerProof", anchors: [{ path: "packages/sdk/src/provable/contracts/treasury-owner.ts", symbol: "tallyVotes", start_line: 335, end_line: 338 }] }
+      - { stable_key: "relation:treasury-contracts:owner:tally:verifies-staking-proof", type: "VERIFIES", from_stable_key: "behavior:treasury-contracts:owner:tally", to: "SideLoadedStakingLedgerToVotingLedgerProof", anchors: [{ path: "packages/sdk/src/provable/contracts/treasury-owner.ts", symbol: "tallyVotes", start_line: 340, end_line: 342 }] }
+      - { stable_key: "relation:treasury-contracts:owner:tally:calls-proposal", type: "CALLS", from_stable_key: "behavior:treasury-contracts:owner:tally", to_stable_key: "behavior:treasury-contracts:proposal:tally", anchors: [{ path: "packages/sdk/src/provable/contracts/treasury-owner.ts", symbol: "tallyVotes", start_line: 394, end_line: 400 }] }
+      - { stable_key: "relation:treasury-contracts:proposal:tally:depends-vote-reducer", type: "DEPENDS_ON", from_stable_key: "behavior:treasury-contracts:proposal:tally", to: "VoteReducer proof statement", anchors: [{ path: "packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts", symbol: "tallyVotes", start_line: 227, end_line: 264 }] }
+      - { stable_key: "relation:treasury-contracts:proposal:tally:depends-staking-transform", type: "DEPENDS_ON", from_stable_key: "behavior:treasury-contracts:proposal:tally", to: "StakingLedgerToVotingLedger proof statement", anchors: [{ path: "packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts", symbol: "tallyVotes", start_line: 261, end_line: 282 }] }
+      - { stable_key: "relation:treasury-contracts:owner:execute:calls-proposal", type: "CALLS", from_stable_key: "behavior:treasury-contracts:owner:execute-proposal", to_stable_key: "behavior:treasury-contracts:proposal:execute", anchors: [{ path: "packages/sdk/src/provable/contracts/treasury-owner.ts", symbol: "executeProposal", start_line: 444, end_line: 450 }] }
+      - { stable_key: "relation:treasury-contracts:proposal:execute:writes-recipient", type: "WRITES", from_stable_key: "behavior:treasury-contracts:proposal:execute", to: "recipient account balance", anchors: [{ path: "packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts", symbol: "execute", start_line: 377, end_line: 383 }] }
+      - { stable_key: "relation:treasury-contracts:owner:toggle:calls-controller", type: "CALLS", from_stable_key: "behavior:treasury-contracts:owner:toggle-proposal-pause", to_stable_key: "behavior:treasury-contracts:pause-controller:authorize-proposal-toggle", anchors: [{ path: "packages/sdk/src/provable/contracts/treasury-owner.ts", symbol: "togglePauseProposal", start_line: 476, end_line: 484 }] }
+      - { stable_key: "relation:treasury-contracts:owner:toggle:calls-proposal", type: "CALLS", from_stable_key: "behavior:treasury-contracts:owner:toggle-proposal-pause", to_stable_key: "behavior:treasury-contracts:proposal:toggle-pause", anchors: [{ path: "packages/sdk/src/provable/contracts/treasury-owner.ts", symbol: "togglePauseProposal", start_line: 486, end_line: 486 }] }
+      - { stable_key: "relation:treasury-contracts:pause:commands:authorize", type: "AUTHORIZES", from_stable_key: "behavior:treasury-contracts:pause-controller:verify-command", to_stable_key: "behavior:treasury-contracts:pause-controller:pause-unpause", anchors: [{ path: "packages/sdk/src/provable/contracts/treasury-pause-controller/treasury-pause-controller.ts", symbol: "pauseTreasury/unpauseTreasury", start_line: 170, end_line: 193 }] }
+      - { stable_key: "relation:treasury-contracts:pause:rotation:authorizes", type: "AUTHORIZES", from_stable_key: "behavior:treasury-contracts:pause-controller:verify-command", to_stable_key: "behavior:treasury-contracts:pause-controller:rotate-commitment", anchors: [{ path: "packages/sdk/src/provable/contracts/treasury-pause-controller/treasury-pause-controller.ts", symbol: "rotateMultisigKeys", start_line: 130, end_line: 145 }] }
+      - { stable_key: "relation:treasury-contracts:events:test-roundtrip", type: "TESTS", from: "packages/sdk/test/provable/events/treasury-proposal-events.test.ts", to_stable_key: "behavior:treasury-contracts:events:emit-observability-records", precision_limitations: ["serialization only; producer/state consistency not tested"] }
+      - { stable_key: "relation:treasury-contracts:owner:test-happy-path", type: "TESTS", from: "packages/sdk/test/integration/treasury-owner.test.ts", to_stable_key: "flow:treasury-contracts:proposal-creation", precision_limitations: ["sequential stateful fixture; mainly successful create/vote/tally/execute"] }
+      - { stable_key: "relation:treasury-contracts:pause:test-negative-partitions", type: "TESTS", from: "packages/sdk/test/provable/contracts/treasury-pause-controller/treasury-pause-controller.test.ts", to_stable_key: "flow:treasury-contracts:global-emergency-command", precision_limitations: ["no >5/duplicate/empty participant or cross-domain cases"] }
+    findings:
+      - stable_key: "finding:treasury-contracts:proposal-pause-erases-terminal-status"
+        title: "Proposal pause erases finalized outcome"
+        rule_id: "CORRECTNESS.STATE.PAUSE_PRESERVES_FINALITY"
+        category: "security"
+        severity: "MEDIUM"
+        confidence: "HIGH"
+        prerequisites: ["proposal is APPROVED or REJECTED", "authorized multisig toggles pause and later toggles again"]
+        root_cause: "Pause and governance result share one status Field; unpause always maps PAUSED to UNKNOWN."
+        impact: "Finalized outcome is lost, retally becomes possible, and approved execution can be interrupted or reset."
+        recommendation: "Use an independent paused Bool or preserve/restore exact pre-pause status; expose explicit pause/unpause transitions."
+        scope_limitations: ["Authoritative intent could permit emergency reset, but no supplied decision states that policy."]
+        affected_stable_keys: ["behavior:treasury-contracts:proposal:toggle-pause", "invariant:treasury-contracts:tally:single-finalization"]
+        anchors: [{ path: "packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts", symbol: "togglePause", start_line: 386, end_line: 397 }]
+        semantic_status: "OPEN"
+        assertions: [{ text: "APPROVED/REJECTED -> PAUSED -> UNKNOWN is source-visible.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_stable_keys: ["evidence:semantic-contracts:proposal-toggle"] }]
+      - stable_key: "finding:treasury-contracts:proposal-pause-event-unbound"
+        title: "Proposal pause event is not bound to post-state"
+        rule_id: "RELIABILITY.EVENT.MATCHES_STATE"
+        category: "reliability"
+        severity: "LOW"
+        confidence: "HIGH"
+        prerequisites: ["caller supplies paused different from actual toggle result"]
+        root_cause: "paused is neither signed nor applied; it is copied only into the event."
+        impact: "Indexers/operators can record a false proposal pause state."
+        recommendation: "Derive event Bool from constrained post-state or sign and enforce an explicit target Bool."
+        scope_limitations: []
+        affected_stable_keys: ["flow:treasury-contracts:proposal-emergency-toggle", "invariant:treasury-contracts:events:event-reflects-state"]
+        anchors: [{ path: "packages/sdk/src/provable/contracts/treasury-owner.ts", symbol: "togglePauseProposal", start_line: 464, end_line: 496 }]
+        semantic_status: "OPEN"
+        assertions: [{ text: "Caller-controlled paused reaches only ProposalPauseToggledEvent.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_stable_keys: ["evidence:semantic-contracts:owner-toggle"] }]
+      - stable_key: "finding:treasury-contracts:pause-init-more-than-five-bricks-authority"
+        title: "Initialization accepts signer sets that verification cannot represent"
+        rule_id: "CORRECTNESS.CONFIG.EXACT_PARTICIPANT_COUNT"
+        category: "correctness"
+        severity: "MEDIUM"
+        confidence: "HIGH"
+        prerequisites: ["deployment configures more than five participants"]
+        root_cause: "init accepts length >=5 and commits the full list; verifySignatures requires length exactly five and a fixed array of five."
+        impact: "A successfully initialized controller cannot authorize pause, unpause, toggle, or rotation."
+        recommendation: "Require exactly five distinct non-empty participant keys before locking permissions."
+        scope_limitations: []
+        affected_stable_keys: ["behavior:treasury-contracts:pause-controller:initialize", "behavior:treasury-contracts:pause-controller:verify-command"]
+        anchors: [{ path: "packages/sdk/src/provable/contracts/treasury-pause-controller/treasury-pause-controller.ts", symbol: "init/verifySignatures", start_line: 64, end_line: 118 }]
+        semantic_status: "OPEN"
+        assertions: [{ text: "The initialization and verification length predicates conflict.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_stable_keys: ["evidence:semantic-contracts:pause-init", "evidence:semantic-contracts:pause-verify"] }]
+      - stable_key: "finding:treasury-contracts:multisig-nondistinct-participants"
+        title: "Multisig threshold does not require distinct participant identities"
+        rule_id: "SECURITY.AUTH.DISTINCT_SIGNERS"
+        category: "security"
+        severity: "MEDIUM"
+        confidence: "MEDIUM"
+        prerequisites: ["initial or rotated commitment corresponds to repeated keys", "same signature can occupy repeated matching slots"]
+        root_cause: "Verification counts valid signature positions without pairwise key distinctness or non-empty-key constraints."
+        impact: "The nominal three-of-five authority can represent fewer than three independent signers."
+        recommendation: "Validate and constrain exactly five distinct, non-empty keys at initialization and rotation."
+        scope_limitations: ["Practical repeated-signature behavior was not executed; current tests use distinct participants."]
+        affected_stable_keys: ["invariant:treasury-contracts:multisig:current-commitment-threshold"]
+        anchors: [{ path: "packages/sdk/src/provable/contracts/treasury-pause-controller/multisig-signatures.ts", symbol: "MultisigSignatures.verify", start_line: 105, end_line: 145 }]
+        semantic_status: "OPEN"
+        assertions: [{ text: "No pairwise-distinct or non-empty participant check is present.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_stable_keys: ["evidence:semantic-contracts:multisig-verify"] }]
+      - stable_key: "finding:treasury-contracts:multisig-cross-domain-replay"
+        title: "Emergency signature messages omit deployment and network domain"
+        rule_id: "SECURITY.AUTH.SIGNATURE_DOMAIN_BINDING"
+        category: "security"
+        severity: "LOW"
+        confidence: "HIGH"
+        prerequisites: ["another deployment/network uses the same participant keys and nonce; operation parameters also align"]
+        root_cause: "Messages omit controller/treasury address, token ID, network/chain identifier, and protocol version."
+        impact: "A command signature set may be replayable across aligned domains."
+        recommendation: "Bind chain/network, controller, treasury/token, protocol version, operation parameters, target state, and nonce."
+        scope_limitations: ["Cross-network signature and transaction behavior is external to the static scope."]
+        affected_stable_keys: ["behavior:treasury-contracts:multisig:construct-domain-messages", "invariant:treasury-contracts:multisig:nonce-replay"]
+        anchors: [{ path: "packages/sdk/src/provable/contracts/treasury-pause-controller/multisig-signatures.ts", symbol: "MultisigSignature data methods", start_line: 22, end_line: 91 }]
+        semantic_status: "OPEN"
+        assertions: [{ text: "Operation prefix, operation parameters, and nonce are the complete signed source-visible domain.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_stable_keys: ["evidence:semantic-contracts:multisig-messages"] }]
+      - stable_key: "finding:treasury-contracts:rotation-allows-unrecoverable-commitment"
+        title: "Key rotation accepts an unvalidated next commitment"
+        rule_id: "RELIABILITY.RECOVERY.ROTATION_PREIMAGE"
+        category: "reliability"
+        severity: "MEDIUM"
+        confidence: "HIGH"
+        prerequisites: ["authorized signers submit a mistyped, unavailable, duplicate-key, or otherwise invalid commitment"]
+        root_cause: "rotateMultisigKeys takes only a Field and does not validate a next five-key preimage or emit it."
+        impact: "Emergency authority can become irrecoverable after an accepted rotation."
+        recommendation: "Accept/validate the exact next participant array, enforce distinct non-empty keys, derive the stored commitment in-circuit, and emit rotation metadata."
+        scope_limitations: ["An operational ceremony outside scope may reduce accidental risk but cannot be inferred."]
+        affected_stable_keys: ["flow:treasury-contracts:key-rotation", "invariant:treasury-contracts:multisig:rotation-preimage-availability"]
+        anchors: [{ path: "packages/sdk/src/provable/contracts/treasury-pause-controller/treasury-pause-controller.ts", symbol: "rotateMultisigKeys", start_line: 121, end_line: 145 }]
+        semantic_status: "OPEN"
+        assertions: [{ text: "The new commitment is stored exactly as submitted.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_stable_keys: ["evidence:semantic-contracts:pause-rotate"] }]
+      - stable_key: "finding:treasury-contracts:failed-quorum-not-finalized"
+        title: "Failed quorum or abstain-only tally cannot finalize as rejected"
+        rule_id: "CORRECTNESS.LIFECYCLE.REJECTION_FINALIZATION"
+        category: "correctness"
+        severity: "MEDIUM"
+        confidence: "HIGH"
+        prerequisites: ["proof package is otherwise valid", "participation below threshold or yay+nay equals zero"]
+        root_cause: "calculateApprovalStatus returns REJECTED, but tally asserts participationMet and hasApprovalVotes before status.set."
+        impact: "Proposal remains UNKNOWN rather than reaching an auditable terminal rejection; repeated submissions fail and status does not distinguish untallied from failed quorum."
+        recommendation: "Persist REJECTED for complete tallies that fail participation/approval and reserve rejection for invalid or incomplete proof packages."
+        scope_limitations: ["The final business policy for quorum failure requires author confirmation."]
+        affected_stable_keys: ["behavior:treasury-contracts:proposal:tally", "flow:treasury-contracts:tally-finalization"]
+        anchors: [{ path: "packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts", symbol: "tallyVotes", start_line: 331, end_line: 350 }]
+        semantic_status: "OPEN"
+        assertions: [{ text: "The status write is unreachable for these two REJECTED cases.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_stable_keys: ["evidence:semantic-contracts:proposal-approval", "evidence:semantic-contracts:proposal-tally"] }]
+      - stable_key: "finding:treasury-contracts:zero-payout-no-progress"
+        title: "Zero-value executions are repeatable without state progress"
+        rule_id: "RELIABILITY.PAYOUT.POSITIVE_PROGRESS"
+        category: "reliability"
+        severity: "LOW"
+        confidence: "HIGH"
+        prerequisites: ["proposal APPROVED", "amountToPayOut is zero"]
+        root_cause: "Execution checks only amountToPayOut <= remaining and has no positive-amount or completion transition."
+        impact: "Any sender can emit repeated execution events and account updates without changing cumulative payout."
+        recommendation: "Require amountToPayOut > 0 and represent terminal completion; emit cumulative/remaining values."
+        scope_limitations: ["Fees may deter spam but do not restore state/event semantics."]
+        affected_stable_keys: ["flow:treasury-contracts:partial-payout"]
+        anchors: [{ path: "packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts", symbol: "execute", start_line: 353, end_line: 384 }]
+        semantic_status: "OPEN"
+        assertions: [{ text: "UInt64 zero passes the remaining cap and adds zero to paidOutAmount.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_stable_keys: ["evidence:semantic-contracts:proposal-execute"] }]
+      - stable_key: "finding:treasury-contracts:zero-balance-threshold-division"
+        title: "Acceptance threshold assumes positive treasury snapshot balance"
+        rule_id: "RELIABILITY.ARITHMETIC.NONZERO_DENOMINATOR"
+        category: "reliability"
+        severity: "LOW"
+        confidence: "HIGH"
+        prerequisites: ["snapshotted Treasury Owner balance is zero"]
+        root_cause: "proposalAmount*BASIS_POINTS is divided by treasuryBalance without a nonzero check or zero-balance policy."
+        impact: "Tally cannot complete for a proposal created against a zero treasury balance."
+        recommendation: "Reject creation when treasury balance is zero or define a constrained zero-balance threshold policy."
+        scope_limitations: ["Exact UInt128 division behavior is dependency-defined."]
+        affected_stable_keys: ["behavior:treasury-contracts:proposal:calculate-acceptance-criteria"]
+        anchors: [{ path: "packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts", symbol: "calculateAcceptanceCriteria", start_line: 102, end_line: 126 }]
+        semantic_status: "OPEN"
+        assertions: [{ text: "No nonzero assertion precedes treasuryBalance division.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_stable_keys: ["evidence:semantic-contracts:proposal-thresholds"] }]
+      - stable_key: "finding:treasury-contracts:proposal-reinitialization-reliance"
+        title: "Proposal creation does not explicitly require a new account"
+        rule_id: "SECURITY.STATE.INITIALIZE_ONCE"
+        category: "security"
+        severity: "INFORMATIONAL"
+        confidence: "MEDIUM"
+        prerequisites: ["an existing proposal token account can satisfy the signed update and installed permissions permit the app-state/key writes"]
+        root_cause: "createProposal does not constrain isNew or prior empty state."
+        impact: "If external permission assumptions change or are misconfigured, proposal state could be reset or replaced."
+        recommendation: "Explicitly require new-account/empty-state semantics or document and test the exact immutable permission dependency."
+        scope_limitations: ["Current o1js default permission and deployed account behavior are outside this bounded static evidence."]
+        affected_stable_keys: ["behavior:treasury-contracts:owner:create-proposal"]
+        anchors: [{ path: "packages/sdk/src/provable/contracts/treasury-owner.ts", symbol: "createProposal", start_line: 210, end_line: 255 }]
+        semantic_status: "UNRESOLVED"
+        assertions: [{ text: "No explicit new-account assertion is present.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_stable_keys: ["evidence:semantic-contracts:owner-create"] }]
+    gaps:
+      - stable_key: "gap:treasury-contracts:bond-owner-and-beneficiary-policy"
+        title: "Bond payer, custody, and successful beneficiary policy diverge from RFC wording"
+        gap_kinds: ["IMPLEMENTATION_DIVERGENCE", "MISSING_BINDING", "UNRESOLVED_AUTHORITY"]
+        materiality: "MEDIUM"
+        implementation_stable_keys: ["flow:treasury-contracts:proposal-creation", "flow:treasury-contracts:partial-payout"]
+        business_consequence: "Any transaction account may fund the bond, sender is labeled proposer, and amount-plus-bond is payable only to recipient; a distinct proposer is not state-bound for refund."
+        rollout_relevance: ["MVP", "SAFETY_PERFORMANCE"]
+        author_question: "Who must pay the bond, and on approval/rejection/cancellation should it be returned to proposer, paid to recipient, burned, frozen, or otherwise handled?"
+        semantic_status: "OPEN"
+        assertions:
+          - { text: "The RFC describes a proposal bond and the prior audit reports recipient payment as acknowledged; current source has no proposer refund path.", evidence_class: "DOCUMENTED_INTENT", confidence: "MEDIUM", evidence_stable_keys: ["evidence:business-context:rfc-6924", "evidence:business-context:zksecurity-audit-report"] }
+          - { text: "Current payout cap adds the bond to recipient-bound amount.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_stable_keys: ["evidence:semantic-contracts:proposal-execute"] }
+      - stable_key: "gap:treasury-contracts:explicit-proposal-pause-intent"
+        title: "Proposal emergency control lacks explicit target state and status preservation policy"
+        gap_kinds: ["MISSING_BINDING", "INCOMPLETE_FAILURE_POLICY", "IMPLEMENTATION_DIVERGENCE"]
+        materiality: "HIGH"
+        implementation_stable_keys: ["flow:treasury-contracts:proposal-emergency-toggle"]
+        business_consequence: "Stale or concurrent commands can invert operator intent, erase final status, and mislead indexers."
+        rollout_relevance: ["MVP", "SAFETY_PERFORMANCE"]
+        author_question: "Should proposal emergency commands be explicit pause/unpause, and what exact status is restored after unpause?"
+        semantic_status: "OPEN"
+        assertions: [{ text: "Signed payload, state effect, and event do not share a bound target Bool.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_stable_keys: ["evidence:semantic-contracts:multisig-messages", "evidence:semantic-contracts:proposal-toggle", "evidence:semantic-contracts:owner-toggle"] }]
+      - stable_key: "gap:treasury-contracts:quorum-failure-terminal-policy"
+        title: "Quorum failure terminal behavior is not aligned between calculator and state transition"
+        gap_kinds: ["INCOMPLETE_FAILURE_POLICY", "UNRESOLVED_AUTHORITY"]
+        materiality: "MEDIUM"
+        implementation_stable_keys: ["behavior:treasury-contracts:proposal:calculate-approval-status", "behavior:treasury-contracts:proposal:tally"]
+        business_consequence: "Users cannot distinguish untallied proposals from complete tallies that fail quorum or contain only abstentions."
+        rollout_relevance: ["MVP"]
+        author_question: "Should a complete low-participation or abstain-only tally persist REJECTED, remain UNKNOWN, or enter a distinct terminal state?"
+        semantic_status: "OPEN"
+        assertions: [{ text: "Calculator and persistence path encode different failure policies.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_stable_keys: ["evidence:semantic-contracts:proposal-approval", "evidence:semantic-contracts:proposal-tally"] }]
+      - stable_key: "gap:treasury-contracts:emergency-observability-and-recovery"
+        title: "Emergency commands and rotations lack a complete on-chain audit/recovery record"
+        gap_kinds: ["INCOMPLETE_FAILURE_POLICY", "OFFCHAIN_TRUST"]
+        materiality: "MEDIUM"
+        implementation_stable_keys: ["flow:treasury-contracts:global-emergency-command", "flow:treasury-contracts:key-rotation"]
+        business_consequence: "Operators and the public must reconstruct global pause and signer rotation from account state/transactions, while recovery depends on an off-chain participant preimage."
+        rollout_relevance: ["MVP", "DECENTRALISATION"]
+        author_question: "Which events, deployment records, rotation ceremony, backup, and recovery procedure make emergency authority transparent and recoverable?"
+        semantic_status: "UNRESOLVED"
+        assertions: [{ text: "Pause Controller declares no events and stores only commitment plus pause Bool.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_stable_keys: ["evidence:semantic-contracts:pause-controller-class"] }]
+      - stable_key: "gap:treasury-contracts:test-owner-adverse-partitions"
+        title: "Treasury Owner integration expectations omit principal adverse partitions"
+        gap_kinds: ["EXPECTATION_DIVERGENCE", "INCOMPLETE_FAILURE_POLICY"]
+        materiality: "HIGH"
+        implementation_stable_keys: ["flow:treasury-contracts:proposal-creation", "flow:treasury-contracts:vote-dispatch", "flow:treasury-contracts:tally-finalization", "flow:treasury-contracts:partial-payout", "flow:treasury-contracts:proposal-emergency-toggle"]
+        business_consequence: "Lifecycle boundaries, paused operations, rejected tally modes, recipient/cap failures, partial/zero payout, terminal retally, and pause event/status agreement lack executable expectation oracles in the pinned suite."
+        rollout_relevance: ["MVP", "SAFETY_PERFORMANCE"]
+        author_question: "Which negative and boundary cases are required as pre-production acceptance criteria?"
+        semantic_status: "OPEN"
+        assertions: [{ text: "The active owner test is one sequential approved path; two integrated pause tests are commented because proving stalled.", evidence_class: "TEST_EXPECTATION", confidence: "HIGH", evidence_stable_keys: ["evidence:semantic-contracts:test-owner-suite"] }]
+      - stable_key: "gap:treasury-contracts:treasury-parameters-authority"
+        title: "Threshold, curve, duration, and bond constants lack a supplied ratified decision source"
+        gap_kinds: ["MISSING_INTENT", "CONFIGURATION_RISK", "UNRESOLVED_AUTHORITY"]
+        materiality: "HIGH"
+        implementation_stable_keys: ["behavior:treasury-contracts:owner:derive-lifecycle-range", "behavior:treasury-contracts:proposal:calculate-acceptance-criteria"]
+        business_consequence: "Governance outcomes and operational deadlines depend directly on hard-coded values marked for real-world configuration."
+        rollout_relevance: ["MVP"]
+        author_question: "Which decision ratifies 7140-slot periods, 10% bond, 20%-50% participation, 51%-70% approval, and curve constants 500/1000 for production?"
+        semantic_status: "OPEN"
+        assertions: [{ text: "The constants file says appropriate values remain TODO; RFC criteria are provisional/parameterized.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_stable_keys: ["evidence:semantic-contracts:constants", "evidence:business-context:rfc-6924"] }]
+    unresolved:
+      - stable_key: "unresolved:treasury-contracts:deployed-permissions-and-authorization"
+        kind: "EXTERNAL"
+        reason: "Proposal uses Permissions.default and child-token composition; exact deployed o1js permission semantics and account state are outside pinned source."
+        required_context: ["pinned o1js permission semantics", "deployment account dump", "transaction composition review"]
+        semantic_status: "OPEN"
+        assertions: [{ text: "Static source cannot establish deployed method authorization or proposal reset resistance.", evidence_class: "UNRESOLVED", confidence: "HIGH", limitation: "Dependency and deployment boundary." }]
+      - stable_key: "unresolved:treasury-contracts:lifecycle-inclusion-semantics"
+        kind: "EXTERNAL"
+        reason: "globalSlotSinceGenesis.requireBetween and endpoint/inclusion behavior are protocol/dependency semantics; the prior audit reported last-block-slot concerns."
+        required_context: ["deployed Mina/o1js version semantics", "boundary transaction analysis"]
+        semantic_status: "OPEN"
+        assertions: [{ text: "Source provides slot bounds but static local analysis cannot prove inclusion in the intended phase.", evidence_class: "UNRESOLVED", confidence: "HIGH", limitation: "No chain execution." }]
+      - stable_key: "unresolved:treasury-contracts:verification-key-and-root-configuration"
+        kind: "EXTERNAL"
+        reason: "Proposal verification keys, empty roots, deployment slot, pause-controller key, and permission mode are mutable statics populated outside these contracts."
+        required_context: ["production deployment manifest", "compiled artifact hashes", "network/account state"]
+        semantic_status: "OPEN"
+        assertions: [{ text: "Correct values and audit-version binding cannot be inferred from class declarations.", evidence_class: "UNRESOLVED", confidence: "HIGH", limitation: "Deployment context absent." }]
+      - stable_key: "unresolved:treasury-contracts:transaction-atomicity-and-balance"
+        kind: "EXTERNAL"
+        reason: "Create and execute compose debits/credits across nested account updates and rely on Mina transaction atomicity and balance rules."
+        required_context: ["o1js/Mina transaction semantics", "separate runtime assurance"]
+        semantic_status: "OPEN"
+        assertions: [{ text: "Static source shows equal amount variables on payout paths but does not execute rollback or conservation.", evidence_class: "UNRESOLVED", confidence: "HIGH", limitation: "No target execution." }]
+      - stable_key: "unresolved:treasury-contracts:proof-and-cryptographic-soundness"
+        kind: "DYNAMIC"
+        reason: "Contract checks consume proof objects, hashes, signatures, and Merkle witnesses; source mapping cannot establish backend soundness, key correctness, or absence of underconstraint."
+        required_context: ["independent circuit review", "compiler/backend assurance", "deployment verification-key manifest"]
+        semantic_status: "OPEN"
+        assertions: [{ text: "No proof, compiler, test, or verifier was run in this workflow.", evidence_class: "UNRESOLVED", confidence: "HIGH", limitation: "Absolute static-only boundary." }]
+      - stable_key: "unresolved:treasury-contracts:current-intent-decisions"
+        kind: "HUMAN_JUDGMENT"
+        reason: "Supplied RFC is provisional and the audit records several acknowledged behaviors; no final decision source resolves bond beneficiary, permissionless execution, failed quorum, emergency reset, or production constants."
+        required_context: ["ratified specification or ADR", "deployment policy", "author confirmation"]
+        semantic_status: "OPEN"
+        assertions: [{ text: "Implemented behavior is clear for these areas, but whether it is intended remains unresolved.", evidence_class: "UNRESOLVED", confidence: "HIGH", limitation: "Intent authority absent." }]
+      - stable_key: "unresolved:treasury-contracts:runtime-test-status"
+        kind: "DYNAMIC"
+        reason: "Tests were read as expectations only; module-level compilation/proof/local-chain code in tests was not invoked."
+        required_context: ["separate authorized test/proof workflow and result artifacts"]
+        semantic_status: "OPEN"
+        assertions: [{ text: "No test outcome is a result of this analysis.", evidence_class: "UNRESOLVED", confidence: "HIGH", limitation: "Static-only workflow." }]
+    evidence:
+      - { stable_key: "evidence:semantic-contracts:owner-snapshot", evidence_class: "IMPLEMENTED_STATIC", description: "Treasury Owner staking snapshot reads.", anchors: [{ path: "packages/sdk/src/provable/contracts/treasury-owner.ts", symbol: "snapshotStakingEpochData", start_line: 97, end_line: 108 }], source_sha256: "7c66014cee7f7a5e559b29f3b7c2790ed19c38c9a91b886c15cbbef3328d17dc", tool: { name: "manual-static-reading", version: "", command: "nl/sed/rg" }, limitations: [] }
+      - { stable_key: "evidence:semantic-contracts:owner-deploy", evidence_class: "IMPLEMENTED_STATIC", description: "Owner permissions and deployment state initialization.", anchors: [{ path: "packages/sdk/src/provable/contracts/treasury-owner.ts", symbol: "TreasuryOwnerSmartContract.permissions/deploy", start_line: 64, end_line: 119 }], source_sha256: "7c66014cee7f7a5e559b29f3b7c2790ed19c38c9a91b886c15cbbef3328d17dc", tool: { name: "manual-static-reading", version: "", command: "nl/sed/rg" }, limitations: [] }
+      - { stable_key: "evidence:semantic-contracts:owner-lifecycle", evidence_class: "IMPLEMENTED_STATIC", description: "Lifecycle definitions, range arithmetic, and network precondition.", anchors: [{ path: "packages/sdk/src/provable/contracts/treasury-owner.ts", symbol: "LifecyclePeriod/getLifecyclePeriodSlotRange/requireLifecyclePeriod", start_line: 51, end_line: 184 }], source_sha256: "7c66014cee7f7a5e559b29f3b7c2790ed19c38c9a91b886c15cbbef3328d17dc", tool: { name: "manual-static-reading", version: "", command: "nl/sed/rg" }, limitations: ["Protocol inclusion semantics external."] }
+      - { stable_key: "evidence:semantic-contracts:owner-receive", evidence_class: "IMPLEMENTED_STATIC", description: "Owner balance receive method.", anchors: [{ path: "packages/sdk/src/provable/contracts/treasury-owner.ts", symbol: "receive", start_line: 186, end_line: 189 }], source_sha256: "7c66014cee7f7a5e559b29f3b7c2790ed19c38c9a91b886c15cbbef3328d17dc", tool: { name: "manual-static-reading", version: "", command: "nl/sed/rg" }, limitations: [] }
+      - { stable_key: "evidence:semantic-contracts:owner-create", evidence_class: "IMPLEMENTED_STATIC", description: "Owner proposal creation, bond credit, proposal account initialization, and event.", anchors: [{ path: "packages/sdk/src/provable/contracts/treasury-owner.ts", symbol: "createProposal", start_line: 191, end_line: 272 }], source_sha256: "7c66014cee7f7a5e559b29f3b7c2790ed19c38c9a91b886c15cbbef3328d17dc", tool: { name: "manual-static-reading", version: "", command: "nl/sed/rg" }, limitations: [] }
+      - { stable_key: "evidence:semantic-contracts:owner-vote", evidence_class: "IMPLEMENTED_STATIC", description: "Owner vote lifecycle/signature/action/event composition.", anchors: [{ path: "packages/sdk/src/provable/contracts/treasury-owner.ts", symbol: "vote", start_line: 274, end_line: 318 }], source_sha256: "7c66014cee7f7a5e559b29f3b7c2790ed19c38c9a91b886c15cbbef3328d17dc", tool: { name: "manual-static-reading", version: "", command: "nl/sed/rg" }, limitations: [] }
+      - { stable_key: "evidence:semantic-contracts:owner-tally", evidence_class: "IMPLEMENTED_STATIC", description: "Owner proof verification, action-state checks, nested tally, and event.", anchors: [{ path: "packages/sdk/src/provable/contracts/treasury-owner.ts", symbol: "tallyVotes", start_line: 320, end_line: 419 }], source_sha256: "7c66014cee7f7a5e559b29f3b7c2790ed19c38c9a91b886c15cbbef3328d17dc", tool: { name: "manual-static-reading", version: "", command: "nl/sed/rg" }, limitations: ["Proof and account-precondition semantics not executed."] }
+      - { stable_key: "evidence:semantic-contracts:owner-execute", evidence_class: "IMPLEMENTED_STATIC", description: "Owner execution lifecycle, debit, nested call, signature-mode branch, and event.", anchors: [{ path: "packages/sdk/src/provable/contracts/treasury-owner.ts", symbol: "executeProposal", start_line: 421, end_line: 462 }], source_sha256: "7c66014cee7f7a5e559b29f3b7c2790ed19c38c9a91b886c15cbbef3328d17dc", tool: { name: "manual-static-reading", version: "", command: "nl/sed/rg" }, limitations: [] }
+      - { stable_key: "evidence:semantic-contracts:owner-toggle", evidence_class: "IMPLEMENTED_STATIC", description: "Owner proposal toggle orchestration and event Bool use.", anchors: [{ path: "packages/sdk/src/provable/contracts/treasury-owner.ts", symbol: "togglePauseProposal", start_line: 464, end_line: 496 }], source_sha256: "7c66014cee7f7a5e559b29f3b7c2790ed19c38c9a91b886c15cbbef3328d17dc", tool: { name: "manual-static-reading", version: "", command: "nl/sed/rg" }, limitations: [] }
+      - { stable_key: "evidence:semantic-contracts:owner-pause-token", evidence_class: "IMPLEMENTED_STATIC", description: "Global pause cross-call and TokenContract approveBase restriction.", anchors: [{ path: "packages/sdk/src/provable/contracts/treasury-owner.ts", symbol: "requireNotPaused/approveBase", start_line: 498, end_line: 511 }], source_sha256: "7c66014cee7f7a5e559b29f3b7c2790ed19c38c9a91b886c15cbbef3328d17dc", tool: { name: "manual-static-reading", version: "", command: "nl/sed/rg" }, limitations: [] }
+      - { stable_key: "evidence:semantic-contracts:constants", evidence_class: "IMPLEMENTED_STATIC", description: "Bond, basis-point, participation, approval, and curve constants including source TODO.", anchors: [{ path: "packages/sdk/src/provable/contracts/treasury-constants.ts", symbol: "treasury constants", start_line: 1, end_line: 15 }], source_sha256: "c4ef6c551437e01ebe6294c51923dfedff4a198735766a37029249482d9247a6", tool: { name: "manual-static-reading", version: "", command: "nl/sed/rg" }, limitations: [] }
+      - { stable_key: "evidence:semantic-contracts:proposal-config", evidence_class: "IMPLEMENTED_STATIC", description: "Proposal state, verification-key/root statics, and permission mode.", anchors: [{ path: "packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts", symbol: "TreasuryProposalSmartContract configuration/state", start_line: 46, end_line: 80 }], source_sha256: "95e5656d3a0d0c09a88ac9befa743517c53a98983bd1cf74b042e87bc9faf7af", tool: { name: "manual-static-reading", version: "", command: "nl/sed/rg" }, limitations: [] }
+      - { stable_key: "evidence:semantic-contracts:proposal-vote", evidence_class: "IMPLEMENTED_STATIC", description: "Proposal pause guard, lifecycle getter, and reducer dispatch.", anchors: [{ path: "packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts", symbol: "requireNotPaused/getLifecycleId/vote", start_line: 81, end_line: 96 }], source_sha256: "95e5656d3a0d0c09a88ac9befa743517c53a98983bd1cf74b042e87bc9faf7af", tool: { name: "manual-static-reading", version: "", command: "nl/sed/rg" }, limitations: [] }
+      - { stable_key: "evidence:semantic-contracts:proposal-thresholds", evidence_class: "IMPLEMENTED_STATIC", description: "Proposal threshold curve calculation.", anchors: [{ path: "packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts", symbol: "calculateAcceptanceCriteria", start_line: 98, end_line: 162 }], source_sha256: "95e5656d3a0d0c09a88ac9befa743517c53a98983bd1cf74b042e87bc9faf7af", tool: { name: "manual-static-reading", version: "", command: "nl/sed/rg" }, limitations: ["No arithmetic execution."] }
+      - { stable_key: "evidence:semantic-contracts:proposal-approval", evidence_class: "IMPLEMENTED_STATIC", description: "Participation, directional vote, approval, and status calculation.", anchors: [{ path: "packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts", symbol: "calculateApprovalStatus", start_line: 164, end_line: 211 }], source_sha256: "95e5656d3a0d0c09a88ac9befa743517c53a98983bd1cf74b042e87bc9faf7af", tool: { name: "manual-static-reading", version: "", command: "nl/sed/rg" }, limitations: [] }
+      - { stable_key: "evidence:semantic-contracts:proposal-tally", evidence_class: "IMPLEMENTED_STATIC", description: "Proposal proof bindings, account witness, threshold enforcement, and status write.", anchors: [{ path: "packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts", symbol: "tallyVotes", start_line: 213, end_line: 351 }], source_sha256: "95e5656d3a0d0c09a88ac9befa743517c53a98983bd1cf74b042e87bc9faf7af", tool: { name: "manual-static-reading", version: "", command: "nl/sed/rg" }, limitations: ["No proof execution or soundness claim."] }
+      - { stable_key: "evidence:semantic-contracts:proposal-execute", evidence_class: "IMPLEMENTED_STATIC", description: "Proposal payout status, cap, recipient, cumulative state, and credit.", anchors: [{ path: "packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts", symbol: "execute", start_line: 353, end_line: 384 }], source_sha256: "95e5656d3a0d0c09a88ac9befa743517c53a98983bd1cf74b042e87bc9faf7af", tool: { name: "manual-static-reading", version: "", command: "nl/sed/rg" }, limitations: [] }
+      - { stable_key: "evidence:semantic-contracts:proposal-toggle", evidence_class: "IMPLEMENTED_STATIC", description: "Proposal shared-status pause transition.", anchors: [{ path: "packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts", symbol: "togglePause", start_line: 386, end_line: 397 }], source_sha256: "95e5656d3a0d0c09a88ac9befa743517c53a98983bd1cf74b042e87bc9faf7af", tool: { name: "manual-static-reading", version: "", command: "nl/sed/rg" }, limitations: [] }
+      - { stable_key: "evidence:semantic-contracts:pause-controller-class", evidence_class: "IMPLEMENTED_STATIC", description: "Pause Controller state and absence of declared events.", anchors: [{ path: "packages/sdk/src/provable/contracts/treasury-pause-controller/treasury-pause-controller.ts", symbol: "TreasuryPauseControllerSmartContract", start_line: 25, end_line: 55 }], source_sha256: "f7139183b963aa496dd36df00017885c9ab6275f11accca35bfd9054260e5104", tool: { name: "manual-static-reading", version: "", command: "nl/sed/rg" }, limitations: [] }
+      - { stable_key: "evidence:semantic-contracts:pause-init", evidence_class: "IMPLEMENTED_STATIC", description: "Pause Controller initialization count, commitment, state, and permissions.", anchors: [{ path: "packages/sdk/src/provable/contracts/treasury-pause-controller/treasury-pause-controller.ts", symbol: "init", start_line: 55, end_line: 85 }], source_sha256: "f7139183b963aa496dd36df00017885c9ab6275f11accca35bfd9054260e5104", tool: { name: "manual-static-reading", version: "", command: "nl/sed/rg" }, limitations: [] }
+      - { stable_key: "evidence:semantic-contracts:pause-nonce", evidence_class: "IMPLEMENTED_STATIC", description: "Controller nonce equality and increment flag.", anchors: [{ path: "packages/sdk/src/provable/contracts/treasury-pause-controller/treasury-pause-controller.ts", symbol: "requireAndIncrementNonce", start_line: 87, end_line: 95 }], source_sha256: "f7139183b963aa496dd36df00017885c9ab6275f11accca35bfd9054260e5104", tool: { name: "manual-static-reading", version: "", command: "nl/sed/rg" }, limitations: [] }
+      - { stable_key: "evidence:semantic-contracts:pause-verify", evidence_class: "IMPLEMENTED_STATIC", description: "Controller witnesses exact five participant keys and delegates commitment/signature verification.", anchors: [{ path: "packages/sdk/src/provable/contracts/treasury-pause-controller/treasury-pause-controller.ts", symbol: "verifySignatures", start_line: 97, end_line: 119 }], source_sha256: "f7139183b963aa496dd36df00017885c9ab6275f11accca35bfd9054260e5104", tool: { name: "manual-static-reading", version: "", command: "nl/sed/rg" }, limitations: ["Host-static key availability remains operational."] }
+      - { stable_key: "evidence:semantic-contracts:pause-rotate", evidence_class: "IMPLEMENTED_STATIC", description: "Rotation data construction, authorization, nonce, and new commitment state write.", anchors: [{ path: "packages/sdk/src/provable/contracts/treasury-pause-controller/treasury-pause-controller.ts", symbol: "rotateMultisigKeys", start_line: 121, end_line: 145 }], source_sha256: "f7139183b963aa496dd36df00017885c9ab6275f11accca35bfd9054260e5104", tool: { name: "manual-static-reading", version: "", command: "nl/sed/rg" }, limitations: [] }
+      - { stable_key: "evidence:semantic-contracts:pause-commands", evidence_class: "IMPLEMENTED_STATIC", description: "Global pause/unpause explicit Bool writes and pause guard.", anchors: [{ path: "packages/sdk/src/provable/contracts/treasury-pause-controller/treasury-pause-controller.ts", symbol: "requireNotPaused/pauseTreasury/unpauseTreasury", start_line: 147, end_line: 193 }], source_sha256: "f7139183b963aa496dd36df00017885c9ab6275f11accca35bfd9054260e5104", tool: { name: "manual-static-reading", version: "", command: "nl/sed/rg" }, limitations: [] }
+      - { stable_key: "evidence:semantic-contracts:pause-toggle", evidence_class: "IMPLEMENTED_STATIC", description: "Proposal-toggle authorization binds proposal key and nonce only.", anchors: [{ path: "packages/sdk/src/provable/contracts/treasury-pause-controller/treasury-pause-controller.ts", symbol: "togglePauseProposal", start_line: 195, end_line: 216 }], source_sha256: "f7139183b963aa496dd36df00017885c9ab6275f11accca35bfd9054260e5104", tool: { name: "manual-static-reading", version: "", command: "nl/sed/rg" }, limitations: [] }
+      - { stable_key: "evidence:semantic-contracts:multisig-messages", evidence_class: "IMPLEMENTED_STATIC", description: "Operation prefixes and complete signed message field lists.", anchors: [{ path: "packages/sdk/src/provable/contracts/treasury-pause-controller/multisig-signatures.ts", symbol: "MultisigSignature", start_line: 22, end_line: 91 }], source_sha256: "48a7c4cd41c1e9764df1329966c37f325817fa43074140c145f4f6c1ae2aa372", tool: { name: "manual-static-reading", version: "", command: "nl/sed/rg" }, limitations: [] }
+      - { stable_key: "evidence:semantic-contracts:multisig-verify", evidence_class: "IMPLEMENTED_STATIC", description: "Ordered participant commitment and three-of-five position threshold.", anchors: [{ path: "packages/sdk/src/provable/contracts/treasury-pause-controller/multisig-signatures.ts", symbol: "MultisigSignatures.createCommitment/verify", start_line: 97, end_line: 145 }], source_sha256: "48a7c4cd41c1e9764df1329966c37f325817fa43074140c145f4f6c1ae2aa372", tool: { name: "manual-static-reading", version: "", command: "nl/sed/rg" }, limitations: ["No signature execution performed."] }
+      - { stable_key: "evidence:semantic-contracts:event-schemas", evidence_class: "IMPLEMENTED_STATIC", description: "Five owner event names and payload schemas.", anchors: [{ path: "packages/sdk/src/provable/events/treasury-proposal-events.ts", symbol: "treasury proposal event schemas", start_line: 4, end_line: 68 }], source_sha256: "421e00244121b82a603b71b722ef35419794d0d603a264270a47a44d05a2c01d", tool: { name: "manual-static-reading", version: "", command: "nl/sed/rg" }, limitations: [] }
+      - { stable_key: "evidence:semantic-contracts:vote-enum", evidence_class: "IMPLEMENTED_STATIC", description: "Vote values and validation including DUMMY.", anchors: [{ path: "packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts", symbol: "Vote/VoteAction", start_line: 45, end_line: 114 }], source_sha256: "37c1f07a5fad41f036f999792b44bf13d4f9af280cb1439bed6a8411dfaa81cd", tool: { name: "manual-static-reading", version: "", command: "nl/sed/rg" }, limitations: [] }
+      - { stable_key: "evidence:semantic-contracts:test-owner-suite", evidence_class: "TEST_EXPECTATION", description: "Sequential owner integration expectations and commented pause liveness note.", anchors: [{ path: "packages/sdk/test/integration/treasury-owner.test.ts", symbol: "owner integration suite", start_line: 264, end_line: 764 }], source_sha256: "f73f778dcb2ac226c416ebfdf69117af3262fcc37f36877ea3fb7d1bd7e0f4e0", tool: { name: "manual-static-reading", version: "", command: "nl/sed/rg" }, limitations: ["Not executed; module imports services/storage outside bounded context."] }
+      - { stable_key: "evidence:semantic-contracts:test-owner-create", evidence_class: "TEST_EXPECTATION", description: "Owner test creates an external bond-payer update and successful proposal.", anchors: [{ path: "packages/sdk/test/integration/treasury-owner.test.ts", symbol: "should create a proposal", start_line: 269, end_line: 427 }], source_sha256: "f73f778dcb2ac226c416ebfdf69117af3262fcc37f36877ea3fb7d1bd7e0f4e0", tool: { name: "manual-static-reading", version: "", command: "nl/sed/rg" }, limitations: ["Expectation only."] }
+      - { stable_key: "evidence:semantic-contracts:test-owner-vote", evidence_class: "TEST_EXPECTATION", description: "Owner tests expect YAY/NAY dispatch and direct proposal-call rejection.", anchors: [{ path: "packages/sdk/test/integration/treasury-owner.test.ts", symbol: "vote tests", start_line: 493, end_line: 564 }], source_sha256: "f73f778dcb2ac226c416ebfdf69117af3262fcc37f36877ea3fb7d1bd7e0f4e0", tool: { name: "manual-static-reading", version: "", command: "nl/sed/rg" }, limitations: ["Expectation only."] }
+      - { stable_key: "evidence:semantic-contracts:test-owner-tally", evidence_class: "TEST_EXPECTATION", description: "Owner test expects one proof-backed approved tally.", anchors: [{ path: "packages/sdk/test/integration/treasury-owner.test.ts", symbol: "should commit action state/should tally votes", start_line: 568, end_line: 702 }], source_sha256: "f73f778dcb2ac226c416ebfdf69117af3262fcc37f36877ea3fb7d1bd7e0f4e0", tool: { name: "manual-static-reading", version: "", command: "nl/sed/rg" }, limitations: ["Expectation only; proof code not executed by analysis."] }
+      - { stable_key: "evidence:semantic-contracts:test-owner-execute", evidence_class: "TEST_EXPECTATION", description: "Owner test expects full amount-plus-bond payout and matching balance debit.", anchors: [{ path: "packages/sdk/test/integration/treasury-owner.test.ts", symbol: "should execute a proposal", start_line: 704, end_line: 764 }], source_sha256: "f73f778dcb2ac226c416ebfdf69117af3262fcc37f36877ea3fb7d1bd7e0f4e0", tool: { name: "manual-static-reading", version: "", command: "nl/sed/rg" }, limitations: ["Expectation only."] }
+      - { stable_key: "evidence:semantic-contracts:test-proposal-thresholds", evidence_class: "TEST_EXPECTATION", description: "Six acceptance-curve examples from 1% through 100% proposal ratio.", anchors: [{ path: "packages/sdk/test/provable/contracts/treasury-proposal/treasury-proposal.test.ts", symbol: "calculate acceptance criteria", start_line: 6, end_line: 84 }], source_sha256: "89444ba4edfc6bf48fae0c0ef4f8b183c9c2d35f24e38e78622334adb3bed6bb", tool: { name: "manual-static-reading", version: "", command: "nl/sed/rg" }, limitations: ["No zero balance, >100%, rounding/equality, or approval-status cases."] }
+      - { stable_key: "evidence:semantic-contracts:test-pause-controller", evidence_class: "TEST_EXPECTATION", description: "Pause Controller deployment, command, nonce, threshold, rotation, atomic failure, and guard expectations.", anchors: [{ path: "packages/sdk/test/provable/contracts/treasury-pause-controller/treasury-pause-controller.test.ts", symbol: "full suite", start_line: 21, end_line: 659 }], source_sha256: "5e4031821bafa39daf9b1b28d2aeba4daf92e1611f78e571035974ab63fbb1e5", tool: { name: "manual-static-reading", version: "", command: "nl/sed/rg" }, limitations: ["Not executed; no >5, duplicate, empty, cross-domain, or explicit proposal-state case."] }
+      - { stable_key: "evidence:semantic-contracts:test-multisig", evidence_class: "TEST_EXPECTATION", description: "Message-hash determinism/domain and signature threshold/ordering expectations.", anchors: [{ path: "packages/sdk/test/provable/contracts/treasury-pause-controller/multisig-signatures.test.ts", symbol: "full suite", start_line: 13, end_line: 611 }], source_sha256: "d51e8afe43141a84650ddcff49d736a308007fb04da1ae22b72d3a65783648b2", tool: { name: "manual-static-reading", version: "", command: "nl/sed/rg" }, limitations: ["Not executed; fixture participants are distinct and deployment/network domains are not tested."] }
+      - { stable_key: "evidence:semantic-contracts:test-events", evidence_class: "TEST_EXPECTATION", description: "Event Struct encoding round-trip expectations.", anchors: [{ path: "packages/sdk/test/provable/events/treasury-proposal-events.test.ts", symbol: "event schema tests", start_line: 41, end_line: 212 }], source_sha256: "2b5204f4acf2dca9135642a242e18bf5535f46fa41526b43fb19b228d6f63f79", tool: { name: "manual-static-reading", version: "", command: "nl/sed/rg" }, limitations: ["Round-trip only; no producer/state consistency oracle."] }
+  proposed_relations: []
+  conflicts:
+    - "calculateApprovalStatus classifies failed participation or zero directional votes as REJECTED, while tallyVotes rejects those states before persisting the result."
+    - "Proposal pause is described operationally as a pause control, while the implementation overwrites the same Field used for final governance status."
+    - "The proposal pause event accepts a desired-state-looking Bool, while signatures and state transition authorize only a toggle."
+    - "Controller initialization accepts at least five participants, while signature verification requires exactly five."
+    - "The RFC bond concept and prior-audit expectation of proposer refund do not match current recipient-bound payout; no final decision source resolves the intended policy."
+  unresolved:
+    - "Whether permissionless execution timing is intentional remains a business decision; funds remain recipient-bound."
+    - "Whether current-epoch rather than next-epoch staking data matches production snapshot policy remains unresolved."
+    - "Mina/o1js slot inclusion, permission, proof, hash, signature, account-update, and atomic rollback semantics were not executed or proven."
+    - "Production values and version binding for lifecycle duration, thresholds, bond, roots, keys, permission mode, and controller address are not supplied."
+  coverage:
+    expected_paths: 6
+    accounted_paths: 6
+    expected_symbols: 70
+    accounted_symbols: 70
+    semantic_method_and_boundary_groups: 31
+    behaviors: 24
+    flows: 7
+    clauses: 26
+    invariants: 16
+    inputs_outputs: 10
+    relations: 19
+    findings: 10
+    gaps: 6
+    unresolved_records: 7
+    active_test_files_read: 5
+    source_hashes_rechecked: 17
+    limitations:
+      - "Cross-component flows are proposals for orchestrator integration; canonical ownership and ID allocation remain with the root orchestrator."
+      - "ZkProgram internals are neighboring context here and are owned by the separate semantic ZK work unit."
+      - "No runtime, proof, compiler, build, or test claim is made."

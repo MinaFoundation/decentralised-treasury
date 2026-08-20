@@ -1,0 +1,433 @@
+bundle:
+  schema_version: 1
+  work_unit: "WU-48B6E1820C"
+  revision: "1e27b1aea88f5ea2764db96e4b337b24fe6dbeb3"
+  scope_hash: "f40d76b91ec3cd8805ecdc7bebba8d43b8f317842639a7799738c37569119ab1"
+  role: "challenge"
+  source_hashes:
+    "packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts": "37c1f07a5fad41f036f999792b44bf13d4f9af280cb1439bed6a8411dfaa81cd"
+    "packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts": "4dcfc5e1f1edcc7e26cfb960f3892208efe16056a2579b14e12e2a79f0e28197"
+    "packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts": "95e5656d3a0d0c09a88ac9befa743517c53a98983bd1cf74b042e87bc9faf7af"
+    "packages/sdk/src/provable/contracts/treasury-owner.ts": "7c66014cee7f7a5e559b29f3b7c2790ed19c38c9a91b886c15cbbef3328d17dc"
+    "packages/sdk/src/provable/contracts/treasury-pause-controller/treasury-pause-controller.ts": "f7139183b963aa496dd36df00017885c9ab6275f11accca35bfd9054260e5104"
+    "packages/sdk/src/provable/contracts/treasury-pause-controller/multisig-signatures.ts": "48a7c4cd41c1e9764df1329966c37f325817fa43074140c145f4f6c1ae2aa372"
+    "packages/sdk/src/provable/account.ts": "00eabfcee24eb10380d0ffeb1e60a08a85aa650cc8a3e9140718cecbf6fd0563"
+    "packages/sdk/src/provable/hashing-helpers.ts": "8ef43c9c685339f97a667002c2f6f349071eaa53ba753c7008dc46be23396869"
+    "packages/sdk/src/provable/merkle-tree/prefixed-merkle-tree.ts": "870ca739cc8406070367beb86367efa64101647d130f0892b636555cbd2a5c6c"
+    "packages/sdk/src/provable/voting-account.ts": "fe383ead1055910ace4062c56cf4c7773dead3d95733f972ef6e49b2de515454"
+    "packages/sdk/src/ledgers/staking-ledger/staking-ledger.ts": "df9be11132c6cb968fe1b9857b53137d629f7d213141652bc90981b5c7c04d69"
+    "packages/sdk/src/ledgers/voting-ledger/voting-ledger.ts": "8405cbfde9370f4cc424efcdb32477949bf5fcf38db24926cfd0bd1f40898c52"
+    "packages/sdk/src/ledgers/nullifier-ledger/nullifier-ledger.ts": "0b8a9038005b7aee785f75d4e0bb4fdf4cb5f945c639f35528596003ac9c36e4"
+    "packages/sdk/src/utils/context-provider.ts": "cbbde1f3561ca2ee39bc7026241a09fa2659629542c527cc49271da5e924b6d4"
+    "packages/sdk/src/utils/public-key.ts": "4a174b2a1bc5d07a9f3f8680e47cde35d3b654eeaf924f82e0aae8cf162a9383"
+    "packages/sdk/test/provable/contracts/treasury-proposal/vote-reducer.test.ts": "7f957b454de0f6e1545fa2dc0367b53e0908bde826eb76db4099d36f4f4e8f8a"
+    "packages/sdk/test/provable/staking-ledger-to-voting-ledger.test.ts": "988d911b4336e64ccd70009cddcb514bc93b693a1df203c6d1a15dbb98e6af0c"
+    "packages/sdk/test/provable/merkle-tree/prefixed-merkle-tree.test.ts": "a26229c7a3247fc649d1fc8cb2212f978cc108e222ecb0f17045327285221845"
+    "packages/sdk/test/provable/context/contracts/vote-reducer-context.ts": "01d905c373575a62eb1274650fbff25a240626f993ae6127f54e2621346d49f0"
+    "packages/sdk/test/provable/context/staking-ledger-to-voting-ledger-context.ts": "4195f6ebbcbee51ca421f319cd5a399d54e9f252ff76334024914f83d8afdfec"
+    "packages/sdk/test/integration/treasury-owner.test.ts": "f73f778dcb2ac226c416ebfdf69117af3262fcc37f36877ea3fb7d1bd7e0f4e0"
+  ownership:
+    primary_paths: []
+    record_ids: []
+    stable_key_prefixes:
+      - "finding:challenge:zk:"
+      - "gap:challenge:zk:"
+      - "unresolved:challenge:zk:"
+      - "evidence:challenge:zk:"
+  assumptions:
+    - "This is an independent static challenge. No target TypeScript, repository test, compiler, build, proof, verifier, local chain, or proof mode was executed."
+    - "The pinned o1js fork supplies the semantics of Field, Bool, UInt64, PublicKey, Poseidon, Provable.witness, Provable.witnessAsync, SelfProof, DynamicProof, and recursive verification. Those semantics are not reimplemented or dynamically validated here."
+    - "A Mina staking-ledger root is assumed to use the repository Account commitment and to have a protocol-defined allocation discipline; the local proof does not itself establish that discipline."
+    - "The side-loaded verification keys and configured empty roots are assumed to be derived from the same program, types, prefixes, tree heights, dependency revision, and deployed contract configuration."
+  observations:
+    - "Both ZkPrograms and all five proof methods are represented by the semantic bundle: VoteReducer.reduceBatch/merge and StakingLedgerToVotingLedger.digest/merge/exhaust."
+    - "The eleven Provable.witnessAsync source sites owned by the two programs reconcile as eight host reads whose returned values are subsequently root/index constrained and three host persistence mutations that are not proved effects."
+    - "The twelfth scoped Provable.witness site is the pause-controller participant-array callback. Its five PublicKey values are private host inputs bound to the on-chain participant commitment and signature checks; it is not a ZkProgram persistence effect but must appear in global witness accounting."
+    - "Contract consumers close the source-visible proof genesis boundary: staking starts at index zero and the configured empty voting root under the proposal snapshot root; voting starts at Reducer.initialActionState and the configured empty nullifier root under the staking proof's output voting root."
+    - "The staking exhausted flag is not monotonic. exhaust sets it true, while merge does not inspect either input flag and always publishes false."
+    - "The vote-reducer suite has substantial root/index/duplicate/merge negative expectations, but its out-of-range vote case is skipped and encodes an expectation contrary to Vote.assertValid. The staking suite contains only successful digest, merge, and exhaust cases."
+  proof_statement_reconciliation:
+    - program: "VoteReducer"
+      method: "reduceBatch"
+      statement: "Given public action, voting-root, nullifier-root, and five action-state targets plus five private VoteActions and host ledger witnesses, prove voter/root/index membership, one-time weighting, ordered action commitment, and target discovery, then publish terminal commitments and UInt64 tallies."
+      public_values:
+        - { name: "fromActionsHash", type: "Field", range_encoding: "canonical Field; Mina action-hash equivalence external" }
+        - { name: "votingLedgerRoot", type: "Field", range_encoding: "prefixed height-255 Merkle root" }
+        - { name: "fromNullifierRoot", type: "Field", range_encoding: "prefixed height-255 Merkle root" }
+        - { name: "actionStateOne", type: "Field", range_encoding: "Mina reducer action-state commitment" }
+        - { name: "actionStateTwo", type: "Field", range_encoding: "Mina reducer action-state commitment" }
+        - { name: "actionStateThree", type: "Field", range_encoding: "Mina reducer action-state commitment" }
+        - { name: "actionStateFour", type: "Field", range_encoding: "Mina reducer action-state commitment" }
+        - { name: "actionStateFive", type: "Field", range_encoding: "Mina reducer action-state commitment" }
+      private_values:
+        - { name: "voteActions[5].vote", type: "Vote(Field)", range_encoding: "explicit membership in 0,1,2,3" }
+        - { name: "voteActions[5].publicKey", type: "PublicKey", range_encoding: "o1js x/isOdd representation; canonicality dependency" }
+        - { name: "votingAccount[iteration].balance", type: "UInt64", range_encoding: "64-bit; bound by voting leaf/root" }
+        - { name: "votingWitness[iteration]", type: "PrefixedMerkleWitness255", range_encoding: "254 Bool directions and 254 Field siblings" }
+        - { name: "priorNullifier[iteration]", type: "Bool", range_encoding: "one constrained Boolean" }
+        - { name: "nullifierWitness[iteration]", type: "PrefixedMerkleWitness255", range_encoding: "254 Bool directions and 254 Field siblings" }
+      output_values:
+        - { name: "toActionsHash", type: "Field", range_encoding: "ordered prefixed action hash" }
+        - { name: "toNullifierRoot", type: "Field", range_encoding: "prefixed height-255 Merkle root" }
+        - { name: "yay", type: "UInt64", range_encoding: "64-bit checked accumulator" }
+        - { name: "nay", type: "UInt64", range_encoding: "64-bit checked accumulator" }
+        - { name: "abstain", type: "UInt64", range_encoding: "64-bit checked accumulator" }
+        - { name: "actionStateHistory[5].hash", type: "Field", range_encoding: "copied target commitment" }
+        - { name: "actionStateHistory[5].found", type: "Bool", range_encoding: "false-initialized monotonic discovery flag" }
+      host_values_effects:
+        - "VotingAccount and voting path reads; both are root/index bound."
+        - "Nullifier Bool and path reads; both are rolling-root/index bound."
+        - "setNullifier and setLeaf mutations return constant Field(0), are not constraint-bound effects, and have no visible transaction boundary."
+    - program: "VoteReducer"
+      method: "merge"
+      statement: "Given two private valid SelfProofs and one public outer input, prove commitment adjacency, one voting root and one target set, add checked tallies, and publish the second terminal state."
+      public_values:
+        - { name: "outerPublicInput", type: "VoteReducerPublicInput", range_encoding: "bound to proof1 input by Poseidon commitment, not fieldwise equality" }
+        - { name: "mergedPublicOutput", type: "VoteReducerPublicOutput", range_encoding: "typed Fields, UInt64 values, and Bools" }
+      private_values:
+        - { name: "proof1", type: "SelfProof", range_encoding: "verified current-program proof" }
+        - { name: "proof2", type: "SelfProof", range_encoding: "verified current-program proof" }
+      continuity:
+        - "proof1 and proof2 verify"
+        - "outer input commitment equals proof1 input commitment"
+        - "voting roots equal"
+        - "proof1.toActionsHash equals proof2.fromActionsHash"
+        - "proof1.toNullifierRoot equals proof2.fromNullifierRoot"
+        - "all five history target hashes equal"
+    - program: "StakingLedgerToVotingLedger"
+      method: "digest"
+      statement: "Given public start index, staking root, and voting root plus five private Accounts and host paths/leaves, prove five consecutive staking memberships and roll delegate voting balances."
+      public_values:
+        - { name: "index", type: "UInt64", range_encoding: "64-bit; consumer constrains aggregate genesis to zero" }
+        - { name: "stakingLedgerRoot", type: "Field", range_encoding: "prefixed height-36 Mina account root" }
+        - { name: "votingLedgerRoot", type: "Field", range_encoding: "prefixed height-255 voting root" }
+      private_values:
+        - { name: "accounts[5]", type: "Account", range_encoding: "repository packed Mina account encoding with typed UInt64/UInt32/Bool/PublicKey members" }
+        - { name: "stakingWitness[iteration]", type: "PrefixedMerkleWitness36", range_encoding: "35 Bool directions and 35 Field siblings" }
+        - { name: "votingAccount[iteration].balance", type: "UInt64", range_encoding: "64-bit accumulator leaf" }
+        - { name: "votingWitness[iteration]", type: "PrefixedMerkleWitness255", range_encoding: "254 Bool directions and 254 Field siblings" }
+      output_values:
+        - { name: "index", type: "UInt64", range_encoding: "input index plus four" }
+        - { name: "votingLedgerRoot", type: "Field", range_encoding: "rolling prefixed root" }
+        - { name: "exhausted", type: "Bool", range_encoding: "constant false" }
+      host_values_effects:
+        - "Staking path, VotingAccount, and voting path reads are root/index bound."
+        - "setVotingAccount plus setLeaf occurs in one witness callback but is not a proved or statically transactional effect."
+    - program: "StakingLedgerToVotingLedger"
+      method: "merge"
+      statement: "Given two private valid SelfProofs and an outer input, prove fixed staking root, adjacent index, and voting-root handoff, then publish proof2 terminal index/root with exhausted=false."
+      public_values:
+        - { name: "outerPublicInput", type: "StakingLedgerToVotingLedgerProgramInput", range_encoding: "bound to proof1 input by Poseidon commitment" }
+        - { name: "mergedPublicOutput", type: "StakingLedgerToVotingLedgerProgramOutput", range_encoding: "UInt64, Field, Bool" }
+      private_values:
+        - { name: "proof1", type: "SelfProof", range_encoding: "verified current-program proof" }
+        - { name: "proof2", type: "SelfProof", range_encoding: "verified current-program proof" }
+      continuity:
+        - "proof1 and proof2 verify"
+        - "outer input commitment equals proof1 input commitment"
+        - "staking roots equal"
+        - "proof1 output index plus one equals proof2 input index"
+        - "proof1 output voting root equals proof2 input voting root"
+        - "neither exhausted input flag is constrained"
+    - program: "StakingLedgerToVotingLedger"
+      method: "exhaust"
+      statement: "Given a private valid prior proof and a private next-index path, prove Account.empty at terminal index plus one under the same staking root and publish the preserved terminal state with exhausted=true."
+      public_values:
+        - { name: "outerPublicInput", type: "StakingLedgerToVotingLedgerProgramInput", range_encoding: "bound to prior input by Poseidon commitment" }
+        - { name: "exhaustedPublicOutput", type: "StakingLedgerToVotingLedgerProgramOutput", range_encoding: "preserved UInt64/Field and true Bool" }
+      private_values:
+        - { name: "proof", type: "SelfProof", range_encoding: "verified current-program proof" }
+        - { name: "nextEmptyWitness", type: "PrefixedMerkleWitness36", range_encoding: "35 Bool directions and 35 Field siblings" }
+      continuity:
+        - "prior proof verifies"
+        - "outer input commitment equals prior input commitment"
+        - "Account.empty root equals proof input staking root at proof output index plus one"
+        - "output index and voting root are preserved"
+  witness_site_reconciliation:
+    - { ordinal: 1, owner: "staking.exhaust", kind: "HOST_READ_PRIVATE_WITNESS", anchor: "packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts:111", binding: "BOUND_TO_STAKING_ROOT_AND_NEXT_INDEX" }
+    - { ordinal: 2, owner: "staking.digest", kind: "HOST_READ_PRIVATE_WITNESS", anchor: "packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts:208", binding: "BOUND_TO_STAKING_ROOT_AND_ROLLING_INDEX" }
+    - { ordinal: 3, owner: "staking.digest", kind: "HOST_READ_PRIVATE_WITNESS", anchor: "packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts:246", binding: "BOUND_WITH_PATH_TO_ROLLING_VOTING_ROOT" }
+    - { ordinal: 4, owner: "staking.digest", kind: "HOST_READ_PRIVATE_WITNESS", anchor: "packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts:262", binding: "BOUND_TO_VOTING_ROOT_AND_POSEIDON_DELEGATE_INDEX" }
+    - { ordinal: 5, owner: "staking.digest", kind: "HOST_MUTATION", anchor: "packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts:310", binding: "HOST_EFFECT_NOT_PROVEN" }
+    - { ordinal: 6, owner: "vote.reduceBatch", kind: "HOST_READ_PRIVATE_WITNESS", anchor: "packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts:460", binding: "BOUND_WITH_PATH_TO_PUBLIC_VOTING_ROOT" }
+    - { ordinal: 7, owner: "vote.reduceBatch", kind: "HOST_READ_PRIVATE_WITNESS", anchor: "packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts:471", binding: "BOUND_TO_PUBLIC_VOTING_ROOT_AND_POSEIDON_VOTER_INDEX" }
+    - { ordinal: 8, owner: "vote.reduceBatch", kind: "HOST_READ_PRIVATE_WITNESS", anchor: "packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts:508", binding: "BOUND_WITH_PATH_TO_ROLLING_NULLIFIER_ROOT" }
+    - { ordinal: 9, owner: "vote.reduceBatch", kind: "HOST_READ_PRIVATE_WITNESS", anchor: "packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts:516", binding: "BOUND_TO_ROLLING_NULLIFIER_ROOT_AND_POSEIDON_VOTER_INDEX" }
+    - { ordinal: 10, owner: "vote.reduceBatch", kind: "HOST_MUTATION", anchor: "packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts:557", binding: "HOST_EFFECT_NOT_PROVEN" }
+    - { ordinal: 11, owner: "vote.reduceBatch", kind: "HOST_MUTATION", anchor: "packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts:567", binding: "HOST_EFFECT_NOT_PROVEN" }
+    - { ordinal: 12, owner: "pause.verifySignatures", kind: "HOST_READ_PRIVATE_WITNESS", anchor: "packages/sdk/src/provable/contracts/treasury-pause-controller/treasury-pause-controller.ts:105", binding: "BOUND_TO_ONCHAIN_COMMITMENT_AND_SIGNATURE_VERIFICATION" }
+  producer_consumer_reconciliation:
+    side_loaded_types:
+      - { type: "SideLoadedVoteReducerProof", max_proofs_verified: 2, verification_key_source: "TreasuryProposalSmartContract.voteReducerVerificationKey" }
+      - { type: "SideLoadedStakingLedgerToVotingLedgerProof", max_proofs_verified: 2, verification_key_source: "TreasuryProposalSmartContract.stakingLedgerToVotingLedgerVerificationKey" }
+    producer_assumptions:
+      - "SelfProof recursion belongs to the current named ZkProgram and current dependency/compiler revision."
+      - "Host contexts are job-scoped and their roots match each proof invocation."
+      - "The staking account serializer/prefix/tree matches the proposal snapshot root."
+    consumer_bindings_present:
+      - "Both proof objects are verified at Treasury Owner and again at Treasury Proposal."
+      - "Staking public input index equals zero."
+      - "Staking public input root equals snapshotted stakingEpochDataLedgerHash."
+      - "Staking public input voting root equals the configured empty voting root."
+      - "Staking public output exhausted is true."
+      - "Vote public input action hash equals Reducer.initialActionState."
+      - "Vote public input nullifier root equals the configured empty nullifier root."
+      - "Vote public input voting root equals staking public output voting root."
+      - "Vote public output action hash equals actionStateOne, and Owner checks five found, non-initial, pairwise-distinct on-chain action-state preconditions."
+    unresolved_boundary:
+      - "Mutable static verification keys/empty roots are not revision- or deployment-bound inside these source files."
+      - "DynamicProof, nested account-update, and deployed verifier semantics are dependency/deployment facts."
+      - "The five simultaneous action-state preconditions depend on Mina/o1js account action-state semantics."
+  test_partition_reconciliation:
+    vote_reducer:
+      present:
+        - "mixed YAY/NAY/ABSTRAIN tallies"
+        - "all exact dummy padding"
+        - "same-batch, prior-state, and cross-batch duplicate voters"
+        - "DUMMY with non-empty key"
+        - "wrong voting/nullifier roots and witness indices"
+        - "merge success and action/nullifier/voting/input/history continuity failures"
+      missing_or_inactive:
+        - "out-of-range vote rejection is skipped and the skipped title expects ignore rather than reject"
+        - "UInt64 accumulator maximum and overflow rejection"
+        - "host callback failure between record and tree writes, retry, and concurrent context replacement"
+        - "public-key hash in the height-255 unmappable tail"
+        - "wrong side-loaded verification key and wrong configured empty roots at the contract consumer"
+    staking_transform:
+      present:
+        - "successful digest of five accounts"
+        - "successful merge of two adjacent batches"
+        - "successful exhaustion after next Account.empty"
+      missing_or_inactive:
+        - "wrong staking root/index and voting root/index"
+        - "non-adjacent merge, wrong root handoff, or mismatched outer input"
+        - "merge with exhausted proof and re-exhaustion"
+        - "non-empty next leaf and sparse ledger with non-empty account after a hole"
+        - "ineligible token/account classes and empty/self/missing delegate partitions"
+        - "UInt64 delegate accumulator boundary"
+        - "host write failure, retry, rollback, and context isolation"
+        - "consumer rejection for nonzero genesis index, wrong snapshot/empty root, and exhausted=false"
+  proposed_records:
+    findings:
+      - stable_key: "finding:challenge:zk:staking-exhaustion-is-not-terminal"
+        title: "Staking proof exhaustion is not a terminal recursive state"
+        rule_id: "ZK.RECURSION.TERMINAL_FLAG_MONOTONICITY"
+        category: "correctness"
+        severity: "LOW"
+        confidence: "HIGH"
+        semantic_status: "OPEN"
+        prerequisites:
+          - "A proof builder passes an exhausted proof as either merge input and supplies an otherwise adjacent proof."
+          - "The selected staking root has commitments that allow the adjacent digest/exhaust sequence; empty leaves suffice for no-op continuation."
+        root_cause: "StakingLedgerToVotingLedger.merge verifies both proofs and continuity but never constrains either publicOutput.exhausted value; it always returns exhausted=false. digest also accepts membership-proven Account.empty values and advances the index."
+        impact: "The public flag does not represent a monotonic terminal state. An exhausted trace can be reopened and extended, obscuring completion/capacity reasoning. If the assumed dense-ledger property is false, the same design can cross an empty hole or certify an early empty boundary without a committed account count."
+        recommendation: "Require both merge inputs to be non-exhausted and define a single terminal exhaust step, or make exhausted monotonic and prohibit later digest composition. Prefer binding a protocol account count or an authoritative terminal index; define and constrain padding separately from real Account.empty membership."
+        scope_limitations:
+          - "Under an authoritative dense-ledger/no-holes invariant, reopening with only trailing empty leaves need not change voting balances."
+          - "No proof was generated; this is a source-visible recursive state-machine finding, not a cryptographic exploit claim."
+        security_objective_refs: []
+        threat_refs: []
+        assumption_refs: []
+        no_security_link_rationale: "Security-objective identifiers are owned by the security work unit; this finding primarily challenges recursive terminal-state correctness and completeness."
+        anchors:
+          - { path: "packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts", symbol: "StakingLedgerToVotingLedger.merge", start_line: 148, end_line: 190 }
+          - { path: "packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts", symbol: "StakingLedgerToVotingLedger.digest", start_line: 195, end_line: 337 }
+          - { path: "packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts", symbol: "StakingLedgerToVotingLedger.exhaust", start_line: 83, end_line: 143 }
+        assertions:
+          - { text: "merge ignores proof1.publicOutput.exhausted and proof2.publicOutput.exhausted and returns Bool(false).", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_refs: ["evidence:challenge:zk:staking-terminal-and-completeness"] }
+          - { text: "digest has no Account.empty rejection or padding selector and increments index for every membership-proven element.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_refs: ["evidence:challenge:zk:staking-terminal-and-completeness"] }
+    gaps:
+      - stable_key: "gap:challenge:zk:staking-completeness-needs-authoritative-terminal-boundary"
+        title: "Full staking-ledger coverage depends on an unbound dense-ledger terminal rule"
+        gap_kinds: ["MISSING_BINDING", "OFFCHAIN_TRUST", "UNRESOLVED_AUTHORITY", "LIVENESS_OR_SCALE_GAP"]
+        materiality: "HIGH"
+        affected_actor_ids: []
+        affected_asset_ids: []
+        requirement_ids: []
+        implementation_stable_keys:
+          - "behavior:zk-programs:staking-transform:prove-terminal-empty-leaf"
+          - "behavior:zk-programs:staking-transform:merge-adjacent-proofs"
+        test_ids: []
+        finding_stable_keys: ["finding:challenge:zk:staking-exhaustion-is-not-terminal"]
+        business_consequence: "If the snapshot representation permits a non-empty account after the first empty leaf, a proof can satisfy index-zero genesis and immediate-next emptiness while excluding later voting balances, changing quorum and approval weights. If Mina guarantees dense allocation, that guarantee is still a critical external premise that authors and operators must version-bind."
+        rollout_relevance: ["MVP", "SAFETY_PERFORMANCE"]
+        author_question: "What authoritative Mina protocol rule or snapshot export guarantee establishes a dense, hole-free staking ledger, and can the proof instead bind the snapshot account count or terminal index directly?"
+        semantic_status: "UNRESOLVED"
+        anchors:
+          - { path: "packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts", symbol: "StakingLedgerToVotingLedger.exhaust", start_line: 107, end_line: 140 }
+          - { path: "packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts", symbol: "TreasuryProposalSmartContract.tallyVotes exhausted consumer", start_line: 266, end_line: 282 }
+        assertions:
+          - { text: "The consumer requires start index zero and exhausted=true, but exhausted proves only Account.empty at terminal index plus one and carries no account count.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_refs: ["evidence:challenge:zk:staking-terminal-and-completeness", "evidence:challenge:zk:consumer-bindings"] }
+          - { text: "Whether immediate-next emptiness is equivalent to complete snapshot traversal is external to the relation.", evidence_class: "UNRESOLVED", confidence: "HIGH", evidence_refs: ["evidence:challenge:zk:staking-terminal-and-completeness"], limitation: "No authoritative dense-ledger allocation specification was supplied in the pinned context." }
+    unresolved:
+      - stable_key: "unresolved:challenge:zk:public-key-index-unmappable-tail"
+        kind: "EXTERNAL"
+        reason: "The height-255 witness represents 254 path bits, while publicKeyBase58ToBigInt and the circuit compare against a canonical Poseidon Field. The prior audit intentionally chose this width to remove modulo-field index aliasing and described the remaining unmappable hash tail as negligible; the exact field modulus, hash distribution, and operational rejection policy are dependency/protocol facts."
+        required_context:
+          - "Pinned o1js Field modulus and Poseidon output-domain specification"
+          - "An explicit calculation of the canonical Field values outside the 254-bit host tree domain"
+          - "Production policy and assurance case for the negligible unmappable-key probability"
+        semantic_status: "OPEN"
+        anchors:
+          - { path: "packages/sdk/src/provable/merkle-tree/prefixed-merkle-tree.ts", symbol: "PrefixedMerkleWitness255", start_line: 226, end_line: 266 }
+          - { path: "packages/sdk/src/utils/public-key.ts", symbol: "publicKeyBase58ToBigInt", start_line: 3, end_line: 10 }
+          - { path: "packages/sdk/src/ledgers/voting-ledger/voting-ledger.ts", symbol: "BaseVotingLedger.getWitness", start_line: 283, end_line: 324 }
+        assertions:
+          - { text: "The host tree leaf domain is 0 through 2^(height-1)-1 and height is 255; both host and circuit derive the key index from Poseidon(publicKey fields).", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_refs: ["evidence:challenge:zk:public-key-index-domain"] }
+          - { text: "Static repository source does not quantify or handle a canonical Poseidon result outside that host index domain.", evidence_class: "UNRESOLVED", confidence: "MEDIUM", evidence_refs: ["evidence:challenge:zk:public-key-index-domain"], limitation: "Field modulus and distribution are external; the prior audit treats the residual probability as negligible rather than an aliasing vulnerability." }
+      - stable_key: "unresolved:challenge:zk:aggregate-uint64-range-budget"
+        kind: "EXTERNAL"
+        reason: "All account balances, voting leaves, and the three vote tallies are UInt64. Source-visible additions are checked typed arithmetic, so overflow is an overconstraint/liveness boundary rather than silent wraparound; however the bounded scope supplies no authoritative bound proving every delegate aggregate and every choice aggregate fits UInt64 after the implemented all-account eligibility rule."
+        required_context:
+          - "Maximum eligible snapshot supply in nanomina for the deployed protocol"
+          - "Authoritative account/token eligibility rule"
+          - "Pinned UInt64 checked-add semantics"
+          - "Boundary assurance for one delegate and one vote choice receiving maximum eligible weight"
+        semantic_status: "OPEN"
+        anchors:
+          - { path: "packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts", symbol: "delegate balance accumulation", start_line: 239, end_line: 302 }
+          - { path: "packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts", symbol: "VoteReducer.reduceBatch tally additions", start_line: 576, end_line: 599 }
+          - { path: "packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts", symbol: "VoteReducer.merge tally additions", start_line: 406, end_line: 414 }
+        assertions:
+          - { text: "The three reducer tallies and each voting-account balance are UInt64 and are combined by UInt64.add.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_refs: ["evidence:challenge:zk:aggregate-range-sites"] }
+          - { text: "No local predicate relates included balances to stakingEpochDataLedgerTotalCurrency or excludes custom-token/account classes before aggregation.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_refs: ["evidence:challenge:zk:aggregate-range-sites"] }
+          - { text: "Whether all valid production aggregates fit UInt64 is unresolved without protocol and eligibility bounds.", evidence_class: "UNRESOLVED", confidence: "HIGH", evidence_refs: ["evidence:challenge:zk:aggregate-range-sites"], limitation: "No target execution or external dependency analysis was authorized." }
+      - stable_key: "unresolved:challenge:zk:witness-callback-evaluation-and-retry-semantics"
+        kind: "EXTERNAL"
+        reason: "Three witness callbacks perform non-idempotent host mutations. Static local source cannot establish when or how often the pinned o1js runtime invokes witness callbacks across analysis, proving, retry, failure, or proofs-disabled fixture modes."
+        required_context:
+          - "Pinned o1js Provable.witnessAsync lifecycle contract"
+          - "Prover worker transaction/retry design"
+          - "Job-scoped context ownership and durable trace protocol"
+          - "Fault-injection assurance outside this static workflow"
+        semantic_status: "OPEN"
+        anchors:
+          - { path: "packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts", symbol: "nullifier persistence witness callbacks", start_line: 556, end_line: 574 }
+          - { path: "packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts", symbol: "voting persistence witness callback", start_line: 304, end_line: 320 }
+          - { path: "packages/sdk/src/utils/context-provider.ts", symbol: "ContextProvider", start_line: 1, end_line: 14 }
+        assertions:
+          - { text: "All three callbacks mutate external objects and return constant Field(0); their successful host effects are not represented in public proof output.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_refs: ["evidence:challenge:zk:witness-and-host-effect-ledger"] }
+          - { text: "Invocation multiplicity, cancellation, and retry semantics are not defined by the pinned repository interfaces.", evidence_class: "UNRESOLVED", confidence: "HIGH", evidence_refs: ["evidence:challenge:zk:witness-and-host-effect-ledger"], limitation: "o1js runtime and prover orchestration are outside the bounded closure." }
+    evidence:
+      - stable_key: "evidence:challenge:zk:staking-terminal-and-completeness"
+        evidence_class: "IMPLEMENTED_STATIC"
+        description: "Staking digest, merge, and exhaust terminal-state, padding, adjacency, and immediate-next-empty semantics."
+        anchors:
+          - { path: "packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts", symbol: "StakingLedgerToVotingLedger.exhaust", start_line: 83, end_line: 143 }
+          - { path: "packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts", symbol: "StakingLedgerToVotingLedger.merge", start_line: 148, end_line: 190 }
+          - { path: "packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts", symbol: "StakingLedgerToVotingLedger.digest", start_line: 195, end_line: 337 }
+        source_sha256: "4dcfc5e1f1edcc7e26cfb960f3892208efe16056a2579b14e12e2a79f0e28197"
+        tool: { name: "manual-static-reading", version: "", command: "nl -ba and semantic reconciliation" }
+        limitations: ["No constraint system or proof was generated."]
+      - stable_key: "evidence:challenge:zk:public-key-index-domain"
+        evidence_class: "IMPLEMENTED_STATIC"
+        description: "Height-derived host leaf count, height-255 witness index reconstruction, and public-key Poseidon index derivation."
+        anchors:
+          - { path: "packages/sdk/src/provable/merkle-tree/prefixed-merkle-tree.ts", symbol: "PrefixedMerkleTree.leafCount/BasePrefixedMerkleWitness.calculateIndex/PrefixedMerkleWitness255", start_line: 171, end_line: 266 }
+          - { path: "packages/sdk/src/utils/public-key.ts", symbol: "publicKeyBase58ToBigInt", start_line: 3, end_line: 10 }
+          - { path: "packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts", symbol: "voting/nullifier index constraints", start_line: 493, end_line: 535 }
+        source_sha256: "multiple:pinned-in-source_hashes"
+        tool: { name: "manual-static-reading", version: "", command: "nl -ba and cross-file comparison" }
+        limitations: ["Field modulus and Poseidon distribution are external."]
+      - stable_key: "evidence:challenge:zk:aggregate-range-sites"
+        evidence_class: "IMPLEMENTED_STATIC"
+        description: "UInt64 voting-leaf, delegate accumulation, batch tally, and recursive tally-addition sites."
+        anchors:
+          - { path: "packages/sdk/src/provable/voting-account.ts", symbol: "VotingAccount.balance", start_line: 5, end_line: 16 }
+          - { path: "packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts", symbol: "delegate voting balance addition", start_line: 239, end_line: 302 }
+          - { path: "packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts", symbol: "batch and merge tally addition", start_line: 406, end_line: 414 }
+          - { path: "packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts", symbol: "vote tally selection", start_line: 576, end_line: 599 }
+        source_sha256: "multiple:pinned-in-source_hashes"
+        tool: { name: "manual-static-reading", version: "", command: "nl -ba and type/range reconciliation" }
+        limitations: ["Pinned o1js UInt64 constraint implementation was not analyzed or executed."]
+      - stable_key: "evidence:challenge:zk:witness-and-host-effect-ledger"
+        evidence_class: "IMPLEMENTED_STATIC"
+        description: "All eleven ZkProgram witnessAsync sites plus the pause-controller participant witness, classified by host read/mutation and constraint binding."
+        anchors:
+          - { path: "packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts", symbol: "all Provable.witnessAsync sites", start_line: 83, end_line: 337 }
+          - { path: "packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts", symbol: "all Provable.witnessAsync sites", start_line: 426, end_line: 639 }
+          - { path: "packages/sdk/src/provable/contracts/treasury-pause-controller/treasury-pause-controller.ts", symbol: "verifySignatures participant witness", start_line: 97, end_line: 119 }
+          - { path: "packages/sdk/src/provable/contracts/treasury-pause-controller/multisig-signatures.ts", symbol: "MultisigSignatures.verify", start_line: 97, end_line: 145 }
+        source_sha256: "multiple:pinned-in-source_hashes"
+        tool: { name: "manual-static-reading", version: "", command: "rg witness sites; nl -ba; binding reconciliation" }
+        limitations: ["Host runtime invocation lifecycle is external."]
+      - stable_key: "evidence:challenge:zk:consumer-bindings"
+        evidence_class: "IMPLEMENTED_STATIC"
+        description: "Side-loaded proof verification, genesis, snapshot, empty-root, action-state, exhaustion, and voting-root bindings at Treasury Owner and Treasury Proposal."
+        anchors:
+          - { path: "packages/sdk/src/provable/contracts/treasury-owner.ts", symbol: "TreasuryOwnerSmartContract.tallyVotes", start_line: 320, end_line: 419 }
+          - { path: "packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts", symbol: "TreasuryProposalSmartContract.tallyVotes", start_line: 213, end_line: 351 }
+        source_sha256: "multiple:pinned-in-source_hashes"
+        tool: { name: "manual-static-reading", version: "", command: "nl -ba and producer-consumer reconciliation" }
+        limitations: ["DynamicProof and Mina account-update semantics are external."]
+      - stable_key: "evidence:challenge:zk:test-partitions"
+        evidence_class: "TEST_EXPECTATION"
+        description: "Static positive, negative, skipped, fixture, consumer, and missing proof-related test partitions."
+        anchors:
+          - { path: "packages/sdk/test/provable/contracts/treasury-proposal/vote-reducer.test.ts", symbol: "vote reducer suite", start_line: 18, end_line: 1517 }
+          - { path: "packages/sdk/test/provable/staking-ledger-to-voting-ledger.test.ts", symbol: "staking transformation suite", start_line: 11, end_line: 134 }
+          - { path: "packages/sdk/test/provable/context/contracts/vote-reducer-context.ts", symbol: "createVoteReducerTestContext", start_line: 41, end_line: 174 }
+          - { path: "packages/sdk/test/provable/context/staking-ledger-to-voting-ledger-context.ts", symbol: "createStakingLedgerToVotingLedgerTestContext", start_line: 22, end_line: 113 }
+          - { path: "packages/sdk/test/integration/treasury-owner.test.ts", symbol: "proof production and tally expectations", start_line: 568, end_line: 701 }
+        source_sha256: "multiple:pinned-in-source_hashes"
+        tool: { name: "manual-static-reading", version: "", command: "rg test partitions; nl -ba; no execution" }
+        limitations: ["No test was executed and no case is treated as passed."]
+  proposed_relations: []
+  correction_recommendations:
+    - target: "Pass-1 ZKP value model"
+      priority: "REQUIRED_FOR_COMPLETENESS"
+      recommendation: "Expand grouped public-instance/output entries into uniquely named field-level values: eight VoteReducer public-input members, the two terminal roots, three UInt64 tallies, five history hashes and five history Bools; three staking public-input members and three public-output members. Preserve private arrays as cardinality-five schemas while naming every Account/VoteAction field encoding and every witness path domain."
+      rationale: "The semantic bundle is directionally correct but groups multiple independent fields into a few values; the final binding ledger should allow each consumer equality, range, and unresolved encoding premise to be traced independently."
+    - target: "Global witness/host-effect ledger"
+      priority: "REQUIRED_FOR_VALIDATION"
+      recommendation: "Record exactly 12 scoped Provable.witness* source sites: 11 in the two programs and one participant-array witness in the pause controller. Classify nine host reads/private inputs as constraint-bound and three storage mutations as HOST_EFFECT_NOT_PROVEN; do not label persistence success as proved."
+      rationale: "The semantic ZK owner correctly accounts for its 11 sites, while the final whole-scope model must also include the controller witness detected by inventory."
+    - target: "Staking recursion and completeness model"
+      priority: "HIGH"
+      recommendation: "Add explicit clauses/invariants for ignored input exhausted flags, constant-false merge output, digest acceptance of Account.empty, and the distinction between immediate-next emptiness and full-ledger completeness. Link the new finding/gap and keep the dense-ledger premise unresolved until an authoritative protocol source is supplied."
+      rationale: "Adjacency/root continuity is present, but the public terminal flag is not monotonic and does not itself prove a globally terminal index."
+    - target: "Range and canonical-encoding model"
+      priority: "HIGH"
+      recommendation: "Keep the prior height-256 aliasing item REMEDIATED_STATICALLY, but separately preserve the height-255 unmappable Field tail as an availability limitation. Add explicit UInt64 aggregate range assumptions for delegate leaves and choice tallies; do not describe checked-add failure as wraparound."
+      rationale: "This separates a fixed aliasing defect from two residual range/completeness boundaries."
+    - target: "Proof producer-consumer boundary"
+      priority: "HIGH"
+      recommendation: "Show both contract verification sites, configured static keys/empty roots, staking genesis/snapshot/exhaustion bindings, vote genesis/nullifier/voting-root/action-history bindings, and the unresolved dependency/deployment provenance of side-loaded keys and Mina action-state preconditions."
+      rationale: "Critical constraints are deliberately split between ZkPrograms, Treasury Proposal, and Treasury Owner; local program review alone is incomplete."
+    - target: "Static test map"
+      priority: "HIGH"
+      recommendation: "Preserve the vote suite's strong negative partitions but mark the invalid-enum case skipped/conflicting. Mark staking proof coverage as happy-path only and add explicit missing partitions for roots/indices, merge adjacency, terminal monotonicity, sparse completeness, eligibility, UInt64 boundaries, host failure/retry, key/root misconfiguration, and contract consumer genesis/history checks."
+      rationale: "A called proof method is not evidence that each independent constraint or failure policy has a test oracle."
+    - target: "Host persistence language"
+      priority: "HIGH"
+      recommendation: "State that Merkle transition outputs are constraint-bound while external record/tree writes are unproved construction-time effects. Require a separate job-scoped copy-on-write/transaction/trace-commit contract before treating retries or concurrent proofs as operationally safe."
+      rationale: "The proof verifies mathematical roots; it neither proves nor repairs the prover's mutable storage."
+  conflicts:
+    - "The staking output field is named exhausted and the consumer requires true, but recursive merge can reopen either exhausted input and returns false; terminal meaning is therefore weaker than the name suggests."
+    - "The prior audit's height-255 remediation removes integer-path aliasing while deliberately retaining a negligible unmappable Field tail; these must not be conflated."
+    - "The skipped out-of-range vote test expects ignore, whereas current Vote.assertValid constrains the vote to 0..3 and rejects other values."
+  unresolved:
+    - "Circuit/backend/cryptographic soundness, proof completeness, and deployed side-loaded key correctness remain unresolved by the static boundary."
+    - "The Mina dense-ledger/account-count rule and exact Account/action commitment equivalence remain external protocol premises."
+    - "Runtime proof cost, deadline fit, callback invocation multiplicity, persistence atomicity, and proofs-enabled/disabled behavior were not executed."
+  coverage:
+    proof_programs_expected: 2
+    proof_programs_accounted: 2
+    proof_methods_expected: 5
+    proof_methods_accounted: 5
+    program_witness_sites_expected: 11
+    program_witness_sites_accounted: 11
+    global_witness_sites_expected: 12
+    global_witness_sites_accounted: 12
+    bound_host_read_sites: 9
+    host_mutation_sites_not_proven: 3
+    producer_consumer_contracts: 2
+    test_suites_challenged: 3
+    unique_findings_proposed: 1
+    unique_gaps_proposed: 1
+    unique_unresolved_proposed: 3
+    source_hashes_rechecked: 21
+    source_hash_mismatches: 0
+    limitations:
+      - "The challenge proposes additions/corrections only and does not rewrite prior bundles."
+      - "No claim of runtime, circuit, cryptographic, or deployed security is made."

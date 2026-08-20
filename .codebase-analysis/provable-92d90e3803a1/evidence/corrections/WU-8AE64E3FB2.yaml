@@ -1,0 +1,607 @@
+bundle:
+  schema_version: 1
+  work_unit: WU-8AE64E3FB2
+  revision: 1e27b1aea88f5ea2764db96e4b337b24fe6dbeb3
+  scope_hash: f40d76b91ec3cd8805ecdc7bebba8d43b8f317842639a7799738c37569119ab1
+  pass_2_sha256: 645101d2946d908ab1e200b78048e56957cdd63daa1f872c81897d1e83618897
+  role: root-validator-closure
+  status: COMPLETE
+  ownership:
+    record_groups:
+      - assumptions
+      - relations
+    canonical_model_mutated: false
+    source_or_test_mutated: false
+changes:
+  - group: assumptions
+    record_id: ASM-3B12C3E849
+    old:
+      affected_ids: &a1
+        - ZKP-0830843A1A
+        - BHV-1136BD4D08
+    set:
+      affected_record_ids: *a1
+    absent_before:
+      - affected_record_ids
+    unset:
+      - affected_ids
+    rationale: Normalize the legacy affected_ids alias to the canonical
+      affected_record_ids field required by the security-model schema; the exact
+      referenced IDs and reviewed conclusion are unchanged.
+    evidence_ids:
+      - EVD-F211A2464E
+    source_references:
+      - packages/sdk/src/provable/account.ts:211-308
+  - group: assumptions
+    record_id: ASM-C093AE5452
+    old:
+      affected_ids: &a2
+        - CMP-E155326DD2
+    set:
+      affected_record_ids: *a2
+    absent_before:
+      - affected_record_ids
+    unset:
+      - affected_ids
+    rationale: Normalize the legacy affected_ids alias to the canonical
+      affected_record_ids field required by the security-model schema; the exact
+      referenced IDs and reviewed conclusion are unchanged.
+    evidence_ids:
+      - EVD-8928C709CD
+    source_references:
+      - packages/sdk/src/provable/contracts/treasury-owner.ts:64-84
+  - group: assumptions
+    record_id: ASM-031E77BE7F
+    old:
+      affected_ids: &a3
+        - ZKP-37F3DC23FD
+        - ZKP-0830843A1A
+    set:
+      affected_record_ids: *a3
+    absent_before:
+      - affected_record_ids
+    unset:
+      - affected_ids
+    rationale: Normalize the legacy affected_ids alias to the canonical
+      affected_record_ids field required by the security-model schema; the exact
+      referenced IDs and reviewed conclusion are unchanged.
+    evidence_ids:
+      - EVD-79754810F6
+    source_references:
+      - packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts:64-66
+  - group: assumptions
+    record_id: ASM-79662ECECE
+    old:
+      affected_ids: &a4
+        - CMP-0F476A460D
+        - CMP-874E479BA1
+    set:
+      affected_record_ids: *a4
+    absent_before:
+      - affected_record_ids
+    unset:
+      - affected_ids
+    rationale: Normalize the legacy affected_ids alias to the canonical
+      affected_record_ids field required by the security-model schema; the exact
+      referenced IDs and reviewed conclusion are unchanged.
+    evidence_ids:
+      - EVD-C15386FB6E
+    source_references:
+      - packages/sdk/src/utils/context-provider.ts:1-14
+  - group: assumptions
+    record_id: ASM-B2699C5369
+    old:
+      affected_ids: &a5
+        - ZKP-37F3DC23FD
+        - ZKP-0830843A1A
+    set:
+      affected_record_ids: *a5
+    absent_before:
+      - affected_record_ids
+    unset:
+      - affected_ids
+    rationale: Normalize the legacy affected_ids alias to the canonical
+      affected_record_ids field required by the security-model schema; the exact
+      referenced IDs and reviewed conclusion are unchanged.
+    evidence_ids:
+      - EVD-B30136F272
+    source_references:
+      - packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts:304-320
+  - group: assumptions
+    record_id: ASM-E6AE27B10D
+    old:
+      affected_ids: &a6
+        - CMP-B6BB8BE661
+    set:
+      affected_record_ids: *a6
+    absent_before:
+      - affected_record_ids
+    unset:
+      - affected_ids
+    rationale: Normalize the legacy affected_ids alias to the canonical
+      affected_record_ids field required by the security-model schema; the exact
+      referenced IDs and reviewed conclusion are unchanged.
+    evidence_ids:
+      - EVD-98C59C67BD
+      - EVD-97F3268F92
+    source_references:
+      - packages/sdk/src/provable/contracts/treasury-pause-controller/treasury-pause-controller.ts:29-35
+  - group: assumptions
+    record_id: ASM-E0E1752AF7
+    old:
+      affected_ids: &a7
+        - CMP-E155326DD2
+        - CMP-5CAF19BDCD
+        - CMP-B6BB8BE661
+        - CMP-0F476A460D
+        - CMP-874E479BA1
+    set:
+      affected_record_ids: *a7
+    absent_before:
+      - affected_record_ids
+    unset:
+      - affected_ids
+    rationale: Normalize the legacy affected_ids alias to the canonical
+      affected_record_ids field required by the security-model schema; the exact
+      referenced IDs and reviewed conclusion are unchanged.
+    evidence_ids:
+      - EVD-1C17FE0D88
+    source_references:
+      - packages/sdk/package.json:48-58
+  - group: assumptions
+    record_id: ASM-557C7137A0
+    old:
+      affected_ids: &a8
+        - BHV-5095682725
+    set:
+      affected_record_ids: *a8
+    absent_before:
+      - affected_record_ids
+    unset:
+      - affected_ids
+    rationale: Normalize the legacy affected_ids alias to the canonical
+      affected_record_ids field required by the security-model schema; the exact
+      referenced IDs and reviewed conclusion are unchanged.
+    evidence_ids:
+      - EVD-9B18A655A2
+    source_references:
+      - packages/sdk/src/provable/contracts/treasury-owner.ts:162-184
+  - group: assumptions
+    record_id: ASM-0E591EC647
+    old:
+      affected_ids: &a9
+        - ZKP-0830843A1A
+    set:
+      affected_record_ids: *a9
+    absent_before:
+      - affected_record_ids
+    unset:
+      - affected_ids
+    rationale: Normalize the legacy affected_ids alias to the canonical
+      affected_record_ids field required by the security-model schema; the exact
+      referenced IDs and reviewed conclusion are unchanged.
+    evidence_ids:
+      - EVD-7BD50662A0
+    source_references:
+      - packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts:107-141
+  - group: assumptions
+    record_id: ASM-82EB259917
+    old:
+      affected_ids: &a10
+        - ZKP-37F3DC23FD
+        - ZKP-0830843A1A
+    set:
+      affected_record_ids: *a10
+    absent_before:
+      - affected_record_ids
+    unset:
+      - affected_ids
+    rationale: Normalize the legacy affected_ids alias to the canonical
+      affected_record_ids field required by the security-model schema; the exact
+      referenced IDs and reviewed conclusion are unchanged.
+    evidence_ids:
+      - EVD-9C55001C7F
+    source_references:
+      - packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts:61-66
+  - group: relations
+    record_id: REL-8D94358D1F
+    old:
+      relation_type: BOUND_BY_CONSTRAINT
+    set:
+      type: BOUND_BY_CONSTRAINT
+    absent_before:
+      - type
+    unset:
+      - relation_type
+    rationale: Normalize the legacy relation_type alias to the canonical type field
+      required by relationship and ZK-binding validation; the relation kind,
+      endpoints, assertions, and reviewed conclusion are unchanged.
+    evidence_ids:
+      - EVD-7241D16957
+    source_references:
+      - packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts:261-283
+  - group: relations
+    record_id: REL-E20DC14C1E
+    old:
+      relation_type: VERIFIES
+    set:
+      type: VERIFIES
+    absent_before:
+      - type
+    unset:
+      - relation_type
+    rationale: Normalize the legacy relation_type alias to the canonical type field
+      required by relationship and ZK-binding validation; the relation kind,
+      endpoints, assertions, and reviewed conclusion are unchanged.
+    evidence_ids:
+      - EVD-69F140A1C8
+    source_references:
+      - packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts:227-233
+  - group: relations
+    record_id: REL-A38D47D128
+    old:
+      relation_type: VERIFIES
+    set:
+      type: VERIFIES
+    absent_before:
+      - type
+    unset:
+      - relation_type
+    rationale: Normalize the legacy relation_type alias to the canonical type field
+      required by relationship and ZK-binding validation; the relation kind,
+      endpoints, assertions, and reviewed conclusion are unchanged.
+    evidence_ids:
+      - EVD-C40CC7BDB8
+    source_references:
+      - packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts:227-233
+  - group: relations
+    record_id: REL-F5500906DF
+    old:
+      relation_type: BOUND_BY_CONSTRAINT
+    set:
+      type: BOUND_BY_CONSTRAINT
+    absent_before:
+      - type
+    unset:
+      - relation_type
+    rationale: Normalize the legacy relation_type alias to the canonical type field
+      required by relationship and ZK-binding validation; the relation kind,
+      endpoints, assertions, and reviewed conclusion are unchanged.
+    evidence_ids:
+      - EVD-74C5612F1A
+    source_references:
+      - packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts:207-237
+  - group: relations
+    record_id: REL-0A93E6EC1A
+    old:
+      relation_type: BOUND_BY_CONSTRAINT
+    set:
+      type: BOUND_BY_CONSTRAINT
+    absent_before:
+      - type
+    unset:
+      - relation_type
+    rationale: Normalize the legacy relation_type alias to the canonical type field
+      required by relationship and ZK-binding validation; the relation kind,
+      endpoints, assertions, and reviewed conclusion are unchanged.
+    evidence_ids:
+      - EVD-77FCCF8764
+    source_references:
+      - packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts:245-302
+  - group: relations
+    record_id: REL-4B6DE7971E
+    old:
+      relation_type: MAY_FLOW_TO
+    set:
+      type: MAY_FLOW_TO
+    absent_before:
+      - type
+    unset:
+      - relation_type
+    rationale: Normalize the legacy relation_type alias to the canonical type field
+      required by relationship and ZK-binding validation; the relation kind,
+      endpoints, assertions, and reviewed conclusion are unchanged.
+    evidence_ids:
+      - EVD-01A88DE81D
+    source_references:
+      - packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts:304-320
+  - group: relations
+    record_id: REL-188319D340
+    old:
+      relation_type: VERIFIES
+    set:
+      type: VERIFIES
+    absent_before:
+      - type
+    unset:
+      - relation_type
+    rationale: Normalize the legacy relation_type alias to the canonical type field
+      required by relationship and ZK-binding validation; the relation kind,
+      endpoints, assertions, and reviewed conclusion are unchanged.
+    evidence_ids:
+      - EVD-BDBE008B7F
+    source_references:
+      - packages/sdk/src/provable/contracts/treasury-owner.ts:335-342
+  - group: relations
+    record_id: REL-8723F51AAF
+    old:
+      relation_type: VERIFIES
+    set:
+      type: VERIFIES
+    absent_before:
+      - type
+    unset:
+      - relation_type
+    rationale: Normalize the legacy relation_type alias to the canonical type field
+      required by relationship and ZK-binding validation; the relation kind,
+      endpoints, assertions, and reviewed conclusion are unchanged.
+    evidence_ids:
+      - EVD-4AAAFAD8E9
+    source_references:
+      - packages/sdk/src/provable/contracts/treasury-owner.ts:335-342
+  - group: relations
+    record_id: REL-B9BE0F0531
+    old:
+      relation_type: BOUND_BY_CONSTRAINT
+    set:
+      type: BOUND_BY_CONSTRAINT
+    absent_before:
+      - type
+    unset:
+      - relation_type
+    rationale: Normalize the legacy relation_type alias to the canonical type field
+      required by relationship and ZK-binding validation; the relation kind,
+      endpoints, assertions, and reviewed conclusion are unchanged.
+    evidence_ids:
+      - EVD-AE1EDCE441
+    source_references:
+      - packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts:507-554
+  - group: relations
+    record_id: REL-9320DFA9E7
+    old:
+      relation_type: BOUND_BY_CONSTRAINT
+    set:
+      type: BOUND_BY_CONSTRAINT
+    absent_before:
+      - type
+    unset:
+      - relation_type
+    rationale: Normalize the legacy relation_type alias to the canonical type field
+      required by relationship and ZK-binding validation; the relation kind,
+      endpoints, assertions, and reviewed conclusion are unchanged.
+    evidence_ids:
+      - EVD-7DDAF2A961
+    source_references:
+      - packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts:470-505
+  - group: relations
+    record_id: REL-8F340CD1A7
+    old:
+      relation_type: MAY_FLOW_TO
+    set:
+      type: MAY_FLOW_TO
+    absent_before:
+      - type
+    unset:
+      - relation_type
+    rationale: Normalize the legacy relation_type alias to the canonical type field
+      required by relationship and ZK-binding validation; the relation kind,
+      endpoints, assertions, and reviewed conclusion are unchanged.
+    evidence_ids:
+      - EVD-7476F54969
+    source_references:
+      - packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts:556-574
+  - group: relations
+    record_id: REL-346BB31D1A
+    old:
+      relation_type: BOUND_BY_CONSTRAINT
+    set:
+      type: BOUND_BY_CONSTRAINT
+    absent_before:
+      - type
+    unset:
+      - relation_type
+    rationale: Normalize the legacy relation_type alias to the canonical type field
+      required by relationship and ZK-binding validation; the relation kind,
+      endpoints, assertions, and reviewed conclusion are unchanged.
+    evidence_ids:
+      - EVD-B7C40C0F6F
+    source_references:
+      - packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts:261-264
+  - group: relations
+    record_id: REL-14E18DFB1F
+    old:
+      relation_type: BOUND_BY_CONSTRAINT
+    set:
+      type: BOUND_BY_CONSTRAINT
+    absent_before:
+      - type
+    unset:
+      - relation_type
+    rationale: Normalize the legacy relation_type alias to the canonical type field
+      required by relationship and ZK-binding validation; the relation kind,
+      endpoints, assertions, and reviewed conclusion are unchanged.
+    evidence_ids:
+      - EVD-177476A23F
+    source_references:
+      - packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts:207-237
+  - group: relations
+    record_id: REL-0908B0F4AD
+    old:
+      relation_type: BOUND_BY_CONSTRAINT
+    set:
+      type: BOUND_BY_CONSTRAINT
+    absent_before:
+      - type
+    unset:
+      - relation_type
+    rationale: Normalize the legacy relation_type alias to the canonical type field
+      required by relationship and ZK-binding validation; the relation kind,
+      endpoints, assertions, and reviewed conclusion are unchanged.
+    evidence_ids:
+      - EVD-2720E90D33
+    source_references:
+      - packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts:107-135
+  - group: relations
+    record_id: REL-A9809109C5
+    old:
+      relation_type: MAY_FLOW_TO
+    set:
+      type: MAY_FLOW_TO
+    absent_before:
+      - type
+    unset:
+      - relation_type
+    rationale: Normalize the legacy relation_type alias to the canonical type field
+      required by relationship and ZK-binding validation; the relation kind,
+      endpoints, assertions, and reviewed conclusion are unchanged.
+    evidence_ids:
+      - EVD-F7DE049BDC
+    source_references:
+      - packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts:304-320
+  - group: relations
+    record_id: REL-04F149788B
+    old:
+      relation_type: BOUND_BY_CONSTRAINT
+    set:
+      type: BOUND_BY_CONSTRAINT
+    absent_before:
+      - type
+    unset:
+      - relation_type
+    rationale: Normalize the legacy relation_type alias to the canonical type field
+      required by relationship and ZK-binding validation; the relation kind,
+      endpoints, assertions, and reviewed conclusion are unchanged.
+    evidence_ids:
+      - EVD-177476A23F
+    source_references:
+      - packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts:207-237
+  - group: relations
+    record_id: REL-02B5E35EEA
+    old:
+      relation_type: BOUND_BY_CONSTRAINT
+    set:
+      type: BOUND_BY_CONSTRAINT
+    absent_before:
+      - type
+    unset:
+      - relation_type
+    rationale: Normalize the legacy relation_type alias to the canonical type field
+      required by relationship and ZK-binding validation; the relation kind,
+      endpoints, assertions, and reviewed conclusion are unchanged.
+    evidence_ids:
+      - EVD-177476A23F
+    source_references:
+      - packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts:261-302
+  - group: relations
+    record_id: REL-DD21A8E7A9
+    old:
+      relation_type: BOUND_BY_CONSTRAINT
+    set:
+      type: BOUND_BY_CONSTRAINT
+    absent_before:
+      - type
+    unset:
+      - relation_type
+    rationale: Normalize the legacy relation_type alias to the canonical type field
+      required by relationship and ZK-binding validation; the relation kind,
+      endpoints, assertions, and reviewed conclusion are unchanged.
+    evidence_ids:
+      - EVD-177476A23F
+    source_references:
+      - packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts:245-302
+  - group: relations
+    record_id: REL-EC2F02C65F
+    old:
+      relation_type: MAY_FLOW_TO
+    set:
+      type: MAY_FLOW_TO
+    absent_before:
+      - type
+    unset:
+      - relation_type
+    rationale: Normalize the legacy relation_type alias to the canonical type field
+      required by relationship and ZK-binding validation; the relation kind,
+      endpoints, assertions, and reviewed conclusion are unchanged.
+    evidence_ids:
+      - EVD-C7D1DB2A7C
+    source_references:
+      - packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts:556-574
+  - group: relations
+    record_id: REL-37CDC651DC
+    old:
+      relation_type: BOUND_BY_CONSTRAINT
+    set:
+      type: BOUND_BY_CONSTRAINT
+    absent_before:
+      - type
+    unset:
+      - relation_type
+    rationale: Normalize the legacy relation_type alias to the canonical type field
+      required by relationship and ZK-binding validation; the relation kind,
+      endpoints, assertions, and reviewed conclusion are unchanged.
+    evidence_ids:
+      - EVD-D70E747767
+    source_references:
+      - packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts:524-542
+  - group: relations
+    record_id: REL-5F2D985D2E
+    old:
+      relation_type: BOUND_BY_CONSTRAINT
+    set:
+      type: BOUND_BY_CONSTRAINT
+    absent_before:
+      - type
+    unset:
+      - relation_type
+    rationale: Normalize the legacy relation_type alias to the canonical type field
+      required by relationship and ZK-binding validation; the relation kind,
+      endpoints, assertions, and reviewed conclusion are unchanged.
+    evidence_ids:
+      - EVD-D70E747767
+    source_references:
+      - packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts:524-542
+  - group: relations
+    record_id: REL-F82E54D4F3
+    old:
+      relation_type: BOUND_BY_CONSTRAINT
+    set:
+      type: BOUND_BY_CONSTRAINT
+    absent_before:
+      - type
+    unset:
+      - relation_type
+    rationale: Normalize the legacy relation_type alias to the canonical type field
+      required by relationship and ZK-binding validation; the relation kind,
+      endpoints, assertions, and reviewed conclusion are unchanged.
+    evidence_ids:
+      - EVD-D70E747767
+    source_references:
+      - packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts:480-505
+  - group: relations
+    record_id: REL-549A32EEBD
+    old:
+      relation_type: BOUND_BY_CONSTRAINT
+    set:
+      type: BOUND_BY_CONSTRAINT
+    absent_before:
+      - type
+    unset:
+      - relation_type
+    rationale: Normalize the legacy relation_type alias to the canonical type field
+      required by relationship and ZK-binding validation; the relation kind,
+      endpoints, assertions, and reviewed conclusion are unchanged.
+    evidence_ids:
+      - EVD-D70E747767
+    source_references:
+      - packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts:480-505
+coverage_changes: []
+unresolved: []
+validation:
+  status: PASS_PROPOSED_PATCH_SIMULATION
+  current_assumptions_normalized: 10
+  current_relations_normalized: 23
+  assertion_changes: 0
+  effective_conclusion_changes: 0
+  contextual_review_changes: 0
+  lifecycle_changes: 0
+  source_or_test_execution: false

@@ -1,0 +1,23 @@
+work_unit:
+  id: "WU-FC6BF1E259"
+  stable_key: "work-unit:semantic:treasury-contracts"
+  role: "semantic"
+  pass: "PASS_1"
+  revision: "1e27b1aea88f5ea2764db96e4b337b24fe6dbeb3"
+  primary_paths: []
+  read_only_context_paths:
+    - "packages/sdk/src/provable/contracts/treasury-owner.ts"
+    - "packages/sdk/src/provable/contracts/treasury-constants.ts"
+    - "packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts"
+    - "packages/sdk/src/provable/contracts/treasury-pause-controller/treasury-pause-controller.ts"
+    - "packages/sdk/src/provable/contracts/treasury-pause-controller/multisig-signatures.ts"
+    - "packages/sdk/src/provable/events/treasury-proposal-events.ts"
+    - "evidence/reconnaissance/WU-BECB8661B0.yaml"
+    - "evidence/reconnaissance/WU-8B484B3509.yaml"
+  owned_record_ids: []
+  owned_stable_key_prefixes: ["behavior:treasury-contracts:", "flow:treasury-contracts:", "clause:treasury-contracts:", "invariant:treasury-contracts:", "finding:treasury-contracts:"]
+  questions:
+    - "What business and implementation behaviors, clauses, invariants, state transitions, permissions, asset movements, failure policies, and integration dependencies are statically present?"
+    - "Where do intended, expected, and implemented behavior diverge or remain unresolved?"
+  output: "evidence/semantic/WU-FC6BF1E259.yaml"
+  status: "COMPLETE"

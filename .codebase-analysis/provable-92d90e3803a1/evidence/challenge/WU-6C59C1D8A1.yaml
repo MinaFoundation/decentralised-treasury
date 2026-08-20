@@ -1,0 +1,824 @@
+bundle:
+  schema_version: 1
+  work_unit: "WU-6C59C1D8A1"
+  revision: "1e27b1aea88f5ea2764db96e4b337b24fe6dbeb3"
+  scope_hash: "f40d76b91ec3cd8805ecdc7bebba8d43b8f317842639a7799738c37569119ab1"
+  role: "security"
+  ownership:
+    primary_paths: []
+    record_ids: []
+    stable_key_prefixes:
+      - "security-objective:"
+      - "threat:"
+      - "assumption:security:"
+      - "evidence:security-review:"
+  source_hashes:
+    "packages/sdk/src/provable/account.ts": "00eabfcee24eb10380d0ffeb1e60a08a85aa650cc8a3e9140718cecbf6fd0563"
+    "packages/sdk/src/provable/contracts/treasury-constants.ts": "c4ef6c551437e01ebe6294c51923dfedff4a198735766a37029249482d9247a6"
+    "packages/sdk/src/provable/contracts/treasury-owner.ts": "7c66014cee7f7a5e559b29f3b7c2790ed19c38c9a91b886c15cbbef3328d17dc"
+    "packages/sdk/src/provable/contracts/treasury-pause-controller/multisig-signatures.ts": "48a7c4cd41c1e9764df1329966c37f325817fa43074140c145f4f6c1ae2aa372"
+    "packages/sdk/src/provable/contracts/treasury-pause-controller/treasury-pause-controller.ts": "f7139183b963aa496dd36df00017885c9ab6275f11accca35bfd9054260e5104"
+    "packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts": "95e5656d3a0d0c09a88ac9befa743517c53a98983bd1cf74b042e87bc9faf7af"
+    "packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts": "37c1f07a5fad41f036f999792b44bf13d4f9af280cb1439bed6a8411dfaa81cd"
+    "packages/sdk/src/provable/events/treasury-proposal-events.ts": "421e00244121b82a603b71b722ef35419794d0d603a264270a47a44d05a2c01d"
+    "packages/sdk/src/provable/hashing-helpers.ts": "8ef43c9c685339f97a667002c2f6f349071eaa53ba753c7008dc46be23396869"
+    "packages/sdk/src/provable/merkle-tree/prefixed-merkle-tree.ts": "870ca739cc8406070367beb86367efa64101647d130f0892b636555cbd2a5c6c"
+    "packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts": "4dcfc5e1f1edcc7e26cfb960f3892208efe16056a2579b14e12e2a79f0e28197"
+    "packages/sdk/src/provable/voting-account.ts": "fe383ead1055910ace4062c56cf4c7773dead3d95733f972ef6e49b2de515454"
+    "packages/sdk/src/logging/logger.ts": "ad0ff96d55f18ddf13a2a7d2fe7e5fd974a8acfd320c65a501cc3a4412b1b944"
+    "packages/sdk/package.json": "d73ba980798af63c8ac79b897ae548bd706e480286ac9f617c68f2144f394eba"
+    "packages/sdk/tsconfig.json": "8206b547d254f2bfd7a1c89d09c5e8b2e650e2e5e52f73047c0b30285f206877"
+    "packages/sdk/test/integration/treasury-owner.test.ts": "f73f778dcb2ac226c416ebfdf69117af3262fcc37f36877ea3fb7d1bd7e0f4e0"
+    "packages/sdk/test/provable/contracts/treasury-pause-controller/treasury-pause-controller.test.ts": "5e4031821bafa39daf9b1b28d2aeba4daf92e1611f78e571035974ab63fbb1e5"
+    "packages/sdk/test/provable/contracts/treasury-proposal/vote-reducer.test.ts": "7f957b454de0f6e1545fa2dc0367b53e0908bde826eb76db4099d36f4f4e8f8a"
+    "packages/sdk/test/provable/staking-ledger-to-voting-ledger.test.ts": "988d911b4336e64ccd70009cddcb514bc93b693a1df203c6d1a15dbb98e6af0c"
+  upstream_artifact_hashes:
+    "context/RFC_EXTRACT.md": "84a7528617db2baebfd1d5a0170b11cf639bd52fb61f05c69c555ac5255c46a0"
+    "context/ZKSECURITY_AUDIT_INDEX.md": "8768353f7bdab76dd93067ddb5df8c749bb37e974232dfcfc397dabcd2ae60cb"
+    "evidence/reconnaissance/WU-7B45F56E9E.yaml": "47a6afc2afc3104c88812a8bafb3edc0a74ebca0bd4db2cb28dfac763b0b8dc0"
+    "evidence/reconnaissance/WU-8B484B3509.yaml": "760c8855016860d8d9afd5ad97ec62b886dca9b9aba02f098039fff8132dc076"
+    "evidence/reconnaissance/WU-BECB8661B0.yaml": "4f7822bd725e831ef99654298d5b13cb66493b8e8378c2109c684488e0c56f7d"
+    "evidence/semantic/WU-5BF98E0171.yaml": "7684fcb0e4cd1abd0d6e977d9266d0c9faddcce746e3aab25921c26407a0ae8d"
+    "evidence/semantic/WU-CAB8FAE2F2.yaml": "4b6ddddb8dcddc1e7a878f7d15193036126632ce689b4bb8a66cb648d7d9ae7f"
+    "evidence/semantic/WU-FC6BF1E259.yaml": "3f3edda56abd322ca26550c075624c322459acb111952929fa728f179e6d9fb7"
+  assumptions:
+    - "This is a preliminary static whole-system review; it did not execute target TypeScript, tests, builds, compilers, proofs, verifiers, transactions, or chains."
+    - "The RFC is versioned intent and the prior audit is revision-bounded historical evidence; neither is certification of the pinned revision."
+    - "Source-visible constraints are not treated as proof-system soundness, and host callbacks are not treated as proved effects."
+  protocol_reconstruction:
+    mission: "A Treasury Owner contract holds funds and orchestrates proposal creation, voting, proof-backed tallying, payout, and emergency controls under a lifecycle clock."
+    actors:
+      - "proposal transaction sender and potentially distinct bond payer"
+      - "voter or staking delegate whose key signs vote dispatch"
+      - "permissionless tally and execution transaction sender"
+      - "three-of-five emergency multisig participant slots"
+      - "off-chain staking/voting/nullifier ledger operator and recursive prover"
+      - "deployment/configuration operator supplying keys, roots, slots, permissions, and participant lists"
+      - "indexer/UI/event consumer"
+    assets:
+      - "Treasury Owner MINA balance and proposal bond"
+      - "proposal recipient, amount, lifecycle, URI commitment, final status, and paid-out amount"
+      - "snapshot staking root/total supply and derived voting weights"
+      - "vote actions, action-history commitments, nullifier uniqueness, and tally result"
+      - "pause-controller signer commitment, nonce, and availability"
+      - "verification keys, empty roots, permissions, deployment slot, and dependency version"
+      - "host prover ledger records, Merkle roots, traces, and recovery state"
+      - "public events and operational audit trail"
+    entrypoints:
+      - "TreasuryOwner.receive/createProposal/vote/tallyVotes/executeProposal/togglePauseProposal"
+      - "TreasuryPauseController.pauseTreasury/unpauseTreasury/togglePauseProposal/rotateMultisigKeys"
+      - "VoteReducer.reduceBatch/merge and StakingLedgerToVotingLedger.digest/merge/exhaust"
+      - "Account/VoteAction deserialization and PrefixedMerkleTree host APIs"
+    trust_zones:
+      - "on-chain owner/proposal/controller account state and account-update authorization"
+      - "constraint/proof statement and recursive continuity"
+      - "host-only witness production, mutable context, storage, trace, and prover scheduling"
+      - "deployment configuration, custom dependency, network protocol, and verification keys"
+      - "public transaction construction, events, indexers, and UI"
+    privileges:
+      - "multisig can globally pause/unpause, toggle proposal status, and rotate its own commitment"
+      - "deployment operator selects immutable or hard-to-change statics and signer commitment"
+      - "host prover supplies private accounts/witnesses and mutates off-chain ledgers, but accepted proof outputs remain subject to source-visible constraints"
+      - "any signed sender can tally and execute when state/lifecycle checks allow; recipient remains hash-bound"
+  observations:
+    - "The strongest local protections are recipient/payout-cap binding, owner/token/root/index bindings at tally, voter/nullifier index binding, recursive root continuity, five on-chain action-state checks, nonce consumption, and three valid signature-slot checks. These protections remain conditional on external protocol, dependency, key, and deployment assumptions."
+    - "The principal composed risks are configuration-driven authority failure, pause/status and event/state asymmetry, undefined eligible voting supply, mutable prover-state recovery, capacity/liveness, and divergence between provisional intent and hard-coded policy."
+    - "Finding severity challenge: proposal-pause finality loss is at least MEDIUM under current evidence because a valid emergency authority can erase an approved or rejected outcome; impact could be higher only if multisig compromise probability or treasury value is established."
+    - "Finding severity challenge: duplicate participant slots and an unvalidated rotation commitment are MEDIUM configuration/recovery risks; they become materially higher only when deployment/rotation is not independently validated. The prerequisite must explicitly include a repeated-key commitment or loss of the next-key preimage."
+    - "Finding severity challenge: account eligibility in the staking transformation is not safely fixed at LOW without knowing Mina snapshot membership. It is LOW if ineligible token accounts cannot occur in the selected ledger, but potentially HIGH for governance integrity if attacker-controlled non-MINA balances are membership-valid and counted. Preserve the uncertainty rather than inheriting the audit label."
+    - "Finding severity challenge: nontransactional host mutations are primarily availability/reliability risk because verifier acceptance is bound to roots, but severity increases if contexts are shared across proposals or recovery can publish an inconsistent trace."
+    - "Finding severity challenge: failed-quorum non-finalization and five-distinct-action-state requirements are liveness/state-policy issues; impact depends on whether UNKNOWN is intentionally nonterminal and whether small-action proposals can supply five distinct states."
+    - "Finding severity challenge: permissionless execution alone does not redirect assets because recipient and remaining cap are constrained; the security question is timing, event spam, and whether execution authority is intended."
+    - "Finding severity challenge: Account.fromJSON fallback and PrefixedMerkleTree partial writes require demonstrated call-path/backend reachability before impact is promoted beyond the proposed MEDIUM reliability prioritization."
+    - "The 28 prior-audit items must remain revision-scoped. Commit ancestry is supporting drift evidence, not a substitute for current enforcement and composed-flow review."
+  proposed_records:
+    evidence:
+      - stable_key: "evidence:security-review:owner-custody-lifecycle-and-entrypoints"
+        evidence_class: "IMPLEMENTED_STATIC"
+        description: "Treasury custody, lifecycle gates, proposal/vote/tally/payout orchestration, pause guard, and public events."
+        anchors: [{ path: "packages/sdk/src/provable/contracts/treasury-owner.ts", symbol: "TreasuryOwnerSmartContract", start_line: 64, end_line: 511 }]
+        source_sha256: "7c66014cee7f7a5e559b29f3b7c2790ed19c38c9a91b886c15cbbef3328d17dc"
+        tool: { name: "manual-static-reading", version: "", command: "nl/sed/rg" }
+        limitations: ["Mina transaction inclusion, permissions, and atomicity were not executed."]
+      - stable_key: "evidence:security-review:proposal-state-tally-and-payout"
+        evidence_class: "IMPLEMENTED_STATIC"
+        description: "Proposal state, threshold computation, proof-consumer bindings, status transitions, recipient cap, and pause toggle."
+        anchors: [{ path: "packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts", symbol: "TreasuryProposalSmartContract", start_line: 46, end_line: 397 }]
+        source_sha256: "95e5656d3a0d0c09a88ac9befa743517c53a98983bd1cf74b042e87bc9faf7af"
+        tool: { name: "manual-static-reading", version: "", command: "nl/sed/rg" }
+        limitations: ["No proof, arithmetic, or account update was executed."]
+      - stable_key: "evidence:security-review:emergency-authority"
+        evidence_class: "IMPLEMENTED_STATIC"
+        description: "Participant commitment, three-of-five slot threshold, message fields, nonce, global pause, proposal toggle, and rotation."
+        anchors:
+          - { path: "packages/sdk/src/provable/contracts/treasury-pause-controller/multisig-signatures.ts", symbol: "MultisigSignature/MultisigSignatures", start_line: 17, end_line: 145 }
+          - { path: "packages/sdk/src/provable/contracts/treasury-pause-controller/treasury-pause-controller.ts", symbol: "TreasuryPauseControllerSmartContract", start_line: 25, end_line: 216 }
+        source_sha256: "multiple:pinned-in-source_hashes"
+        tool: { name: "manual-static-reading", version: "", command: "nl/sed/rg" }
+        limitations: ["Signer custody and deployment ceremony are outside scope."]
+      - stable_key: "evidence:security-review:vote-statement"
+        evidence_class: "IMPLEMENTED_STATIC"
+        description: "Vote domain, voter/root/index binding, nullifier transition, host effects, tallies, action history, and recursive merge."
+        anchors: [{ path: "packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts", symbol: "VoteReducer", start_line: 30, end_line: 659 }]
+        source_sha256: "37c1f07a5fad41f036f999792b44bf13d4f9af280cb1439bed6a8411dfaa81cd"
+        tool: { name: "manual-static-reading", version: "", command: "nl/sed/rg" }
+        limitations: ["Constraint and cryptographic soundness are unresolved."]
+      - stable_key: "evidence:security-review:staking-transformation-statement"
+        evidence_class: "IMPLEMENTED_STATIC"
+        description: "Staking membership, fixed batch, delegate aggregation, host persistence, recursive adjacency, and next-empty exhaustion."
+        anchors: [{ path: "packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts", symbol: "StakingLedgerToVotingLedger", start_line: 35, end_line: 351 }]
+        source_sha256: "4dcfc5e1f1edcc7e26cfb960f3892208efe16056a2579b14e12e2a79f0e28197"
+        tool: { name: "manual-static-reading", version: "", command: "nl/sed/rg" }
+        limitations: ["Dense-ledger, eligibility, backend, and proof soundness assumptions remain external."]
+      - stable_key: "evidence:security-review:serialization-and-merkle-host-boundary"
+        evidence_class: "IMPLEMENTED_STATIC"
+        description: "Account fallback/packing and storage-backed Merkle bounds, witness calculations, and sequential writes."
+        anchors:
+          - { path: "packages/sdk/src/provable/account.ts", symbol: "Account.fromJSON/toHashInput/packToFields", start_line: 211, end_line: 392 }
+          - { path: "packages/sdk/src/provable/merkle-tree/prefixed-merkle-tree.ts", symbol: "PrefixedMerkleTree/BasePrefixedMerkleWitness", start_line: 31, end_line: 266 }
+        source_sha256: "multiple:pinned-in-source_hashes"
+        tool: { name: "manual-static-reading", version: "", command: "nl/sed/rg" }
+        limitations: ["External protocol compatibility and backend crash behavior were not established."]
+      - stable_key: "evidence:security-review:configuration-and-logging"
+        evidence_class: "IMPLEMENTED_STATIC"
+        description: "Custom dependency, disabled strict option, proof-capable scripts, configurable logging, and hard-coded governance constants."
+        anchors:
+          - { path: "packages/sdk/package.json", symbol: "scripts/devDependencies", start_line: 8, end_line: 59 }
+          - { path: "packages/sdk/tsconfig.json", symbol: "compilerOptions", start_line: 2, end_line: 30 }
+          - { path: "packages/sdk/src/logging/logger.ts", symbol: "provableLog", start_line: 7, end_line: 56 }
+          - { path: "packages/sdk/src/provable/contracts/treasury-constants.ts", symbol: "treasury constants", start_line: 1, end_line: 15 }
+        source_sha256: "multiple:pinned-in-source_hashes"
+        tool: { name: "manual-static-reading", version: "", command: "nl/sed/rg" }
+        limitations: ["Installed dependency implementation and production environment are outside scope."]
+      - stable_key: "evidence:security-review:test-assurance-boundary"
+        evidence_class: "TEST_EXPECTATION"
+        description: "Ordered owner happy path, broad reducer negatives, pause-controller negatives, and staking transformation happy paths."
+        anchors:
+          - { path: "packages/sdk/test/integration/treasury-owner.test.ts", symbol: "integration suite", start_line: 264, end_line: 764 }
+          - { path: "packages/sdk/test/provable/contracts/treasury-proposal/vote-reducer.test.ts", symbol: "vote reducer suite", start_line: 18, end_line: 1517 }
+          - { path: "packages/sdk/test/provable/contracts/treasury-pause-controller/treasury-pause-controller.test.ts", symbol: "pause controller suite", start_line: 19, end_line: 659 }
+          - { path: "packages/sdk/test/provable/staking-ledger-to-voting-ledger.test.ts", symbol: "staking transformation suite", start_line: 11, end_line: 134 }
+        source_sha256: "multiple:pinned-in-source_hashes"
+        tool: { name: "manual-static-reading", version: "", command: "nl/sed/rg" }
+        limitations: ["Tests were read but never run."]
+      - stable_key: "evidence:security-review:rfc-intent"
+        evidence_class: "DOCUMENTED_INTENT"
+        description: "Versioned RFC intent for custody, lifecycle, voting, nullifiers, bonds, break-glass control, rollout, and infrastructure."
+        anchors: [{ path: "https://forums.minaprotocol.com/t/rfc-mina-decentralized-treasury-decentralized-on-chain-community-treasury/6924", symbol: "RFC", start_line: 7, end_line: 163 }]
+        source_sha256: "e7ac762b41e5568427fb78021ea515f63455a3f20337f0f03907bcbbd458aa6e"
+        tool: { name: "repository-bound-public-document", version: "", command: "read-only retrieval" }
+        limitations: ["Provisional, optional, deferred, and contested statements are not final production decisions."]
+      - stable_key: "evidence:security-review:prior-audit"
+        evidence_class: "EXTERNAL_STANDARD"
+        description: "Twenty-eight item zkSecurity report for audited revision f2c93cfdb27836b156769ca4eaeca7d5f01fa8b5."
+        anchors: [{ path: "https://reports.zksecurity.xyz/reports/mina-treasury-1.md", symbol: "full report", start_line: 1, end_line: 1368 }]
+        source_sha256: "fbe4fb7745391609600ba40c0a4c527e3756bd086af852acc71b95fa31abf7e6"
+        tool: { name: "repository-bound-public-document", version: "", command: "read-only retrieval" }
+        limitations: ["Finding status and severity cannot be inherited across revisions."]
+    security_objectives:
+      - stable_key: "security-objective:treasury-protocol:custody-conservation-and-destination"
+        title: "Preserve treasury custody, payout conservation, and destination binding"
+        protected_property: "Only an approved proposal may reduce treasury funds; cumulative payout must not exceed the authorized amount and bond, and funds must reach the committed recipient."
+        asset_actor_stable_keys: ["treasury funds", "proposal recipient", "transaction sender"]
+        requirement_rule_stable_keys: ["requirement:rfc-6924:treasury-spend-mina-and-custom-token"]
+        enforcement_stable_keys: ["behavior:treasury-contracts:owner:execute-proposal", "behavior:treasury-contracts:proposal:execute", "invariant:treasury-contracts:assets:payout-recipient-and-cap"]
+        threat_stable_keys: ["threat:security:asset-flow:unauthorized-or-misdirected-payout", "threat:security:ordering:repeat-or-zero-progress-execution"]
+        assumption_stable_keys: ["assumption:security:protocol:transaction-atomicity-and-balance", "assumption:security:deployment:proposal-permissions"]
+        assertions: [{ text: "Source binds approved status, recipient hash, remaining cap, owner debit, and recipient credit, while atomic conservation remains protocol-dependent.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_stable_keys: ["evidence:security-review:owner-custody-lifecycle-and-entrypoints", "evidence:security-review:proposal-state-tally-and-payout"] }]
+      - stable_key: "security-objective:treasury-protocol:proposal-integrity-and-initialization"
+        title: "Preserve proposal identity, immutable initialization, and authorization domain"
+        protected_property: "Proposal amount, recipient, lifecycle, snapshot, URI, key, and child-token identity must describe one non-resettable proposal instance."
+        enforcement_stable_keys: ["behavior:treasury-contracts:owner:create-proposal", "behavior:treasury-contracts:owner:global-pause-and-token-boundary"]
+        threat_stable_keys: ["threat:security:state:proposal-reset-or-configuration-substitution"]
+        assumption_stable_keys: ["assumption:security:deployment:proposal-permissions", "assumption:security:configuration:verification-keys-and-empty-roots"]
+        assertions: [{ text: "Creation installs state and a verification key on a signed derived-token account, but explicit isNew and deployed-permission guarantees are absent from local evidence.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_stable_keys: ["evidence:security-review:owner-custody-lifecycle-and-entrypoints"] }]
+      - stable_key: "security-objective:treasury-protocol:lifecycle-finality-and-state-consistency"
+        title: "Enforce lifecycle ordering and preserve terminal governance state"
+        protected_property: "Create, vote, tally, pause, unpause, rejection, approval, and execution transitions must occur in intended periods without erasing or ambiguously restoring terminal outcomes."
+        enforcement_stable_keys: ["invariant:treasury-contracts:lifecycle:business-method-gates", "behavior:treasury-contracts:proposal:toggle-pause"]
+        threat_stable_keys: ["threat:security:state:pause-erases-or-inverts-proposal-result", "threat:security:lifecycle:slot-or-quorum-nonfinality"]
+        assumption_stable_keys: ["assumption:security:protocol:slot-inclusion-semantics", "assumption:security:business:terminal-rejection-policy"]
+        assertions: [{ text: "Source-visible time gates exist, but pause shares the result Field and low-participation tally cannot persist REJECTED.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_stable_keys: ["evidence:security-review:owner-custody-lifecycle-and-entrypoints", "evidence:security-review:proposal-state-tally-and-payout"] }]
+      - stable_key: "security-objective:treasury-protocol:voting-eligibility-uniqueness-and-tally"
+        title: "Count only eligible voting weight once and produce an accurate tally"
+        protected_property: "Voting supply must derive from the intended snapshot/accounts/delegates, each voter weight must count at most once per proposal, and action completeness and tally arithmetic must be bound."
+        enforcement_stable_keys: ["behavior:zk-programs:staking-transform:aggregate-by-delegate", "behavior:zk-programs:vote-reducer:nullify-and-weight-once", "behavior:zk-programs:proof-consumer:bind-composed-tally"]
+        threat_stable_keys: ["threat:security:voting:ineligible-or-misattributed-weight", "threat:security:voting:duplicate-omitted-or-dummy-vote", "threat:security:zk:incomplete-action-or-recursive-binding"]
+        assumption_stable_keys: ["assumption:security:protocol:eligible-account-and-delegate-model", "assumption:security:protocol:mina-commitment-compatibility"]
+        assertions: [{ text: "Voter/nullifier indices and proof continuity are constrained, but eligible account/delegate policy and public DUMMY semantics are not authoritatively aligned.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_stable_keys: ["evidence:security-review:vote-statement", "evidence:security-review:staking-transformation-statement"] }]
+      - stable_key: "security-objective:treasury-protocol:proof-statement-and-recursion-integrity"
+        title: "Bind every accepted proof product to its intended statement and state effect"
+        protected_property: "Public roots, indices, actions, nullifiers, tallies, previous proofs, initial state, terminal state, keys, and downstream proposal state must form one continuous relation."
+        enforcement_stable_keys: ["zk-statement:zk-programs:vote-reducer:reduce-batch", "zk-statement:zk-programs:staking-transform:digest", "behavior:zk-programs:proof-consumer:bind-composed-tally"]
+        threat_stable_keys: ["threat:security:zk:incomplete-action-or-recursive-binding", "threat:security:zk:host-computation-mistaken-for-proof"]
+        assumption_stable_keys: ["assumption:security:cryptographic:proof-and-hash-soundness", "assumption:security:configuration:verification-keys-and-empty-roots"]
+        assertions: [{ text: "Local source shows extensive root/index/continuity bindings; circuit soundness, keys, and host effects remain explicitly outside the established property.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_stable_keys: ["evidence:security-review:vote-statement", "evidence:security-review:staking-transformation-statement", "evidence:security-review:proposal-state-tally-and-payout"] }]
+      - stable_key: "security-objective:treasury-protocol:emergency-authority-and-recovery"
+        title: "Keep emergency authority thresholded, replay-bounded, transparent, and recoverable"
+        protected_property: "Only the intended distinct signer quorum may issue domain-bound commands; rotations must preserve recoverability and public accountability."
+        enforcement_stable_keys: ["behavior:treasury-contracts:pause-controller:verify-command", "behavior:treasury-contracts:pause-controller:consume-nonce", "behavior:treasury-contracts:pause-controller:rotate-commitment"]
+        threat_stable_keys: ["threat:security:identity:multisig-threshold-collapse", "threat:security:replay:cross-deployment-emergency-command", "threat:security:recovery:irrecoverable-emergency-authority"]
+        assumption_stable_keys: ["assumption:security:operator:distinct-secure-multisig-keys", "assumption:security:deployment:unique-command-domain"]
+        assertions: [{ text: "Commitment, operation prefixes, nonce, and three valid slots are enforced; distinct identities, deployment/network domain, exact target pause state, next-key preimage, and controller events are not.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_stable_keys: ["evidence:security-review:emergency-authority"] }]
+      - stable_key: "security-objective:treasury-protocol:host-proof-state-consistency"
+        title: "Keep prover host state isolated, failure-atomic, reproducible, and consistent with public roots"
+        protected_property: "Witness records, Merkle leaves, trace checkpoints, and proof jobs must not diverge after failure, retry, or concurrency."
+        enforcement_stable_keys: ["invariant:zk-programs:proof-host-state:synchronized-ledgers", "invariant:primitives-tests:merkle-storage-root-consistency"]
+        threat_stable_keys: ["threat:security:host:partial-write-retry-or-cross-job-contamination"]
+        assumption_stable_keys: ["assumption:security:host:job-isolation-and-atomic-recovery", "assumption:security:availability:host-services"]
+        assertions: [{ text: "Host mutations occur inside witness callbacks without a visible transactional/job boundary; proof verification does not certify persistence completion.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_stable_keys: ["evidence:security-review:vote-statement", "evidence:security-review:staking-transformation-statement", "evidence:security-review:serialization-and-merkle-host-boundary"] }]
+      - stable_key: "security-objective:treasury-protocol:deployment-and-version-integrity"
+        title: "Bind deployment configuration and dependency versions to the reviewed protocol"
+        protected_property: "Permissions, keys, roots, statics, constants, controller address, custom dependency, and network version must match the reviewed source and intended deployment."
+        enforcement_stable_keys: ["behavior:treasury-contracts:owner:deploy", "behavior:treasury-contracts:pause-controller:initialize"]
+        threat_stable_keys: ["threat:security:configuration:wrong-key-root-permission-or-version"]
+        assumption_stable_keys: ["assumption:security:dependency:custom-o1js-semantics", "assumption:security:deployment:manifest-and-account-state", "assumption:security:business:ratified-governance-parameters"]
+        assertions: [{ text: "Multiple security-critical values are class-static, dependency-defined, or hard-coded; the pinned scope contains no production manifest binding them to this revision.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_stable_keys: ["evidence:security-review:configuration-and-logging", "evidence:security-review:owner-custody-lifecycle-and-entrypoints", "evidence:security-review:proposal-state-tally-and-payout"] }]
+      - stable_key: "security-objective:treasury-protocol:liveness-capacity-and-permissionless-completion"
+        title: "Permit complete governance processing within operational deadlines"
+        protected_property: "Valid snapshots, votes, tallies, emergency actions, and payouts must remain processable under expected account/action volume and service failure."
+        enforcement_stable_keys: ["behavior:zk-programs:vote-reducer:reduce-fixed-batch", "behavior:zk-programs:staking-transform:digest-fixed-batch"]
+        threat_stable_keys: ["threat:security:liveness:proof-backlog-or-unsatisfiable-finalization", "threat:security:recovery:irrecoverable-emergency-authority"]
+        assumption_stable_keys: ["assumption:security:availability:host-services", "assumption:security:protocol:dense-ledger-exhaustion"]
+        assertions: [{ text: "Base proofs process five records and tally requires strict terminal/history conditions, while throughput, recursion schedule, service availability, and deadline fit are unresolved.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_stable_keys: ["evidence:security-review:vote-statement", "evidence:security-review:staking-transformation-statement"] }]
+      - stable_key: "security-objective:treasury-protocol:observable-state-and-diagnostic-integrity"
+        title: "Keep events, parsing, logs, and operational diagnostics faithful to state"
+        protected_property: "Public events and host inputs must not silently misrepresent constrained state, parse failure, emergency authority, or proof-job recovery."
+        enforcement_stable_keys: ["invariant:primitives-tests:event-schema-and-semantic-parity", "invariant:primitives-tests:parse-failure-distinguishable"]
+        threat_stable_keys: ["threat:security:observability:false-event-or-silent-default", "threat:security:information:diagnostic-metadata-exposure"]
+        assumption_stable_keys: ["assumption:security:operator:event-and-state-reconciliation", "assumption:security:operator:logging-policy"]
+        assertions: [{ text: "Shared event schemas exist, but proposal pause emits caller input rather than derived post-state and deserializers can convert failures into empty values.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_stable_keys: ["evidence:security-review:owner-custody-lifecycle-and-entrypoints", "evidence:security-review:serialization-and-merkle-host-boundary"] }]
+    threats:
+      - stable_key: "threat:security:asset-flow:unauthorized-or-misdirected-payout"
+        title: "Unauthorized, excessive, or misdirected treasury payout"
+        category: "asset custody and authorization"
+        actors: ["transaction sender", "misconfigured proposal/deployment"]
+        assets: ["treasury funds", "recipient commitment"]
+        entrypoints: ["executeProposal", "TreasuryProposal.execute"]
+        trust_zones: ["owner/proposal account updates", "Mina transaction semantics"]
+        preconditions: ["approval, permission, recipient, cap, or atomicity binding is absent, bypassed, or misconfigured"]
+        adverse_sequence: ["submit payout", "bypass or invalidate governing state", "owner debits", "wrong/excess recipient is credited"]
+        affected_objective_stable_keys: ["security-objective:treasury-protocol:custody-conservation-and-destination"]
+        affected_record_stable_keys: ["behavior:treasury-contracts:owner:execute-proposal", "invariant:treasury-contracts:assets:payout-recipient-and-cap"]
+        assumption_stable_keys: ["assumption:security:protocol:transaction-atomicity-and-balance", "assumption:security:deployment:proposal-permissions"]
+        static_reasoning: "Recipient hash, APPROVED status, cumulative cap, and matching amount variables are visible mitigations; deployed permission and transaction semantics remain external."
+        disposition: "PARTIALLY_MITIGATED"
+        limitations: ["No deployed account or transaction was inspected."]
+        assertions: [{ text: "Local state checks mitigate direct redirection and overpayment, without proving deployed authorization or atomic conservation.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_stable_keys: ["evidence:security-review:owner-custody-lifecycle-and-entrypoints", "evidence:security-review:proposal-state-tally-and-payout"] }]
+      - stable_key: "threat:security:ordering:repeat-or-zero-progress-execution"
+        title: "Repeat or zero-progress execution obscures completion"
+        category: "replay, idempotency, and state progress"
+        actors: ["any signed sender"]
+        assets: ["payout liveness", "execution audit trail"]
+        entrypoints: ["executeProposal"]
+        trust_zones: ["public transaction and event boundary"]
+        preconditions: ["proposal approved", "amountToPayOut is zero or payout is partial"]
+        adverse_sequence: ["call execution repeatedly", "zero changes paidOutAmount by zero", "emit repeated execution records"]
+        affected_objective_stable_keys: ["security-objective:treasury-protocol:custody-conservation-and-destination", "security-objective:treasury-protocol:observable-state-and-diagnostic-integrity"]
+        affected_record_stable_keys: ["finding:treasury-contracts:zero-payout-no-progress"]
+        static_reasoning: "Cap prevents excess payout but no positive-progress or completed-state rule exists."
+        disposition: "CANDIDATE"
+        limitations: ["Fees and operational policy are outside scope."]
+        assertions: [{ text: "Zero satisfies the cap and can be repeated without state progress.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_stable_keys: ["evidence:security-review:proposal-state-tally-and-payout"] }]
+      - stable_key: "threat:security:state:proposal-reset-or-configuration-substitution"
+        title: "Proposal state reset or configuration substitution"
+        category: "initialization and state integrity"
+        actors: ["proposal account signer", "deployment/configuration operator"]
+        assets: ["proposal identity", "verification key", "governance state"]
+        entrypoints: ["createProposal"]
+        trust_zones: ["signed proposal token account", "installed permissions"]
+        preconditions: ["an existing account can satisfy signed writes and permissions allow replacement"]
+        adverse_sequence: ["reuse proposal key", "rewrite app state/key/URI", "present reset proposal as new"]
+        affected_objective_stable_keys: ["security-objective:treasury-protocol:proposal-integrity-and-initialization"]
+        affected_record_stable_keys: ["finding:treasury-contracts:proposal-reinitialization-reliance"]
+        assumption_stable_keys: ["assumption:security:deployment:proposal-permissions"]
+        static_reasoning: "No explicit isNew/empty assertion exists; practical feasibility depends on external permissions."
+        disposition: "UNRESOLVED"
+        limitations: ["Current o1js permission semantics and deployed state are outside scope."]
+        assertions: [{ text: "Initialization-once is permission-dependent rather than locally explicit.", evidence_class: "IMPLEMENTED_STATIC", confidence: "MEDIUM", evidence_stable_keys: ["evidence:security-review:owner-custody-lifecycle-and-entrypoints"] }]
+      - stable_key: "threat:security:state:pause-erases-or-inverts-proposal-result"
+        title: "Emergency toggle erases finality or inverts operator intent"
+        category: "state machine and authorization binding"
+        actors: ["authorized emergency signers", "transaction sender supplying event Bool"]
+        assets: ["proposal final status", "execution eligibility", "public pause state"]
+        entrypoints: ["togglePauseProposal"]
+        trust_zones: ["controller authorization", "proposal state", "event consumer"]
+        preconditions: ["proposal finalized or command target state differs from blind toggle"]
+        adverse_sequence: ["sign toggle lacking target Bool", "APPROVED/REJECTED becomes PAUSED", "second toggle becomes UNKNOWN", "event may claim arbitrary Bool"]
+        affected_objective_stable_keys: ["security-objective:treasury-protocol:lifecycle-finality-and-state-consistency", "security-objective:treasury-protocol:observable-state-and-diagnostic-integrity"]
+        affected_record_stable_keys: ["finding:treasury-contracts:proposal-pause-erases-terminal-status", "finding:treasury-contracts:proposal-pause-event-unbound"]
+        static_reasoning: "The complete adverse transition is source-visible and requires valid multisig authorization."
+        disposition: "CANDIDATE"
+        limitations: ["No final decision establishes whether emergency reset is intentional."]
+        assertions: [{ text: "Signed message omits target state, proposal blindly toggles shared status, and event uses unconstrained caller input.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_stable_keys: ["evidence:security-review:emergency-authority", "evidence:security-review:owner-custody-lifecycle-and-entrypoints", "evidence:security-review:proposal-state-tally-and-payout"] }]
+      - stable_key: "threat:security:lifecycle:slot-or-quorum-nonfinality"
+        title: "Slot semantics or quorum policy prevents intended finalization"
+        category: "lifecycle and failure policy"
+        actors: ["ordinary proposal participants", "network block producer"]
+        assets: ["governance finality", "proposal liveness"]
+        entrypoints: ["createProposal", "vote", "tallyVotes", "executeProposal"]
+        trust_zones: ["network preconditions", "proposal status transition"]
+        preconditions: ["boundary-slot semantics differ from intended inclusion rule, or participation/directional votes fail"]
+        adverse_sequence: ["transaction is formed near boundary or complete tally fails quorum", "precondition/status write rejects", "proposal remains UNKNOWN or misses phase"]
+        affected_objective_stable_keys: ["security-objective:treasury-protocol:lifecycle-finality-and-state-consistency"]
+        affected_record_stable_keys: ["finding:treasury-contracts:failed-quorum-not-finalized", "unresolved:treasury-contracts:lifecycle-inclusion-semantics"]
+        assumption_stable_keys: ["assumption:security:protocol:slot-inclusion-semantics", "assumption:security:business:terminal-rejection-policy"]
+        static_reasoning: "Bounds and assertions are visible; final inclusion semantics and intended failure state are unresolved."
+        disposition: "UNRESOLVED"
+        limitations: ["No chain execution or ratified terminal policy."]
+        assertions: [{ text: "The implementation may reject instead of persist REJECTED, and phase validity depends on external slot semantics.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_stable_keys: ["evidence:security-review:owner-custody-lifecycle-and-entrypoints", "evidence:security-review:proposal-state-tally-and-payout"] }]
+      - stable_key: "threat:security:voting:ineligible-or-misattributed-weight"
+        title: "Ineligible or misattributed snapshot balance affects governance"
+        category: "voting eligibility and account identity"
+        actors: ["holder of an account class not intended to vote", "delegate"]
+        assets: ["eligible supply", "quorum", "approval result"]
+        entrypoints: ["StakingLedgerToVotingLedger.digest"]
+        trust_zones: ["Mina staking snapshot", "proof relation", "host ledger"]
+        preconditions: ["membership-valid account is ineligible by business policy or has ambiguous empty/self/token delegate semantics"]
+        adverse_sequence: ["prove account membership", "aggregate all balance to Account.delegate", "derived weight participates in tally"]
+        affected_objective_stable_keys: ["security-objective:treasury-protocol:voting-eligibility-uniqueness-and-tally"]
+        affected_record_stable_keys: ["finding:zk-programs:staking-transform:account-eligibility-unbound", "gap:zk-programs:staking-transform:eligible-voting-supply-definition"]
+        assumption_stable_keys: ["assumption:security:protocol:eligible-account-and-delegate-model"]
+        static_reasoning: "No tokenId or account-class predicate is active; actual occurrence and intended policy are external."
+        disposition: "UNRESOLVED"
+        limitations: ["Mina ledger representation determines feasibility and severity."]
+        assertions: [{ text: "Every proven account balance is added at Poseidon(delegate), regardless of tokenId or account class.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_stable_keys: ["evidence:security-review:staking-transformation-statement"] }]
+      - stable_key: "threat:security:voting:duplicate-omitted-or-dummy-vote"
+        title: "Duplicate, omitted, or public DUMMY action changes represented participation"
+        category: "uniqueness, omission, and public input domain"
+        actors: ["voter", "action collector/prover"]
+        assets: ["nullifier uniqueness", "participation", "action completeness"]
+        entrypoints: ["vote", "VoteReducer.reduceBatch/merge"]
+        trust_zones: ["action queue", "proof relation", "proposal consumer"]
+        preconditions: ["DUMMY is dispatched with real key, duplicate action occurs, or action/state completeness assumptions fail"]
+        adverse_sequence: ["dispatch or select actions", "DUMMY/nonempty consumes nullifier but adds no tally; duplicate receives zero weight; omitted action may prevent required history", "tally differs from user expectation or cannot finalize"]
+        affected_objective_stable_keys: ["security-objective:treasury-protocol:voting-eligibility-uniqueness-and-tally"]
+        affected_record_stable_keys: ["finding:zk-programs:vote-reducer:public-dummy-consumes-nullifier", "unresolved:zk-programs:five-action-state-liveness"]
+        static_reasoning: "Nullifier logic mitigates double weighting, but public/internal vote domains and completeness/liveness remain imperfectly aligned."
+        disposition: "PARTIALLY_MITIGATED"
+        limitations: ["Mina action-state semantics remain external."]
+        assertions: [{ text: "Duplicate weight is zero, while DUMMY with a nonempty key follows the non-padding nullifier/action path.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_stable_keys: ["evidence:security-review:vote-statement"] }]
+      - stable_key: "threat:security:zk:incomplete-action-or-recursive-binding"
+        title: "Incomplete proof continuity or action-state binding authorizes a wrong tally"
+        category: "ZK statement, recursion, and state binding"
+        actors: ["malicious or faulty prover"]
+        assets: ["voting roots", "nullifier roots", "action history", "tally"]
+        entrypoints: ["both ZkPrograms", "tallyVotes"]
+        trust_zones: ["constraint system", "side-loaded verification", "contract consumer"]
+        preconditions: ["a required root, index, previous proof, target history, initial state, terminal state, or key binding is absent or ineffective"]
+        adverse_sequence: ["construct mismatched proof chain", "verify under accepted key", "consume public outputs", "store incorrect proposal result"]
+        affected_objective_stable_keys: ["security-objective:treasury-protocol:proof-statement-and-recursion-integrity", "security-objective:treasury-protocol:voting-eligibility-uniqueness-and-tally"]
+        affected_record_stable_keys: ["zk-statement:zk-programs:vote-reducer:merge", "zk-statement:zk-programs:staking-transform:merge", "behavior:zk-programs:proof-consumer:bind-composed-tally"]
+        assumption_stable_keys: ["assumption:security:cryptographic:proof-and-hash-soundness", "assumption:security:configuration:verification-keys-and-empty-roots"]
+        static_reasoning: "Current source contains the principal previously missing bindings; static review cannot prove that compiler/backend/deployed keys make them effective."
+        disposition: "PARTIALLY_MITIGATED"
+        limitations: ["No proof compilation, generation, verification, or cryptographic review."]
+        assertions: [{ text: "Source binds initial roots/index, recursion handoffs, exhaustion, action hash/history, owner identity/token, and five on-chain states.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_stable_keys: ["evidence:security-review:vote-statement", "evidence:security-review:staking-transformation-statement", "evidence:security-review:proposal-state-tally-and-payout"] }]
+      - stable_key: "threat:security:zk:host-computation-mistaken-for-proof"
+        title: "Host computation or persistence is mistaken for a proved effect"
+        category: "host versus constraint boundary"
+        actors: ["prover operator", "reviewer or downstream orchestrator"]
+        assets: ["host ledger consistency", "trace reproducibility", "assurance claims"]
+        entrypoints: ["Provable.witness/Provable.witnessAsync callbacks"]
+        trust_zones: ["host runtime", "constraint system"]
+        preconditions: ["host read/write success or data provenance is assumed from proof acceptance"]
+        adverse_sequence: ["host supplies witnesses or mutates storage", "constraint binds only returned values/roots", "operator infers persistence or provenance was proved"]
+        affected_objective_stable_keys: ["security-objective:treasury-protocol:proof-statement-and-recursion-integrity", "security-objective:treasury-protocol:host-proof-state-consistency"]
+        affected_record_stable_keys: ["finding:zk-programs:proof-host-state:nontransactional-witness-side-effects"]
+        assumption_stable_keys: ["assumption:security:host:job-isolation-and-atomic-recovery"]
+        static_reasoning: "Witness callbacks include multiple host reads/writes; constant returned Fields do not encode persistence completion."
+        disposition: "CANDIDATE"
+        limitations: ["Higher-level orchestration may add safeguards outside scope."]
+        assertions: [{ text: "Proof constraints bind selected values and roots, not the success, durability, or atomicity of host persistence.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_stable_keys: ["evidence:security-review:vote-statement", "evidence:security-review:staking-transformation-statement"] }]
+      - stable_key: "threat:security:identity:multisig-threshold-collapse"
+        title: "Repeated participant identities collapse the emergency threshold"
+        category: "identity and privilege"
+        actors: ["deployment or rotation operator", "holder of repeated key"]
+        assets: ["emergency authority", "treasury availability/finality"]
+        entrypoints: ["init", "rotateMultisigKeys", "MultisigSignatures.verify"]
+        trust_zones: ["off-chain participant list", "on-chain commitment"]
+        preconditions: ["committed list contains duplicate or unsuitable keys"]
+        adverse_sequence: ["commit repeated identities", "reuse valid signature in matching slots", "reach three valid positions with fewer independent signers"]
+        affected_objective_stable_keys: ["security-objective:treasury-protocol:emergency-authority-and-recovery"]
+        affected_record_stable_keys: ["finding:treasury-contracts:multisig-nondistinct-participants"]
+        assumption_stable_keys: ["assumption:security:operator:distinct-secure-multisig-keys"]
+        static_reasoning: "Verification counts positions; source contains no pairwise distinctness check."
+        disposition: "CANDIDATE"
+        limitations: ["Repeated-signature behavior was not executed."]
+        assertions: [{ text: "The nominal threshold is over five slots rather than constrained-distinct identities.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_stable_keys: ["evidence:security-review:emergency-authority"] }]
+      - stable_key: "threat:security:replay:cross-deployment-emergency-command"
+        title: "Emergency signatures replay across aligned deployments or networks"
+        category: "replay and domain separation"
+        actors: ["holder/observer of a valid signature set"]
+        assets: ["pause state", "proposal state", "signer authority"]
+        entrypoints: ["pause/unpause/toggle/rotate"]
+        trust_zones: ["signature message", "controller account nonce", "network/deployment"]
+        preconditions: ["same signer commitment, nonce, operation parameters, and compatible account state exist elsewhere"]
+        adverse_sequence: ["obtain valid signatures", "submit to another aligned controller/network", "command verifies because address/network/version are absent"]
+        affected_objective_stable_keys: ["security-objective:treasury-protocol:emergency-authority-and-recovery"]
+        affected_record_stable_keys: ["finding:treasury-contracts:multisig-cross-domain-replay"]
+        assumption_stable_keys: ["assumption:security:deployment:unique-command-domain"]
+        static_reasoning: "Operation prefix and nonce are bound, but controller, treasury/token, network, and version are omitted."
+        disposition: "UNRESOLVED"
+        limitations: ["Cross-network/account replay semantics were not executed."]
+        assertions: [{ text: "The source-visible signed domain is insufficient to prove deployment/network uniqueness.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_stable_keys: ["evidence:security-review:emergency-authority"] }]
+      - stable_key: "threat:security:recovery:irrecoverable-emergency-authority"
+        title: "Initialization or rotation makes emergency authority unusable"
+        category: "configuration, recovery, and availability"
+        actors: ["deployment/rotation operator", "authorized signers"]
+        assets: ["incident response", "treasury liveness"]
+        entrypoints: ["init", "rotateMultisigKeys"]
+        trust_zones: ["static participant list", "commitment state", "off-chain key custody"]
+        preconditions: ["more than five keys initialized, or next commitment has no valid/available five-key preimage"]
+        adverse_sequence: ["controller accepts configuration", "later proof-time list must be exactly five or cannot match commitment", "all emergency commands and repair rotation fail"]
+        affected_objective_stable_keys: ["security-objective:treasury-protocol:emergency-authority-and-recovery", "security-objective:treasury-protocol:liveness-capacity-and-permissionless-completion"]
+        affected_record_stable_keys: ["finding:treasury-contracts:pause-init-more-than-five-bricks-authority", "finding:treasury-contracts:rotation-allows-unrecoverable-commitment"]
+        assumption_stable_keys: ["assumption:security:operator:distinct-secure-multisig-keys"]
+        static_reasoning: "Initialization accepts >=5 but verification requires exactly 5; rotation stores any Field without next-list validation."
+        disposition: "CANDIDATE"
+        limitations: ["Operational ceremonies may reduce likelihood but are not supplied."]
+        assertions: [{ text: "Two source-visible configuration paths can strand the only on-chain emergency authority.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_stable_keys: ["evidence:security-review:emergency-authority"] }]
+      - stable_key: "threat:security:host:partial-write-retry-or-cross-job-contamination"
+        title: "Partial host writes, retry, or shared context corrupts proof-job state"
+        category: "concurrency, rollback, and off-chain trust"
+        actors: ["faulty service", "concurrent prover jobs"]
+        assets: ["voting/nullifier ledgers", "trace reproducibility", "tally liveness"]
+        entrypoints: ["digest", "reduceBatch", "PrefixedMerkleTree.setLeaf/fill"]
+        trust_zones: ["global ContextProvider", "storage backend", "proof trace"]
+        preconditions: ["one write succeeds before later failure, or jobs share mutable context/backend"]
+        adverse_sequence: ["mutate record/tree", "later write/constraint/job fails", "retry begins from stale checkpoint against advanced host root", "witness generation fails or diverges"]
+        affected_objective_stable_keys: ["security-objective:treasury-protocol:host-proof-state-consistency"]
+        affected_record_stable_keys: ["finding:zk-programs:proof-host-state:nontransactional-witness-side-effects", "finding:primitives-tests:merkle-partial-update-policy"]
+        assumption_stable_keys: ["assumption:security:host:job-isolation-and-atomic-recovery"]
+        static_reasoning: "Separate async writes and mutable singleton-like contexts have no pinned transaction/recovery contract."
+        disposition: "UNRESOLVED"
+        limitations: ["Concrete orchestration/backends may mitigate this outside scope."]
+        assertions: [{ text: "Host consistency after failure or concurrency is not enforced in the pinned interfaces.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_stable_keys: ["evidence:security-review:vote-statement", "evidence:security-review:staking-transformation-statement", "evidence:security-review:serialization-and-merkle-host-boundary"] }]
+      - stable_key: "threat:security:configuration:wrong-key-root-permission-or-version"
+        title: "Wrong key, root, permission, constant, or dependency version changes the reviewed protocol"
+        category: "dependency, configuration, and deployment"
+        actors: ["deployment operator", "dependency supplier"]
+        assets: ["all proof and contract objectives"]
+        entrypoints: ["deploy/init", "class-static configuration", "dependency resolution"]
+        trust_zones: ["build/deployment pipeline", "on-chain account state", "custom o1js fork"]
+        preconditions: ["production values differ from reviewed programs/source or are not validated"]
+        adverse_sequence: ["compile/deploy with mismatched dependency/key/root/permissions/constants", "transactions verify under a different effective protocol", "review conclusions no longer apply"]
+        affected_objective_stable_keys: ["security-objective:treasury-protocol:deployment-and-version-integrity", "security-objective:treasury-protocol:proof-statement-and-recursion-integrity"]
+        affected_record_stable_keys: ["unresolved:treasury-contracts:verification-key-and-root-configuration", "unresolved:zk-programs:proof-mode-runtime-equivalence"]
+        assumption_stable_keys: ["assumption:security:dependency:custom-o1js-semantics", "assumption:security:deployment:manifest-and-account-state", "assumption:security:configuration:verification-keys-and-empty-roots"]
+        static_reasoning: "Security-critical statics and a Git-hosted fork exist without a pinned production manifest in scope."
+        disposition: "UNRESOLVED"
+        limitations: ["No build lock resolution, artifact, account dump, or deployment manifest was inspected."]
+        assertions: [{ text: "Local source cannot establish that production keys, roots, permissions, and dependency semantics match this revision.", evidence_class: "UNRESOLVED", confidence: "HIGH", evidence_stable_keys: ["evidence:security-review:configuration-and-logging"], limitation: "Deployment boundary absent." }]
+      - stable_key: "threat:security:liveness:proof-backlog-or-unsatisfiable-finalization"
+        title: "Proof backlog or strict terminal condition prevents tally"
+        category: "resource exhaustion and liveness"
+        actors: ["high participation", "prover operator", "service failure"]
+        assets: ["proposal finalization", "permissionless governance"]
+        entrypoints: ["digest/merge/exhaust", "reduceBatch/merge", "tallyVotes"]
+        trust_zones: ["off-chain prover/storage", "lifecycle deadline", "action-state protocol"]
+        preconditions: ["account/action volume exceeds available proof capacity, host service is unavailable, ledger is sparse, or five action states cannot be satisfied"]
+        adverse_sequence: ["accumulate snapshot/actions", "base proofs and recursive aggregation lag or terminal check fails", "tally is delayed or impossible", "execution cannot proceed"]
+        affected_objective_stable_keys: ["security-objective:treasury-protocol:liveness-capacity-and-permissionless-completion"]
+        affected_record_stable_keys: ["gap:zk-programs:capacity:full-ledger-and-action-throughput", "unresolved:zk-programs:five-action-state-liveness"]
+        assumption_stable_keys: ["assumption:security:availability:host-services", "assumption:security:protocol:dense-ledger-exhaustion"]
+        static_reasoning: "Fixed batch size and strict terminal/history conditions are visible; throughput/deadline feasibility is not."
+        disposition: "UNRESOLVED"
+        limitations: ["No benchmarks, proofs, service topology, or production volume were supplied."]
+        assertions: [{ text: "Static capacity is five accounts/actions per base proof and runtime completion remains unresolved.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_stable_keys: ["evidence:security-review:vote-statement", "evidence:security-review:staking-transformation-statement"] }]
+      - stable_key: "threat:security:observability:false-event-or-silent-default"
+        title: "False event or silent default misleads operators and downstream consumers"
+        category: "observability and producer-consumer asymmetry"
+        actors: ["transaction sender", "malformed data source", "indexer/UI"]
+        assets: ["public governance view", "host ledger correctness", "incident response"]
+        entrypoints: ["togglePauseProposal", "Account.fromJSON", "VoteAction.fromJSON"]
+        trust_zones: ["contract-to-event consumer", "serialized input-to-host model"]
+        preconditions: ["caller-supplied event Bool disagrees with state, or parsing throws"]
+        adverse_sequence: ["emit type-valid false state or return empty default", "consumer accepts representation", "operator/prover acts on wrong state/data"]
+        affected_objective_stable_keys: ["security-objective:treasury-protocol:observable-state-and-diagnostic-integrity"]
+        affected_record_stable_keys: ["finding:treasury-contracts:proposal-pause-event-unbound", "finding:primitives-tests:account-json-silent-empty-fallback"]
+        assumption_stable_keys: ["assumption:security:operator:event-and-state-reconciliation"]
+        static_reasoning: "Both asymmetries are source-visible; downstream reach and reconciliation are outside scope."
+        disposition: "CANDIDATE"
+        limitations: ["No indexer/worker consumers were analyzed beyond the pinned closure."]
+        assertions: [{ text: "Type-valid outputs can disagree with state or collapse malformed input into an empty value.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_stable_keys: ["evidence:security-review:owner-custody-lifecycle-and-entrypoints", "evidence:security-review:serialization-and-merkle-host-boundary"] }]
+      - stable_key: "threat:security:information:diagnostic-metadata-exposure"
+        title: "Debug diagnostics expose operational metadata"
+        category: "information exposure"
+        actors: ["operator or log reader"]
+        assets: ["participant-list metadata", "proposal/proof operational data"]
+        entrypoints: ["provableLog/Provable.log"]
+        trust_zones: ["application/prover logs"]
+        preconditions: ["debug logging enabled and logs are visible outside intended operator boundary"]
+        adverse_sequence: ["contract/prover code logs participants, roots, lifecycle, or calculation values", "log backend retains/discloses metadata"]
+        affected_objective_stable_keys: ["security-objective:treasury-protocol:observable-state-and-diagnostic-integrity"]
+        affected_record_stable_keys: ["behavior:treasury-contracts:pause-controller:initialize"]
+        assumption_stable_keys: ["assumption:security:operator:logging-policy"]
+        static_reasoning: "Debug gate exists; logged values are mostly public or operational metadata, but production policy and access are absent."
+        disposition: "UNRESOLVED"
+        limitations: ["No secret private keys are logged in scoped source; actual log configuration/retention is external."]
+        assertions: [{ text: "Logging is environment-controlled and includes participant public keys and governance/proof values when debug is enabled.", evidence_class: "IMPLEMENTED_STATIC", confidence: "MEDIUM", evidence_stable_keys: ["evidence:security-review:configuration-and-logging", "evidence:security-review:emergency-authority"] }]
+    assumptions:
+      - stable_key: "assumption:security:protocol:transaction-atomicity-and-balance"
+        title: "Mina account updates are failure-atomic and conserve composed debits/credits"
+        category: "PROTOCOL"
+        source: "IMPLEMENTATION_DEPENDENCY"
+        semantic_status: "RELIED_UPON"
+        affected_record_stable_keys: ["behavior:treasury-contracts:owner:create-proposal", "behavior:treasury-contracts:owner:execute-proposal"]
+        failure_consequence: "Bond or payout accounting could diverge or an owner debit could survive a downstream rejection."
+        validation_or_enforcement_stable_keys: []
+        author_question: "Which pinned Mina/o1js semantics and integration evidence establish atomic rollback and balance conservation?"
+        limitations: ["Not executable in this workflow."]
+        assertions: [{ text: "Source composes nested updates and relies on protocol rejection/rollback rather than implementing rollback itself.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_stable_keys: ["evidence:security-review:owner-custody-lifecycle-and-entrypoints", "evidence:security-review:proposal-state-tally-and-payout"] }]
+      - stable_key: "assumption:security:deployment:proposal-permissions"
+        title: "Deployed owner/proposal permissions enforce intended call and initialization boundaries"
+        category: "DEPLOYMENT"
+        source: "IMPLEMENTATION_DEPENDENCY"
+        semantic_status: "PARTIALLY_ENFORCED"
+        affected_record_stable_keys: ["behavior:treasury-contracts:owner:create-proposal", "behavior:treasury-contracts:owner:execute-proposal", "finding:treasury-contracts:proposal-reinitialization-reliance"]
+        failure_consequence: "Proposal state/key may be reset, child calls bypassed, or valid methods become unusable."
+        validation_or_enforcement_stable_keys: ["behavior:treasury-contracts:owner:deploy", "behavior:treasury-contracts:owner:global-pause-and-token-boundary"]
+        author_question: "What production account dump and permission matrix is bound to this revision?"
+        limitations: ["o1js/deployed account semantics external."]
+        assertions: [{ text: "Source sets owner permissions and proposal defaults, but deployed values and effective child-call authorization are not established.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_stable_keys: ["evidence:security-review:owner-custody-lifecycle-and-entrypoints"] }]
+      - stable_key: "assumption:security:protocol:slot-inclusion-semantics"
+        title: "globalSlotSinceGenesis preconditions enforce the intended inclusion phase"
+        category: "PROTOCOL"
+        source: "IMPLEMENTATION_DEPENDENCY"
+        semantic_status: "UNRESOLVED"
+        affected_record_stable_keys: ["invariant:treasury-contracts:lifecycle:business-method-gates"]
+        failure_consequence: "A phase-bound action may be included outside the intended window or miss a valid boundary."
+        validation_or_enforcement_stable_keys: ["behavior:treasury-contracts:owner:derive-lifecycle-range"]
+        author_question: "Which Mina/o1js version semantics govern endpoint and inclusion-slot behavior?"
+        limitations: ["Prior audit reported a last-block-slot concern; no chain execution occurred."]
+        assertions: [{ text: "Local code constructs requireBetween bounds; their exact inclusion meaning is external.", evidence_class: "UNRESOLVED", confidence: "HIGH", evidence_stable_keys: ["evidence:security-review:owner-custody-lifecycle-and-entrypoints"], limitation: "Protocol boundary." }]
+      - stable_key: "assumption:security:business:terminal-rejection-policy"
+        title: "UNKNOWN after failed quorum is the intended terminal/failure policy"
+        category: "OTHER"
+        source: "UNKNOWN"
+        semantic_status: "CONTRADICTED"
+        affected_record_stable_keys: ["finding:treasury-contracts:failed-quorum-not-finalized"]
+        failure_consequence: "Users cannot distinguish untallied from complete low-participation proposals and finalization may repeat indefinitely."
+        validation_or_enforcement_stable_keys: []
+        author_question: "Should low participation and abstain-only tallies persist REJECTED or another terminal status?"
+        limitations: ["Supplied RFC does not ratify the terminal state policy."]
+        assertions: [{ text: "The calculator returns REJECTED while tally asserts these conditions before the status write.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_stable_keys: ["evidence:security-review:proposal-state-tally-and-payout"] }]
+      - stable_key: "assumption:security:protocol:eligible-account-and-delegate-model"
+        title: "Every selected staking-ledger account balance and delegate is eligible voting weight"
+        category: "PROTOCOL"
+        source: "INFERRED"
+        semantic_status: "UNRESOLVED"
+        affected_record_stable_keys: ["behavior:zk-programs:staking-transform:aggregate-by-delegate", "finding:zk-programs:staking-transform:account-eligibility-unbound"]
+        failure_consequence: "Quorum and approval may include ineligible balances or assign them to an unintended identity."
+        validation_or_enforcement_stable_keys: ["behavior:zk-programs:staking-transform:digest-fixed-batch"]
+        author_question: "What exact default-token/account/delegate predicate defines eligible supply?"
+        limitations: ["Mina snapshot representation and final business rule absent."]
+        assertions: [{ text: "Implementation uses Account.delegate and balance without a token/account-class eligibility branch.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_stable_keys: ["evidence:security-review:staking-transformation-statement"] }]
+      - stable_key: "assumption:security:protocol:mina-commitment-compatibility"
+        title: "Repository account/action/Merkle encodings match the deployed Mina revision"
+        category: "PROTOCOL"
+        source: "IMPLEMENTATION_DEPENDENCY"
+        semantic_status: "RELIED_UPON"
+        affected_record_stable_keys: ["invariant:primitives-tests:account-hash-protocol-compatibility", "invariant:primitives-tests:action-hash-order", "behavior:zk-programs:proof-consumer:bind-composed-tally"]
+        failure_consequence: "Valid network snapshots/actions cannot be proved, or locally derived commitments refer to different data."
+        validation_or_enforcement_stable_keys: []
+        author_question: "Which authoritative cross-implementation vectors bind these encodings to the deployment version?"
+        limitations: ["No differential/runtime vectors in scope."]
+        assertions: [{ text: "Manual packing, prefixes, and action hashing are local implementations whose external equivalence is not established.", evidence_class: "UNRESOLVED", confidence: "HIGH", evidence_stable_keys: ["evidence:security-review:serialization-and-merkle-host-boundary", "evidence:security-review:vote-statement"], limitation: "Protocol/dependency boundary." }]
+      - stable_key: "assumption:security:protocol:dense-ledger-exhaustion"
+        title: "Immediate next empty leaf proves the full staking ledger is exhausted"
+        category: "PROTOCOL"
+        source: "IMPLEMENTATION_DEPENDENCY"
+        semantic_status: "RELIED_UPON"
+        affected_record_stable_keys: ["behavior:zk-programs:staking-transform:prove-terminal-empty-leaf"]
+        failure_consequence: "A sparse ledger could omit later accounts while publishing exhausted=true."
+        validation_or_enforcement_stable_keys: ["behavior:zk-programs:staking-transform:prove-terminal-empty-leaf"]
+        author_question: "Which Mina ledger invariant guarantees contiguous occupied indices for the selected snapshot?"
+        limitations: ["Only the immediate next leaf is constrained."]
+        assertions: [{ text: "The exhaust method checks Account.empty at output.index+1 and no later index/count.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_stable_keys: ["evidence:security-review:staking-transformation-statement"] }]
+      - stable_key: "assumption:security:cryptographic:proof-and-hash-soundness"
+        title: "Proof backend, recursion, signatures, Poseidon, and canonical field encodings are sound"
+        category: "CRYPTOGRAPHIC"
+        source: "IMPLEMENTATION_DEPENDENCY"
+        semantic_status: "RELIED_UPON"
+        affected_record_stable_keys: ["security-objective:treasury-protocol:proof-statement-and-recursion-integrity", "security-objective:treasury-protocol:emergency-authority-and-recovery"]
+        failure_consequence: "Invalid statements or signatures may verify, or commitment comparisons may not protect represented values."
+        validation_or_enforcement_stable_keys: []
+        author_question: "What independent assurance and pinned backend/version evidence applies to deployed artifacts?"
+        limitations: ["Static source review cannot establish cryptographic soundness."]
+        assertions: [{ text: "All security properties rely on external compiler/backend/primitive correctness.", evidence_class: "UNRESOLVED", confidence: "HIGH", limitation: "No cryptographic or proof execution assurance." }]
+      - stable_key: "assumption:security:configuration:verification-keys-and-empty-roots"
+        title: "Configured side-loaded keys and empty roots match the current programs and tree domains"
+        category: "CONFIGURATION"
+        source: "IMPLEMENTATION_DEPENDENCY"
+        semantic_status: "RELIED_UPON"
+        affected_record_stable_keys: ["behavior:zk-programs:proof-consumer:bind-composed-tally", "behavior:treasury-contracts:owner:deploy"]
+        failure_consequence: "Valid proofs may be rejected, wrong programs accepted, or genesis bindings refer to a different tree."
+        validation_or_enforcement_stable_keys: []
+        author_question: "Where is the production manifest binding key/root hashes to this source revision?"
+        limitations: ["Values are supplied outside scoped source."]
+        assertions: [{ text: "Consumers reference mutable class-static keys and roots without a pinned manifest in scope.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_stable_keys: ["evidence:security-review:proposal-state-tally-and-payout", "evidence:security-review:configuration-and-logging"] }]
+      - stable_key: "assumption:security:dependency:custom-o1js-semantics"
+        title: "The custom o1js fork implements the assumed constraint, permission, proof, and account-update semantics"
+        category: "DEPENDENCY"
+        source: "IMPLEMENTATION_DEPENDENCY"
+        semantic_status: "RELIED_UPON"
+        affected_record_stable_keys: ["security-objective:treasury-protocol:deployment-and-version-integrity"]
+        failure_consequence: "Source-level reasoning may not match compiled constraints or deployed account behavior."
+        validation_or_enforcement_stable_keys: []
+        author_question: "Which exact resolved dependency commit and review evidence is part of the release?"
+        limitations: ["Dependency internals excluded from bounded scope."]
+        assertions: [{ text: "package.json names a Git-hosted mesa-support fork rather than a registry version.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_stable_keys: ["evidence:security-review:configuration-and-logging"] }]
+      - stable_key: "assumption:security:deployment:manifest-and-account-state"
+        title: "Production deployment state matches reviewed statics, constants, controller, and permissions"
+        category: "DEPLOYMENT"
+        source: "UNKNOWN"
+        semantic_status: "UNRESOLVED"
+        affected_record_stable_keys: ["security-objective:treasury-protocol:deployment-and-version-integrity"]
+        failure_consequence: "The effective treasury protocol can differ from the reviewed source."
+        validation_or_enforcement_stable_keys: []
+        author_question: "Provide the signed deployment manifest, account states, compiled artifact/key hashes, and network version."
+        limitations: ["No deployment artifact supplied."]
+        assertions: [{ text: "Deployment slot, controller key, proposal verification key, proof keys/roots, and permission mode are assigned outside the scoped implementation.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_stable_keys: ["evidence:security-review:owner-custody-lifecycle-and-entrypoints", "evidence:security-review:proposal-state-tally-and-payout"] }]
+      - stable_key: "assumption:security:operator:distinct-secure-multisig-keys"
+        title: "Exactly five distinct available participant keys are safely operated and recoverable"
+        category: "OPERATOR"
+        source: "INFERRED"
+        semantic_status: "RELIED_UPON"
+        affected_record_stable_keys: ["finding:treasury-contracts:multisig-nondistinct-participants", "finding:treasury-contracts:rotation-allows-unrecoverable-commitment", "finding:treasury-contracts:pause-init-more-than-five-bricks-authority"]
+        failure_consequence: "Threshold independence collapses or emergency authority becomes unusable."
+        validation_or_enforcement_stable_keys: ["behavior:treasury-contracts:pause-controller:verify-command"]
+        author_question: "What ceremony enforces exact count, distinctness, custody, backup, rotation preimage, and recovery?"
+        limitations: ["Operational evidence absent."]
+        assertions: [{ text: "Code verifies commitment/signatures but does not validate distinct identities or the next commitment preimage.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_stable_keys: ["evidence:security-review:emergency-authority"] }]
+      - stable_key: "assumption:security:deployment:unique-command-domain"
+        title: "No other deployment/network shares an aligned signer commitment and nonce domain"
+        category: "DEPLOYMENT"
+        source: "INFERRED"
+        semantic_status: "RELIED_UPON"
+        affected_record_stable_keys: ["finding:treasury-contracts:multisig-cross-domain-replay"]
+        failure_consequence: "Valid emergency signatures may authorize a command in another domain."
+        validation_or_enforcement_stable_keys: []
+        author_question: "Should command messages bind chain/network, controller, treasury/token, and protocol version?"
+        limitations: ["No deployment inventory supplied."]
+        assertions: [{ text: "Signed messages omit deployment and network identifiers.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_stable_keys: ["evidence:security-review:emergency-authority"] }]
+      - stable_key: "assumption:security:host:job-isolation-and-atomic-recovery"
+        title: "Each proof job has isolated, transactional, idempotent, recoverable host ledgers"
+        category: "OPERATOR"
+        source: "IMPLEMENTATION_DEPENDENCY"
+        semantic_status: "UNRESOLVED"
+        affected_record_stable_keys: ["finding:zk-programs:proof-host-state:nontransactional-witness-side-effects", "finding:primitives-tests:merkle-partial-update-policy"]
+        failure_consequence: "Retries/concurrency may corrupt host state and prevent reproducible proof completion."
+        validation_or_enforcement_stable_keys: []
+        author_question: "Which worker/storage layer provides proposal scoping, transaction commit, checkpointing, retry, and repair?"
+        limitations: ["Concrete orchestration/backends outside scope."]
+        assertions: [{ text: "Pinned contexts/storage expose mutable operations without a job transaction/recovery contract.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_stable_keys: ["evidence:security-review:vote-statement", "evidence:security-review:staking-transformation-statement", "evidence:security-review:serialization-and-merkle-host-boundary"] }]
+      - stable_key: "assumption:security:availability:host-services"
+        title: "Archive/snapshot, storage, prover, relayer, and transaction services remain available at required capacity"
+        category: "AVAILABILITY"
+        source: "INFERRED"
+        semantic_status: "UNRESOLVED"
+        affected_record_stable_keys: ["gap:zk-programs:capacity:full-ledger-and-action-throughput", "security-objective:treasury-protocol:liveness-capacity-and-permissionless-completion"]
+        failure_consequence: "Snapshots cannot be transformed, actions cannot be reduced, proposals cannot be tallied or executed in time."
+        validation_or_enforcement_stable_keys: []
+        author_question: "What volume, latency, redundancy, retry, and deadline budgets are production acceptance criteria?"
+        limitations: ["No topology, SLO, benchmark, or runtime evidence supplied."]
+        assertions: [{ text: "The RFC asks for permissionless/self-hostable infrastructure while source shows fixed-size proof work and mutable host dependencies.", evidence_class: "DOCUMENTED_INTENT", confidence: "HIGH", evidence_stable_keys: ["evidence:security-review:rfc-intent", "evidence:security-review:staking-transformation-statement", "evidence:security-review:vote-statement"] }]
+      - stable_key: "assumption:security:business:ratified-governance-parameters"
+        title: "Hard-coded lifecycle, bond, participation, approval, and curve values are ratified"
+        category: "CONFIGURATION"
+        source: "UNKNOWN"
+        semantic_status: "UNRESOLVED"
+        affected_record_stable_keys: ["gap:treasury-contracts:treasury-parameters-authority"]
+        failure_consequence: "Governance legitimacy, spam deterrence, liveness, and payout decisions use unapproved policy."
+        validation_or_enforcement_stable_keys: ["behavior:treasury-contracts:owner:derive-lifecycle-range", "behavior:treasury-contracts:proposal:calculate-acceptance-criteria"]
+        author_question: "Which final decision ratifies the production constants?"
+        limitations: ["RFC criteria are provisional/contested and source contains a configuration TODO."]
+        assertions: [{ text: "The source hard-codes 7140-slot periods, 10% bond, and threshold curves while stating values need real-world configuration.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_stable_keys: ["evidence:security-review:configuration-and-logging", "evidence:security-review:rfc-intent"] }]
+      - stable_key: "assumption:security:operator:event-and-state-reconciliation"
+        title: "Indexers and operators reconcile events against authoritative account state"
+        category: "OPERATOR"
+        source: "INFERRED"
+        semantic_status: "RELIED_UPON"
+        affected_record_stable_keys: ["finding:treasury-contracts:proposal-pause-event-unbound", "finding:primitives-tests:event-oracle-incomplete"]
+        failure_consequence: "UI/monitoring may present a false pause, tally, or execution view."
+        validation_or_enforcement_stable_keys: []
+        author_question: "Which consumer treats account state as authoritative and detects event/state mismatch?"
+        limitations: ["Indexer/UI outside scope."]
+        assertions: [{ text: "Event schema type safety does not guarantee emitted values match state.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_stable_keys: ["evidence:security-review:owner-custody-lifecycle-and-entrypoints", "evidence:security-review:test-assurance-boundary"] }]
+      - stable_key: "assumption:security:operator:logging-policy"
+        title: "Production logging, retention, and access are appropriate for governance/prover metadata"
+        category: "OPERATOR"
+        source: "UNKNOWN"
+        semantic_status: "UNRESOLVED"
+        affected_record_stable_keys: ["threat:security:information:diagnostic-metadata-exposure"]
+        failure_consequence: "Operational metadata may be disclosed or diagnostics needed for incident response may be absent."
+        validation_or_enforcement_stable_keys: ["evidence:security-review:configuration-and-logging"]
+        author_question: "What production log level, redaction, access, retention, and incident policy applies?"
+        limitations: ["Runtime environment absent."]
+        assertions: [{ text: "LOG_LEVEL controls Provable.log, and source logs participant public keys and governance/proof calculation metadata at debug level.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_stable_keys: ["evidence:security-review:configuration-and-logging", "evidence:security-review:emergency-authority"] }]
+  security_review:
+    methodology: "zksecurity_inspired_static_whole_system"
+    protocol_overview_stable_keys:
+      - "security-objective:treasury-protocol:custody-conservation-and-destination"
+      - "security-objective:treasury-protocol:voting-eligibility-uniqueness-and-tally"
+      - "security-objective:treasury-protocol:proof-statement-and-recursion-integrity"
+      - "security-objective:treasury-protocol:emergency-authority-and-recovery"
+    local_review_stable_keys:
+      - "threat:security:asset-flow:unauthorized-or-misdirected-payout"
+      - "threat:security:state:pause-erases-or-inverts-proposal-result"
+      - "threat:security:voting:ineligible-or-misattributed-weight"
+      - "threat:security:identity:multisig-threshold-collapse"
+    composed_review_stable_keys:
+      - "threat:security:zk:incomplete-action-or-recursive-binding"
+      - "threat:security:zk:host-computation-mistaken-for-proof"
+      - "threat:security:host:partial-write-retry-or-cross-job-contamination"
+      - "threat:security:configuration:wrong-key-root-permission-or-version"
+      - "threat:security:liveness:proof-backlog-or-unsatisfiable-finalization"
+    failure_classes:
+      - class: "MISSING_CHECK_OR_BINDING"
+        disposition: "APPLICABLE_REVIEWED"
+        rationale: "Reviewed new-account, target-pause, account eligibility, value/root/index, recipient, action-history, and proof-consumer bindings; several local checks exist while proposal initialization, target state, and eligibility remain partial or unresolved."
+        record_stable_keys: ["threat:security:state:proposal-reset-or-configuration-substitution", "threat:security:state:pause-erases-or-inverts-proposal-result", "threat:security:voting:ineligible-or-misattributed-weight", "threat:security:zk:incomplete-action-or-recursive-binding"]
+      - class: "STATE_OR_FAILURE_POLICY"
+        disposition: "APPLICABLE_REVIEWED"
+        rationale: "Reviewed initialization, UNKNOWN/APPROVED/REJECTED/PAUSED transitions, low-quorum rejection, zero-progress payout, rollback, and recovery."
+        record_stable_keys: ["threat:security:state:pause-erases-or-inverts-proposal-result", "threat:security:lifecycle:slot-or-quorum-nonfinality", "threat:security:ordering:repeat-or-zero-progress-execution", "threat:security:host:partial-write-retry-or-cross-job-contamination"]
+      - class: "IDENTITY_OR_PRIVILEGE"
+        disposition: "APPLICABLE_REVIEWED"
+        rationale: "Reviewed sender/voter/recipient/proposer roles, owner token identity, delegate identity, signer-slot distinctness, and deployment authority."
+        record_stable_keys: ["threat:security:identity:multisig-threshold-collapse", "threat:security:voting:ineligible-or-misattributed-weight", "threat:security:asset-flow:unauthorized-or-misdirected-payout"]
+      - class: "REPLAY_ORDER_OR_CONCURRENCY"
+        disposition: "APPLICABLE_REVIEWED"
+        rationale: "Reviewed controller nonce, cross-domain replay, nullifier uniqueness, action order/history, repeat payout, host retry, shared contexts, and recursive adjacency."
+        record_stable_keys: ["threat:security:replay:cross-deployment-emergency-command", "threat:security:voting:duplicate-omitted-or-dummy-vote", "threat:security:host:partial-write-retry-or-cross-job-contamination", "threat:security:ordering:repeat-or-zero-progress-execution"]
+      - class: "ARITHMETIC_OR_ENCODING"
+        disposition: "APPLICABLE_REVIEWED"
+        rationale: "Reviewed UInt128 threshold use, zero treasury denominator, payout arithmetic, account packing, Merkle indices, Poseidon-based equality, prefixes, and external canonical encoding assumptions."
+        record_stable_keys: ["assumption:security:protocol:mina-commitment-compatibility", "assumption:security:cryptographic:proof-and-hash-soundness", "finding:treasury-contracts:zero-balance-threshold-division", "finding:primitives-tests:merkle-negative-index"]
+      - class: "UNTRUSTED_DATA_FLOW"
+        disposition: "APPLICABLE_REVIEWED"
+        rationale: "Reviewed caller proposal/vote/payout/pause inputs, private prover witnesses, JSON parsing, host contexts, and sinks in balance/state/storage/event effects."
+        record_stable_keys: ["threat:security:observability:false-event-or-silent-default", "threat:security:zk:host-computation-mistaken-for-proof", "threat:security:asset-flow:unauthorized-or-misdirected-payout"]
+      - class: "PRODUCER_CONSUMER_ASYMMETRY"
+        disposition: "APPLICABLE_REVIEWED"
+        rationale: "Reviewed proof producer versus contract consumer, host write versus root consumer, calculator versus persisted status, event producer versus indexer, and serializer versus parser."
+        record_stable_keys: ["threat:security:zk:incomplete-action-or-recursive-binding", "threat:security:host:partial-write-retry-or-cross-job-contamination", "threat:security:observability:false-event-or-silent-default", "threat:security:lifecycle:slot-or-quorum-nonfinality"]
+      - class: "DEPENDENCY_OR_CONFIGURATION"
+        disposition: "APPLICABLE_REVIEWED"
+        rationale: "Reviewed custom o1js semantics, side-loaded keys, empty roots, permission modes, deployment statics, signer configuration, hard-coded policy, and protocol/network version."
+        record_stable_keys: ["threat:security:configuration:wrong-key-root-permission-or-version", "assumption:security:dependency:custom-o1js-semantics", "assumption:security:deployment:manifest-and-account-state", "assumption:security:business:ratified-governance-parameters"]
+      - class: "INFORMATION_EXPOSURE"
+        disposition: "APPLICABLE_REVIEWED"
+        rationale: "Reviewed public governance events, debug Provable.log values, participant public-key logging, parse errors, and absent runtime retention/access policy; no scoped private key material is logged."
+        record_stable_keys: ["threat:security:information:diagnostic-metadata-exposure", "assumption:security:operator:logging-policy"]
+      - class: "RESOURCE_OR_LIVENESS"
+        disposition: "APPLICABLE_REVIEWED"
+        rationale: "Reviewed five-record base proofs, recursive workload, full snapshot/action volume, five-state tally requirement, sparse-ledger exhaustion, host availability, lifecycle deadlines, and emergency-authority bricking."
+        record_stable_keys: ["threat:security:liveness:proof-backlog-or-unsatisfiable-finalization", "threat:security:recovery:irrecoverable-emergency-authority", "assumption:security:availability:host-services"]
+      - class: "OBSERVABILITY_OR_RECOVERY"
+        disposition: "APPLICABLE_REVIEWED"
+        rationale: "Reviewed owner events, missing controller rotation/global-pause events, pause event/state disagreement, silent parse fallback, ledger rollback/checkpointing, key recovery, and operational reconciliation."
+        record_stable_keys: ["threat:security:observability:false-event-or-silent-default", "threat:security:recovery:irrecoverable-emergency-authority", "threat:security:host:partial-write-retry-or-cross-job-contamination", "assumption:security:operator:event-and-state-reconciliation"]
+      - class: "TEST_ORACLE_BLIND_SPOT"
+        disposition: "APPLICABLE_REVIEWED"
+        rationale: "Reviewed ordered owner happy path, commented composed pause tests, staking happy paths without negative partitions, skipped invalid vote, primitive serialization/Merkle gaps, and event schema-only oracles. Tests remain unexecuted expectations."
+        record_stable_keys: ["finding:primitives-tests:primitive-test-blind-spots", "finding:primitives-tests:integration-suite-order-and-pausing-gap", "finding:zk-programs:staking-transform:negative-test-partitions-absent", "finding:primitives-tests:event-oracle-incomplete"]
+      - class: "REQUIREMENT_OR_AUDIT_DRIFT"
+        disposition: "APPLICABLE_REVIEWED"
+        rationale: "Reviewed provisional/contested RFC policy, bond beneficiary, public vote domain, hard-coded parameters, 28 prior-audit items, fix-commit ancestry, and current-source dispositions without inheriting certification."
+        record_stable_keys: ["assumption:security:business:ratified-governance-parameters", "security-objective:treasury-protocol:lifecycle-finality-and-state-consistency", "security-objective:treasury-protocol:voting-eligibility-uniqueness-and-tally"]
+      - class: "SMART_CONTRACT_OR_ZK"
+        disposition: "APPLICABLE_REVIEWED"
+        rationale: "Reviewed account permissions and token effects, proof public/private values, witnesses, roots/indices, nullifiers, recursive continuity, action-state binding, host effects, verification keys, proof modes, deployed state, and liveness."
+        record_stable_keys: ["security-objective:treasury-protocol:proof-statement-and-recursion-integrity", "threat:security:zk:incomplete-action-or-recursive-binding", "threat:security:zk:host-computation-mistaken-for-proof", "assumption:security:cryptographic:proof-and-hash-soundness"]
+  proposed_relations: []
+  conflicts:
+    - "The RFC describes successful bond return to the proposer, while current payout adds bond to the recipient-bound cap; no final decision source authorizes the divergence."
+    - "The RFC exposes yay/nay/abstain, while public validation also accepts DUMMY and current tests expect a real-key DUMMY to consume the nullifier."
+    - "Proposal status is both governance outcome and pause flag, so emergency control and finality cannot both be represented."
+    - "The approval calculator returns REJECTED for failed participation/no directional votes, while tally rejects before storing that result."
+    - "The intended eligible account/delegate predicate and Mina snapshot representation are not jointly specified."
+  unresolved:
+    - "Deployed permission/key/root/static/account state, resolved custom dependency commit, and network version were not supplied."
+    - "Circuit, compiler, backend, recursive proof, signature, hash, and canonical encoding soundness cannot be established statically."
+    - "Mina action-state history, slot inclusion, account commitment, sparse/dense ledger, and transaction atomicity semantics remain external."
+    - "Concrete prover worker, storage transaction, retry, concurrency, recovery, and service-availability guarantees remain outside scope."
+    - "Production governance parameters, bond beneficiary, quorum failure, permissionless execution, emergency reset, and break-glass sunset require human authority."
+    - "Runtime capacity, lifecycle deadline fit, deployed behavior, and all test/proof outcomes remain unresolved because execution is prohibited."
+  coverage:
+    mandatory_failure_classes_expected: 14
+    mandatory_failure_classes_accounted: 14
+    security_objectives: 10
+    threats: 17
+    assumptions: 18
+    evidence_records: 10
+    scope_inputs_rehashed: 38
+    primary_source_files_rehashed: 12
+    cited_context_files_rehashed: 8
+    user_context_inputs_rechecked: 2
+    source_mutation_detected: false
+    limitations:
+      - "Stable IDs and final links are allocated by the root orchestrator."
+      - "This bundle deliberately proposes no FND records; it challenges existing finding severity and prerequisites in observations to avoid duplicate ownership."
+      - "All conclusions are static, revision-specific, and subject to Pass-2 contextual review."

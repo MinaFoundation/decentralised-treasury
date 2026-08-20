@@ -1,0 +1,5116 @@
+{
+  "bundle": {
+    "schema_version": 1,
+    "work_unit": "WU-A182673A27",
+    "revision": "1e27b1aea88f5ea2764db96e4b337b24fe6dbeb3",
+    "scope_hash": "f40d76b91ec3cd8805ecdc7bebba8d43b8f317842639a7799738c37569119ab1",
+    "pass_1_sha256": "1baa122bc91838a651da0116040b290de56f49b90e1c8688ba3712e0db7c6213",
+    "context_sha256": "b08ad4cfef37e8a2f19bb2dd46d69763312a48e00e6204e7f8ec30a291afdfd1",
+    "role": "contextual",
+    "ownership": {
+      "primary_paths": [
+
+      ],
+      "record_ids": [
+        "ASM-031E77BE7F",
+        "ASM-03D9CA273D",
+        "ASM-0DCB6712DD",
+        "ASM-0E591EC647",
+        "ASM-35D9BB50D0",
+        "ASM-39FFFFFD50",
+        "ASM-3B12C3E849",
+        "ASM-4B596D13E3",
+        "ASM-503E6DE8AD",
+        "ASM-53F278775C",
+        "ASM-557C7137A0",
+        "ASM-64F6936A94",
+        "ASM-73AF207816",
+        "ASM-79662ECECE",
+        "ASM-82EB259917",
+        "ASM-912B3DBDF6",
+        "ASM-A4087EF988",
+        "ASM-B2699C5369",
+        "ASM-B549EC8751",
+        "ASM-BD7E733FE5",
+        "ASM-C093AE5452",
+        "ASM-C0AB78216E",
+        "ASM-D691B96D3B",
+        "ASM-E0E1752AF7",
+        "ASM-E6AE27B10D",
+        "ASM-EF2D37A6EF",
+        "ASM-F556007192",
+        "ASM-FF091135AE",
+        "FND-077D28F305",
+        "FND-10A2C953A0",
+        "FND-1897280316",
+        "FND-1979AEB628",
+        "FND-19EC441E53",
+        "FND-1B33097A18",
+        "FND-1D115F22E4",
+        "FND-1FBF087284",
+        "FND-2184025222",
+        "FND-2237382FBA",
+        "FND-23916993D0",
+        "FND-30B94DCCE0",
+        "FND-3471621CD6",
+        "FND-37BEE2B1BA",
+        "FND-3B35F91A1C",
+        "FND-4234CF9EC6",
+        "FND-4B4F5D76C9",
+        "FND-4C6DF9502F",
+        "FND-5F15694229",
+        "FND-67861A5343",
+        "FND-7264C0E61E",
+        "FND-756A14D862",
+        "FND-7BE7D38B6B",
+        "FND-7D495DBE3F",
+        "FND-8467BE9FD1",
+        "FND-88B3C09521",
+        "FND-8B2DE6F23F",
+        "FND-8C3BA008B7",
+        "FND-8DB62F78C9",
+        "FND-961BD4A980",
+        "FND-996A8C6D4E",
+        "FND-9AA5203528",
+        "FND-A5A4858953",
+        "FND-B5948FE3CF",
+        "FND-BBC3A2316C",
+        "FND-BF3449506D",
+        "FND-BFFEA51091",
+        "FND-C0656D649D",
+        "FND-CA0F83CE86",
+        "FND-CD3FC08B49",
+        "FND-D0ABA9650D",
+        "FND-D0C94E0DC6",
+        "FND-D889112D27",
+        "FND-E393B29703",
+        "FND-E5DB7A78F8",
+        "FND-E683792BE2",
+        "FND-ECA97458D5",
+        "FND-EE80C71EE3",
+        "FND-F3C6E62E0B",
+        "GAP-003C868089",
+        "GAP-0B47B1BC29",
+        "GAP-1DC17F1884",
+        "GAP-2124E32D06",
+        "GAP-212C9A0653",
+        "GAP-22CD8BD355",
+        "GAP-2CA978704D",
+        "GAP-48D1CB3548",
+        "GAP-4B6AF1A2C6",
+        "GAP-4DE9FCF9CE",
+        "GAP-50DC9AE203",
+        "GAP-52A3FE4758",
+        "GAP-5EB38DFDA6",
+        "GAP-721B65BE75",
+        "GAP-7BAF881BED",
+        "GAP-817200738F",
+        "GAP-8826CA0D4C",
+        "GAP-8C60DBC5D8",
+        "GAP-935AA6FD0D",
+        "GAP-9398E85581",
+        "GAP-96C24B88BE",
+        "GAP-9CA1247303",
+        "GAP-9D0D23D527",
+        "GAP-A25D114C6F",
+        "GAP-ABC383D9C1",
+        "GAP-ADD703D733",
+        "GAP-B1C8C1A4E1",
+        "GAP-B798CE8DB1",
+        "GAP-B9423A0E57",
+        "GAP-BB80E3EB16",
+        "GAP-BCB6F29C25",
+        "GAP-E291D5E72A",
+        "GAP-EF32A38D1C",
+        "GAP-F035E24714",
+        "GAP-F47532E2A5",
+        "GAP-F83C6F5411",
+        "GAP-FE43BADC05",
+        "SEC-042FF4BC76",
+        "SEC-10182FB352",
+        "SEC-9F3756E302",
+        "SEC-B560A051DA",
+        "SEC-BC2C476AE2",
+        "SEC-DD3B44137C",
+        "SEC-E0D95AF002",
+        "SEC-EE4E9A7ADB",
+        "SEC-F88596C819",
+        "SEC-FB542C27D2",
+        "THR-01539B0FF5",
+        "THR-0DEBF32E0A",
+        "THR-0EC3832BA7",
+        "THR-56AA87E621",
+        "THR-5D2535B0B5",
+        "THR-5F94AE7496",
+        "THR-622BA37FCF",
+        "THR-647A188D6B",
+        "THR-77C87EDE62",
+        "THR-902C4A0F9F",
+        "THR-92F9C4D82A",
+        "THR-A943E3380A",
+        "THR-B041D07C7D",
+        "THR-B55C2C8D2F",
+        "THR-C66F2EDB38",
+        "THR-CD2BC0B163",
+        "THR-F283B3AF7E",
+        "TST-318386F25F",
+        "TST-5A6CA56CD8",
+        "TST-5FC61A24DA",
+        "TST-6530589740",
+        "TST-A696D485D6",
+        "TST-A9E4F4D3BC",
+        "TST-D1863E1F8D",
+        "TST-ED3BD4CF2F",
+        "UNR-0B3E825B88",
+        "UNR-13C729A54A",
+        "UNR-15F1A8EB0E",
+        "UNR-1733743332",
+        "UNR-20BC6033C1",
+        "UNR-29788D0D91",
+        "UNR-2C4BA211D7",
+        "UNR-3694303308",
+        "UNR-3C529E3B2C",
+        "UNR-6384846777",
+        "UNR-72174E5C45",
+        "UNR-743184E14A",
+        "UNR-9EEFA83E06",
+        "UNR-BA7E7021CF",
+        "UNR-C23B2D9729",
+        "UNR-C42A921AD9",
+        "UNR-D007DAF961",
+        "UNR-D5F28B1A0D",
+        "UNR-F951787FC2"
+      ]
+    },
+    "assumptions": [
+
+    ],
+    "observations": [
+      "All 168 owned current Pass-1 records were re-read against raw anchors and the complete context pack.",
+      "Tests are expectation evidence only; no source, test, build, proof, compiler, or chain execution occurred.",
+      "All 28 prior-audit records retain revision-bounded historical provenance and are separated from current-source findings.",
+      "RFC optional, deferred, contested, and unratified items remain distinct from current implementation defects."
+    ],
+    "proposed_records": {
+    },
+    "proposed_relations": [
+
+    ],
+    "limitations": [
+      "Static review cannot establish deployed permissions, keys, roots, dependency resolution, protocol semantics, proof-system soundness, host orchestration, capacity, or runtime test outcomes.",
+      "The RFC and prior-audit extracts are bound summaries; they orient but do not override pinned raw source or supply missing human decisions."
+    ]
+  },
+  "contextual_reviews": [
+    {
+      "record_id": "ASM-031E77BE7F",
+      "disposition": "CONFIRMED",
+      "pass_1_record_ids": [
+        "ASM-031E77BE7F"
+      ],
+      "context_ids": [
+        "SEC-E0D95AF002",
+        "CMP-0F476A460D"
+      ],
+      "user_context_evidence_ids": [
+
+      ],
+      "reviewer_work_unit_id": "WU-A182673A27",
+      "rationale": "The raw anchors show a real implementation dependency. The context neither removes nor strengthens it; failure consequences remain bounded to the stated protocol, dependency, deployment, or operator premise.",
+      "assumptions_added": [
+
+      ],
+      "assumptions_removed": [
+
+      ],
+      "global_consequences": [
+        "Dependent conclusions remain conditional on this premise; consolidation avoids overstating independent trust assumptions."
+      ],
+      "replacement_ids": [
+
+      ]
+    },
+    {
+      "record_id": "ASM-03D9CA273D",
+      "disposition": "UNRESOLVED",
+      "pass_1_record_ids": [
+        "ASM-03D9CA273D"
+      ],
+      "context_ids": [
+        "BHV-C01A568AAE",
+        "FND-4C6DF9502F"
+      ],
+      "user_context_evidence_ids": [
+
+      ],
+      "reviewer_work_unit_id": "WU-A182673A27",
+      "rationale": "The source visibly relies on this premise, while the complete context supplies no authoritative protocol, deployment, operator, or governance evidence that establishes it. The assumption therefore remains explicit and unresolved.",
+      "assumptions_added": [
+
+      ],
+      "assumptions_removed": [
+
+      ],
+      "global_consequences": [
+        "Dependent conclusions remain conditional on this premise; consolidation avoids overstating independent trust assumptions."
+      ],
+      "replacement_ids": [
+
+      ]
+    },
+    {
+      "record_id": "ASM-0DCB6712DD",
+      "disposition": "UNRESOLVED",
+      "pass_1_record_ids": [
+        "ASM-0DCB6712DD"
+      ],
+      "context_ids": [
+        "INV-A0200396FA",
+        "BHV-5095682725",
+        "UNR-0B3E825B88"
+      ],
+      "user_context_evidence_ids": [
+
+      ],
+      "reviewer_work_unit_id": "WU-A182673A27",
+      "rationale": "The source visibly relies on this premise, while the complete context supplies no authoritative protocol, deployment, operator, or governance evidence that establishes it. The assumption therefore remains explicit and unresolved.",
+      "assumptions_added": [
+
+      ],
+      "assumptions_removed": [
+
+      ],
+      "global_consequences": [
+        "Dependent conclusions remain conditional on this premise; consolidation avoids overstating independent trust assumptions."
+      ],
+      "replacement_ids": [
+
+      ]
+    },
+    {
+      "record_id": "ASM-0E591EC647",
+      "disposition": "REFINED",
+      "pass_1_record_ids": [
+        "ASM-0E591EC647"
+      ],
+      "context_ids": [
+        "SEC-F88596C819",
+        "THR-B55C2C8D2F"
+      ],
+      "user_context_evidence_ids": [
+
+      ],
+      "reviewer_work_unit_id": "WU-A182673A27",
+      "rationale": "The premise is materially duplicated by ASM-35D9BB50D0. Consolidating the lineage preserves the underlying external dependency while preventing independent counting of the same trust premise.",
+      "assumptions_added": [
+
+      ],
+      "assumptions_removed": [
+        "Treating the same underlying premise or policy deficiency as an independent duplicate."
+      ],
+      "global_consequences": [
+        "Dependent conclusions remain conditional on this premise; consolidation avoids overstating independent trust assumptions."
+      ],
+      "replacement_ids": [
+
+      ],
+      "proposed_changes": [
+        "Consolidate substantive publication coverage under the listed replacement IDs while retaining this Pass-1 ID in contextual-review lineage."
+      ],
+      "consolidation_target_ids": [
+        "ASM-35D9BB50D0"
+      ]
+    },
+    {
+      "record_id": "ASM-35D9BB50D0",
+      "disposition": "CONFIRMED",
+      "pass_1_record_ids": [
+        "ASM-35D9BB50D0"
+      ],
+      "context_ids": [
+        "GAP-EF32A38D1C",
+        "FND-CA0F83CE86"
+      ],
+      "user_context_evidence_ids": [
+
+      ],
+      "reviewer_work_unit_id": "WU-A182673A27",
+      "rationale": "The raw anchors show a real implementation dependency. The context neither removes nor strengthens it; failure consequences remain bounded to the stated protocol, dependency, deployment, or operator premise.",
+      "assumptions_added": [
+
+      ],
+      "assumptions_removed": [
+
+      ],
+      "global_consequences": [
+        "Dependent conclusions remain conditional on this premise; consolidation avoids overstating independent trust assumptions."
+      ],
+      "replacement_ids": [
+
+      ]
+    },
+    {
+      "record_id": "ASM-39FFFFFD50",
+      "disposition": "UNRESOLVED",
+      "pass_1_record_ids": [
+        "ASM-39FFFFFD50"
+      ],
+      "context_ids": [
+        "GAP-1DC17F1884",
+        "BHV-5095682725"
+      ],
+      "user_context_evidence_ids": [
+        "EVD-0D50A0B3BE",
+        "EVD-C70801D35C"
+      ],
+      "reviewer_work_unit_id": "WU-A182673A27",
+      "rationale": "The source visibly relies on this premise, while the complete context supplies no authoritative protocol, deployment, operator, or governance evidence that establishes it. The assumption therefore remains explicit and unresolved.",
+      "assumptions_added": [
+
+      ],
+      "assumptions_removed": [
+
+      ],
+      "global_consequences": [
+        "Dependent conclusions remain conditional on this premise; consolidation avoids overstating independent trust assumptions."
+      ],
+      "replacement_ids": [
+
+      ]
+    },
+    {
+      "record_id": "ASM-3B12C3E849",
+      "disposition": "CONFIRMED",
+      "pass_1_record_ids": [
+        "ASM-3B12C3E849"
+      ],
+      "context_ids": [
+        "UNR-6384846777",
+        "CMP-7CC27EFA43"
+      ],
+      "user_context_evidence_ids": [
+
+      ],
+      "reviewer_work_unit_id": "WU-A182673A27",
+      "rationale": "The raw anchors show a real implementation dependency. The context neither removes nor strengthens it; failure consequences remain bounded to the stated protocol, dependency, deployment, or operator premise.",
+      "assumptions_added": [
+
+      ],
+      "assumptions_removed": [
+
+      ],
+      "global_consequences": [
+        "Dependent conclusions remain conditional on this premise; consolidation avoids overstating independent trust assumptions."
+      ],
+      "replacement_ids": [
+
+      ]
+    },
+    {
+      "record_id": "ASM-4B596D13E3",
+      "disposition": "CONFIRMED",
+      "pass_1_record_ids": [
+        "ASM-4B596D13E3"
+      ],
+      "context_ids": [
+        "BHV-BAB5A8FD7C",
+        "CMP-7CC27EFA43",
+        "CMP-0F476A460D"
+      ],
+      "user_context_evidence_ids": [
+
+      ],
+      "reviewer_work_unit_id": "WU-A182673A27",
+      "rationale": "The raw anchors show a real implementation dependency. The context neither removes nor strengthens it; failure consequences remain bounded to the stated protocol, dependency, deployment, or operator premise.",
+      "assumptions_added": [
+
+      ],
+      "assumptions_removed": [
+
+      ],
+      "global_consequences": [
+        "Dependent conclusions remain conditional on this premise; consolidation avoids overstating independent trust assumptions."
+      ],
+      "replacement_ids": [
+
+      ]
+    },
+    {
+      "record_id": "ASM-503E6DE8AD",
+      "disposition": "UNRESOLVED",
+      "pass_1_record_ids": [
+        "ASM-503E6DE8AD"
+      ],
+      "context_ids": [
+        "GAP-A25D114C6F",
+        "SEC-042FF4BC76"
+      ],
+      "user_context_evidence_ids": [
+        "EVD-0D50A0B3BE",
+        "EVD-C70801D35C"
+      ],
+      "reviewer_work_unit_id": "WU-A182673A27",
+      "rationale": "The source visibly relies on this premise, while the complete context supplies no authoritative protocol, deployment, operator, or governance evidence that establishes it. The assumption therefore remains explicit and unresolved.",
+      "assumptions_added": [
+
+      ],
+      "assumptions_removed": [
+
+      ],
+      "global_consequences": [
+        "Dependent conclusions remain conditional on this premise; consolidation avoids overstating independent trust assumptions."
+      ],
+      "replacement_ids": [
+
+      ]
+    },
+    {
+      "record_id": "ASM-53F278775C",
+      "disposition": "REFINED",
+      "pass_1_record_ids": [
+        "ASM-53F278775C"
+      ],
+      "context_ids": [
+        "BHV-BAB5A8FD7C",
+        "ASM-EF2D37A6EF"
+      ],
+      "user_context_evidence_ids": [
+
+      ],
+      "reviewer_work_unit_id": "WU-A182673A27",
+      "rationale": "The premise is materially duplicated by ASM-031E77BE7F and ASM-82EB259917. Consolidating the lineage preserves the underlying external dependency while preventing independent counting of the same trust premise.",
+      "assumptions_added": [
+
+      ],
+      "assumptions_removed": [
+        "Treating the same underlying premise or policy deficiency as an independent duplicate."
+      ],
+      "global_consequences": [
+        "Dependent conclusions remain conditional on this premise; consolidation avoids overstating independent trust assumptions."
+      ],
+      "replacement_ids": [
+
+      ],
+      "proposed_changes": [
+        "Consolidate substantive publication coverage under the listed replacement IDs while retaining this Pass-1 ID in contextual-review lineage."
+      ],
+      "consolidation_target_ids": [
+        "ASM-031E77BE7F",
+        "ASM-82EB259917"
+      ]
+    },
+    {
+      "record_id": "ASM-557C7137A0",
+      "disposition": "REFINED",
+      "pass_1_record_ids": [
+        "ASM-557C7137A0"
+      ],
+      "context_ids": [
+        "BHV-5095682725"
+      ],
+      "user_context_evidence_ids": [
+
+      ],
+      "reviewer_work_unit_id": "WU-A182673A27",
+      "rationale": "The premise is materially duplicated by ASM-0DCB6712DD. Consolidating the lineage preserves the underlying external dependency while preventing independent counting of the same trust premise.",
+      "assumptions_added": [
+
+      ],
+      "assumptions_removed": [
+        "Treating the same underlying premise or policy deficiency as an independent duplicate."
+      ],
+      "global_consequences": [
+        "Dependent conclusions remain conditional on this premise; consolidation avoids overstating independent trust assumptions."
+      ],
+      "replacement_ids": [
+
+      ],
+      "proposed_changes": [
+        "Consolidate substantive publication coverage under the listed replacement IDs while retaining this Pass-1 ID in contextual-review lineage."
+      ],
+      "consolidation_target_ids": [
+        "ASM-0DCB6712DD"
+      ]
+    },
+    {
+      "record_id": "ASM-64F6936A94",
+      "disposition": "CONFIRMED",
+      "pass_1_record_ids": [
+        "ASM-64F6936A94"
+      ],
+      "context_ids": [
+        "SEC-10182FB352",
+        "THR-0DEBF32E0A"
+      ],
+      "user_context_evidence_ids": [
+
+      ],
+      "reviewer_work_unit_id": "WU-A182673A27",
+      "rationale": "The raw anchors show a real implementation dependency. The context neither removes nor strengthens it; failure consequences remain bounded to the stated protocol, dependency, deployment, or operator premise.",
+      "assumptions_added": [
+
+      ],
+      "assumptions_removed": [
+
+      ],
+      "global_consequences": [
+        "Dependent conclusions remain conditional on this premise; consolidation avoids overstating independent trust assumptions."
+      ],
+      "replacement_ids": [
+
+      ]
+    },
+    {
+      "record_id": "ASM-73AF207816",
+      "disposition": "UNRESOLVED",
+      "pass_1_record_ids": [
+        "ASM-73AF207816"
+      ],
+      "context_ids": [
+        "FND-19EC441E53",
+        "UNR-1733743332"
+      ],
+      "user_context_evidence_ids": [
+
+      ],
+      "reviewer_work_unit_id": "WU-A182673A27",
+      "rationale": "The source visibly relies on this premise, while the complete context supplies no authoritative protocol, deployment, operator, or governance evidence that establishes it. The assumption therefore remains explicit and unresolved.",
+      "assumptions_added": [
+
+      ],
+      "assumptions_removed": [
+
+      ],
+      "global_consequences": [
+        "Dependent conclusions remain conditional on this premise; consolidation avoids overstating independent trust assumptions."
+      ],
+      "replacement_ids": [
+
+      ]
+    },
+    {
+      "record_id": "ASM-79662ECECE",
+      "disposition": "CONFIRMED",
+      "pass_1_record_ids": [
+        "ASM-79662ECECE"
+      ],
+      "context_ids": [
+        "CMP-0F476A460D",
+        "CMP-874E479BA1",
+        "CMP-5CAF19BDCD"
+      ],
+      "user_context_evidence_ids": [
+
+      ],
+      "reviewer_work_unit_id": "WU-A182673A27",
+      "rationale": "The raw anchors show a real implementation dependency. The context neither removes nor strengthens it; failure consequences remain bounded to the stated protocol, dependency, deployment, or operator premise.",
+      "assumptions_added": [
+
+      ],
+      "assumptions_removed": [
+
+      ],
+      "global_consequences": [
+        "Dependent conclusions remain conditional on this premise; consolidation avoids overstating independent trust assumptions."
+      ],
+      "replacement_ids": [
+
+      ]
+    },
+    {
+      "record_id": "ASM-82EB259917",
+      "disposition": "CONFIRMED",
+      "pass_1_record_ids": [
+        "ASM-82EB259917"
+      ],
+      "context_ids": [
+        "SEC-EE4E9A7ADB",
+        "THR-56AA87E621"
+      ],
+      "user_context_evidence_ids": [
+
+      ],
+      "reviewer_work_unit_id": "WU-A182673A27",
+      "rationale": "The raw anchors show a real implementation dependency. The context neither removes nor strengthens it; failure consequences remain bounded to the stated protocol, dependency, deployment, or operator premise.",
+      "assumptions_added": [
+
+      ],
+      "assumptions_removed": [
+
+      ],
+      "global_consequences": [
+        "Dependent conclusions remain conditional on this premise; consolidation avoids overstating independent trust assumptions."
+      ],
+      "replacement_ids": [
+
+      ]
+    },
+    {
+      "record_id": "ASM-912B3DBDF6",
+      "disposition": "REFINED",
+      "pass_1_record_ids": [
+        "ASM-912B3DBDF6"
+      ],
+      "context_ids": [
+        "SEC-EE4E9A7ADB",
+        "ASM-FF091135AE"
+      ],
+      "user_context_evidence_ids": [
+
+      ],
+      "reviewer_work_unit_id": "WU-A182673A27",
+      "rationale": "The premise is materially duplicated by ASM-E0E1752AF7. Consolidating the lineage preserves the underlying external dependency while preventing independent counting of the same trust premise.",
+      "assumptions_added": [
+
+      ],
+      "assumptions_removed": [
+        "Treating the same underlying premise or policy deficiency as an independent duplicate."
+      ],
+      "global_consequences": [
+        "Dependent conclusions remain conditional on this premise; consolidation avoids overstating independent trust assumptions."
+      ],
+      "replacement_ids": [
+
+      ],
+      "proposed_changes": [
+        "Consolidate substantive publication coverage under the listed replacement IDs while retaining this Pass-1 ID in contextual-review lineage."
+      ],
+      "consolidation_target_ids": [
+        "ASM-E0E1752AF7"
+      ]
+    },
+    {
+      "record_id": "ASM-A4087EF988",
+      "disposition": "CONFIRMED",
+      "pass_1_record_ids": [
+        "ASM-A4087EF988"
+      ],
+      "context_ids": [
+        "SEC-10182FB352",
+        "THR-0DEBF32E0A"
+      ],
+      "user_context_evidence_ids": [
+
+      ],
+      "reviewer_work_unit_id": "WU-A182673A27",
+      "rationale": "The raw anchors show a real implementation dependency. The context neither removes nor strengthens it; failure consequences remain bounded to the stated protocol, dependency, deployment, or operator premise.",
+      "assumptions_added": [
+
+      ],
+      "assumptions_removed": [
+
+      ],
+      "global_consequences": [
+        "Dependent conclusions remain conditional on this premise; consolidation avoids overstating independent trust assumptions."
+      ],
+      "replacement_ids": [
+
+      ]
+    },
+    {
+      "record_id": "ASM-B2699C5369",
+      "disposition": "REFINED",
+      "pass_1_record_ids": [
+        "ASM-B2699C5369"
+      ],
+      "context_ids": [
+        "SEC-B560A051DA",
+        "THR-C66F2EDB38"
+      ],
+      "user_context_evidence_ids": [
+
+      ],
+      "reviewer_work_unit_id": "WU-A182673A27",
+      "rationale": "The premise is materially duplicated by ASM-73AF207816. Consolidating the lineage preserves the underlying external dependency while preventing independent counting of the same trust premise.",
+      "assumptions_added": [
+
+      ],
+      "assumptions_removed": [
+        "Treating the same underlying premise or policy deficiency as an independent duplicate."
+      ],
+      "global_consequences": [
+        "Dependent conclusions remain conditional on this premise; consolidation avoids overstating independent trust assumptions."
+      ],
+      "replacement_ids": [
+
+      ],
+      "proposed_changes": [
+        "Consolidate substantive publication coverage under the listed replacement IDs while retaining this Pass-1 ID in contextual-review lineage."
+      ],
+      "consolidation_target_ids": [
+        "ASM-73AF207816"
+      ]
+    },
+    {
+      "record_id": "ASM-B549EC8751",
+      "disposition": "CONFIRMED",
+      "pass_1_record_ids": [
+        "ASM-B549EC8751"
+      ],
+      "context_ids": [
+        "FND-B5948FE3CF"
+      ],
+      "user_context_evidence_ids": [
+
+      ],
+      "reviewer_work_unit_id": "WU-A182673A27",
+      "rationale": "The source-visible state transition contradicts the proposed policy premise, so Pass 1 correctly records the assumption as contradicted rather than silently treating it as intended behavior.",
+      "assumptions_added": [
+
+      ],
+      "assumptions_removed": [
+
+      ],
+      "global_consequences": [
+        "Dependent conclusions remain conditional on this premise; consolidation avoids overstating independent trust assumptions."
+      ],
+      "replacement_ids": [
+
+      ],
+      "conflicting_evidence_ids": [
+        "EVD-11DB5D89B4"
+      ]
+    },
+    {
+      "record_id": "ASM-BD7E733FE5",
+      "disposition": "CONFIRMED",
+      "pass_1_record_ids": [
+        "ASM-BD7E733FE5"
+      ],
+      "context_ids": [
+        "BHV-80247CE73D",
+        "BHV-5D3FCC7B93",
+        "ASM-D691B96D3B"
+      ],
+      "user_context_evidence_ids": [
+
+      ],
+      "reviewer_work_unit_id": "WU-A182673A27",
+      "rationale": "The raw anchors show a real implementation dependency. The context neither removes nor strengthens it; failure consequences remain bounded to the stated protocol, dependency, deployment, or operator premise.",
+      "assumptions_added": [
+
+      ],
+      "assumptions_removed": [
+
+      ],
+      "global_consequences": [
+        "Dependent conclusions remain conditional on this premise; consolidation avoids overstating independent trust assumptions."
+      ],
+      "replacement_ids": [
+
+      ]
+    },
+    {
+      "record_id": "ASM-C093AE5452",
+      "disposition": "CONFIRMED",
+      "pass_1_record_ids": [
+        "ASM-C093AE5452"
+      ],
+      "context_ids": [
+        "CMP-E155326DD2",
+        "CMP-0F476A460D",
+        "CMP-5CAF19BDCD"
+      ],
+      "user_context_evidence_ids": [
+
+      ],
+      "reviewer_work_unit_id": "WU-A182673A27",
+      "rationale": "The raw anchors show a real implementation dependency. The context neither removes nor strengthens it; failure consequences remain bounded to the stated protocol, dependency, deployment, or operator premise.",
+      "assumptions_added": [
+
+      ],
+      "assumptions_removed": [
+
+      ],
+      "global_consequences": [
+        "Dependent conclusions remain conditional on this premise; consolidation avoids overstating independent trust assumptions."
+      ],
+      "replacement_ids": [
+
+      ]
+    },
+    {
+      "record_id": "ASM-C0AB78216E",
+      "disposition": "CONFIRMED",
+      "pass_1_record_ids": [
+        "ASM-C0AB78216E"
+      ],
+      "context_ids": [
+        "FND-1D115F22E4",
+        "FND-7264C0E61E",
+        "GAP-817200738F"
+      ],
+      "user_context_evidence_ids": [
+
+      ],
+      "reviewer_work_unit_id": "WU-A182673A27",
+      "rationale": "The raw anchors show a real implementation dependency. The context neither removes nor strengthens it; failure consequences remain bounded to the stated protocol, dependency, deployment, or operator premise.",
+      "assumptions_added": [
+
+      ],
+      "assumptions_removed": [
+
+      ],
+      "global_consequences": [
+        "Dependent conclusions remain conditional on this premise; consolidation avoids overstating independent trust assumptions."
+      ],
+      "replacement_ids": [
+
+      ]
+    },
+    {
+      "record_id": "ASM-D691B96D3B",
+      "disposition": "CONFIRMED",
+      "pass_1_record_ids": [
+        "ASM-D691B96D3B"
+      ],
+      "context_ids": [
+        "BHV-80247CE73D",
+        "BHV-5D3FCC7B93",
+        "ASM-BD7E733FE5"
+      ],
+      "user_context_evidence_ids": [
+
+      ],
+      "reviewer_work_unit_id": "WU-A182673A27",
+      "rationale": "The raw anchors show a real implementation dependency. The context neither removes nor strengthens it; failure consequences remain bounded to the stated protocol, dependency, deployment, or operator premise.",
+      "assumptions_added": [
+
+      ],
+      "assumptions_removed": [
+
+      ],
+      "global_consequences": [
+        "Dependent conclusions remain conditional on this premise; consolidation avoids overstating independent trust assumptions."
+      ],
+      "replacement_ids": [
+
+      ]
+    },
+    {
+      "record_id": "ASM-E0E1752AF7",
+      "disposition": "CONFIRMED",
+      "pass_1_record_ids": [
+        "ASM-E0E1752AF7"
+      ],
+      "context_ids": [
+        "CMP-E155326DD2",
+        "CMP-5CAF19BDCD",
+        "CMP-B6BB8BE661"
+      ],
+      "user_context_evidence_ids": [
+
+      ],
+      "reviewer_work_unit_id": "WU-A182673A27",
+      "rationale": "The raw anchors show a real implementation dependency. The context neither removes nor strengthens it; failure consequences remain bounded to the stated protocol, dependency, deployment, or operator premise.",
+      "assumptions_added": [
+
+      ],
+      "assumptions_removed": [
+
+      ],
+      "global_consequences": [
+        "Dependent conclusions remain conditional on this premise; consolidation avoids overstating independent trust assumptions."
+      ],
+      "replacement_ids": [
+
+      ]
+    },
+    {
+      "record_id": "ASM-E6AE27B10D",
+      "disposition": "CONFIRMED",
+      "pass_1_record_ids": [
+        "ASM-E6AE27B10D"
+      ],
+      "context_ids": [
+        "CMP-B6BB8BE661",
+        "CMP-5CAF19BDCD",
+        "CMP-E155326DD2"
+      ],
+      "user_context_evidence_ids": [
+
+      ],
+      "reviewer_work_unit_id": "WU-A182673A27",
+      "rationale": "The raw anchors show a real implementation dependency. The context neither removes nor strengthens it; failure consequences remain bounded to the stated protocol, dependency, deployment, or operator premise.",
+      "assumptions_added": [
+
+      ],
+      "assumptions_removed": [
+
+      ],
+      "global_consequences": [
+        "Dependent conclusions remain conditional on this premise; consolidation avoids overstating independent trust assumptions."
+      ],
+      "replacement_ids": [
+
+      ]
+    },
+    {
+      "record_id": "ASM-EF2D37A6EF",
+      "disposition": "CONFIRMED",
+      "pass_1_record_ids": [
+        "ASM-EF2D37A6EF"
+      ],
+      "context_ids": [
+        "SEC-E0D95AF002",
+        "SEC-10182FB352",
+        "ASM-53F278775C"
+      ],
+      "user_context_evidence_ids": [
+
+      ],
+      "reviewer_work_unit_id": "WU-A182673A27",
+      "rationale": "The raw anchors show a real implementation dependency. The context neither removes nor strengthens it; failure consequences remain bounded to the stated protocol, dependency, deployment, or operator premise.",
+      "assumptions_added": [
+
+      ],
+      "assumptions_removed": [
+
+      ],
+      "global_consequences": [
+        "Dependent conclusions remain conditional on this premise; consolidation avoids overstating independent trust assumptions."
+      ],
+      "replacement_ids": [
+
+      ]
+    },
+    {
+      "record_id": "ASM-F556007192",
+      "disposition": "UNRESOLVED",
+      "pass_1_record_ids": [
+        "ASM-F556007192"
+      ],
+      "context_ids": [
+        "THR-622BA37FCF"
+      ],
+      "user_context_evidence_ids": [
+
+      ],
+      "reviewer_work_unit_id": "WU-A182673A27",
+      "rationale": "The source visibly relies on this premise, while the complete context supplies no authoritative protocol, deployment, operator, or governance evidence that establishes it. The assumption therefore remains explicit and unresolved.",
+      "assumptions_added": [
+
+      ],
+      "assumptions_removed": [
+
+      ],
+      "global_consequences": [
+        "Dependent conclusions remain conditional on this premise; consolidation avoids overstating independent trust assumptions."
+      ],
+      "replacement_ids": [
+
+      ]
+    },
+    {
+      "record_id": "ASM-FF091135AE",
+      "disposition": "UNRESOLVED",
+      "pass_1_record_ids": [
+        "ASM-FF091135AE"
+      ],
+      "context_ids": [
+        "SEC-EE4E9A7ADB",
+        "ASM-912B3DBDF6"
+      ],
+      "user_context_evidence_ids": [
+
+      ],
+      "reviewer_work_unit_id": "WU-A182673A27",
+      "rationale": "The source visibly relies on this premise, while the complete context supplies no authoritative protocol, deployment, operator, or governance evidence that establishes it. The assumption therefore remains explicit and unresolved.",
+      "assumptions_added": [
+
+      ],
+      "assumptions_removed": [
+
+      ],
+      "global_consequences": [
+        "Dependent conclusions remain conditional on this premise; consolidation avoids overstating independent trust assumptions."
+      ],
+      "replacement_ids": [
+
+      ]
+    },
+    {
+      "record_id": "FND-077D28F305",
+      "disposition": "CONFIRMED",
+      "pass_1_record_ids": [
+        "FND-077D28F305"
+      ],
+      "context_ids": [
+        "GAP-A25D114C6F",
+        "SEC-042FF4BC76"
+      ],
+      "user_context_evidence_ids": [
+        "EVD-0554D3710D",
+        "EVD-FB46967B48"
+      ],
+      "reviewer_work_unit_id": "WU-A182673A27",
+      "rationale": "This remains a distinct historical prior-audit item with its original identifier/severity/status provenance. Independent current-source anchors still expose the acknowledged pattern, but the historical severity is not inherited as a fresh exploitability judgment for the current revision.",
+      "assumptions_added": [
+
+      ],
+      "assumptions_removed": [
+
+      ],
+      "global_consequences": [
+        "Historical audit provenance remains separate from current source-visible disposition and current deployment assurance."
+      ],
+      "replacement_ids": [
+
+      ]
+    },
+    {
+      "record_id": "FND-10A2C953A0",
+      "disposition": "CONFIRMED",
+      "pass_1_record_ids": [
+        "FND-10A2C953A0"
+      ],
+      "context_ids": [
+        "FLW-745B097927",
+        "INV-0697F6A5B4"
+      ],
+      "user_context_evidence_ids": [
+
+      ],
+      "reviewer_work_unit_id": "WU-A182673A27",
+      "rationale": "Raw source/test anchors independently support the stated prerequisites, root cause, and impact. The recorded severity is proportionate as static prioritization, with deployment, runtime, and downstream reach kept outside the conclusion.",
+      "assumptions_added": [
+
+      ],
+      "assumptions_removed": [
+
+      ],
+      "global_consequences": [
+        "Linked objectives, threats, and gaps retain a source-visible current conclusion without a runtime exploitability claim."
+      ],
+      "replacement_ids": [
+
+      ]
+    },
+    {
+      "record_id": "FND-1897280316",
+      "disposition": "CONFIRMED",
+      "pass_1_record_ids": [
+        "FND-1897280316"
+      ],
+      "context_ids": [
+        "SEC-B560A051DA",
+        "THR-C66F2EDB38"
+      ],
+      "user_context_evidence_ids": [
+
+      ],
+      "reviewer_work_unit_id": "WU-A182673A27",
+      "rationale": "Raw source/test anchors independently support the stated prerequisites, root cause, and impact. The recorded severity is proportionate as static prioritization, with deployment, runtime, and downstream reach kept outside the conclusion.",
+      "assumptions_added": [
+
+      ],
+      "assumptions_removed": [
+
+      ],
+      "global_consequences": [
+        "Linked objectives, threats, and gaps retain a source-visible current conclusion without a runtime exploitability claim."
+      ],
+      "replacement_ids": [
+
+      ]
+    },
+    {
+      "record_id": "FND-1979AEB628",
+      "disposition": "CONFIRMED",
+      "pass_1_record_ids": [
+        "FND-1979AEB628"
+      ],
+      "context_ids": [
+        "SEC-F88596C819",
+        "THR-B55C2C8D2F"
+      ],
+      "user_context_evidence_ids": [
+        "EVD-0554D3710D",
+        "EVD-FB46967B48"
+      ],
+      "reviewer_work_unit_id": "WU-A182673A27",
+      "rationale": "This is one of the 28 revision-bounded prior-audit items, not a new current finding. Current pinned-source evidence shows the principal missing binding or permission/arithmetic condition is present, supporting RESOLVED_STATICALLY only; audit ancestry and source comparison do not certify runtime or deployment behavior.",
+      "assumptions_added": [
+
+      ],
+      "assumptions_removed": [
+
+      ],
+      "global_consequences": [
+        "Historical audit provenance remains separate from current source-visible disposition and current deployment assurance."
+      ],
+      "replacement_ids": [
+
+      ],
+      "conflicting_evidence_ids": [
+        "EVD-8C7F748854"
+      ]
+    },
+    {
+      "record_id": "FND-19EC441E53",
+      "disposition": "CONFIRMED",
+      "pass_1_record_ids": [
+        "FND-19EC441E53"
+      ],
+      "context_ids": [
+        "CMP-7CC27EFA43",
+        "CMP-0F476A460D",
+        "CMP-874E479BA1"
+      ],
+      "user_context_evidence_ids": [
+
+      ],
+      "reviewer_work_unit_id": "WU-A182673A27",
+      "rationale": "Raw source/test anchors independently support the stated prerequisites, root cause, and impact. The recorded severity is proportionate as static prioritization, with deployment, runtime, and downstream reach kept outside the conclusion.",
+      "assumptions_added": [
+
+      ],
+      "assumptions_removed": [
+
+      ],
+      "global_consequences": [
+        "Linked objectives, threats, and gaps retain a source-visible current conclusion without a runtime exploitability claim."
+      ],
+      "replacement_ids": [
+
+      ]
+    },
+    {
+      "record_id": "FND-1B33097A18",
+      "disposition": "CONFIRMED",
+      "pass_1_record_ids": [
+        "FND-1B33097A18"
+      ],
+      "context_ids": [
+        "SEC-9F3756E302",
+        "THR-647A188D6B"
+      ],
+      "user_context_evidence_ids": [
+        "EVD-0554D3710D",
+        "EVD-FB46967B48"
+      ],
+      "reviewer_work_unit_id": "WU-A182673A27",
+      "rationale": "This remains a distinct historical prior-audit item with its original identifier/severity/status provenance. Independent current-source anchors still expose the acknowledged pattern, but the historical severity is not inherited as a fresh exploitability judgment for the current revision.",
+      "assumptions_added": [
+
+      ],
+      "assumptions_removed": [
+
+      ],
+      "global_consequences": [
+        "Historical audit provenance remains separate from current source-visible disposition and current deployment assurance."
+      ],
+      "replacement_ids": [
+
+      ]
+    },
+    {
+      "record_id": "FND-1D115F22E4",
+      "disposition": "CONFIRMED",
+      "pass_1_record_ids": [
+        "FND-1D115F22E4"
+      ],
+      "context_ids": [
+        "FLW-5AA543472A",
+        "INV-015B387636",
+        "FND-BFFEA51091"
+      ],
+      "user_context_evidence_ids": [
+
+      ],
+      "reviewer_work_unit_id": "WU-A182673A27",
+      "rationale": "Raw source/test anchors independently support the stated prerequisites, root cause, and impact. The recorded severity is proportionate as static prioritization, with deployment, runtime, and downstream reach kept outside the conclusion.",
+      "assumptions_added": [
+
+      ],
+      "assumptions_removed": [
+
+      ],
+      "global_consequences": [
+        "Linked objectives, threats, and gaps retain a source-visible current conclusion without a runtime exploitability claim."
+      ],
+      "replacement_ids": [
+
+      ]
+    },
+    {
+      "record_id": "FND-1FBF087284",
+      "disposition": "CONFIRMED",
+      "pass_1_record_ids": [
+        "FND-1FBF087284"
+      ],
+      "context_ids": [
+        "SEC-BC2C476AE2",
+        "INV-A0200396FA"
+      ],
+      "user_context_evidence_ids": [
+        "EVD-0554D3710D",
+        "EVD-FB46967B48"
+      ],
+      "reviewer_work_unit_id": "WU-A182673A27",
+      "rationale": "This remains a distinct historical prior-audit item with its original identifier/severity/status provenance. Independent current-source anchors still expose the acknowledged pattern, but the historical severity is not inherited as a fresh exploitability judgment for the current revision.",
+      "assumptions_added": [
+
+      ],
+      "assumptions_removed": [
+
+      ],
+      "global_consequences": [
+        "Historical audit provenance remains separate from current source-visible disposition and current deployment assurance."
+      ],
+      "replacement_ids": [
+
+      ]
+    },
+    {
+      "record_id": "FND-2184025222",
+      "disposition": "CONFIRMED",
+      "pass_1_record_ids": [
+        "FND-2184025222"
+      ],
+      "context_ids": [
+        "SEC-F88596C819",
+        "THR-B55C2C8D2F"
+      ],
+      "user_context_evidence_ids": [
+        "EVD-0D50A0B3BE",
+        "EVD-C70801D35C"
+      ],
+      "reviewer_work_unit_id": "WU-A182673A27",
+      "rationale": "Raw source/test anchors independently support the stated prerequisites, root cause, and impact. The recorded severity is proportionate as static prioritization, with deployment, runtime, and downstream reach kept outside the conclusion.",
+      "assumptions_added": [
+
+      ],
+      "assumptions_removed": [
+
+      ],
+      "global_consequences": [
+        "Linked objectives, threats, and gaps retain a source-visible current conclusion without a runtime exploitability claim."
+      ],
+      "replacement_ids": [
+
+      ]
+    },
+    {
+      "record_id": "FND-2237382FBA",
+      "disposition": "CONFIRMED",
+      "pass_1_record_ids": [
+        "FND-2237382FBA"
+      ],
+      "context_ids": [
+        "SEC-F88596C819",
+        "THR-B55C2C8D2F"
+      ],
+      "user_context_evidence_ids": [
+
+      ],
+      "reviewer_work_unit_id": "WU-A182673A27",
+      "rationale": "Raw source/test anchors independently support the stated prerequisites, root cause, and impact. The recorded severity is proportionate as static prioritization, with deployment, runtime, and downstream reach kept outside the conclusion.",
+      "assumptions_added": [
+
+      ],
+      "assumptions_removed": [
+
+      ],
+      "global_consequences": [
+        "Linked objectives, threats, and gaps retain a source-visible current conclusion without a runtime exploitability claim."
+      ],
+      "replacement_ids": [
+
+      ]
+    },
+    {
+      "record_id": "FND-23916993D0",
+      "disposition": "CONFIRMED",
+      "pass_1_record_ids": [
+        "FND-23916993D0"
+      ],
+      "context_ids": [
+        "ASM-79662ECECE"
+      ],
+      "user_context_evidence_ids": [
+
+      ],
+      "reviewer_work_unit_id": "WU-A182673A27",
+      "rationale": "Raw source/test anchors independently support the stated prerequisites, root cause, and impact. The recorded severity is proportionate as static prioritization, with deployment, runtime, and downstream reach kept outside the conclusion.",
+      "assumptions_added": [
+
+      ],
+      "assumptions_removed": [
+
+      ],
+      "global_consequences": [
+        "Linked objectives, threats, and gaps retain a source-visible current conclusion without a runtime exploitability claim."
+      ],
+      "replacement_ids": [
+
+      ]
+    },
+    {
+      "record_id": "FND-30B94DCCE0",
+      "disposition": "CONFIRMED",
+      "pass_1_record_ids": [
+        "FND-30B94DCCE0"
+      ],
+      "context_ids": [
+        "SEC-F88596C819",
+        "THR-B55C2C8D2F"
+      ],
+      "user_context_evidence_ids": [
+        "EVD-0554D3710D",
+        "EVD-FB46967B48"
+      ],
+      "reviewer_work_unit_id": "WU-A182673A27",
+      "rationale": "This remains a distinct historical prior-audit item with its original identifier/severity/status provenance. Independent current-source anchors still expose the acknowledged pattern, but the historical severity is not inherited as a fresh exploitability judgment for the current revision.",
+      "assumptions_added": [
+
+      ],
+      "assumptions_removed": [
+
+      ],
+      "global_consequences": [
+        "Historical audit provenance remains separate from current source-visible disposition and current deployment assurance."
+      ],
+      "replacement_ids": [
+
+      ]
+    },
+    {
+      "record_id": "FND-3471621CD6",
+      "disposition": "CONFIRMED",
+      "pass_1_record_ids": [
+        "FND-3471621CD6"
+      ],
+      "context_ids": [
+        "SEC-EE4E9A7ADB",
+        "THR-56AA87E621"
+      ],
+      "user_context_evidence_ids": [
+        "EVD-0554D3710D",
+        "EVD-FB46967B48"
+      ],
+      "reviewer_work_unit_id": "WU-A182673A27",
+      "rationale": "This is one of the 28 revision-bounded prior-audit items, not a new current finding. Current pinned-source evidence shows the principal missing binding or permission/arithmetic condition is present, supporting RESOLVED_STATICALLY only; audit ancestry and source comparison do not certify runtime or deployment behavior.",
+      "assumptions_added": [
+
+      ],
+      "assumptions_removed": [
+
+      ],
+      "global_consequences": [
+        "Historical audit provenance remains separate from current source-visible disposition and current deployment assurance."
+      ],
+      "replacement_ids": [
+
+      ],
+      "conflicting_evidence_ids": [
+        "EVD-995A61228D"
+      ]
+    },
+    {
+      "record_id": "FND-37BEE2B1BA",
+      "disposition": "CONFIRMED",
+      "pass_1_record_ids": [
+        "FND-37BEE2B1BA"
+      ],
+      "context_ids": [
+        "CMP-7CC27EFA43",
+        "CMP-0F476A460D",
+        "CMP-874E479BA1"
+      ],
+      "user_context_evidence_ids": [
+
+      ],
+      "reviewer_work_unit_id": "WU-A182673A27",
+      "rationale": "Raw source/test anchors independently support the stated prerequisites, root cause, and impact. The recorded severity is proportionate as static prioritization, with deployment, runtime, and downstream reach kept outside the conclusion.",
+      "assumptions_added": [
+
+      ],
+      "assumptions_removed": [
+
+      ],
+      "global_consequences": [
+        "Linked objectives, threats, and gaps retain a source-visible current conclusion without a runtime exploitability claim."
+      ],
+      "replacement_ids": [
+
+      ]
+    },
+    {
+      "record_id": "FND-3B35F91A1C",
+      "disposition": "CONFIRMED",
+      "pass_1_record_ids": [
+        "FND-3B35F91A1C"
+      ],
+      "context_ids": [
+        "SEC-9F3756E302",
+        "CMP-5CAF19BDCD"
+      ],
+      "user_context_evidence_ids": [
+        "EVD-0554D3710D",
+        "EVD-FB46967B48"
+      ],
+      "reviewer_work_unit_id": "WU-A182673A27",
+      "rationale": "This remains a distinct historical prior-audit item with its original identifier/severity/status provenance. Independent current-source anchors still expose the acknowledged pattern, but the historical severity is not inherited as a fresh exploitability judgment for the current revision.",
+      "assumptions_added": [
+
+      ],
+      "assumptions_removed": [
+
+      ],
+      "global_consequences": [
+        "Historical audit provenance remains separate from current source-visible disposition and current deployment assurance."
+      ],
+      "replacement_ids": [
+
+      ]
+    },
+    {
+      "record_id": "FND-4234CF9EC6",
+      "disposition": "CONFIRMED",
+      "pass_1_record_ids": [
+        "FND-4234CF9EC6"
+      ],
+      "context_ids": [
+        "SEC-F88596C819",
+        "THR-B55C2C8D2F"
+      ],
+      "user_context_evidence_ids": [
+        "EVD-0554D3710D",
+        "EVD-FB46967B48"
+      ],
+      "reviewer_work_unit_id": "WU-A182673A27",
+      "rationale": "This remains a distinct historical prior-audit item with its original identifier/severity/status provenance. Independent current-source anchors still expose the acknowledged pattern, but the historical severity is not inherited as a fresh exploitability judgment for the current revision.",
+      "assumptions_added": [
+
+      ],
+      "assumptions_removed": [
+
+      ],
+      "global_consequences": [
+        "Historical audit provenance remains separate from current source-visible disposition and current deployment assurance."
+      ],
+      "replacement_ids": [
+
+      ]
+    },
+    {
+      "record_id": "FND-4B4F5D76C9",
+      "disposition": "CONFIRMED",
+      "pass_1_record_ids": [
+        "FND-4B4F5D76C9"
+      ],
+      "context_ids": [
+        "SEC-10182FB352",
+        "THR-0DEBF32E0A"
+      ],
+      "user_context_evidence_ids": [
+
+      ],
+      "reviewer_work_unit_id": "WU-A182673A27",
+      "rationale": "Raw source/test anchors independently support the stated prerequisites, root cause, and impact. The recorded severity is proportionate as static prioritization, with deployment, runtime, and downstream reach kept outside the conclusion.",
+      "assumptions_added": [
+
+      ],
+      "assumptions_removed": [
+
+      ],
+      "global_consequences": [
+        "Linked objectives, threats, and gaps retain a source-visible current conclusion without a runtime exploitability claim."
+      ],
+      "replacement_ids": [
+
+      ]
+    },
+    {
+      "record_id": "FND-4C6DF9502F",
+      "disposition": "CONFIRMED",
+      "pass_1_record_ids": [
+        "FND-4C6DF9502F"
+      ],
+      "context_ids": [
+        "CMP-874E479BA1",
+        "CMP-0F476A460D",
+        "CMP-5CAF19BDCD"
+      ],
+      "user_context_evidence_ids": [
+        "EVD-0554D3710D",
+        "EVD-FB46967B48"
+      ],
+      "reviewer_work_unit_id": "WU-A182673A27",
+      "rationale": "Raw source/test anchors independently support the stated prerequisites, root cause, and impact. The recorded severity is proportionate as static prioritization, with deployment, runtime, and downstream reach kept outside the conclusion.",
+      "assumptions_added": [
+
+      ],
+      "assumptions_removed": [
+
+      ],
+      "global_consequences": [
+        "Linked objectives, threats, and gaps retain a source-visible current conclusion without a runtime exploitability claim."
+      ],
+      "replacement_ids": [
+
+      ]
+    },
+    {
+      "record_id": "FND-5F15694229",
+      "disposition": "CONFIRMED",
+      "pass_1_record_ids": [
+        "FND-5F15694229"
+      ],
+      "context_ids": [
+        "SEC-F88596C819",
+        "THR-B55C2C8D2F"
+      ],
+      "user_context_evidence_ids": [
+        "EVD-0554D3710D",
+        "EVD-FB46967B48"
+      ],
+      "reviewer_work_unit_id": "WU-A182673A27",
+      "rationale": "This is one of the 28 revision-bounded prior-audit items, not a new current finding. Current pinned-source evidence shows the principal missing binding or permission/arithmetic condition is present, supporting RESOLVED_STATICALLY only; audit ancestry and source comparison do not certify runtime or deployment behavior.",
+      "assumptions_added": [
+
+      ],
+      "assumptions_removed": [
+
+      ],
+      "global_consequences": [
+        "Historical audit provenance remains separate from current source-visible disposition and current deployment assurance."
+      ],
+      "replacement_ids": [
+
+      ],
+      "conflicting_evidence_ids": [
+        "EVD-8C7F748854"
+      ]
+    },
+    {
+      "record_id": "FND-67861A5343",
+      "disposition": "CONFIRMED",
+      "pass_1_record_ids": [
+        "FND-67861A5343"
+      ],
+      "context_ids": [
+        "SEC-F88596C819",
+        "THR-B55C2C8D2F"
+      ],
+      "user_context_evidence_ids": [
+        "EVD-0554D3710D",
+        "EVD-FB46967B48"
+      ],
+      "reviewer_work_unit_id": "WU-A182673A27",
+      "rationale": "This is one of the 28 revision-bounded prior-audit items, not a new current finding. Current pinned-source evidence shows the principal missing binding or permission/arithmetic condition is present, supporting RESOLVED_STATICALLY only; audit ancestry and source comparison do not certify runtime or deployment behavior.",
+      "assumptions_added": [
+
+      ],
+      "assumptions_removed": [
+
+      ],
+      "global_consequences": [
+        "Historical audit provenance remains separate from current source-visible disposition and current deployment assurance."
+      ],
+      "replacement_ids": [
+
+      ],
+      "conflicting_evidence_ids": [
+        "EVD-5099700F2E"
+      ]
+    },
+    {
+      "record_id": "FND-7264C0E61E",
+      "disposition": "CONFIRMED",
+      "pass_1_record_ids": [
+        "FND-7264C0E61E"
+      ],
+      "context_ids": [
+        "SEC-DD3B44137C",
+        "THR-F283B3AF7E"
+      ],
+      "user_context_evidence_ids": [
+
+      ],
+      "reviewer_work_unit_id": "WU-A182673A27",
+      "rationale": "Raw source/test anchors independently support the stated prerequisites, root cause, and impact. The recorded severity is proportionate as static prioritization, with deployment, runtime, and downstream reach kept outside the conclusion.",
+      "assumptions_added": [
+
+      ],
+      "assumptions_removed": [
+
+      ],
+      "global_consequences": [
+        "Linked objectives, threats, and gaps retain a source-visible current conclusion without a runtime exploitability claim."
+      ],
+      "replacement_ids": [
+
+      ]
+    },
+    {
+      "record_id": "FND-756A14D862",
+      "disposition": "CONFIRMED",
+      "pass_1_record_ids": [
+        "FND-756A14D862"
+      ],
+      "context_ids": [
+        "SEC-F88596C819",
+        "THR-B55C2C8D2F"
+      ],
+      "user_context_evidence_ids": [
+        "EVD-0554D3710D",
+        "EVD-FB46967B48"
+      ],
+      "reviewer_work_unit_id": "WU-A182673A27",
+      "rationale": "This is one of the 28 revision-bounded prior-audit items, not a new current finding. Current pinned-source evidence shows the principal missing binding or permission/arithmetic condition is present, supporting RESOLVED_STATICALLY only; audit ancestry and source comparison do not certify runtime or deployment behavior.",
+      "assumptions_added": [
+
+      ],
+      "assumptions_removed": [
+
+      ],
+      "global_consequences": [
+        "Historical audit provenance remains separate from current source-visible disposition and current deployment assurance."
+      ],
+      "replacement_ids": [
+
+      ],
+      "conflicting_evidence_ids": [
+        "EVD-5099700F2E"
+      ]
+    },
+    {
+      "record_id": "FND-7BE7D38B6B",
+      "disposition": "CONFIRMED",
+      "pass_1_record_ids": [
+        "FND-7BE7D38B6B"
+      ],
+      "context_ids": [
+        "SEC-EE4E9A7ADB",
+        "THR-56AA87E621"
+      ],
+      "user_context_evidence_ids": [
+        "EVD-0D50A0B3BE",
+        "EVD-C70801D35C",
+        "EVD-0554D3710D",
+        "EVD-FB46967B48"
+      ],
+      "reviewer_work_unit_id": "WU-A182673A27",
+      "rationale": "This remains a distinct historical prior-audit item with its original identifier/severity/status provenance. Independent current-source anchors still expose the acknowledged pattern, but the historical severity is not inherited as a fresh exploitability judgment for the current revision.",
+      "assumptions_added": [
+
+      ],
+      "assumptions_removed": [
+
+      ],
+      "global_consequences": [
+        "Historical audit provenance remains separate from current source-visible disposition and current deployment assurance."
+      ],
+      "replacement_ids": [
+
+      ]
+    },
+    {
+      "record_id": "FND-7D495DBE3F",
+      "disposition": "CONFIRMED",
+      "pass_1_record_ids": [
+        "FND-7D495DBE3F"
+      ],
+      "context_ids": [
+        "SEC-EE4E9A7ADB",
+        "THR-56AA87E621"
+      ],
+      "user_context_evidence_ids": [
+        "EVD-0554D3710D",
+        "EVD-FB46967B48"
+      ],
+      "reviewer_work_unit_id": "WU-A182673A27",
+      "rationale": "This remains a distinct historical prior-audit item with its original identifier/severity/status provenance. Independent current-source anchors still expose the acknowledged pattern, but the historical severity is not inherited as a fresh exploitability judgment for the current revision.",
+      "assumptions_added": [
+
+      ],
+      "assumptions_removed": [
+
+      ],
+      "global_consequences": [
+        "Historical audit provenance remains separate from current source-visible disposition and current deployment assurance."
+      ],
+      "replacement_ids": [
+
+      ]
+    },
+    {
+      "record_id": "FND-8467BE9FD1",
+      "disposition": "CONFIRMED",
+      "pass_1_record_ids": [
+        "FND-8467BE9FD1"
+      ],
+      "context_ids": [
+        "SEC-F88596C819",
+        "THR-B55C2C8D2F"
+      ],
+      "user_context_evidence_ids": [
+        "EVD-0554D3710D",
+        "EVD-FB46967B48"
+      ],
+      "reviewer_work_unit_id": "WU-A182673A27",
+      "rationale": "This is one of the 28 revision-bounded prior-audit items, not a new current finding. Current pinned-source evidence shows the principal missing binding or permission/arithmetic condition is present, supporting RESOLVED_STATICALLY only; audit ancestry and source comparison do not certify runtime or deployment behavior.",
+      "assumptions_added": [
+
+      ],
+      "assumptions_removed": [
+
+      ],
+      "global_consequences": [
+        "Historical audit provenance remains separate from current source-visible disposition and current deployment assurance."
+      ],
+      "replacement_ids": [
+
+      ],
+      "conflicting_evidence_ids": [
+        "EVD-5099700F2E"
+      ]
+    },
+    {
+      "record_id": "FND-88B3C09521",
+      "disposition": "CONFIRMED",
+      "pass_1_record_ids": [
+        "FND-88B3C09521"
+      ],
+      "context_ids": [
+        "SEC-EE4E9A7ADB",
+        "THR-56AA87E621"
+      ],
+      "user_context_evidence_ids": [
+        "EVD-0554D3710D",
+        "EVD-FB46967B48"
+      ],
+      "reviewer_work_unit_id": "WU-A182673A27",
+      "rationale": "This remains a distinct historical prior-audit item with its original identifier/severity/status provenance. Independent current-source anchors still expose the acknowledged pattern, but the historical severity is not inherited as a fresh exploitability judgment for the current revision.",
+      "assumptions_added": [
+
+      ],
+      "assumptions_removed": [
+
+      ],
+      "global_consequences": [
+        "Historical audit provenance remains separate from current source-visible disposition and current deployment assurance."
+      ],
+      "replacement_ids": [
+
+      ]
+    },
+    {
+      "record_id": "FND-8B2DE6F23F",
+      "disposition": "CONFIRMED",
+      "pass_1_record_ids": [
+        "FND-8B2DE6F23F"
+      ],
+      "context_ids": [
+        "SEC-BC2C476AE2",
+        "THR-A943E3380A"
+      ],
+      "user_context_evidence_ids": [
+        "EVD-0554D3710D",
+        "EVD-FB46967B48"
+      ],
+      "reviewer_work_unit_id": "WU-A182673A27",
+      "rationale": "This remains a distinct historical prior-audit item with its original identifier/severity/status provenance. Independent current-source anchors still expose the acknowledged pattern, but the historical severity is not inherited as a fresh exploitability judgment for the current revision.",
+      "assumptions_added": [
+
+      ],
+      "assumptions_removed": [
+
+      ],
+      "global_consequences": [
+        "Historical audit provenance remains separate from current source-visible disposition and current deployment assurance."
+      ],
+      "replacement_ids": [
+
+      ]
+    },
+    {
+      "record_id": "FND-8C3BA008B7",
+      "disposition": "CONFIRMED",
+      "pass_1_record_ids": [
+        "FND-8C3BA008B7"
+      ],
+      "context_ids": [
+        "GAP-ADD703D733"
+      ],
+      "user_context_evidence_ids": [
+
+      ],
+      "reviewer_work_unit_id": "WU-A182673A27",
+      "rationale": "Raw source/test anchors independently support the stated prerequisites, root cause, and impact. The recorded severity is proportionate as static prioritization, with deployment, runtime, and downstream reach kept outside the conclusion.",
+      "assumptions_added": [
+
+      ],
+      "assumptions_removed": [
+
+      ],
+      "global_consequences": [
+        "Linked objectives, threats, and gaps retain a source-visible current conclusion without a runtime exploitability claim."
+      ],
+      "replacement_ids": [
+
+      ]
+    },
+    {
+      "record_id": "FND-8DB62F78C9",
+      "disposition": "CONFIRMED",
+      "pass_1_record_ids": [
+        "FND-8DB62F78C9"
+      ],
+      "context_ids": [
+        "SEC-BC2C476AE2",
+        "THR-A943E3380A"
+      ],
+      "user_context_evidence_ids": [
+        "EVD-0554D3710D",
+        "EVD-FB46967B48"
+      ],
+      "reviewer_work_unit_id": "WU-A182673A27",
+      "rationale": "This remains a distinct historical prior-audit item with its original identifier/severity/status provenance. Independent current-source anchors still expose the acknowledged pattern, but the historical severity is not inherited as a fresh exploitability judgment for the current revision.",
+      "assumptions_added": [
+
+      ],
+      "assumptions_removed": [
+
+      ],
+      "global_consequences": [
+        "Historical audit provenance remains separate from current source-visible disposition and current deployment assurance."
+      ],
+      "replacement_ids": [
+
+      ]
+    },
+    {
+      "record_id": "FND-961BD4A980",
+      "disposition": "CONFIRMED",
+      "pass_1_record_ids": [
+        "FND-961BD4A980"
+      ],
+      "context_ids": [
+        "SEC-B560A051DA",
+        "THR-C66F2EDB38"
+      ],
+      "user_context_evidence_ids": [
+
+      ],
+      "reviewer_work_unit_id": "WU-A182673A27",
+      "rationale": "Raw source/test anchors independently support the stated prerequisites, root cause, and impact. The recorded severity is proportionate as static prioritization, with deployment, runtime, and downstream reach kept outside the conclusion.",
+      "assumptions_added": [
+
+      ],
+      "assumptions_removed": [
+
+      ],
+      "global_consequences": [
+        "Linked objectives, threats, and gaps retain a source-visible current conclusion without a runtime exploitability claim."
+      ],
+      "replacement_ids": [
+
+      ]
+    },
+    {
+      "record_id": "FND-996A8C6D4E",
+      "disposition": "CONFIRMED",
+      "pass_1_record_ids": [
+        "FND-996A8C6D4E"
+      ],
+      "context_ids": [
+        "SEC-F88596C819",
+        "THR-B55C2C8D2F"
+      ],
+      "user_context_evidence_ids": [
+
+      ],
+      "reviewer_work_unit_id": "WU-A182673A27",
+      "rationale": "Raw source/test anchors independently support the stated prerequisites, root cause, and impact. The recorded severity is proportionate as static prioritization, with deployment, runtime, and downstream reach kept outside the conclusion.",
+      "assumptions_added": [
+
+      ],
+      "assumptions_removed": [
+
+      ],
+      "global_consequences": [
+        "Linked objectives, threats, and gaps retain a source-visible current conclusion without a runtime exploitability claim."
+      ],
+      "replacement_ids": [
+
+      ]
+    },
+    {
+      "record_id": "FND-9AA5203528",
+      "disposition": "CONFIRMED",
+      "pass_1_record_ids": [
+        "FND-9AA5203528"
+      ],
+      "context_ids": [
+        "SEC-EE4E9A7ADB",
+        "THR-56AA87E621"
+      ],
+      "user_context_evidence_ids": [
+        "EVD-0554D3710D",
+        "EVD-FB46967B48"
+      ],
+      "reviewer_work_unit_id": "WU-A182673A27",
+      "rationale": "This is one of the 28 revision-bounded prior-audit items, not a new current finding. Current pinned-source evidence shows the principal missing binding or permission/arithmetic condition is present, supporting RESOLVED_STATICALLY only; audit ancestry and source comparison do not certify runtime or deployment behavior.",
+      "assumptions_added": [
+
+      ],
+      "assumptions_removed": [
+
+      ],
+      "global_consequences": [
+        "Historical audit provenance remains separate from current source-visible disposition and current deployment assurance."
+      ],
+      "replacement_ids": [
+
+      ],
+      "conflicting_evidence_ids": [
+        "EVD-995A61228D"
+      ]
+    },
+    {
+      "record_id": "FND-A5A4858953",
+      "disposition": "CONFIRMED",
+      "pass_1_record_ids": [
+        "FND-A5A4858953"
+      ],
+      "context_ids": [
+        "SEC-EE4E9A7ADB",
+        "THR-56AA87E621"
+      ],
+      "user_context_evidence_ids": [
+        "EVD-0554D3710D",
+        "EVD-FB46967B48"
+      ],
+      "reviewer_work_unit_id": "WU-A182673A27",
+      "rationale": "This remains a distinct historical prior-audit item with its original identifier/severity/status provenance. Independent current-source anchors still expose the acknowledged pattern, but the historical severity is not inherited as a fresh exploitability judgment for the current revision.",
+      "assumptions_added": [
+
+      ],
+      "assumptions_removed": [
+
+      ],
+      "global_consequences": [
+        "Historical audit provenance remains separate from current source-visible disposition and current deployment assurance."
+      ],
+      "replacement_ids": [
+
+      ]
+    },
+    {
+      "record_id": "FND-B5948FE3CF",
+      "disposition": "CONFIRMED",
+      "pass_1_record_ids": [
+        "FND-B5948FE3CF"
+      ],
+      "context_ids": [
+        "FLW-5E24C8B8E4",
+        "GAP-2124E32D06"
+      ],
+      "user_context_evidence_ids": [
+
+      ],
+      "reviewer_work_unit_id": "WU-A182673A27",
+      "rationale": "Raw source/test anchors independently support the stated prerequisites, root cause, and impact. The recorded severity is proportionate as static prioritization, with deployment, runtime, and downstream reach kept outside the conclusion.",
+      "assumptions_added": [
+
+      ],
+      "assumptions_removed": [
+
+      ],
+      "global_consequences": [
+        "Linked objectives, threats, and gaps retain a source-visible current conclusion without a runtime exploitability claim."
+      ],
+      "replacement_ids": [
+
+      ]
+    },
+    {
+      "record_id": "FND-BBC3A2316C",
+      "disposition": "CONFIRMED",
+      "pass_1_record_ids": [
+        "FND-BBC3A2316C"
+      ],
+      "context_ids": [
+        "INV-1E832E77A4"
+      ],
+      "user_context_evidence_ids": [
+
+      ],
+      "reviewer_work_unit_id": "WU-A182673A27",
+      "rationale": "Raw source/test anchors independently support the stated prerequisites, root cause, and impact. The recorded severity is proportionate as static prioritization, with deployment, runtime, and downstream reach kept outside the conclusion.",
+      "assumptions_added": [
+
+      ],
+      "assumptions_removed": [
+
+      ],
+      "global_consequences": [
+        "Linked objectives, threats, and gaps retain a source-visible current conclusion without a runtime exploitability claim."
+      ],
+      "replacement_ids": [
+
+      ]
+    },
+    {
+      "record_id": "FND-BF3449506D",
+      "disposition": "CONFIRMED",
+      "pass_1_record_ids": [
+        "FND-BF3449506D"
+      ],
+      "context_ids": [
+        "SEC-F88596C819",
+        "THR-B55C2C8D2F"
+      ],
+      "user_context_evidence_ids": [
+        "EVD-0554D3710D",
+        "EVD-FB46967B48"
+      ],
+      "reviewer_work_unit_id": "WU-A182673A27",
+      "rationale": "This remains a distinct historical prior-audit item with its original identifier/severity/status provenance. Independent current-source anchors still expose the acknowledged pattern, but the historical severity is not inherited as a fresh exploitability judgment for the current revision.",
+      "assumptions_added": [
+
+      ],
+      "assumptions_removed": [
+
+      ],
+      "global_consequences": [
+        "Historical audit provenance remains separate from current source-visible disposition and current deployment assurance."
+      ],
+      "replacement_ids": [
+
+      ]
+    },
+    {
+      "record_id": "FND-BFFEA51091",
+      "disposition": "CONFIRMED",
+      "pass_1_record_ids": [
+        "FND-BFFEA51091"
+      ],
+      "context_ids": [
+        "BHV-8B6F3A639B",
+        "FND-1D115F22E4"
+      ],
+      "user_context_evidence_ids": [
+
+      ],
+      "reviewer_work_unit_id": "WU-A182673A27",
+      "rationale": "Raw source/test anchors independently support the stated prerequisites, root cause, and impact. The recorded severity is proportionate as static prioritization, with deployment, runtime, and downstream reach kept outside the conclusion.",
+      "assumptions_added": [
+
+      ],
+      "assumptions_removed": [
+
+      ],
+      "global_consequences": [
+        "Linked objectives, threats, and gaps retain a source-visible current conclusion without a runtime exploitability claim."
+      ],
+      "replacement_ids": [
+
+      ]
+    },
+    {
+      "record_id": "FND-C0656D649D",
+      "disposition": "CONFIRMED",
+      "pass_1_record_ids": [
+        "FND-C0656D649D"
+      ],
+      "context_ids": [
+        "SEC-042FF4BC76",
+        "GAP-A25D114C6F"
+      ],
+      "user_context_evidence_ids": [
+        "EVD-0554D3710D",
+        "EVD-FB46967B48"
+      ],
+      "reviewer_work_unit_id": "WU-A182673A27",
+      "rationale": "This remains a distinct historical prior-audit item with its original identifier/severity/status provenance. Independent current-source anchors still expose the acknowledged pattern, but the historical severity is not inherited as a fresh exploitability judgment for the current revision.",
+      "assumptions_added": [
+
+      ],
+      "assumptions_removed": [
+
+      ],
+      "global_consequences": [
+        "Historical audit provenance remains separate from current source-visible disposition and current deployment assurance."
+      ],
+      "replacement_ids": [
+
+      ]
+    },
+    {
+      "record_id": "FND-CA0F83CE86",
+      "disposition": "REFINED",
+      "pass_1_record_ids": [
+        "FND-CA0F83CE86"
+      ],
+      "context_ids": [
+        "CMP-874E479BA1",
+        "CMP-0F476A460D",
+        "CMP-5CAF19BDCD"
+      ],
+      "user_context_evidence_ids": [
+
+      ],
+      "reviewer_work_unit_id": "WU-A182673A27",
+      "rationale": "Source confirms that merge ignores input exhausted flags and emits exhausted=false. Refine the impact to non-monotonic completion and liveness/composition ambiguity; omission of later accounts additionally requires the separately unresolved dense-ledger premise.",
+      "assumptions_added": [
+
+      ],
+      "assumptions_removed": [
+
+      ],
+      "global_consequences": [
+        "Linked objectives, threats, and gaps retain a source-visible current conclusion without a runtime exploitability claim."
+      ],
+      "replacement_ids": [
+
+      ],
+      "proposed_changes": [
+        "Narrow impact wording to non-monotonic completion/liveness; cross-link sparse-ledger omission to GAP-EF32A38D1C and ASM-35D9BB50D0."
+      ]
+    },
+    {
+      "record_id": "FND-CD3FC08B49",
+      "disposition": "CONFIRMED",
+      "pass_1_record_ids": [
+        "FND-CD3FC08B49"
+      ],
+      "context_ids": [
+        "SEC-F88596C819",
+        "THR-B55C2C8D2F"
+      ],
+      "user_context_evidence_ids": [
+        "EVD-0554D3710D",
+        "EVD-FB46967B48"
+      ],
+      "reviewer_work_unit_id": "WU-A182673A27",
+      "rationale": "This is one of the 28 revision-bounded prior-audit items, not a new current finding. Current pinned-source evidence shows the principal missing binding or permission/arithmetic condition is present, supporting RESOLVED_STATICALLY only; audit ancestry and source comparison do not certify runtime or deployment behavior.",
+      "assumptions_added": [
+
+      ],
+      "assumptions_removed": [
+
+      ],
+      "global_consequences": [
+        "Historical audit provenance remains separate from current source-visible disposition and current deployment assurance."
+      ],
+      "replacement_ids": [
+
+      ],
+      "conflicting_evidence_ids": [
+        "EVD-8C7F748854"
+      ]
+    },
+    {
+      "record_id": "FND-D0ABA9650D",
+      "disposition": "CONFIRMED",
+      "pass_1_record_ids": [
+        "FND-D0ABA9650D"
+      ],
+      "context_ids": [
+        "SEC-10182FB352",
+        "THR-0DEBF32E0A"
+      ],
+      "user_context_evidence_ids": [
+        "EVD-0554D3710D",
+        "EVD-FB46967B48"
+      ],
+      "reviewer_work_unit_id": "WU-A182673A27",
+      "rationale": "This remains a distinct historical prior-audit item with its original identifier/severity/status provenance. Independent current-source anchors still expose the acknowledged pattern, but the historical severity is not inherited as a fresh exploitability judgment for the current revision.",
+      "assumptions_added": [
+
+      ],
+      "assumptions_removed": [
+
+      ],
+      "global_consequences": [
+        "Historical audit provenance remains separate from current source-visible disposition and current deployment assurance."
+      ],
+      "replacement_ids": [
+
+      ]
+    },
+    {
+      "record_id": "FND-D0C94E0DC6",
+      "disposition": "UNRESOLVED",
+      "pass_1_record_ids": [
+        "FND-D0C94E0DC6"
+      ],
+      "context_ids": [
+        "BHV-80247CE73D"
+      ],
+      "user_context_evidence_ids": [
+
+      ],
+      "reviewer_work_unit_id": "WU-A182673A27",
+      "rationale": "The missing local binding is source-visible, but current practical feasibility depends on external permission semantics or deployed state. The finding remains visible as UNRESOLVED rather than being promoted to a current exploit claim.",
+      "assumptions_added": [
+
+      ],
+      "assumptions_removed": [
+
+      ],
+      "global_consequences": [
+        "Linked objectives, threats, and gaps retain a source-visible current conclusion without a runtime exploitability claim."
+      ],
+      "replacement_ids": [
+
+      ]
+    },
+    {
+      "record_id": "FND-D889112D27",
+      "disposition": "CONFIRMED",
+      "pass_1_record_ids": [
+        "FND-D889112D27"
+      ],
+      "context_ids": [
+        "SEC-EE4E9A7ADB",
+        "THR-56AA87E621"
+      ],
+      "user_context_evidence_ids": [
+        "EVD-0554D3710D",
+        "EVD-FB46967B48"
+      ],
+      "reviewer_work_unit_id": "WU-A182673A27",
+      "rationale": "This remains a distinct historical prior-audit item with its original identifier/severity/status provenance. Independent current-source anchors still expose the acknowledged pattern, but the historical severity is not inherited as a fresh exploitability judgment for the current revision.",
+      "assumptions_added": [
+
+      ],
+      "assumptions_removed": [
+
+      ],
+      "global_consequences": [
+        "Historical audit provenance remains separate from current source-visible disposition and current deployment assurance."
+      ],
+      "replacement_ids": [
+
+      ]
+    },
+    {
+      "record_id": "FND-E393B29703",
+      "disposition": "CONFIRMED",
+      "pass_1_record_ids": [
+        "FND-E393B29703"
+      ],
+      "context_ids": [
+        "SEC-B560A051DA",
+        "THR-C66F2EDB38"
+      ],
+      "user_context_evidence_ids": [
+        "EVD-0554D3710D",
+        "EVD-FB46967B48"
+      ],
+      "reviewer_work_unit_id": "WU-A182673A27",
+      "rationale": "This is one of the 28 revision-bounded prior-audit items, not a new current finding. Current pinned-source evidence shows the principal missing binding or permission/arithmetic condition is present, supporting RESOLVED_STATICALLY only; audit ancestry and source comparison do not certify runtime or deployment behavior.",
+      "assumptions_added": [
+
+      ],
+      "assumptions_removed": [
+
+      ],
+      "global_consequences": [
+        "Historical audit provenance remains separate from current source-visible disposition and current deployment assurance."
+      ],
+      "replacement_ids": [
+
+      ],
+      "conflicting_evidence_ids": [
+        "EVD-BD35AE3098"
+      ]
+    },
+    {
+      "record_id": "FND-E5DB7A78F8",
+      "disposition": "CONFIRMED",
+      "pass_1_record_ids": [
+        "FND-E5DB7A78F8"
+      ],
+      "context_ids": [
+        "SEC-F88596C819",
+        "THR-B55C2C8D2F"
+      ],
+      "user_context_evidence_ids": [
+        "EVD-0554D3710D",
+        "EVD-FB46967B48"
+      ],
+      "reviewer_work_unit_id": "WU-A182673A27",
+      "rationale": "This is one of the 28 revision-bounded prior-audit items, not a new current finding. Current pinned-source evidence shows the principal missing binding or permission/arithmetic condition is present, supporting RESOLVED_STATICALLY only; audit ancestry and source comparison do not certify runtime or deployment behavior.",
+      "assumptions_added": [
+
+      ],
+      "assumptions_removed": [
+
+      ],
+      "global_consequences": [
+        "Historical audit provenance remains separate from current source-visible disposition and current deployment assurance."
+      ],
+      "replacement_ids": [
+
+      ],
+      "conflicting_evidence_ids": [
+        "EVD-5099700F2E"
+      ]
+    },
+    {
+      "record_id": "FND-E683792BE2",
+      "disposition": "CONFIRMED",
+      "pass_1_record_ids": [
+        "FND-E683792BE2"
+      ],
+      "context_ids": [
+        "SEC-10182FB352",
+        "THR-0DEBF32E0A"
+      ],
+      "user_context_evidence_ids": [
+
+      ],
+      "reviewer_work_unit_id": "WU-A182673A27",
+      "rationale": "Raw source/test anchors independently support the stated prerequisites, root cause, and impact. The recorded severity is proportionate as static prioritization, with deployment, runtime, and downstream reach kept outside the conclusion.",
+      "assumptions_added": [
+
+      ],
+      "assumptions_removed": [
+
+      ],
+      "global_consequences": [
+        "Linked objectives, threats, and gaps retain a source-visible current conclusion without a runtime exploitability claim."
+      ],
+      "replacement_ids": [
+
+      ]
+    },
+    {
+      "record_id": "FND-ECA97458D5",
+      "disposition": "CONFIRMED",
+      "pass_1_record_ids": [
+        "FND-ECA97458D5"
+      ],
+      "context_ids": [
+        "SEC-F88596C819",
+        "THR-B55C2C8D2F"
+      ],
+      "user_context_evidence_ids": [
+        "EVD-0554D3710D",
+        "EVD-FB46967B48"
+      ],
+      "reviewer_work_unit_id": "WU-A182673A27",
+      "rationale": "This is one of the 28 revision-bounded prior-audit items, not a new current finding. Current pinned-source evidence shows the principal missing binding or permission/arithmetic condition is present, supporting RESOLVED_STATICALLY only; audit ancestry and source comparison do not certify runtime or deployment behavior.",
+      "assumptions_added": [
+
+      ],
+      "assumptions_removed": [
+
+      ],
+      "global_consequences": [
+        "Historical audit provenance remains separate from current source-visible disposition and current deployment assurance."
+      ],
+      "replacement_ids": [
+
+      ],
+      "conflicting_evidence_ids": [
+        "EVD-8C7F748854"
+      ]
+    },
+    {
+      "record_id": "FND-EE80C71EE3",
+      "disposition": "CONFIRMED",
+      "pass_1_record_ids": [
+        "FND-EE80C71EE3"
+      ],
+      "context_ids": [
+        "FLW-9D28A6D299"
+      ],
+      "user_context_evidence_ids": [
+
+      ],
+      "reviewer_work_unit_id": "WU-A182673A27",
+      "rationale": "Raw source/test anchors independently support the stated prerequisites, root cause, and impact. The recorded severity is proportionate as static prioritization, with deployment, runtime, and downstream reach kept outside the conclusion.",
+      "assumptions_added": [
+
+      ],
+      "assumptions_removed": [
+
+      ],
+      "global_consequences": [
+        "Linked objectives, threats, and gaps retain a source-visible current conclusion without a runtime exploitability claim."
+      ],
+      "replacement_ids": [
+
+      ]
+    },
+    {
+      "record_id": "FND-F3C6E62E0B",
+      "disposition": "CONFIRMED",
+      "pass_1_record_ids": [
+        "FND-F3C6E62E0B"
+      ],
+      "context_ids": [
+        "SEC-F88596C819",
+        "THR-B55C2C8D2F"
+      ],
+      "user_context_evidence_ids": [
+        "EVD-0554D3710D",
+        "EVD-FB46967B48"
+      ],
+      "reviewer_work_unit_id": "WU-A182673A27",
+      "rationale": "This remains a distinct historical prior-audit item with its original identifier/severity/status provenance. Independent current-source anchors still expose the acknowledged pattern, but the historical severity is not inherited as a fresh exploitability judgment for the current revision.",
+      "assumptions_added": [
+
+      ],
+      "assumptions_removed": [
+
+      ],
+      "global_consequences": [
+        "Historical audit provenance remains separate from current source-visible disposition and current deployment assurance."
+      ],
+      "replacement_ids": [
+
+      ]
+    },
+    {
+      "record_id": "GAP-003C868089",
+      "disposition": "UNRESOLVED",
+      "pass_1_record_ids": [
+        "GAP-003C868089"
+      ],
+      "context_ids": [
+        "REQ-1EEDB7A733"
+      ],
+      "user_context_evidence_ids": [
+        "EVD-0D50A0B3BE",
+        "EVD-C70801D35C"
+      ],
+      "reviewer_work_unit_id": "WU-A182673A27",
+      "rationale": "The gap identifies missing authority, deployment evidence, protocol semantics, capacity evidence, or off-chain policy that the context pack cannot supply. RFC maturity qualifications are preserved, so optional or future items are not mislabeled as implementation defects.",
+      "assumptions_added": [
+
+      ],
+      "assumptions_removed": [
+
+      ],
+      "global_consequences": [
+        "Human authority or external assurance remains visible; traceability refinements avoid double-counting the same policy deficiency."
+      ],
+      "replacement_ids": [
+
+      ]
+    },
+    {
+      "record_id": "GAP-0B47B1BC29",
+      "disposition": "REFINED",
+      "pass_1_record_ids": [
+        "GAP-0B47B1BC29"
+      ],
+      "context_ids": [
+        "SEC-BC2C476AE2",
+        "INV-A0200396FA"
+      ],
+      "user_context_evidence_ids": [
+        "EVD-0D50A0B3BE",
+        "EVD-C70801D35C"
+      ],
+      "reviewer_work_unit_id": "WU-A182673A27",
+      "rationale": "The requirement-specific traceability concern is real, but its substance is already captured more precisely by GAP-1DC17F1884. Refine this record into traceability lineage rather than counting an additional independent gap.",
+      "assumptions_added": [
+
+      ],
+      "assumptions_removed": [
+        "Treating the same underlying premise or policy deficiency as an independent duplicate."
+      ],
+      "global_consequences": [
+        "Human authority or external assurance remains visible; traceability refinements avoid double-counting the same policy deficiency."
+      ],
+      "replacement_ids": [
+
+      ],
+      "proposed_changes": [
+        "Consolidate substantive publication coverage under the listed replacement IDs while retaining this Pass-1 ID in contextual-review lineage."
+      ],
+      "consolidation_target_ids": [
+        "GAP-1DC17F1884"
+      ]
+    },
+    {
+      "record_id": "GAP-1DC17F1884",
+      "disposition": "CONFIRMED",
+      "pass_1_record_ids": [
+        "GAP-1DC17F1884"
+      ],
+      "context_ids": [
+        "BHV-5095682725"
+      ],
+      "user_context_evidence_ids": [
+        "EVD-0D50A0B3BE",
+        "EVD-C70801D35C"
+      ],
+      "reviewer_work_unit_id": "WU-A182673A27",
+      "rationale": "Pinned implementation and test anchors support the divergence or missing policy, and the business consequence is distinct from linked security findings. Materiality remains a static prioritization under the stated prerequisites.",
+      "assumptions_added": [
+
+      ],
+      "assumptions_removed": [
+
+      ],
+      "global_consequences": [
+        "Human authority or external assurance remains visible; traceability refinements avoid double-counting the same policy deficiency."
+      ],
+      "replacement_ids": [
+
+      ]
+    },
+    {
+      "record_id": "GAP-2124E32D06",
+      "disposition": "CONFIRMED",
+      "pass_1_record_ids": [
+        "GAP-2124E32D06"
+      ],
+      "context_ids": [
+        "FND-B5948FE3CF"
+      ],
+      "user_context_evidence_ids": [
+
+      ],
+      "reviewer_work_unit_id": "WU-A182673A27",
+      "rationale": "Pinned implementation and test anchors support the divergence or missing policy, and the business consequence is distinct from linked security findings. Materiality remains a static prioritization under the stated prerequisites.",
+      "assumptions_added": [
+
+      ],
+      "assumptions_removed": [
+
+      ],
+      "global_consequences": [
+        "Human authority or external assurance remains visible; traceability refinements avoid double-counting the same policy deficiency."
+      ],
+      "replacement_ids": [
+
+      ]
+    },
+    {
+      "record_id": "GAP-212C9A0653",
+      "disposition": "UNRESOLVED",
+      "pass_1_record_ids": [
+        "GAP-212C9A0653"
+      ],
+      "context_ids": [
+        "SEC-FB542C27D2",
+        "THR-92F9C4D82A"
+      ],
+      "user_context_evidence_ids": [
+        "EVD-0D50A0B3BE",
+        "EVD-C70801D35C"
+      ],
+      "reviewer_work_unit_id": "WU-A182673A27",
+      "rationale": "The gap identifies missing authority, deployment evidence, protocol semantics, capacity evidence, or off-chain policy that the context pack cannot supply. RFC maturity qualifications are preserved, so optional or future items are not mislabeled as implementation defects.",
+      "assumptions_added": [
+
+      ],
+      "assumptions_removed": [
+
+      ],
+      "global_consequences": [
+        "Human authority or external assurance remains visible; traceability refinements avoid double-counting the same policy deficiency."
+      ],
+      "replacement_ids": [
+
+      ]
+    },
+    {
+      "record_id": "GAP-22CD8BD355",
+      "disposition": "CONFIRMED",
+      "pass_1_record_ids": [
+        "GAP-22CD8BD355"
+      ],
+      "context_ids": [
+        "FLW-5AA543472A",
+        "THR-A943E3380A"
+      ],
+      "user_context_evidence_ids": [
+
+      ],
+      "reviewer_work_unit_id": "WU-A182673A27",
+      "rationale": "Pinned implementation and test anchors support the divergence or missing policy, and the business consequence is distinct from linked security findings. Materiality remains a static prioritization under the stated prerequisites.",
+      "assumptions_added": [
+
+      ],
+      "assumptions_removed": [
+
+      ],
+      "global_consequences": [
+        "Human authority or external assurance remains visible; traceability refinements avoid double-counting the same policy deficiency."
+      ],
+      "replacement_ids": [
+
+      ]
+    },
+    {
+      "record_id": "GAP-2CA978704D",
+      "disposition": "UNRESOLVED",
+      "pass_1_record_ids": [
+        "GAP-2CA978704D"
+      ],
+      "context_ids": [
+        "REQ-8AC636D92F"
+      ],
+      "user_context_evidence_ids": [
+        "EVD-0D50A0B3BE",
+        "EVD-C70801D35C"
+      ],
+      "reviewer_work_unit_id": "WU-A182673A27",
+      "rationale": "The gap identifies missing authority, deployment evidence, protocol semantics, capacity evidence, or off-chain policy that the context pack cannot supply. RFC maturity qualifications are preserved, so optional or future items are not mislabeled as implementation defects.",
+      "assumptions_added": [
+
+      ],
+      "assumptions_removed": [
+
+      ],
+      "global_consequences": [
+        "Human authority or external assurance remains visible; traceability refinements avoid double-counting the same policy deficiency."
+      ],
+      "replacement_ids": [
+
+      ]
+    },
+    {
+      "record_id": "GAP-48D1CB3548",
+      "disposition": "UNRESOLVED",
+      "pass_1_record_ids": [
+        "GAP-48D1CB3548"
+      ],
+      "context_ids": [
+        "SEC-EE4E9A7ADB",
+        "THR-56AA87E621"
+      ],
+      "user_context_evidence_ids": [
+        "EVD-0D50A0B3BE",
+        "EVD-C70801D35C"
+      ],
+      "reviewer_work_unit_id": "WU-A182673A27",
+      "rationale": "The gap identifies missing authority, deployment evidence, protocol semantics, capacity evidence, or off-chain policy that the context pack cannot supply. RFC maturity qualifications are preserved, so optional or future items are not mislabeled as implementation defects.",
+      "assumptions_added": [
+
+      ],
+      "assumptions_removed": [
+
+      ],
+      "global_consequences": [
+        "Human authority or external assurance remains visible; traceability refinements avoid double-counting the same policy deficiency."
+      ],
+      "replacement_ids": [
+
+      ]
+    },
+    {
+      "record_id": "GAP-4B6AF1A2C6",
+      "disposition": "REFINED",
+      "pass_1_record_ids": [
+        "GAP-4B6AF1A2C6"
+      ],
+      "context_ids": [
+        "GAP-817200738F",
+        "ASM-C0AB78216E"
+      ],
+      "user_context_evidence_ids": [
+        "EVD-0D50A0B3BE",
+        "EVD-C70801D35C"
+      ],
+      "reviewer_work_unit_id": "WU-A182673A27",
+      "rationale": "The requirement-specific traceability concern is real, but its substance is already captured more precisely by GAP-817200738F. Refine this record into traceability lineage rather than counting an additional independent gap.",
+      "assumptions_added": [
+
+      ],
+      "assumptions_removed": [
+        "Treating the same underlying premise or policy deficiency as an independent duplicate."
+      ],
+      "global_consequences": [
+        "Human authority or external assurance remains visible; traceability refinements avoid double-counting the same policy deficiency."
+      ],
+      "replacement_ids": [
+
+      ],
+      "proposed_changes": [
+        "Consolidate substantive publication coverage under the listed replacement IDs while retaining this Pass-1 ID in contextual-review lineage."
+      ],
+      "consolidation_target_ids": [
+        "GAP-817200738F"
+      ]
+    },
+    {
+      "record_id": "GAP-4DE9FCF9CE",
+      "disposition": "CONFIRMED",
+      "pass_1_record_ids": [
+        "GAP-4DE9FCF9CE"
+      ],
+      "context_ids": [
+        "SEC-9F3756E302",
+        "THR-647A188D6B"
+      ],
+      "user_context_evidence_ids": [
+
+      ],
+      "reviewer_work_unit_id": "WU-A182673A27",
+      "rationale": "Pinned implementation and test anchors support the divergence or missing policy, and the business consequence is distinct from linked security findings. Materiality remains a static prioritization under the stated prerequisites.",
+      "assumptions_added": [
+
+      ],
+      "assumptions_removed": [
+
+      ],
+      "global_consequences": [
+        "Human authority or external assurance remains visible; traceability refinements avoid double-counting the same policy deficiency."
+      ],
+      "replacement_ids": [
+
+      ]
+    },
+    {
+      "record_id": "GAP-50DC9AE203",
+      "disposition": "UNRESOLVED",
+      "pass_1_record_ids": [
+        "GAP-50DC9AE203"
+      ],
+      "context_ids": [
+        "SEC-F88596C819",
+        "THR-B55C2C8D2F"
+      ],
+      "user_context_evidence_ids": [
+        "EVD-0D50A0B3BE",
+        "EVD-C70801D35C"
+      ],
+      "reviewer_work_unit_id": "WU-A182673A27",
+      "rationale": "The gap identifies missing authority, deployment evidence, protocol semantics, capacity evidence, or off-chain policy that the context pack cannot supply. RFC maturity qualifications are preserved, so optional or future items are not mislabeled as implementation defects.",
+      "assumptions_added": [
+
+      ],
+      "assumptions_removed": [
+
+      ],
+      "global_consequences": [
+        "Human authority or external assurance remains visible; traceability refinements avoid double-counting the same policy deficiency."
+      ],
+      "replacement_ids": [
+
+      ]
+    },
+    {
+      "record_id": "GAP-52A3FE4758",
+      "disposition": "UNRESOLVED",
+      "pass_1_record_ids": [
+        "GAP-52A3FE4758"
+      ],
+      "context_ids": [
+        "FLW-21AF7F4E4D",
+        "FLW-745B097927"
+      ],
+      "user_context_evidence_ids": [
+
+      ],
+      "reviewer_work_unit_id": "WU-A182673A27",
+      "rationale": "The gap identifies missing authority, deployment evidence, protocol semantics, capacity evidence, or off-chain policy that the context pack cannot supply. RFC maturity qualifications are preserved, so optional or future items are not mislabeled as implementation defects.",
+      "assumptions_added": [
+
+      ],
+      "assumptions_removed": [
+
+      ],
+      "global_consequences": [
+        "Human authority or external assurance remains visible; traceability refinements avoid double-counting the same policy deficiency."
+      ],
+      "replacement_ids": [
+
+      ]
+    },
+    {
+      "record_id": "GAP-5EB38DFDA6",
+      "disposition": "UNRESOLVED",
+      "pass_1_record_ids": [
+        "GAP-5EB38DFDA6"
+      ],
+      "context_ids": [
+        "SEC-F88596C819",
+        "THR-B55C2C8D2F"
+      ],
+      "user_context_evidence_ids": [
+        "EVD-0D50A0B3BE",
+        "EVD-C70801D35C"
+      ],
+      "reviewer_work_unit_id": "WU-A182673A27",
+      "rationale": "The gap identifies missing authority, deployment evidence, protocol semantics, capacity evidence, or off-chain policy that the context pack cannot supply. RFC maturity qualifications are preserved, so optional or future items are not mislabeled as implementation defects.",
+      "assumptions_added": [
+
+      ],
+      "assumptions_removed": [
+
+      ],
+      "global_consequences": [
+        "Human authority or external assurance remains visible; traceability refinements avoid double-counting the same policy deficiency."
+      ],
+      "replacement_ids": [
+
+      ]
+    },
+    {
+      "record_id": "GAP-721B65BE75",
+      "disposition": "REFINED",
+      "pass_1_record_ids": [
+        "GAP-721B65BE75"
+      ],
+      "context_ids": [
+        "SEC-042FF4BC76",
+        "GAP-A25D114C6F"
+      ],
+      "user_context_evidence_ids": [
+        "EVD-0D50A0B3BE",
+        "EVD-C70801D35C"
+      ],
+      "reviewer_work_unit_id": "WU-A182673A27",
+      "rationale": "The requirement-specific traceability concern is real, but its substance is already captured more precisely by GAP-A25D114C6F and GAP-8826CA0D4C. Refine this record into traceability lineage rather than counting an additional independent gap.",
+      "assumptions_added": [
+
+      ],
+      "assumptions_removed": [
+        "Treating the same underlying premise or policy deficiency as an independent duplicate."
+      ],
+      "global_consequences": [
+        "Human authority or external assurance remains visible; traceability refinements avoid double-counting the same policy deficiency."
+      ],
+      "replacement_ids": [
+
+      ],
+      "proposed_changes": [
+        "Consolidate substantive publication coverage under the listed replacement IDs while retaining this Pass-1 ID in contextual-review lineage."
+      ],
+      "consolidation_target_ids": [
+        "GAP-A25D114C6F",
+        "GAP-8826CA0D4C"
+      ]
+    },
+    {
+      "record_id": "GAP-7BAF881BED",
+      "disposition": "UNRESOLVED",
+      "pass_1_record_ids": [
+        "GAP-7BAF881BED"
+      ],
+      "context_ids": [
+        "FLW-6394A1B72B",
+        "FLW-5E24C8B8E4",
+        "FLW-9D28A6D299"
+      ],
+      "user_context_evidence_ids": [
+        "EVD-0D50A0B3BE",
+        "EVD-C70801D35C"
+      ],
+      "reviewer_work_unit_id": "WU-A182673A27",
+      "rationale": "The gap identifies missing authority, deployment evidence, protocol semantics, capacity evidence, or off-chain policy that the context pack cannot supply. RFC maturity qualifications are preserved, so optional or future items are not mislabeled as implementation defects.",
+      "assumptions_added": [
+
+      ],
+      "assumptions_removed": [
+
+      ],
+      "global_consequences": [
+        "Human authority or external assurance remains visible; traceability refinements avoid double-counting the same policy deficiency."
+      ],
+      "replacement_ids": [
+
+      ]
+    },
+    {
+      "record_id": "GAP-817200738F",
+      "disposition": "UNRESOLVED",
+      "pass_1_record_ids": [
+        "GAP-817200738F"
+      ],
+      "context_ids": [
+        "BHV-80247CE73D",
+        "ASM-C0AB78216E"
+      ],
+      "user_context_evidence_ids": [
+        "EVD-0D50A0B3BE",
+        "EVD-C70801D35C"
+      ],
+      "reviewer_work_unit_id": "WU-A182673A27",
+      "rationale": "The gap identifies missing authority, deployment evidence, protocol semantics, capacity evidence, or off-chain policy that the context pack cannot supply. RFC maturity qualifications are preserved, so optional or future items are not mislabeled as implementation defects.",
+      "assumptions_added": [
+
+      ],
+      "assumptions_removed": [
+
+      ],
+      "global_consequences": [
+        "Human authority or external assurance remains visible; traceability refinements avoid double-counting the same policy deficiency."
+      ],
+      "replacement_ids": [
+
+      ]
+    },
+    {
+      "record_id": "GAP-8826CA0D4C",
+      "disposition": "UNRESOLVED",
+      "pass_1_record_ids": [
+        "GAP-8826CA0D4C"
+      ],
+      "context_ids": [
+        "SEC-B560A051DA",
+        "THR-C66F2EDB38"
+      ],
+      "user_context_evidence_ids": [
+
+      ],
+      "reviewer_work_unit_id": "WU-A182673A27",
+      "rationale": "The gap identifies missing authority, deployment evidence, protocol semantics, capacity evidence, or off-chain policy that the context pack cannot supply. RFC maturity qualifications are preserved, so optional or future items are not mislabeled as implementation defects.",
+      "assumptions_added": [
+
+      ],
+      "assumptions_removed": [
+
+      ],
+      "global_consequences": [
+        "Human authority or external assurance remains visible; traceability refinements avoid double-counting the same policy deficiency."
+      ],
+      "replacement_ids": [
+
+      ]
+    },
+    {
+      "record_id": "GAP-8C60DBC5D8",
+      "disposition": "UNRESOLVED",
+      "pass_1_record_ids": [
+        "GAP-8C60DBC5D8"
+      ],
+      "context_ids": [
+        "SEC-BC2C476AE2",
+        "INV-A0200396FA"
+      ],
+      "user_context_evidence_ids": [
+        "EVD-0D50A0B3BE",
+        "EVD-C70801D35C"
+      ],
+      "reviewer_work_unit_id": "WU-A182673A27",
+      "rationale": "The gap identifies missing authority, deployment evidence, protocol semantics, capacity evidence, or off-chain policy that the context pack cannot supply. RFC maturity qualifications are preserved, so optional or future items are not mislabeled as implementation defects.",
+      "assumptions_added": [
+
+      ],
+      "assumptions_removed": [
+
+      ],
+      "global_consequences": [
+        "Human authority or external assurance remains visible; traceability refinements avoid double-counting the same policy deficiency."
+      ],
+      "replacement_ids": [
+
+      ]
+    },
+    {
+      "record_id": "GAP-935AA6FD0D",
+      "disposition": "REFINED",
+      "pass_1_record_ids": [
+        "GAP-935AA6FD0D"
+      ],
+      "context_ids": [
+        "SEC-BC2C476AE2",
+        "INV-A0200396FA"
+      ],
+      "user_context_evidence_ids": [
+        "EVD-0D50A0B3BE",
+        "EVD-C70801D35C"
+      ],
+      "reviewer_work_unit_id": "WU-A182673A27",
+      "rationale": "The requirement-specific traceability concern is real, but its substance is already captured more precisely by GAP-1DC17F1884. Refine this record into traceability lineage rather than counting an additional independent gap.",
+      "assumptions_added": [
+
+      ],
+      "assumptions_removed": [
+        "Treating the same underlying premise or policy deficiency as an independent duplicate."
+      ],
+      "global_consequences": [
+        "Human authority or external assurance remains visible; traceability refinements avoid double-counting the same policy deficiency."
+      ],
+      "replacement_ids": [
+
+      ],
+      "proposed_changes": [
+        "Consolidate substantive publication coverage under the listed replacement IDs while retaining this Pass-1 ID in contextual-review lineage."
+      ],
+      "consolidation_target_ids": [
+        "GAP-1DC17F1884"
+      ]
+    },
+    {
+      "record_id": "GAP-9398E85581",
+      "disposition": "CONFIRMED",
+      "pass_1_record_ids": [
+        "GAP-9398E85581"
+      ],
+      "context_ids": [
+        "SEC-042FF4BC76",
+        "GAP-A25D114C6F"
+      ],
+      "user_context_evidence_ids": [
+
+      ],
+      "reviewer_work_unit_id": "WU-A182673A27",
+      "rationale": "Pinned implementation and test anchors support the divergence or missing policy, and the business consequence is distinct from linked security findings. Materiality remains a static prioritization under the stated prerequisites.",
+      "assumptions_added": [
+
+      ],
+      "assumptions_removed": [
+
+      ],
+      "global_consequences": [
+        "Human authority or external assurance remains visible; traceability refinements avoid double-counting the same policy deficiency."
+      ],
+      "replacement_ids": [
+
+      ]
+    },
+    {
+      "record_id": "GAP-96C24B88BE",
+      "disposition": "UNRESOLVED",
+      "pass_1_record_ids": [
+        "GAP-96C24B88BE"
+      ],
+      "context_ids": [
+        "SEC-F88596C819",
+        "THR-B55C2C8D2F"
+      ],
+      "user_context_evidence_ids": [
+        "EVD-0D50A0B3BE",
+        "EVD-C70801D35C"
+      ],
+      "reviewer_work_unit_id": "WU-A182673A27",
+      "rationale": "The gap identifies missing authority, deployment evidence, protocol semantics, capacity evidence, or off-chain policy that the context pack cannot supply. RFC maturity qualifications are preserved, so optional or future items are not mislabeled as implementation defects.",
+      "assumptions_added": [
+
+      ],
+      "assumptions_removed": [
+
+      ],
+      "global_consequences": [
+        "Human authority or external assurance remains visible; traceability refinements avoid double-counting the same policy deficiency."
+      ],
+      "replacement_ids": [
+
+      ]
+    },
+    {
+      "record_id": "GAP-9CA1247303",
+      "disposition": "REFINED",
+      "pass_1_record_ids": [
+        "GAP-9CA1247303"
+      ],
+      "context_ids": [
+        "SEC-BC2C476AE2",
+        "INV-A0200396FA"
+      ],
+      "user_context_evidence_ids": [
+        "EVD-0D50A0B3BE",
+        "EVD-C70801D35C"
+      ],
+      "reviewer_work_unit_id": "WU-A182673A27",
+      "rationale": "The requirement-specific traceability concern is real, but its substance is already captured more precisely by GAP-1DC17F1884. Refine this record into traceability lineage rather than counting an additional independent gap.",
+      "assumptions_added": [
+
+      ],
+      "assumptions_removed": [
+        "Treating the same underlying premise or policy deficiency as an independent duplicate."
+      ],
+      "global_consequences": [
+        "Human authority or external assurance remains visible; traceability refinements avoid double-counting the same policy deficiency."
+      ],
+      "replacement_ids": [
+
+      ],
+      "proposed_changes": [
+        "Consolidate substantive publication coverage under the listed replacement IDs while retaining this Pass-1 ID in contextual-review lineage."
+      ],
+      "consolidation_target_ids": [
+        "GAP-1DC17F1884"
+      ]
+    },
+    {
+      "record_id": "GAP-9D0D23D527",
+      "disposition": "UNRESOLVED",
+      "pass_1_record_ids": [
+        "GAP-9D0D23D527"
+      ],
+      "context_ids": [
+        "SEC-F88596C819",
+        "THR-B55C2C8D2F"
+      ],
+      "user_context_evidence_ids": [
+        "EVD-0D50A0B3BE",
+        "EVD-C70801D35C"
+      ],
+      "reviewer_work_unit_id": "WU-A182673A27",
+      "rationale": "The gap identifies missing authority, deployment evidence, protocol semantics, capacity evidence, or off-chain policy that the context pack cannot supply. RFC maturity qualifications are preserved, so optional or future items are not mislabeled as implementation defects.",
+      "assumptions_added": [
+
+      ],
+      "assumptions_removed": [
+
+      ],
+      "global_consequences": [
+        "Human authority or external assurance remains visible; traceability refinements avoid double-counting the same policy deficiency."
+      ],
+      "replacement_ids": [
+
+      ]
+    },
+    {
+      "record_id": "GAP-A25D114C6F",
+      "disposition": "UNRESOLVED",
+      "pass_1_record_ids": [
+        "GAP-A25D114C6F"
+      ],
+      "context_ids": [
+        "CMP-874E479BA1",
+        "CMP-0F476A460D",
+        "CMP-5CAF19BDCD"
+      ],
+      "user_context_evidence_ids": [
+
+      ],
+      "reviewer_work_unit_id": "WU-A182673A27",
+      "rationale": "The gap identifies missing authority, deployment evidence, protocol semantics, capacity evidence, or off-chain policy that the context pack cannot supply. RFC maturity qualifications are preserved, so optional or future items are not mislabeled as implementation defects.",
+      "assumptions_added": [
+
+      ],
+      "assumptions_removed": [
+
+      ],
+      "global_consequences": [
+        "Human authority or external assurance remains visible; traceability refinements avoid double-counting the same policy deficiency."
+      ],
+      "replacement_ids": [
+
+      ]
+    },
+    {
+      "record_id": "GAP-ABC383D9C1",
+      "disposition": "UNRESOLVED",
+      "pass_1_record_ids": [
+        "GAP-ABC383D9C1"
+      ],
+      "context_ids": [
+        "SEC-F88596C819",
+        "THR-B55C2C8D2F"
+      ],
+      "user_context_evidence_ids": [
+        "EVD-0D50A0B3BE",
+        "EVD-C70801D35C"
+      ],
+      "reviewer_work_unit_id": "WU-A182673A27",
+      "rationale": "The gap identifies missing authority, deployment evidence, protocol semantics, capacity evidence, or off-chain policy that the context pack cannot supply. RFC maturity qualifications are preserved, so optional or future items are not mislabeled as implementation defects.",
+      "assumptions_added": [
+
+      ],
+      "assumptions_removed": [
+
+      ],
+      "global_consequences": [
+        "Human authority or external assurance remains visible; traceability refinements avoid double-counting the same policy deficiency."
+      ],
+      "replacement_ids": [
+
+      ]
+    },
+    {
+      "record_id": "GAP-ADD703D733",
+      "disposition": "CONFIRMED",
+      "pass_1_record_ids": [
+        "GAP-ADD703D733"
+      ],
+      "context_ids": [
+        "FLW-6394A1B72B",
+        "FLW-A6B92A4E6D",
+        "FLW-5E24C8B8E4"
+      ],
+      "user_context_evidence_ids": [
+
+      ],
+      "reviewer_work_unit_id": "WU-A182673A27",
+      "rationale": "Pinned implementation and test anchors support the divergence or missing policy, and the business consequence is distinct from linked security findings. Materiality remains a static prioritization under the stated prerequisites.",
+      "assumptions_added": [
+
+      ],
+      "assumptions_removed": [
+
+      ],
+      "global_consequences": [
+        "Human authority or external assurance remains visible; traceability refinements avoid double-counting the same policy deficiency."
+      ],
+      "replacement_ids": [
+
+      ]
+    },
+    {
+      "record_id": "GAP-B1C8C1A4E1",
+      "disposition": "REFINED",
+      "pass_1_record_ids": [
+        "GAP-B1C8C1A4E1"
+      ],
+      "context_ids": [
+        "SEC-FB542C27D2",
+        "THR-92F9C4D82A"
+      ],
+      "user_context_evidence_ids": [
+        "EVD-0D50A0B3BE",
+        "EVD-C70801D35C"
+      ],
+      "reviewer_work_unit_id": "WU-A182673A27",
+      "rationale": "The requirement-specific traceability concern is real, but its substance is already captured more precisely by GAP-1DC17F1884 and GAP-9398E85581. Refine this record into traceability lineage rather than counting an additional independent gap.",
+      "assumptions_added": [
+
+      ],
+      "assumptions_removed": [
+        "Treating the same underlying premise or policy deficiency as an independent duplicate."
+      ],
+      "global_consequences": [
+        "Human authority or external assurance remains visible; traceability refinements avoid double-counting the same policy deficiency."
+      ],
+      "replacement_ids": [
+
+      ],
+      "proposed_changes": [
+        "Consolidate substantive publication coverage under the listed replacement IDs while retaining this Pass-1 ID in contextual-review lineage."
+      ],
+      "consolidation_target_ids": [
+        "GAP-1DC17F1884",
+        "GAP-9398E85581"
+      ]
+    },
+    {
+      "record_id": "GAP-B798CE8DB1",
+      "disposition": "UNRESOLVED",
+      "pass_1_record_ids": [
+        "GAP-B798CE8DB1"
+      ],
+      "context_ids": [
+        "BHV-5D3FCC7B93",
+        "CMP-5CAF19BDCD",
+        "CMP-0F476A460D"
+      ],
+      "user_context_evidence_ids": [
+
+      ],
+      "reviewer_work_unit_id": "WU-A182673A27",
+      "rationale": "The gap identifies missing authority, deployment evidence, protocol semantics, capacity evidence, or off-chain policy that the context pack cannot supply. RFC maturity qualifications are preserved, so optional or future items are not mislabeled as implementation defects.",
+      "assumptions_added": [
+
+      ],
+      "assumptions_removed": [
+
+      ],
+      "global_consequences": [
+        "Human authority or external assurance remains visible; traceability refinements avoid double-counting the same policy deficiency."
+      ],
+      "replacement_ids": [
+
+      ]
+    },
+    {
+      "record_id": "GAP-B9423A0E57",
+      "disposition": "REFINED",
+      "pass_1_record_ids": [
+        "GAP-B9423A0E57"
+      ],
+      "context_ids": [
+        "SEC-BC2C476AE2",
+        "INV-A0200396FA"
+      ],
+      "user_context_evidence_ids": [
+        "EVD-0D50A0B3BE",
+        "EVD-C70801D35C"
+      ],
+      "reviewer_work_unit_id": "WU-A182673A27",
+      "rationale": "The requirement-specific traceability concern is real, but its substance is already captured more precisely by GAP-B798CE8DB1. Refine this record into traceability lineage rather than counting an additional independent gap.",
+      "assumptions_added": [
+
+      ],
+      "assumptions_removed": [
+        "Treating the same underlying premise or policy deficiency as an independent duplicate."
+      ],
+      "global_consequences": [
+        "Human authority or external assurance remains visible; traceability refinements avoid double-counting the same policy deficiency."
+      ],
+      "replacement_ids": [
+
+      ],
+      "proposed_changes": [
+        "Consolidate substantive publication coverage under the listed replacement IDs while retaining this Pass-1 ID in contextual-review lineage."
+      ],
+      "consolidation_target_ids": [
+        "GAP-B798CE8DB1"
+      ]
+    },
+    {
+      "record_id": "GAP-BB80E3EB16",
+      "disposition": "UNRESOLVED",
+      "pass_1_record_ids": [
+        "GAP-BB80E3EB16"
+      ],
+      "context_ids": [
+        "SEC-F88596C819",
+        "THR-B55C2C8D2F"
+      ],
+      "user_context_evidence_ids": [
+        "EVD-0D50A0B3BE",
+        "EVD-C70801D35C"
+      ],
+      "reviewer_work_unit_id": "WU-A182673A27",
+      "rationale": "The gap identifies missing authority, deployment evidence, protocol semantics, capacity evidence, or off-chain policy that the context pack cannot supply. RFC maturity qualifications are preserved, so optional or future items are not mislabeled as implementation defects.",
+      "assumptions_added": [
+
+      ],
+      "assumptions_removed": [
+
+      ],
+      "global_consequences": [
+        "Human authority or external assurance remains visible; traceability refinements avoid double-counting the same policy deficiency."
+      ],
+      "replacement_ids": [
+
+      ]
+    },
+    {
+      "record_id": "GAP-BCB6F29C25",
+      "disposition": "UNRESOLVED",
+      "pass_1_record_ids": [
+        "GAP-BCB6F29C25"
+      ],
+      "context_ids": [
+        "SEC-EE4E9A7ADB",
+        "THR-56AA87E621"
+      ],
+      "user_context_evidence_ids": [
+        "EVD-0D50A0B3BE",
+        "EVD-C70801D35C",
+        "EVD-0554D3710D",
+        "EVD-FB46967B48"
+      ],
+      "reviewer_work_unit_id": "WU-A182673A27",
+      "rationale": "The gap identifies missing authority, deployment evidence, protocol semantics, capacity evidence, or off-chain policy that the context pack cannot supply. RFC maturity qualifications are preserved, so optional or future items are not mislabeled as implementation defects.",
+      "assumptions_added": [
+
+      ],
+      "assumptions_removed": [
+
+      ],
+      "global_consequences": [
+        "Human authority or external assurance remains visible; traceability refinements avoid double-counting the same policy deficiency."
+      ],
+      "replacement_ids": [
+
+      ]
+    },
+    {
+      "record_id": "GAP-E291D5E72A",
+      "disposition": "UNRESOLVED",
+      "pass_1_record_ids": [
+        "GAP-E291D5E72A"
+      ],
+      "context_ids": [
+        "SEC-F88596C819",
+        "THR-B55C2C8D2F"
+      ],
+      "user_context_evidence_ids": [
+        "EVD-0D50A0B3BE",
+        "EVD-C70801D35C"
+      ],
+      "reviewer_work_unit_id": "WU-A182673A27",
+      "rationale": "The gap identifies missing authority, deployment evidence, protocol semantics, capacity evidence, or off-chain policy that the context pack cannot supply. RFC maturity qualifications are preserved, so optional or future items are not mislabeled as implementation defects.",
+      "assumptions_added": [
+
+      ],
+      "assumptions_removed": [
+
+      ],
+      "global_consequences": [
+        "Human authority or external assurance remains visible; traceability refinements avoid double-counting the same policy deficiency."
+      ],
+      "replacement_ids": [
+
+      ]
+    },
+    {
+      "record_id": "GAP-EF32A38D1C",
+      "disposition": "UNRESOLVED",
+      "pass_1_record_ids": [
+        "GAP-EF32A38D1C"
+      ],
+      "context_ids": [
+        "FND-CA0F83CE86",
+        "INV-016B52DE5B"
+      ],
+      "user_context_evidence_ids": [
+
+      ],
+      "reviewer_work_unit_id": "WU-A182673A27",
+      "rationale": "The gap identifies missing authority, deployment evidence, protocol semantics, capacity evidence, or off-chain policy that the context pack cannot supply. RFC maturity qualifications are preserved, so optional or future items are not mislabeled as implementation defects.",
+      "assumptions_added": [
+
+      ],
+      "assumptions_removed": [
+
+      ],
+      "global_consequences": [
+        "Human authority or external assurance remains visible; traceability refinements avoid double-counting the same policy deficiency."
+      ],
+      "replacement_ids": [
+
+      ]
+    },
+    {
+      "record_id": "GAP-F035E24714",
+      "disposition": "CONFIRMED",
+      "pass_1_record_ids": [
+        "GAP-F035E24714"
+      ],
+      "context_ids": [
+        "SEC-BC2C476AE2",
+        "INV-A0200396FA"
+      ],
+      "user_context_evidence_ids": [
+        "EVD-0554D3710D",
+        "EVD-FB46967B48"
+      ],
+      "reviewer_work_unit_id": "WU-A182673A27",
+      "rationale": "Pinned implementation and test anchors support the divergence or missing policy, and the business consequence is distinct from linked security findings. Materiality remains a static prioritization under the stated prerequisites.",
+      "assumptions_added": [
+
+      ],
+      "assumptions_removed": [
+
+      ],
+      "global_consequences": [
+        "Human authority or external assurance remains visible; traceability refinements avoid double-counting the same policy deficiency."
+      ],
+      "replacement_ids": [
+
+      ]
+    },
+    {
+      "record_id": "GAP-F47532E2A5",
+      "disposition": "CONFIRMED",
+      "pass_1_record_ids": [
+        "GAP-F47532E2A5"
+      ],
+      "context_ids": [
+        "SEC-F88596C819",
+        "THR-B55C2C8D2F"
+      ],
+      "user_context_evidence_ids": [
+        "EVD-0D50A0B3BE",
+        "EVD-C70801D35C"
+      ],
+      "reviewer_work_unit_id": "WU-A182673A27",
+      "rationale": "Pinned implementation and test anchors support the divergence or missing policy, and the business consequence is distinct from linked security findings. Materiality remains a static prioritization under the stated prerequisites.",
+      "assumptions_added": [
+
+      ],
+      "assumptions_removed": [
+
+      ],
+      "global_consequences": [
+        "Human authority or external assurance remains visible; traceability refinements avoid double-counting the same policy deficiency."
+      ],
+      "replacement_ids": [
+
+      ]
+    },
+    {
+      "record_id": "GAP-F83C6F5411",
+      "disposition": "CONFIRMED",
+      "pass_1_record_ids": [
+        "GAP-F83C6F5411"
+      ],
+      "context_ids": [
+        "FLW-6394A1B72B",
+        "FLW-9D28A6D299",
+        "INV-CF85A74EED"
+      ],
+      "user_context_evidence_ids": [
+        "EVD-0D50A0B3BE",
+        "EVD-C70801D35C",
+        "EVD-0554D3710D",
+        "EVD-FB46967B48"
+      ],
+      "reviewer_work_unit_id": "WU-A182673A27",
+      "rationale": "Pinned implementation and test anchors support the divergence or missing policy, and the business consequence is distinct from linked security findings. Materiality remains a static prioritization under the stated prerequisites.",
+      "assumptions_added": [
+
+      ],
+      "assumptions_removed": [
+
+      ],
+      "global_consequences": [
+        "Human authority or external assurance remains visible; traceability refinements avoid double-counting the same policy deficiency."
+      ],
+      "replacement_ids": [
+
+      ]
+    },
+    {
+      "record_id": "GAP-FE43BADC05",
+      "disposition": "UNRESOLVED",
+      "pass_1_record_ids": [
+        "GAP-FE43BADC05"
+      ],
+      "context_ids": [
+        "BHV-C01A568AAE"
+      ],
+      "user_context_evidence_ids": [
+        "EVD-0D50A0B3BE",
+        "EVD-C70801D35C"
+      ],
+      "reviewer_work_unit_id": "WU-A182673A27",
+      "rationale": "The gap identifies missing authority, deployment evidence, protocol semantics, capacity evidence, or off-chain policy that the context pack cannot supply. RFC maturity qualifications are preserved, so optional or future items are not mislabeled as implementation defects.",
+      "assumptions_added": [
+
+      ],
+      "assumptions_removed": [
+
+      ],
+      "global_consequences": [
+        "Human authority or external assurance remains visible; traceability refinements avoid double-counting the same policy deficiency."
+      ],
+      "replacement_ids": [
+
+      ]
+    },
+    {
+      "record_id": "SEC-042FF4BC76",
+      "disposition": "CONFIRMED",
+      "pass_1_record_ids": [
+        "SEC-042FF4BC76"
+      ],
+      "context_ids": [
+        "THR-0EC3832BA7",
+        "THR-5D2535B0B5",
+        "ASM-503E6DE8AD"
+      ],
+      "user_context_evidence_ids": [
+
+      ],
+      "reviewer_work_unit_id": "WU-A182673A27",
+      "rationale": "The protected property is supported as a system objective by the pinned source, linked invariants, threats, and explicit deployment/runtime limits. It is an objective, not a claim that every enforcement boundary is proved.",
+      "assumptions_added": [
+
+      ],
+      "assumptions_removed": [
+
+      ],
+      "global_consequences": [
+        "The objective continues to organize linked threats, assumptions, gaps, findings, and enforcement records without implying complete assurance."
+      ],
+      "replacement_ids": [
+
+      ]
+    },
+    {
+      "record_id": "SEC-10182FB352",
+      "disposition": "CONFIRMED",
+      "pass_1_record_ids": [
+        "SEC-10182FB352"
+      ],
+      "context_ids": [
+        "THR-77C87EDE62",
+        "THR-0DEBF32E0A",
+        "THR-5D2535B0B5"
+      ],
+      "user_context_evidence_ids": [
+
+      ],
+      "reviewer_work_unit_id": "WU-A182673A27",
+      "rationale": "The protected property is supported as a system objective by the pinned source, linked invariants, threats, and explicit deployment/runtime limits. It is an objective, not a claim that every enforcement boundary is proved.",
+      "assumptions_added": [
+
+      ],
+      "assumptions_removed": [
+
+      ],
+      "global_consequences": [
+        "The objective continues to organize linked threats, assumptions, gaps, findings, and enforcement records without implying complete assurance."
+      ],
+      "replacement_ids": [
+
+      ]
+    },
+    {
+      "record_id": "SEC-9F3756E302",
+      "disposition": "CONFIRMED",
+      "pass_1_record_ids": [
+        "SEC-9F3756E302"
+      ],
+      "context_ids": [
+        "BHV-80247CE73D",
+        "THR-647A188D6B",
+        "ASM-D691B96D3B"
+      ],
+      "user_context_evidence_ids": [
+
+      ],
+      "reviewer_work_unit_id": "WU-A182673A27",
+      "rationale": "The protected property is supported as a system objective by the pinned source, linked invariants, threats, and explicit deployment/runtime limits. It is an objective, not a claim that every enforcement boundary is proved.",
+      "assumptions_added": [
+
+      ],
+      "assumptions_removed": [
+
+      ],
+      "global_consequences": [
+        "The objective continues to organize linked threats, assumptions, gaps, findings, and enforcement records without implying complete assurance."
+      ],
+      "replacement_ids": [
+
+      ]
+    },
+    {
+      "record_id": "SEC-B560A051DA",
+      "disposition": "CONFIRMED",
+      "pass_1_record_ids": [
+        "SEC-B560A051DA"
+      ],
+      "context_ids": [
+        "INV-108FEC74C4",
+        "THR-C66F2EDB38",
+        "ASM-73AF207816"
+      ],
+      "user_context_evidence_ids": [
+
+      ],
+      "reviewer_work_unit_id": "WU-A182673A27",
+      "rationale": "The protected property is supported as a system objective by the pinned source, linked invariants, threats, and explicit deployment/runtime limits. It is an objective, not a claim that every enforcement boundary is proved.",
+      "assumptions_added": [
+
+      ],
+      "assumptions_removed": [
+
+      ],
+      "global_consequences": [
+        "The objective continues to organize linked threats, assumptions, gaps, findings, and enforcement records without implying complete assurance."
+      ],
+      "replacement_ids": [
+
+      ]
+    },
+    {
+      "record_id": "SEC-BC2C476AE2",
+      "disposition": "CONFIRMED",
+      "pass_1_record_ids": [
+        "SEC-BC2C476AE2"
+      ],
+      "context_ids": [
+        "INV-A0200396FA",
+        "BHV-8B6F3A639B",
+        "THR-A943E3380A"
+      ],
+      "user_context_evidence_ids": [
+
+      ],
+      "reviewer_work_unit_id": "WU-A182673A27",
+      "rationale": "The protected property is supported as a system objective by the pinned source, linked invariants, threats, and explicit deployment/runtime limits. It is an objective, not a claim that every enforcement boundary is proved.",
+      "assumptions_added": [
+
+      ],
+      "assumptions_removed": [
+
+      ],
+      "global_consequences": [
+        "The objective continues to organize linked threats, assumptions, gaps, findings, and enforcement records without implying complete assurance."
+      ],
+      "replacement_ids": [
+
+      ]
+    },
+    {
+      "record_id": "SEC-DD3B44137C",
+      "disposition": "CONFIRMED",
+      "pass_1_record_ids": [
+        "SEC-DD3B44137C"
+      ],
+      "context_ids": [
+        "INV-A59D85B29B",
+        "THR-F283B3AF7E",
+        "THR-622BA37FCF"
+      ],
+      "user_context_evidence_ids": [
+
+      ],
+      "reviewer_work_unit_id": "WU-A182673A27",
+      "rationale": "The protected property is supported as a system objective by the pinned source, linked invariants, threats, and explicit deployment/runtime limits. It is an objective, not a claim that every enforcement boundary is proved.",
+      "assumptions_added": [
+
+      ],
+      "assumptions_removed": [
+
+      ],
+      "global_consequences": [
+        "The objective continues to organize linked threats, assumptions, gaps, findings, and enforcement records without implying complete assurance."
+      ],
+      "replacement_ids": [
+
+      ]
+    },
+    {
+      "record_id": "SEC-E0D95AF002",
+      "disposition": "CONFIRMED",
+      "pass_1_record_ids": [
+        "SEC-E0D95AF002"
+      ],
+      "context_ids": [
+        "ZKP-BA11C90A9F",
+        "ZKP-5DF7D24003",
+        "BHV-BAB5A8FD7C"
+      ],
+      "user_context_evidence_ids": [
+
+      ],
+      "reviewer_work_unit_id": "WU-A182673A27",
+      "rationale": "The protected property is supported as a system objective by the pinned source, linked invariants, threats, and explicit deployment/runtime limits. It is an objective, not a claim that every enforcement boundary is proved.",
+      "assumptions_added": [
+
+      ],
+      "assumptions_removed": [
+
+      ],
+      "global_consequences": [
+        "The objective continues to organize linked threats, assumptions, gaps, findings, and enforcement records without implying complete assurance."
+      ],
+      "replacement_ids": [
+
+      ]
+    },
+    {
+      "record_id": "SEC-EE4E9A7ADB",
+      "disposition": "CONFIRMED",
+      "pass_1_record_ids": [
+        "SEC-EE4E9A7ADB"
+      ],
+      "context_ids": [
+        "THR-56AA87E621",
+        "ASM-912B3DBDF6",
+        "ASM-FF091135AE"
+      ],
+      "user_context_evidence_ids": [
+
+      ],
+      "reviewer_work_unit_id": "WU-A182673A27",
+      "rationale": "The protected property is supported as a system objective by the pinned source, linked invariants, threats, and explicit deployment/runtime limits. It is an objective, not a claim that every enforcement boundary is proved.",
+      "assumptions_added": [
+
+      ],
+      "assumptions_removed": [
+
+      ],
+      "global_consequences": [
+        "The objective continues to organize linked threats, assumptions, gaps, findings, and enforcement records without implying complete assurance."
+      ],
+      "replacement_ids": [
+
+      ]
+    },
+    {
+      "record_id": "SEC-F88596C819",
+      "disposition": "CONFIRMED",
+      "pass_1_record_ids": [
+        "SEC-F88596C819"
+      ],
+      "context_ids": [
+        "BHV-C01A568AAE",
+        "BHV-141ED40E5D",
+        "BHV-BAB5A8FD7C"
+      ],
+      "user_context_evidence_ids": [
+
+      ],
+      "reviewer_work_unit_id": "WU-A182673A27",
+      "rationale": "The protected property is supported as a system objective by the pinned source, linked invariants, threats, and explicit deployment/runtime limits. It is an objective, not a claim that every enforcement boundary is proved.",
+      "assumptions_added": [
+
+      ],
+      "assumptions_removed": [
+
+      ],
+      "global_consequences": [
+        "The objective continues to organize linked threats, assumptions, gaps, findings, and enforcement records without implying complete assurance."
+      ],
+      "replacement_ids": [
+
+      ]
+    },
+    {
+      "record_id": "SEC-FB542C27D2",
+      "disposition": "CONFIRMED",
+      "pass_1_record_ids": [
+        "SEC-FB542C27D2"
+      ],
+      "context_ids": [
+        "BHV-5D3FCC7B93",
+        "INV-EF3059DB8A",
+        "CMP-49180D7623"
+      ],
+      "user_context_evidence_ids": [
+
+      ],
+      "reviewer_work_unit_id": "WU-A182673A27",
+      "rationale": "The protected property is supported as a system objective by the pinned source, linked invariants, threats, and explicit deployment/runtime limits. It is an objective, not a claim that every enforcement boundary is proved.",
+      "assumptions_added": [
+
+      ],
+      "assumptions_removed": [
+
+      ],
+      "global_consequences": [
+        "The objective continues to organize linked threats, assumptions, gaps, findings, and enforcement records without implying complete assurance."
+      ],
+      "replacement_ids": [
+
+      ]
+    },
+    {
+      "record_id": "THR-01539B0FF5",
+      "disposition": "CONFIRMED",
+      "pass_1_record_ids": [
+        "THR-01539B0FF5"
+      ],
+      "context_ids": [
+        "SEC-E0D95AF002",
+        "SEC-F88596C819",
+        "ZKP-547C93E79B"
+      ],
+      "user_context_evidence_ids": [
+
+      ],
+      "reviewer_work_unit_id": "WU-A182673A27",
+      "rationale": "Pinned source anchors support the stated adverse sequence and the recorded static mitigation level. The conclusion remains prerequisite-bounded and does not assert runtime exploitability.",
+      "assumptions_added": [
+
+      ],
+      "assumptions_removed": [
+
+      ],
+      "global_consequences": [
+        "Threat-model coverage remains prerequisite-bounded and preserves external/runtime limitations."
+      ],
+      "replacement_ids": [
+
+      ]
+    },
+    {
+      "record_id": "THR-0DEBF32E0A",
+      "disposition": "UNRESOLVED",
+      "pass_1_record_ids": [
+        "THR-0DEBF32E0A"
+      ],
+      "context_ids": [
+        "SEC-10182FB352",
+        "ASM-64F6936A94",
+        "CMP-B6BB8BE661"
+      ],
+      "user_context_evidence_ids": [
+
+      ],
+      "reviewer_work_unit_id": "WU-A182673A27",
+      "rationale": "The adverse sequence remains plausible under the stated prerequisites, but the bounded static evidence cannot decide feasibility or mitigation because protocol, deployment, capacity, logging, or host-orchestration facts are external.",
+      "assumptions_added": [
+
+      ],
+      "assumptions_removed": [
+
+      ],
+      "global_consequences": [
+        "Threat-model coverage remains prerequisite-bounded and preserves external/runtime limitations."
+      ],
+      "replacement_ids": [
+
+      ]
+    },
+    {
+      "record_id": "THR-0EC3832BA7",
+      "disposition": "UNRESOLVED",
+      "pass_1_record_ids": [
+        "THR-0EC3832BA7"
+      ],
+      "context_ids": [
+        "SEC-042FF4BC76",
+        "GAP-A25D114C6F",
+        "UNR-13C729A54A"
+      ],
+      "user_context_evidence_ids": [
+
+      ],
+      "reviewer_work_unit_id": "WU-A182673A27",
+      "rationale": "The adverse sequence remains plausible under the stated prerequisites, but the bounded static evidence cannot decide feasibility or mitigation because protocol, deployment, capacity, logging, or host-orchestration facts are external.",
+      "assumptions_added": [
+
+      ],
+      "assumptions_removed": [
+
+      ],
+      "global_consequences": [
+        "Threat-model coverage remains prerequisite-bounded and preserves external/runtime limitations."
+      ],
+      "replacement_ids": [
+
+      ]
+    },
+    {
+      "record_id": "THR-56AA87E621",
+      "disposition": "UNRESOLVED",
+      "pass_1_record_ids": [
+        "THR-56AA87E621"
+      ],
+      "context_ids": [
+        "SEC-EE4E9A7ADB",
+        "SEC-E0D95AF002",
+        "UNR-C42A921AD9"
+      ],
+      "user_context_evidence_ids": [
+
+      ],
+      "reviewer_work_unit_id": "WU-A182673A27",
+      "rationale": "The adverse sequence remains plausible under the stated prerequisites, but the bounded static evidence cannot decide feasibility or mitigation because protocol, deployment, capacity, logging, or host-orchestration facts are external.",
+      "assumptions_added": [
+
+      ],
+      "assumptions_removed": [
+
+      ],
+      "global_consequences": [
+        "Threat-model coverage remains prerequisite-bounded and preserves external/runtime limitations."
+      ],
+      "replacement_ids": [
+
+      ]
+    },
+    {
+      "record_id": "THR-5D2535B0B5",
+      "disposition": "CONFIRMED",
+      "pass_1_record_ids": [
+        "THR-5D2535B0B5"
+      ],
+      "context_ids": [
+        "SEC-10182FB352",
+        "SEC-042FF4BC76",
+        "ASM-A4087EF988"
+      ],
+      "user_context_evidence_ids": [
+
+      ],
+      "reviewer_work_unit_id": "WU-A182673A27",
+      "rationale": "Pinned source anchors support the stated adverse sequence and the recorded static mitigation level. The conclusion remains prerequisite-bounded and does not assert runtime exploitability.",
+      "assumptions_added": [
+
+      ],
+      "assumptions_removed": [
+
+      ],
+      "global_consequences": [
+        "Threat-model coverage remains prerequisite-bounded and preserves external/runtime limitations."
+      ],
+      "replacement_ids": [
+
+      ]
+    },
+    {
+      "record_id": "THR-5F94AE7496",
+      "disposition": "CONFIRMED",
+      "pass_1_record_ids": [
+        "THR-5F94AE7496"
+      ],
+      "context_ids": [
+        "SEC-E0D95AF002",
+        "SEC-B560A051DA",
+        "ASM-73AF207816"
+      ],
+      "user_context_evidence_ids": [
+
+      ],
+      "reviewer_work_unit_id": "WU-A182673A27",
+      "rationale": "Pinned source anchors support the stated adverse sequence and the recorded static mitigation level. The conclusion remains prerequisite-bounded and does not assert runtime exploitability.",
+      "assumptions_added": [
+
+      ],
+      "assumptions_removed": [
+
+      ],
+      "global_consequences": [
+        "Threat-model coverage remains prerequisite-bounded and preserves external/runtime limitations."
+      ],
+      "replacement_ids": [
+
+      ]
+    },
+    {
+      "record_id": "THR-622BA37FCF",
+      "disposition": "UNRESOLVED",
+      "pass_1_record_ids": [
+        "THR-622BA37FCF"
+      ],
+      "context_ids": [
+        "SEC-DD3B44137C",
+        "ASM-F556007192"
+      ],
+      "user_context_evidence_ids": [
+
+      ],
+      "reviewer_work_unit_id": "WU-A182673A27",
+      "rationale": "The adverse sequence remains plausible under the stated prerequisites, but the bounded static evidence cannot decide feasibility or mitigation because protocol, deployment, capacity, logging, or host-orchestration facts are external.",
+      "assumptions_added": [
+
+      ],
+      "assumptions_removed": [
+
+      ],
+      "global_consequences": [
+        "Threat-model coverage remains prerequisite-bounded and preserves external/runtime limitations."
+      ],
+      "replacement_ids": [
+
+      ]
+    },
+    {
+      "record_id": "THR-647A188D6B",
+      "disposition": "UNRESOLVED",
+      "pass_1_record_ids": [
+        "THR-647A188D6B"
+      ],
+      "context_ids": [
+        "SEC-9F3756E302",
+        "ASM-D691B96D3B"
+      ],
+      "user_context_evidence_ids": [
+
+      ],
+      "reviewer_work_unit_id": "WU-A182673A27",
+      "rationale": "The adverse sequence remains plausible under the stated prerequisites, but the bounded static evidence cannot decide feasibility or mitigation because protocol, deployment, capacity, logging, or host-orchestration facts are external.",
+      "assumptions_added": [
+
+      ],
+      "assumptions_removed": [
+
+      ],
+      "global_consequences": [
+        "Threat-model coverage remains prerequisite-bounded and preserves external/runtime limitations."
+      ],
+      "replacement_ids": [
+
+      ]
+    },
+    {
+      "record_id": "THR-77C87EDE62",
+      "disposition": "CONFIRMED",
+      "pass_1_record_ids": [
+        "THR-77C87EDE62"
+      ],
+      "context_ids": [
+        "SEC-10182FB352",
+        "ASM-A4087EF988",
+        "CMP-B6BB8BE661"
+      ],
+      "user_context_evidence_ids": [
+
+      ],
+      "reviewer_work_unit_id": "WU-A182673A27",
+      "rationale": "Pinned source anchors support the stated adverse sequence and the recorded static mitigation level. The conclusion remains prerequisite-bounded and does not assert runtime exploitability.",
+      "assumptions_added": [
+
+      ],
+      "assumptions_removed": [
+
+      ],
+      "global_consequences": [
+        "Threat-model coverage remains prerequisite-bounded and preserves external/runtime limitations."
+      ],
+      "replacement_ids": [
+
+      ]
+    },
+    {
+      "record_id": "THR-902C4A0F9F",
+      "disposition": "UNRESOLVED",
+      "pass_1_record_ids": [
+        "THR-902C4A0F9F"
+      ],
+      "context_ids": [
+        "SEC-BC2C476AE2",
+        "FND-B5948FE3CF",
+        "UNR-0B3E825B88"
+      ],
+      "user_context_evidence_ids": [
+
+      ],
+      "reviewer_work_unit_id": "WU-A182673A27",
+      "rationale": "The adverse sequence remains plausible under the stated prerequisites, but the bounded static evidence cannot decide feasibility or mitigation because protocol, deployment, capacity, logging, or host-orchestration facts are external.",
+      "assumptions_added": [
+
+      ],
+      "assumptions_removed": [
+
+      ],
+      "global_consequences": [
+        "Threat-model coverage remains prerequisite-bounded and preserves external/runtime limitations."
+      ],
+      "replacement_ids": [
+
+      ]
+    },
+    {
+      "record_id": "THR-92F9C4D82A",
+      "disposition": "CONFIRMED",
+      "pass_1_record_ids": [
+        "THR-92F9C4D82A"
+      ],
+      "context_ids": [
+        "SEC-FB542C27D2",
+        "BHV-5D3FCC7B93",
+        "INV-EF3059DB8A"
+      ],
+      "user_context_evidence_ids": [
+
+      ],
+      "reviewer_work_unit_id": "WU-A182673A27",
+      "rationale": "Pinned source anchors support the stated adverse sequence and the recorded static mitigation level. The conclusion remains prerequisite-bounded and does not assert runtime exploitability.",
+      "assumptions_added": [
+
+      ],
+      "assumptions_removed": [
+
+      ],
+      "global_consequences": [
+        "Threat-model coverage remains prerequisite-bounded and preserves external/runtime limitations."
+      ],
+      "replacement_ids": [
+
+      ]
+    },
+    {
+      "record_id": "THR-A943E3380A",
+      "disposition": "CONFIRMED",
+      "pass_1_record_ids": [
+        "THR-A943E3380A"
+      ],
+      "context_ids": [
+        "SEC-BC2C476AE2",
+        "SEC-DD3B44137C",
+        "FND-BFFEA51091"
+      ],
+      "user_context_evidence_ids": [
+
+      ],
+      "reviewer_work_unit_id": "WU-A182673A27",
+      "rationale": "Pinned source anchors support the stated adverse sequence and the recorded static mitigation level. The conclusion remains prerequisite-bounded and does not assert runtime exploitability.",
+      "assumptions_added": [
+
+      ],
+      "assumptions_removed": [
+
+      ],
+      "global_consequences": [
+        "Threat-model coverage remains prerequisite-bounded and preserves external/runtime limitations."
+      ],
+      "replacement_ids": [
+
+      ]
+    },
+    {
+      "record_id": "THR-B041D07C7D",
+      "disposition": "CONFIRMED",
+      "pass_1_record_ids": [
+        "THR-B041D07C7D"
+      ],
+      "context_ids": [
+        "SEC-FB542C27D2",
+        "SEC-DD3B44137C"
+      ],
+      "user_context_evidence_ids": [
+
+      ],
+      "reviewer_work_unit_id": "WU-A182673A27",
+      "rationale": "Pinned source anchors support the stated adverse sequence and the recorded static mitigation level. The conclusion remains prerequisite-bounded and does not assert runtime exploitability.",
+      "assumptions_added": [
+
+      ],
+      "assumptions_removed": [
+
+      ],
+      "global_consequences": [
+        "Threat-model coverage remains prerequisite-bounded and preserves external/runtime limitations."
+      ],
+      "replacement_ids": [
+
+      ]
+    },
+    {
+      "record_id": "THR-B55C2C8D2F",
+      "disposition": "UNRESOLVED",
+      "pass_1_record_ids": [
+        "THR-B55C2C8D2F"
+      ],
+      "context_ids": [
+        "SEC-F88596C819",
+        "FND-4C6DF9502F",
+        "ASM-03D9CA273D"
+      ],
+      "user_context_evidence_ids": [
+
+      ],
+      "reviewer_work_unit_id": "WU-A182673A27",
+      "rationale": "The adverse sequence remains plausible under the stated prerequisites, but the bounded static evidence cannot decide feasibility or mitigation because protocol, deployment, capacity, logging, or host-orchestration facts are external.",
+      "assumptions_added": [
+
+      ],
+      "assumptions_removed": [
+
+      ],
+      "global_consequences": [
+        "Threat-model coverage remains prerequisite-bounded and preserves external/runtime limitations."
+      ],
+      "replacement_ids": [
+
+      ]
+    },
+    {
+      "record_id": "THR-C66F2EDB38",
+      "disposition": "UNRESOLVED",
+      "pass_1_record_ids": [
+        "THR-C66F2EDB38"
+      ],
+      "context_ids": [
+        "SEC-B560A051DA",
+        "FND-19EC441E53",
+        "ASM-73AF207816"
+      ],
+      "user_context_evidence_ids": [
+
+      ],
+      "reviewer_work_unit_id": "WU-A182673A27",
+      "rationale": "The adverse sequence remains plausible under the stated prerequisites, but the bounded static evidence cannot decide feasibility or mitigation because protocol, deployment, capacity, logging, or host-orchestration facts are external.",
+      "assumptions_added": [
+
+      ],
+      "assumptions_removed": [
+
+      ],
+      "global_consequences": [
+        "Threat-model coverage remains prerequisite-bounded and preserves external/runtime limitations."
+      ],
+      "replacement_ids": [
+
+      ]
+    },
+    {
+      "record_id": "THR-CD2BC0B163",
+      "disposition": "CONFIRMED",
+      "pass_1_record_ids": [
+        "THR-CD2BC0B163"
+      ],
+      "context_ids": [
+        "SEC-F88596C819",
+        "FND-2184025222",
+        "UNR-13C729A54A"
+      ],
+      "user_context_evidence_ids": [
+
+      ],
+      "reviewer_work_unit_id": "WU-A182673A27",
+      "rationale": "Pinned source anchors support the stated adverse sequence and the recorded static mitigation level. The conclusion remains prerequisite-bounded and does not assert runtime exploitability.",
+      "assumptions_added": [
+
+      ],
+      "assumptions_removed": [
+
+      ],
+      "global_consequences": [
+        "Threat-model coverage remains prerequisite-bounded and preserves external/runtime limitations."
+      ],
+      "replacement_ids": [
+
+      ]
+    },
+    {
+      "record_id": "THR-F283B3AF7E",
+      "disposition": "CONFIRMED",
+      "pass_1_record_ids": [
+        "THR-F283B3AF7E"
+      ],
+      "context_ids": [
+        "SEC-DD3B44137C",
+        "FND-1D115F22E4",
+        "FND-37BEE2B1BA"
+      ],
+      "user_context_evidence_ids": [
+
+      ],
+      "reviewer_work_unit_id": "WU-A182673A27",
+      "rationale": "Pinned source anchors support the stated adverse sequence and the recorded static mitigation level. The conclusion remains prerequisite-bounded and does not assert runtime exploitability.",
+      "assumptions_added": [
+
+      ],
+      "assumptions_removed": [
+
+      ],
+      "global_consequences": [
+        "Threat-model coverage remains prerequisite-bounded and preserves external/runtime limitations."
+      ],
+      "replacement_ids": [
+
+      ]
+    },
+    {
+      "record_id": "TST-318386F25F",
+      "disposition": "CONFIRMED",
+      "pass_1_record_ids": [
+        "TST-318386F25F"
+      ],
+      "context_ids": [
+        "API-98891BC765"
+      ],
+      "user_context_evidence_ids": [
+
+      ],
+      "reviewer_work_unit_id": "WU-A182673A27",
+      "rationale": "Raw test source statically enumerates the recorded cases and expectations. The suite was not executed, so the Pass-1 STATICALLY_MAPPED classification and expectation-only authority are confirmed without any pass/fail claim.",
+      "assumptions_added": [
+
+      ],
+      "assumptions_removed": [
+
+      ],
+      "global_consequences": [
+        "No runtime pass/fail claim enters the final model; cases remain expectation evidence only."
+      ],
+      "replacement_ids": [
+
+      ]
+    },
+    {
+      "record_id": "TST-5A6CA56CD8",
+      "disposition": "CONFIRMED",
+      "pass_1_record_ids": [
+        "TST-5A6CA56CD8"
+      ],
+      "context_ids": [
+        "API-702CAD321E",
+        "API-1889CE2CD1"
+      ],
+      "user_context_evidence_ids": [
+
+      ],
+      "reviewer_work_unit_id": "WU-A182673A27",
+      "rationale": "Raw test source statically enumerates the recorded cases and expectations. The suite was not executed, so the Pass-1 STATICALLY_MAPPED classification and expectation-only authority are confirmed without any pass/fail claim.",
+      "assumptions_added": [
+
+      ],
+      "assumptions_removed": [
+
+      ],
+      "global_consequences": [
+        "No runtime pass/fail claim enters the final model; cases remain expectation evidence only."
+      ],
+      "replacement_ids": [
+
+      ]
+    },
+    {
+      "record_id": "TST-5FC61A24DA",
+      "disposition": "CONFIRMED",
+      "pass_1_record_ids": [
+        "TST-5FC61A24DA"
+      ],
+      "context_ids": [
+        "API-FD2A8AB499"
+      ],
+      "user_context_evidence_ids": [
+
+      ],
+      "reviewer_work_unit_id": "WU-A182673A27",
+      "rationale": "Raw test source statically enumerates the recorded cases and expectations. The suite was not executed, so the Pass-1 STATICALLY_MAPPED classification and expectation-only authority are confirmed without any pass/fail claim.",
+      "assumptions_added": [
+
+      ],
+      "assumptions_removed": [
+
+      ],
+      "global_consequences": [
+        "No runtime pass/fail claim enters the final model; cases remain expectation evidence only."
+      ],
+      "replacement_ids": [
+
+      ]
+    },
+    {
+      "record_id": "TST-6530589740",
+      "disposition": "CONFIRMED",
+      "pass_1_record_ids": [
+        "TST-6530589740"
+      ],
+      "context_ids": [
+        "API-FD75421927"
+      ],
+      "user_context_evidence_ids": [
+
+      ],
+      "reviewer_work_unit_id": "WU-A182673A27",
+      "rationale": "Raw test source statically enumerates the recorded cases and expectations. The suite was not executed, so the Pass-1 STATICALLY_MAPPED classification and expectation-only authority are confirmed without any pass/fail claim.",
+      "assumptions_added": [
+
+      ],
+      "assumptions_removed": [
+
+      ],
+      "global_consequences": [
+        "No runtime pass/fail claim enters the final model; cases remain expectation evidence only."
+      ],
+      "replacement_ids": [
+
+      ]
+    },
+    {
+      "record_id": "TST-A696D485D6",
+      "disposition": "CONFIRMED",
+      "pass_1_record_ids": [
+        "TST-A696D485D6"
+      ],
+      "context_ids": [
+        "API-3E2D8706B3",
+        "API-FD2A8AB499",
+        "API-FD75421927"
+      ],
+      "user_context_evidence_ids": [
+
+      ],
+      "reviewer_work_unit_id": "WU-A182673A27",
+      "rationale": "Raw test source statically enumerates the recorded cases and expectations. The suite was not executed, so the Pass-1 STATICALLY_MAPPED classification and expectation-only authority are confirmed without any pass/fail claim.",
+      "assumptions_added": [
+
+      ],
+      "assumptions_removed": [
+
+      ],
+      "global_consequences": [
+        "No runtime pass/fail claim enters the final model; cases remain expectation evidence only."
+      ],
+      "replacement_ids": [
+
+      ]
+    },
+    {
+      "record_id": "TST-A9E4F4D3BC",
+      "disposition": "CONFIRMED",
+      "pass_1_record_ids": [
+        "TST-A9E4F4D3BC"
+      ],
+      "context_ids": [
+        "API-2E2E88515C",
+        "API-C8E2E47556"
+      ],
+      "user_context_evidence_ids": [
+
+      ],
+      "reviewer_work_unit_id": "WU-A182673A27",
+      "rationale": "Raw test source statically enumerates the recorded cases and expectations. The suite was not executed, so the Pass-1 STATICALLY_MAPPED classification and expectation-only authority are confirmed without any pass/fail claim.",
+      "assumptions_added": [
+
+      ],
+      "assumptions_removed": [
+
+      ],
+      "global_consequences": [
+        "No runtime pass/fail claim enters the final model; cases remain expectation evidence only."
+      ],
+      "replacement_ids": [
+
+      ]
+    },
+    {
+      "record_id": "TST-D1863E1F8D",
+      "disposition": "CONFIRMED",
+      "pass_1_record_ids": [
+        "TST-D1863E1F8D"
+      ],
+      "context_ids": [
+        "SEC-10182FB352",
+        "THR-0DEBF32E0A"
+      ],
+      "user_context_evidence_ids": [
+
+      ],
+      "reviewer_work_unit_id": "WU-A182673A27",
+      "rationale": "Raw test source statically enumerates the recorded cases and expectations. The suite was not executed, so the Pass-1 STATICALLY_MAPPED classification and expectation-only authority are confirmed without any pass/fail claim.",
+      "assumptions_added": [
+
+      ],
+      "assumptions_removed": [
+
+      ],
+      "global_consequences": [
+        "No runtime pass/fail claim enters the final model; cases remain expectation evidence only."
+      ],
+      "replacement_ids": [
+
+      ]
+    },
+    {
+      "record_id": "TST-ED3BD4CF2F",
+      "disposition": "CONFIRMED",
+      "pass_1_record_ids": [
+        "TST-ED3BD4CF2F"
+      ],
+      "context_ids": [
+        "API-5E63FB46F2",
+        "INV-A59D85B29B"
+      ],
+      "user_context_evidence_ids": [
+
+      ],
+      "reviewer_work_unit_id": "WU-A182673A27",
+      "rationale": "Raw test source statically enumerates the recorded cases and expectations. The suite was not executed, so the Pass-1 STATICALLY_MAPPED classification and expectation-only authority are confirmed without any pass/fail claim.",
+      "assumptions_added": [
+
+      ],
+      "assumptions_removed": [
+
+      ],
+      "global_consequences": [
+        "No runtime pass/fail claim enters the final model; cases remain expectation evidence only."
+      ],
+      "replacement_ids": [
+
+      ]
+    },
+    {
+      "record_id": "UNR-0B3E825B88",
+      "disposition": "UNRESOLVED",
+      "pass_1_record_ids": [
+        "UNR-0B3E825B88"
+      ],
+      "context_ids": [
+        "ASM-0DCB6712DD"
+      ],
+      "user_context_evidence_ids": [
+
+      ],
+      "reviewer_work_unit_id": "WU-A182673A27",
+      "rationale": "Neither pinned source/tests nor the revision-bounded RFC/audit context supplies the required external fact or human decision. The unresolved item remains explicit, scoped, and non-duplicative of related assumptions, gaps, threats, and findings.",
+      "assumptions_added": [
+
+      ],
+      "assumptions_removed": [
+
+      ],
+      "global_consequences": [
+        "Final publication must retain the limitation and required context rather than infer a resolution."
+      ],
+      "replacement_ids": [
+
+      ]
+    },
+    {
+      "record_id": "UNR-13C729A54A",
+      "disposition": "UNRESOLVED",
+      "pass_1_record_ids": [
+        "UNR-13C729A54A"
+      ],
+      "context_ids": [
+        "INV-222CED01FB"
+      ],
+      "user_context_evidence_ids": [
+
+      ],
+      "reviewer_work_unit_id": "WU-A182673A27",
+      "rationale": "Neither pinned source/tests nor the revision-bounded RFC/audit context supplies the required external fact or human decision. The unresolved item remains explicit, scoped, and non-duplicative of related assumptions, gaps, threats, and findings.",
+      "assumptions_added": [
+
+      ],
+      "assumptions_removed": [
+
+      ],
+      "global_consequences": [
+        "Final publication must retain the limitation and required context rather than infer a resolution."
+      ],
+      "replacement_ids": [
+
+      ]
+    },
+    {
+      "record_id": "UNR-15F1A8EB0E",
+      "disposition": "UNRESOLVED",
+      "pass_1_record_ids": [
+        "UNR-15F1A8EB0E"
+      ],
+      "context_ids": [
+        "REQ-8AC636D92F"
+      ],
+      "user_context_evidence_ids": [
+        "EVD-0D50A0B3BE",
+        "EVD-C70801D35C"
+      ],
+      "reviewer_work_unit_id": "WU-A182673A27",
+      "rationale": "Neither pinned source/tests nor the revision-bounded RFC/audit context supplies the required external fact or human decision. The unresolved item remains explicit, scoped, and non-duplicative of related assumptions, gaps, threats, and findings.",
+      "assumptions_added": [
+
+      ],
+      "assumptions_removed": [
+
+      ],
+      "global_consequences": [
+        "Final publication must retain the limitation and required context rather than infer a resolution."
+      ],
+      "replacement_ids": [
+
+      ]
+    },
+    {
+      "record_id": "UNR-1733743332",
+      "disposition": "UNRESOLVED",
+      "pass_1_record_ids": [
+        "UNR-1733743332"
+      ],
+      "context_ids": [
+        "ASM-73AF207816"
+      ],
+      "user_context_evidence_ids": [
+
+      ],
+      "reviewer_work_unit_id": "WU-A182673A27",
+      "rationale": "Neither pinned source/tests nor the revision-bounded RFC/audit context supplies the required external fact or human decision. The unresolved item remains explicit, scoped, and non-duplicative of related assumptions, gaps, threats, and findings.",
+      "assumptions_added": [
+
+      ],
+      "assumptions_removed": [
+
+      ],
+      "global_consequences": [
+        "Final publication must retain the limitation and required context rather than infer a resolution."
+      ],
+      "replacement_ids": [
+
+      ]
+    },
+    {
+      "record_id": "UNR-20BC6033C1",
+      "disposition": "UNRESOLVED",
+      "pass_1_record_ids": [
+        "UNR-20BC6033C1"
+      ],
+      "context_ids": [
+        "UNR-BA7E7021CF",
+        "UNR-6384846777"
+      ],
+      "user_context_evidence_ids": [
+
+      ],
+      "reviewer_work_unit_id": "WU-A182673A27",
+      "rationale": "Neither pinned source/tests nor the revision-bounded RFC/audit context supplies the required external fact or human decision. The unresolved item remains explicit, scoped, and non-duplicative of related assumptions, gaps, threats, and findings.",
+      "assumptions_added": [
+
+      ],
+      "assumptions_removed": [
+
+      ],
+      "global_consequences": [
+        "Final publication must retain the limitation and required context rather than infer a resolution."
+      ],
+      "replacement_ids": [
+
+      ]
+    },
+    {
+      "record_id": "UNR-29788D0D91",
+      "disposition": "UNRESOLVED",
+      "pass_1_record_ids": [
+        "UNR-29788D0D91"
+      ],
+      "context_ids": [
+        "ASM-BD7E733FE5",
+        "SEC-FB542C27D2"
+      ],
+      "user_context_evidence_ids": [
+
+      ],
+      "reviewer_work_unit_id": "WU-A182673A27",
+      "rationale": "Neither pinned source/tests nor the revision-bounded RFC/audit context supplies the required external fact or human decision. The unresolved item remains explicit, scoped, and non-duplicative of related assumptions, gaps, threats, and findings.",
+      "assumptions_added": [
+
+      ],
+      "assumptions_removed": [
+
+      ],
+      "global_consequences": [
+        "Final publication must retain the limitation and required context rather than infer a resolution."
+      ],
+      "replacement_ids": [
+
+      ]
+    },
+    {
+      "record_id": "UNR-2C4BA211D7",
+      "disposition": "UNRESOLVED",
+      "pass_1_record_ids": [
+        "UNR-2C4BA211D7"
+      ],
+      "context_ids": [
+        "SEC-10182FB352",
+        "THR-0DEBF32E0A"
+      ],
+      "user_context_evidence_ids": [
+        "EVD-0D50A0B3BE",
+        "EVD-C70801D35C"
+      ],
+      "reviewer_work_unit_id": "WU-A182673A27",
+      "rationale": "Neither pinned source/tests nor the revision-bounded RFC/audit context supplies the required external fact or human decision. The unresolved item remains explicit, scoped, and non-duplicative of related assumptions, gaps, threats, and findings.",
+      "assumptions_added": [
+
+      ],
+      "assumptions_removed": [
+
+      ],
+      "global_consequences": [
+        "Final publication must retain the limitation and required context rather than infer a resolution."
+      ],
+      "replacement_ids": [
+
+      ]
+    },
+    {
+      "record_id": "UNR-3694303308",
+      "disposition": "UNRESOLVED",
+      "pass_1_record_ids": [
+        "UNR-3694303308"
+      ],
+      "context_ids": [
+        "SEC-B560A051DA",
+        "THR-C66F2EDB38"
+      ],
+      "user_context_evidence_ids": [
+
+      ],
+      "reviewer_work_unit_id": "WU-A182673A27",
+      "rationale": "Neither pinned source/tests nor the revision-bounded RFC/audit context supplies the required external fact or human decision. The unresolved item remains explicit, scoped, and non-duplicative of related assumptions, gaps, threats, and findings.",
+      "assumptions_added": [
+
+      ],
+      "assumptions_removed": [
+
+      ],
+      "global_consequences": [
+        "Final publication must retain the limitation and required context rather than infer a resolution."
+      ],
+      "replacement_ids": [
+
+      ]
+    },
+    {
+      "record_id": "UNR-3C529E3B2C",
+      "disposition": "UNRESOLVED",
+      "pass_1_record_ids": [
+        "UNR-3C529E3B2C"
+      ],
+      "context_ids": [
+        "REQ-E7F4E1ECAD"
+      ],
+      "user_context_evidence_ids": [
+        "EVD-0D50A0B3BE",
+        "EVD-C70801D35C"
+      ],
+      "reviewer_work_unit_id": "WU-A182673A27",
+      "rationale": "Neither pinned source/tests nor the revision-bounded RFC/audit context supplies the required external fact or human decision. The unresolved item remains explicit, scoped, and non-duplicative of related assumptions, gaps, threats, and findings.",
+      "assumptions_added": [
+
+      ],
+      "assumptions_removed": [
+
+      ],
+      "global_consequences": [
+        "Final publication must retain the limitation and required context rather than infer a resolution."
+      ],
+      "replacement_ids": [
+
+      ]
+    },
+    {
+      "record_id": "UNR-6384846777",
+      "disposition": "UNRESOLVED",
+      "pass_1_record_ids": [
+        "UNR-6384846777"
+      ],
+      "context_ids": [
+        "UNR-20BC6033C1"
+      ],
+      "user_context_evidence_ids": [
+
+      ],
+      "reviewer_work_unit_id": "WU-A182673A27",
+      "rationale": "Neither pinned source/tests nor the revision-bounded RFC/audit context supplies the required external fact or human decision. The unresolved item remains explicit, scoped, and non-duplicative of related assumptions, gaps, threats, and findings.",
+      "assumptions_added": [
+
+      ],
+      "assumptions_removed": [
+
+      ],
+      "global_consequences": [
+        "Final publication must retain the limitation and required context rather than infer a resolution."
+      ],
+      "replacement_ids": [
+
+      ]
+    },
+    {
+      "record_id": "UNR-72174E5C45",
+      "disposition": "UNRESOLVED",
+      "pass_1_record_ids": [
+        "UNR-72174E5C45"
+      ],
+      "context_ids": [
+        "SEC-E0D95AF002",
+        "THR-01539B0FF5"
+      ],
+      "user_context_evidence_ids": [
+
+      ],
+      "reviewer_work_unit_id": "WU-A182673A27",
+      "rationale": "Neither pinned source/tests nor the revision-bounded RFC/audit context supplies the required external fact or human decision. The unresolved item remains explicit, scoped, and non-duplicative of related assumptions, gaps, threats, and findings.",
+      "assumptions_added": [
+
+      ],
+      "assumptions_removed": [
+
+      ],
+      "global_consequences": [
+        "Final publication must retain the limitation and required context rather than infer a resolution."
+      ],
+      "replacement_ids": [
+
+      ]
+    },
+    {
+      "record_id": "UNR-743184E14A",
+      "disposition": "UNRESOLVED",
+      "pass_1_record_ids": [
+        "UNR-743184E14A"
+      ],
+      "context_ids": [
+        "GAP-1DC17F1884",
+        "ASM-39FFFFFD50"
+      ],
+      "user_context_evidence_ids": [
+
+      ],
+      "reviewer_work_unit_id": "WU-A182673A27",
+      "rationale": "Neither pinned source/tests nor the revision-bounded RFC/audit context supplies the required external fact or human decision. The unresolved item remains explicit, scoped, and non-duplicative of related assumptions, gaps, threats, and findings.",
+      "assumptions_added": [
+
+      ],
+      "assumptions_removed": [
+
+      ],
+      "global_consequences": [
+        "Final publication must retain the limitation and required context rather than infer a resolution."
+      ],
+      "replacement_ids": [
+
+      ]
+    },
+    {
+      "record_id": "UNR-9EEFA83E06",
+      "disposition": "UNRESOLVED",
+      "pass_1_record_ids": [
+        "UNR-9EEFA83E06"
+      ],
+      "context_ids": [
+        "SEC-F88596C819",
+        "THR-B55C2C8D2F"
+      ],
+      "user_context_evidence_ids": [
+
+      ],
+      "reviewer_work_unit_id": "WU-A182673A27",
+      "rationale": "Neither pinned source/tests nor the revision-bounded RFC/audit context supplies the required external fact or human decision. The unresolved item remains explicit, scoped, and non-duplicative of related assumptions, gaps, threats, and findings.",
+      "assumptions_added": [
+
+      ],
+      "assumptions_removed": [
+
+      ],
+      "global_consequences": [
+        "Final publication must retain the limitation and required context rather than infer a resolution."
+      ],
+      "replacement_ids": [
+
+      ]
+    },
+    {
+      "record_id": "UNR-BA7E7021CF",
+      "disposition": "UNRESOLVED",
+      "pass_1_record_ids": [
+        "UNR-BA7E7021CF"
+      ],
+      "context_ids": [
+        "UNR-20BC6033C1"
+      ],
+      "user_context_evidence_ids": [
+
+      ],
+      "reviewer_work_unit_id": "WU-A182673A27",
+      "rationale": "Neither pinned source/tests nor the revision-bounded RFC/audit context supplies the required external fact or human decision. The unresolved item remains explicit, scoped, and non-duplicative of related assumptions, gaps, threats, and findings.",
+      "assumptions_added": [
+
+      ],
+      "assumptions_removed": [
+
+      ],
+      "global_consequences": [
+        "Final publication must retain the limitation and required context rather than infer a resolution."
+      ],
+      "replacement_ids": [
+
+      ]
+    },
+    {
+      "record_id": "UNR-C23B2D9729",
+      "disposition": "UNRESOLVED",
+      "pass_1_record_ids": [
+        "UNR-C23B2D9729"
+      ],
+      "context_ids": [
+        "CMP-0F476A460D",
+        "CMP-5CAF19BDCD",
+        "CMP-7CC27EFA43"
+      ],
+      "user_context_evidence_ids": [
+
+      ],
+      "reviewer_work_unit_id": "WU-A182673A27",
+      "rationale": "Neither pinned source/tests nor the revision-bounded RFC/audit context supplies the required external fact or human decision. The unresolved item remains explicit, scoped, and non-duplicative of related assumptions, gaps, threats, and findings.",
+      "assumptions_added": [
+
+      ],
+      "assumptions_removed": [
+
+      ],
+      "global_consequences": [
+        "Final publication must retain the limitation and required context rather than infer a resolution."
+      ],
+      "replacement_ids": [
+
+      ]
+    },
+    {
+      "record_id": "UNR-C42A921AD9",
+      "disposition": "UNRESOLVED",
+      "pass_1_record_ids": [
+        "UNR-C42A921AD9"
+      ],
+      "context_ids": [
+        "SEC-BC2C476AE2",
+        "INV-A0200396FA"
+      ],
+      "user_context_evidence_ids": [
+
+      ],
+      "reviewer_work_unit_id": "WU-A182673A27",
+      "rationale": "Neither pinned source/tests nor the revision-bounded RFC/audit context supplies the required external fact or human decision. The unresolved item remains explicit, scoped, and non-duplicative of related assumptions, gaps, threats, and findings.",
+      "assumptions_added": [
+
+      ],
+      "assumptions_removed": [
+
+      ],
+      "global_consequences": [
+        "Final publication must retain the limitation and required context rather than infer a resolution."
+      ],
+      "replacement_ids": [
+
+      ]
+    },
+    {
+      "record_id": "UNR-D007DAF961",
+      "disposition": "UNRESOLVED",
+      "pass_1_record_ids": [
+        "UNR-D007DAF961"
+      ],
+      "context_ids": [
+        "SEC-EE4E9A7ADB",
+        "THR-56AA87E621"
+      ],
+      "user_context_evidence_ids": [
+        "EVD-0554D3710D",
+        "EVD-FB46967B48"
+      ],
+      "reviewer_work_unit_id": "WU-A182673A27",
+      "rationale": "Neither pinned source/tests nor the revision-bounded RFC/audit context supplies the required external fact or human decision. The unresolved item remains explicit, scoped, and non-duplicative of related assumptions, gaps, threats, and findings.",
+      "assumptions_added": [
+
+      ],
+      "assumptions_removed": [
+
+      ],
+      "global_consequences": [
+        "Final publication must retain the limitation and required context rather than infer a resolution."
+      ],
+      "replacement_ids": [
+
+      ]
+    },
+    {
+      "record_id": "UNR-D5F28B1A0D",
+      "disposition": "UNRESOLVED",
+      "pass_1_record_ids": [
+        "UNR-D5F28B1A0D"
+      ],
+      "context_ids": [
+        "SEC-EE4E9A7ADB",
+        "THR-56AA87E621"
+      ],
+      "user_context_evidence_ids": [
+
+      ],
+      "reviewer_work_unit_id": "WU-A182673A27",
+      "rationale": "Neither pinned source/tests nor the revision-bounded RFC/audit context supplies the required external fact or human decision. The unresolved item remains explicit, scoped, and non-duplicative of related assumptions, gaps, threats, and findings.",
+      "assumptions_added": [
+
+      ],
+      "assumptions_removed": [
+
+      ],
+      "global_consequences": [
+        "Final publication must retain the limitation and required context rather than infer a resolution."
+      ],
+      "replacement_ids": [
+
+      ]
+    },
+    {
+      "record_id": "UNR-F951787FC2",
+      "disposition": "UNRESOLVED",
+      "pass_1_record_ids": [
+        "UNR-F951787FC2"
+      ],
+      "context_ids": [
+        "SEC-F88596C819",
+        "THR-CD2BC0B163"
+      ],
+      "user_context_evidence_ids": [
+
+      ],
+      "reviewer_work_unit_id": "WU-A182673A27",
+      "rationale": "Neither pinned source/tests nor the revision-bounded RFC/audit context supplies the required external fact or human decision. The unresolved item remains explicit, scoped, and non-duplicative of related assumptions, gaps, threats, and findings.",
+      "assumptions_added": [
+
+      ],
+      "assumptions_removed": [
+
+      ],
+      "global_consequences": [
+        "Final publication must retain the limitation and required context rather than infer a resolution."
+      ],
+      "replacement_ids": [
+
+      ]
+    }
+  ]
+}

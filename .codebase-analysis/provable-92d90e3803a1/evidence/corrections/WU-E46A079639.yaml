@@ -1,0 +1,5692 @@
+{
+  "bundle": {
+    "schema_version": 1,
+    "work_unit": "WU-E46A079639",
+    "revision": "1e27b1aea88f5ea2764db96e4b337b24fe6dbeb3",
+    "scope_hash": "f40d76b91ec3cd8805ecdc7bebba8d43b8f317842639a7799738c37569119ab1",
+    "pass_2_sha256": "645101d2946d908ab1e200b78048e56957cdd63daa1f872c81897d1e83618897",
+    "role": "challenge",
+    "status": "COMPLETE",
+    "source_hashes": {
+      "SCOPE.yaml": "9344afe7d4f90951790c715b8f7ef9992aad0364510f045fedd6ea640df2ec35",
+      "model/pass-1.yaml": "1baa122bc91838a651da0116040b290de56f49b90e1c8688ba3712e0db7c6213",
+      "model/context.yaml": "b08ad4cfef37e8a2f19bb2dd46d69763312a48e00e6204e7f8ec30a291afdfd1",
+      "model/pass-2-contextual-corrected.yaml": "645101d2946d908ab1e200b78048e56957cdd63daa1f872c81897d1e83618897",
+      "context/RFC_EXTRACT.md": "84a7528617db2baebfd1d5a0170b11cf639bd52fb61f05c69c555ac5255c46a0",
+      "context/ZKSECURITY_AUDIT_INDEX.md": "8768353f7bdab76dd93067ddb5df8c749bb37e974232dfcfc397dabcd2ae60cb",
+      "work-units/WU-E46A079639.yaml": "81fe536f43a48b4de544b817f41ac278383e72addb01911628d6e4fc742fa6d6"
+    },
+    "ownership": {
+      "primary_paths": [],
+      "record_ids": [],
+      "stable_key_prefixes": [
+        "requirement:",
+        "test:",
+        "finding:",
+        "gap:"
+      ]
+    },
+    "assumptions": [],
+    "observations": [
+      {
+        "kind": "REQUIREMENT_TRACEABILITY_ADJUDICATION",
+        "details": {
+          "total_current": 30,
+          "after_patch": {
+            "both_nonempty": 22,
+            "implementation_only": 1,
+            "test_only": 1,
+            "intentionally_both_empty": 6
+          },
+          "intentionally_unchanged": [
+            {
+              "id": "REQ-E7F4E1ECAD",
+              "reason": "Optional or future functionality remains unimplemented and untested in the pinned scope."
+            },
+            {
+              "id": "REQ-948F2AA498",
+              "reason": "Optional or future functionality remains unimplemented and untested in the pinned scope."
+            },
+            {
+              "id": "REQ-FBC7A8913A",
+              "reason": "Optional or future functionality remains unimplemented and untested in the pinned scope."
+            },
+            {
+              "id": "REQ-3E7C685492",
+              "reason": "Optional or future functionality remains unimplemented and untested in the pinned scope."
+            },
+            {
+              "id": "REQ-1E02AF2B34",
+              "reason": "Deployment or policy evidence is outside the pinned static scope; no implementation or test link is claimed."
+            },
+            {
+              "id": "REQ-230AF0D420",
+              "reason": "Deployment or policy evidence is outside the pinned static scope; no implementation or test link is claimed."
+            }
+          ],
+          "partial_links": [
+            {
+              "id": "REQ-1EEFCCC541",
+              "reason": "Local API/test links do not establish protocol runtime or deployed verification behavior."
+            },
+            {
+              "id": "REQ-583E087F5C",
+              "reason": "Local program/API/test links do not establish self-hosting, production capacity, or operational availability."
+            },
+            {
+              "id": "REQ-12FA8872CA",
+              "reason": "The integration expectation is linked, but no implementation ID establishes completed external audit or devnet deployment."
+            },
+            {
+              "id": "REQ-87F314C527",
+              "reason": "Current payout semantics cover MINA only; custom-token support is absent."
+            }
+          ]
+        }
+      },
+      {
+        "kind": "TEST_CASE_SEMANTIC_TARGET_ADJUDICATION",
+        "details": {
+          "total_current_suites": 8,
+          "total_current_cases": 95,
+          "active_cases": 94,
+          "skipped_cases": 1,
+          "target_arrays_changed": 90,
+          "unchanged_api_only_cases": 5,
+          "exactly_mapped_cases": 86,
+          "partial_mapping_cases": 9,
+          "partial_cases": [
+            {
+              "suite_id": "TST-5FC61A24DA",
+              "case_index": 0,
+              "name": "compile",
+              "reason": "Compilation asserts an API artifact but no individual BHV/CL/INV/FLW outcome."
+            },
+            {
+              "suite_id": "TST-5FC61A24DA",
+              "case_index": 18,
+              "name": "requireNotPaused allows unpaused state",
+              "reason": "The current canonical model has no distinct positive requireNotPaused semantic record."
+            },
+            {
+              "suite_id": "TST-D1863E1F8D",
+              "case_index": 26,
+              "name": "empty participant list fails",
+              "reason": "The broad failure oracle does not isolate which fixed-witness or threshold constraint rejects."
+            },
+            {
+              "suite_id": "TST-D1863E1F8D",
+              "case_index": 27,
+              "name": "short public-key list fails",
+              "reason": "The broad failure oracle does not isolate which fixed-witness or threshold constraint rejects."
+            },
+            {
+              "suite_id": "TST-5A6CA56CD8",
+              "case_index": 0,
+              "name": "compile",
+              "reason": "Compilation asserts an API artifact but no individual program semantic outcome."
+            },
+            {
+              "suite_id": "TST-A696D485D6",
+              "case_index": 0,
+              "name": "should compile",
+              "reason": "Compilation asserts an API artifact but no individual owner semantic outcome."
+            },
+            {
+              "suite_id": "TST-A696D485D6",
+              "case_index": 5,
+              "name": "should commit action state",
+              "reason": "The case exercises several proof helpers but its assertions do not close every helper outcome."
+            },
+            {
+              "suite_id": "TST-A9E4F4D3BC",
+              "case_index": 0,
+              "name": "compile",
+              "reason": "Compilation asserts an API artifact but no individual reducer semantic outcome."
+            },
+            {
+              "suite_id": "TST-A9E4F4D3BC",
+              "case_index": 7,
+              "name": "out-of-range vote value",
+              "reason": "The case is explicitly skipped; semantic targets describe intended checked behavior, not an active oracle."
+            }
+          ],
+          "reviewed_suite_semantic_status_changes": 0,
+          "per_case_status_field": "semantic_target_status"
+        }
+      },
+      {
+        "kind": "NONCANONICAL_PHASE_6_CANDIDATE_ADJUDICATION",
+        "details": {
+          "stable_key": "finding:qa:treasury-owner:unused-proposal-verification-key-static",
+          "disposition": "NONCANONICAL_PHASE_6_AUTHOR_DECISION",
+          "proposed_kind": "INFORMATIONAL_CONFIGURATION_TESTABILITY",
+          "canonical_finding_created": false,
+          "canonical_refs": [
+            "API-3E2D8706B3",
+            "BHV-80247CE73D",
+            "TST-A696D485D6",
+            "ASM-FF091135AE",
+            "UNR-C42A921AD9"
+          ],
+          "rationale": "TreasuryOwnerSmartContract.proposalContractVerificationKey is declared and assigned by the integration setup, while createProposal installs TreasuryProposalSmartContract._verificationKey directly. The Phase-6 security review did not promote this observation and it has no reviewed canonical finding lineage, so it remains a noncanonical author decision rather than a new finding.",
+          "author_question": "Should proposalContractVerificationKey be removed as dead configuration, or should createProposal intentionally consume it and bind deployment configuration to that value?",
+          "evidence_ids": [
+            "EVD-E95EC38949",
+            "EVD-2E424CAB76"
+          ],
+          "source_references": [
+            "packages/sdk/src/provable/contracts/treasury-owner.ts:65",
+            "packages/sdk/src/provable/contracts/treasury-owner.ts:247",
+            "packages/sdk/test/integration/treasury-owner.test.ts:199",
+            "evidence/contextual/WU-367D918B22.yaml"
+          ],
+          "limitation": "No target TypeScript, compilation, proof, test, deployment, or runtime behavior was executed."
+        }
+      }
+    ],
+    "coverage": {
+      "current_requirements": 30,
+      "current_test_suites": 8,
+      "current_test_cases": 95,
+      "active_test_cases": 94,
+      "skipped_test_cases": 1,
+      "current_findings": 49,
+      "current_gaps": 37
+    },
+    "patch_contract": {
+      "apply_to": "model/pass-2-contextual-corrected.yaml",
+      "deep_old_equality_required": true,
+      "cases_guarded_by": "SHA256(JSON.stringify(oldCases))",
+      "new_fields_require_absent_before": true,
+      "null_does_not_mean_absent": true,
+      "only_actual_changes": true,
+      "reviewed_suite_semantic_status_changes": 0,
+      "assertion_or_effective_conclusion_rewrites": false
+    },
+    "validation": {
+      "yaml_parse": "OK",
+      "canonical_id_membership": "OK",
+      "record_and_case_counts": "OK",
+      "old_value_deep_equality": "OK",
+      "cases_old_sha256": "OK",
+      "replay": "OK",
+      "input_hash_recheck": "OK",
+      "target_typescript_tests_builds_proofs_executed": false
+    },
+    "change_summary": {
+      "change_records": 78,
+      "requirement_records_changed": 24,
+      "finding_records_changed": 9,
+      "gap_records_changed": 37,
+      "test_suite_records_changed": 8,
+      "test_case_arrays_replaced": 8,
+      "test_case_target_arrays_changed": 90,
+      "reviewed_suite_semantic_statuses_changed": 0,
+      "per_case_semantic_target_statuses_added": 95,
+      "new_gap_fields_added": 18,
+      "fields_removed": 0,
+      "assertions_rewritten": 0,
+      "effective_conclusions_rewritten": 0
+    }
+  },
+  "changes": [
+    {
+      "group": "requirements",
+      "record_id": "REQ-998DF345BB",
+      "old": {
+        "implementation_ids": [],
+        "test_ids": []
+      },
+      "set": {
+        "implementation_ids": [
+          "BHV-80247CE73D",
+          "BHV-F2207732B4",
+          "FLW-6394A1B72B",
+          "FLW-9D28A6D299"
+        ],
+        "test_ids": [
+          "TST-A696D485D6"
+        ]
+      },
+      "rationale": "Links the documented requirement only to current canonical implementation and expectation records supported by the pinned source, RFC, and test anchors; omitted fields remain intentionally unresolved.",
+      "evidence_ids": [
+        "EVD-C70801D35C"
+      ],
+      "source_references": [
+        "context/RFC_EXTRACT.md",
+        "model/pass-2-contextual-corrected.yaml"
+      ]
+    },
+    {
+      "group": "requirements",
+      "record_id": "REQ-8BFD766005",
+      "old": {
+        "implementation_ids": [],
+        "test_ids": []
+      },
+      "set": {
+        "implementation_ids": [
+          "FLW-21AF7F4E4D",
+          "FLW-5AA543472A",
+          "FLW-745B097927"
+        ],
+        "test_ids": [
+          "TST-5FC61A24DA",
+          "TST-D1863E1F8D"
+        ]
+      },
+      "rationale": "Links the documented requirement only to current canonical implementation and expectation records supported by the pinned source, RFC, and test anchors; omitted fields remain intentionally unresolved.",
+      "evidence_ids": [
+        "EVD-C70801D35C"
+      ],
+      "source_references": [
+        "context/RFC_EXTRACT.md",
+        "model/pass-2-contextual-corrected.yaml"
+      ]
+    },
+    {
+      "group": "requirements",
+      "record_id": "REQ-8AC636D92F",
+      "old": {
+        "implementation_ids": [],
+        "test_ids": []
+      },
+      "set": {
+        "implementation_ids": [
+          "FLW-6394A1B72B",
+          "FLW-A6B92A4E6D",
+          "FLW-5E24C8B8E4",
+          "FLW-9D28A6D299"
+        ],
+        "test_ids": [
+          "TST-A696D485D6"
+        ]
+      },
+      "rationale": "Links the documented requirement only to current canonical implementation and expectation records supported by the pinned source, RFC, and test anchors; omitted fields remain intentionally unresolved.",
+      "evidence_ids": [
+        "EVD-C70801D35C"
+      ],
+      "source_references": [
+        "context/RFC_EXTRACT.md",
+        "model/pass-2-contextual-corrected.yaml"
+      ]
+    },
+    {
+      "group": "requirements",
+      "record_id": "REQ-F8D28DBFF5",
+      "old": {
+        "implementation_ids": [],
+        "test_ids": []
+      },
+      "set": {
+        "implementation_ids": [
+          "BHV-5095682725",
+          "FLW-5E24C8B8E4",
+          "FLW-9D28A6D299"
+        ],
+        "test_ids": [
+          "TST-A696D485D6"
+        ]
+      },
+      "rationale": "Links the documented requirement only to current canonical implementation and expectation records supported by the pinned source, RFC, and test anchors; omitted fields remain intentionally unresolved.",
+      "evidence_ids": [
+        "EVD-C70801D35C"
+      ],
+      "source_references": [
+        "context/RFC_EXTRACT.md",
+        "model/pass-2-contextual-corrected.yaml"
+      ]
+    },
+    {
+      "group": "requirements",
+      "record_id": "REQ-9DEF6918CA",
+      "old": {
+        "implementation_ids": [],
+        "test_ids": []
+      },
+      "set": {
+        "implementation_ids": [
+          "BHV-8E9F5C3ECE",
+          "BHV-C01A568AAE"
+        ],
+        "test_ids": [
+          "TST-A696D485D6"
+        ]
+      },
+      "rationale": "Links the documented requirement only to current canonical implementation and expectation records supported by the pinned source, RFC, and test anchors; omitted fields remain intentionally unresolved.",
+      "evidence_ids": [
+        "EVD-C70801D35C"
+      ],
+      "source_references": [
+        "context/RFC_EXTRACT.md",
+        "model/pass-2-contextual-corrected.yaml"
+      ]
+    },
+    {
+      "group": "requirements",
+      "record_id": "REQ-EAE9049742",
+      "old": {
+        "implementation_ids": []
+      },
+      "set": {
+        "implementation_ids": [
+          "BHV-5095682725",
+          "FLW-A6B92A4E6D"
+        ]
+      },
+      "rationale": "Links the documented requirement only to current canonical implementation and expectation records supported by the pinned source, RFC, and test anchors; omitted fields remain intentionally unresolved.",
+      "evidence_ids": [
+        "EVD-C70801D35C"
+      ],
+      "source_references": [
+        "context/RFC_EXTRACT.md",
+        "model/pass-2-contextual-corrected.yaml"
+      ]
+    },
+    {
+      "group": "requirements",
+      "record_id": "REQ-529C5F460D",
+      "old": {
+        "implementation_ids": [],
+        "test_ids": []
+      },
+      "set": {
+        "implementation_ids": [
+          "FLW-A565B35EC6",
+          "FLW-7DA083B071",
+          "FLW-53B4410963",
+          "FLW-5E24C8B8E4"
+        ],
+        "test_ids": [
+          "TST-5A6CA56CD8",
+          "TST-A696D485D6"
+        ]
+      },
+      "rationale": "Links the documented requirement only to current canonical implementation and expectation records supported by the pinned source, RFC, and test anchors; omitted fields remain intentionally unresolved.",
+      "evidence_ids": [
+        "EVD-C70801D35C"
+      ],
+      "source_references": [
+        "context/RFC_EXTRACT.md",
+        "model/pass-2-contextual-corrected.yaml"
+      ]
+    },
+    {
+      "group": "requirements",
+      "record_id": "REQ-8671471176",
+      "old": {
+        "implementation_ids": [],
+        "test_ids": []
+      },
+      "set": {
+        "implementation_ids": [
+          "FLW-A6B92A4E6D",
+          "FLW-BFD5C6D535",
+          "FLW-9BB4E99B75",
+          "FLW-5E24C8B8E4"
+        ],
+        "test_ids": [
+          "TST-A9E4F4D3BC",
+          "TST-A696D485D6"
+        ]
+      },
+      "rationale": "Links the documented requirement only to current canonical implementation and expectation records supported by the pinned source, RFC, and test anchors; omitted fields remain intentionally unresolved.",
+      "evidence_ids": [
+        "EVD-C70801D35C"
+      ],
+      "source_references": [
+        "context/RFC_EXTRACT.md",
+        "model/pass-2-contextual-corrected.yaml"
+      ]
+    },
+    {
+      "group": "requirements",
+      "record_id": "REQ-80815948D4",
+      "old": {
+        "implementation_ids": [],
+        "test_ids": []
+      },
+      "set": {
+        "implementation_ids": [
+          "BHV-C0141CC000",
+          "BHV-5095682725"
+        ],
+        "test_ids": [
+          "TST-A696D485D6"
+        ]
+      },
+      "rationale": "Links the documented requirement only to current canonical implementation and expectation records supported by the pinned source, RFC, and test anchors; omitted fields remain intentionally unresolved.",
+      "evidence_ids": [
+        "EVD-C70801D35C"
+      ],
+      "source_references": [
+        "context/RFC_EXTRACT.md",
+        "model/pass-2-contextual-corrected.yaml"
+      ]
+    },
+    {
+      "group": "requirements",
+      "record_id": "REQ-74C4827C5B",
+      "old": {
+        "implementation_ids": [],
+        "test_ids": []
+      },
+      "set": {
+        "implementation_ids": [
+          "BHV-B377C55F96",
+          "BHV-A302A43C9F",
+          "FLW-E60ABD1745"
+        ],
+        "test_ids": [
+          "TST-6530589740",
+          "TST-A696D485D6"
+        ]
+      },
+      "rationale": "Links the documented requirement only to current canonical implementation and expectation records supported by the pinned source, RFC, and test anchors; omitted fields remain intentionally unresolved.",
+      "evidence_ids": [
+        "EVD-C70801D35C"
+      ],
+      "source_references": [
+        "context/RFC_EXTRACT.md",
+        "model/pass-2-contextual-corrected.yaml"
+      ]
+    },
+    {
+      "group": "requirements",
+      "record_id": "REQ-1EEFCCC541",
+      "old": {
+        "implementation_ids": [],
+        "test_ids": []
+      },
+      "set": {
+        "implementation_ids": [
+          "API-3E2D8706B3",
+          "API-FD75421927",
+          "API-FD2A8AB499",
+          "API-702CAD321E",
+          "API-2E2E88515C"
+        ],
+        "test_ids": [
+          "TST-5FC61A24DA",
+          "TST-5A6CA56CD8",
+          "TST-A696D485D6",
+          "TST-A9E4F4D3BC"
+        ]
+      },
+      "rationale": "Links the documented requirement only to current canonical implementation and expectation records supported by the pinned source, RFC, and test anchors; omitted fields remain intentionally unresolved.",
+      "evidence_ids": [
+        "EVD-C70801D35C"
+      ],
+      "source_references": [
+        "context/RFC_EXTRACT.md",
+        "model/pass-2-contextual-corrected.yaml"
+      ]
+    },
+    {
+      "group": "requirements",
+      "record_id": "REQ-B5E5D97336",
+      "old": {
+        "implementation_ids": [],
+        "test_ids": []
+      },
+      "set": {
+        "implementation_ids": [
+          "BHV-141ED40E5D",
+          "CL-9C7B0C38F5",
+          "CL-61EF5A92CB",
+          "INV-E1381514EB",
+          "FLW-BFD5C6D535"
+        ],
+        "test_ids": [
+          "TST-A9E4F4D3BC"
+        ]
+      },
+      "rationale": "Links the documented requirement only to current canonical implementation and expectation records supported by the pinned source, RFC, and test anchors; omitted fields remain intentionally unresolved.",
+      "evidence_ids": [
+        "EVD-C70801D35C"
+      ],
+      "source_references": [
+        "context/RFC_EXTRACT.md",
+        "model/pass-2-contextual-corrected.yaml"
+      ]
+    },
+    {
+      "group": "requirements",
+      "record_id": "REQ-583E087F5C",
+      "old": {
+        "implementation_ids": [],
+        "test_ids": []
+      },
+      "set": {
+        "implementation_ids": [
+          "API-702CAD321E",
+          "API-2E2E88515C",
+          "API-3E2D8706B3"
+        ],
+        "test_ids": [
+          "TST-5A6CA56CD8",
+          "TST-A9E4F4D3BC",
+          "TST-A696D485D6"
+        ]
+      },
+      "rationale": "Links the documented requirement only to current canonical implementation and expectation records supported by the pinned source, RFC, and test anchors; omitted fields remain intentionally unresolved.",
+      "evidence_ids": [
+        "EVD-C70801D35C"
+      ],
+      "source_references": [
+        "context/RFC_EXTRACT.md",
+        "model/pass-2-contextual-corrected.yaml"
+      ]
+    },
+    {
+      "group": "requirements",
+      "record_id": "REQ-B3FFF31BC9",
+      "old": {
+        "implementation_ids": [],
+        "test_ids": []
+      },
+      "set": {
+        "implementation_ids": [
+          "BHV-5D3FCC7B93",
+          "BHV-F2207732B4",
+          "FLW-9D28A6D299"
+        ],
+        "test_ids": [
+          "TST-A696D485D6"
+        ]
+      },
+      "rationale": "Links the documented requirement only to current canonical implementation and expectation records supported by the pinned source, RFC, and test anchors; omitted fields remain intentionally unresolved.",
+      "evidence_ids": [
+        "EVD-C70801D35C"
+      ],
+      "source_references": [
+        "context/RFC_EXTRACT.md",
+        "model/pass-2-contextual-corrected.yaml"
+      ]
+    },
+    {
+      "group": "requirements",
+      "record_id": "REQ-12FA8872CA",
+      "old": {
+        "test_ids": []
+      },
+      "set": {
+        "test_ids": [
+          "TST-A696D485D6"
+        ]
+      },
+      "rationale": "Links the documented requirement only to current canonical implementation and expectation records supported by the pinned source, RFC, and test anchors; omitted fields remain intentionally unresolved.",
+      "evidence_ids": [
+        "EVD-C70801D35C"
+      ],
+      "source_references": [
+        "context/RFC_EXTRACT.md",
+        "model/pass-2-contextual-corrected.yaml"
+      ]
+    },
+    {
+      "group": "requirements",
+      "record_id": "REQ-4F1B35FCAA",
+      "old": {
+        "implementation_ids": [],
+        "test_ids": []
+      },
+      "set": {
+        "implementation_ids": [
+          "BHV-80247CE73D",
+          "FLW-6394A1B72B"
+        ],
+        "test_ids": [
+          "TST-A696D485D6"
+        ]
+      },
+      "rationale": "Links the documented requirement only to current canonical implementation and expectation records supported by the pinned source, RFC, and test anchors; omitted fields remain intentionally unresolved.",
+      "evidence_ids": [
+        "EVD-C70801D35C"
+      ],
+      "source_references": [
+        "context/RFC_EXTRACT.md",
+        "model/pass-2-contextual-corrected.yaml"
+      ]
+    },
+    {
+      "group": "requirements",
+      "record_id": "REQ-740285CD08",
+      "old": {
+        "implementation_ids": [],
+        "test_ids": []
+      },
+      "set": {
+        "implementation_ids": [
+          "BHV-5095682725",
+          "BHV-80247CE73D",
+          "CL-EA98E3F196",
+          "FLW-6394A1B72B"
+        ],
+        "test_ids": [
+          "TST-A696D485D6"
+        ]
+      },
+      "rationale": "Links the documented requirement only to current canonical implementation and expectation records supported by the pinned source, RFC, and test anchors; omitted fields remain intentionally unresolved.",
+      "evidence_ids": [
+        "EVD-C70801D35C"
+      ],
+      "source_references": [
+        "context/RFC_EXTRACT.md",
+        "model/pass-2-contextual-corrected.yaml"
+      ]
+    },
+    {
+      "group": "requirements",
+      "record_id": "REQ-989D12F5D3",
+      "old": {
+        "implementation_ids": [],
+        "test_ids": []
+      },
+      "set": {
+        "implementation_ids": [
+          "BHV-80247CE73D",
+          "CL-EBC2FA7E3D",
+          "FLW-6394A1B72B"
+        ],
+        "test_ids": [
+          "TST-A696D485D6"
+        ]
+      },
+      "rationale": "Links the documented requirement only to current canonical implementation and expectation records supported by the pinned source, RFC, and test anchors; omitted fields remain intentionally unresolved.",
+      "evidence_ids": [
+        "EVD-C70801D35C"
+      ],
+      "source_references": [
+        "context/RFC_EXTRACT.md",
+        "model/pass-2-contextual-corrected.yaml"
+      ]
+    },
+    {
+      "group": "requirements",
+      "record_id": "REQ-1EEDB7A733",
+      "old": {
+        "implementation_ids": [],
+        "test_ids": []
+      },
+      "set": {
+        "implementation_ids": [
+          "FLW-6394A1B72B",
+          "FLW-A6B92A4E6D",
+          "FLW-5E24C8B8E4",
+          "FLW-9D28A6D299"
+        ],
+        "test_ids": [
+          "TST-5A6CA56CD8",
+          "TST-A9E4F4D3BC",
+          "TST-A696D485D6"
+        ]
+      },
+      "rationale": "Links the documented requirement only to current canonical implementation and expectation records supported by the pinned source, RFC, and test anchors; omitted fields remain intentionally unresolved.",
+      "evidence_ids": [
+        "EVD-C70801D35C"
+      ],
+      "source_references": [
+        "context/RFC_EXTRACT.md",
+        "model/pass-2-contextual-corrected.yaml"
+      ]
+    },
+    {
+      "group": "requirements",
+      "record_id": "REQ-15F6A20397",
+      "old": {
+        "implementation_ids": [],
+        "test_ids": []
+      },
+      "set": {
+        "implementation_ids": [
+          "BHV-B377C55F96",
+          "BHV-A302A43C9F",
+          "BHV-1136BD4D08",
+          "CL-A9E8CDAD73"
+        ],
+        "test_ids": [
+          "TST-6530589740",
+          "TST-A696D485D6"
+        ]
+      },
+      "rationale": "Links the documented requirement only to current canonical implementation and expectation records supported by the pinned source, RFC, and test anchors; omitted fields remain intentionally unresolved.",
+      "evidence_ids": [
+        "EVD-C70801D35C"
+      ],
+      "source_references": [
+        "context/RFC_EXTRACT.md",
+        "model/pass-2-contextual-corrected.yaml"
+      ]
+    },
+    {
+      "group": "requirements",
+      "record_id": "REQ-D100BF5A33",
+      "old": {
+        "implementation_ids": [],
+        "test_ids": []
+      },
+      "set": {
+        "implementation_ids": [
+          "BHV-C01A568AAE",
+          "FLW-7DA083B071"
+        ],
+        "test_ids": [
+          "TST-5A6CA56CD8",
+          "TST-A696D485D6"
+        ]
+      },
+      "rationale": "Links the documented requirement only to current canonical implementation and expectation records supported by the pinned source, RFC, and test anchors; omitted fields remain intentionally unresolved.",
+      "evidence_ids": [
+        "EVD-C70801D35C"
+      ],
+      "source_references": [
+        "context/RFC_EXTRACT.md",
+        "model/pass-2-contextual-corrected.yaml"
+      ]
+    },
+    {
+      "group": "requirements",
+      "record_id": "REQ-87F314C527",
+      "old": {
+        "implementation_ids": [],
+        "test_ids": []
+      },
+      "set": {
+        "implementation_ids": [
+          "BHV-5D3FCC7B93",
+          "BHV-F2207732B4",
+          "FLW-9D28A6D299"
+        ],
+        "test_ids": [
+          "TST-A696D485D6"
+        ]
+      },
+      "rationale": "Links the documented requirement only to current canonical implementation and expectation records supported by the pinned source, RFC, and test anchors; omitted fields remain intentionally unresolved.",
+      "evidence_ids": [
+        "EVD-C70801D35C"
+      ],
+      "source_references": [
+        "context/RFC_EXTRACT.md",
+        "model/pass-2-contextual-corrected.yaml"
+      ]
+    },
+    {
+      "group": "requirements",
+      "record_id": "REQ-632DB8C787",
+      "old": {
+        "implementation_ids": [],
+        "test_ids": []
+      },
+      "set": {
+        "implementation_ids": [
+          "BHV-5095682725",
+          "BHV-8E9F5C3ECE",
+          "FLW-A6B92A4E6D"
+        ],
+        "test_ids": [
+          "TST-A696D485D6"
+        ]
+      },
+      "rationale": "Links the documented requirement only to current canonical implementation and expectation records supported by the pinned source, RFC, and test anchors; omitted fields remain intentionally unresolved.",
+      "evidence_ids": [
+        "EVD-C70801D35C"
+      ],
+      "source_references": [
+        "context/RFC_EXTRACT.md",
+        "model/pass-2-contextual-corrected.yaml"
+      ]
+    },
+    {
+      "group": "requirements",
+      "record_id": "REQ-AFB190A0FA",
+      "old": {
+        "implementation_ids": [],
+        "test_ids": []
+      },
+      "set": {
+        "implementation_ids": [
+          "BHV-CEE91EC6D9",
+          "BHV-50C1B246E0",
+          "CL-72C688955E",
+          "CL-034C97475E"
+        ],
+        "test_ids": [
+          "TST-A9E4F4D3BC",
+          "TST-A696D485D6"
+        ]
+      },
+      "rationale": "Links the documented requirement only to current canonical implementation and expectation records supported by the pinned source, RFC, and test anchors; omitted fields remain intentionally unresolved.",
+      "evidence_ids": [
+        "EVD-C70801D35C"
+      ],
+      "source_references": [
+        "context/RFC_EXTRACT.md",
+        "model/pass-2-contextual-corrected.yaml"
+      ]
+    },
+    {
+      "group": "findings",
+      "record_id": "FND-7BE7D38B6B",
+      "old": {
+        "scope_limitations": []
+      },
+      "set": {
+        "scope_limitations": [
+          "The prior-audit severity and disposition are revision-bounded; proposer, bond payer, and recipient identities and deployed transaction behavior were not dynamically established."
+        ]
+      },
+      "rationale": "Adds a conservative trigger prerequisite or verification boundary derived from the finding's existing assertion, evidence, and Phase-6 review without changing the assertion or effective conclusion.",
+      "evidence_ids": [
+        "EVD-FB46967B48",
+        "EVD-94B958AAA8",
+        "EVD-C70801D35C"
+      ],
+      "source_references": [
+        "model/pass-2-contextual-corrected.yaml",
+        "evidence/contextual/WU-367D918B22.yaml"
+      ]
+    },
+    {
+      "group": "findings",
+      "record_id": "FND-BF3449506D",
+      "old": {
+        "scope_limitations": []
+      },
+      "set": {
+        "scope_limitations": [
+          "The active suite does not exercise the skipped invalid-value case or establish production vote-entry behavior; runtime and proof behavior were not executed."
+        ]
+      },
+      "rationale": "Adds a conservative trigger prerequisite or verification boundary derived from the finding's existing assertion, evidence, and Phase-6 review without changing the assertion or effective conclusion.",
+      "evidence_ids": [
+        "EVD-FB46967B48",
+        "EVD-05B8A4E6FF",
+        "EVD-C70801D35C"
+      ],
+      "source_references": [
+        "model/pass-2-contextual-corrected.yaml",
+        "evidence/contextual/WU-367D918B22.yaml"
+      ]
+    },
+    {
+      "group": "findings",
+      "record_id": "FND-7D495DBE3F",
+      "old": {
+        "prerequisites": [],
+        "scope_limitations": []
+      },
+      "set": {
+        "prerequisites": [
+          "The current tallyVotes implementation contains both source-visible fromActionsHash equality assertions."
+        ],
+        "scope_limitations": [
+          "No constraint count or proving-cost impact was measured; this is a source-visible redundancy observation."
+        ]
+      },
+      "rationale": "Adds a conservative trigger prerequisite or verification boundary derived from the finding's existing assertion, evidence, and Phase-6 review without changing the assertion or effective conclusion.",
+      "evidence_ids": [
+        "EVD-FB46967B48",
+        "EVD-B964F79D31"
+      ],
+      "source_references": [
+        "model/pass-2-contextual-corrected.yaml",
+        "evidence/contextual/WU-367D918B22.yaml"
+      ]
+    },
+    {
+      "group": "findings",
+      "record_id": "FND-30B94DCCE0",
+      "old": {
+        "prerequisites": []
+      },
+      "set": {
+        "prerequisites": [
+          "The Owner tally path passes the same vote and staking proof objects into the nested Proposal tally after Owner-level verification."
+        ]
+      },
+      "rationale": "Adds a conservative trigger prerequisite or verification boundary derived from the finding's existing assertion, evidence, and Phase-6 review without changing the assertion or effective conclusion.",
+      "evidence_ids": [
+        "EVD-FB46967B48",
+        "EVD-B964F79D31"
+      ],
+      "source_references": [
+        "model/pass-2-contextual-corrected.yaml",
+        "evidence/contextual/WU-367D918B22.yaml"
+      ]
+    },
+    {
+      "group": "findings",
+      "record_id": "FND-3B35F91A1C",
+      "old": {
+        "scope_limitations": []
+      },
+      "set": {
+        "scope_limitations": [
+          "No enum-value or app-state-layout change was observed or executed; the stated impact is conditional on a future maintenance change."
+        ]
+      },
+      "rationale": "Adds a conservative trigger prerequisite or verification boundary derived from the finding's existing assertion, evidence, and Phase-6 review without changing the assertion or effective conclusion.",
+      "evidence_ids": [
+        "EVD-FB46967B48",
+        "EVD-C3C25357D4"
+      ],
+      "source_references": [
+        "model/pass-2-contextual-corrected.yaml",
+        "evidence/contextual/WU-367D918B22.yaml"
+      ]
+    },
+    {
+      "group": "findings",
+      "record_id": "FND-8467BE9FD1",
+      "old": {
+        "scope_limitations": []
+      },
+      "set": {
+        "scope_limitations": [
+          "REMEDIATED_STATICALLY is limited to the pinned source revision; deployed bytecode, verification keys, account state, and runtime proof behavior were not verified."
+        ]
+      },
+      "rationale": "Adds a conservative trigger prerequisite or verification boundary derived from the finding's existing assertion, evidence, and Phase-6 review without changing the assertion or effective conclusion.",
+      "evidence_ids": [
+        "EVD-FB46967B48",
+        "EVD-5099700F2E"
+      ],
+      "source_references": [
+        "model/pass-2-contextual-corrected.yaml",
+        "evidence/contextual/WU-367D918B22.yaml"
+      ]
+    },
+    {
+      "group": "findings",
+      "record_id": "FND-88B3C09521",
+      "old": {
+        "prerequisites": []
+      },
+      "set": {
+        "prerequisites": [
+          "The current exhaust or merge path compares program inputs through Poseidon hashes rather than direct field equality."
+        ]
+      },
+      "rationale": "Adds a conservative trigger prerequisite or verification boundary derived from the finding's existing assertion, evidence, and Phase-6 review without changing the assertion or effective conclusion.",
+      "evidence_ids": [
+        "EVD-FB46967B48",
+        "EVD-D181A65EBF"
+      ],
+      "source_references": [
+        "model/pass-2-contextual-corrected.yaml",
+        "evidence/contextual/WU-367D918B22.yaml"
+      ]
+    },
+    {
+      "group": "findings",
+      "record_id": "FND-E683792BE2",
+      "old": {
+        "scope_limitations": []
+      },
+      "set": {
+        "scope_limitations": [
+          "The incompatible predicates are source-visible, but no deployment with more than five participants or recovery ceremony was executed; deployed configuration remains unknown."
+        ]
+      },
+      "rationale": "Adds a conservative trigger prerequisite or verification boundary derived from the finding's existing assertion, evidence, and Phase-6 review without changing the assertion or effective conclusion.",
+      "evidence_ids": [
+        "EVD-278D27A176",
+        "EVD-6665BB19D1"
+      ],
+      "source_references": [
+        "model/pass-2-contextual-corrected.yaml",
+        "evidence/contextual/WU-367D918B22.yaml"
+      ]
+    },
+    {
+      "group": "findings",
+      "record_id": "FND-1D115F22E4",
+      "old": {
+        "scope_limitations": []
+      },
+      "set": {
+        "scope_limitations": [
+          "Indexer and UI consumers and production event streams are outside scope; downstream reliance and runtime harm were not established."
+        ]
+      },
+      "rationale": "Adds a conservative trigger prerequisite or verification boundary derived from the finding's existing assertion, evidence, and Phase-6 review without changing the assertion or effective conclusion.",
+      "evidence_ids": [
+        "EVD-02AE7D74CF",
+        "EVD-B2D3AF1279"
+      ],
+      "source_references": [
+        "model/pass-2-contextual-corrected.yaml",
+        "evidence/contextual/WU-367D918B22.yaml"
+      ]
+    },
+    {
+      "group": "gaps",
+      "record_id": "GAP-F47532E2A5",
+      "set": {
+        "affected_actor_ids": [
+          "INV-BD6F8D1028"
+        ],
+        "affected_asset_ids": [
+          "SEC-F88596C819"
+        ]
+      },
+      "rationale": "Assigns accountability using only existing current canonical records that identify the affected role boundary and protected asset; no actor or asset canonical record is invented.",
+      "evidence_ids": [],
+      "source_references": [
+        "model/context.yaml",
+        "model/pass-2-contextual-corrected.yaml",
+        "evidence/contextual/WU-367D918B22.yaml"
+      ],
+      "old": {
+        "affected_actor_ids": [],
+        "affected_asset_ids": []
+      }
+    },
+    {
+      "group": "gaps",
+      "record_id": "GAP-9398E85581",
+      "set": {
+        "affected_actor_ids": [
+          "BHV-80247CE73D"
+        ],
+        "affected_asset_ids": [
+          "SEC-FB542C27D2",
+          "SEC-9F3756E302"
+        ]
+      },
+      "rationale": "Assigns accountability using only existing current canonical records that identify the affected role boundary and protected asset; no actor or asset canonical record is invented.",
+      "evidence_ids": [],
+      "source_references": [
+        "model/context.yaml",
+        "model/pass-2-contextual-corrected.yaml",
+        "evidence/contextual/WU-367D918B22.yaml"
+      ],
+      "old": {
+        "affected_actor_ids": [],
+        "affected_asset_ids": []
+      }
+    },
+    {
+      "group": "gaps",
+      "record_id": "GAP-F035E24714",
+      "set": {
+        "affected_actor_ids": [
+          "BHV-80247CE73D",
+          "INV-BD6F8D1028",
+          "BHV-4866A87097",
+          "BHV-5D3FCC7B93"
+        ],
+        "affected_asset_ids": [
+          "SEC-9F3756E302",
+          "SEC-F88596C819"
+        ]
+      },
+      "rationale": "Assigns accountability using only existing current canonical records that identify the affected role boundary and protected asset; no actor or asset canonical record is invented.",
+      "evidence_ids": [],
+      "source_references": [
+        "model/context.yaml",
+        "model/pass-2-contextual-corrected.yaml",
+        "evidence/contextual/WU-367D918B22.yaml"
+      ],
+      "old": {
+        "affected_actor_ids": [],
+        "affected_asset_ids": []
+      }
+    },
+    {
+      "group": "gaps",
+      "record_id": "GAP-4DE9FCF9CE",
+      "set": {
+        "affected_actor_ids": [
+          "BHV-80247CE73D",
+          "ASM-FF091135AE"
+        ],
+        "affected_asset_ids": [
+          "SEC-9F3756E302",
+          "SEC-EE4E9A7ADB"
+        ]
+      },
+      "rationale": "Assigns accountability using only existing current canonical records that identify the affected role boundary and protected asset; no actor or asset canonical record is invented.",
+      "evidence_ids": [],
+      "source_references": [
+        "model/context.yaml",
+        "model/pass-2-contextual-corrected.yaml",
+        "evidence/contextual/WU-367D918B22.yaml"
+      ],
+      "old": {
+        "affected_actor_ids": [],
+        "affected_asset_ids": []
+      }
+    },
+    {
+      "group": "gaps",
+      "record_id": "GAP-817200738F",
+      "set": {
+        "affected_actor_ids": [
+          "BHV-80247CE73D",
+          "INV-BD6F8D1028",
+          "ASM-C0AB78216E"
+        ],
+        "affected_asset_ids": [
+          "SEC-9F3756E302",
+          "SEC-DD3B44137C"
+        ]
+      },
+      "rationale": "Assigns accountability using only existing current canonical records that identify the affected role boundary and protected asset; no actor or asset canonical record is invented.",
+      "evidence_ids": [],
+      "source_references": [
+        "model/context.yaml",
+        "model/pass-2-contextual-corrected.yaml",
+        "evidence/contextual/WU-367D918B22.yaml"
+      ],
+      "old": {
+        "affected_actor_ids": [],
+        "affected_asset_ids": []
+      }
+    },
+    {
+      "group": "gaps",
+      "record_id": "GAP-B798CE8DB1",
+      "set": {
+        "affected_actor_ids": [
+          "BHV-5D3FCC7B93",
+          "ASM-C0AB78216E"
+        ],
+        "affected_asset_ids": [
+          "SEC-FB542C27D2",
+          "SEC-9F3756E302",
+          "SEC-DD3B44137C"
+        ]
+      },
+      "rationale": "Assigns accountability using only existing current canonical records that identify the affected role boundary and protected asset; no actor or asset canonical record is invented.",
+      "evidence_ids": [],
+      "source_references": [
+        "model/context.yaml",
+        "model/pass-2-contextual-corrected.yaml",
+        "evidence/contextual/WU-367D918B22.yaml"
+      ],
+      "old": {
+        "affected_actor_ids": [],
+        "affected_asset_ids": []
+      }
+    },
+    {
+      "group": "gaps",
+      "record_id": "GAP-7BAF881BED",
+      "set": {
+        "affected_actor_ids": [
+          "BHV-5D3FCC7B93"
+        ],
+        "affected_asset_ids": [
+          "SEC-FB542C27D2",
+          "SEC-9F3756E302"
+        ]
+      },
+      "rationale": "Assigns accountability using only existing current canonical records that identify the affected role boundary and protected asset; no actor or asset canonical record is invented.",
+      "evidence_ids": [],
+      "source_references": [
+        "model/context.yaml",
+        "model/pass-2-contextual-corrected.yaml",
+        "evidence/contextual/WU-367D918B22.yaml"
+      ],
+      "old": {
+        "affected_actor_ids": [],
+        "affected_asset_ids": []
+      }
+    },
+    {
+      "group": "gaps",
+      "record_id": "GAP-EF32A38D1C",
+      "set": {
+        "affected_actor_ids": [
+          "ASM-73AF207816",
+          "INV-BD6F8D1028",
+          "BHV-4866A87097"
+        ],
+        "affected_asset_ids": [
+          "SEC-F88596C819",
+          "SEC-B560A051DA"
+        ]
+      },
+      "rationale": "Assigns accountability using only existing current canonical records that identify the affected role boundary and protected asset; no actor or asset canonical record is invented.",
+      "evidence_ids": [],
+      "source_references": [
+        "model/context.yaml",
+        "model/pass-2-contextual-corrected.yaml",
+        "evidence/contextual/WU-367D918B22.yaml"
+      ],
+      "old": {
+        "affected_actor_ids": [],
+        "affected_asset_ids": []
+      }
+    },
+    {
+      "group": "gaps",
+      "record_id": "GAP-2CA978704D",
+      "set": {
+        "affected_actor_ids": [
+          "BHV-80247CE73D",
+          "INV-BD6F8D1028",
+          "BHV-4866A87097",
+          "BHV-5D3FCC7B93"
+        ],
+        "affected_asset_ids": [
+          "SEC-FB542C27D2",
+          "SEC-9F3756E302",
+          "SEC-F88596C819"
+        ]
+      },
+      "rationale": "Assigns accountability using only existing current canonical records that identify the affected role boundary and protected asset; no actor or asset canonical record is invented.",
+      "evidence_ids": [],
+      "source_references": [
+        "model/context.yaml",
+        "model/pass-2-contextual-corrected.yaml",
+        "evidence/contextual/WU-367D918B22.yaml"
+      ],
+      "old": {
+        "affected_actor_ids": [],
+        "affected_asset_ids": []
+      }
+    },
+    {
+      "group": "gaps",
+      "record_id": "GAP-BB80E3EB16",
+      "set": {
+        "affected_actor_ids": [
+          "BHV-4866A87097",
+          "BHV-5D3FCC7B93"
+        ],
+        "affected_asset_ids": [
+          "SEC-9F3756E302",
+          "SEC-FB542C27D2"
+        ]
+      },
+      "rationale": "Assigns accountability using only existing current canonical records that identify the affected role boundary and protected asset; no actor or asset canonical record is invented.",
+      "evidence_ids": [],
+      "source_references": [
+        "model/context.yaml",
+        "model/pass-2-contextual-corrected.yaml",
+        "evidence/contextual/WU-367D918B22.yaml"
+      ],
+      "old": {
+        "affected_actor_ids": [],
+        "affected_asset_ids": []
+      }
+    },
+    {
+      "group": "gaps",
+      "record_id": "GAP-96C24B88BE",
+      "set": {
+        "affected_actor_ids": [
+          "INV-BD6F8D1028"
+        ],
+        "affected_asset_ids": [
+          "SEC-F88596C819"
+        ]
+      },
+      "rationale": "Assigns accountability using only existing current canonical records that identify the affected role boundary and protected asset; no actor or asset canonical record is invented.",
+      "evidence_ids": [],
+      "source_references": [
+        "model/context.yaml",
+        "model/pass-2-contextual-corrected.yaml",
+        "evidence/contextual/WU-367D918B22.yaml"
+      ],
+      "old": {
+        "affected_actor_ids": [],
+        "affected_asset_ids": []
+      }
+    },
+    {
+      "group": "gaps",
+      "record_id": "GAP-50DC9AE203",
+      "set": {
+        "affected_actor_ids": [
+          "INV-BD6F8D1028"
+        ],
+        "affected_asset_ids": [
+          "SEC-9F3756E302",
+          "SEC-F88596C819"
+        ]
+      },
+      "rationale": "Assigns accountability using only existing current canonical records that identify the affected role boundary and protected asset; no actor or asset canonical record is invented.",
+      "evidence_ids": [],
+      "source_references": [
+        "model/context.yaml",
+        "model/pass-2-contextual-corrected.yaml",
+        "evidence/contextual/WU-367D918B22.yaml"
+      ],
+      "old": {
+        "affected_actor_ids": [],
+        "affected_asset_ids": []
+      }
+    },
+    {
+      "group": "gaps",
+      "record_id": "GAP-ABC383D9C1",
+      "set": {
+        "affected_actor_ids": [
+          "INV-BD6F8D1028",
+          "ASM-73AF207816"
+        ],
+        "affected_asset_ids": [
+          "SEC-F88596C819",
+          "SEC-B560A051DA"
+        ]
+      },
+      "rationale": "Assigns accountability using only existing current canonical records that identify the affected role boundary and protected asset; no actor or asset canonical record is invented.",
+      "evidence_ids": [],
+      "source_references": [
+        "model/context.yaml",
+        "model/pass-2-contextual-corrected.yaml",
+        "evidence/contextual/WU-367D918B22.yaml"
+      ],
+      "old": {
+        "affected_actor_ids": [],
+        "affected_asset_ids": []
+      }
+    },
+    {
+      "group": "gaps",
+      "record_id": "GAP-935AA6FD0D",
+      "set": {
+        "affected_actor_ids": [
+          "ASM-FF091135AE"
+        ],
+        "affected_asset_ids": [
+          "SEC-9F3756E302",
+          "SEC-EE4E9A7ADB"
+        ]
+      },
+      "rationale": "Assigns accountability using only existing current canonical records that identify the affected role boundary and protected asset; no actor or asset canonical record is invented.",
+      "evidence_ids": [],
+      "source_references": [
+        "model/context.yaml",
+        "model/pass-2-contextual-corrected.yaml",
+        "evidence/contextual/WU-367D918B22.yaml"
+      ],
+      "old": {
+        "affected_actor_ids": [],
+        "affected_asset_ids": []
+      }
+    },
+    {
+      "group": "gaps",
+      "record_id": "GAP-0B47B1BC29",
+      "set": {
+        "affected_actor_ids": [
+          "INV-BD6F8D1028",
+          "BHV-4866A87097"
+        ],
+        "affected_asset_ids": [
+          "SEC-F88596C819",
+          "SEC-9F3756E302"
+        ]
+      },
+      "rationale": "Assigns accountability using only existing current canonical records that identify the affected role boundary and protected asset; no actor or asset canonical record is invented.",
+      "evidence_ids": [],
+      "source_references": [
+        "model/context.yaml",
+        "model/pass-2-contextual-corrected.yaml",
+        "evidence/contextual/WU-367D918B22.yaml"
+      ],
+      "old": {
+        "affected_actor_ids": [],
+        "affected_asset_ids": []
+      }
+    },
+    {
+      "group": "gaps",
+      "record_id": "GAP-48D1CB3548",
+      "set": {
+        "affected_actor_ids": [
+          "ASM-FF091135AE"
+        ],
+        "affected_asset_ids": [
+          "SEC-EE4E9A7ADB"
+        ]
+      },
+      "rationale": "Assigns accountability using only existing current canonical records that identify the affected role boundary and protected asset; no actor or asset canonical record is invented.",
+      "evidence_ids": [],
+      "source_references": [
+        "model/context.yaml",
+        "model/pass-2-contextual-corrected.yaml",
+        "evidence/contextual/WU-367D918B22.yaml"
+      ],
+      "old": {
+        "affected_actor_ids": [],
+        "affected_asset_ids": []
+      }
+    },
+    {
+      "group": "gaps",
+      "record_id": "GAP-5EB38DFDA6",
+      "set": {
+        "affected_actor_ids": [
+          "INV-BD6F8D1028",
+          "ASM-73AF207816"
+        ],
+        "affected_asset_ids": [
+          "SEC-F88596C819",
+          "SEC-B560A051DA"
+        ]
+      },
+      "rationale": "Assigns accountability using only existing current canonical records that identify the affected role boundary and protected asset; no actor or asset canonical record is invented.",
+      "evidence_ids": [],
+      "source_references": [
+        "model/context.yaml",
+        "model/pass-2-contextual-corrected.yaml",
+        "evidence/contextual/WU-367D918B22.yaml"
+      ],
+      "old": {
+        "affected_actor_ids": [],
+        "affected_asset_ids": []
+      }
+    },
+    {
+      "group": "gaps",
+      "record_id": "GAP-721B65BE75",
+      "set": {
+        "affected_actor_ids": [
+          "INV-BD6F8D1028",
+          "BHV-4866A87097",
+          "BHV-5D3FCC7B93",
+          "ASM-73AF207816"
+        ],
+        "affected_asset_ids": [
+          "SEC-F88596C819",
+          "SEC-B560A051DA"
+        ]
+      },
+      "rationale": "Assigns accountability using only existing current canonical records that identify the affected role boundary and protected asset; no actor or asset canonical record is invented.",
+      "evidence_ids": [],
+      "source_references": [
+        "model/context.yaml",
+        "model/pass-2-contextual-corrected.yaml",
+        "evidence/contextual/WU-367D918B22.yaml"
+      ],
+      "old": {
+        "affected_actor_ids": [],
+        "affected_asset_ids": []
+      }
+    },
+    {
+      "group": "gaps",
+      "record_id": "GAP-B9423A0E57",
+      "set": {
+        "affected_actor_ids": [
+          "BHV-5D3FCC7B93"
+        ],
+        "affected_asset_ids": [
+          "SEC-FB542C27D2",
+          "SEC-9F3756E302"
+        ]
+      },
+      "rationale": "Assigns accountability using only existing current canonical records that identify the affected role boundary and protected asset; no actor or asset canonical record is invented.",
+      "evidence_ids": [],
+      "source_references": [
+        "model/context.yaml",
+        "model/pass-2-contextual-corrected.yaml",
+        "evidence/contextual/WU-367D918B22.yaml"
+      ],
+      "old": {
+        "affected_actor_ids": [],
+        "affected_asset_ids": []
+      }
+    },
+    {
+      "group": "gaps",
+      "record_id": "GAP-BCB6F29C25",
+      "set": {
+        "affected_actor_ids": [
+          "ASM-FF091135AE"
+        ],
+        "affected_asset_ids": [
+          "SEC-EE4E9A7ADB",
+          "SEC-FB542C27D2"
+        ]
+      },
+      "rationale": "Assigns accountability using only existing current canonical records that identify the affected role boundary and protected asset; no actor or asset canonical record is invented.",
+      "evidence_ids": [],
+      "source_references": [
+        "model/context.yaml",
+        "model/pass-2-contextual-corrected.yaml",
+        "evidence/contextual/WU-367D918B22.yaml"
+      ],
+      "old": {
+        "affected_actor_ids": [],
+        "affected_asset_ids": []
+      }
+    },
+    {
+      "group": "gaps",
+      "record_id": "GAP-4B6AF1A2C6",
+      "set": {
+        "affected_actor_ids": [
+          "BHV-80247CE73D",
+          "INV-BD6F8D1028",
+          "ASM-C0AB78216E"
+        ],
+        "affected_asset_ids": [
+          "SEC-9F3756E302",
+          "SEC-DD3B44137C"
+        ]
+      },
+      "rationale": "Assigns accountability using only existing current canonical records that identify the affected role boundary and protected asset; no actor or asset canonical record is invented.",
+      "evidence_ids": [],
+      "source_references": [
+        "model/context.yaml",
+        "model/pass-2-contextual-corrected.yaml",
+        "evidence/contextual/WU-367D918B22.yaml"
+      ],
+      "old": {
+        "affected_actor_ids": [],
+        "affected_asset_ids": []
+      }
+    },
+    {
+      "group": "gaps",
+      "record_id": "GAP-8C60DBC5D8",
+      "set": {
+        "affected_actor_ids": [
+          "BHV-80247CE73D"
+        ],
+        "affected_asset_ids": [
+          "SEC-9F3756E302"
+        ]
+      },
+      "rationale": "Assigns accountability using only existing current canonical records that identify the affected role boundary and protected asset; no actor or asset canonical record is invented.",
+      "evidence_ids": [],
+      "source_references": [
+        "model/context.yaml",
+        "model/pass-2-contextual-corrected.yaml",
+        "evidence/contextual/WU-367D918B22.yaml"
+      ],
+      "old": {
+        "affected_actor_ids": [],
+        "affected_asset_ids": []
+      }
+    },
+    {
+      "group": "gaps",
+      "record_id": "GAP-B1C8C1A4E1",
+      "set": {
+        "affected_actor_ids": [
+          "BHV-80247CE73D"
+        ],
+        "affected_asset_ids": [
+          "SEC-FB542C27D2",
+          "SEC-9F3756E302"
+        ]
+      },
+      "rationale": "Assigns accountability using only existing current canonical records that identify the affected role boundary and protected asset; no actor or asset canonical record is invented.",
+      "evidence_ids": [],
+      "source_references": [
+        "model/context.yaml",
+        "model/pass-2-contextual-corrected.yaml",
+        "evidence/contextual/WU-367D918B22.yaml"
+      ],
+      "old": {
+        "affected_actor_ids": [],
+        "affected_asset_ids": []
+      }
+    },
+    {
+      "group": "gaps",
+      "record_id": "GAP-003C868089",
+      "set": {
+        "affected_actor_ids": [
+          "BHV-80247CE73D",
+          "INV-BD6F8D1028",
+          "BHV-4866A87097",
+          "BHV-5D3FCC7B93",
+          "ASM-73AF207816"
+        ],
+        "affected_asset_ids": [
+          "SEC-FB542C27D2",
+          "SEC-9F3756E302",
+          "SEC-F88596C819",
+          "SEC-B560A051DA"
+        ]
+      },
+      "rationale": "Assigns accountability using only existing current canonical records that identify the affected role boundary and protected asset; no actor or asset canonical record is invented.",
+      "evidence_ids": [],
+      "source_references": [
+        "model/context.yaml",
+        "model/pass-2-contextual-corrected.yaml",
+        "evidence/contextual/WU-367D918B22.yaml"
+      ],
+      "old": {
+        "affected_actor_ids": [],
+        "affected_asset_ids": []
+      }
+    },
+    {
+      "group": "gaps",
+      "record_id": "GAP-9CA1247303",
+      "set": {
+        "affected_actor_ids": [
+          "INV-BD6F8D1028",
+          "BHV-4866A87097"
+        ],
+        "affected_asset_ids": [
+          "SEC-F88596C819",
+          "SEC-9F3756E302"
+        ]
+      },
+      "rationale": "Assigns accountability using only existing current canonical records that identify the affected role boundary and protected asset; no actor or asset canonical record is invented.",
+      "evidence_ids": [],
+      "source_references": [
+        "model/context.yaml",
+        "model/pass-2-contextual-corrected.yaml",
+        "evidence/contextual/WU-367D918B22.yaml"
+      ],
+      "old": {
+        "affected_actor_ids": [],
+        "affected_asset_ids": []
+      }
+    },
+    {
+      "group": "gaps",
+      "record_id": "GAP-E291D5E72A",
+      "set": {
+        "affected_actor_ids": [
+          "INV-BD6F8D1028"
+        ],
+        "affected_asset_ids": [
+          "SEC-F88596C819"
+        ]
+      },
+      "rationale": "Assigns accountability using only existing current canonical records that identify the affected role boundary and protected asset; no actor or asset canonical record is invented.",
+      "evidence_ids": [],
+      "source_references": [
+        "model/context.yaml",
+        "model/pass-2-contextual-corrected.yaml",
+        "evidence/contextual/WU-367D918B22.yaml"
+      ],
+      "old": {
+        "affected_actor_ids": [],
+        "affected_asset_ids": []
+      }
+    },
+    {
+      "group": "gaps",
+      "record_id": "GAP-212C9A0653",
+      "set": {
+        "affected_actor_ids": [
+          "BHV-80247CE73D",
+          "BHV-5D3FCC7B93"
+        ],
+        "affected_asset_ids": [
+          "SEC-FB542C27D2",
+          "SEC-9F3756E302"
+        ]
+      },
+      "rationale": "Assigns accountability using only existing current canonical records that identify the affected role boundary and protected asset; no actor or asset canonical record is invented.",
+      "evidence_ids": [],
+      "source_references": [
+        "model/context.yaml",
+        "model/pass-2-contextual-corrected.yaml",
+        "evidence/contextual/WU-367D918B22.yaml"
+      ],
+      "old": {
+        "affected_actor_ids": [],
+        "affected_asset_ids": []
+      }
+    },
+    {
+      "group": "gaps",
+      "record_id": "GAP-9D0D23D527",
+      "set": {
+        "affected_actor_ids": [
+          "INV-BD6F8D1028"
+        ],
+        "affected_asset_ids": [
+          "SEC-F88596C819",
+          "SEC-9F3756E302"
+        ]
+      },
+      "rationale": "Assigns accountability using only existing current canonical records that identify the affected role boundary and protected asset; no actor or asset canonical record is invented.",
+      "evidence_ids": [],
+      "source_references": [
+        "model/context.yaml",
+        "model/pass-2-contextual-corrected.yaml",
+        "evidence/contextual/WU-367D918B22.yaml"
+      ],
+      "old": {
+        "affected_actor_ids": [],
+        "affected_asset_ids": []
+      }
+    },
+    {
+      "group": "gaps",
+      "record_id": "GAP-F83C6F5411",
+      "set": {
+        "affected_actor_ids": [
+          "BHV-80247CE73D",
+          "BHV-5D3FCC7B93",
+          "FLW-6394A1B72B"
+        ],
+        "affected_asset_ids": [
+          "SEC-FB542C27D2",
+          "SEC-9F3756E302"
+        ]
+      },
+      "rationale": "Assigns accountability using only existing current canonical records that identify the affected role boundary and protected asset; no actor or asset canonical record is invented.",
+      "evidence_ids": [],
+      "source_references": [
+        "model/context.yaml",
+        "model/pass-2-contextual-corrected.yaml",
+        "evidence/contextual/WU-367D918B22.yaml"
+      ],
+      "absent_before": [
+        "affected_actor_ids",
+        "affected_asset_ids"
+      ]
+    },
+    {
+      "group": "gaps",
+      "record_id": "GAP-52A3FE4758",
+      "set": {
+        "affected_actor_ids": [
+          "INV-1E832E77A4",
+          "ASM-FF091135AE",
+          "ASM-C0AB78216E"
+        ],
+        "affected_asset_ids": [
+          "SEC-10182FB352",
+          "SEC-DD3B44137C",
+          "SEC-EE4E9A7ADB"
+        ]
+      },
+      "rationale": "Assigns accountability using only existing current canonical records that identify the affected role boundary and protected asset; no actor or asset canonical record is invented.",
+      "evidence_ids": [],
+      "source_references": [
+        "model/context.yaml",
+        "model/pass-2-contextual-corrected.yaml",
+        "evidence/contextual/WU-367D918B22.yaml"
+      ],
+      "absent_before": [
+        "affected_actor_ids",
+        "affected_asset_ids"
+      ]
+    },
+    {
+      "group": "gaps",
+      "record_id": "GAP-22CD8BD355",
+      "set": {
+        "affected_actor_ids": [
+          "INV-1E832E77A4",
+          "ASM-C0AB78216E"
+        ],
+        "affected_asset_ids": [
+          "SEC-10182FB352",
+          "SEC-9F3756E302",
+          "SEC-DD3B44137C"
+        ]
+      },
+      "rationale": "Assigns accountability using only existing current canonical records that identify the affected role boundary and protected asset; no actor or asset canonical record is invented.",
+      "evidence_ids": [],
+      "source_references": [
+        "model/context.yaml",
+        "model/pass-2-contextual-corrected.yaml",
+        "evidence/contextual/WU-367D918B22.yaml"
+      ],
+      "absent_before": [
+        "affected_actor_ids",
+        "affected_asset_ids"
+      ]
+    },
+    {
+      "group": "gaps",
+      "record_id": "GAP-2124E32D06",
+      "set": {
+        "affected_actor_ids": [
+          "BHV-4866A87097",
+          "INV-BD6F8D1028",
+          "ASM-C0AB78216E"
+        ],
+        "affected_asset_ids": [
+          "SEC-F88596C819",
+          "SEC-9F3756E302",
+          "SEC-DD3B44137C"
+        ]
+      },
+      "rationale": "Assigns accountability using only existing current canonical records that identify the affected role boundary and protected asset; no actor or asset canonical record is invented.",
+      "evidence_ids": [],
+      "source_references": [
+        "model/context.yaml",
+        "model/pass-2-contextual-corrected.yaml",
+        "evidence/contextual/WU-367D918B22.yaml"
+      ],
+      "absent_before": [
+        "affected_actor_ids",
+        "affected_asset_ids"
+      ]
+    },
+    {
+      "group": "gaps",
+      "record_id": "GAP-ADD703D733",
+      "set": {
+        "affected_actor_ids": [
+          "BHV-80247CE73D",
+          "INV-BD6F8D1028",
+          "BHV-4866A87097",
+          "BHV-5D3FCC7B93",
+          "INV-1E832E77A4"
+        ],
+        "affected_asset_ids": [
+          "SEC-FB542C27D2",
+          "SEC-9F3756E302",
+          "SEC-F88596C819",
+          "SEC-10182FB352",
+          "SEC-DD3B44137C"
+        ]
+      },
+      "rationale": "Assigns accountability using only existing current canonical records that identify the affected role boundary and protected asset; no actor or asset canonical record is invented.",
+      "evidence_ids": [],
+      "source_references": [
+        "model/context.yaml",
+        "model/pass-2-contextual-corrected.yaml",
+        "evidence/contextual/WU-367D918B22.yaml"
+      ],
+      "absent_before": [
+        "affected_actor_ids",
+        "affected_asset_ids"
+      ]
+    },
+    {
+      "group": "gaps",
+      "record_id": "GAP-1DC17F1884",
+      "set": {
+        "affected_actor_ids": [
+          "ASM-FF091135AE",
+          "BHV-4866A87097"
+        ],
+        "affected_asset_ids": [
+          "SEC-EE4E9A7ADB",
+          "SEC-F88596C819",
+          "SEC-9F3756E302"
+        ]
+      },
+      "rationale": "Assigns accountability using only existing current canonical records that identify the affected role boundary and protected asset; no actor or asset canonical record is invented.",
+      "evidence_ids": [],
+      "source_references": [
+        "model/context.yaml",
+        "model/pass-2-contextual-corrected.yaml",
+        "evidence/contextual/WU-367D918B22.yaml"
+      ],
+      "absent_before": [
+        "affected_actor_ids",
+        "affected_asset_ids"
+      ]
+    },
+    {
+      "group": "gaps",
+      "record_id": "GAP-A25D114C6F",
+      "set": {
+        "affected_actor_ids": [
+          "ASM-73AF207816",
+          "BHV-4866A87097",
+          "INV-BD6F8D1028"
+        ],
+        "affected_asset_ids": [
+          "SEC-B560A051DA",
+          "SEC-F88596C819"
+        ]
+      },
+      "rationale": "Assigns accountability using only existing current canonical records that identify the affected role boundary and protected asset; no actor or asset canonical record is invented.",
+      "evidence_ids": [],
+      "source_references": [
+        "model/context.yaml",
+        "model/pass-2-contextual-corrected.yaml",
+        "evidence/contextual/WU-367D918B22.yaml"
+      ],
+      "absent_before": [
+        "affected_actor_ids",
+        "affected_asset_ids"
+      ]
+    },
+    {
+      "group": "gaps",
+      "record_id": "GAP-8826CA0D4C",
+      "set": {
+        "affected_actor_ids": [
+          "ASM-73AF207816"
+        ],
+        "affected_asset_ids": [
+          "SEC-B560A051DA",
+          "SEC-F88596C819"
+        ]
+      },
+      "rationale": "Assigns accountability using only existing current canonical records that identify the affected role boundary and protected asset; no actor or asset canonical record is invented.",
+      "evidence_ids": [],
+      "source_references": [
+        "model/context.yaml",
+        "model/pass-2-contextual-corrected.yaml",
+        "evidence/contextual/WU-367D918B22.yaml"
+      ],
+      "absent_before": [
+        "affected_actor_ids",
+        "affected_asset_ids"
+      ]
+    },
+    {
+      "group": "gaps",
+      "record_id": "GAP-FE43BADC05",
+      "set": {
+        "affected_actor_ids": [
+          "INV-BD6F8D1028",
+          "ASM-73AF207816"
+        ],
+        "affected_asset_ids": [
+          "SEC-F88596C819",
+          "SEC-B560A051DA"
+        ]
+      },
+      "rationale": "Assigns accountability using only existing current canonical records that identify the affected role boundary and protected asset; no actor or asset canonical record is invented.",
+      "evidence_ids": [],
+      "source_references": [
+        "model/context.yaml",
+        "model/pass-2-contextual-corrected.yaml",
+        "evidence/contextual/WU-367D918B22.yaml"
+      ],
+      "absent_before": [
+        "affected_actor_ids",
+        "affected_asset_ids"
+      ]
+    },
+    {
+      "group": "tests",
+      "record_id": "TST-ED3BD4CF2F",
+      "old_sha256": {
+        "cases": "39d99ff8fc7dd63a0a7ce6c00d8aa87d226e3326396b2c1c40a6e6171b92ab96"
+      },
+      "set": {
+        "cases": [
+          {
+            "name": "ProposalCreated schema reuse and round trip",
+            "line": 41,
+            "active": true,
+            "setup": "analyze mock method; encode/decode constructed payload",
+            "target_ids": [
+              "BHV-761186E23C",
+              "INV-A59D85B29B",
+              "BHV-5CBB373BE5",
+              "FLW-2F560AE009"
+            ],
+            "inputs": [
+              "all nine fields"
+            ],
+            "mocks": [
+              "MockIndexerFixtureContract"
+            ],
+            "environment": [
+              "analyzeMethods if run"
+            ],
+            "proof_mode": "NO_PROOF",
+            "partitions": [
+              "created schema",
+              "round trip"
+            ],
+            "static_gaps": [
+              "does not emit/fetch event or inspect production owner"
+            ],
+            "assertions": [
+              "mock method exists",
+              "all nine decoded fields equal"
+            ],
+            "fixture_setup": "Random public keys and in-memory Struct values; one mock SmartContract registers all names and exposes only a proposal-created emitter.",
+            "environment_assumptions": [],
+            "semantic_target_status": "EXACT_MAPPING"
+          },
+          {
+            "name": "ProposalVoteDispatched round trip",
+            "line": 105,
+            "active": true,
+            "setup": "encode/decode constructed payload",
+            "target_ids": [
+              "BHV-761186E23C",
+              "BHV-5CBB373BE5",
+              "FLW-2F560AE009"
+            ],
+            "inputs": [
+              "proposal",
+              "voter",
+              "YAY",
+              "sender"
+            ],
+            "mocks": [],
+            "environment": [
+              "host Struct encoding"
+            ],
+            "proof_mode": "NO_PROOF",
+            "partitions": [
+              "vote event",
+              "YAY"
+            ],
+            "static_gaps": [
+              "NAY/ABSTAIN/DUMMY values absent",
+              "production emission absent"
+            ],
+            "assertions": [
+              "all four decoded fields equal"
+            ],
+            "fixture_setup": "Random public keys and in-memory Struct values; one mock SmartContract registers all names and exposes only a proposal-created emitter.",
+            "environment_assumptions": [],
+            "semantic_target_status": "EXACT_MAPPING"
+          },
+          {
+            "name": "ProposalVotesTallied round trip",
+            "line": 131,
+            "active": true,
+            "setup": "encode/decode constructed payload",
+            "target_ids": [
+              "BHV-761186E23C",
+              "BHV-5CBB373BE5",
+              "FLW-2F560AE009"
+            ],
+            "inputs": [
+              "all seven fields"
+            ],
+            "mocks": [],
+            "environment": [
+              "host Struct encoding"
+            ],
+            "proof_mode": "NO_PROOF",
+            "partitions": [
+              "tally event"
+            ],
+            "static_gaps": [
+              "lifecycleId, yayWeight, and nayWeight are not individually asserted",
+              "production emission absent"
+            ],
+            "assertions": [
+              "proposal, abstain, result, sender equal"
+            ],
+            "fixture_setup": "Random public keys and in-memory Struct values; one mock SmartContract registers all names and exposes only a proposal-created emitter.",
+            "environment_assumptions": [],
+            "semantic_target_status": "EXACT_MAPPING"
+          },
+          {
+            "name": "ProposalExecuted round trip",
+            "line": 165,
+            "active": true,
+            "setup": "encode/decode constructed payload",
+            "target_ids": [
+              "BHV-761186E23C",
+              "BHV-5CBB373BE5",
+              "FLW-2F560AE009"
+            ],
+            "inputs": [
+              "proposal",
+              "amount",
+              "sender"
+            ],
+            "mocks": [],
+            "environment": [
+              "host Struct encoding"
+            ],
+            "proof_mode": "NO_PROOF",
+            "partitions": [
+              "execution event"
+            ],
+            "static_gaps": [
+              "recipient and cumulative amount are not schema fields",
+              "production emission absent"
+            ],
+            "assertions": [
+              "all three decoded fields equal"
+            ],
+            "fixture_setup": "Random public keys and in-memory Struct values; one mock SmartContract registers all names and exposes only a proposal-created emitter.",
+            "environment_assumptions": [],
+            "semantic_target_status": "EXACT_MAPPING"
+          },
+          {
+            "name": "ProposalPauseToggled round trip",
+            "line": 189,
+            "active": true,
+            "setup": "encode/decode constructed payload",
+            "target_ids": [
+              "BHV-761186E23C",
+              "INV-A59D85B29B",
+              "BHV-5CBB373BE5",
+              "FLW-2F560AE009"
+            ],
+            "inputs": [
+              "proposal",
+              "paused=true",
+              "sender"
+            ],
+            "mocks": [],
+            "environment": [
+              "host Struct encoding"
+            ],
+            "proof_mode": "NO_PROOF",
+            "partitions": [
+              "paused=true"
+            ],
+            "static_gaps": [
+              "paused=false absent",
+              "event value is not compared to resulting production state"
+            ],
+            "assertions": [
+              "all three decoded fields equal"
+            ],
+            "fixture_setup": "Random public keys and in-memory Struct values; one mock SmartContract registers all names and exposes only a proposal-created emitter.",
+            "environment_assumptions": [],
+            "semantic_target_status": "EXACT_MAPPING"
+          }
+        ]
+      },
+      "rationale": "Retains every original case field, API target, active/skipped state, and reviewed suite semantic_status while adding only assertion-supported BHV/CL/INV/FLW targets. Per-case semantic_target_status explicitly records exact versus partial target closure.",
+      "evidence_ids": [
+        "EVD-02AE7D74CF",
+        "EVD-B2D3AF1279"
+      ],
+      "source_references": [
+        "packages/sdk/test/provable/events/treasury-proposal-events.test.ts",
+        "model/pass-2-contextual-corrected.yaml",
+        "evidence/contextual/WU-367D918B22.yaml"
+      ]
+    },
+    {
+      "group": "tests",
+      "record_id": "TST-5FC61A24DA",
+      "old_sha256": {
+        "cases": "9da6472dc2f161ba87ec395ddf50344a7d27c9ac0ac6ab9994e447b14dfa6cb2"
+      },
+      "set": {
+        "cases": [
+          {
+            "name": "compile",
+            "line": 28,
+            "partitions": [
+              "compile"
+            ],
+            "active": true,
+            "setup": "fresh context",
+            "target_ids": [
+              "API-FD2A8AB499"
+            ],
+            "inputs": [
+              "forceRecompile=true"
+            ],
+            "mocks": [
+              "LocalBlockchain"
+            ],
+            "environment": [
+              "PROOFS_ENABLED-derived chain"
+            ],
+            "proof_mode": "CONFIGURATION_DEPENDENT; compile if run",
+            "static_gaps": [
+              "no fixed verification-key vector"
+            ],
+            "assertions": [
+              "compile resolves"
+            ],
+            "fixture_setup": "One LocalBlockchain; fresh controller and random five-participant set per nested case; transaction helper proves/signs/sends/waits.",
+            "environment_assumptions": [],
+            "semantic_target_status": "PARTIAL_MAPPING"
+          },
+          {
+            "name": "verification key independent of participant values",
+            "line": 32,
+            "partitions": [
+              "configuration independence"
+            ],
+            "active": true,
+            "setup": "compile before/after assigning static participants",
+            "target_ids": [
+              "API-FD2A8AB499",
+              "BHV-F898CD867A"
+            ],
+            "inputs": [
+              "empty then random participants"
+            ],
+            "mocks": [],
+            "environment": [
+              "compiler cache"
+            ],
+            "proof_mode": "CONFIGURATION_DEPENDENT; compile if run",
+            "static_gaps": [
+              "does not show deployment commitment correctness"
+            ],
+            "assertions": [
+              "verification-key hashes equal"
+            ],
+            "fixture_setup": "One LocalBlockchain; fresh controller and random five-participant set per nested case; transaction helper proves/signs/sends/waits.",
+            "environment_assumptions": [],
+            "semantic_target_status": "EXACT_MAPPING"
+          },
+          {
+            "name": "deployment rejects too few participants",
+            "line": 62,
+            "partitions": [
+              "participant count below",
+              "negative"
+            ],
+            "active": true,
+            "setup": "static participant list empty",
+            "target_ids": [
+              "API-FD2A8AB499",
+              "BHV-8786B10BA6",
+              "CL-DA4E524A76"
+            ],
+            "inputs": [
+              "0 participants"
+            ],
+            "mocks": [
+              "LocalBlockchain"
+            ],
+            "environment": [
+              "transaction prove"
+            ],
+            "proof_mode": "CONFIGURATION_DEPENDENT",
+            "static_gaps": [
+              "counts 1-4 and >5 absent"
+            ],
+            "assertions": [
+              "rejects NOT_ENOUGH_PARTICIPANTS"
+            ],
+            "fixture_setup": "One LocalBlockchain; fresh controller and random five-participant set per nested case; transaction helper proves/signs/sends/waits.",
+            "environment_assumptions": [],
+            "semantic_target_status": "EXACT_MAPPING"
+          },
+          {
+            "name": "deployment accepts enough participants and initializes state/permissions",
+            "line": 72,
+            "partitions": [
+              "participant count equality",
+              "initial state",
+              "permissions"
+            ],
+            "active": true,
+            "setup": "five participants",
+            "target_ids": [
+              "API-FD2A8AB499",
+              "BHV-8786B10BA6",
+              "CL-DA4E524A76",
+              "INV-0697F6A5B4"
+            ],
+            "inputs": [
+              "5 keys"
+            ],
+            "mocks": [
+              "LocalBlockchain"
+            ],
+            "environment": [
+              "transaction prove"
+            ],
+            "proof_mode": "CONFIGURATION_DEPENDENT",
+            "static_gaps": [
+              ">5 static participants not covered"
+            ],
+            "assertions": [
+              "commitment",
+              "paused=false",
+              "all configured permissions"
+            ],
+            "fixture_setup": "One LocalBlockchain; fresh controller and random five-participant set per nested case; transaction helper proves/signs/sends/waits.",
+            "environment_assumptions": [],
+            "semantic_target_status": "EXACT_MAPPING"
+          },
+          {
+            "name": "pause succeeds with valid signatures",
+            "line": 120,
+            "partitions": [
+              "success",
+              "nonce increment"
+            ],
+            "active": true,
+            "setup": "deployed unpaused controller",
+            "target_ids": [
+              "API-FD2A8AB499",
+              "BHV-DDC0A35072",
+              "BHV-1FC418499A",
+              "BHV-F898CD867A",
+              "CL-06DF3A63C6",
+              "CL-C07EA8DC01",
+              "CL-EE7157BCAE",
+              "INV-1E832E77A4",
+              "INV-187FD2A7A9",
+              "FLW-21AF7F4E4D"
+            ],
+            "inputs": [
+              "current nonce",
+              "valid signatures"
+            ],
+            "mocks": [
+              "LocalBlockchain"
+            ],
+            "environment": [
+              "transaction prove"
+            ],
+            "proof_mode": "CONFIGURATION_DEPENDENT",
+            "static_gaps": [
+              "repeat pause absent",
+              "no event"
+            ],
+            "assertions": [
+              "paused=true",
+              "nonce +1"
+            ],
+            "fixture_setup": "One LocalBlockchain; fresh controller and random five-participant set per nested case; transaction helper proves/signs/sends/waits.",
+            "environment_assumptions": [],
+            "semantic_target_status": "EXACT_MAPPING"
+          },
+          {
+            "name": "pause rejects incorrect nonce atomically",
+            "line": 139,
+            "partitions": [
+              "nonce mismatch",
+              "atomic failure"
+            ],
+            "active": true,
+            "setup": "deployed unpaused controller",
+            "target_ids": [
+              "API-FD2A8AB499",
+              "BHV-1FC418499A",
+              "CL-06DF3A63C6",
+              "INV-187FD2A7A9",
+              "FLW-21AF7F4E4D"
+            ],
+            "inputs": [
+              "nonce+1",
+              "signatures for wrong nonce"
+            ],
+            "mocks": [
+              "LocalBlockchain"
+            ],
+            "environment": [
+              "transaction prove"
+            ],
+            "proof_mode": "CONFIGURATION_DEPENDENT",
+            "static_gaps": [
+              "error identity not asserted"
+            ],
+            "assertions": [
+              "rejects",
+              "paused remains false",
+              "nonce unchanged"
+            ],
+            "fixture_setup": "One LocalBlockchain; fresh controller and random five-participant set per nested case; transaction helper proves/signs/sends/waits.",
+            "environment_assumptions": [],
+            "semantic_target_status": "EXACT_MAPPING"
+          },
+          {
+            "name": "pause rejects insufficient signatures atomically",
+            "line": 163,
+            "partitions": [
+              "threshold below",
+              "atomic failure"
+            ],
+            "active": true,
+            "setup": "deployed unpaused controller",
+            "target_ids": [
+              "API-FD2A8AB499",
+              "BHV-F898CD867A",
+              "CL-C07EA8DC01",
+              "CL-EE7157BCAE",
+              "INV-1E832E77A4",
+              "FLW-21AF7F4E4D"
+            ],
+            "inputs": [
+              "current nonce",
+              "2 signatures"
+            ],
+            "mocks": [
+              "LocalBlockchain"
+            ],
+            "environment": [
+              "transaction prove"
+            ],
+            "proof_mode": "CONFIGURATION_DEPENDENT",
+            "static_gaps": [],
+            "assertions": [
+              "rejects threshold error",
+              "paused false",
+              "nonce unchanged"
+            ],
+            "fixture_setup": "One LocalBlockchain; fresh controller and random five-participant set per nested case; transaction helper proves/signs/sends/waits.",
+            "environment_assumptions": [],
+            "semantic_target_status": "EXACT_MAPPING"
+          },
+          {
+            "name": "unpause succeeds with valid signatures",
+            "line": 212,
+            "partitions": [
+              "success",
+              "nonce increment"
+            ],
+            "active": true,
+            "setup": "pause controller in beforeEach then call unpause",
+            "target_ids": [
+              "API-FD2A8AB499",
+              "BHV-DDC0A35072",
+              "BHV-1FC418499A",
+              "BHV-F898CD867A",
+              "CL-06DF3A63C6",
+              "CL-C07EA8DC01",
+              "CL-EE7157BCAE",
+              "INV-1E832E77A4",
+              "INV-187FD2A7A9",
+              "FLW-21AF7F4E4D"
+            ],
+            "inputs": [
+              "current nonce",
+              "valid unpause signatures"
+            ],
+            "mocks": [
+              "LocalBlockchain"
+            ],
+            "environment": [
+              "two transactions prove"
+            ],
+            "proof_mode": "CONFIGURATION_DEPENDENT",
+            "static_gaps": [
+              "repeat unpause absent"
+            ],
+            "assertions": [
+              "paused=false",
+              "nonce +1"
+            ],
+            "fixture_setup": "One LocalBlockchain; fresh controller and random five-participant set per nested case; transaction helper proves/signs/sends/waits.",
+            "environment_assumptions": [],
+            "semantic_target_status": "EXACT_MAPPING"
+          },
+          {
+            "name": "unpause rejects incorrect nonce atomically",
+            "line": 231,
+            "partitions": [
+              "nonce mismatch",
+              "atomic failure"
+            ],
+            "active": true,
+            "setup": "controller paused",
+            "target_ids": [
+              "API-FD2A8AB499",
+              "BHV-1FC418499A",
+              "CL-06DF3A63C6",
+              "INV-187FD2A7A9",
+              "FLW-21AF7F4E4D"
+            ],
+            "inputs": [
+              "nonce+1"
+            ],
+            "mocks": [
+              "LocalBlockchain"
+            ],
+            "environment": [
+              "transaction prove"
+            ],
+            "proof_mode": "CONFIGURATION_DEPENDENT",
+            "static_gaps": [
+              "error identity not asserted"
+            ],
+            "assertions": [
+              "rejects",
+              "paused true",
+              "nonce unchanged"
+            ],
+            "fixture_setup": "One LocalBlockchain; fresh controller and random five-participant set per nested case; transaction helper proves/signs/sends/waits.",
+            "environment_assumptions": [],
+            "semantic_target_status": "EXACT_MAPPING"
+          },
+          {
+            "name": "unpause rejects insufficient signatures atomically",
+            "line": 255,
+            "partitions": [
+              "threshold below",
+              "atomic failure"
+            ],
+            "active": true,
+            "setup": "controller paused",
+            "target_ids": [
+              "API-FD2A8AB499",
+              "BHV-F898CD867A",
+              "CL-C07EA8DC01",
+              "CL-EE7157BCAE",
+              "INV-1E832E77A4",
+              "FLW-21AF7F4E4D"
+            ],
+            "inputs": [
+              "2 signatures"
+            ],
+            "mocks": [
+              "LocalBlockchain"
+            ],
+            "environment": [
+              "transaction prove"
+            ],
+            "proof_mode": "CONFIGURATION_DEPENDENT",
+            "static_gaps": [],
+            "assertions": [
+              "rejects threshold error",
+              "paused true",
+              "nonce unchanged"
+            ],
+            "fixture_setup": "One LocalBlockchain; fresh controller and random five-participant set per nested case; transaction helper proves/signs/sends/waits.",
+            "environment_assumptions": [],
+            "semantic_target_status": "EXACT_MAPPING"
+          },
+          {
+            "name": "proposal toggle authorization succeeds",
+            "line": 298,
+            "partitions": [
+              "success",
+              "proposal binding"
+            ],
+            "active": true,
+            "setup": "deployed controller; random proposal key",
+            "target_ids": [
+              "API-FD2A8AB499",
+              "BHV-10BA9AD71E",
+              "BHV-1FC418499A",
+              "BHV-F898CD867A",
+              "CL-06DF3A63C6",
+              "CL-C07EA8DC01",
+              "CL-EE7157BCAE",
+              "INV-1E832E77A4",
+              "INV-187FD2A7A9",
+              "FLW-FD2B1F4966"
+            ],
+            "inputs": [
+              "proposal key",
+              "current nonce",
+              "valid signatures"
+            ],
+            "mocks": [
+              "LocalBlockchain"
+            ],
+            "environment": [
+              "transaction prove"
+            ],
+            "proof_mode": "CONFIGURATION_DEPENDENT",
+            "static_gaps": [
+              "does not call proposal or assert paused state",
+              "desired state absent"
+            ],
+            "assertions": [
+              "nonce +1"
+            ],
+            "fixture_setup": "One LocalBlockchain; fresh controller and random five-participant set per nested case; transaction helper proves/signs/sends/waits.",
+            "environment_assumptions": [],
+            "semantic_target_status": "EXACT_MAPPING"
+          },
+          {
+            "name": "proposal toggle rejects incorrect nonce",
+            "line": 325,
+            "partitions": [
+              "nonce mismatch",
+              "negative"
+            ],
+            "active": true,
+            "setup": "deployed controller",
+            "target_ids": [
+              "API-FD2A8AB499",
+              "BHV-10BA9AD71E",
+              "BHV-1FC418499A",
+              "CL-06DF3A63C6",
+              "INV-187FD2A7A9",
+              "FLW-FD2B1F4966"
+            ],
+            "inputs": [
+              "proposal key",
+              "nonce+1"
+            ],
+            "mocks": [
+              "LocalBlockchain"
+            ],
+            "environment": [
+              "transaction prove"
+            ],
+            "proof_mode": "CONFIGURATION_DEPENDENT",
+            "static_gaps": [
+              "proposal state not involved"
+            ],
+            "assertions": [
+              "rejects",
+              "nonce unchanged"
+            ],
+            "fixture_setup": "One LocalBlockchain; fresh controller and random five-participant set per nested case; transaction helper proves/signs/sends/waits.",
+            "environment_assumptions": [],
+            "semantic_target_status": "EXACT_MAPPING"
+          },
+          {
+            "name": "proposal toggle rejects insufficient signatures",
+            "line": 354,
+            "partitions": [
+              "threshold below",
+              "negative"
+            ],
+            "active": true,
+            "setup": "deployed controller",
+            "target_ids": [
+              "API-FD2A8AB499",
+              "BHV-10BA9AD71E",
+              "BHV-F898CD867A",
+              "CL-C07EA8DC01",
+              "CL-EE7157BCAE",
+              "INV-1E832E77A4",
+              "FLW-FD2B1F4966"
+            ],
+            "inputs": [
+              "proposal key",
+              "2 signatures"
+            ],
+            "mocks": [
+              "LocalBlockchain"
+            ],
+            "environment": [
+              "transaction prove"
+            ],
+            "proof_mode": "CONFIGURATION_DEPENDENT",
+            "static_gaps": [
+              "proposal state not involved"
+            ],
+            "assertions": [
+              "rejects threshold error",
+              "nonce unchanged"
+            ],
+            "fixture_setup": "One LocalBlockchain; fresh controller and random five-participant set per nested case; transaction helper proves/signs/sends/waits.",
+            "environment_assumptions": [],
+            "semantic_target_status": "EXACT_MAPPING"
+          },
+          {
+            "name": "key rotation succeeds",
+            "line": 400,
+            "partitions": [
+              "rotation success"
+            ],
+            "active": true,
+            "setup": "deployed old set; generate new commitment",
+            "target_ids": [
+              "API-FD2A8AB499",
+              "BHV-0D6A8D760E",
+              "BHV-1FC418499A",
+              "BHV-F898CD867A",
+              "CL-06DF3A63C6",
+              "CL-C07EA8DC01",
+              "CL-EE7157BCAE",
+              "INV-1E832E77A4",
+              "INV-187FD2A7A9",
+              "INV-0697F6A5B4",
+              "FLW-745B097927"
+            ],
+            "inputs": [
+              "new commitment",
+              "current nonce",
+              "old-set signatures"
+            ],
+            "mocks": [
+              "LocalBlockchain"
+            ],
+            "environment": [
+              "transaction prove"
+            ],
+            "proof_mode": "CONFIGURATION_DEPENDENT",
+            "static_gaps": [
+              "new participant list is off-chain only",
+              "no event/recovery oracle"
+            ],
+            "assertions": [
+              "nonce +1",
+              "commitment updated"
+            ],
+            "fixture_setup": "One LocalBlockchain; fresh controller and random five-participant set per nested case; transaction helper proves/signs/sends/waits.",
+            "environment_assumptions": [],
+            "semantic_target_status": "EXACT_MAPPING"
+          },
+          {
+            "name": "key rotation rejects incorrect nonce atomically",
+            "line": 440,
+            "partitions": [
+              "nonce mismatch",
+              "atomic failure"
+            ],
+            "active": true,
+            "setup": "deployed old set",
+            "target_ids": [
+              "API-FD2A8AB499",
+              "BHV-0D6A8D760E",
+              "BHV-1FC418499A",
+              "CL-06DF3A63C6",
+              "INV-187FD2A7A9",
+              "FLW-745B097927"
+            ],
+            "inputs": [
+              "new commitment",
+              "nonce+1"
+            ],
+            "mocks": [
+              "LocalBlockchain"
+            ],
+            "environment": [
+              "transaction prove"
+            ],
+            "proof_mode": "CONFIGURATION_DEPENDENT",
+            "static_gaps": [
+              "error identity not asserted"
+            ],
+            "assertions": [
+              "rejects",
+              "nonce and commitment unchanged"
+            ],
+            "fixture_setup": "One LocalBlockchain; fresh controller and random five-participant set per nested case; transaction helper proves/signs/sends/waits.",
+            "environment_assumptions": [],
+            "semantic_target_status": "EXACT_MAPPING"
+          },
+          {
+            "name": "key rotation rejects mismatched current commitment",
+            "line": 482,
+            "partitions": [
+              "old commitment binding",
+              "atomic failure"
+            ],
+            "active": true,
+            "setup": "sign wrong old commitment",
+            "target_ids": [
+              "API-FD2A8AB499",
+              "BHV-0D6A8D760E",
+              "BHV-8ED0438CC8",
+              "BHV-F898CD867A",
+              "CL-EE7157BCAE",
+              "FLW-745B097927"
+            ],
+            "inputs": [
+              "wrong old=0",
+              "new commitment",
+              "current nonce"
+            ],
+            "mocks": [
+              "LocalBlockchain"
+            ],
+            "environment": [
+              "transaction prove"
+            ],
+            "proof_mode": "CONFIGURATION_DEPENDENT",
+            "static_gaps": [],
+            "assertions": [
+              "rejects threshold error",
+              "nonce/commitment unchanged"
+            ],
+            "fixture_setup": "One LocalBlockchain; fresh controller and random five-participant set per nested case; transaction helper proves/signs/sends/waits.",
+            "environment_assumptions": [],
+            "semantic_target_status": "EXACT_MAPPING"
+          },
+          {
+            "name": "key rotation rejects insufficient signatures",
+            "line": 525,
+            "partitions": [
+              "threshold below",
+              "atomic failure"
+            ],
+            "active": true,
+            "setup": "deployed old set",
+            "target_ids": [
+              "API-FD2A8AB499",
+              "BHV-0D6A8D760E",
+              "BHV-F898CD867A",
+              "CL-EE7157BCAE",
+              "INV-1E832E77A4",
+              "FLW-745B097927"
+            ],
+            "inputs": [
+              "new commitment",
+              "2 signatures"
+            ],
+            "mocks": [
+              "LocalBlockchain"
+            ],
+            "environment": [
+              "transaction prove"
+            ],
+            "proof_mode": "CONFIGURATION_DEPENDENT",
+            "static_gaps": [],
+            "assertions": [
+              "rejects threshold error",
+              "nonce/commitment unchanged"
+            ],
+            "fixture_setup": "One LocalBlockchain; fresh controller and random five-participant set per nested case; transaction helper proves/signs/sends/waits.",
+            "environment_assumptions": [],
+            "semantic_target_status": "EXACT_MAPPING"
+          },
+          {
+            "name": "old keys rejected and new keys accepted after rotation",
+            "line": 568,
+            "partitions": [
+              "old/new authority boundary"
+            ],
+            "active": true,
+            "setup": "rotate commitment then replace class-static participant list",
+            "target_ids": [
+              "API-FD2A8AB499",
+              "BHV-0D6A8D760E",
+              "BHV-DDC0A35072",
+              "BHV-F898CD867A",
+              "BHV-1FC418499A",
+              "CL-06DF3A63C6",
+              "CL-C07EA8DC01",
+              "CL-EE7157BCAE",
+              "INV-1E832E77A4",
+              "INV-187FD2A7A9",
+              "INV-0697F6A5B4",
+              "FLW-745B097927",
+              "FLW-21AF7F4E4D"
+            ],
+            "inputs": [
+              "old pause signatures",
+              "new pause signatures"
+            ],
+            "mocks": [
+              "LocalBlockchain",
+              "manual static-list synchronization"
+            ],
+            "environment": [
+              "multiple transaction proofs"
+            ],
+            "proof_mode": "CONFIGURATION_DEPENDENT",
+            "static_gaps": [
+              "test manually supplies new off-chain list; restart/configuration drift absent"
+            ],
+            "assertions": [
+              "old rejects",
+              "new pauses",
+              "nonce +1 on success"
+            ],
+            "fixture_setup": "One LocalBlockchain; fresh controller and random five-participant set per nested case; transaction helper proves/signs/sends/waits.",
+            "environment_assumptions": [],
+            "semantic_target_status": "EXACT_MAPPING"
+          },
+          {
+            "name": "requireNotPaused allows unpaused state",
+            "line": 640,
+            "partitions": [
+              "unpaused"
+            ],
+            "active": true,
+            "setup": "fresh deployed controller",
+            "target_ids": [
+              "API-FD2A8AB499"
+            ],
+            "inputs": [],
+            "mocks": [
+              "LocalBlockchain"
+            ],
+            "environment": [
+              "transaction prove"
+            ],
+            "proof_mode": "CONFIGURATION_DEPENDENT",
+            "static_gaps": [],
+            "assertions": [
+              "transaction resolves"
+            ],
+            "fixture_setup": "One LocalBlockchain; fresh controller and random five-participant set per nested case; transaction helper proves/signs/sends/waits.",
+            "environment_assumptions": [],
+            "semantic_target_status": "PARTIAL_MAPPING"
+          },
+          {
+            "name": "requireNotPaused rejects paused state",
+            "line": 646,
+            "partitions": [
+              "paused",
+              "negative"
+            ],
+            "active": true,
+            "setup": "pause then call requireNotPaused",
+            "target_ids": [
+              "API-FD2A8AB499",
+              "BHV-DDC0A35072",
+              "FLW-21AF7F4E4D"
+            ],
+            "inputs": [
+              "valid pause signatures"
+            ],
+            "mocks": [
+              "LocalBlockchain"
+            ],
+            "environment": [
+              "multiple transaction proofs"
+            ],
+            "proof_mode": "CONFIGURATION_DEPENDENT",
+            "static_gaps": [
+              "no composed owner operation"
+            ],
+            "assertions": [
+              "rejects TREASURY_PAUSED"
+            ],
+            "fixture_setup": "One LocalBlockchain; fresh controller and random five-participant set per nested case; transaction helper proves/signs/sends/waits.",
+            "environment_assumptions": [],
+            "semantic_target_status": "EXACT_MAPPING"
+          }
+        ]
+      },
+      "rationale": "Retains every original case field, API target, active/skipped state, and reviewed suite semantic_status while adding only assertion-supported BHV/CL/INV/FLW targets. Per-case semantic_target_status explicitly records exact versus partial target closure.",
+      "evidence_ids": [
+        "EVD-72A633D2CC",
+        "EVD-1F2E90DA0D"
+      ],
+      "source_references": [
+        "packages/sdk/test/provable/contracts/treasury-pause-controller/treasury-pause-controller.test.ts",
+        "model/pass-2-contextual-corrected.yaml",
+        "evidence/contextual/WU-367D918B22.yaml"
+      ]
+    },
+    {
+      "group": "tests",
+      "record_id": "TST-D1863E1F8D",
+      "old_sha256": {
+        "cases": "b1f1b1a9ea0ef84a1d5035ce66770fc091fee198a27385be2358e926414ea10a"
+      },
+      "set": {
+        "cases": [
+          {
+            "name": "pause hash deterministic",
+            "line": 22,
+            "partitions": [
+              "nonce boundaries"
+            ],
+            "active": true,
+            "setup": "same operation and nonce twice",
+            "target_ids": [
+              "API-58119694A5",
+              "BHV-8ED0438CC8"
+            ],
+            "inputs": [
+              "TEST_NONCES"
+            ],
+            "mocks": [],
+            "environment": [
+              "host Field operations"
+            ],
+            "proof_mode": "NO_PROOF",
+            "static_gaps": [
+              "does not compare authoritative vector"
+            ],
+            "assertions": [
+              "hash1 == hash2"
+            ],
+            "fixture_setup": "Fresh random five-participant context per verification case; nonces 0,1,2,UInt32.MAXINT; empty signatures pad fixed array.",
+            "environment_assumptions": [],
+            "semantic_target_status": "EXACT_MAPPING"
+          },
+          {
+            "name": "unpause hash deterministic",
+            "line": 35,
+            "partitions": [
+              "nonce boundaries"
+            ],
+            "active": true,
+            "setup": "same operation and nonce twice",
+            "target_ids": [
+              "API-58119694A5",
+              "BHV-8ED0438CC8"
+            ],
+            "inputs": [
+              "TEST_NONCES"
+            ],
+            "mocks": [],
+            "environment": [
+              "host Field operations"
+            ],
+            "proof_mode": "NO_PROOF",
+            "static_gaps": [
+              "does not compare authoritative vector"
+            ],
+            "assertions": [
+              "hash1 == hash2"
+            ],
+            "fixture_setup": "Fresh random five-participant context per verification case; nonces 0,1,2,UInt32.MAXINT; empty signatures pad fixed array.",
+            "environment_assumptions": [],
+            "semantic_target_status": "EXACT_MAPPING"
+          },
+          {
+            "name": "toggle hash deterministic",
+            "line": 48,
+            "partitions": [
+              "proposal-key",
+              "nonce boundaries"
+            ],
+            "active": true,
+            "setup": "same proposal key and nonce twice",
+            "target_ids": [
+              "API-58119694A5",
+              "BHV-8ED0438CC8"
+            ],
+            "inputs": [
+              "random proposal key",
+              "TEST_NONCES"
+            ],
+            "mocks": [],
+            "environment": [
+              "random key"
+            ],
+            "proof_mode": "NO_PROOF",
+            "static_gaps": [
+              "desired pause state is absent from both fixture and source message"
+            ],
+            "assertions": [
+              "hash1 == hash2"
+            ],
+            "fixture_setup": "Fresh random five-participant context per verification case; nonces 0,1,2,UInt32.MAXINT; empty signatures pad fixed array.",
+            "environment_assumptions": [],
+            "semantic_target_status": "EXACT_MAPPING"
+          },
+          {
+            "name": "toggle hash changes with proposal key",
+            "line": 66,
+            "partitions": [
+              "proposal identity"
+            ],
+            "active": true,
+            "setup": "two random proposal keys; same nonce",
+            "target_ids": [
+              "API-58119694A5",
+              "BHV-8ED0438CC8"
+            ],
+            "inputs": [
+              "proposal key A/B",
+              "nonce=1"
+            ],
+            "mocks": [],
+            "environment": [
+              "random keys"
+            ],
+            "proof_mode": "NO_PROOF",
+            "static_gaps": [
+              "no controller/network identity partition"
+            ],
+            "assertions": [
+              "hashes differ"
+            ],
+            "fixture_setup": "Fresh random five-participant context per verification case; nonces 0,1,2,UInt32.MAXINT; empty signatures pad fixed array.",
+            "environment_assumptions": [],
+            "semantic_target_status": "EXACT_MAPPING"
+          },
+          {
+            "name": "rotate hash deterministic",
+            "line": 86,
+            "partitions": [
+              "nonce boundaries"
+            ],
+            "active": true,
+            "setup": "same old/new commitments and nonce twice",
+            "target_ids": [
+              "API-58119694A5",
+              "BHV-8ED0438CC8"
+            ],
+            "inputs": [
+              "old=1",
+              "new=2",
+              "TEST_NONCES"
+            ],
+            "mocks": [],
+            "environment": [
+              "host Field operations"
+            ],
+            "proof_mode": "NO_PROOF",
+            "static_gaps": [
+              "no vector"
+            ],
+            "assertions": [
+              "hash1 == hash2"
+            ],
+            "fixture_setup": "Fresh random five-participant context per verification case; nonces 0,1,2,UInt32.MAXINT; empty signatures pad fixed array.",
+            "environment_assumptions": [],
+            "semantic_target_status": "EXACT_MAPPING"
+          },
+          {
+            "name": "rotate hash changes with new commitment",
+            "line": 107,
+            "partitions": [
+              "new commitment binding"
+            ],
+            "active": true,
+            "setup": "same old/nonce; change new",
+            "target_ids": [
+              "API-58119694A5",
+              "BHV-8ED0438CC8"
+            ],
+            "inputs": [
+              "old=1",
+              "new=2/3",
+              "nonce=1"
+            ],
+            "mocks": [],
+            "environment": [],
+            "proof_mode": "NO_PROOF",
+            "static_gaps": [],
+            "assertions": [
+              "hashes differ"
+            ],
+            "fixture_setup": "Fresh random five-participant context per verification case; nonces 0,1,2,UInt32.MAXINT; empty signatures pad fixed array.",
+            "environment_assumptions": [],
+            "semantic_target_status": "EXACT_MAPPING"
+          },
+          {
+            "name": "rotate hash changes with old commitment",
+            "line": 129,
+            "partitions": [
+              "old commitment binding"
+            ],
+            "active": true,
+            "setup": "same new/nonce; change old",
+            "target_ids": [
+              "API-58119694A5",
+              "BHV-8ED0438CC8"
+            ],
+            "inputs": [
+              "old=1/3",
+              "new=2",
+              "nonce=1"
+            ],
+            "mocks": [],
+            "environment": [],
+            "proof_mode": "NO_PROOF",
+            "static_gaps": [],
+            "assertions": [
+              "hashes differ"
+            ],
+            "fixture_setup": "Fresh random five-participant context per verification case; nonces 0,1,2,UInt32.MAXINT; empty signatures pad fixed array.",
+            "environment_assumptions": [],
+            "semantic_target_status": "EXACT_MAPPING"
+          },
+          {
+            "name": "cross-method hashes differ",
+            "line": 153,
+            "partitions": [
+              "operation domain separation"
+            ],
+            "active": true,
+            "setup": "construct pause/unpause/toggle/rotate for each nonce",
+            "target_ids": [
+              "API-58119694A5",
+              "BHV-8ED0438CC8"
+            ],
+            "inputs": [
+              "TEST_NONCES",
+              "proposal key",
+              "commitments"
+            ],
+            "mocks": [],
+            "environment": [
+              "random proposal keys"
+            ],
+            "proof_mode": "NO_PROOF",
+            "static_gaps": [
+              "finite samples do not prove collision resistance"
+            ],
+            "assertions": [
+              "all six operation pairs differ"
+            ],
+            "fixture_setup": "Fresh random five-participant context per verification case; nonces 0,1,2,UInt32.MAXINT; empty signatures pad fixed array.",
+            "environment_assumptions": [],
+            "semantic_target_status": "EXACT_MAPPING"
+          },
+          {
+            "name": "pause hashes vary across nonce range",
+            "line": 185,
+            "partitions": [
+              "nonce replay"
+            ],
+            "active": true,
+            "setup": "map four nonces",
+            "target_ids": [
+              "API-58119694A5",
+              "BHV-8ED0438CC8"
+            ],
+            "inputs": [
+              "0,1,2,MAX"
+            ],
+            "mocks": [],
+            "environment": [],
+            "proof_mode": "NO_PROOF",
+            "static_gaps": [
+              "no wrap/increment behavior"
+            ],
+            "assertions": [
+              "all pairs differ"
+            ],
+            "fixture_setup": "Fresh random five-participant context per verification case; nonces 0,1,2,UInt32.MAXINT; empty signatures pad fixed array.",
+            "environment_assumptions": [],
+            "semantic_target_status": "EXACT_MAPPING"
+          },
+          {
+            "name": "unpause hashes vary across nonce range",
+            "line": 199,
+            "partitions": [
+              "nonce replay"
+            ],
+            "active": true,
+            "setup": "map four nonces",
+            "target_ids": [
+              "API-58119694A5",
+              "BHV-8ED0438CC8"
+            ],
+            "inputs": [
+              "0,1,2,MAX"
+            ],
+            "mocks": [],
+            "environment": [],
+            "proof_mode": "NO_PROOF",
+            "static_gaps": [
+              "no wrap/increment behavior"
+            ],
+            "assertions": [
+              "all pairs differ"
+            ],
+            "fixture_setup": "Fresh random five-participant context per verification case; nonces 0,1,2,UInt32.MAXINT; empty signatures pad fixed array.",
+            "environment_assumptions": [],
+            "semantic_target_status": "EXACT_MAPPING"
+          },
+          {
+            "name": "toggle hashes vary across nonce range",
+            "line": 213,
+            "partitions": [
+              "nonce replay"
+            ],
+            "active": true,
+            "setup": "fixed proposal key; map four nonces",
+            "target_ids": [
+              "API-58119694A5",
+              "BHV-8ED0438CC8"
+            ],
+            "inputs": [
+              "proposal key",
+              "0,1,2,MAX"
+            ],
+            "mocks": [],
+            "environment": [
+              "random key"
+            ],
+            "proof_mode": "NO_PROOF",
+            "static_gaps": [
+              "no desired-state binding"
+            ],
+            "assertions": [
+              "all pairs differ"
+            ],
+            "fixture_setup": "Fresh random five-participant context per verification case; nonces 0,1,2,UInt32.MAXINT; empty signatures pad fixed array.",
+            "environment_assumptions": [],
+            "semantic_target_status": "EXACT_MAPPING"
+          },
+          {
+            "name": "rotate hashes vary across nonce range",
+            "line": 228,
+            "partitions": [
+              "nonce replay"
+            ],
+            "active": true,
+            "setup": "fixed commitments; map four nonces",
+            "target_ids": [
+              "API-58119694A5",
+              "BHV-8ED0438CC8"
+            ],
+            "inputs": [
+              "old=1",
+              "new=2",
+              "0,1,2,MAX"
+            ],
+            "mocks": [],
+            "environment": [],
+            "proof_mode": "NO_PROOF",
+            "static_gaps": [],
+            "assertions": [
+              "all pairs differ"
+            ],
+            "fixture_setup": "Fresh random five-participant context per verification case; nonces 0,1,2,UInt32.MAXINT; empty signatures pad fixed array.",
+            "environment_assumptions": [],
+            "semantic_target_status": "EXACT_MAPPING"
+          },
+          {
+            "name": "minimum signatures verify",
+            "line": 260,
+            "partitions": [
+              "threshold equality"
+            ],
+            "active": true,
+            "setup": "fresh five participants/commitment",
+            "target_ids": [
+              "API-58119694A5",
+              "BHV-F898CD867A",
+              "CL-C07EA8DC01",
+              "CL-EE7157BCAE",
+              "INV-1E832E77A4"
+            ],
+            "inputs": [
+              "3 valid signatures"
+            ],
+            "mocks": [],
+            "environment": [
+              "random participants"
+            ],
+            "proof_mode": "DIRECT_CONSTRAINT_OBJECT_CALL",
+            "static_gaps": [
+              "no explicit boolean/result"
+            ],
+            "assertions": [
+              "verify resolves"
+            ],
+            "fixture_setup": "Fresh random five-participant context per verification case; nonces 0,1,2,UInt32.MAXINT; empty signatures pad fixed array.",
+            "environment_assumptions": [],
+            "semantic_target_status": "EXACT_MAPPING"
+          },
+          {
+            "name": "more than minimum signatures verify",
+            "line": 277,
+            "partitions": [
+              "threshold above"
+            ],
+            "active": true,
+            "setup": "fresh context",
+            "target_ids": [
+              "API-58119694A5",
+              "BHV-F898CD867A",
+              "CL-C07EA8DC01",
+              "CL-EE7157BCAE",
+              "INV-1E832E77A4"
+            ],
+            "inputs": [
+              "4 valid signatures"
+            ],
+            "mocks": [],
+            "environment": [
+              "random participants"
+            ],
+            "proof_mode": "DIRECT_CONSTRAINT_OBJECT_CALL",
+            "static_gaps": [],
+            "assertions": [
+              "verify resolves"
+            ],
+            "fixture_setup": "Fresh random five-participant context per verification case; nonces 0,1,2,UInt32.MAXINT; empty signatures pad fixed array.",
+            "environment_assumptions": [],
+            "semantic_target_status": "EXACT_MAPPING"
+          },
+          {
+            "name": "all signatures verify",
+            "line": 293,
+            "partitions": [
+              "all valid"
+            ],
+            "active": true,
+            "setup": "fresh context",
+            "target_ids": [
+              "API-58119694A5",
+              "BHV-F898CD867A",
+              "CL-C07EA8DC01",
+              "CL-EE7157BCAE",
+              "INV-1E832E77A4"
+            ],
+            "inputs": [
+              "5 valid signatures"
+            ],
+            "mocks": [],
+            "environment": [
+              "random participants"
+            ],
+            "proof_mode": "DIRECT_CONSTRAINT_OBJECT_CALL",
+            "static_gaps": [],
+            "assertions": [
+              "verify resolves"
+            ],
+            "fixture_setup": "Fresh random five-participant context per verification case; nonces 0,1,2,UInt32.MAXINT; empty signatures pad fixed array.",
+            "environment_assumptions": [],
+            "semantic_target_status": "EXACT_MAPPING"
+          },
+          {
+            "name": "non-contiguous valid signatures verify",
+            "line": 306,
+            "partitions": [
+              "position sparse",
+              "threshold equality"
+            ],
+            "active": true,
+            "setup": "signers at positions 0,2,4",
+            "target_ids": [
+              "API-58119694A5",
+              "BHV-F898CD867A",
+              "CL-C07EA8DC01",
+              "CL-EE7157BCAE",
+              "INV-1E832E77A4"
+            ],
+            "inputs": [
+              "3 sparse signatures"
+            ],
+            "mocks": [],
+            "environment": [
+              "random participants"
+            ],
+            "proof_mode": "DIRECT_CONSTRAINT_OBJECT_CALL",
+            "static_gaps": [],
+            "assertions": [
+              "verify resolves"
+            ],
+            "fixture_setup": "Fresh random five-participant context per verification case; nonces 0,1,2,UInt32.MAXINT; empty signatures pad fixed array.",
+            "environment_assumptions": [],
+            "semantic_target_status": "EXACT_MAPPING"
+          },
+          {
+            "name": "insufficient signatures fail",
+            "line": 333,
+            "partitions": [
+              "threshold below",
+              "negative"
+            ],
+            "active": true,
+            "setup": "fresh context",
+            "target_ids": [
+              "API-58119694A5",
+              "BHV-F898CD867A",
+              "CL-EE7157BCAE",
+              "INV-1E832E77A4"
+            ],
+            "inputs": [
+              "2 valid signatures"
+            ],
+            "mocks": [],
+            "environment": [
+              "random participants"
+            ],
+            "proof_mode": "DIRECT_CONSTRAINT_OBJECT_CALL",
+            "static_gaps": [],
+            "assertions": [
+              "rejects NOT_ENOUGH_VALID_SIGNATURES"
+            ],
+            "fixture_setup": "Fresh random five-participant context per verification case; nonces 0,1,2,UInt32.MAXINT; empty signatures pad fixed array.",
+            "environment_assumptions": [],
+            "semantic_target_status": "EXACT_MAPPING"
+          },
+          {
+            "name": "empty signatures fail",
+            "line": 354,
+            "partitions": [
+              "zero valid",
+              "negative"
+            ],
+            "active": true,
+            "setup": "five empty signature slots",
+            "target_ids": [
+              "API-58119694A5",
+              "BHV-F898CD867A",
+              "CL-EE7157BCAE",
+              "INV-1E832E77A4"
+            ],
+            "inputs": [
+              "0 valid signatures"
+            ],
+            "mocks": [],
+            "environment": [
+              "random participants"
+            ],
+            "proof_mode": "DIRECT_CONSTRAINT_OBJECT_CALL",
+            "static_gaps": [],
+            "assertions": [
+              "rejects NOT_ENOUGH_VALID_SIGNATURES"
+            ],
+            "fixture_setup": "Fresh random five-participant context per verification case; nonces 0,1,2,UInt32.MAXINT; empty signatures pad fixed array.",
+            "environment_assumptions": [],
+            "semantic_target_status": "EXACT_MAPPING"
+          },
+          {
+            "name": "duplicated signatures fail",
+            "line": 373,
+            "partitions": [
+              "duplicate",
+              "position binding",
+              "negative"
+            ],
+            "active": true,
+            "setup": "same participant signature in slots 0 and 1",
+            "target_ids": [
+              "API-58119694A5",
+              "BHV-F898CD867A",
+              "CL-EE7157BCAE",
+              "INV-1E832E77A4"
+            ],
+            "inputs": [
+              "duplicate signature",
+              "remaining empty"
+            ],
+            "mocks": [],
+            "environment": [
+              "random participants"
+            ],
+            "proof_mode": "DIRECT_CONSTRAINT_OBJECT_CALL",
+            "static_gaps": [
+              "three duplicate placements not separately sampled"
+            ],
+            "assertions": [
+              "rejects NOT_ENOUGH_VALID_SIGNATURES"
+            ],
+            "fixture_setup": "Fresh random five-participant context per verification case; nonces 0,1,2,UInt32.MAXINT; empty signatures pad fixed array.",
+            "environment_assumptions": [],
+            "semantic_target_status": "EXACT_MAPPING"
+          },
+          {
+            "name": "mismatched data fails",
+            "line": 402,
+            "partitions": [
+              "message binding",
+              "negative"
+            ],
+            "active": true,
+            "setup": "sign Field(3), verify Field(4)",
+            "target_ids": [
+              "API-58119694A5",
+              "BHV-F898CD867A",
+              "CL-EE7157BCAE",
+              "INV-1E832E77A4"
+            ],
+            "inputs": [
+              "3 signatures",
+              "wrong data"
+            ],
+            "mocks": [],
+            "environment": [
+              "random participants"
+            ],
+            "proof_mode": "DIRECT_CONSTRAINT_OBJECT_CALL",
+            "static_gaps": [],
+            "assertions": [
+              "rejects NOT_ENOUGH_VALID_SIGNATURES"
+            ],
+            "fixture_setup": "Fresh random five-participant context per verification case; nonces 0,1,2,UInt32.MAXINT; empty signatures pad fixed array.",
+            "environment_assumptions": [],
+            "semantic_target_status": "EXACT_MAPPING"
+          },
+          {
+            "name": "changed prefix fails",
+            "line": 420,
+            "partitions": [
+              "operation domain separation",
+              "negative"
+            ],
+            "active": true,
+            "setup": "sign pause hash, verify unpause hash",
+            "target_ids": [
+              "API-58119694A5",
+              "BHV-8ED0438CC8",
+              "BHV-F898CD867A",
+              "CL-EE7157BCAE",
+              "INV-1E832E77A4"
+            ],
+            "inputs": [
+              "TEST_NONCES"
+            ],
+            "mocks": [],
+            "environment": [
+              "random participants"
+            ],
+            "proof_mode": "DIRECT_CONSTRAINT_OBJECT_CALL",
+            "static_gaps": [],
+            "assertions": [
+              "rejects NOT_ENOUGH_VALID_SIGNATURES"
+            ],
+            "fixture_setup": "Fresh random five-participant context per verification case; nonces 0,1,2,UInt32.MAXINT; empty signatures pad fixed array.",
+            "environment_assumptions": [],
+            "semantic_target_status": "EXACT_MAPPING"
+          },
+          {
+            "name": "other participants fail",
+            "line": 444,
+            "partitions": [
+              "identity binding",
+              "negative"
+            ],
+            "active": true,
+            "setup": "sign with second random participant set",
+            "target_ids": [
+              "API-58119694A5",
+              "BHV-F898CD867A",
+              "CL-EE7157BCAE",
+              "INV-1E832E77A4"
+            ],
+            "inputs": [
+              "foreign signatures",
+              "original keys/commitment"
+            ],
+            "mocks": [],
+            "environment": [
+              "two random sets"
+            ],
+            "proof_mode": "DIRECT_CONSTRAINT_OBJECT_CALL",
+            "static_gaps": [],
+            "assertions": [
+              "rejects NOT_ENOUGH_VALID_SIGNATURES"
+            ],
+            "fixture_setup": "Fresh random five-participant context per verification case; nonces 0,1,2,UInt32.MAXINT; empty signatures pad fixed array.",
+            "environment_assumptions": [],
+            "semantic_target_status": "EXACT_MAPPING"
+          },
+          {
+            "name": "mismatched commitment fails",
+            "line": 470,
+            "partitions": [
+              "commitment binding",
+              "negative"
+            ],
+            "active": true,
+            "setup": "original signatures/keys with foreign commitment",
+            "target_ids": [
+              "API-58119694A5",
+              "BHV-F898CD867A",
+              "CL-C07EA8DC01",
+              "INV-1E832E77A4"
+            ],
+            "inputs": [
+              "wrong commitment"
+            ],
+            "mocks": [],
+            "environment": [
+              "two random sets"
+            ],
+            "proof_mode": "DIRECT_CONSTRAINT_OBJECT_CALL",
+            "static_gaps": [],
+            "assertions": [
+              "rejects INVALID_MULTISIG_COMMITMENT"
+            ],
+            "fixture_setup": "Fresh random five-participant context per verification case; nonces 0,1,2,UInt32.MAXINT; empty signatures pad fixed array.",
+            "environment_assumptions": [],
+            "semantic_target_status": "EXACT_MAPPING"
+          },
+          {
+            "name": "reordered participants with original commitment fail",
+            "line": 494,
+            "partitions": [
+              "ordering",
+              "negative"
+            ],
+            "active": true,
+            "setup": "reverse keys but retain original commitment/signature slots",
+            "target_ids": [
+              "API-58119694A5",
+              "BHV-F898CD867A",
+              "CL-C07EA8DC01",
+              "INV-1E832E77A4"
+            ],
+            "inputs": [
+              "5 signatures",
+              "reversed keys"
+            ],
+            "mocks": [],
+            "environment": [
+              "random participants"
+            ],
+            "proof_mode": "DIRECT_CONSTRAINT_OBJECT_CALL",
+            "static_gaps": [],
+            "assertions": [
+              "rejects NOT_ENOUGH_VALID_SIGNATURES"
+            ],
+            "fixture_setup": "Fresh random five-participant context per verification case; nonces 0,1,2,UInt32.MAXINT; empty signatures pad fixed array.",
+            "environment_assumptions": [],
+            "semantic_target_status": "EXACT_MAPPING"
+          },
+          {
+            "name": "reordered participants and commitment still fail against signature positions",
+            "line": 516,
+            "partitions": [
+              "signature slot ordering",
+              "negative"
+            ],
+            "active": true,
+            "setup": "reverse keys and recompute commitment but retain signatures",
+            "target_ids": [
+              "API-58119694A5",
+              "BHV-F898CD867A",
+              "CL-C07EA8DC01",
+              "CL-EE7157BCAE",
+              "INV-1E832E77A4"
+            ],
+            "inputs": [
+              "reversed keys/commitment"
+            ],
+            "mocks": [],
+            "environment": [
+              "random participants"
+            ],
+            "proof_mode": "DIRECT_CONSTRAINT_OBJECT_CALL",
+            "static_gaps": [],
+            "assertions": [
+              "rejects NOT_ENOUGH_VALID_SIGNATURES"
+            ],
+            "fixture_setup": "Fresh random five-participant context per verification case; nonces 0,1,2,UInt32.MAXINT; empty signatures pad fixed array.",
+            "environment_assumptions": [],
+            "semantic_target_status": "EXACT_MAPPING"
+          },
+          {
+            "name": "shifted public-key positions fail",
+            "line": 543,
+            "partitions": [
+              "ordering",
+              "negative"
+            ],
+            "active": true,
+            "setup": "cyclically shift keys",
+            "target_ids": [
+              "API-58119694A5",
+              "BHV-F898CD867A",
+              "CL-C07EA8DC01",
+              "INV-1E832E77A4"
+            ],
+            "inputs": [
+              "5 signatures",
+              "shifted keys",
+              "original commitment"
+            ],
+            "mocks": [],
+            "environment": [
+              "random participants"
+            ],
+            "proof_mode": "DIRECT_CONSTRAINT_OBJECT_CALL",
+            "static_gaps": [],
+            "assertions": [
+              "rejects NOT_ENOUGH_VALID_SIGNATURES"
+            ],
+            "fixture_setup": "Fresh random five-participant context per verification case; nonces 0,1,2,UInt32.MAXINT; empty signatures pad fixed array.",
+            "environment_assumptions": [],
+            "semantic_target_status": "EXACT_MAPPING"
+          },
+          {
+            "name": "empty participant list fails",
+            "line": 568,
+            "partitions": [
+              "empty",
+              "negative"
+            ],
+            "active": true,
+            "setup": "zero generated participants and empty commitment/signatures",
+            "target_ids": [
+              "API-58119694A5",
+              "BHV-F898CD867A",
+              "CL-C07EA8DC01",
+              "CL-EE7157BCAE",
+              "INV-1E832E77A4"
+            ],
+            "inputs": [
+              "empty keys"
+            ],
+            "mocks": [],
+            "environment": [],
+            "proof_mode": "DIRECT_CONSTRAINT_OBJECT_CALL",
+            "static_gaps": [
+              "broad alternative error oracle"
+            ],
+            "assertions": [
+              "rejects toGroup or NOT_ENOUGH_VALID_SIGNATURES"
+            ],
+            "fixture_setup": "Fresh random five-participant context per verification case; nonces 0,1,2,UInt32.MAXINT; empty signatures pad fixed array.",
+            "environment_assumptions": [],
+            "semantic_target_status": "PARTIAL_MAPPING"
+          },
+          {
+            "name": "short public-key list fails",
+            "line": 591,
+            "partitions": [
+              "length below",
+              "negative"
+            ],
+            "active": true,
+            "setup": "remove final key from valid context",
+            "target_ids": [
+              "API-58119694A5",
+              "BHV-F898CD867A",
+              "CL-C07EA8DC01",
+              "CL-EE7157BCAE",
+              "INV-1E832E77A4"
+            ],
+            "inputs": [
+              "4 keys",
+              "3 signatures"
+            ],
+            "mocks": [],
+            "environment": [
+              "random participants"
+            ],
+            "proof_mode": "DIRECT_CONSTRAINT_OBJECT_CALL",
+            "static_gaps": [
+              "long key list absent",
+              "broad alternative error oracle"
+            ],
+            "assertions": [
+              "rejects toGroup or NOT_ENOUGH_VALID_SIGNATURES"
+            ],
+            "fixture_setup": "Fresh random five-participant context per verification case; nonces 0,1,2,UInt32.MAXINT; empty signatures pad fixed array.",
+            "environment_assumptions": [],
+            "semantic_target_status": "PARTIAL_MAPPING"
+          }
+        ]
+      },
+      "rationale": "Retains every original case field, API target, active/skipped state, and reviewed suite semantic_status while adding only assertion-supported BHV/CL/INV/FLW targets. Per-case semantic_target_status explicitly records exact versus partial target closure.",
+      "evidence_ids": [
+        "EVD-278D27A176",
+        "EVD-050BB6E11B"
+      ],
+      "source_references": [
+        "packages/sdk/test/provable/contracts/treasury-pause-controller/multisig-signatures.test.ts",
+        "model/pass-2-contextual-corrected.yaml",
+        "evidence/contextual/WU-367D918B22.yaml"
+      ]
+    },
+    {
+      "group": "tests",
+      "record_id": "TST-318386F25F",
+      "old_sha256": {
+        "cases": "13f3b2f91fba2911535b4024024567dd928a538b33af5506c017c25b80464436"
+      },
+      "set": {
+        "cases": [
+          {
+            "name": "creates expected prefixed Merkle root",
+            "line": 13,
+            "partitions": [
+              "full two-leaf tree",
+              "known vector"
+            ],
+            "active": true,
+            "setup": "write both leaves serially",
+            "target_ids": [
+              "BHV-4EC84F351D",
+              "INV-41F2D0C67B",
+              "BHV-C881A8957C",
+              "CL-FB3A4538F7"
+            ],
+            "inputs": [
+              "height=2",
+              "prefix=test-prefix-0",
+              "leaves=[1,2]"
+            ],
+            "mocks": [
+              "in-memory SQLite Keyv"
+            ],
+            "environment": [
+              "host storage"
+            ],
+            "proof_mode": "NO_PROOF",
+            "static_gaps": [
+              "empty/sparse tree, update order, -1, leafCount, fill, witness length/root/index, prefix/height mismatch, and storage failure absent"
+            ],
+            "assertions": [
+              "root equals fixed vector"
+            ],
+            "fixture_setup": "Height-two tree, zero empty leaf, one prefix, Keyv SQLite memory store, leaves 1 and 2, fixed decimal root.",
+            "environment_assumptions": [],
+            "semantic_target_status": "EXACT_MAPPING"
+          }
+        ]
+      },
+      "rationale": "Retains every original case field, API target, active/skipped state, and reviewed suite semantic_status while adding only assertion-supported BHV/CL/INV/FLW targets. Per-case semantic_target_status explicitly records exact versus partial target closure.",
+      "evidence_ids": [
+        "EVD-F340AFD049"
+      ],
+      "source_references": [
+        "packages/sdk/test/provable/merkle-tree/prefixed-merkle-tree.test.ts",
+        "model/pass-2-contextual-corrected.yaml",
+        "evidence/contextual/WU-367D918B22.yaml"
+      ]
+    },
+    {
+      "group": "tests",
+      "record_id": "TST-5A6CA56CD8",
+      "old_sha256": {
+        "cases": "9d897ee6e83da77e07f12497dc444ac726d662825926a60813b3a85e18abf9e1"
+      },
+      "set": {
+        "cases": [
+          {
+            "name": "compile",
+            "line": 26,
+            "partitions": [
+              "compile"
+            ],
+            "active": true,
+            "setup": "fresh hydrated ledgers",
+            "target_ids": [
+              "API-702CAD321E"
+            ],
+            "inputs": [],
+            "mocks": [
+              "SQLite ledgers"
+            ],
+            "environment": [
+              "PROOFS_ENABLED default"
+            ],
+            "proof_mode": "CONFIGURATION_DEPENDENT; compile if run",
+            "static_gaps": [
+              "no verification-key vector"
+            ],
+            "assertions": [
+              "compile resolves"
+            ],
+            "fixture_setup": "First ten accounts from test-ledger-mini.json; SQLite in-memory staking/voting ledgers; fixed batch five; unique voting namespace uses time/random suffix.",
+            "environment_assumptions": [],
+            "semantic_target_status": "PARTIAL_MAPPING"
+          },
+          {
+            "name": "digest",
+            "line": 30,
+            "partitions": [
+              "happy path"
+            ],
+            "active": true,
+            "setup": "digest first five accounts",
+            "target_ids": [
+              "API-702CAD321E",
+              "FLW-A565B35EC6",
+              "BHV-C4F9C6CEE0",
+              "BHV-C01A568AAE",
+              "FLW-7DA083B071",
+              "CL-1957332AC8",
+              "CL-3D67D2EC7C",
+              "CL-43DA8C0600",
+              "CL-E1DF82E30D",
+              "CL-B5C01C5182",
+              "INV-2A14CD3045",
+              "INV-D61CCCD760",
+              "INV-73B643FAB3",
+              "INV-D6ADE4E9DA"
+            ],
+            "inputs": [
+              "one batch"
+            ],
+            "mocks": [],
+            "environment": [
+              "ZkProgram method if run"
+            ],
+            "proof_mode": "fixture-controlled",
+            "static_gaps": [
+              "No wrong root/index, token-class, empty-delegate, overflow, or partial-write partition."
+            ],
+            "assertions": [
+              "host voting root equals proof output",
+              "input index=0",
+              "output index=4",
+              "exhausted=false",
+              "host root equals proof root",
+              "input index zero",
+              "output index four",
+              "not exhausted"
+            ],
+            "fixture_setup": "first five accounts from mini ledger",
+            "asserted_outputs": [
+              "host root equals proof root",
+              "input index zero",
+              "output index four",
+              "not exhausted"
+            ],
+            "environment_assumptions": [
+              "persistent in-memory SQLite host ledgers"
+            ],
+            "semantic_target_status": "EXACT_MAPPING"
+          },
+          {
+            "name": "merge",
+            "line": 55,
+            "partitions": [
+              "happy path"
+            ],
+            "active": true,
+            "setup": "digest adjacent account batches then merge",
+            "target_ids": [
+              "API-702CAD321E",
+              "BHV-17E3A4CB8C",
+              "FLW-53B4410963",
+              "CL-5C42FDBA1B",
+              "CL-820ACD71D0",
+              "CL-E51C01E8DF",
+              "INV-D61CCCD760"
+            ],
+            "inputs": [
+              "two proofs"
+            ],
+            "mocks": [],
+            "environment": [
+              "recursive ZkProgram calls"
+            ],
+            "proof_mode": "fixture-controlled",
+            "static_gaps": [
+              "No non-adjacent index, different staking root, wrong voting handoff, or input mismatch negative case."
+            ],
+            "assertions": [
+              "host voting root equals merged proof output",
+              "host root equals merged output"
+            ],
+            "fixture_setup": "two adjacent five-account batches",
+            "asserted_outputs": [
+              "host root equals merged output"
+            ],
+            "environment_assumptions": [],
+            "semantic_target_status": "EXACT_MAPPING"
+          },
+          {
+            "name": "exhaust",
+            "line": 87,
+            "partitions": [
+              "happy path"
+            ],
+            "active": true,
+            "setup": "merge two batches then call exhaust",
+            "target_ids": [
+              "API-702CAD321E",
+              "BHV-E7ECC5B6FC",
+              "FLW-53B4410963",
+              "CL-26D2B7BB15",
+              "CL-DA12027943",
+              "INV-016B52DE5B",
+              "INV-D6ADE4E9DA",
+              "INV-D61CCCD760"
+            ],
+            "inputs": [
+              "aggregate proof"
+            ],
+            "mocks": [],
+            "environment": [
+              "recursive ZkProgram calls"
+            ],
+            "proof_mode": "fixture-controlled",
+            "static_gaps": [
+              "No non-empty-next rejection, sparse-later-account, already-exhausted, or wrong prior input case."
+            ],
+            "assertions": [
+              "exhausted=true",
+              "public input starts 0",
+              "output index=9",
+              "exhausted true",
+              "input zero",
+              "terminal index nine"
+            ],
+            "fixture_setup": "merge two batches then witness next empty",
+            "asserted_outputs": [
+              "exhausted true",
+              "input zero",
+              "terminal index nine"
+            ],
+            "environment_assumptions": [
+              "ledger is dense and next leaf empty"
+            ],
+            "semantic_target_status": "EXACT_MAPPING"
+          }
+        ]
+      },
+      "rationale": "Retains every original case field, API target, active/skipped state, and reviewed suite semantic_status while adding only assertion-supported BHV/CL/INV/FLW targets. Per-case semantic_target_status explicitly records exact versus partial target closure.",
+      "evidence_ids": [
+        "EVD-0CA3D36B38"
+      ],
+      "source_references": [
+        "packages/sdk/test/provable/staking-ledger-to-voting-ledger.test.ts",
+        "model/pass-2-contextual-corrected.yaml",
+        "evidence/contextual/WU-367D918B22.yaml"
+      ]
+    },
+    {
+      "group": "tests",
+      "record_id": "TST-A696D485D6",
+      "old_sha256": {
+        "cases": "91ea0980b2493a6f90f0cd083e85ae030e85f0012be81cc1f04236d1f1451317"
+      },
+      "set": {
+        "cases": [
+          {
+            "name": "should compile",
+            "line": 264,
+            "expectation": "Treasury owner compile/analyze surface is callable.",
+            "partitions": [
+              "compile"
+            ],
+            "active": true,
+            "setup": "module fixture already compiled dependencies",
+            "target_ids": [
+              "API-3E2D8706B3"
+            ],
+            "inputs": [],
+            "mocks": [
+              "LocalBlockchain"
+            ],
+            "environment": [
+              "PROOFS_ENABLED controls module fixture"
+            ],
+            "proof_mode": "CONFIGURATION_DEPENDENT; compile if run",
+            "static_gaps": [
+              "no verification-key assertion"
+            ],
+            "assertions": [
+              "compile resolves; analyzeMethods is logged but not asserted"
+            ],
+            "fixture_setup": "One module-level LocalBlockchain; SQLite-backed staking/voting/nullifier ledgers; five multisig signers; owner/controller/proposal contracts; two voters; service facade; shared proofs and mutable slots.",
+            "environment_assumptions": [],
+            "semantic_target_status": "PARTIAL_MAPPING"
+          },
+          {
+            "name": "should create a proposal",
+            "line": 269,
+            "expectation": "Deploy pause controller and owner, fund treasury, snapshot staking ledger, create proposal, and pay bond.",
+            "partitions": [
+              "deploy",
+              "receive",
+              "snapshot",
+              "create",
+              "bond"
+            ],
+            "active": true,
+            "setup": "deploy controller and owner; fund owner; hydrate three staking accounts; set stakingEpochData; signed bond payer",
+            "target_ids": [
+              "BHV-80247CE73D",
+              "BHV-C0141CC000",
+              "BHV-8786B10BA6",
+              "BHV-9E36CCC678",
+              "BHV-5B1BD6B386",
+              "BHV-5095682725",
+              "FLW-6394A1B72B",
+              "CL-DA4E524A76",
+              "CL-EA98E3F196",
+              "CL-EBC2FA7E3D",
+              "CL-EDE8130D74",
+              "INV-0697F6A5B4",
+              "INV-CF85A74EED",
+              "INV-A0200396FA",
+              "INV-A2C6F00258",
+              "INV-075E1EBA53"
+            ],
+            "inputs": [
+              "amount=100000000000",
+              "lifecycle=0",
+              "recipient",
+              "URI",
+              "bond=amount/10"
+            ],
+            "mocks": [
+              "LocalBlockchain network state",
+              "SQLite ledgers"
+            ],
+            "environment": [
+              "sequential shared state",
+              "transaction prove"
+            ],
+            "proof_mode": "CONFIGURATION_DEPENDENT; transaction prove if run",
+            "static_gaps": [
+              "does not assert proposal state, permissions, event, exact post-create balances, wrong lifecycle/pause/signatures, or proposer-bond identity"
+            ],
+            "assertions": [
+              "controller commitment equals fixture commitment"
+            ],
+            "fixture_setup": "One module-level LocalBlockchain; SQLite-backed staking/voting/nullifier ledgers; five multisig signers; owner/controller/proposal contracts; two voters; service facade; shared proofs and mutable slots.",
+            "environment_assumptions": [],
+            "semantic_target_status": "EXACT_MAPPING"
+          },
+          {
+            "name": "should vote on a proposal",
+            "line": 493,
+            "expectation": "Signed voter dispatches YAY during voting period.",
+            "partitions": [
+              "existing-voter",
+              "yay",
+              "voting-period"
+            ],
+            "active": true,
+            "setup": "depends on prior proposal; increments slot by two periods",
+            "target_ids": [
+              "BHV-8E9F5C3ECE",
+              "BHV-9E1B7D1BA1",
+              "BHV-5095682725",
+              "FLW-A6B92A4E6D",
+              "CL-72C688955E",
+              "CL-B573FAE492",
+              "INV-A0200396FA",
+              "INV-BD6F8D1028"
+            ],
+            "inputs": [
+              "voter1",
+              "YAY"
+            ],
+            "mocks": [
+              "LocalBlockchain"
+            ],
+            "environment": [
+              "shared proposal state",
+              "voter signature"
+            ],
+            "proof_mode": "CONFIGURATION_DEPENDENT; transaction prove if run",
+            "static_gaps": [
+              "no action/event/state assertion",
+              "no boundary slot or missing-signature case"
+            ],
+            "assertions": [
+              "transaction send/wait completes"
+            ],
+            "fixture_setup": "One module-level LocalBlockchain; SQLite-backed staking/voting/nullifier ledgers; five multisig signers; owner/controller/proposal contracts; two voters; service facade; shared proofs and mutable slots.",
+            "environment_assumptions": [],
+            "semantic_target_status": "EXACT_MAPPING"
+          },
+          {
+            "name": "should vote on a proposal from a new account",
+            "line": 519,
+            "expectation": "New signed voter account dispatches NAY.",
+            "partitions": [
+              "new-account",
+              "nay"
+            ],
+            "active": true,
+            "setup": "depends on prior vote; increments slot by one; funds account",
+            "target_ids": [
+              "BHV-8E9F5C3ECE",
+              "BHV-9E1B7D1BA1",
+              "BHV-5095682725",
+              "FLW-A6B92A4E6D",
+              "CL-72C688955E",
+              "CL-B573FAE492",
+              "INV-A0200396FA",
+              "INV-BD6F8D1028"
+            ],
+            "inputs": [
+              "voter2",
+              "NAY"
+            ],
+            "mocks": [
+              "LocalBlockchain"
+            ],
+            "environment": [
+              "shared proposal state",
+              "voter signature"
+            ],
+            "proof_mode": "CONFIGURATION_DEPENDENT; transaction prove if run",
+            "static_gaps": [
+              "no action/event/state assertion",
+              "ABSTAIN and DUMMY absent"
+            ],
+            "assertions": [
+              "transaction send/wait completes"
+            ],
+            "fixture_setup": "One module-level LocalBlockchain; SQLite-backed staking/voting/nullifier ledgers; five multisig signers; owner/controller/proposal contracts; two voters; service facade; shared proofs and mutable slots.",
+            "environment_assumptions": [],
+            "semantic_target_status": "EXACT_MAPPING"
+          },
+          {
+            "name": "should fail while attempting to vote on the proposal contract directly",
+            "line": 538,
+            "expectation": "Direct proposal action update is rejected by owner token approval policy.",
+            "partitions": [
+              "negative",
+              "direct-child-call",
+              "token-approval"
+            ],
+            "active": true,
+            "setup": "construct child proposal under owner token",
+            "target_ids": [
+              "BHV-872BB5A5F8",
+              "CL-D9178E192D"
+            ],
+            "inputs": [
+              "direct proposal.vote YAY",
+              "owner.approveAccountUpdate"
+            ],
+            "mocks": [
+              "LocalBlockchain"
+            ],
+            "environment": [
+              "shared proposal state"
+            ],
+            "proof_mode": "CONFIGURATION_DEPENDENT; prove attempt if run",
+            "static_gaps": [
+              "manual try/catch can dereference unassigned error if unexpectedly successful",
+              "other external update shapes absent"
+            ],
+            "assertions": [
+              "caught message includes No external account updates allowed for this token"
+            ],
+            "fixture_setup": "One module-level LocalBlockchain; SQLite-backed staking/voting/nullifier ledgers; five multisig signers; owner/controller/proposal contracts; two voters; service facade; shared proofs and mutable slots.",
+            "environment_assumptions": [],
+            "semantic_target_status": "EXACT_MAPPING"
+          },
+          {
+            "name": "should commit action state",
+            "line": 568,
+            "expectation": "Ledger transformation and vote reduction proofs are constructed and statically verified by test code.",
+            "partitions": [
+              "digest",
+              "exhaust",
+              "reduce",
+              "side-loaded-conversion-preparation"
+            ],
+            "active": true,
+            "setup": "depends on two votes; advances one period; reads actions; pads to five; builds host ledgers",
+            "target_ids": [
+              "API-2E2E88515C",
+              "API-702CAD321E",
+              "BHV-CB4CCBE337",
+              "BHV-C4F9C6CEE0",
+              "BHV-E7ECC5B6FC",
+              "BHV-50C1B246E0",
+              "FLW-7DA083B071",
+              "FLW-53B4410963",
+              "FLW-BFD5C6D535"
+            ],
+            "inputs": [
+              "five staking accounts/padding",
+              "fetched vote actions",
+              "history target"
+            ],
+            "mocks": [
+              "LocalBlockchain action archive",
+              "SQLite ledgers"
+            ],
+            "environment": [
+              "shared state and module-level proof variables"
+            ],
+            "proof_mode": "CONFIGURATION_DEPENDENT; digest/exhaust/reduce/verify if run",
+            "static_gaps": [
+              "logged verification is not asserted",
+              "no failure/rollback/continuity negative",
+              "proof result depends on prior cases"
+            ],
+            "assertions": [
+              "no explicit assertion; proofs assigned and verification booleans logged"
+            ],
+            "fixture_setup": "One module-level LocalBlockchain; SQLite-backed staking/voting/nullifier ledgers; five multisig signers; owner/controller/proposal contracts; two voters; service facade; shared proofs and mutable slots.",
+            "environment_assumptions": [],
+            "semantic_target_status": "PARTIAL_MAPPING"
+          },
+          {
+            "name": "should tally votes",
+            "line": 671,
+            "expectation": "Service tally sets proposal status APPROVED for fixture totals.",
+            "partitions": [
+              "approved",
+              "tally"
+            ],
+            "active": true,
+            "setup": "depends on proofs assigned by prior case and owner account witness",
+            "target_ids": [
+              "BHV-4866A87097",
+              "BHV-1136BD4D08",
+              "BHV-BAB5A8FD7C",
+              "BHV-A302A43C9F",
+              "BHV-B377C55F96",
+              "FLW-5E24C8B8E4",
+              "FLW-E60ABD1745",
+              "CL-454A642590",
+              "CL-D0B87D2135",
+              "CL-2EE46748BE",
+              "CL-0E9183DED0",
+              "CL-A9E8CDAD73",
+              "CL-CB5F345B9C",
+              "CL-AFDB356F05",
+              "INV-A2C6F00258",
+              "INV-222CED01FB",
+              "INV-F79F5B8C65",
+              "INV-159AD1A04E",
+              "INV-DAA7454111",
+              "INV-A0200396FA"
+            ],
+            "inputs": [
+              "side-loaded vote and staking proofs",
+              "owner account/witness"
+            ],
+            "mocks": [
+              "LocalBlockchain through 127.0.0.1 service URL",
+              "SQLite service"
+            ],
+            "environment": [
+              "shared proof/contract state"
+            ],
+            "proof_mode": "CONFIGURATION_DEPENDENT; service transaction if run",
+            "static_gaps": [
+              "no rejected/quorum/equality/repeat/wrong-proof/action-history negative",
+              "no weights/event assertion"
+            ],
+            "assertions": [
+              "service returns tallyTxHash",
+              "proposal status equals APPROVED"
+            ],
+            "fixture_setup": "One module-level LocalBlockchain; SQLite-backed staking/voting/nullifier ledgers; five multisig signers; owner/controller/proposal contracts; two voters; service facade; shared proofs and mutable slots.",
+            "environment_assumptions": [],
+            "semantic_target_status": "EXACT_MAPPING"
+          },
+          {
+            "name": "should execute a proposal",
+            "line": 704,
+            "expectation": "Execution transfers amount plus bond and reduces treasury owner balance by the same amount.",
+            "partitions": [
+              "full payout",
+              "balance conservation",
+              "post-cooldown"
+            ],
+            "active": true,
+            "setup": "depends on approved status; advances two periods",
+            "target_ids": [
+              "BHV-5D3FCC7B93",
+              "BHV-F2207732B4",
+              "FLW-9D28A6D299",
+              "FLW-BEFDEF1197",
+              "CL-AB6846116A",
+              "CL-D767301DCD",
+              "CL-7A13BAC4AA",
+              "CL-944081AB4C",
+              "CL-B6F99A74D4",
+              "INV-A0200396FA",
+              "INV-681AEC9EF4",
+              "INV-EF3059DB8A"
+            ],
+            "inputs": [
+              "recipient",
+              "amount+bond",
+              "service nonce"
+            ],
+            "mocks": [
+              "LocalBlockchain through 127.0.0.1 service URL",
+              "SQLite service"
+            ],
+            "environment": [
+              "shared approved proposal"
+            ],
+            "proof_mode": "CONFIGURATION_DEPENDENT; service transaction if run",
+            "static_gaps": [
+              "no partial/repeat/overpay/wrong-recipient/insufficient-balance/pause case",
+              "does not assert paidOutAmount or event",
+              "testAccount fee balance captured but not asserted"
+            ],
+            "assertions": [
+              "executeTxHash",
+              "owner balance decreased by amount+bond",
+              "recipient balance equals amount+bond"
+            ],
+            "fixture_setup": "One module-level LocalBlockchain; SQLite-backed staking/voting/nullifier ledgers; five multisig signers; owner/controller/proposal contracts; two voters; service facade; shared proofs and mutable slots.",
+            "environment_assumptions": [],
+            "semantic_target_status": "EXACT_MAPPING"
+          }
+        ]
+      },
+      "rationale": "Retains every original case field, API target, active/skipped state, and reviewed suite semantic_status while adding only assertion-supported BHV/CL/INV/FLW targets. Per-case semantic_target_status explicitly records exact versus partial target closure.",
+      "evidence_ids": [
+        "EVD-B5183C166D",
+        "EVD-A39B48EDF0"
+      ],
+      "source_references": [
+        "packages/sdk/test/integration/treasury-owner.test.ts",
+        "model/pass-2-contextual-corrected.yaml",
+        "evidence/contextual/WU-367D918B22.yaml"
+      ]
+    },
+    {
+      "group": "tests",
+      "record_id": "TST-6530589740",
+      "old_sha256": {
+        "cases": "5725e72fd4d15bee8d9727503ac8dff93810b4a00fdf03112c1a72d6e1c1cd50"
+      },
+      "set": {
+        "cases": [
+          {
+            "name": "1% of treasury",
+            "line": 9,
+            "expected_participation_bp": 2504,
+            "expected_approval_bp": 5274,
+            "active": true,
+            "setup": "direct static method",
+            "target_ids": [
+              "BHV-B377C55F96",
+              "CL-6989AB70EA"
+            ],
+            "inputs": [
+              "proposal=100",
+              "treasury=10000",
+              "currency=10000"
+            ],
+            "mocks": [],
+            "environment": [
+              "host/direct o1js arithmetic"
+            ],
+            "proof_mode": "NO_PROOF",
+            "partitions": [
+              "low positive ratio"
+            ],
+            "static_gaps": [
+              "no rounding-neighbor values"
+            ],
+            "assertions": [
+              "participation=2504bp",
+              "approval=5274bp"
+            ],
+            "fixture_setup": "Table-driven direct calls with treasuryBalance=totalCurrency=10000 and proposal ratios 1%,10%,25%,50%,90%,100%.",
+            "environment_assumptions": [],
+            "semantic_target_status": "EXACT_MAPPING"
+          },
+          {
+            "name": "10% of treasury",
+            "line": 18,
+            "expected_participation_bp": 4068,
+            "expected_approval_bp": 6099,
+            "active": true,
+            "setup": "direct static method",
+            "target_ids": [
+              "BHV-B377C55F96",
+              "CL-6989AB70EA"
+            ],
+            "inputs": [
+              "proposal=1000",
+              "treasury=10000",
+              "currency=10000"
+            ],
+            "mocks": [],
+            "environment": [
+              "host/direct o1js arithmetic"
+            ],
+            "proof_mode": "NO_PROOF",
+            "partitions": [
+              "10 percent"
+            ],
+            "static_gaps": [
+              "no rounding-neighbor values"
+            ],
+            "assertions": [
+              "participation=4068bp",
+              "approval=6099bp"
+            ],
+            "fixture_setup": "Table-driven direct calls with treasuryBalance=totalCurrency=10000 and proposal ratios 1%,10%,25%,50%,90%,100%.",
+            "environment_assumptions": [],
+            "semantic_target_status": "EXACT_MAPPING"
+          },
+          {
+            "name": "25% of treasury",
+            "line": 27,
+            "expected_participation_bp": 4608,
+            "expected_approval_bp": 6561,
+            "active": true,
+            "setup": "direct static method",
+            "target_ids": [
+              "BHV-B377C55F96",
+              "CL-6989AB70EA"
+            ],
+            "inputs": [
+              "proposal=2500",
+              "treasury=10000",
+              "currency=10000"
+            ],
+            "mocks": [],
+            "environment": [
+              "host/direct o1js arithmetic"
+            ],
+            "proof_mode": "NO_PROOF",
+            "partitions": [
+              "quarter"
+            ],
+            "static_gaps": [],
+            "assertions": [
+              "participation=4608bp",
+              "approval=6561bp"
+            ],
+            "fixture_setup": "Table-driven direct calls with treasuryBalance=totalCurrency=10000 and proposal ratios 1%,10%,25%,50%,90%,100%.",
+            "environment_assumptions": [],
+            "semantic_target_status": "EXACT_MAPPING"
+          },
+          {
+            "name": "50% of treasury",
+            "line": 36,
+            "expected_participation_bp": 4856,
+            "expected_approval_bp": 6827,
+            "active": true,
+            "setup": "direct static method",
+            "target_ids": [
+              "BHV-B377C55F96",
+              "CL-6989AB70EA"
+            ],
+            "inputs": [
+              "proposal=5000",
+              "treasury=10000",
+              "currency=10000"
+            ],
+            "mocks": [],
+            "environment": [
+              "host/direct o1js arithmetic"
+            ],
+            "proof_mode": "NO_PROOF",
+            "partitions": [
+              "half"
+            ],
+            "static_gaps": [],
+            "assertions": [
+              "participation=4856bp",
+              "approval=6827bp"
+            ],
+            "fixture_setup": "Table-driven direct calls with treasuryBalance=totalCurrency=10000 and proposal ratios 1%,10%,25%,50%,90%,100%.",
+            "environment_assumptions": [],
+            "semantic_target_status": "EXACT_MAPPING"
+          },
+          {
+            "name": "90% of treasury",
+            "line": 45,
+            "expected_participation_bp": 4983,
+            "expected_approval_bp": 6979,
+            "active": true,
+            "setup": "direct static method",
+            "target_ids": [
+              "BHV-B377C55F96",
+              "CL-6989AB70EA"
+            ],
+            "inputs": [
+              "proposal=9000",
+              "treasury=10000",
+              "currency=10000"
+            ],
+            "mocks": [],
+            "environment": [
+              "host/direct o1js arithmetic"
+            ],
+            "proof_mode": "NO_PROOF",
+            "partitions": [
+              "near cap"
+            ],
+            "static_gaps": [],
+            "assertions": [
+              "participation=4983bp",
+              "approval=6979bp"
+            ],
+            "fixture_setup": "Table-driven direct calls with treasuryBalance=totalCurrency=10000 and proposal ratios 1%,10%,25%,50%,90%,100%.",
+            "environment_assumptions": [],
+            "semantic_target_status": "EXACT_MAPPING"
+          },
+          {
+            "name": "100% of treasury",
+            "line": 54,
+            "expected_participation_bp": 5000,
+            "expected_approval_bp": 7000,
+            "active": true,
+            "setup": "direct static method",
+            "target_ids": [
+              "BHV-B377C55F96",
+              "CL-6989AB70EA"
+            ],
+            "inputs": [
+              "proposal=10000",
+              "treasury=10000",
+              "currency=10000"
+            ],
+            "mocks": [],
+            "environment": [
+              "host/direct o1js arithmetic"
+            ],
+            "proof_mode": "NO_PROOF",
+            "partitions": [
+              "cap equality"
+            ],
+            "static_gaps": [
+              "greater-than-cap, zero treasury/currency, max UInt, and calculateApprovalStatus boundaries absent"
+            ],
+            "assertions": [
+              "participation=5000bp",
+              "approval=7000bp"
+            ],
+            "fixture_setup": "Table-driven direct calls with treasuryBalance=totalCurrency=10000 and proposal ratios 1%,10%,25%,50%,90%,100%.",
+            "environment_assumptions": [],
+            "semantic_target_status": "EXACT_MAPPING"
+          }
+        ]
+      },
+      "rationale": "Retains every original case field, API target, active/skipped state, and reviewed suite semantic_status while adding only assertion-supported BHV/CL/INV/FLW targets. Per-case semantic_target_status explicitly records exact versus partial target closure.",
+      "evidence_ids": [
+        "EVD-CFF488F119",
+        "EVD-9DFE0879E6"
+      ],
+      "source_references": [
+        "packages/sdk/test/provable/contracts/treasury-proposal/treasury-proposal.test.ts",
+        "model/pass-2-contextual-corrected.yaml",
+        "evidence/contextual/WU-367D918B22.yaml"
+      ]
+    },
+    {
+      "group": "tests",
+      "record_id": "TST-A9E4F4D3BC",
+      "old_sha256": {
+        "cases": "4df1f51eb0fdd4580db5178fd61c7b77305da46bd18ad4dfe1831608a9565ab5"
+      },
+      "set": {
+        "cases": [
+          {
+            "name": "compile",
+            "line": 29,
+            "partitions": [
+              "compile"
+            ],
+            "active": true,
+            "setup": "fresh seeded context",
+            "target_ids": [
+              "API-2E2E88515C"
+            ],
+            "inputs": [],
+            "mocks": [
+              "SQLite ledgers"
+            ],
+            "environment": [
+              "PROOFS_ENABLED from environment"
+            ],
+            "proof_mode": "CONFIGURATION_DEPENDENT; compile if run",
+            "static_gaps": [
+              "no verification-key vector"
+            ],
+            "assertions": [
+              "compile resolves"
+            ],
+            "fixture_setup": "Ten generated voting accounts; SQLite in-memory voting/nullifier ledgers; fixed batch five; global voteReducerContext; dummy padding; fixture action-history target builder.",
+            "environment_assumptions": [],
+            "semantic_target_status": "PARTIAL_MAPPING"
+          },
+          {
+            "name": "tally vote action batch",
+            "line": 34,
+            "partitions": [
+              "normal",
+              "three vote kinds"
+            ],
+            "active": true,
+            "setup": "five mixed YAY/NAY/ABSTAIN actions",
+            "target_ids": [
+              "API-2E2E88515C",
+              "INV-307C13CAB2",
+              "BHV-50C1B246E0",
+              "BHV-CEE91EC6D9",
+              "BHV-E79288F8DA",
+              "BHV-141ED40E5D",
+              "BHV-3946C60752",
+              "FLW-BFD5C6D535",
+              "CL-2311B61899",
+              "CL-0C9F68A22B",
+              "CL-2F056FA9A9",
+              "CL-9C7B0C38F5",
+              "CL-61EF5A92CB",
+              "CL-631833DB43",
+              "CL-034C97475E",
+              "CL-5D1DBDDB89",
+              "CL-0966A605CA",
+              "INV-5A6C7F3858",
+              "INV-E1381514EB",
+              "INV-24A18B4772",
+              "INV-ED032F16C5",
+              "INV-BFF99DCF17",
+              "INV-1036638B64",
+              "INV-EA1AD61C8B"
+            ],
+            "inputs": [
+              "mixed YAY/NAY/ABSTRAIN batch"
+            ],
+            "mocks": [],
+            "environment": [
+              "ZkProgram method if run"
+            ],
+            "proof_mode": "fixture-controlled",
+            "static_gaps": [],
+            "assertions": [
+              "yay/nay/abstain weights",
+              "expected nullifier root",
+              "all target found flags",
+              "tallies",
+              "nullifier root",
+              "history flags"
+            ],
+            "fixture_setup": "generated voting accounts and fresh ledgers",
+            "asserted_outputs": [
+              "tallies",
+              "nullifier root",
+              "history flags"
+            ],
+            "environment_assumptions": [
+              "fixture compile mode"
+            ],
+            "semantic_target_status": "EXACT_MAPPING"
+          },
+          {
+            "name": "contiguous action hash output",
+            "line": 128,
+            "partitions": [
+              "action-chain order",
+              "padding"
+            ],
+            "active": true,
+            "setup": "three real actions plus dummy padding",
+            "target_ids": [
+              "BHV-CB4CCBE337",
+              "API-2E2E88515C",
+              "BHV-3946C60752",
+              "FLW-BFD5C6D535",
+              "CL-5D1DBDDB89",
+              "INV-E502583790",
+              "INV-5A6C7F3858"
+            ],
+            "inputs": [
+              "ordered actions"
+            ],
+            "mocks": [
+              "host ledgers"
+            ],
+            "environment": [
+              "ZkProgram method if run"
+            ],
+            "proof_mode": "PROGRAM_METHOD",
+            "static_gaps": [
+              "reordered sequence comparison absent"
+            ],
+            "assertions": [
+              "toActionsHash equals independently appended chain"
+            ],
+            "fixture_setup": "Ten generated voting accounts; SQLite in-memory voting/nullifier ledgers; fixed batch five; global voteReducerContext; dummy padding; fixture action-history target builder.",
+            "environment_assumptions": [],
+            "semantic_target_status": "EXACT_MAPPING"
+          },
+          {
+            "name": "all dummy actions leave roots/tallies unchanged",
+            "line": 174,
+            "partitions": [
+              "all-dummy"
+            ],
+            "active": true,
+            "setup": "five VoteAction.dummy",
+            "target_ids": [
+              "API-2E2E88515C",
+              "BHV-CEE91EC6D9",
+              "BHV-50C1B246E0",
+              "FLW-BFD5C6D535",
+              "CL-0C9F68A22B",
+              "CL-5D1DBDDB89",
+              "CL-61EF5A92CB",
+              "CL-631833DB43",
+              "CL-034C97475E",
+              "INV-5A6C7F3858",
+              "INV-E1381514EB",
+              "INV-EA1AD61C8B"
+            ],
+            "inputs": [
+              "padding"
+            ],
+            "mocks": [],
+            "environment": [
+              "ZkProgram method if run"
+            ],
+            "proof_mode": "fixture-controlled",
+            "static_gaps": [
+              "still requires valid empty-key voting/nullifier witnesses"
+            ],
+            "assertions": [
+              "zero tallies",
+              "actions hash unchanged",
+              "nullifier root unchanged",
+              "history flags false",
+              "unchanged action/nullifier roots"
+            ],
+            "fixture_setup": "five VoteAction.dummy",
+            "asserted_outputs": [
+              "zero tallies",
+              "unchanged action/nullifier roots"
+            ],
+            "environment_assumptions": [],
+            "semantic_target_status": "EXACT_MAPPING"
+          },
+          {
+            "name": "duplicate vote in same batch counted once",
+            "line": 237,
+            "partitions": [
+              "same-batch duplicate",
+              "prior-nullified",
+              "cross-batch duplicate"
+            ],
+            "active": true,
+            "setup": "same voter appears repeatedly",
+            "target_ids": [
+              "API-2E2E88515C",
+              "BHV-141ED40E5D",
+              "BHV-50C1B246E0",
+              "FLW-BFD5C6D535",
+              "CL-9C7B0C38F5",
+              "CL-61EF5A92CB",
+              "CL-631833DB43",
+              "CL-034C97475E",
+              "INV-E1381514EB",
+              "INV-BFF99DCF17",
+              "INV-ED032F16C5"
+            ],
+            "inputs": [
+              "duplicate voter"
+            ],
+            "mocks": [],
+            "environment": [
+              "ZkProgram method if run"
+            ],
+            "proof_mode": "fixture-controlled",
+            "static_gaps": [],
+            "assertions": [
+              "first weight only",
+              "expected nullifier root",
+              "count once or zero"
+            ],
+            "fixture_setup": "duplicate in batch and pre-seeded nullifier",
+            "asserted_outputs": [
+              "count once or zero"
+            ],
+            "environment_assumptions": [],
+            "semantic_target_status": "EXACT_MAPPING"
+          },
+          {
+            "name": "already-nullified voter has zero weight",
+            "line": 306,
+            "partitions": [
+              "pre-nullified",
+              "zero weight"
+            ],
+            "active": true,
+            "setup": "seed nullifier true before batch",
+            "target_ids": [
+              "API-2E2E88515C",
+              "BHV-141ED40E5D",
+              "BHV-50C1B246E0",
+              "FLW-BFD5C6D535",
+              "CL-9C7B0C38F5",
+              "CL-61EF5A92CB",
+              "CL-631833DB43",
+              "CL-034C97475E",
+              "INV-E1381514EB",
+              "INV-BFF99DCF17",
+              "INV-ED032F16C5"
+            ],
+            "inputs": [
+              "pre-nullified voter actions"
+            ],
+            "mocks": [
+              "host ledgers"
+            ],
+            "environment": [
+              "ZkProgram method if run"
+            ],
+            "proof_mode": "PROGRAM_METHOD",
+            "static_gaps": [
+              "policy chooses ignore rather than reject; no explicit error oracle"
+            ],
+            "assertions": [
+              "zero contribution for pre-nullified voter",
+              "other tallies",
+              "expected root"
+            ],
+            "fixture_setup": "Ten generated voting accounts; SQLite in-memory voting/nullifier ledgers; fixed batch five; global voteReducerContext; dummy padding; fixture action-history target builder.",
+            "environment_assumptions": [],
+            "semantic_target_status": "EXACT_MAPPING"
+          },
+          {
+            "name": "DUMMY value with non-empty public key is non-dummy",
+            "line": 380,
+            "partitions": [
+              "dummy-boundary"
+            ],
+            "active": true,
+            "setup": "Vote.DUMMY paired with real voter key",
+            "target_ids": [
+              "API-2E2E88515C",
+              "BHV-CEE91EC6D9",
+              "BHV-141ED40E5D",
+              "BHV-50C1B246E0",
+              "FLW-BFD5C6D535",
+              "CL-0C9F68A22B",
+              "CL-9C7B0C38F5",
+              "CL-61EF5A92CB",
+              "CL-631833DB43",
+              "CL-034C97475E",
+              "CL-5D1DBDDB89",
+              "INV-E1381514EB",
+              "INV-24A18B4772",
+              "INV-5A6C7F3858",
+              "INV-BFF99DCF17"
+            ],
+            "inputs": [
+              "DUMMY/non-empty key"
+            ],
+            "mocks": [],
+            "environment": [
+              "ZkProgram method if run"
+            ],
+            "proof_mode": "fixture-controlled",
+            "static_gaps": [
+              "Encodes current behavior rather than RFC public choice intent."
+            ],
+            "assertions": [
+              "action hash advances",
+              "nullifier root changes",
+              "all tallies zero",
+              "action and nullifier roots change",
+              "all tallies remain zero"
+            ],
+            "fixture_setup": "real public key with vote zero",
+            "asserted_outputs": [
+              "action and nullifier roots change",
+              "all tallies remain zero"
+            ],
+            "environment_assumptions": [],
+            "semantic_target_status": "EXACT_MAPPING"
+          },
+          {
+            "name": "out-of-range vote value",
+            "line": 454,
+            "partitions": [
+              "invalid enum"
+            ],
+            "active": false,
+            "skip": true,
+            "static_gap": "Skipped test title says ignore, while source Vote.assertValid statically rejects invalid values.",
+            "setup": "construct Vote(Field(99))",
+            "target_ids": [
+              "API-2E2E88515C",
+              "BHV-CEE91EC6D9",
+              "CL-2311B61899",
+              "INV-24A18B4772"
+            ],
+            "inputs": [
+              "out-of-range Field"
+            ],
+            "mocks": [],
+            "environment": [
+              "t.skip"
+            ],
+            "proof_mode": "fixture-controlled",
+            "static_gaps": [
+              "Test is skipped; source assertion is not actively exercised."
+            ],
+            "assertions": [
+              "source contains intended rejection assertion, but test body is skipped"
+            ],
+            "fixture_setup": "invalid enum",
+            "asserted_outputs": [],
+            "environment_assumptions": [],
+            "semantic_target_status": "PARTIAL_MAPPING"
+          },
+          {
+            "name": "cross-batch nullifier prevents double count",
+            "line": 529,
+            "partitions": [
+              "cross-batch duplicate",
+              "continuity"
+            ],
+            "active": true,
+            "setup": "two sequential batches with repeated voters and root handoff",
+            "target_ids": [
+              "API-2E2E88515C",
+              "BHV-50C1B246E0",
+              "BHV-141ED40E5D",
+              "FLW-BFD5C6D535",
+              "CL-9C7B0C38F5",
+              "CL-61EF5A92CB",
+              "CL-631833DB43",
+              "INV-E1381514EB",
+              "INV-BFF99DCF17"
+            ],
+            "inputs": [
+              "batch1",
+              "batch2",
+              "proof1 output roots"
+            ],
+            "mocks": [
+              "host ledgers"
+            ],
+            "environment": [
+              "two ZkProgram calls"
+            ],
+            "proof_mode": "PROGRAM_METHOD",
+            "static_gaps": [
+              "no merge in this case"
+            ],
+            "assertions": [
+              "second-batch tallies exclude earlier voters",
+              "expected final nullifier root"
+            ],
+            "fixture_setup": "Ten generated voting accounts; SQLite in-memory voting/nullifier ledgers; fixed batch five; global voteReducerContext; dummy padding; fixture action-history target builder.",
+            "environment_assumptions": [],
+            "semantic_target_status": "EXACT_MAPPING"
+          },
+          {
+            "name": "cross-batch action hash progresses",
+            "line": 622,
+            "partitions": [
+              "cross-batch action continuity"
+            ],
+            "active": true,
+            "setup": "two sequential batches",
+            "target_ids": [
+              "BHV-CB4CCBE337",
+              "API-2E2E88515C",
+              "BHV-50C1B246E0",
+              "BHV-3946C60752",
+              "FLW-BFD5C6D535",
+              "CL-5D1DBDDB89",
+              "INV-5A6C7F3858",
+              "INV-E502583790"
+            ],
+            "inputs": [
+              "proof1 toActionsHash as proof2 input"
+            ],
+            "mocks": [
+              "host ledgers"
+            ],
+            "environment": [
+              "two ZkProgram calls"
+            ],
+            "proof_mode": "PROGRAM_METHOD",
+            "static_gaps": [],
+            "assertions": [
+              "proof2 action hash equals independent complete chain"
+            ],
+            "fixture_setup": "Ten generated voting accounts; SQLite in-memory voting/nullifier ledgers; fixed batch five; global voteReducerContext; dummy padding; fixture action-history target builder.",
+            "environment_assumptions": [],
+            "semantic_target_status": "EXACT_MAPPING"
+          },
+          {
+            "name": "too few actions rejected",
+            "line": 689,
+            "partitions": [
+              "array length below",
+              "negative"
+            ],
+            "active": true,
+            "setup": "array length below five",
+            "target_ids": [
+              "API-2E2E88515C",
+              "BHV-50C1B246E0",
+              "CL-EED9250B77",
+              "INV-EA1AD61C8B"
+            ],
+            "inputs": [
+              "one action"
+            ],
+            "mocks": [
+              "host ledgers"
+            ],
+            "environment": [
+              "runtime wrapper"
+            ],
+            "proof_mode": "PROGRAM_METHOD",
+            "static_gaps": [
+              "error identity absent"
+            ],
+            "assertions": [
+              "reduceBatch rejects"
+            ],
+            "fixture_setup": "Ten generated voting accounts; SQLite in-memory voting/nullifier ledgers; fixed batch five; global voteReducerContext; dummy padding; fixture action-history target builder.",
+            "environment_assumptions": [],
+            "semantic_target_status": "EXACT_MAPPING"
+          },
+          {
+            "name": "actions beyond batch size ignored",
+            "line": 712,
+            "partitions": [
+              "array length above",
+              "truncation"
+            ],
+            "active": true,
+            "setup": "six actions",
+            "target_ids": [
+              "API-2E2E88515C",
+              "BHV-50C1B246E0",
+              "CL-EED9250B77",
+              "INV-EA1AD61C8B"
+            ],
+            "inputs": [
+              "first five plus sixth"
+            ],
+            "mocks": [
+              "host ledgers"
+            ],
+            "environment": [
+              "runtime wrapper accepts extra JS array"
+            ],
+            "proof_mode": "PROGRAM_METHOD",
+            "static_gaps": [
+              "silent ignore policy may differ from intended API contract"
+            ],
+            "assertions": [
+              "toActionsHash reflects first five only"
+            ],
+            "fixture_setup": "Ten generated voting accounts; SQLite in-memory voting/nullifier ledgers; fixed batch five; global voteReducerContext; dummy padding; fixture action-history target builder.",
+            "environment_assumptions": [],
+            "semantic_target_status": "EXACT_MAPPING"
+          },
+          {
+            "name": "mismatched voting witness index rejected",
+            "line": 770,
+            "partitions": [
+              "wrong voting index",
+              "wrong nullifier index",
+              "wrong roots"
+            ],
+            "active": true,
+            "setup": "fixture supplies witness for wrong public key",
+            "target_ids": [
+              "API-2E2E88515C",
+              "INV-307C13CAB2",
+              "BHV-E79288F8DA",
+              "BHV-141ED40E5D",
+              "BHV-50C1B246E0",
+              "CL-2F056FA9A9",
+              "CL-9C7B0C38F5",
+              "INV-ED032F16C5",
+              "INV-BFF99DCF17"
+            ],
+            "inputs": [
+              "wrong voting/nullifier paths or roots"
+            ],
+            "mocks": [
+              "ledger adapters returning another key witness"
+            ],
+            "environment": [
+              "ZkProgram method"
+            ],
+            "proof_mode": "fixture-controlled",
+            "static_gaps": [],
+            "assertions": [
+              "reduce rejects",
+              "rejection"
+            ],
+            "fixture_setup": "substituted witness/root providers",
+            "asserted_outputs": [
+              "rejection"
+            ],
+            "environment_assumptions": [],
+            "semantic_target_status": "EXACT_MAPPING"
+          },
+          {
+            "name": "mismatched nullifier witness index rejected",
+            "line": 825,
+            "partitions": [
+              "witness index mismatch",
+              "negative"
+            ],
+            "active": true,
+            "setup": "fixture supplies wrong nullifier witness",
+            "target_ids": [
+              "API-2E2E88515C",
+              "INV-307C13CAB2",
+              "BHV-141ED40E5D",
+              "BHV-50C1B246E0",
+              "CL-9C7B0C38F5",
+              "INV-BFF99DCF17"
+            ],
+            "inputs": [
+              "action key",
+              "wrong nullifier witness"
+            ],
+            "mocks": [
+              "overridden host ledger witness"
+            ],
+            "environment": [
+              "ZkProgram method"
+            ],
+            "proof_mode": "PROGRAM_METHOD",
+            "static_gaps": [
+              "error identity absent"
+            ],
+            "assertions": [
+              "reduce rejects"
+            ],
+            "fixture_setup": "Ten generated voting accounts; SQLite in-memory voting/nullifier ledgers; fixed batch five; global voteReducerContext; dummy padding; fixture action-history target builder.",
+            "environment_assumptions": [],
+            "semantic_target_status": "EXACT_MAPPING"
+          },
+          {
+            "name": "wrong voting root rejected",
+            "line": 882,
+            "partitions": [
+              "root binding",
+              "negative"
+            ],
+            "active": true,
+            "setup": "public input root differs from host witness root",
+            "target_ids": [
+              "API-2E2E88515C",
+              "BHV-E79288F8DA",
+              "BHV-50C1B246E0",
+              "CL-2F056FA9A9",
+              "INV-ED032F16C5"
+            ],
+            "inputs": [
+              "wrong voting root"
+            ],
+            "mocks": [
+              "host ledgers"
+            ],
+            "environment": [
+              "ZkProgram method"
+            ],
+            "proof_mode": "PROGRAM_METHOD",
+            "static_gaps": [
+              "error identity absent"
+            ],
+            "assertions": [
+              "reduce rejects"
+            ],
+            "fixture_setup": "Ten generated voting accounts; SQLite in-memory voting/nullifier ledgers; fixed batch five; global voteReducerContext; dummy padding; fixture action-history target builder.",
+            "environment_assumptions": [],
+            "semantic_target_status": "EXACT_MAPPING"
+          },
+          {
+            "name": "wrong nullifier root rejected",
+            "line": 916,
+            "partitions": [
+              "root binding",
+              "negative"
+            ],
+            "active": true,
+            "setup": "public input root differs from host witness root",
+            "target_ids": [
+              "API-2E2E88515C",
+              "BHV-141ED40E5D",
+              "BHV-50C1B246E0",
+              "CL-9C7B0C38F5",
+              "INV-E1381514EB",
+              "INV-BFF99DCF17"
+            ],
+            "inputs": [
+              "wrong nullifier root"
+            ],
+            "mocks": [
+              "host ledgers"
+            ],
+            "environment": [
+              "ZkProgram method"
+            ],
+            "proof_mode": "PROGRAM_METHOD",
+            "static_gaps": [
+              "host mutation-on-failure not asserted"
+            ],
+            "assertions": [
+              "reduce rejects"
+            ],
+            "fixture_setup": "Ten generated voting accounts; SQLite in-memory voting/nullifier ledgers; fixed batch five; global voteReducerContext; dummy padding; fixture action-history target builder.",
+            "environment_assumptions": [],
+            "semantic_target_status": "EXACT_MAPPING"
+          },
+          {
+            "name": "merge succeeds and combines tallies/history",
+            "line": 954,
+            "partitions": [
+              "success",
+              "nullifier discontinuity",
+              "voting root mismatch",
+              "outer input mismatch",
+              "action discontinuity"
+            ],
+            "active": true,
+            "setup": "construct two contiguous proofs then merge",
+            "target_ids": [
+              "API-2E2E88515C",
+              "BHV-67153EA362",
+              "FLW-9BB4E99B75",
+              "CL-14F284A0F4",
+              "CL-9DDDB05A64",
+              "CL-96F95D8CE6",
+              "CL-CE68CFDE0A",
+              "INV-BB400806DE",
+              "INV-1036638B64",
+              "INV-5A6C7F3858",
+              "INV-E502583790"
+            ],
+            "inputs": [
+              "adjacent or deliberately mismatched roots/input/hash"
+            ],
+            "mocks": [],
+            "environment": [
+              "recursive proof calls"
+            ],
+            "proof_mode": "fixture-controlled",
+            "static_gaps": [
+              "No arithmetic maximum/overflow partition."
+            ],
+            "assertions": [
+              "tallies add",
+              "terminal roots/hashes equal proof2",
+              "history flags and target equality",
+              "sum/history on success",
+              "rejection on mismatch"
+            ],
+            "fixture_setup": "two base proofs",
+            "asserted_outputs": [
+              "sum/history on success",
+              "rejection on mismatch"
+            ],
+            "environment_assumptions": [],
+            "semantic_target_status": "EXACT_MAPPING"
+          },
+          {
+            "name": "merge rejects noncontiguous nullifier roots",
+            "line": 1110,
+            "partitions": [
+              "nullifier continuity",
+              "negative"
+            ],
+            "active": true,
+            "setup": "proof2 starts from original rather than proof1 nullifier root",
+            "target_ids": [
+              "API-2E2E88515C",
+              "BHV-67153EA362",
+              "FLW-9BB4E99B75",
+              "CL-96F95D8CE6",
+              "INV-BB400806DE"
+            ],
+            "inputs": [
+              "nonadjacent proofs"
+            ],
+            "mocks": [
+              "host ledgers"
+            ],
+            "environment": [
+              "recursive proof calls"
+            ],
+            "proof_mode": "PROGRAM_METHOD_RECURSION",
+            "static_gaps": [
+              "error identity absent"
+            ],
+            "assertions": [
+              "merge rejects"
+            ],
+            "fixture_setup": "Ten generated voting accounts; SQLite in-memory voting/nullifier ledgers; fixed batch five; global voteReducerContext; dummy padding; fixture action-history target builder.",
+            "environment_assumptions": [],
+            "semantic_target_status": "EXACT_MAPPING"
+          },
+          {
+            "name": "merge rejects different voting roots",
+            "line": 1176,
+            "partitions": [
+              "voting root equality",
+              "negative"
+            ],
+            "active": true,
+            "setup": "proof2 uses a different voting root",
+            "target_ids": [
+              "API-2E2E88515C",
+              "BHV-67153EA362",
+              "FLW-9BB4E99B75",
+              "CL-96F95D8CE6",
+              "INV-BB400806DE"
+            ],
+            "inputs": [
+              "root-mismatched proofs"
+            ],
+            "mocks": [
+              "host ledgers"
+            ],
+            "environment": [
+              "recursive proof calls"
+            ],
+            "proof_mode": "PROGRAM_METHOD_RECURSION",
+            "static_gaps": [],
+            "assertions": [
+              "merge rejects"
+            ],
+            "fixture_setup": "Ten generated voting accounts; SQLite in-memory voting/nullifier ledgers; fixed batch five; global voteReducerContext; dummy padding; fixture action-history target builder.",
+            "environment_assumptions": [],
+            "semantic_target_status": "EXACT_MAPPING"
+          },
+          {
+            "name": "merge combines action-history found flags",
+            "line": 1250,
+            "partitions": [
+              "history OR composition"
+            ],
+            "active": true,
+            "setup": "targets found across different proofs",
+            "target_ids": [
+              "API-2E2E88515C",
+              "BHV-67153EA362",
+              "FLW-9BB4E99B75",
+              "CL-CE68CFDE0A",
+              "INV-1036638B64"
+            ],
+            "inputs": [
+              "two proofs",
+              "history target"
+            ],
+            "mocks": [
+              "host ledgers"
+            ],
+            "environment": [
+              "recursive proof calls"
+            ],
+            "proof_mode": "PROGRAM_METHOD_RECURSION",
+            "static_gaps": [
+              "not every flag asserted in this focused case"
+            ],
+            "assertions": [
+              "selected final found flags true"
+            ],
+            "fixture_setup": "Ten generated voting accounts; SQLite in-memory voting/nullifier ledgers; fixed batch five; global voteReducerContext; dummy padding; fixture action-history target builder.",
+            "environment_assumptions": [],
+            "semantic_target_status": "EXACT_MAPPING"
+          },
+          {
+            "name": "merge rejects mismatched public input",
+            "line": 1313,
+            "partitions": [
+              "public-input equality",
+              "negative"
+            ],
+            "active": true,
+            "setup": "call merge with a public input not equal to proof1 input",
+            "target_ids": [
+              "API-2E2E88515C",
+              "BHV-67153EA362",
+              "FLW-9BB4E99B75",
+              "CL-9DDDB05A64"
+            ],
+            "inputs": [
+              "mismatched top-level input"
+            ],
+            "mocks": [
+              "host ledgers"
+            ],
+            "environment": [
+              "recursive proof calls"
+            ],
+            "proof_mode": "PROGRAM_METHOD_RECURSION",
+            "static_gaps": [],
+            "assertions": [
+              "merge rejects"
+            ],
+            "fixture_setup": "Ten generated voting accounts; SQLite in-memory voting/nullifier ledgers; fixed batch five; global voteReducerContext; dummy padding; fixture action-history target builder.",
+            "environment_assumptions": [],
+            "semantic_target_status": "EXACT_MAPPING"
+          },
+          {
+            "name": "merge rejects noncontiguous action hash",
+            "line": 1381,
+            "partitions": [
+              "action continuity",
+              "negative"
+            ],
+            "active": true,
+            "setup": "proof2 fromActionsHash does not equal proof1 output",
+            "target_ids": [
+              "API-2E2E88515C",
+              "INV-E502583790",
+              "BHV-67153EA362",
+              "FLW-9BB4E99B75",
+              "CL-96F95D8CE6",
+              "INV-BB400806DE",
+              "INV-5A6C7F3858"
+            ],
+            "inputs": [
+              "action-discontinuous proofs"
+            ],
+            "mocks": [
+              "host ledgers"
+            ],
+            "environment": [
+              "recursive proof calls"
+            ],
+            "proof_mode": "PROGRAM_METHOD_RECURSION",
+            "static_gaps": [],
+            "assertions": [
+              "merge rejects"
+            ],
+            "fixture_setup": "Ten generated voting accounts; SQLite in-memory voting/nullifier ledgers; fixed batch five; global voteReducerContext; dummy padding; fixture action-history target builder.",
+            "environment_assumptions": [],
+            "semantic_target_status": "EXACT_MAPPING"
+          },
+          {
+            "name": "merge preserves earlier found history",
+            "line": 1442,
+            "partitions": [
+              "history monotonicity"
+            ],
+            "active": true,
+            "setup": "first proof finds targets absent from later proof",
+            "target_ids": [
+              "API-2E2E88515C",
+              "BHV-67153EA362",
+              "FLW-9BB4E99B75",
+              "CL-CE68CFDE0A",
+              "INV-1036638B64"
+            ],
+            "inputs": [
+              "two proofs",
+              "history target"
+            ],
+            "mocks": [
+              "host ledgers"
+            ],
+            "environment": [
+              "recursive proof calls"
+            ],
+            "proof_mode": "PROGRAM_METHOD_RECURSION",
+            "static_gaps": [
+              "consumer uniqueness/noninitial checks belong to owner integration and are absent here"
+            ],
+            "assertions": [
+              "earlier selected found flags remain true"
+            ],
+            "fixture_setup": "Ten generated voting accounts; SQLite in-memory voting/nullifier ledgers; fixed batch five; global voteReducerContext; dummy padding; fixture action-history target builder.",
+            "environment_assumptions": [],
+            "semantic_target_status": "EXACT_MAPPING"
+          }
+        ]
+      },
+      "rationale": "Retains every original case field, API target, active/skipped state, and reviewed suite semantic_status while adding only assertion-supported BHV/CL/INV/FLW targets. Per-case semantic_target_status explicitly records exact versus partial target closure.",
+      "evidence_ids": [
+        "EVD-D70E747767",
+        "EVD-D43C7ED7D0",
+        "EVD-B3600D67DE"
+      ],
+      "source_references": [
+        "packages/sdk/test/provable/contracts/treasury-proposal/vote-reducer.test.ts",
+        "model/pass-2-contextual-corrected.yaml",
+        "evidence/contextual/WU-367D918B22.yaml"
+      ]
+    }
+  ],
+  "unresolved": [
+    {
+      "matter": "Six optional, future, deployment, or policy requirements intentionally retain empty implementation_ids and test_ids."
+    },
+    {
+      "matter": "REQ-EAE9049742 has implementation links but no direct current test link; REQ-12FA8872CA has a local expectation link but no implementation record proving audit or devnet completion."
+    },
+    {
+      "matter": "Nine test cases remain explicitly partial; five retain API-only target arrays and the skipped reducer case remains skipped."
+    },
+    {
+      "matter": "Runtime, proof, cryptographic, deployed-bytecode, verification-key, account-state, production-capacity, off-chain-consumer, and policy conclusions remain unresolved exactly as in the corrected Pass-2 model."
+    },
+    {
+      "matter": "The unused proposalContractVerificationKey observation remains a noncanonical Phase-6 author decision and creates no canonical finding."
+    }
+  ]
+}

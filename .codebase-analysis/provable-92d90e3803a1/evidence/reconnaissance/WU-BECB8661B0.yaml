@@ -1,0 +1,1706 @@
+bundle:
+  schema_version: 1
+  work_unit: "WU-BECB8661B0"
+  revision: "1e27b1aea88f5ea2764db96e4b337b24fe6dbeb3"
+  scope_hash: "f40d76b91ec3cd8805ecdc7bebba8d43b8f317842639a7799738c37569119ab1"
+  role: "business"
+  ownership:
+    primary_paths: []
+    record_ids: []
+    stable_key_prefixes: ["requirement:", "business-rule:", "finding:prior-audit:", "gap:business-context:", "unresolved:business-context:", "evidence:business-context:"]
+  source_hashes:
+    "https://forums.minaprotocol.com/t/rfc-mina-decentralized-treasury-decentralized-on-chain-community-treasury/6924": "e7ac762b41e5568427fb78021ea515f63455a3f20337f0f03907bcbbd458aa6e"
+    "https://reports.zksecurity.xyz/reports/mina-treasury-1.md": "fbe4fb7745391609600ba40c0a4c527e3756bd086af852acc71b95fa31abf7e6"
+    "packages/sdk/src/provable/contracts/treasury-owner.ts": "7c66014cee7f7a5e559b29f3b7c2790ed19c38c9a91b886c15cbbef3328d17dc"
+    "packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts": "95e5656d3a0d0c09a88ac9befa743517c53a98983bd1cf74b042e87bc9faf7af"
+    "packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts": "37c1f07a5fad41f036f999792b44bf13d4f9af280cb1439bed6a8411dfaa81cd"
+    "packages/sdk/src/provable/contracts/treasury-pause-controller/treasury-pause-controller.ts": "f7139183b963aa496dd36df00017885c9ab6275f11accca35bfd9054260e5104"
+    "packages/sdk/src/provable/contracts/treasury-pause-controller/multisig-signatures.ts": "48a7c4cd41c1e9764df1329966c37f325817fa43074140c145f4f6c1ae2aa372"
+    "packages/sdk/src/provable/merkle-tree/prefixed-merkle-tree.ts": "870ca739cc8406070367beb86367efa64101647d130f0892b636555cbd2a5c6c"
+    "packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts": "4dcfc5e1f1edcc7e26cfb960f3892208efe16056a2579b14e12e2a79f0e28197"
+  assumptions:
+    - "The RFC is versioned design intent published as a request for comments, not evidence that every described feature is current or ratified."
+    - "Community replies are contested/informative unless the RFC author explicitly resolves a point; provisional parameters remain provisional."
+    - "The prior audit is revision-bounded evidence for f2c93cfdb27836b156769ca4eaeca7d5f01fa8b5, not certification of the current revision."
+    - "Current dispositions are static source comparisons only; no target code, tests, proofs, builds, or runtime behavior were executed."
+  observations:
+    - "The RFC defines the product objective and rollout direction but explicitly leaves voting criteria, break-glass details, delegation, upgrades, and several safety/performance features subject to later research or stages."
+    - "The audit covers eleven files in packages/sdk/src/provable at f2c93cfdb27836b156769ca4eaeca7d5f01fa8b5 and contains exactly 28 findings: 8 High, 2 Medium, 4 Low, and 14 Informational."
+    - "All seven repository remediation commits cited for fixed findings are ancestors of the pinned current revision. This ancestry supports traceability but does not replace the item-specific source comparison below."
+    - "Current static comparison supports REMEDIATED_STATICALLY for the eight High findings, both Medium findings, and the commit/tally Informational finding. The remaining four Low and thirteen Informational findings remain visibly present or applicable in current source."
+  proposed_records:
+    evidence:
+      - stable_key: "evidence:business-context:rfc-6924"
+        evidence_class: "DOCUMENTED_INTENT"
+        description: "Mina Decentralized Treasury RFC, including author text and maturity qualifications."
+        anchors:
+          - { path: "https://forums.minaprotocol.com/t/rfc-mina-decentralized-treasury-decentralized-on-chain-community-treasury/6924", symbol: "RFC", start_line: 7, end_line: 163 }
+        source_sha256: "e7ac762b41e5568427fb78021ea515f63455a3f20337f0f03907bcbbd458aa6e"
+        tool: { name: "repository-bound-public-document", version: "", command: "read-only retrieval" }
+        limitations: ["Forum line numbering is retrieval-specific; canonical URL and content hash bind the evidence."]
+      - stable_key: "evidence:business-context:zksecurity-audit-report"
+        evidence_class: "EXTERNAL_STANDARD"
+        description: "zkSecurity audit report for the Mina Decentralised Treasury at audited revision f2c93cfdb27836b156769ca4eaeca7d5f01fa8b5."
+        anchors:
+          - { path: "https://reports.zksecurity.xyz/reports/mina-treasury-1.md", symbol: "full report", start_line: 1, end_line: 1368 }
+        source_sha256: "fbe4fb7745391609600ba40c0a4c527e3756bd086af852acc71b95fa31abf7e6"
+        tool: { name: "repository-bound-public-document", version: "", command: "read-only retrieval" }
+        limitations: ["Prior audit conclusions are scoped and time-bounded; current dispositions require separate current-source evidence."]
+      - stable_key: "evidence:business-context:current-action-history-binding"
+        evidence_class: "IMPLEMENTED_STATIC"
+        description: "Current vote-reducer derives found flags from false and current owner validates non-initial unique on-chain action states in the same tally call."
+        anchors:
+          - { path: "packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts", symbol: "ActionStateHistory.fromTarget/reduceBatch/merge", start_line: 243, end_line: 265 }
+          - { path: "packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts", symbol: "VoteReducer.merge/reduceBatch", start_line: 371, end_line: 415 }
+          - { path: "packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts", symbol: "VoteReducer.reduceBatch", start_line: 611, end_line: 638 }
+          - { path: "packages/sdk/src/provable/contracts/treasury-owner.ts", symbol: "TreasuryOwnerSmartContract.tallyVotes", start_line: 354, end_line: 400 }
+        source_sha256: "37c1f07a5fad41f036f999792b44bf13d4f9af280cb1439bed6a8411dfaa81cd"
+        tool: { name: "manual-static-reading", version: "", command: "nl/sed/rg" }
+        limitations: ["Multiple anchors span two hashed files; each hash is separately pinned in bundle.source_hashes."]
+      - stable_key: "evidence:business-context:current-owner-permissions"
+        evidence_class: "IMPLEMENTED_STATIC"
+        description: "Current owner overrides deploy after super.deploy and configures proof-authorized send and receive."
+        anchors:
+          - { path: "packages/sdk/src/provable/contracts/treasury-owner.ts", symbol: "TreasuryOwnerSmartContract.permissions/deploy", start_line: 64, end_line: 119 }
+        source_sha256: "7c66014cee7f7a5e559b29f3b7c2790ed19c38c9a91b886c15cbbef3328d17dc"
+        tool: { name: "manual-static-reading", version: "", command: "nl/sed/rg" }
+        limitations: []
+      - stable_key: "evidence:business-context:current-ledger-index-width"
+        evidence_class: "IMPLEMENTED_STATIC"
+        description: "Current voting and nullifier witnesses use PrefixedMerkleWitness255, whose path has 254 index bits."
+        anchors:
+          - { path: "packages/sdk/src/provable/merkle-tree/prefixed-merkle-tree.ts", symbol: "PrefixedMerkleWitness255", start_line: 222, end_line: 266 }
+          - { path: "packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts", symbol: "VoteReducer.reduceBatch", start_line: 470, end_line: 535 }
+        source_sha256: "870ca739cc8406070367beb86367efa64101647d130f0892b636555cbd2a5c6c"
+        tool: { name: "manual-static-reading", version: "", command: "nl/sed/rg" }
+        limitations: ["This establishes source-visible width and equality checks, not cryptographic soundness."]
+      - stable_key: "evidence:business-context:current-tally-initialization-and-arithmetic"
+        evidence_class: "IMPLEMENTED_STATIC"
+        description: "Current tally uses UInt128 intermediates and constrains transformation start index, empty voting root, and default token ID."
+        anchors:
+          - { path: "packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts", symbol: "calculateAcceptanceCriteria/calculateApprovalStatus", start_line: 98, end_line: 210 }
+          - { path: "packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts", symbol: "TreasuryProposalSmartContract.tallyVotes", start_line: 261, end_line: 337 }
+        source_sha256: "95e5656d3a0d0c09a88ac9befa743517c53a98983bd1cf74b042e87bc9faf7af"
+        tool: { name: "manual-static-reading", version: "", command: "nl/sed/rg" }
+        limitations: ["Static type and constraint construction only; no proof was generated."]
+      - stable_key: "evidence:business-context:current-execution-and-bond"
+        evidence_class: "IMPLEMENTED_STATIC"
+        description: "Current execution is callable by a signed transaction sender without recipient authorization and pays proposal amount plus bond to the recipient."
+        anchors:
+          - { path: "packages/sdk/src/provable/contracts/treasury-owner.ts", symbol: "TreasuryOwnerSmartContract.executeProposal", start_line: 421, end_line: 462 }
+          - { path: "packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts", symbol: "TreasuryProposalSmartContract.execute", start_line: 353, end_line: 384 }
+        source_sha256: "95e5656d3a0d0c09a88ac9befa743517c53a98983bd1cf74b042e87bc9faf7af"
+        tool: { name: "manual-static-reading", version: "", command: "nl/sed/rg" }
+        limitations: []
+      - stable_key: "evidence:business-context:current-pause-signature-domain"
+        evidence_class: "IMPLEMENTED_STATIC"
+        description: "Current multisig messages include action prefixes, operation data, and nonce but not controller address or network identifier."
+        anchors:
+          - { path: "packages/sdk/src/provable/contracts/treasury-pause-controller/multisig-signatures.ts", symbol: "MultisigSignature", start_line: 22, end_line: 91 }
+          - { path: "packages/sdk/src/provable/contracts/treasury-pause-controller/treasury-pause-controller.ts", symbol: "pause/unpause/toggle/rotate", start_line: 121, end_line: 216 }
+        source_sha256: "48a7c4cd41c1e9764df1329966c37f325817fa43074140c145f4f6c1ae2aa372"
+        tool: { name: "manual-static-reading", version: "", command: "nl/sed/rg" }
+        limitations: ["Deployment reuse of signer sets and nonces is an operational assumption not established by source."]
+      - stable_key: "evidence:business-context:current-lifecycle-slot"
+        evidence_class: "IMPLEMENTED_STATIC"
+        description: "Current lifecycle guard uses network.globalSlotSinceGenesis.requireBetween."
+        anchors:
+          - { path: "packages/sdk/src/provable/contracts/treasury-owner.ts", symbol: "TreasuryOwnerSmartContract.requireLifecyclePeriod", start_line: 121, end_line: 184 }
+        source_sha256: "7c66014cee7f7a5e559b29f3b7c2790ed19c38c9a91b886c15cbbef3328d17dc"
+        tool: { name: "manual-static-reading", version: "", command: "nl/sed/rg" }
+        limitations: ["The semantic difference from inclusion slot relies on audit/o1js protocol analysis and is not dynamically tested here."]
+      - stable_key: "evidence:business-context:current-proposal-creation"
+        evidence_class: "IMPLEMENTED_STATIC"
+        description: "Current proposal creation uses a signed token account update, raw Field(0) status, and no explicit isNew or minimum-amount constraint."
+        anchors:
+          - { path: "packages/sdk/src/provable/contracts/treasury-owner.ts", symbol: "TreasuryOwnerSmartContract.createProposal", start_line: 191, end_line: 272 }
+        source_sha256: "7c66014cee7f7a5e559b29f3b7c2790ed19c38c9a91b886c15cbbef3328d17dc"
+        tool: { name: "manual-static-reading", version: "", command: "nl/sed/rg" }
+        limitations: []
+      - stable_key: "evidence:business-context:current-vote-domain"
+        evidence_class: "IMPLEMENTED_STATIC"
+        description: "Current public vote entry accepts Vote.assertValid, and assertValid includes DUMMY; there is no minimum voting balance at dispatch."
+        anchors:
+          - { path: "packages/sdk/src/provable/contracts/treasury-owner.ts", symbol: "TreasuryOwnerSmartContract.vote", start_line: 274, end_line: 318 }
+          - { path: "packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts", symbol: "Vote.assertValid", start_line: 45, end_line: 67 }
+        source_sha256: "37c1f07a5fad41f036f999792b44bf13d4f9af280cb1439bed6a8411dfaa81cd"
+        tool: { name: "manual-static-reading", version: "", command: "nl/sed/rg" }
+        limitations: []
+      - stable_key: "evidence:business-context:current-staking-transform"
+        evidence_class: "IMPLEMENTED_STATIC"
+        description: "Current transformation rebuilds the voting ledger in fixed batches, hashes structs for equality, and uses delegate address rather than token ID to classify accumulation."
+        anchors:
+          - { path: "packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts", symbol: "StakingLedgerToVotingLedger", start_line: 72, end_line: 190 }
+          - { path: "packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts", symbol: "StakingLedgerToVotingLedger.digest", start_line: 193, end_line: 337 }
+        source_sha256: "4dcfc5e1f1edcc7e26cfb960f3892208efe16056a2579b14e12e2a79f0e28197"
+        tool: { name: "manual-static-reading", version: "", command: "nl/sed/rg" }
+        limitations: ["Performance impact is unresolved because execution and benchmarking are prohibited."]
+      - stable_key: "evidence:business-context:current-proposal-methods-and-tally"
+        evidence_class: "IMPLEMENTED_STATIC"
+        description: "Current proposal operations remain proof methods; tally repeats the fromActionsHash check and verifies both proofs after owner verification."
+        anchors:
+          - { path: "packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts", symbol: "TreasuryProposalSmartContract", start_line: 81, end_line: 96 }
+          - { path: "packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts", symbol: "TreasuryProposalSmartContract.tallyVotes", start_line: 213, end_line: 273 }
+          - { path: "packages/sdk/src/provable/contracts/treasury-owner.ts", symbol: "TreasuryOwnerSmartContract.tallyVotes", start_line: 320, end_line: 400 }
+        source_sha256: "95e5656d3a0d0c09a88ac9befa743517c53a98983bd1cf74b042e87bc9faf7af"
+        tool: { name: "manual-static-reading", version: "", command: "nl/sed/rg" }
+        limitations: ["Actual proof and account-update cost was not measured."]
+      - stable_key: "evidence:business-context:current-snapshot-and-pause-state"
+        evidence_class: "IMPLEMENTED_STATIC"
+        description: "Current owner snapshots stakingEpochData; proposal toggle blindly maps PAUSED to UNKNOWN and all other states to PAUSED."
+        anchors:
+          - { path: "packages/sdk/src/provable/contracts/treasury-owner.ts", symbol: "TreasuryOwnerSmartContract.snapshotStakingEpochData", start_line: 97, end_line: 108 }
+          - { path: "packages/sdk/src/provable/contracts/treasury-owner.ts", symbol: "TreasuryOwnerSmartContract.togglePauseProposal", start_line: 464, end_line: 495 }
+          - { path: "packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts", symbol: "TreasuryProposalSmartContract.togglePause", start_line: 386, end_line: 397 }
+        source_sha256: "7c66014cee7f7a5e559b29f3b7c2790ed19c38c9a91b886c15cbbef3328d17dc"
+        tool: { name: "manual-static-reading", version: "", command: "nl/sed/rg" }
+        limitations: []
+    requirements:
+      - stable_key: "requirement:rfc-6924:community-controlled-onchain-treasury"
+        title: "Community-controlled on-chain treasury"
+        requirement_kind: "PROVISIONAL"
+        authority: "AUTHORITATIVE_INTENT"
+        rollout_stage: "MVP"
+        implementation_status: "UNRESOLVED"
+        rationale: "Replace single-party custody with transparent, trust-minimised community governance."
+        protected_assets_outcomes: ["treasury funds", "community governance legitimacy", "transparent execution"]
+        implementation_ids: []
+        test_ids: []
+        gap_ids: []
+        decision_evidence_stable_keys: ["evidence:business-context:rfc-6924"]
+        author_question: "Which post-RFC decision ratifies the current production meaning of fully on-chain and community-controlled?"
+        assertions: [{ stable_key: "assertion:requirement:rfc-6924:community-controlled-onchain-treasury:documented", text: "The RFC proposes a fully on-chain treasury owned and controlled by the Mina community.", evidence_class: "DOCUMENTED_INTENT", confidence: "HIGH", evidence_stable_keys: ["evidence:business-context:rfc-6924"] }]
+      - stable_key: "requirement:rfc-6924:provable-governance-processing"
+        title: "Provable proposal, voting, execution, and accounting"
+        requirement_kind: "PROVISIONAL"
+        authority: "AUTHORITATIVE_INTENT"
+        rollout_stage: "MVP"
+        implementation_status: "UNRESOLVED"
+        rationale: "Avoid governance processes that cannot be programmatically enforced."
+        protected_assets_outcomes: ["governance integrity", "treasury accounting"]
+        implementation_ids: []
+        test_ids: []
+        gap_ids: []
+        decision_evidence_stable_keys: ["evidence:business-context:rfc-6924"]
+        author_question: "Which off-chain inputs or operations are intentionally outside the provable boundary?"
+        assertions: [{ stable_key: "assertion:requirement:rfc-6924:provable-governance-processing:documented", text: "The RFC states that proposal handling, voting, execution, and accounting should be performed in a provable manner.", evidence_class: "DOCUMENTED_INTENT", confidence: "HIGH", evidence_stable_keys: ["evidence:business-context:rfc-6924"] }]
+      - stable_key: "requirement:rfc-6924:treasury-spend-mina-and-custom-token"
+        title: "Treasury spend proposal"
+        requirement_kind: "PROVISIONAL"
+        authority: "AUTHORITATIVE_INTENT"
+        rollout_stage: "MVP"
+        implementation_status: "UNRESOLVED"
+        rationale: "Approved proposals transfer treasury assets to a named recipient."
+        protected_assets_outcomes: ["MINA", "custom tokens", "recipient binding"]
+        implementation_ids: []
+        test_ids: []
+        gap_ids: []
+        decision_evidence_stable_keys: ["evidence:business-context:rfc-6924"]
+        author_question: "Is custom-token spending current intent or a later feature?"
+        assertions: [{ stable_key: "assertion:requirement:rfc-6924:treasury-spend-mina-and-custom-token:documented", text: "The RFC says treasury-spend proposals should transfer MINA or custom tokens to a recipient.", evidence_class: "DOCUMENTED_INTENT", confidence: "HIGH", evidence_stable_keys: ["evidence:business-context:rfc-6924"] }]
+      - stable_key: "requirement:rfc-6924:treasury-upgrade"
+        title: "Treasury verification-key upgrade"
+        requirement_kind: "OPTIONAL"
+        authority: "AUTHORITATIVE_INTENT"
+        rollout_stage: "ADVANCED"
+        implementation_status: "DEFERRED"
+        rationale: "Permit critical fixes after deployment."
+        protected_assets_outcomes: ["upgrade recovery", "contract integrity"]
+        implementation_ids: []
+        test_ids: []
+        gap_ids: []
+        decision_evidence_stable_keys: ["evidence:business-context:rfc-6924"]
+        author_question: "Has upgradability been intentionally deferred or rejected for this deployment?"
+        assertions: [{ stable_key: "assertion:requirement:rfc-6924:treasury-upgrade:documented", text: "Treasury upgrades are explicitly optional and placed in later rollout stages.", evidence_class: "DOCUMENTED_INTENT", confidence: "HIGH", evidence_stable_keys: ["evidence:business-context:rfc-6924"] }]
+      - stable_key: "requirement:rfc-6924:proposal-content-reference"
+        title: "Proposal content reference"
+        requirement_kind: "PROVISIONAL"
+        authority: "AUTHORITATIVE_INTENT"
+        rollout_stage: "MVP"
+        implementation_status: "UNRESOLVED"
+        rationale: "Make proposal content publicly inspectable without storing full text on-chain."
+        protected_assets_outcomes: ["proposal identity", "content availability"]
+        implementation_ids: []
+        test_ids: []
+        gap_ids: []
+        decision_evidence_stable_keys: ["evidence:business-context:rfc-6924"]
+        author_question: "Must the on-chain reference bind both a URI and an immutable content hash?"
+        assertions: [{ stable_key: "assertion:requirement:rfc-6924:proposal-content-reference:documented", text: "Each proposal must include a reference to Markdown content, such as a URL or hash, while contracts need not host the content.", evidence_class: "DOCUMENTED_INTENT", confidence: "HIGH", evidence_stable_keys: ["evidence:business-context:rfc-6924"] }]
+      - stable_key: "requirement:rfc-6924:proposal-period"
+        title: "Proposal-submission period"
+        requirement_kind: "PROVISIONAL"
+        authority: "AUTHORITATIVE_INTENT"
+        rollout_stage: "MVP"
+        implementation_status: "UNRESOLVED"
+        rationale: "Bound proposal intake to a lifecycle window."
+        protected_assets_outcomes: ["lifecycle integrity"]
+        implementation_ids: []
+        test_ids: []
+        gap_ids: []
+        decision_evidence_stable_keys: ["evidence:business-context:rfc-6924"]
+        author_question: "Are lifecycle periods globally synchronized or proposal-relative in current intent?"
+        assertions: [{ stable_key: "assertion:requirement:rfc-6924:proposal-period:documented", text: "New proposals are accepted during a proposal period.", evidence_class: "DOCUMENTED_INTENT", confidence: "HIGH", evidence_stable_keys: ["evidence:business-context:rfc-6924"] }]
+      - stable_key: "requirement:rfc-6924:exploration-period"
+        title: "Exploration period without voting"
+        requirement_kind: "PROVISIONAL"
+        authority: "AUTHORITATIVE_INTENT"
+        rollout_stage: "MVP"
+        implementation_status: "UNRESOLVED"
+        rationale: "Reserve time for community evaluation before voting."
+        protected_assets_outcomes: ["deliberation integrity"]
+        implementation_ids: []
+        test_ids: []
+        gap_ids: []
+        decision_evidence_stable_keys: ["evidence:business-context:rfc-6924"]
+        author_question: "Is any on-chain action permitted during exploration besides passive observation?"
+        assertions: [{ stable_key: "assertion:requirement:rfc-6924:exploration-period:documented", text: "The RFC defines an exploration period for discussion with no voting.", evidence_class: "DOCUMENTED_INTENT", confidence: "HIGH", evidence_stable_keys: ["evidence:business-context:rfc-6924"] }]
+      - stable_key: "requirement:rfc-6924:voting-period"
+        title: "Voting period"
+        requirement_kind: "PROVISIONAL"
+        authority: "AUTHORITATIVE_INTENT"
+        rollout_stage: "MVP"
+        implementation_status: "UNRESOLVED"
+        rationale: "Accept votes only in the designated voting window."
+        protected_assets_outcomes: ["vote ordering", "governance finality"]
+        implementation_ids: []
+        test_ids: []
+        gap_ids: []
+        decision_evidence_stable_keys: ["evidence:business-context:rfc-6924"]
+        author_question: "What exact inclusion-slot boundary is authoritative for the first and last voting blocks?"
+        assertions: [{ stable_key: "assertion:requirement:rfc-6924:voting-period:documented", text: "Votes are recorded on-chain during the voting period.", evidence_class: "DOCUMENTED_INTENT", confidence: "HIGH", evidence_stable_keys: ["evidence:business-context:rfc-6924"] }]
+      - stable_key: "requirement:rfc-6924:cooldown-period"
+        title: "Cooldown permits tally but prevents execution"
+        requirement_kind: "PROVISIONAL"
+        authority: "AUTHORITATIVE_INTENT"
+        rollout_stage: "MVP"
+        implementation_status: "UNRESOLVED"
+        rationale: "Provide a timelock for emergency intervention after voting."
+        protected_assets_outcomes: ["treasury funds", "break-glass response window"]
+        implementation_ids: []
+        test_ids: []
+        gap_ids: []
+        decision_evidence_stable_keys: ["evidence:business-context:rfc-6924"]
+        author_question: "May tallying happen only during cooldown or at any later time?"
+        assertions: [{ stable_key: "assertion:requirement:rfc-6924:cooldown-period:documented", text: "Votes may be tallied during cooldown, but approved proposals cannot yet be executed.", evidence_class: "DOCUMENTED_INTENT", confidence: "HIGH", evidence_stable_keys: ["evidence:business-context:rfc-6924"] }]
+      - stable_key: "requirement:rfc-6924:post-cooldown-execution"
+        title: "Post-cooldown approved execution"
+        requirement_kind: "PROVISIONAL"
+        authority: "AUTHORITATIVE_INTENT"
+        rollout_stage: "MVP"
+        implementation_status: "UNRESOLVED"
+        rationale: "Release funds only after approval and the intervention window."
+        protected_assets_outcomes: ["authorized payout", "execution finality"]
+        implementation_ids: []
+        test_ids: []
+        gap_ids: []
+        decision_evidence_stable_keys: ["evidence:business-context:rfc-6924"]
+        author_question: "What execution uniqueness and terminal-state rule applies after full payout?"
+        assertions: [{ stable_key: "assertion:requirement:rfc-6924:post-cooldown-execution:documented", text: "A proposal may execute after cooldown only if it passed and break-glass did not intervene.", evidence_class: "DOCUMENTED_INTENT", confidence: "HIGH", evidence_stable_keys: ["evidence:business-context:rfc-6924"] }]
+      - stable_key: "requirement:rfc-6924:lifecycle-configuration"
+        title: "Lifecycle synchronization and configuration"
+        requirement_kind: "PARAMETERIZED"
+        authority: "AUTHORITATIVE_INTENT"
+        rollout_stage: "UNKNOWN"
+        implementation_status: "CONFIGURATION_DEPENDENT"
+        rationale: "Bind proposals to stable historical-ledger snapshots and predictable windows."
+        protected_assets_outcomes: ["snapshot consistency", "lifecycle timing"]
+        implementation_ids: []
+        test_ids: []
+        gap_ids: []
+        decision_evidence_stable_keys: ["evidence:business-context:rfc-6924"]
+        author_question: "Which lifecycle configuration was selected after the RFC?"
+        assertions: [{ stable_key: "assertion:requirement:rfc-6924:lifecycle-configuration:documented", text: "The RFC leaves global versus per-proposal lifecycle synchronization subject to configuration.", evidence_class: "DOCUMENTED_INTENT", confidence: "HIGH", evidence_stable_keys: ["evidence:business-context:rfc-6924"] }]
+      - stable_key: "requirement:rfc-6924:proposer-bond"
+        title: "Configurable proposer bond"
+        requirement_kind: "PARAMETERIZED"
+        authority: "AUTHORITATIVE_INTENT"
+        rollout_stage: "SAFETY_PERFORMANCE"
+        implementation_status: "UNRESOLVED"
+        rationale: "Discourage low-quality or abusive proposal submission."
+        protected_assets_outcomes: ["proposal attention", "treasury usability"]
+        implementation_ids: []
+        test_ids: []
+        gap_ids: []
+        decision_evidence_stable_keys: ["evidence:business-context:rfc-6924"]
+        author_question: "What minimum amount and bond policy is intended to prevent zero-bond dust proposals?"
+        assertions: [{ stable_key: "assertion:requirement:rfc-6924:proposer-bond:documented", text: "A proposer should lock a configurable percentage of requested value as a spam-prevention bond.", evidence_class: "DOCUMENTED_INTENT", confidence: "HIGH", evidence_stable_keys: ["evidence:business-context:rfc-6924"] }]
+      - stable_key: "requirement:rfc-6924:bond-disposition"
+        title: "Bond return or loss"
+        requirement_kind: "PROVISIONAL"
+        authority: "AUTHORITATIVE_INTENT"
+        rollout_stage: "SAFETY_PERFORMANCE"
+        implementation_status: "UNRESOLVED"
+        rationale: "Return the successful proposer's stake and penalize failed/spam proposals."
+        protected_assets_outcomes: ["proposer bond", "spam deterrence"]
+        implementation_ids: []
+        test_ids: []
+        gap_ids: ["gap:business-context:successful-bond-recipient"]
+        decision_evidence_stable_keys: ["evidence:business-context:rfc-6924"]
+        author_question: "Should a successful bond always return to the proposer, and should failure burn or freeze it?"
+        assertions: [{ stable_key: "assertion:requirement:rfc-6924:bond-disposition:documented", text: "The RFC says bonds are returned when a proposal passes and otherwise burned or frozen; the failed-proposal disposition remains unresolved.", evidence_class: "DOCUMENTED_INTENT", confidence: "HIGH", evidence_stable_keys: ["evidence:business-context:rfc-6924"] }]
+      - stable_key: "requirement:rfc-6924:historical-ledger-voting-weight"
+        title: "Historical staking-ledger voting weight"
+        requirement_kind: "PROVISIONAL"
+        authority: "AUTHORITATIVE_INTENT"
+        rollout_stage: "MVP"
+        implementation_status: "UNRESOLVED"
+        rationale: "Freeze stake and delegation inputs for a proposal lifecycle."
+        protected_assets_outcomes: ["voting power", "snapshot consistency"]
+        implementation_ids: []
+        test_ids: []
+        gap_ids: []
+        decision_evidence_stable_keys: ["evidence:business-context:rfc-6924"]
+        author_question: "Which available epoch ledger is the intended snapshot and why?"
+        assertions: [{ stable_key: "assertion:requirement:rfc-6924:historical-ledger-voting-weight:documented", text: "Voting weights are derived from an epoch-based historical account-ledger snapshot.", evidence_class: "DOCUMENTED_INTENT", confidence: "HIGH", evidence_stable_keys: ["evidence:business-context:rfc-6924"] }]
+      - stable_key: "requirement:rfc-6924:staking-delegate-vote"
+        title: "Staking-delegate voting"
+        requirement_kind: "PROVISIONAL"
+        authority: "AUTHORITATIVE_INTENT"
+        rollout_stage: "MVP"
+        implementation_status: "UNRESOLVED"
+        rationale: "Increase feasible stake participation by aggregating delegated balance."
+        protected_assets_outcomes: ["voting representation", "participation"]
+        implementation_ids: []
+        test_ids: []
+        gap_ids: []
+        decision_evidence_stable_keys: ["evidence:business-context:rfc-6924"]
+        author_question: "Is staking delegation still the intended default voting delegation for MVP?"
+        assertions: [{ stable_key: "assertion:requirement:rfc-6924:staking-delegate-vote:documented", text: "Where an account has a staking delegate and no voting override, the staking delegate votes on its behalf.", evidence_class: "DOCUMENTED_INTENT", confidence: "MEDIUM", evidence_stable_keys: ["evidence:business-context:rfc-6924"] }]
+      - stable_key: "requirement:rfc-6924:direct-vote"
+        title: "Direct voting without delegation"
+        requirement_kind: "PROVISIONAL"
+        authority: "AUTHORITATIVE_INTENT"
+        rollout_stage: "MVP"
+        implementation_status: "UNRESOLVED"
+        rationale: "Retain permissionless direct participation."
+        protected_assets_outcomes: ["voter autonomy"]
+        implementation_ids: []
+        test_ids: []
+        gap_ids: []
+        decision_evidence_stable_keys: ["evidence:business-context:rfc-6924"]
+        author_question: "How is direct voting represented when Mina accounts conventionally self-delegate?"
+        assertions: [{ stable_key: "assertion:requirement:rfc-6924:direct-vote:documented", text: "An account without a staking delegate should be able to cast its own vote.", evidence_class: "DOCUMENTED_INTENT", confidence: "MEDIUM", evidence_stable_keys: ["evidence:business-context:rfc-6924"] }]
+      - stable_key: "requirement:rfc-6924:voting-delegate-override"
+        title: "Independent voting-delegate override"
+        requirement_kind: "DEFERRED"
+        authority: "AUTHORITATIVE_INTENT"
+        rollout_stage: "ADVANCED"
+        implementation_status: "DEFERRED"
+        rationale: "Allow governance delegation distinct from staking delegation."
+        protected_assets_outcomes: ["voter autonomy", "delegation choice"]
+        implementation_ids: []
+        test_ids: []
+        gap_ids: []
+        decision_evidence_stable_keys: ["evidence:business-context:rfc-6924"]
+        author_question: "Is independent voting delegation still planned, and what account/state owns it?"
+        assertions: [{ stable_key: "assertion:requirement:rfc-6924:voting-delegate-override:documented", text: "A voting delegate should override staking delegation, but the author explicitly classifies voting delegation as an advanced feature.", evidence_class: "DOCUMENTED_INTENT", confidence: "HIGH", evidence_stable_keys: ["evidence:business-context:rfc-6924"] }]
+      - stable_key: "requirement:rfc-6924:self-override"
+        title: "Self-override of delegation"
+        requirement_kind: "DEFERRED"
+        authority: "AUTHORITATIVE_INTENT"
+        rollout_stage: "ADVANCED"
+        implementation_status: "DEFERRED"
+        rationale: "Allow a delegator to vote directly while staked elsewhere."
+        protected_assets_outcomes: ["voter autonomy"]
+        implementation_ids: []
+        test_ids: []
+        gap_ids: []
+        decision_evidence_stable_keys: ["evidence:business-context:rfc-6924"]
+        author_question: "Is self-override part of the same deferred voting-delegation feature?"
+        assertions: [{ stable_key: "assertion:requirement:rfc-6924:self-override:documented", text: "Setting the voting delegate to self is proposed as a direct-voting override, subject to the advanced delegation rollout.", evidence_class: "DOCUMENTED_INTENT", confidence: "HIGH", evidence_stable_keys: ["evidence:business-context:rfc-6924"] }]
+      - stable_key: "requirement:rfc-6924:yay-nay-abstain-semantics"
+        title: "Yay, nay, and abstain semantics"
+        requirement_kind: "PROVISIONAL"
+        authority: "AUTHORITATIVE_INTENT"
+        rollout_stage: "MVP"
+        implementation_status: "UNRESOLVED"
+        rationale: "Distinguish support, opposition, and participation-only voting."
+        protected_assets_outcomes: ["vote tally integrity"]
+        implementation_ids: []
+        test_ids: []
+        gap_ids: ["gap:business-context:dummy-public-vote"]
+        decision_evidence_stable_keys: ["evidence:business-context:rfc-6924"]
+        author_question: "Should any public vote value other than yay, nay, and abstain be accepted?"
+        assertions: [{ stable_key: "assertion:requirement:rfc-6924:yay-nay-abstain-semantics:documented", text: "Yay supports approval, nay opposes approval, and abstain contributes to quorum without affecting the yay/nay outcome; names remain discussable.", evidence_class: "DOCUMENTED_INTENT", confidence: "HIGH", evidence_stable_keys: ["evidence:business-context:rfc-6924"] }]
+      - stable_key: "requirement:rfc-6924:quorum"
+        title: "Quorum criterion"
+        requirement_kind: "DISPUTED"
+        authority: "CONTESTED"
+        rollout_stage: "UNKNOWN"
+        implementation_status: "CONFIGURATION_DEPENDENT"
+        rationale: "Require sufficient stake participation without deadlocking governance."
+        protected_assets_outcomes: ["governance legitimacy", "liveness"]
+        implementation_ids: []
+        test_ids: []
+        gap_ids: []
+        decision_evidence_stable_keys: ["evidence:business-context:rfc-6924"]
+        author_question: "What ratified quorum formula and denominator supersede the RFC examples?"
+        assertions: [{ stable_key: "assertion:requirement:rfc-6924:quorum:documented", text: "The RFC gives at least 50% of eligible snapshot supply as an example but explicitly states passing criteria require further research; community comments dispute feasibility.", evidence_class: "DOCUMENTED_INTENT", confidence: "HIGH", evidence_stable_keys: ["evidence:business-context:rfc-6924"] }]
+      - stable_key: "requirement:rfc-6924:majority"
+        title: "Approval-majority criterion"
+        requirement_kind: "PARAMETERIZED"
+        authority: "CONTESTED"
+        rollout_stage: "UNKNOWN"
+        implementation_status: "CONFIGURATION_DEPENDENT"
+        rationale: "Require a sufficient fraction of decisive votes in favour."
+        protected_assets_outcomes: ["payout legitimacy"]
+        implementation_ids: []
+        test_ids: []
+        gap_ids: []
+        decision_evidence_stable_keys: ["evidence:business-context:rfc-6924"]
+        author_question: "What ratified approval curve or threshold supersedes the 60%/75% examples?"
+        assertions: [{ stable_key: "assertion:requirement:rfc-6924:majority:documented", text: "The RFC proposes a configurable approval majority, with 60% and 75% only as examples pending research.", evidence_class: "DOCUMENTED_INTENT", confidence: "HIGH", evidence_stable_keys: ["evidence:business-context:rfc-6924"] }]
+      - stable_key: "requirement:rfc-6924:moving-quorum"
+        title: "Dynamic or moving quorum"
+        requirement_kind: "OPTIONAL"
+        authority: "CONTESTED"
+        rollout_stage: "FUTURE"
+        implementation_status: "DEFERRED"
+        rationale: "Mitigate low-participation deadlock while limiting narrow-minority control."
+        protected_assets_outcomes: ["governance liveness", "capture resistance"]
+        implementation_ids: []
+        test_ids: []
+        gap_ids: []
+        decision_evidence_stable_keys: ["evidence:business-context:rfc-6924"]
+        author_question: "Has a dynamic-quorum rule been selected, rejected, or deferred?"
+        assertions: [{ stable_key: "assertion:requirement:rfc-6924:moving-quorum:documented", text: "The RFC says dynamic quorum may be considered to mitigate deadlock; it is not a settled requirement.", evidence_class: "DOCUMENTED_INTENT", confidence: "HIGH", evidence_stable_keys: ["evidence:business-context:rfc-6924"] }]
+      - stable_key: "requirement:rfc-6924:nullifier-once-per-proposal"
+        title: "One voting-weight contribution per proposal"
+        requirement_kind: "PROVISIONAL"
+        authority: "AUTHORITATIVE_INTENT"
+        rollout_stage: "MVP"
+        implementation_status: "UNRESOLVED"
+        rationale: "Prevent repeated use of the same snapshot balance."
+        protected_assets_outcomes: ["vote uniqueness", "tally integrity"]
+        implementation_ids: []
+        test_ids: []
+        gap_ids: []
+        decision_evidence_stable_keys: ["evidence:business-context:rfc-6924"]
+        author_question: "Which domains bind nullifier uniqueness across proposal, lifecycle, network, and vote type?"
+        assertions: [{ stable_key: "assertion:requirement:rfc-6924:nullifier-once-per-proposal:documented", text: "Nullifiers and ledger snapshots should ensure an account balance contributes voting power at most once per proposal.", evidence_class: "DOCUMENTED_INTENT", confidence: "HIGH", evidence_stable_keys: ["evidence:business-context:rfc-6924"] }]
+      - stable_key: "requirement:rfc-6924:break-glass"
+        title: "Break-glass multisig intervention"
+        requirement_kind: "PROVISIONAL"
+        authority: "AUTHORITATIVE_INTENT"
+        rollout_stage: "SAFETY_PERFORMANCE"
+        implementation_status: "UNRESOLVED"
+        rationale: "Temporarily halt malicious or exploit-driven execution."
+        protected_assets_outcomes: ["treasury funds", "incident response"]
+        implementation_ids: []
+        test_ids: []
+        gap_ids: ["gap:business-context:pause-message-domain", "gap:business-context:pause-state-destruction"]
+        decision_evidence_stable_keys: ["evidence:business-context:rfc-6924"]
+        author_question: "What are the ratified scope, transparency, signer-rotation, recovery, and sunset rules?"
+        assertions: [{ stable_key: "assertion:requirement:rfc-6924:break-glass:documented", text: "The RFC proposes a temporary break-glass multisig able to halt execution, while leaving details and eventual removal subject to further discussion.", evidence_class: "DOCUMENTED_INTENT", confidence: "HIGH", evidence_stable_keys: ["evidence:business-context:rfc-6924"] }]
+      - stable_key: "requirement:rfc-6924:progressive-fund-migration"
+        title: "Progressive treasury funding"
+        requirement_kind: "PROVISIONAL"
+        authority: "AUTHORITATIVE_INTENT"
+        rollout_stage: "DECENTRALISATION"
+        implementation_status: "DEFERRED"
+        rationale: "Limit blast radius during progressive rollout."
+        protected_assets_outcomes: ["treasury funds", "rollout safety"]
+        implementation_ids: []
+        test_ids: []
+        gap_ids: []
+        decision_evidence_stable_keys: ["evidence:business-context:rfc-6924"]
+        author_question: "What operational funding tranches and stop conditions are current?"
+        assertions: [{ stable_key: "assertion:requirement:rfc-6924:progressive-fund-migration:documented", text: "Treasury funds should migrate in tranches to reduce incident blast radius.", evidence_class: "DOCUMENTED_INTENT", confidence: "HIGH", evidence_stable_keys: ["evidence:business-context:rfc-6924"] }]
+      - stable_key: "requirement:rfc-6924:sub-treasuries"
+        title: "Multiple sub-treasuries"
+        requirement_kind: "OPTIONAL"
+        authority: "AUTHORITATIVE_INTENT"
+        rollout_stage: "FUTURE"
+        implementation_status: "DEFERRED"
+        rationale: "Preserve delegation-program distribution while sharing governance rules."
+        protected_assets_outcomes: ["delegation program", "blast-radius segmentation"]
+        implementation_ids: []
+        test_ids: []
+        gap_ids: []
+        decision_evidence_stable_keys: ["evidence:business-context:rfc-6924"]
+        author_question: "Are sub-treasuries part of any committed rollout?"
+        assertions: [{ stable_key: "assertion:requirement:rfc-6924:sub-treasuries:documented", text: "The RFC says treasury funds may be split across sub-treasuries delegating to different block producers under common rules.", evidence_class: "DOCUMENTED_INTENT", confidence: "HIGH", evidence_stable_keys: ["evidence:business-context:rfc-6924"] }]
+      - stable_key: "requirement:rfc-6924:jit-vote-actions"
+        title: "Lightweight vote dispatch and deferred tally"
+        requirement_kind: "OPTIONAL"
+        authority: "AUTHORITATIVE_INTENT"
+        rollout_stage: "SAFETY_PERFORMANCE"
+        implementation_status: "UNRESOLVED"
+        rationale: "Keep voting participation lightweight while deferring heavy proving."
+        protected_assets_outcomes: ["voter accessibility", "tally completeness"]
+        implementation_ids: []
+        test_ids: []
+        gap_ids: []
+        decision_evidence_stable_keys: ["evidence:business-context:rfc-6924"]
+        author_question: "Which party is expected to provide and fund complete tally proofs?"
+        assertions: [{ stable_key: "assertion:requirement:rfc-6924:jit-vote-actions:documented", text: "The RFC suggests signature-authorized vote actions with later rollup and optimistic UI display before final tally.", evidence_class: "DOCUMENTED_INTENT", confidence: "HIGH", evidence_stable_keys: ["evidence:business-context:rfc-6924"] }]
+      - stable_key: "requirement:rfc-6924:permissionless-self-hostable-infrastructure"
+        title: "Permissionless self-hostable infrastructure"
+        requirement_kind: "PROVISIONAL"
+        authority: "AUTHORITATIVE_INTENT"
+        rollout_stage: "MVP"
+        implementation_status: "UNRESOLVED"
+        rationale: "Avoid operator censorship and proprietary participation barriers."
+        protected_assets_outcomes: ["participation", "censorship resistance", "availability"]
+        implementation_ids: []
+        test_ids: []
+        gap_ids: []
+        decision_evidence_stable_keys: ["evidence:business-context:rfc-6924"]
+        author_question: "Which archives, ledger exporters, databases, provers, and operators are required in practice?"
+        assertions: [{ stable_key: "assertion:requirement:rfc-6924:permissionless-self-hostable-infrastructure:documented", text: "Associated infrastructure should be permissionless and self-hostable.", evidence_class: "DOCUMENTED_INTENT", confidence: "HIGH", evidence_stable_keys: ["evidence:business-context:rfc-6924"] }]
+      - stable_key: "requirement:rfc-6924:preproduction-audit-and-devnet"
+        title: "Independent audit and devnet testing before mainnet"
+        requirement_kind: "NORMATIVE"
+        authority: "AUTHORITATIVE_INTENT"
+        rollout_stage: "MVP"
+        implementation_status: "UNRESOLVED"
+        rationale: "Reduce pre-production technical risk before funds are committed."
+        protected_assets_outcomes: ["production safety", "treasury funds"]
+        implementation_ids: []
+        test_ids: []
+        gap_ids: []
+        decision_evidence_stable_keys: ["evidence:business-context:rfc-6924", "evidence:business-context:zksecurity-audit-report"]
+        author_question: "What independent reviews, integrated follow-up, and devnet exit criteria remain before deployment?"
+        assertions: [{ stable_key: "assertion:requirement:rfc-6924:preproduction-audit-and-devnet:documented", text: "The RFC makes independent multi-party audit and completed devnet/community testing preconditions for mainnet rollout.", evidence_class: "DOCUMENTED_INTENT", confidence: "HIGH", evidence_stable_keys: ["evidence:business-context:rfc-6924"] }]
+      - stable_key: "requirement:rfc-6924:no-hardfork"
+        title: "Existing-protocol compatibility"
+        requirement_kind: "PROVISIONAL"
+        authority: "AUTHORITATIVE_INTENT"
+        rollout_stage: "MVP"
+        implementation_status: "UNRESOLVED"
+        rationale: "Deploy without a Mina protocol hard fork."
+        protected_assets_outcomes: ["deployability", "protocol compatibility"]
+        implementation_ids: []
+        test_ids: []
+        gap_ids: []
+        decision_evidence_stable_keys: ["evidence:business-context:rfc-6924"]
+        author_question: "Which Mina/o1js versions and fork-specific features form the supported deployment baseline?"
+        assertions: [{ stable_key: "assertion:requirement:rfc-6924:no-hardfork:documented", text: "The proposed design should rely on the existing Mina zkApp protocol and require no hard fork.", evidence_class: "DOCUMENTED_INTENT", confidence: "HIGH", evidence_stable_keys: ["evidence:business-context:rfc-6924"] }]
+    business_rules:
+      - stable_key: "business-rule:rfc-6924:proposal-governed-payout"
+        title: "Treasury payout follows proposal approval"
+        record_status: "CURRENT"
+        summary: "Treasury value is released through a proposal, vote, cooldown, and execution lifecycle rather than unilateral custody."
+        scope: { components: [], source_ids: [] }
+        anchors: [{ path: "https://forums.minaprotocol.com/t/rfc-mina-decentralized-treasury-decentralized-on-chain-community-treasury/6924", symbol: "Proposal System", start_line: 39, end_line: 67 }]
+        assertions: [{ stable_key: "assertion:business-rule:rfc-6924:proposal-governed-payout:documented", text: "A treasury-spend proposal must pass community governance before payout after cooldown.", evidence_class: "DOCUMENTED_INTENT", confidence: "HIGH", evidence_stable_keys: ["evidence:business-context:rfc-6924"] }]
+        related_stable_keys: ["requirement:rfc-6924:treasury-spend-mina-and-custom-token", "requirement:rfc-6924:post-cooldown-execution"]
+        assumptions: []
+        limitations: ["Final ratified parameters are not present in the RFC."]
+      - stable_key: "business-rule:rfc-6924:snapshot-weight"
+        title: "Voting weight is snapshot-derived"
+        record_status: "CURRENT"
+        summary: "Each eligible voting identity receives weight derived from a historical staking-ledger snapshot."
+        scope: { components: [], source_ids: [] }
+        anchors: [{ path: "https://forums.minaprotocol.com/t/rfc-mina-decentralized-treasury-decentralized-on-chain-community-treasury/6924", symbol: "Voting weights", start_line: 70, end_line: 103 }]
+        assertions: [{ stable_key: "assertion:business-rule:rfc-6924:snapshot-weight:documented", text: "Voting power must be computed from a fixed historical ledger snapshot and not from mutable current balances.", evidence_class: "DOCUMENTED_INTENT", confidence: "HIGH", evidence_stable_keys: ["evidence:business-context:rfc-6924"] }]
+        related_stable_keys: ["requirement:rfc-6924:historical-ledger-voting-weight"]
+        assumptions: ["The selected snapshot is available and stable for proving and verification."]
+        limitations: []
+      - stable_key: "business-rule:rfc-6924:vote-once"
+        title: "Snapshot voting power is single-use per proposal"
+        record_status: "CURRENT"
+        summary: "Nullifier state prevents repeated contribution of the same voting identity's weight to one proposal."
+        scope: { components: [], source_ids: [] }
+        anchors: [{ path: "https://forums.minaprotocol.com/t/rfc-mina-decentralized-treasury-decentralized-on-chain-community-treasury/6924", symbol: "Double-Spend Resistance", start_line: 101, end_line: 103 }]
+        assertions: [{ stable_key: "assertion:business-rule:rfc-6924:vote-once:documented", text: "One account balance must not contribute more than once to a proposal outcome.", evidence_class: "DOCUMENTED_INTENT", confidence: "HIGH", evidence_stable_keys: ["evidence:business-context:rfc-6924"] }]
+        related_stable_keys: ["requirement:rfc-6924:nullifier-once-per-proposal"]
+        assumptions: ["Nullifier keys and roots are bound to the intended proposal domain."]
+        limitations: []
+      - stable_key: "business-rule:rfc-6924:abstain-participation-only"
+        title: "Abstain counts for participation only"
+        record_status: "CURRENT"
+        summary: "Abstain contributes to quorum but not the yay-versus-nay approval fraction."
+        scope: { components: [], source_ids: [] }
+        anchors: [{ path: "https://forums.minaprotocol.com/t/rfc-mina-decentralized-treasury-decentralized-on-chain-community-treasury/6924", symbol: "Vote Types", start_line: 83, end_line: 100 }]
+        assertions: [{ stable_key: "assertion:business-rule:rfc-6924:abstain-participation-only:documented", text: "Abstention is neutral on outcome but contributes to participation.", evidence_class: "DOCUMENTED_INTENT", confidence: "HIGH", evidence_stable_keys: ["evidence:business-context:rfc-6924"] }]
+        related_stable_keys: ["requirement:rfc-6924:yay-nay-abstain-semantics"]
+        assumptions: []
+        limitations: []
+      - stable_key: "business-rule:rfc-6924:successful-bond-return"
+        title: "Successful proposal returns proposer bond"
+        record_status: "CURRENT"
+        summary: "A successful proposal restores the bond to its proposer; unsuccessful disposition remains burn-or-freeze provisional."
+        scope: { components: [], source_ids: [] }
+        anchors: [{ path: "https://forums.minaprotocol.com/t/rfc-mina-decentralized-treasury-decentralized-on-chain-community-treasury/6924", symbol: "Spam Prevention", start_line: 65, end_line: 67 }]
+        assertions: [{ stable_key: "assertion:business-rule:rfc-6924:successful-bond-return:documented", text: "The successful-proposal bond is returned rather than added to the recipient payout.", evidence_class: "DOCUMENTED_INTENT", confidence: "HIGH", evidence_stable_keys: ["evidence:business-context:rfc-6924"] }]
+        related_stable_keys: ["requirement:rfc-6924:bond-disposition", "gap:business-context:successful-bond-recipient"]
+        assumptions: ["Proposer and recipient may be distinct actors."]
+        limitations: ["Failed-proposal burn versus freeze policy is not settled."]
+      - stable_key: "business-rule:rfc-6924:cooldown-intervention"
+        title: "Execution is blocked during cooldown"
+        record_status: "CURRENT"
+        summary: "Cooldown is a timelock in which tally may occur and emergency intervention remains possible, but payout is not allowed."
+        scope: { components: [], source_ids: [] }
+        anchors: [{ path: "https://forums.minaprotocol.com/t/rfc-mina-decentralized-treasury-decentralized-on-chain-community-treasury/6924", symbol: "Lifecycle Periods", start_line: 52, end_line: 64 }]
+        assertions: [{ stable_key: "assertion:business-rule:rfc-6924:cooldown-intervention:documented", text: "Approved payout must wait until after cooldown and absence of break-glass intervention.", evidence_class: "DOCUMENTED_INTENT", confidence: "HIGH", evidence_stable_keys: ["evidence:business-context:rfc-6924"] }]
+        related_stable_keys: ["requirement:rfc-6924:cooldown-period", "requirement:rfc-6924:break-glass"]
+        assumptions: []
+        limitations: []
+      - stable_key: "business-rule:rfc-6924:participation-access"
+        title: "Participation infrastructure remains open"
+        record_status: "CURRENT"
+        summary: "Proposing, voting, proving, and observing should not depend on a privileged proprietary operator."
+        scope: { components: [], source_ids: [] }
+        anchors: [{ path: "https://forums.minaprotocol.com/t/rfc-mina-decentralized-treasury-decentralized-on-chain-community-treasury/6924", symbol: "Conceptual overview", start_line: 20, end_line: 35 }]
+        assertions: [{ stable_key: "assertion:business-rule:rfc-6924:participation-access:documented", text: "The system should minimize technical barriers and keep infrastructure permissionless and self-hostable.", evidence_class: "DOCUMENTED_INTENT", confidence: "HIGH", evidence_stable_keys: ["evidence:business-context:rfc-6924"] }]
+        related_stable_keys: ["requirement:rfc-6924:permissionless-self-hostable-infrastructure"]
+        assumptions: ["Required Mina archive and ledger data are publicly obtainable."]
+        limitations: ["Operational feasibility and capacity require separate analysis."]
+    findings:
+      - stable_key: "finding:prior-audit:action-history-found-flags-prover-controlled"
+        title: "Prior audit: action-history found flags were prover-controlled"
+        origin: "PRIOR_AUDIT"
+        rule_id: "ZKSECURITY.HIGH.ACTION_HISTORY_FOUND_FLAGS"
+        category: "security"
+        severity: "HIGH"
+        confidence: "HIGH"
+        message: "The audited revision allowed input found flags to survive without proof-derived discovery."
+        original_identifier: "Action State History found Flags Are Prover-Controlled, Allowing Fabricated Votes"
+        original_severity: "High"
+        original_status: "FIXED_CLAIMED"
+        audited_revision: "f2c93cfdb27836b156769ca4eaeca7d5f01fa8b5"
+        affected_paths: ["packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts"]
+        scope_exclusions: ["Code outside the report's eleven-file packages/sdk/src/provable scope"]
+        prerequisites: ["Untrusted prover supplies a reducer input history."]
+        root_cause: "Found flags were part of prover-controlled public input and were not reset before reduction."
+        impact: "Combined with missing on-chain history binding, fabricated actions could control governance tallies."
+        recommendation: "Derive found flags from false inside the program and propagate only proof-derived outputs."
+        remediation_reference: ["37ca9850a61767dad9036ac98ea82895919c9c6a"]
+        current_revision_disposition: "REMEDIATED_STATICALLY"
+        current_disposition_rationale: "Current ActionStateHistory.fromTarget hardcodes false; reduceBatch derives matches; merge combines derived flags."
+        evidence_stable_keys: ["evidence:business-context:zksecurity-audit-report", "evidence:business-context:current-action-history-binding"]
+        semantic_status: "RESOLVED_STATICALLY"
+        security_objective_ids: []
+        threat_ids: []
+        assumption_ids: []
+        no_security_link_rationale: "Security linkage is owned by the later security work unit."
+        scope_limitations: ["Static inspection does not establish circuit soundness."]
+        assertions:
+          - { stable_key: "assertion:finding:prior-audit:action-history-found-flags-prover-controlled:prior", text: "zkSecurity reported this as High at the audited revision.", evidence_class: "EXTERNAL_STANDARD", confidence: "HIGH", evidence_stable_keys: ["evidence:business-context:zksecurity-audit-report"] }
+          - { stable_key: "assertion:finding:prior-audit:action-history-found-flags-prover-controlled:current", text: "The reported input-controlled initialization is absent from current source and replaced by false initialization plus constrained discovery.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_stable_keys: ["evidence:business-context:current-action-history-binding"] }
+      - stable_key: "finding:prior-audit:action-history-not-linked-to-output-hash"
+        title: "Prior audit: action history was not linked to the tally output hash"
+        origin: "PRIOR_AUDIT"
+        rule_id: "ZKSECURITY.HIGH.ACTION_HISTORY_OUTPUT_BINDING"
+        category: "security"
+        severity: "HIGH"
+        confidence: "HIGH"
+        message: "The audited two-transaction flow could commit a fabricated extension beyond validated action states."
+        original_identifier: "Action State History Not Linked to toActionsHash, Allowing Fabricated Votes"
+        original_severity: "High"
+        original_status: "FIXED_CLAIMED"
+        audited_revision: "f2c93cfdb27836b156769ca4eaeca7d5f01fa8b5"
+        affected_paths: ["packages/sdk/src/provable/contracts/treasury-owner.ts"]
+        scope_exclusions: ["Code outside the report's eleven-file packages/sdk/src/provable scope"]
+        prerequisites: ["Untrusted prover submits crafted commit and tally proofs."]
+        root_cause: "Validated historical action states and the stored reducer output hash were not atomically constrained to the same terminal state."
+        impact: "Fabricated votes could change approval and authorize an unintended payout."
+        recommendation: "Bind the final reducer hash to the latest validated action state in one atomic tally operation."
+        remediation_reference: ["791401edf87e47d901ed4c76323fbfbf44b56c4a"]
+        current_revision_disposition: "REMEDIATED_STATICALLY"
+        current_disposition_rationale: "Current tally validates all history entries and requires reducer toActionsHash to equal actionStateOne within the same owner method; separate commitActionState is absent."
+        evidence_stable_keys: ["evidence:business-context:zksecurity-audit-report", "evidence:business-context:current-action-history-binding"]
+        semantic_status: "RESOLVED_STATICALLY"
+        security_objective_ids: []
+        threat_ids: []
+        assumption_ids: []
+        no_security_link_rationale: "Security linkage is owned by the later security work unit."
+        scope_limitations: ["Static inspection does not establish Mina action-state ordering semantics beyond visible constraints."]
+        assertions:
+          - { stable_key: "assertion:finding:prior-audit:action-history-not-linked-to-output-hash:prior", text: "zkSecurity reported a missing action-history/output-hash link as High.", evidence_class: "EXTERNAL_STANDARD", confidence: "HIGH", evidence_stable_keys: ["evidence:business-context:zksecurity-audit-report"] }
+          - { stable_key: "assertion:finding:prior-audit:action-history-not-linked-to-output-hash:current", text: "Current source colocates history validation and tally and explicitly equates toActionsHash with a validated history target.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_stable_keys: ["evidence:business-context:current-action-history-binding"] }
+      - stable_key: "finding:prior-audit:action-state-uniqueness-missing"
+        title: "Prior audit: action-state uniqueness was not checked"
+        origin: "PRIOR_AUDIT"
+        rule_id: "ZKSECURITY.HIGH.ACTION_STATE_UNIQUENESS"
+        category: "security"
+        severity: "HIGH"
+        confidence: "HIGH"
+        message: "The audited revision accepted repeated historical states, permitting later votes to be omitted."
+        original_identifier: "Action State Uniqueness Not Checked, Allowing Vote Discarding"
+        original_severity: "High"
+        original_status: "FIXED_CLAIMED"
+        audited_revision: "f2c93cfdb27836b156769ca4eaeca7d5f01fa8b5"
+        affected_paths: ["packages/sdk/src/provable/contracts/treasury-owner.ts"]
+        scope_exclusions: ["Code outside the report's eleven-file packages/sdk/src/provable scope"]
+        prerequisites: ["Untrusted prover selects repeated older action-state values."]
+        root_cause: "Five membership preconditions did not require five distinct, non-initial states."
+        impact: "Later votes could be omitted and committed tally work disrupted."
+        recommendation: "Require pairwise uniqueness and reject the initial action state."
+        remediation_reference: ["791401edf87e47d901ed4c76323fbfbf44b56c4a", "60bfb4de7751a7b1957c98ec753194c5fab2f15e"]
+        current_revision_disposition: "REMEDIATED_STATICALLY"
+        current_disposition_rationale: "Current owner tally rejects the initial state and performs all pairwise hash inequality checks."
+        evidence_stable_keys: ["evidence:business-context:zksecurity-audit-report", "evidence:business-context:current-action-history-binding"]
+        semantic_status: "RESOLVED_STATICALLY"
+        security_objective_ids: []
+        threat_ids: []
+        assumption_ids: []
+        no_security_link_rationale: "Security linkage is owned by the later security work unit."
+        scope_limitations: ["Action-state history completeness is not dynamically exercised."]
+        assertions:
+          - { stable_key: "assertion:finding:prior-audit:action-state-uniqueness-missing:prior", text: "zkSecurity reported missing uniqueness as High.", evidence_class: "EXTERNAL_STANDARD", confidence: "HIGH", evidence_stable_keys: ["evidence:business-context:zksecurity-audit-report"] }
+          - { stable_key: "assertion:finding:prior-audit:action-state-uniqueness-missing:current", text: "Current source includes non-initial and pairwise uniqueness assertions.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_stable_keys: ["evidence:business-context:current-action-history-binding"] }
+      - stable_key: "finding:prior-audit:owner-deploy-permissions-ineffective"
+        title: "Prior audit: owner permissions were overwritten during deployment"
+        origin: "PRIOR_AUDIT"
+        rule_id: "ZKSECURITY.HIGH.DEPLOY_PERMISSION_ORDER"
+        category: "security"
+        severity: "HIGH"
+        confidence: "HIGH"
+        message: "The audited init-based permission assignment was overwritten by TokenContract.deploy defaults."
+        original_identifier: "Permissions Are Ineffective Due to o1js Deploy Behavior"
+        original_severity: "High"
+        original_status: "FIXED_CLAIMED"
+        audited_revision: "f2c93cfdb27836b156769ca4eaeca7d5f01fa8b5"
+        affected_paths: ["packages/sdk/src/provable/contracts/treasury-owner.ts"]
+        scope_exclusions: ["Deployment tooling and o1js runtime outside report scope"]
+        prerequisites: ["Contract deployed using audited override order."]
+        root_cause: "Custom permissions were assigned before superclass deployment assigned defaults."
+        impact: "Private-key authorization could bypass intended proof-only governance constraints."
+        recommendation: "Override deploy, await super.deploy, then set restrictive permissions."
+        remediation_reference: ["791401edf87e47d901ed4c76323fbfbf44b56c4a", "c8fb37a8816a833d1cbeda6543c1fa63f2db3016"]
+        current_revision_disposition: "REMEDIATED_STATICALLY"
+        current_disposition_rationale: "Current deploy awaits super.deploy before setting TreasuryOwnerSmartContract.permissions."
+        evidence_stable_keys: ["evidence:business-context:zksecurity-audit-report", "evidence:business-context:current-owner-permissions"]
+        semantic_status: "RESOLVED_STATICALLY"
+        security_objective_ids: []
+        threat_ids: []
+        assumption_ids: []
+        no_security_link_rationale: "Security linkage is owned by the later security work unit."
+        scope_limitations: ["Actual deployed account permissions are outside static source evidence."]
+        assertions:
+          - { stable_key: "assertion:finding:prior-audit:owner-deploy-permissions-ineffective:prior", text: "zkSecurity reported ineffective deployment permissions as High.", evidence_class: "EXTERNAL_STANDARD", confidence: "HIGH", evidence_stable_keys: ["evidence:business-context:zksecurity-audit-report"] }
+          - { stable_key: "assertion:finding:prior-audit:owner-deploy-permissions-ineffective:current", text: "Current source applies permissions after superclass deployment.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_stable_keys: ["evidence:business-context:current-owner-permissions"] }
+      - stable_key: "finding:prior-audit:voting-nullifier-index-aliasing"
+        title: "Prior audit: Merkle index aliasing allowed double voting"
+        origin: "PRIOR_AUDIT"
+        rule_id: "ZKSECURITY.HIGH.FIELD_INDEX_ALIASING"
+        category: "security"
+        severity: "HIGH"
+        confidence: "HIGH"
+        message: "A height-256 tree exposed two integer paths with the same field index."
+        original_identifier: "Index Aliasing for Voting and Nullifier Ledgers Allows Double Voting"
+        original_severity: "High"
+        original_status: "FIXED_CLAIMED"
+        audited_revision: "f2c93cfdb27836b156769ca4eaeca7d5f01fa8b5"
+        affected_paths: ["packages/sdk/src/provable/merkle-tree/prefixed-merkle-tree.ts"]
+        scope_exclusions: ["Underlying Poseidon and field implementations"]
+        prerequisites: ["Attacker supplies the alternate Merkle path index congruent modulo the field order."]
+        root_cause: "A 255-bit integer path was reconstructed as a field element despite the field modulus being near 2^254."
+        impact: "The same identity could reach two nullifier leaves or be assigned zero voting weight via an alias."
+        recommendation: "Use a height-255 tree so path indices fit the intended canonical field range with negligible unmappable hashes."
+        remediation_reference: ["c8fb37a8816a833d1cbeda6543c1fa63f2db3016", "397c77120544fb460d36350cbe06773419b0c0e1"]
+        current_revision_disposition: "REMEDIATED_STATICALLY"
+        current_disposition_rationale: "Current voting and nullifier witnesses are PrefixedMerkleWitness255."
+        evidence_stable_keys: ["evidence:business-context:zksecurity-audit-report", "evidence:business-context:current-ledger-index-width"]
+        semantic_status: "RESOLVED_STATICALLY"
+        security_objective_ids: []
+        threat_ids: []
+        assumption_ids: []
+        no_security_link_rationale: "Security linkage is owned by the later security work unit."
+        scope_limitations: ["Cryptographic and compiler correctness remain unverified."]
+        assertions:
+          - { stable_key: "assertion:finding:prior-audit:voting-nullifier-index-aliasing:prior", text: "zkSecurity reported index aliasing as High.", evidence_class: "EXTERNAL_STANDARD", confidence: "HIGH", evidence_stable_keys: ["evidence:business-context:zksecurity-audit-report"] }
+          - { stable_key: "assertion:finding:prior-audit:voting-nullifier-index-aliasing:current", text: "The current witness height is 255 rather than the vulnerable 256.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_stable_keys: ["evidence:business-context:current-ledger-index-width"] }
+      - stable_key: "finding:prior-audit:acceptance-criteria-uint64-overflow"
+        title: "Prior audit: acceptance arithmetic overflowed UInt64"
+        origin: "PRIOR_AUDIT"
+        rule_id: "ZKSECURITY.HIGH.ACCEPTANCE_OVERFLOW"
+        category: "correctness"
+        severity: "HIGH"
+        confidence: "HIGH"
+        message: "Mainnet-scale participation and approval products exceeded UInt64."
+        original_identifier: "UInt64 Overflow in Acceptance Criteria Causes Vote Tallying to Always Fail"
+        original_severity: "High"
+        original_status: "FIXED_CLAIMED"
+        audited_revision: "f2c93cfdb27836b156769ca4eaeca7d5f01fa8b5"
+        affected_paths: ["packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts"]
+        scope_exclusions: ["Custom o1js UInt128 implementation was remediated in a separate fork commit"]
+        prerequisites: ["Mainnet-scale supply, approved-vote weight, or large proposal amount."]
+        root_cause: "Multiplication by basis points occurred in UInt64 before division."
+        impact: "Valid tally proofs could not be generated, making governance non-functional."
+        recommendation: "Use wider checked intermediates while preserving integer-division semantics."
+        remediation_reference: ["0967b6803e80338b4143b76b0b9cfc4387f91065", "o1js:3d82d84092a67871207759133677733a3c613e94"]
+        current_revision_disposition: "REMEDIATED_STATICALLY"
+        current_disposition_rationale: "Current calculations promote proposal, treasury, vote, threshold, and product values to UInt128 before multiplication."
+        evidence_stable_keys: ["evidence:business-context:zksecurity-audit-report", "evidence:business-context:current-tally-initialization-and-arithmetic"]
+        semantic_status: "RESOLVED_STATICALLY"
+        security_objective_ids: []
+        threat_ids: []
+        assumption_ids: []
+        no_security_link_rationale: "Security linkage is owned by the later security work unit."
+        scope_limitations: ["No arithmetic execution or proof generation was performed; dependency implementation remains assumed."]
+        assertions:
+          - { stable_key: "assertion:finding:prior-audit:acceptance-criteria-uint64-overflow:prior", text: "zkSecurity reported inevitable UInt64 overflow as High.", evidence_class: "EXTERNAL_STANDARD", confidence: "HIGH", evidence_stable_keys: ["evidence:business-context:zksecurity-audit-report"] }
+          - { stable_key: "assertion:finding:prior-audit:acceptance-criteria-uint64-overflow:current", text: "Current source uses UInt128 for the vulnerable intermediate products.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_stable_keys: ["evidence:business-context:current-tally-initialization-and-arithmetic"] }
+      - stable_key: "finding:prior-audit:initial-staking-index-unconstrained"
+        title: "Prior audit: initial staking-ledger index was unconstrained"
+        origin: "PRIOR_AUDIT"
+        rule_id: "ZKSECURITY.HIGH.STAKING_START_INDEX"
+        category: "security"
+        severity: "HIGH"
+        confidence: "HIGH"
+        message: "A transformation could start after index zero and omit voters."
+        original_identifier: "Unconstrained Initial Staking Ledger Index Allows Selective Voter Exclusion"
+        original_severity: "High"
+        original_status: "FIXED_CLAIMED"
+        audited_revision: "f2c93cfdb27836b156769ca4eaeca7d5f01fa8b5"
+        affected_paths: ["packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts"]
+        scope_exclusions: []
+        prerequisites: ["Untrusted prover chooses the transformation's public start index."]
+        root_cause: "Terminal exhaustion and recursive adjacency were enforced without a genesis/start constraint."
+        impact: "Opposing voters below the chosen index could be excluded from voting weight."
+        recommendation: "Require the public input index to equal zero."
+        remediation_reference: ["397c77120544fb460d36350cbe06773419b0c0e1"]
+        current_revision_disposition: "REMEDIATED_STATICALLY"
+        current_disposition_rationale: "Current tally asserts the transformation public input index equals UInt64(0)."
+        evidence_stable_keys: ["evidence:business-context:zksecurity-audit-report", "evidence:business-context:current-tally-initialization-and-arithmetic"]
+        semantic_status: "RESOLVED_STATICALLY"
+        security_objective_ids: []
+        threat_ids: []
+        assumption_ids: []
+        no_security_link_rationale: "Security linkage is owned by the later security work unit."
+        scope_limitations: ["Recursive proof continuity is statically inspected elsewhere."]
+        assertions:
+          - { stable_key: "assertion:finding:prior-audit:initial-staking-index-unconstrained:prior", text: "zkSecurity reported the missing start-index constraint as High.", evidence_class: "EXTERNAL_STANDARD", confidence: "HIGH", evidence_stable_keys: ["evidence:business-context:zksecurity-audit-report"] }
+          - { stable_key: "assertion:finding:prior-audit:initial-staking-index-unconstrained:current", text: "Current source explicitly constrains the index to zero.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_stable_keys: ["evidence:business-context:current-tally-initialization-and-arithmetic"] }
+      - stable_key: "finding:prior-audit:initial-voting-root-unconstrained"
+        title: "Prior audit: initial voting-ledger root was unconstrained"
+        origin: "PRIOR_AUDIT"
+        rule_id: "ZKSECURITY.HIGH.VOTING_INITIAL_ROOT"
+        category: "security"
+        severity: "HIGH"
+        confidence: "HIGH"
+        message: "A transformation could begin from a malicious pre-populated voting ledger."
+        original_identifier: "Unconstrained Initial Voting Ledger Root Allows Vote Weight Manipulation"
+        original_severity: "High"
+        original_status: "FIXED_CLAIMED"
+        audited_revision: "f2c93cfdb27836b156769ca4eaeca7d5f01fa8b5"
+        affected_paths: ["packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts"]
+        scope_exclusions: []
+        prerequisites: ["Untrusted prover supplies a pre-populated initial voting ledger root."]
+        root_cause: "The output root and staking root were bound, but the transformation input voting root was not required to be empty."
+        impact: "An attacker could inflate voting weight and approve an unauthorized payout."
+        recommendation: "Require the transformation input root to equal the canonical empty voting root."
+        remediation_reference: ["397c77120544fb460d36350cbe06773419b0c0e1"]
+        current_revision_disposition: "REMEDIATED_STATICALLY"
+        current_disposition_rationale: "Current tally asserts equality with TreasuryProposalSmartContract.emptyVotingLedgerRoot."
+        evidence_stable_keys: ["evidence:business-context:zksecurity-audit-report", "evidence:business-context:current-tally-initialization-and-arithmetic"]
+        semantic_status: "RESOLVED_STATICALLY"
+        security_objective_ids: []
+        threat_ids: []
+        assumption_ids: []
+        no_security_link_rationale: "Security linkage is owned by the later security work unit."
+        scope_limitations: ["Correct construction of the configured empty root remains an initialization assumption."]
+        assertions:
+          - { stable_key: "assertion:finding:prior-audit:initial-voting-root-unconstrained:prior", text: "zkSecurity reported the missing empty-root constraint as High.", evidence_class: "EXTERNAL_STANDARD", confidence: "HIGH", evidence_stable_keys: ["evidence:business-context:zksecurity-audit-report"] }
+          - { stable_key: "assertion:finding:prior-audit:initial-voting-root-unconstrained:current", text: "Current source explicitly constrains the initial voting root to the configured empty root.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_stable_keys: ["evidence:business-context:current-tally-initialization-and-arithmetic"] }
+      - stable_key: "finding:prior-audit:owner-account-token-id-missing"
+        title: "Prior audit: owner-account token ID was not checked"
+        origin: "PRIOR_AUDIT"
+        rule_id: "ZKSECURITY.MEDIUM.OWNER_TOKEN_ID"
+        category: "security"
+        severity: "MEDIUM"
+        confidence: "HIGH"
+        message: "A same-public-key custom-token account could alter dynamic acceptance criteria."
+        original_identifier: "Missing Token ID Check on Treasury Owner Allows Acceptance Criteria Manipulation"
+        original_severity: "Medium"
+        original_status: "FIXED_CLAIMED"
+        audited_revision: "f2c93cfdb27836b156769ca4eaeca7d5f01fa8b5"
+        affected_paths: ["packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts"]
+        scope_exclusions: []
+        prerequisites: ["A custom-token account exists at the treasury owner's public key and is supplied with a valid witness."]
+        root_cause: "Mina account identity was reduced to public key instead of public key plus token ID."
+        impact: "Participation and approval thresholds could be lowered or raised using the wrong balance."
+        recommendation: "Require TokenId.default on the witnessed treasury-owner account."
+        remediation_reference: ["3a8eb54a64dd4a58311048c22a63bfefa67c5b3b"]
+        current_revision_disposition: "REMEDIATED_STATICALLY"
+        current_disposition_rationale: "Current tally asserts treasuryOwnerAccount.tokenId equals TokenId.default."
+        evidence_stable_keys: ["evidence:business-context:zksecurity-audit-report", "evidence:business-context:current-tally-initialization-and-arithmetic"]
+        semantic_status: "RESOLVED_STATICALLY"
+        security_objective_ids: []
+        threat_ids: []
+        assumption_ids: []
+        no_security_link_rationale: "Security linkage is owned by the later security work unit."
+        scope_limitations: []
+        assertions:
+          - { stable_key: "assertion:finding:prior-audit:owner-account-token-id-missing:prior", text: "zkSecurity reported the missing token-ID binding as Medium.", evidence_class: "EXTERNAL_STANDARD", confidence: "HIGH", evidence_stable_keys: ["evidence:business-context:zksecurity-audit-report"] }
+          - { stable_key: "assertion:finding:prior-audit:owner-account-token-id-missing:current", text: "Current source binds the witnessed owner account to the default token ID.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_stable_keys: ["evidence:business-context:current-tally-initialization-and-arithmetic"] }
+      - stable_key: "finding:prior-audit:owner-send-receive-impossible"
+        title: "Prior audit: owner permissions prevented send and receive"
+        origin: "PRIOR_AUDIT"
+        rule_id: "ZKSECURITY.MEDIUM.OWNER_SEND_RECEIVE"
+        category: "correctness"
+        severity: "MEDIUM"
+        confidence: "HIGH"
+        message: "Applying allImpossible without send/receive overrides would disable bonds and payouts."
+        original_identifier: "Restrictive Treasury Owner Permissions Prevent Contract Operation"
+        original_severity: "Medium"
+        original_status: "FIXED_CLAIMED"
+        audited_revision: "f2c93cfdb27836b156769ca4eaeca7d5f01fa8b5"
+        affected_paths: ["packages/sdk/src/provable/contracts/treasury-owner.ts"]
+        scope_exclusions: []
+        prerequisites: ["The restrictive permissions are actually applied at deployment."]
+        root_cause: "send and receive inherited impossible permissions."
+        impact: "The treasury could neither collect bonds nor pay approved proposals."
+        recommendation: "Set send and receive to proof authorization."
+        remediation_reference: ["791401edf87e47d901ed4c76323fbfbf44b56c4a"]
+        current_revision_disposition: "REMEDIATED_STATICALLY"
+        current_disposition_rationale: "Current permissions explicitly set send and receive to proof."
+        evidence_stable_keys: ["evidence:business-context:zksecurity-audit-report", "evidence:business-context:current-owner-permissions"]
+        semantic_status: "RESOLVED_STATICALLY"
+        security_objective_ids: []
+        threat_ids: []
+        assumption_ids: []
+        no_security_link_rationale: "Security linkage is owned by the later security work unit."
+        scope_limitations: ["Deployment and runtime transfer behavior were not executed."]
+        assertions:
+          - { stable_key: "assertion:finding:prior-audit:owner-send-receive-impossible:prior", text: "zkSecurity reported the restrictive send/receive permissions as Medium.", evidence_class: "EXTERNAL_STANDARD", confidence: "HIGH", evidence_stable_keys: ["evidence:business-context:zksecurity-audit-report"] }
+          - { stable_key: "assertion:finding:prior-audit:owner-send-receive-impossible:current", text: "Current source authorizes proof-based send and receive.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_stable_keys: ["evidence:business-context:current-owner-permissions"] }
+      - stable_key: "finding:prior-audit:anyone-can-execute-for-recipient"
+        title: "Prior audit: anyone can execute for the recipient"
+        origin: "PRIOR_AUDIT"
+        rule_id: "ZKSECURITY.LOW.PERMISSIONLESS_EXECUTION"
+        category: "business-logic"
+        severity: "LOW"
+        confidence: "HIGH"
+        message: "Any signed caller chooses payout timing and partial amount, while funds remain recipient-bound."
+        original_identifier: "Anyone Can Execute an Approved Proposal on Behalf of the Recipient"
+        original_severity: "Low"
+        original_status: "ACKNOWLEDGED"
+        audited_revision: "f2c93cfdb27836b156769ca4eaeca7d5f01fa8b5"
+        affected_paths: ["packages/sdk/src/provable/contracts/treasury-owner.ts"]
+        scope_exclusions: []
+        prerequisites: ["Proposal approved and cooldown complete."]
+        root_cause: "executeProposal requires a transaction sender signature but does not bind it to the proposal recipient."
+        impact: "A third party can force or fragment payouts, although cannot redirect them."
+        recommendation: "If recipient-controlled timing is intended, require recipient authorization; otherwise document permissionless execution explicitly."
+        remediation_reference: []
+        current_revision_disposition: "STILL_APPLICABLE"
+        current_disposition_rationale: "Current owner obtains sender signature only for event attribution; proposal execution checks recipient hash but not caller identity."
+        evidence_stable_keys: ["evidence:business-context:zksecurity-audit-report", "evidence:business-context:current-execution-and-bond"]
+        semantic_status: "OPEN"
+        security_objective_ids: []
+        threat_ids: []
+        assumption_ids: []
+        no_security_link_rationale: "Whether this is undesirable depends on intended execution agency, which the RFC does not settle."
+        scope_limitations: ["No runtime cost or recipient handling policy was supplied."]
+        assertions:
+          - { stable_key: "assertion:finding:prior-audit:anyone-can-execute-for-recipient:prior", text: "zkSecurity reported permissionless execution timing as Low and the client acknowledged it.", evidence_class: "EXTERNAL_STANDARD", confidence: "HIGH", evidence_stable_keys: ["evidence:business-context:zksecurity-audit-report"] }
+          - { stable_key: "assertion:finding:prior-audit:anyone-can-execute-for-recipient:current", text: "The source-visible caller and recipient remain distinct and no recipient signature is required.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_stable_keys: ["evidence:business-context:current-execution-and-bond"] }
+      - stable_key: "finding:prior-audit:bond-paid-to-recipient"
+        title: "Prior audit: successful bond is paid to recipient"
+        origin: "PRIOR_AUDIT"
+        rule_id: "ZKSECURITY.LOW.BOND_RECIPIENT"
+        category: "business-logic"
+        severity: "LOW"
+        confidence: "HIGH"
+        message: "A successful proposer loses the bond to the recipient when those actors differ."
+        original_identifier: "Bond Is Paid to the Proposal Recipient Rather Than Returned to the Proposer"
+        original_severity: "Low"
+        original_status: "ACKNOWLEDGED"
+        audited_revision: "f2c93cfdb27836b156769ca4eaeca7d5f01fa8b5"
+        affected_paths: ["packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts", "packages/sdk/src/provable/contracts/treasury-owner.ts"]
+        scope_exclusions: []
+        prerequisites: ["Proposer and recipient differ and proposal succeeds."]
+        root_cause: "Proposer identity is emitted but not stored for refund; executable amount adds bond to recipient entitlement."
+        impact: "Successful proposer loses bond and recipient receives more than requested amount."
+        recommendation: "Store proposer and refund the bond separately, or require proposer and recipient equality."
+        remediation_reference: []
+        current_revision_disposition: "STILL_APPLICABLE"
+        current_disposition_rationale: "Current execute calculates amount plus amount/divisor and credits it to recipient; proposal state has no proposer field."
+        evidence_stable_keys: ["evidence:business-context:zksecurity-audit-report", "evidence:business-context:current-execution-and-bond", "evidence:business-context:rfc-6924"]
+        semantic_status: "OPEN"
+        security_objective_ids: []
+        threat_ids: []
+        assumption_ids: []
+        no_security_link_rationale: "This is principally an intent/implementation divergence rather than an exploit claim."
+        scope_limitations: []
+        assertions:
+          - { stable_key: "assertion:finding:prior-audit:bond-paid-to-recipient:prior", text: "zkSecurity reported the bond destination as Low and the client acknowledged it.", evidence_class: "EXTERNAL_STANDARD", confidence: "HIGH", evidence_stable_keys: ["evidence:business-context:zksecurity-audit-report"] }
+          - { stable_key: "assertion:finding:prior-audit:bond-paid-to-recipient:current", text: "Current source still includes the bond in the recipient's executable total.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_stable_keys: ["evidence:business-context:current-execution-and-bond"] }
+          - { stable_key: "assertion:finding:prior-audit:bond-paid-to-recipient:intent", text: "The RFC says a passing proposal's bond is returned.", evidence_class: "DOCUMENTED_INTENT", confidence: "HIGH", evidence_stable_keys: ["evidence:business-context:rfc-6924"] }
+      - stable_key: "finding:prior-audit:pause-signature-domain-weak"
+        title: "Prior audit: pause signatures lack deployment-domain binding"
+        origin: "PRIOR_AUDIT"
+        rule_id: "ZKSECURITY.LOW.MULTISIG_DOMAIN"
+        category: "security"
+        severity: "LOW"
+        confidence: "HIGH"
+        message: "Signatures can be interchangeable across controllers sharing signer set and nonce."
+        original_identifier: "Weak Signature Binding in Pause Controller Multisig"
+        original_severity: "Low"
+        original_status: "ACKNOWLEDGED"
+        audited_revision: "f2c93cfdb27836b156769ca4eaeca7d5f01fa8b5"
+        affected_paths: ["packages/sdk/src/provable/contracts/treasury-pause-controller/treasury-pause-controller.ts", "packages/sdk/src/provable/contracts/treasury-pause-controller/multisig-signatures.ts"]
+        scope_exclusions: ["Deployment policy for signer-set reuse"]
+        prerequisites: ["Same signer set and nonce exist on another controller or network; attacker is a signer who sees peer signatures."
+        ]
+        root_cause: "Signed payload omits controller public key and network/deployment identifier."
+        impact: "A signer may replay a threshold authorization across controller domains."
+        recommendation: "Bind network and controller identity into all pause, unpause, proposal-toggle, and rotation messages."
+        remediation_reference: []
+        current_revision_disposition: "STILL_APPLICABLE"
+        current_disposition_rationale: "Current action prefixes and nonces remain unbound to controller address or network ID."
+        evidence_stable_keys: ["evidence:business-context:zksecurity-audit-report", "evidence:business-context:current-pause-signature-domain"]
+        semantic_status: "OPEN"
+        security_objective_ids: []
+        threat_ids: []
+        assumption_ids: []
+        no_security_link_rationale: "Security linkage is owned by the later security work unit."
+        scope_limitations: ["Exploitability depends on deployment reuse and signature visibility assumptions."]
+        assertions:
+          - { stable_key: "assertion:finding:prior-audit:pause-signature-domain-weak:prior", text: "zkSecurity reported weak cross-controller signature binding as Low and the client acknowledged it.", evidence_class: "EXTERNAL_STANDARD", confidence: "HIGH", evidence_stable_keys: ["evidence:business-context:zksecurity-audit-report"] }
+          - { stable_key: "assertion:finding:prior-audit:pause-signature-domain-weak:current", text: "Current signed message constructors do not include controller or network identity.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_stable_keys: ["evidence:business-context:current-pause-signature-domain"] }
+      - stable_key: "finding:prior-audit:last-block-slot-not-inclusion-slot"
+        title: "Prior audit: lifecycle guard uses last-block slot"
+        origin: "PRIOR_AUDIT"
+        rule_id: "ZKSECURITY.LOW.LIFECYCLE_SLOT"
+        category: "correctness"
+        severity: "LOW"
+        confidence: "HIGH"
+        message: "The network-state slot precondition may admit an operation one block beyond its intended period."
+        original_identifier: "Slot Precondition Uses Last Block Slot Instead of Inclusion Slot"
+        original_severity: "Low"
+        original_status: "ACKNOWLEDGED"
+        audited_revision: "f2c93cfdb27836b156769ca4eaeca7d5f01fa8b5"
+        affected_paths: ["packages/sdk/src/provable/contracts/treasury-owner.ts"]
+        scope_exclusions: ["Mina protocol implementation of slot preconditions"]
+        prerequisites: ["Transaction is included in the first block after a lifecycle boundary."
+        ]
+        root_cause: "Guard uses network.globalSlotSinceGenesis rather than currentSlot inclusion precondition."
+        impact: "A proposal or vote can be accepted one block after its intended period."
+        recommendation: "Use the inclusion-slot precondition."
+        remediation_reference: []
+        current_revision_disposition: "STILL_APPLICABLE"
+        current_disposition_rationale: "Current requireLifecyclePeriod still invokes this.network.globalSlotSinceGenesis.requireBetween."
+        evidence_stable_keys: ["evidence:business-context:zksecurity-audit-report", "evidence:business-context:current-lifecycle-slot"]
+        semantic_status: "OPEN"
+        security_objective_ids: []
+        threat_ids: []
+        assumption_ids: []
+        no_security_link_rationale: "Security linkage is owned by the later security work unit."
+        scope_limitations: ["The audit supplies the o1js/Mina semantic interpretation; this run did not execute it."]
+        assertions:
+          - { stable_key: "assertion:finding:prior-audit:last-block-slot-not-inclusion-slot:prior", text: "zkSecurity reported the lifecycle-slot discrepancy as Low and the client acknowledged it.", evidence_class: "EXTERNAL_STANDARD", confidence: "HIGH", evidence_stable_keys: ["evidence:business-context:zksecurity-audit-report"] }
+          - { stable_key: "assertion:finding:prior-audit:last-block-slot-not-inclusion-slot:current", text: "Current source retains the audited network-slot API.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_stable_keys: ["evidence:business-context:current-lifecycle-slot"] }
+      - stable_key: "finding:prior-audit:commit-and-tally-split"
+        title: "Prior audit: commit and tally were split"
+        origin: "PRIOR_AUDIT"
+        rule_id: "ZKSECURITY.INFO.COMMIT_TALLY_ATOMICITY"
+        category: "maintainability"
+        severity: "INFORMATIONAL"
+        confidence: "HIGH"
+        message: "Two transactions increased consistency and interleaving attack surface."
+        original_identifier: "commitActionState() and tallyVotes() Could Be Merged to Reduce Attack Surface"
+        original_severity: "Informational"
+        original_status: "FIXED_CLAIMED"
+        audited_revision: "f2c93cfdb27836b156769ca4eaeca7d5f01fa8b5"
+        affected_paths: ["packages/sdk/src/provable/contracts/treasury-owner.ts"]
+        scope_exclusions: []
+        prerequisites: ["Two-step tally flow permits interleaving or inconsistent linkage."
+        ]
+        root_cause: "Action-state validation and final tally were separated to work around account-update cost."
+        impact: "The split complicated end-to-end binding and enabled the related High action-history issue."
+        recommendation: "Validate history and tally atomically in one owner method."
+        remediation_reference: ["791401edf87e47d901ed4c76323fbfbf44b56c4a"]
+        current_revision_disposition: "REMEDIATED_STATICALLY"
+        current_disposition_rationale: "No commitActionState method remains; current tally performs history validation and outcome calculation together."
+        evidence_stable_keys: ["evidence:business-context:zksecurity-audit-report", "evidence:business-context:current-action-history-binding"]
+        semantic_status: "RESOLVED_STATICALLY"
+        security_objective_ids: []
+        threat_ids: []
+        assumption_ids: []
+        no_security_link_rationale: "Security linkage is owned by the later security work unit."
+        scope_limitations: ["Account-update cost and runtime success were not measured."]
+        assertions:
+          - { stable_key: "assertion:finding:prior-audit:commit-and-tally-split:prior", text: "zkSecurity recommended merging the two steps and records a fix.", evidence_class: "EXTERNAL_STANDARD", confidence: "HIGH", evidence_stable_keys: ["evidence:business-context:zksecurity-audit-report"] }
+          - { stable_key: "assertion:finding:prior-audit:commit-and-tally-split:current", text: "Current source has a single owner tally method containing history validation.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_stable_keys: ["evidence:business-context:current-action-history-binding"] }
+      - stable_key: "finding:prior-audit:create-proposal-is-new"
+        title: "Prior audit: proposal creation lacks explicit isNew guard"
+        origin: "PRIOR_AUDIT"
+        rule_id: "ZKSECURITY.INFO.PROPOSAL_IS_NEW"
+        category: "reliability"
+        severity: "INFORMATIONAL"
+        confidence: "HIGH"
+        message: "Single-use proposal initialization relies on permissions rather than an explicit account-newness precondition."
+        original_identifier: "createProposal() Relies Solely on Permissions to Prevent Proposal State Reset"
+        original_severity: "Informational"
+        original_status: "ACKNOWLEDGED"
+        audited_revision: "f2c93cfdb27836b156769ca4eaeca7d5f01fa8b5"
+        affected_paths: ["packages/sdk/src/provable/contracts/treasury-owner.ts"]
+        scope_exclusions: []
+        prerequisites: ["Proposal permissions change or do not reject a second signed state update."
+        ]
+        root_cause: "createProposal uses createSigned without account.isNew.requireEquals(true)."
+        impact: "A second initialization could reset proposal state if permission assumptions change."
+        recommendation: "Add an explicit isNew precondition."
+        remediation_reference: []
+        current_revision_disposition: "STILL_APPLICABLE"
+        current_disposition_rationale: "Current proposal creation remains createSigned plus permissions and has no isNew precondition."
+        evidence_stable_keys: ["evidence:business-context:zksecurity-audit-report", "evidence:business-context:current-proposal-creation"]
+        semantic_status: "OPEN"
+        security_objective_ids: []
+        threat_ids: []
+        assumption_ids: []
+        no_security_link_rationale: "Security linkage is owned by the later security work unit."
+        scope_limitations: ["Current protocol rejection under default permissions was not executed."]
+        assertions:
+          - { stable_key: "assertion:finding:prior-audit:create-proposal-is-new:prior", text: "zkSecurity reported implicit newness reliance as Informational and the client acknowledged it.", evidence_class: "EXTERNAL_STANDARD", confidence: "HIGH", evidence_stable_keys: ["evidence:business-context:zksecurity-audit-report"] }
+          - { stable_key: "assertion:finding:prior-audit:create-proposal-is-new:current", text: "Current source still omits an explicit account-newness precondition.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_stable_keys: ["evidence:business-context:current-proposal-creation"] }
+      - stable_key: "finding:prior-audit:delegate-emptiness-token-classification"
+        title: "Prior audit: token accounts are classified by empty delegate"
+        origin: "PRIOR_AUDIT"
+        rule_id: "ZKSECURITY.INFO.MINATOKEN_CLASSIFICATION"
+        category: "reliability"
+        severity: "INFORMATIONAL"
+        confidence: "HIGH"
+        message: "Transformation relies on a Mina protocol delegate invariant rather than checking token ID."
+        original_identifier: "Delegate Emptiness Check Used Instead of Token ID to Identify MINA Accounts"
+        original_severity: "Informational"
+        original_status: "ACKNOWLEDGED"
+        audited_revision: "f2c93cfdb27836b156769ca4eaeca7d5f01fa8b5"
+        affected_paths: ["packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts"]
+        scope_exclusions: ["Mina transaction-logic invariant implementation"]
+        prerequisites: ["Delegate-field convention changes or malformed ledger data reaches the proof relation."
+        ]
+        root_cause: "The digest unconditionally accumulates by delegate and does not constrain account.tokenId."
+        impact: "Correctness depends implicitly on token accounts having empty delegates."
+        recommendation: "Explicitly gate balance accumulation on TokenId.default."
+        remediation_reference: []
+        current_revision_disposition: "STILL_APPLICABLE"
+        current_disposition_rationale: "Current source retains TODO comments and does not check token ID before balance accumulation."
+        evidence_stable_keys: ["evidence:business-context:zksecurity-audit-report", "evidence:business-context:current-staking-transform"]
+        semantic_status: "OPEN"
+        security_objective_ids: []
+        threat_ids: []
+        assumption_ids: []
+        no_security_link_rationale: "Security linkage is owned by the later security work unit."
+        scope_limitations: ["The underlying Mina ledger invariant is external to scope."]
+        assertions:
+          - { stable_key: "assertion:finding:prior-audit:delegate-emptiness-token-classification:prior", text: "zkSecurity reported implicit delegate-based classification as Informational.", evidence_class: "EXTERNAL_STANDARD", confidence: "HIGH", evidence_stable_keys: ["evidence:business-context:zksecurity-audit-report"] }
+          - { stable_key: "assertion:finding:prior-audit:delegate-emptiness-token-classification:current", text: "Current transformation still has no explicit token-ID gate.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_stable_keys: ["evidence:business-context:current-staking-transform"] }
+      - stable_key: "finding:prior-audit:dummy-public-vote"
+        title: "Prior audit: DUMMY is accepted as a public vote"
+        origin: "PRIOR_AUDIT"
+        rule_id: "ZKSECURITY.INFO.DUMMY_VOTE"
+        category: "business-logic"
+        severity: "INFORMATIONAL"
+        confidence: "HIGH"
+        message: "A real voter can consume its nullifier without contributing to any defined vote tally."
+        original_identifier: "DUMMY Vote Accepted as Valid, Allowing Voters to Burn Their Vote Without Contributing to Participation"
+        original_severity: "Informational"
+        original_status: "ACKNOWLEDGED"
+        audited_revision: "f2c93cfdb27836b156769ca4eaeca7d5f01fa8b5"
+        affected_paths: ["packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts", "packages/sdk/src/provable/contracts/treasury-owner.ts"]
+        scope_exclusions: []
+        prerequisites: ["A real public key submits Vote.DUMMY."
+        ]
+        root_cause: "One validator serves internal padding and the public vote API without excluding DUMMY at the entry point."
+        impact: "The voter loses its vote while its balance does not count even toward participation."
+        recommendation: "Reject DUMMY at the public owner vote method while retaining it for reducer padding."
+        remediation_reference: []
+        current_revision_disposition: "STILL_APPLICABLE"
+        current_disposition_rationale: "Current owner calls Vote.assertValid and that method includes DUMMY."
+        evidence_stable_keys: ["evidence:business-context:zksecurity-audit-report", "evidence:business-context:current-vote-domain", "evidence:business-context:rfc-6924"]
+        semantic_status: "OPEN"
+        security_objective_ids: []
+        threat_ids: []
+        assumption_ids: []
+        no_security_link_rationale: "This is a vote-domain and intent discrepancy; security linkage follows later."
+        scope_limitations: []
+        assertions:
+          - { stable_key: "assertion:finding:prior-audit:dummy-public-vote:prior", text: "zkSecurity reported public DUMMY acceptance as Informational.", evidence_class: "EXTERNAL_STANDARD", confidence: "HIGH", evidence_stable_keys: ["evidence:business-context:zksecurity-audit-report"] }
+          - { stable_key: "assertion:finding:prior-audit:dummy-public-vote:current", text: "Current source still admits DUMMY through the public vote validator.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_stable_keys: ["evidence:business-context:current-vote-domain"] }
+      - stable_key: "finding:prior-audit:struct-equality-via-hashing"
+        title: "Prior audit: struct equality uses in-circuit hashing"
+        origin: "PRIOR_AUDIT"
+        rule_id: "ZKSECURITY.INFO.HASH_EQUALITY_COST"
+        category: "maintainability"
+        severity: "INFORMATIONAL"
+        confidence: "HIGH"
+        message: "Small structs are compared through two Poseidon hashes rather than field equality."
+        original_identifier: "Struct Comparison via Hashing Is Inefficient"
+        original_severity: "Informational"
+        original_status: "ACKNOWLEDGED"
+        audited_revision: "f2c93cfdb27836b156769ca4eaeca7d5f01fa8b5"
+        affected_paths: ["packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts", "packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts"]
+        scope_exclusions: []
+        prerequisites: []
+        root_cause: "Equality is expressed as Poseidon(toFields(a)) equals Poseidon(toFields(b))."
+        impact: "Unnecessary constraints increase proving cost and complexity."
+        recommendation: "Use field-by-field Provable.assertEqual where semantically equivalent."
+        remediation_reference: []
+        current_revision_disposition: "STILL_APPLICABLE"
+        current_disposition_rationale: "Current exhaust and merge paths retain Poseidon-based public-input comparisons."
+        evidence_stable_keys: ["evidence:business-context:zksecurity-audit-report", "evidence:business-context:current-staking-transform"]
+        semantic_status: "OPEN"
+        security_objective_ids: []
+        threat_ids: []
+        assumption_ids: []
+        no_security_link_rationale: "The item is efficiency-focused."
+        scope_limitations: ["No constraint count or proof timing was measured."]
+        assertions:
+          - { stable_key: "assertion:finding:prior-audit:struct-equality-via-hashing:prior", text: "zkSecurity reported hashing-based equality as Informational.", evidence_class: "EXTERNAL_STANDARD", confidence: "HIGH", evidence_stable_keys: ["evidence:business-context:zksecurity-audit-report"] }
+          - { stable_key: "assertion:finding:prior-audit:struct-equality-via-hashing:current", text: "Current source still compares program inputs through Poseidon hashes.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_stable_keys: ["evidence:business-context:current-staking-transform"] }
+      - stable_key: "finding:prior-audit:no-minimum-proposal-or-voting-balance"
+        title: "Prior audit: no minimum proposal amount or voting balance"
+        origin: "PRIOR_AUDIT"
+        rule_id: "ZKSECURITY.INFO.MINIMUM_PARTICIPATION_VALUE"
+        category: "reliability"
+        severity: "INFORMATIONAL"
+        confidence: "HIGH"
+        message: "Dust proposals can have zero bond and negligible-weight votes can inflate action-processing work."
+        original_identifier: "No Minimum Proposal Amount or Voting Balance Enforced"
+        original_severity: "Informational"
+        original_status: "ACKNOWLEDGED"
+        audited_revision: "f2c93cfdb27836b156769ca4eaeca7d5f01fa8b5"
+        affected_paths: ["packages/sdk/src/provable/contracts/treasury-owner.ts"]
+        scope_exclusions: ["Network fee market and UI filtering"]
+        prerequisites: ["Attacker pays transaction/account-creation fees."
+        ]
+        root_cause: "Bond is integer-divided with no amount floor, and vote dispatch cannot check voting weight."
+        impact: "Proposal UX and proof workload can be degraded by low-value entries."
+        recommendation: "Define and enforce intended minimum proposal and voting-balance policies, or document fee-based deterrence."
+        remediation_reference: []
+        current_revision_disposition: "STILL_APPLICABLE"
+        current_disposition_rationale: "Current createProposal has no amount minimum and current vote has an explicit spam-prevention TODO."
+        evidence_stable_keys: ["evidence:business-context:zksecurity-audit-report", "evidence:business-context:current-proposal-creation", "evidence:business-context:current-vote-domain"]
+        semantic_status: "OPEN"
+        security_objective_ids: []
+        threat_ids: []
+        assumption_ids: []
+        no_security_link_rationale: "Resource-exhaustion linkage is owned by the later security work unit."
+        scope_limitations: ["Practical spam economics and chain capacity were not measured."]
+        assertions:
+          - { stable_key: "assertion:finding:prior-audit:no-minimum-proposal-or-voting-balance:prior", text: "zkSecurity reported absent minimums as Informational.", evidence_class: "EXTERNAL_STANDARD", confidence: "HIGH", evidence_stable_keys: ["evidence:business-context:zksecurity-audit-report"] }
+          - { stable_key: "assertion:finding:prior-audit:no-minimum-proposal-or-voting-balance:current", text: "Current entry points still expose the reported absence of minimums.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_stable_keys: ["evidence:business-context:current-proposal-creation", "evidence:business-context:current-vote-domain"] }
+      - stable_key: "finding:prior-audit:staking-transform-efficiency"
+        title: "Prior audit: staking transformation may be substantially more efficient"
+        origin: "PRIOR_AUDIT"
+        rule_id: "ZKSECURITY.INFO.STAKING_TRANSFORM_COST"
+        category: "reliability"
+        severity: "INFORMATIONAL"
+        confidence: "MEDIUM"
+        message: "The complete staking ledger is rebuilt through deep Merkle witnesses each epoch."
+        original_identifier: "Staking-to-Voting Ledger Proof Could Be Significantly More Efficient"
+        original_severity: "Informational"
+        original_status: "ACKNOWLEDGED"
+        audited_revision: "f2c93cfdb27836b156769ca4eaeca7d5f01fa8b5"
+        affected_paths: ["packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts"]
+        scope_exclusions: ["Operational prover implementation and current ledger-change statistics"]
+        prerequisites: ["A complete ledger must be transformed within lifecycle time."
+        ]
+        root_cause: "Design processes every account from scratch using a plain deep Merkle tree."
+        impact: "High proving cost and latency may threaten tally liveness."
+        recommendation: "Evaluate indexed maps and provably complete epoch deltas."
+        remediation_reference: []
+        current_revision_disposition: "STILL_APPLICABLE"
+        current_disposition_rationale: "Current program remains fixed-batch full-ledger transformation with 255-height witnesses."
+        evidence_stable_keys: ["evidence:business-context:zksecurity-audit-report", "evidence:business-context:current-staking-transform"]
+        semantic_status: "OPEN"
+        security_objective_ids: []
+        threat_ids: []
+        assumption_ids: []
+        no_security_link_rationale: "Liveness linkage is owned by later security/capacity analysis."
+        scope_limitations: ["The report's estimated factors are historical; no current benchmark or proof execution is permitted."]
+        assertions:
+          - { stable_key: "assertion:finding:prior-audit:staking-transform-efficiency:prior", text: "zkSecurity identified two possible efficiency improvements and estimated a historical combined reduction.", evidence_class: "EXTERNAL_STANDARD", confidence: "MEDIUM", evidence_stable_keys: ["evidence:business-context:zksecurity-audit-report"] }
+          - { stable_key: "assertion:finding:prior-audit:staking-transform-efficiency:current", text: "Current source retains the full-ledger deep-witness architecture.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_stable_keys: ["evidence:business-context:current-staking-transform"] }
+      - stable_key: "finding:prior-audit:proposal-methods-proof-authorized"
+        title: "Prior audit: proposal methods retain redundant proof authorization"
+        origin: "PRIOR_AUDIT"
+        rule_id: "ZKSECURITY.INFO.PROPOSAL_PROOF_AUTH"
+        category: "maintainability"
+        severity: "INFORMATIONAL"
+        confidence: "MEDIUM"
+        message: "Token-owner approval may make nested proposal proofs redundant while expanding cost and review surface."
+        original_identifier: "Proposal Contract Methods Do Not Need Proofs"
+        original_severity: "Informational"
+        original_status: "ACKNOWLEDGED"
+        audited_revision: "f2c93cfdb27836b156769ca4eaeca7d5f01fa8b5"
+        affected_paths: ["packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts", "packages/sdk/src/provable/contracts/treasury-owner.ts"]
+        scope_exclusions: ["o1js methodWithoutProof abstraction and account-creation semantics"]
+        prerequisites: ["Token-owner approveBase fully prevents unapproved child updates."
+        ]
+        root_cause: "Both token ownership and nested proof authorization enforce proposal access."
+        impact: "Additional proof generation, circuit surface, and account-update cost."
+        recommendation: "Evaluate none-authorized child updates only with explicit isNew and permission safety invariants."
+        remediation_reference: []
+        current_revision_disposition: "STILL_APPLICABLE"
+        current_disposition_rationale: "Current proposal operations remain decorated @method/@method.returns and owner invokes them."
+        evidence_stable_keys: ["evidence:business-context:zksecurity-audit-report", "evidence:business-context:current-proposal-methods-and-tally"]
+        semantic_status: "OPEN"
+        security_objective_ids: []
+        threat_ids: []
+        assumption_ids: []
+        no_security_link_rationale: "The suggested relaxation carries its own security assumptions; later security review must assess them."
+        scope_limitations: ["No proof cost or account-update budget was measured."]
+        assertions:
+          - { stable_key: "assertion:finding:prior-audit:proposal-methods-proof-authorized:prior", text: "zkSecurity recommended removing nested proposal proofs subject to explicit safeguards.", evidence_class: "EXTERNAL_STANDARD", confidence: "MEDIUM", evidence_stable_keys: ["evidence:business-context:zksecurity-audit-report"] }
+          - { stable_key: "assertion:finding:prior-audit:proposal-methods-proof-authorized:current", text: "Current proposal methods remain proof methods.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_stable_keys: ["evidence:business-context:current-proposal-methods-and-tally"] }
+      - stable_key: "finding:prior-audit:implicit-field-zero-status"
+        title: "Prior audit: proposal status uses raw Field(0)"
+        origin: "PRIOR_AUDIT"
+        rule_id: "ZKSECURITY.INFO.STATUS_LITERAL"
+        category: "maintainability"
+        severity: "INFORMATIONAL"
+        confidence: "HIGH"
+        message: "Proposal creation initializes a security-sensitive status slot through a positional literal."
+        original_identifier: "Proposal Status Uses Implicit Field(0) Instead of Explicit ProposalStatus.UNKNOWN"
+        original_severity: "Informational"
+        original_status: "ACKNOWLEDGED"
+        audited_revision: "f2c93cfdb27836b156769ca4eaeca7d5f01fa8b5"
+        affected_paths: ["packages/sdk/src/provable/contracts/treasury-owner.ts"]
+        scope_exclusions: []
+        prerequisites: ["Enum values or app-state slot ordering change."
+        ]
+        root_cause: "Low-level appState construction uses Field(0) instead of the named status constant."
+        impact: "Maintenance error could initialize an unintended execution-enabling status."
+        recommendation: "Use ProposalStatus.UNKNOWN or a typed state-setting abstraction."
+        remediation_reference: []
+        current_revision_disposition: "STILL_APPLICABLE"
+        current_disposition_rationale: "Current createProposal still writes Field(0) to appState status position."
+        evidence_stable_keys: ["evidence:business-context:zksecurity-audit-report", "evidence:business-context:current-proposal-creation"]
+        semantic_status: "OPEN"
+        security_objective_ids: []
+        threat_ids: []
+        assumption_ids: []
+        no_security_link_rationale: "Security linkage is owned by later review."
+        scope_limitations: []
+        assertions:
+          - { stable_key: "assertion:finding:prior-audit:implicit-field-zero-status:prior", text: "zkSecurity reported the raw status literal as Informational.", evidence_class: "EXTERNAL_STANDARD", confidence: "HIGH", evidence_stable_keys: ["evidence:business-context:zksecurity-audit-report"] }
+          - { stable_key: "assertion:finding:prior-audit:implicit-field-zero-status:current", text: "Current source retains the raw Field(0) status write.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_stable_keys: ["evidence:business-context:current-proposal-creation"] }
+      - stable_key: "finding:prior-audit:duplicate-from-actions-hash-assertion"
+        title: "Prior audit: fromActionsHash assertion is duplicated"
+        origin: "PRIOR_AUDIT"
+        rule_id: "ZKSECURITY.INFO.REDUNDANT_ASSERTION"
+        category: "maintainability"
+        severity: "INFORMATIONAL"
+        confidence: "HIGH"
+        message: "The same initial action-state equality is asserted twice."
+        original_identifier: "Redundant fromActionsHash Assertion in tallyVotes"
+        original_severity: "Informational"
+        original_status: "ACKNOWLEDGED"
+        audited_revision: "f2c93cfdb27836b156769ca4eaeca7d5f01fa8b5"
+        affected_paths: ["packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts"]
+        scope_exclusions: []
+        prerequisites: []
+        root_cause: "Duplicate constraint code remains in tallyVotes."
+        impact: "No security impact; avoidable constraint and maintenance noise."
+        recommendation: "Remove one duplicate assertion."
+        remediation_reference: []
+        current_revision_disposition: "STILL_APPLICABLE"
+        current_disposition_rationale: "Current tally contains identical checks at lines 248-250 and 256-259."
+        evidence_stable_keys: ["evidence:business-context:zksecurity-audit-report", "evidence:business-context:current-proposal-methods-and-tally"]
+        semantic_status: "OPEN"
+        security_objective_ids: []
+        threat_ids: []
+        assumption_ids: []
+        no_security_link_rationale: "The item has no security impact."
+        scope_limitations: []
+        assertions:
+          - { stable_key: "assertion:finding:prior-audit:duplicate-from-actions-hash-assertion:prior", text: "zkSecurity reported the duplicate assertion as Informational.", evidence_class: "EXTERNAL_STANDARD", confidence: "HIGH", evidence_stable_keys: ["evidence:business-context:zksecurity-audit-report"] }
+          - { stable_key: "assertion:finding:prior-audit:duplicate-from-actions-hash-assertion:current", text: "The duplicate assertion remains in current source.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_stable_keys: ["evidence:business-context:current-proposal-methods-and-tally"] }
+      - stable_key: "finding:prior-audit:stale-staking-epoch-snapshot"
+        title: "Prior audit: staking snapshot lags behind newer finalized data"
+        origin: "PRIOR_AUDIT"
+        rule_id: "ZKSECURITY.INFO.SNAPSHOT_STALENESS"
+        category: "business-logic"
+        severity: "INFORMATIONAL"
+        confidence: "MEDIUM"
+        message: "stakingEpochData is older than nextEpochData and produces older voting weights."
+        original_identifier: "Staking Epoch Data Lags Behind by One Epoch; nextEpochData Would Improve UX"
+        original_severity: "Informational"
+        original_status: "ACKNOWLEDGED"
+        audited_revision: "f2c93cfdb27836b156769ca4eaeca7d5f01fa8b5"
+        affected_paths: ["packages/sdk/src/provable/contracts/treasury-owner.ts"]
+        scope_exclusions: ["Mina epoch-data semantics and ledger exporter"]
+        prerequisites: ["More recent finalized nextEpochData is available and suitable for governance."
+        ]
+        root_cause: "Snapshot reads stakingEpochData rather than nextEpochData."
+        impact: "Delegation and balance changes take an extra epoch to affect voting power."
+        recommendation: "Use the most recent stable ledger if that matches ratified snapshot policy."
+        remediation_reference: []
+        current_revision_disposition: "STILL_APPLICABLE"
+        current_disposition_rationale: "Current snapshot still reads network.stakingEpochData."
+        evidence_stable_keys: ["evidence:business-context:zksecurity-audit-report", "evidence:business-context:current-snapshot-and-pause-state"]
+        semantic_status: "OPEN"
+        security_objective_ids: []
+        threat_ids: []
+        assumption_ids: []
+        no_security_link_rationale: "This is primarily snapshot-policy and UX; security linkage follows later."
+        scope_limitations: ["The RFC does not choose stakingEpochData versus nextEpochData."]
+        assertions:
+          - { stable_key: "assertion:finding:prior-audit:stale-staking-epoch-snapshot:prior", text: "zkSecurity reported the older snapshot choice as Informational.", evidence_class: "EXTERNAL_STANDARD", confidence: "MEDIUM", evidence_stable_keys: ["evidence:business-context:zksecurity-audit-report"] }
+          - { stable_key: "assertion:finding:prior-audit:stale-staking-epoch-snapshot:current", text: "Current source still selects stakingEpochData.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_stable_keys: ["evidence:business-context:current-snapshot-and-pause-state"] }
+      - stable_key: "finding:prior-audit:toggle-without-intended-state"
+        title: "Prior audit: proposal pause toggles without intended state"
+        origin: "PRIOR_AUDIT"
+        rule_id: "ZKSECURITY.INFO.PAUSE_DIRECTION"
+        category: "reliability"
+        severity: "INFORMATIONAL"
+        confidence: "HIGH"
+        message: "The authorized action expresses toggle, not pause/unpause direction."
+        original_identifier: "togglePause() Does Not Take the Intended Pause State as Input"
+        original_severity: "Informational"
+        original_status: "ACKNOWLEDGED"
+        audited_revision: "f2c93cfdb27836b156769ca4eaeca7d5f01fa8b5"
+        affected_paths: ["packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts", "packages/sdk/src/provable/contracts/treasury-owner.ts", "packages/sdk/src/provable/contracts/treasury-pause-controller/multisig-signatures.ts"]
+        scope_exclusions: []
+        prerequisites: ["State changes between transaction construction and inclusion, or caller/event supplies wrong paused flag."
+        ]
+        root_cause: "Proposal method and multisig payload omit desired pause direction; owner's paused argument is event-only."
+        impact: "Concurrent submissions can produce the opposite state from signer intent and the event can misstate resulting state."
+        recommendation: "Bind desired state into signature and proposal transition, and assert the prior state."
+        remediation_reference: []
+        current_revision_disposition: "STILL_APPLICABLE"
+        current_disposition_rationale: "Current owner accepts paused only for its event; controller signs toggle; proposal flips current status."
+        evidence_stable_keys: ["evidence:business-context:zksecurity-audit-report", "evidence:business-context:current-snapshot-and-pause-state", "evidence:business-context:current-pause-signature-domain"]
+        semantic_status: "OPEN"
+        security_objective_ids: []
+        threat_ids: []
+        assumption_ids: []
+        no_security_link_rationale: "Security linkage is owned by later review."
+        scope_limitations: ["Concurrent transaction behavior is not executed."]
+        assertions:
+          - { stable_key: "assertion:finding:prior-audit:toggle-without-intended-state:prior", text: "zkSecurity reported blind pause toggling as Informational.", evidence_class: "EXTERNAL_STANDARD", confidence: "HIGH", evidence_stable_keys: ["evidence:business-context:zksecurity-audit-report"] }
+          - { stable_key: "assertion:finding:prior-audit:toggle-without-intended-state:current", text: "Current signatures and proposal transition still omit desired pause state.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_stable_keys: ["evidence:business-context:current-snapshot-and-pause-state", "evidence:business-context:current-pause-signature-domain"] }
+      - stable_key: "finding:prior-audit:pause-destroys-proposal-finality"
+        title: "Prior audit: proposal pause destroys tally finality"
+        origin: "PRIOR_AUDIT"
+        rule_id: "ZKSECURITY.INFO.PAUSE_STATUS_OVERLOAD"
+        category: "reliability"
+        severity: "INFORMATIONAL"
+        confidence: "HIGH"
+        message: "Pause overwrites APPROVED/REJECTED and unpause resets to UNKNOWN."
+        original_identifier: "togglePause() Resets Proposal Finality, Requiring Retally After Unpause"
+        original_severity: "Informational"
+        original_status: "ACKNOWLEDGED"
+        audited_revision: "f2c93cfdb27836b156769ca4eaeca7d5f01fa8b5"
+        affected_paths: ["packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts"]
+        scope_exclusions: ["Operational retention and availability of prior tally proofs"]
+        prerequisites: ["A finalized proposal is paused then unpaused."
+        ]
+        root_cause: "One status field encodes both voting outcome and pause state."
+        impact: "The outcome must be retallied after unpause, creating operational burden and proof-availability dependence."
+        recommendation: "Separate pause state from proposal outcome."
+        remediation_reference: []
+        current_revision_disposition: "STILL_APPLICABLE"
+        current_disposition_rationale: "Current toggle maps every non-paused status to PAUSED and maps PAUSED to UNKNOWN."
+        evidence_stable_keys: ["evidence:business-context:zksecurity-audit-report", "evidence:business-context:current-snapshot-and-pause-state"]
+        semantic_status: "OPEN"
+        security_objective_ids: []
+        threat_ids: []
+        assumption_ids: []
+        no_security_link_rationale: "Liveness linkage is owned by later review."
+        scope_limitations: ["Whether prior proofs remain reusable and available is operationally unresolved."]
+        assertions:
+          - { stable_key: "assertion:finding:prior-audit:pause-destroys-proposal-finality:prior", text: "zkSecurity reported status destruction and retally burden as Informational.", evidence_class: "EXTERNAL_STANDARD", confidence: "HIGH", evidence_stable_keys: ["evidence:business-context:zksecurity-audit-report"] }
+          - { stable_key: "assertion:finding:prior-audit:pause-destroys-proposal-finality:current", text: "Current source still overloads status and resets unpaused proposals to UNKNOWN.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_stable_keys: ["evidence:business-context:current-snapshot-and-pause-state"] }
+      - stable_key: "finding:prior-audit:duplicate-proof-verification"
+        title: "Prior audit: tally proofs are verified twice"
+        origin: "PRIOR_AUDIT"
+        rule_id: "ZKSECURITY.INFO.DUPLICATE_PROOF_VERIFY"
+        category: "maintainability"
+        severity: "INFORMATIONAL"
+        confidence: "HIGH"
+        message: "Owner and nested proposal both verify the same two proof objects."
+        original_identifier: "Unnecessary Proof Verification When Only Public Inputs Are Needed"
+        original_severity: "Informational"
+        original_status: "ACKNOWLEDGED"
+        audited_revision: "f2c93cfdb27836b156769ca4eaeca7d5f01fa8b5"
+        affected_paths: ["packages/sdk/src/provable/contracts/treasury-owner.ts", "packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts"]
+        scope_exclusions: ["o1js proof-input requirements and actual circuit cost"]
+        prerequisites: []
+        root_cause: "Full proof objects cross into a nested proof method after top-level verification."
+        impact: "Avoidable verification and proving overhead."
+        recommendation: "Verify once at owner level and pass constrained public values into non-proof child logic, subject to account-update binding analysis."
+        remediation_reference: []
+        current_revision_disposition: "STILL_APPLICABLE"
+        current_disposition_rationale: "Current owner verifies both proofs and current proposal tally verifies both again."
+        evidence_stable_keys: ["evidence:business-context:zksecurity-audit-report", "evidence:business-context:current-proposal-methods-and-tally"]
+        semantic_status: "OPEN"
+        security_objective_ids: []
+        threat_ids: []
+        assumption_ids: []
+        no_security_link_rationale: "The item is efficiency-focused, though any refactor requires binding review."
+        scope_limitations: ["Proof cost was not measured and proofs were not executed."]
+        assertions:
+          - { stable_key: "assertion:finding:prior-audit:duplicate-proof-verification:prior", text: "zkSecurity reported duplicate proof verification as Informational.", evidence_class: "EXTERNAL_STANDARD", confidence: "HIGH", evidence_stable_keys: ["evidence:business-context:zksecurity-audit-report"] }
+          - { stable_key: "assertion:finding:prior-audit:duplicate-proof-verification:current", text: "Both verification layers remain in current source.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_stable_keys: ["evidence:business-context:current-proposal-methods-and-tally"] }
+    gaps:
+      - stable_key: "gap:business-context:successful-bond-recipient"
+        title: "Successful bond destination diverges from RFC"
+        gap_kinds: ["IMPLEMENTATION_DIVERGENCE"]
+        materiality: "MEDIUM"
+        affected_actor_ids: []
+        affected_asset_ids: []
+        requirement_stable_keys: ["requirement:rfc-6924:bond-disposition"]
+        implementation_ids: []
+        test_ids: []
+        finding_stable_keys: ["finding:prior-audit:bond-paid-to-recipient"]
+        business_consequence: "A successful proposer can lose its bond to a distinct recipient."
+        rollout_relevance: ["MVP", "SAFETY_PERFORMANCE"]
+        author_question: "Should the code refund the proposer, or is proposer-equals-recipient now an enforced policy?"
+        semantic_status: "OPEN"
+        assertions: [{ stable_key: "assertion:gap:business-context:successful-bond-recipient:divergence", text: "RFC return-to-proposer intent and current recipient payout differ when proposer and recipient are distinct.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_stable_keys: ["evidence:business-context:rfc-6924", "evidence:business-context:current-execution-and-bond"] }]
+      - stable_key: "gap:business-context:dummy-public-vote"
+        title: "Public DUMMY vote is outside documented vote semantics"
+        gap_kinds: ["IMPLEMENTATION_DIVERGENCE"]
+        materiality: "LOW"
+        affected_actor_ids: []
+        affected_asset_ids: []
+        requirement_stable_keys: ["requirement:rfc-6924:yay-nay-abstain-semantics"]
+        implementation_ids: []
+        test_ids: []
+        finding_stable_keys: ["finding:prior-audit:dummy-public-vote"]
+        business_consequence: "A voter can consume its vote without selecting a documented governance choice or contributing to quorum."
+        rollout_relevance: ["MVP"]
+        author_question: "Should DUMMY be rejected at the public entry point?"
+        semantic_status: "OPEN"
+        assertions: [{ stable_key: "assertion:gap:business-context:dummy-public-vote:divergence", text: "Current implementation accepts an internal padding value not described among the RFC's public vote types.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_stable_keys: ["evidence:business-context:rfc-6924", "evidence:business-context:current-vote-domain"] }]
+      - stable_key: "gap:business-context:pause-message-domain"
+        title: "Break-glass messages lack deployment-domain binding"
+        gap_kinds: ["MISSING_BINDING", "CONFIGURATION_RISK"]
+        materiality: "MEDIUM"
+        affected_actor_ids: []
+        affected_asset_ids: []
+        requirement_stable_keys: ["requirement:rfc-6924:break-glass"]
+        implementation_ids: []
+        test_ids: []
+        finding_stable_keys: ["finding:prior-audit:pause-signature-domain-weak"]
+        business_consequence: "Threshold intent may be replayable between deployments that reuse signers and nonce state."
+        rollout_relevance: ["SAFETY_PERFORMANCE", "DECENTRALISATION"]
+        author_question: "Will signer sets ever be reused, and should every signature bind network and controller?"
+        semantic_status: "OPEN"
+        assertions: [{ stable_key: "assertion:gap:business-context:pause-message-domain:missing-binding", text: "Current signed messages omit network and controller identity.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_stable_keys: ["evidence:business-context:current-pause-signature-domain"] }]
+      - stable_key: "gap:business-context:pause-state-destruction"
+        title: "Pause state overwrites governance finality"
+        gap_kinds: ["INCOMPLETE_FAILURE_POLICY", "LIVENESS_OR_SCALE_GAP"]
+        materiality: "MEDIUM"
+        affected_actor_ids: []
+        affected_asset_ids: []
+        requirement_stable_keys: ["requirement:rfc-6924:break-glass"]
+        implementation_ids: []
+        test_ids: []
+        finding_stable_keys: ["finding:prior-audit:pause-destroys-proposal-finality", "finding:prior-audit:toggle-without-intended-state"]
+        business_consequence: "Incident response destroys the prior tally state and creates a retally dependency after recovery."
+        rollout_relevance: ["SAFETY_PERFORMANCE"]
+        author_question: "Should pausing preserve APPROVED/REJECTED separately from the operational pause flag?"
+        semantic_status: "OPEN"
+        assertions: [{ stable_key: "assertion:gap:business-context:pause-state-destruction:current", text: "Current pause transition overwrites proposal outcome and unpause returns UNKNOWN.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_stable_keys: ["evidence:business-context:current-snapshot-and-pause-state"] }]
+      - stable_key: "gap:business-context:lifecycle-inclusion-boundary"
+        title: "Lifecycle guard may use the wrong block-time reference"
+        gap_kinds: ["IMPLEMENTATION_DIVERGENCE", "CONFIGURATION_RISK"]
+        materiality: "MEDIUM"
+        affected_actor_ids: []
+        affected_asset_ids: []
+        requirement_stable_keys: ["requirement:rfc-6924:voting-period", "requirement:rfc-6924:proposal-period"]
+        implementation_ids: []
+        test_ids: []
+        finding_stable_keys: ["finding:prior-audit:last-block-slot-not-inclusion-slot"]
+        business_consequence: "A boundary operation may be accepted in a block outside the intended lifecycle period."
+        rollout_relevance: ["MVP"]
+        author_question: "Are lifecycle windows intended to constrain transaction inclusion slot exactly?"
+        semantic_status: "OPEN"
+        assertions: [{ stable_key: "assertion:gap:business-context:lifecycle-inclusion-boundary:current", text: "Current lifecycle guard uses network global slot rather than the audit-recommended inclusion-slot API.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_stable_keys: ["evidence:business-context:current-lifecycle-slot", "evidence:business-context:zksecurity-audit-report"] }]
+      - stable_key: "gap:business-context:dust-spam-policy"
+        title: "Bond policy does not deter zero-bond dust proposals"
+        gap_kinds: ["PARTIAL_IMPLEMENTATION", "LIVENESS_OR_SCALE_GAP"]
+        materiality: "MEDIUM"
+        affected_actor_ids: []
+        affected_asset_ids: []
+        requirement_stable_keys: ["requirement:rfc-6924:proposer-bond"]
+        implementation_ids: []
+        test_ids: []
+        finding_stable_keys: ["finding:prior-audit:no-minimum-proposal-or-voting-balance"]
+        business_consequence: "Integer division permits zero bond for small proposals, weakening the stated attention/spam policy."
+        rollout_relevance: ["SAFETY_PERFORMANCE"]
+        author_question: "What proposal floor, bond floor, or operational filter is intended?"
+        semantic_status: "OPEN"
+        assertions: [{ stable_key: "assertion:gap:business-context:dust-spam-policy:current", text: "Current amount/divisor bond has no minimum and can evaluate to zero for dust amounts.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_stable_keys: ["evidence:business-context:current-proposal-creation"] }]
+      - stable_key: "gap:business-context:proposal-newness-policy"
+        title: "Proposal uniqueness is implicit in permissions"
+        gap_kinds: ["MISSING_BINDING", "CONFIGURATION_RISK"]
+        materiality: "MEDIUM"
+        affected_actor_ids: []
+        affected_asset_ids: []
+        requirement_stable_keys: ["requirement:rfc-6924:proposal-content-reference"]
+        implementation_ids: []
+        test_ids: []
+        finding_stable_keys: ["finding:prior-audit:create-proposal-is-new"]
+        business_consequence: "A future permission refactor can silently remove the only barrier to proposal-state reset."
+        rollout_relevance: ["MVP", "ADVANCED"]
+        author_question: "Should proposal account identity be explicitly single-use through an isNew precondition?"
+        semantic_status: "OPEN"
+        assertions: [{ stable_key: "assertion:gap:business-context:proposal-newness-policy:current", text: "Current source encodes proposal single-use only through permission behavior, not an explicit precondition.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_stable_keys: ["evidence:business-context:current-proposal-creation"] }]
+    unresolved:
+      - stable_key: "unresolved:business-context:rfc-ratification"
+        kind: "HUMAN_JUDGMENT"
+        affected_stable_keys: ["requirement:rfc-6924:community-controlled-onchain-treasury"]
+        competing_assertion_ids: []
+        reason: "The supplied RFC is authoritative versioned intent but remains an RFC with comments and no supplied final decision record."
+        required_context: ["Final governance decision, accepted RFC revision, or production specification"]
+        record_status: "CURRENT"
+        semantic_status: "OPEN"
+        resolution: { resolver_work_unit: null, disposition: null, replacement_ids: [], resolved_utc: null }
+        assertions: [{ stable_key: "assertion:unresolved:business-context:rfc-ratification:unresolved", text: "The current authority of provisional and disputed RFC statements cannot be established from the RFC alone.", evidence_class: "UNRESOLVED", confidence: "HIGH", evidence_stable_keys: ["evidence:business-context:rfc-6924"] }]
+      - stable_key: "unresolved:business-context:passing-criteria-decision"
+        kind: "HUMAN_JUDGMENT"
+        affected_stable_keys: ["requirement:rfc-6924:quorum", "requirement:rfc-6924:majority", "requirement:rfc-6924:moving-quorum"]
+        competing_assertion_ids: []
+        reason: "The RFC explicitly leaves quorum/majority research open and community discussion disputes feasibility."
+        required_context: ["Ratified acceptance-curve decision and parameter rationale"]
+        record_status: "CURRENT"
+        semantic_status: "OPEN"
+        resolution: { resolver_work_unit: null, disposition: null, replacement_ids: [], resolved_utc: null }
+        assertions: [{ stable_key: "assertion:unresolved:business-context:passing-criteria-decision:unresolved", text: "No supplied source authoritatively selects the production acceptance formula.", evidence_class: "UNRESOLVED", confidence: "HIGH", evidence_stable_keys: ["evidence:business-context:rfc-6924"] }]
+      - stable_key: "unresolved:business-context:break-glass-governance"
+        kind: "HUMAN_JUDGMENT"
+        affected_stable_keys: ["requirement:rfc-6924:break-glass"]
+        competing_assertion_ids: []
+        reason: "The RFC leaves break-glass scope, transparency, legal use, rotation, recovery, and sunset under discussion."
+        required_context: ["Operational multisig policy, signer selection/rotation, incident process, and sunset decision"]
+        record_status: "CURRENT"
+        semantic_status: "OPEN"
+        resolution: { resolver_work_unit: null, disposition: null, replacement_ids: [], resolved_utc: null }
+        assertions: [{ stable_key: "assertion:unresolved:business-context:break-glass-governance:unresolved", text: "Code-level threshold checks cannot establish the intended operational governance of break-glass authority.", evidence_class: "UNRESOLVED", confidence: "HIGH", evidence_stable_keys: ["evidence:business-context:rfc-6924"] }]
+      - stable_key: "unresolved:business-context:current-deployment-audit-drift"
+        kind: "EXTERNAL"
+        affected_stable_keys: []
+        competing_assertion_ids: []
+        reason: "The current revision postdates the audit; source comparison covers each original finding, but deployment configuration, dependency versions, integrated behavior, and later code outside the original eleven-file scope are not covered by that audit."
+        required_context: ["Deployment manifest", "verification keys", "dependency lock/version decision", "integrated follow-up audit"]
+        record_status: "CURRENT"
+        semantic_status: "OPEN"
+        resolution: { resolver_work_unit: null, disposition: null, replacement_ids: [], resolved_utc: null }
+        assertions: [{ stable_key: "assertion:unresolved:business-context:current-deployment-audit-drift:unresolved", text: "A prior audit and static remediation comparison do not certify the current deployment or integrated system.", evidence_class: "UNRESOLVED", confidence: "HIGH", evidence_stable_keys: ["evidence:business-context:zksecurity-audit-report"] }]
+  conflicts:
+    - "RFC successful-bond return conflicts with current amount-plus-bond recipient payout when proposer and recipient differ."
+    - "RFC public vote semantics enumerate yay/nay/abstain, while current entry validation also admits the internal DUMMY value."
+    - "The RFC proposes fixed examples for quorum and majority while explicitly leaving passing criteria open and community comments dispute them."
+  unresolved:
+    - "No final post-RFC decision record was supplied for quorum, approval curves, delegation rollout, break-glass policy, or custom-token spending."
+    - "Static review cannot establish proof soundness, runtime throughput, deployed permissions/keys, signer-set reuse, or end-to-end liveness."
+    - "The audit's historical throughput/proving estimates were not revalidated and must not be presented as current measured capacity."
+  coverage:
+    expected_paths: 2
+    accounted_paths: 2
+    expected_symbols: 0
+    accounted_symbols: 0
+    context_documents: 2
+    requirements_proposed: 30
+    business_rules_proposed: 7
+    prior_audit_findings_expected: 28
+    prior_audit_findings_proposed: 28
+    audit_current_dispositions:
+      REMEDIATED_STATICALLY: 11
+      STILL_APPLICABLE: 17
+      REGRESSED_CANDIDATE: 0
+      CODE_MOVED: 0
+      OUT_OF_SCOPE: 0
+      UNRESOLVED: 0
+    gaps_proposed: 7
+    unresolved_proposed: 4

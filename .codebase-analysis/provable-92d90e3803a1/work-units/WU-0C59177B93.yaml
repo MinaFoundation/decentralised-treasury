@@ -1,0 +1,22 @@
+work_unit:
+  id: "WU-0C59177B93"
+  stable_key: "work-unit:phase-6-correction:relation-io-direction"
+  role: "challenge"
+  pass: "PASS_2"
+  revision: "1e27b1aea88f5ea2764db96e4b337b24fe6dbeb3"
+  scope_hash: "f40d76b91ec3cd8805ecdc7bebba8d43b8f317842639a7799738c37569119ab1"
+  pass_1_sha256: "1baa122bc91838a651da0116040b290de56f49b90e1c8688ba3712e0db7c6213"
+  context_sha256: "b08ad4cfef37e8a2f19bb2dd46d69763312a48e00e6204e7f8ec30a291afdfd1"
+  pass_2_sha256: "645101d2946d908ab1e200b78048e56957cdd63daa1f872c81897d1e83618897"
+  primary_paths: []
+  read_only_context_paths: []
+  owned_record_ids: []
+  owned_stable_key_prefixes: ["relation:", "input-output:", "zk-statement:"]
+  correction_domains: ["canonical_relation_endpoints", "zk_statement_lifecycle", "io_producer_consumer_direction"]
+  inputs:
+    model: "model/pass-2-contextual-corrected.yaml"
+    context: "model/context.yaml"
+    qa_review: "evidence/contextual/WU-367D918B22.yaml"
+    scope: "SCOPE.yaml"
+  output: "evidence/corrections/WU-0C59177B93.yaml"
+  status: "COMPLETE"

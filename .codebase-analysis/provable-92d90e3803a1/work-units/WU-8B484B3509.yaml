@@ -1,0 +1,14 @@
+work_unit:
+  id: "WU-8B484B3509"
+  stable_key: "work-unit:platform:packages/sdk/src/provable"
+  role: "platform"
+  pass: "PASS_1"
+  revision: "1e27b1aea88f5ea2764db96e4b337b24fe6dbeb3"
+  primary_paths: []
+  read_only_context_paths: ["packages/sdk/src/provable", "packages/sdk/package.json", "packages/sdk/tsconfig.json"]
+  owned_record_ids: []
+  owned_stable_key_prefixes: ["zk-statement:", "assumption:platform:", "component:platform:"]
+  questions:
+    - "What are the smart-contract, proof, host/constraint, state, permission, and deployment boundaries?"
+  output: "evidence/reconnaissance/WU-8B484B3509.yaml"
+  status: "COMPLETE"

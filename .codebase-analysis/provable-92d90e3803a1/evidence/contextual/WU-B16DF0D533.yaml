@@ -1,0 +1,831 @@
+bundle:
+  schema_version: 1
+  work_unit: WU-B16DF0D533
+  revision: 1e27b1aea88f5ea2764db96e4b337b24fe6dbeb3
+  scope_hash: f40d76b91ec3cd8805ecdc7bebba8d43b8f317842639a7799738c37569119ab1
+  scope_artifact_sha256: 9344afe7d4f90951790c715b8f7ef9992aad0364510f045fedd6ea640df2ec35
+  pass_1_sha256: 1baa122bc91838a651da0116040b290de56f49b90e1c8688ba3712e0db7c6213
+  context_sha256: b08ad4cfef37e8a2f19bb2dd46d69763312a48e00e6204e7f8ec30a291afdfd1
+  pass_2_sha256: 645101d2946d908ab1e200b78048e56957cdd63daa1f872c81897d1e83618897
+  role: security
+  ownership:
+    primary_paths: []
+    record_ids: []
+    stable_key_prefixes: []
+    output: evidence/contextual/WU-B16DF0D533.yaml
+  source_hashes:
+    packages/sdk/package.json: d73ba980798af63c8ac79b897ae548bd706e480286ac9f617c68f2144f394eba
+    packages/sdk/src/logging/logger.ts: ad0ff96d55f18ddf13a2a7d2fe7e5fd974a8acfd320c65a501cc3a4412b1b944
+    packages/sdk/src/ledgers/nullifier-ledger/nullifier-ledger.ts: 0b8a9038005b7aee785f75d4e0bb4fdf4cb5f945c639f35528596003ac9c36e4
+    packages/sdk/src/ledgers/staking-ledger/staking-ledger.ts: df9be11132c6cb968fe1b9857b53137d629f7d213141652bc90981b5c7c04d69
+    packages/sdk/src/ledgers/voting-ledger/voting-ledger.ts: 8405cbfde9370f4cc424efcdb32477949bf5fcf38db24926cfd0bd1f40898c52
+    packages/sdk/src/provable/account.ts: 00eabfcee24eb10380d0ffeb1e60a08a85aa650cc8a3e9140718cecbf6fd0563
+    packages/sdk/src/provable/contracts/treasury-constants.ts: c4ef6c551437e01ebe6294c51923dfedff4a198735766a37029249482d9247a6
+    packages/sdk/src/provable/contracts/treasury-owner.ts: 7c66014cee7f7a5e559b29f3b7c2790ed19c38c9a91b886c15cbbef3328d17dc
+    packages/sdk/src/provable/contracts/treasury-pause-controller/multisig-signatures.ts: 48a7c4cd41c1e9764df1329966c37f325817fa43074140c145f4f6c1ae2aa372
+    packages/sdk/src/provable/contracts/treasury-pause-controller/treasury-pause-controller.ts: f7139183b963aa496dd36df00017885c9ab6275f11accca35bfd9054260e5104
+    packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts: 95e5656d3a0d0c09a88ac9befa743517c53a98983bd1cf74b042e87bc9faf7af
+    packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts: 37c1f07a5fad41f036f999792b44bf13d4f9af280cb1439bed6a8411dfaa81cd
+    packages/sdk/src/provable/events/treasury-proposal-events.ts: 421e00244121b82a603b71b722ef35419794d0d603a264270a47a44d05a2c01d
+    packages/sdk/src/provable/hashing-helpers.ts: 8ef43c9c685339f97a667002c2f6f349071eaa53ba753c7008dc46be23396869
+    packages/sdk/src/provable/merkle-tree/prefixed-merkle-tree.ts: 870ca739cc8406070367beb86367efa64101647d130f0892b636555cbd2a5c6c
+    packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts: 4dcfc5e1f1edcc7e26cfb960f3892208efe16056a2579b14e12e2a79f0e28197
+    packages/sdk/src/provable/voting-account.ts: fe383ead1055910ace4062c56cf4c7773dead3d95733f972ef6e49b2de515454
+    packages/sdk/src/storage/in-memory/in-memory-merkle-tree-storage.ts: b4d3fc976ee94a108773f8839c03e8775843ab86a9ced5d730b84f9e12a7589b
+    packages/sdk/src/storage/keyv/keyv-merkle-tree-storage.ts: da9b8eac67d45d4a73ecbc53865986ab50bfdc34bd2a3eded3e3701b868f6d70
+    packages/sdk/src/storage/merkle-tree-storage.ts: ce5610141a8d1c7d4a5e8b83ae90dc17f6ae64e5da11e29907cdadd5c1a69539
+    packages/sdk/src/utils/context-provider.ts: cbbde1f3561ca2ee39bc7026241a09fa2659629542c527cc49271da5e924b6d4
+    packages/sdk/src/utils/public-key.ts: 4a174b2a1bc5d07a9f3f8680e47cde35d3b654eeaf924f82e0aae8cf162a9383
+    packages/sdk/test/integration/treasury-owner.test.ts: f73f778dcb2ac226c416ebfdf69117af3262fcc37f36877ea3fb7d1bd7e0f4e0
+    packages/sdk/test/provable/context/contracts/mina-local.ts: 1f1bc37d6f2fe73405b8b6d6a5044ef60de9210cebc0fc5599f0501eeae037f7
+    packages/sdk/test/provable/context/contracts/multisig-signatures-context.ts: d7ab8c5b956860cd6be820f4109fccf5b5418e17ddc6c49f8297f290d031bfe3
+    packages/sdk/test/provable/context/contracts/treasury-pause-controller-context.ts: c19bf32ccf5beaef34b5493c1fb459a2d9e5c4cccbba7c07c6dcebc570f7e0dc
+    packages/sdk/test/provable/context/contracts/treasury-proposal-context.ts: 26867da6fe78c507f120849a85c6752ad3b463124cc59393d8adc37b7e8d6463
+    packages/sdk/test/provable/context/contracts/vote-reducer-context.ts: 01d905c373575a62eb1274650fbff25a240626f993ae6127f54e2621346d49f0
+    packages/sdk/test/provable/context/proofs-enabled.ts: 8811666fcffeca3ff5a2bc4d6dbe93b208dcd242b97860390abba0f7551ce2bd
+    packages/sdk/test/provable/context/staking-ledger-to-voting-ledger-context.ts: 4195f6ebbcbee51ca421f319cd5a399d54e9f252ff76334024914f83d8afdfec
+    packages/sdk/test/provable/contracts/treasury-pause-controller/multisig-signatures.test.ts: d51e8afe43141a84650ddcff49d736a308007fb04da1ae22b72d3a65783648b2
+    packages/sdk/test/provable/contracts/treasury-pause-controller/treasury-pause-controller.test.ts: 5e4031821bafa39daf9b1b28d2aeba4daf92e1611f78e571035974ab63fbb1e5
+    packages/sdk/test/provable/contracts/treasury-proposal/treasury-proposal.test.ts: 89444ba4edfc6bf48fae0c0ef4f8b183c9c2d35f24e38e78622334adb3bed6bb
+    packages/sdk/test/provable/contracts/treasury-proposal/vote-reducer.test.ts: 7f957b454de0f6e1545fa2dc0367b53e0908bde826eb76db4099d36f4f4e8f8a
+    packages/sdk/test/provable/events/treasury-proposal-events.test.ts: 2b5204f4acf2dca9135642a242e18bf5535f46fa41526b43fb19b228d6f63f79
+    packages/sdk/test/provable/merkle-tree/prefixed-merkle-tree.test.ts: a26229c7a3247fc649d1fc8cb2212f978cc108e222ecb0f17045327285221845
+    packages/sdk/test/provable/staking-ledger-to-voting-ledger.test.ts: 988d911b4336e64ccd70009cddcb514bc93b693a1df203c6d1a15dbb98e6af0c
+    packages/sdk/tsconfig.json: 8206b547d254f2bfd7a1c89d09c5e8b2e650e2e5e52f73047c0b30285f206877
+  upstream_artifact_hashes:
+    context/RFC_EXTRACT.md: 84a7528617db2baebfd1d5a0170b11cf639bd52fb61f05c69c555ac5255c46a0
+    context/ZKSECURITY_AUDIT_INDEX.md: 8768353f7bdab76dd93067ddb5df8c749bb37e974232dfcfc397dabcd2ae60cb
+    evidence/challenge/WU-6C59C1D8A1.yaml: 7a08281c65e5e2cf0cc68dc869447e08453e0f5a3a5e09f4b8a88d2b44951c9f
+    evidence/contextual/WU-7CB5C8181B.yaml: 13b96ce0a7270a5d50c18a63c103647496dcc20360e5933341c6f9b073a66aa2
+    evidence/contextual/WU-A182673A27.yaml: f5abb1f91f95f9d6093fa3122d03a33641707ba19513c47f6c5b9f0100aca2a1
+    evidence/contextual/WU-C72BE604E8.yaml: a5d8dc6e53a019925cc3044a3254cb4937187f72c529c7af3eabbea3d33dcd40
+  authority_source_hashes:
+    https://forums.minaprotocol.com/t/rfc-mina-decentralized-treasury-decentralized-on-chain-community-treasury/6924: e7ac762b41e5568427fb78021ea515f63455a3f20337f0f03907bcbbd458aa6e
+    https://reports.zksecurity.xyz/reports/mina-treasury-1.md: fbe4fb7745391609600ba40c0a4c527e3756bd086af852acc71b95fa31abf7e6
+  assumptions:
+    - Static review only; target TypeScript, tests, builds, compilers, proofs, verifiers, transactions, chains, and proof modes were not executed.
+    - The RFC is versioned intent and the prior audit is revision-bounded historical evidence; neither is deployment authority or certification.
+    - Source-visible bindings are not promoted to circuit, compiler, cryptographic, key, runtime, transaction, or persistence assurance.
+  observations:
+    - The corrected Pass-2 model was loaded in full and all current security objectives, threats, assumptions, findings, ZK statements, ZK values, witness sites, and failure classes were rechecked against raw anchors.
+    - The composed design has strong local recipient, cap, root, index, nullifier, action-history, nonce, and recursive-continuity bindings, but the effective protocol remains conditional on deployment, Mina/o1js, host-operation, policy, and availability facts outside the scope.
+  proposed_records: {}
+  proposed_relations: []
+  conflicts: []
+  unresolved:
+    - Runtime behavior, test results, proof/circuit/cryptographic soundness, deployed permissions/keys/roots, protocol semantics, host transactionality, and capacity remain unresolved.
+  coverage:
+    scope_inputs_expected: 38
+    scope_inputs_rehashed_before: 38
+    scope_inputs_rehashed_after: 38
+    source_mutation_detected: false
+    current_security_objectives_reviewed: 10
+    current_threats_reviewed: 17
+    current_assumptions_reviewed: 28
+    current_findings_reviewed: 49
+    current_zk_statements_reviewed: 6
+    zk_values_reviewed: 44
+    witness_sites_reviewed: 12
+    required_failure_classes_reviewed: 14
+
+phase_6_review:
+  role: security_trust_coherence
+  overall_disposition: QUALIFIED_CONFIRMATION_WITH_DISSENT
+  reviewed_universe:
+    revision: 1e27b1aea88f5ea2764db96e4b337b24fe6dbeb3
+    scope_hash: f40d76b91ec3cd8805ecdc7bebba8d43b8f317842639a7799738c37569119ab1
+    corrected_pass_2_only: model/pass-2-contextual-corrected.yaml
+    counts:
+      objectives: 10
+      threats: 17
+      assumptions: 28
+      current_findings: 49
+      active_or_unresolved_findings: 38
+      remediated_prior_audit_findings: 11
+      current_zk_statements: 6
+      represented_zk_values: 44
+      witness_sites: 12
+      failure_classes: 14
+  system_reconstruction:
+    purpose:
+      conclusion: The scope implements a Mina Treasury Owner custody/orchestration contract, derived-token Proposal accounts, a shared three-of-five Pause Controller, and two recursive proof programs for snapshot transformation and vote reduction.
+      record_ids: [CMP-E155326DD2, CMP-5CAF19BDCD, CMP-B6BB8BE661, CMP-874E479BA1, CMP-0F476A460D]
+      evidence_refs: [EVD-2E424CAB76, EVD-11DB5D89B4, EVD-72A633D2CC, EVD-5963C00DAB, EVD-B3695707DC]
+      anchor_refs:
+        - packages/sdk/src/provable/contracts/treasury-owner.ts#L64-511
+        - packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts#L46-397
+        - packages/sdk/src/provable/contracts/treasury-pause-controller/treasury-pause-controller.ts#L25-216
+        - packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts#L35-351
+        - packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts#L30-659
+    state:
+      conclusion: Proposal lifecycle is deployment-relative PROPOSAL/EXPLORATION/VOTING/COOLDOWN, while proposal result and proposal pause share one Field and the controller uses a separate global Bool plus account nonce.
+      record_ids: [INV-A0200396FA, BHV-8B6F3A639B, INV-DEFE674779, BHV-F898CD867A]
+      evidence_refs: [EVD-9B18A655A2, EVD-6665BB19D1, EVD-72A633D2CC]
+      anchor_refs:
+        - packages/sdk/src/provable/contracts/treasury-owner.ts#L51-184
+        - packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts#L52-79
+        - packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts#L386-397
+        - packages/sdk/src/provable/contracts/treasury-pause-controller/treasury-pause-controller.ts#L50-53
+    assets:
+      conclusion: Protected assets are owner MINA and pooled bonds; proposal identity/recipient/amount/snapshot/status/payout; voting supply, nullifiers, actions and tally; emergency commitment/nonce/recovery; proof keys/roots; host ledgers/traces; and event/state truth.
+      record_ids: [SEC-FB542C27D2, SEC-9F3756E302, SEC-F88596C819, SEC-10182FB352, SEC-EE4E9A7ADB, SEC-B560A051DA, SEC-DD3B44137C]
+      evidence_refs: [EVD-E95EC38949, EVD-DD1C7DA36F, EVD-D70E747767, EVD-72A633D2CC, EVD-1D93AC4BAF]
+      anchor_refs:
+        - packages/sdk/src/provable/contracts/treasury-owner.ts#L191-272
+        - packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts#L213-384
+        - packages/sdk/src/provable/contracts/treasury-pause-controller/treasury-pause-controller.ts#L55-216
+    actors_and_trust_zones:
+      conclusion: Signed senders, potentially distinct bond payers, voters, permissionless tally/execution callers, emergency signer slots, deployment operators, prover/host-ledger operators, and indexers cross on-chain, constraint, host, deployment, protocol, and event-consumer trust zones.
+      record_ids: [ASM-D691B96D3B, ASM-A4087EF988, ASM-73AF207816, ASM-C0AB78216E, THR-56AA87E621]
+      evidence_refs: [EVD-2E424CAB76, EVD-72A633D2CC, EVD-B3695707DC, EVD-5963C00DAB]
+      anchor_refs:
+        - packages/sdk/src/provable/contracts/treasury-owner.ts#L191-496
+        - packages/sdk/src/provable/contracts/treasury-pause-controller/treasury-pause-controller.ts#L55-216
+  confirmations:
+    - conclusion: Recipient hash, approved status, cumulative cap, matching owner debit/recipient credit amount, initial proof roots/index, recursive handoffs, nullifier index, five action states, signer commitment, operation prefix, and nonce are source-visible local bindings.
+      record_ids: [SEC-FB542C27D2, SEC-E0D95AF002, SEC-F88596C819, SEC-10182FB352, INV-EF3059DB8A, INV-BB400806DE, INV-222CED01FB]
+      evidence_refs: [EVD-DD1C7DA36F, EVD-5AED8D6498, EVD-D70E747767, EVD-72A633D2CC]
+      anchor_refs:
+        - packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts#L213-384
+        - packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts#L333-639
+        - packages/sdk/src/provable/contracts/treasury-owner.ts#L320-400
+    - conclusion: All twelve witness sites are represented; nine host reads are constraint-bound to returned values/roots/indices and three persistence mutation sites remain explicitly not proved.
+      record_ids: [ZKP-EFB3E28391, ZKP-5DF7D24003, ZKP-DF018A9714, ZKP-BA11C90A9F, THR-5F94AE7496]
+      evidence_refs: [EVD-8F785412DE, EVD-177476A23F, EVD-2720E90D33, EVD-D70E747767, EVD-C7D1DB2A7C, EVD-F7DE049BDC]
+      anchor_refs:
+        - packages/sdk/src/provable/contracts/treasury-pause-controller/treasury-pause-controller.ts#L105-108
+        - packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts#L111-118
+        - packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts#L208-320
+        - packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts#L460-574
+  qualifications:
+    - conclusion: BOUND in the ZK value matrix means a source-visible constraint link only; it does not establish circuit, compiler, backend, cryptographic, verification-key, deployment, or runtime soundness.
+      record_ids: [SEC-E0D95AF002, ASM-EF2D37A6EF, ASM-53F278775C, UNR-20BC6033C1]
+      evidence_refs: [EVD-BAD04529F7, EVD-9C55001C7F]
+      anchor_refs: ['packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts#L59-66']
+    - conclusion: Audit-fix ancestry supports static remediation of eleven historical items but is not certification; seventeen audit items remain source-visible and several overlap newer local findings.
+      record_ids: [FND-1979AEB628, FND-CD3FC08B49, FND-ECA97458D5, FND-D0ABA9650D, FND-8DB62F78C9, FND-BF3449506D]
+      evidence_refs: [EVD-FB46967B48, EVD-8C7F748854, EVD-5099700F2E, EVD-995A61228D]
+      anchor_refs:
+        - .codebase-analysis/provable-92d90e3803a1/context/ZKSECURITY_AUDIT_INDEX.md#L1-20
+        - packages/sdk/src/provable/contracts/treasury-owner.ts#L64-119
+        - packages/sdk/src/provable/contracts/treasury-owner.ts#L320-400
+  contradictions_or_dissent:
+    - conclusion: FND-4C6DF9502F is not safely rankable as unqualified LOW. If membership-valid ineligible/custom-token balances can enter the selected staking ledger, governance impact can be material; recommend MEDIUM with MEDIUM confidence or explicit provisional LOW pending the Mina eligibility fact.
+      record_ids: [FND-4C6DF9502F, GAP-FE43BADC05, THR-B55C2C8D2F, ASM-03D9CA273D]
+      evidence_refs: [EVD-177476A23F, EVD-5963C00DAB, EVD-FB46967B48]
+      anchor_refs: ['packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts#L195-337']
+    - conclusion: Five assumption records are duplicate lineages and should not be independently counted or ranked after consolidation.
+      record_ids: [ASM-0E591EC647, ASM-35D9BB50D0, ASM-53F278775C, ASM-031E77BE7F, ASM-82EB259917, ASM-557C7137A0, ASM-0DCB6712DD, ASM-912B3DBDF6, ASM-E0E1752AF7, ASM-B2699C5369, ASM-73AF207816]
+      evidence_refs: [EVD-7BD50662A0, EVD-79754810F6, EVD-9C55001C7F, EVD-9B18A655A2, EVD-1C17FE0D88, EVD-B30136F272]
+      anchor_refs:
+        - packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts#L83-144
+        - packages/sdk/src/provable/contracts/treasury-owner.ts#L121-184
+        - packages/sdk/package.json#L8-59
+
+  security_objective_matrix:
+    - id: SEC-042FF4BC76
+      disposition: CONFIRMED_WITH_UNRESOLVED_CAPACITY
+      record_ids: [SEC-042FF4BC76, THR-0EC3832BA7, ASM-503E6DE8AD, GAP-A25D114C6F]
+      evidence_refs: [EVD-B3695707DC, EVD-5963C00DAB]
+      anchor_refs: ['packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts#L426-639', 'packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts#L195-337']
+      reasoning: Five-record base proofs and strict history/exhaustion consumers are visible; throughput, deadlines, retries, operator availability, and proof completeness are not.
+      prerequisite_correction: Production volume, proof latency, recursive aggregation schedule, action-state availability, and service SLOs are required.
+      impact_correction: Failure is governance liveness/finalization loss, not proof unsoundness by itself.
+      limitation_correction: Preserve UNKNOWN; no proof or benchmark ran.
+      dissent: null
+    - id: SEC-10182FB352
+      disposition: CONFIRMED_PARTIAL_ENFORCEMENT
+      record_ids: [SEC-10182FB352, THR-77C87EDE62, THR-0DEBF32E0A, THR-5D2535B0B5]
+      evidence_refs: [EVD-72A633D2CC, EVD-278D27A176, EVD-CF08ADCD5E]
+      anchor_refs: ['packages/sdk/src/provable/contracts/treasury-pause-controller/multisig-signatures.ts#L17-145', 'packages/sdk/src/provable/contracts/treasury-pause-controller/treasury-pause-controller.ts#L55-216']
+      reasoning: Commitment, operation prefixes, nonce, and three valid positions exist; distinct identities, deployment domain, target state, rotation preimage, events, and recovery are absent or external.
+      prerequisite_correction: Harm requires duplicate/unsafe key configuration, aligned replay domain, blind-toggle state, or unavailable next preimage.
+      impact_correction: Threshold collapse, wrong-state command, finality loss, or permanent loss of emergency authority.
+      limitation_correction: Signer custody, ceremony, deployed domains, and transaction behavior are outside scope.
+      dissent: null
+    - id: SEC-9F3756E302
+      disposition: CONFIRMED_PERMISSION_DEPENDENT
+      record_ids: [SEC-9F3756E302, THR-647A188D6B, ASM-D691B96D3B, FND-D0C94E0DC6]
+      evidence_refs: [EVD-E95EC38949, EVD-C3C25357D4]
+      anchor_refs: ['packages/sdk/src/provable/contracts/treasury-owner.ts#L191-272']
+      reasoning: Creation binds key/token/app state/URI and requires a proposal signature, but no explicit isNew or prior-empty constraint exists.
+      prerequisite_correction: Reset requires an existing derived-token account whose effective permissions permit signed state/key writes.
+      impact_correction: Proposal identity/state replacement is conditional, not established exploitable behavior.
+      limitation_correction: Deployed permissions and o1js account-creation semantics remain unresolved.
+      dissent: null
+    - id: SEC-B560A051DA
+      disposition: CONFIRMED_UNRESOLVED_HOST_ATOMICITY
+      record_ids: [SEC-B560A051DA, THR-C66F2EDB38, THR-5F94AE7496, ASM-73AF207816, FND-23916993D0]
+      evidence_refs: [EVD-C7D1DB2A7C, EVD-F7DE049BDC, EVD-C15386FB6E, EVD-1D24E67049]
+      anchor_refs: ['packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts#L304-320', 'packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts#L556-574', 'packages/sdk/src/utils/context-provider.ts#L1-14']
+      reasoning: Host writes occur inside witness callbacks with no scoped transaction, rollback, checkpoint, or proof-output completion binding in the pinned interfaces.
+      prerequisite_correction: Partial failure, retry, or shared context/backend is required.
+      impact_correction: Primary source-visible impact is availability/reproducibility and trusted recovery; accepted on-chain invalid state is not established.
+      limitation_correction: Higher-level orchestration/backends may mitigate externally.
+      dissent: null
+    - id: SEC-BC2C476AE2
+      disposition: CONFIRMED_WITH_STATE_POLICY_CONFLICT
+      record_ids: [SEC-BC2C476AE2, THR-A943E3380A, THR-902C4A0F9F, FND-BFFEA51091, FND-B5948FE3CF]
+      evidence_refs: [EVD-9B18A655A2, EVD-6665BB19D1, EVD-CFF488F119, EVD-5AED8D6498]
+      anchor_refs: ['packages/sdk/src/provable/contracts/treasury-owner.ts#L121-184', 'packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts#L164-211', 'packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts#L213-397']
+      reasoning: Source-visible lifecycle gates exist, but pause erases result state and low-participation/abstain-only tally rejects before persisting REJECTED.
+      prerequisite_correction: Finality loss requires valid emergency authorization; quorum ambiguity requires an otherwise valid proof package that fails participation/directional votes.
+      impact_correction: Governance outcome can be lost or remain indistinguishable from untallied UNKNOWN.
+      limitation_correction: Slot inclusion and intended terminal policy require external authority.
+      dissent: null
+    - id: SEC-DD3B44137C
+      disposition: CONFIRMED_PARTIAL_OBSERVABILITY
+      record_ids: [SEC-DD3B44137C, THR-F283B3AF7E, THR-622BA37FCF, FND-1D115F22E4, FND-37BEE2B1BA]
+      evidence_refs: [EVD-0E83AEA025, EVD-03D20507BE, EVD-1D93AC4BAF]
+      anchor_refs: ['packages/sdk/src/provable/contracts/treasury-owner.ts#L464-496', 'packages/sdk/src/provable/account.ts#L211-392', 'packages/sdk/src/logging/logger.ts#L7-56']
+      reasoning: Typed event schemas exist, but proposal pause emits caller input instead of derived post-state and parse failures can collapse to empty values.
+      prerequisite_correction: Downstream harm requires consumers that trust the event/default without state reconciliation.
+      impact_correction: Misleading UI, prover input, monitoring, or incident response; no direct asset diversion is shown.
+      limitation_correction: Indexers, log access/retention, and downstream consumers are outside scope.
+      dissent: null
+    - id: SEC-E0D95AF002
+      disposition: CONFIRMED_STATIC_BINDINGS_ONLY
+      record_ids: [SEC-E0D95AF002, THR-01539B0FF5, THR-5F94AE7496, ASM-EF2D37A6EF, ASM-53F278775C]
+      evidence_refs: [EVD-D70E747767, EVD-4F2874E860, EVD-177476A23F, EVD-2720E90D33, EVD-C71179133B]
+      anchor_refs: ['packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts#L333-639', 'packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts#L83-337']
+      reasoning: Principal root/index/action/nullifier/recursion/genesis/consumer links are visible, while compiler/backend/key/crypto effectiveness and host effects remain outside the established property.
+      prerequisite_correction: Wrong tally requires a missing/ineffective constraint, wrong key/configuration, or protocol mismatch; no such runtime feasibility is proven.
+      impact_correction: If a prerequisite holds, governance tally and payout authorization can be affected.
+      limitation_correction: No circuit or proof execution and no cryptographic assurance.
+      dissent: null
+    - id: SEC-EE4E9A7ADB
+      disposition: CONFIRMED_UNRESOLVED_DEPLOYMENT
+      record_ids: [SEC-EE4E9A7ADB, THR-56AA87E621, ASM-912B3DBDF6, ASM-FF091135AE, ASM-82EB259917]
+      evidence_refs: [EVD-1D93AC4BAF, EVD-8928C709CD, EVD-9C55001C7F]
+      anchor_refs: ['packages/sdk/package.json#L8-59', 'packages/sdk/src/provable/contracts/treasury-owner.ts#L64-119', 'packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts#L59-66']
+      reasoning: Security-critical statics, roots, keys, permissions, constants, and a custom dependency exist without a production manifest/account dump in scope.
+      prerequisite_correction: Effective drift requires production values or resolved dependency semantics to differ from the reviewed baseline.
+      impact_correction: The effective protocol and all downstream conclusions may differ.
+      limitation_correction: Deployment artifacts were not supplied.
+      dissent: null
+    - id: SEC-F88596C819
+      disposition: CONFIRMED_WITH_ELIGIBILITY_DISSENT
+      record_ids: [SEC-F88596C819, THR-B55C2C8D2F, THR-CD2BC0B163, THR-01539B0FF5, GAP-FE43BADC05]
+      evidence_refs: [EVD-177476A23F, EVD-D70E747767, EVD-5AED8D6498]
+      anchor_refs: ['packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts#L195-337', 'packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts#L426-639', 'packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts#L213-351']
+      reasoning: Membership, voter/nullifier indices, recursive continuity, tallies and action history are bound, but eligible account/token/delegate policy and public DUMMY semantics are not authoritatively aligned.
+      prerequisite_correction: Ineligible-weight impact requires membership-valid ineligible accounts; DUMMY loss requires a real-key DUMMY action.
+      impact_correction: Eligibility failure can materially change quorum/approval; DUMMY consumes the voter's opportunity without weight.
+      limitation_correction: Mina snapshot composition and final business policy remain unresolved.
+      dissent: FND-4C6DF9502F severity should be raised or expressly marked provisional.
+    - id: SEC-FB542C27D2
+      disposition: CONFIRMED_PROTOCOL_CONDITIONAL
+      record_ids: [SEC-FB542C27D2, THR-92F9C4D82A, THR-B041D07C7D, ASM-BD7E733FE5, INV-EF3059DB8A]
+      evidence_refs: [EVD-F2FC321D60, EVD-DD1C7DA36F]
+      anchor_refs: ['packages/sdk/src/provable/contracts/treasury-owner.ts#L421-462', 'packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts#L353-384']
+      reasoning: Approved status, recipient hash, remaining cap, owner debit and recipient credit are visible; atomic conservation and deployed authorization remain protocol/permission dependent.
+      prerequisite_correction: Unauthorized loss requires permission/transaction/account-update semantics to violate assumed composition; zero-progress execution is separately source-visible.
+      impact_correction: Direct redirection/overpayment is locally mitigated; event spam, forced timing/chunking and atomicity remain qualified.
+      limitation_correction: No deployed account or transaction executed.
+      dissent: null
+
+  threat_matrix:
+    - { id: THR-01539B0FF5, disposition: CONFIRMED_PARTIALLY_MITIGATED, record_ids: [THR-01539B0FF5, SEC-E0D95AF002, SEC-F88596C819], evidence_refs: [EVD-B3695707DC, EVD-5963C00DAB, EVD-11DB5D89B4], anchor_refs: [packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts#L333-639, packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts#L83-337, packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts#L213-351], reasoning: "Principal continuity and consumer bindings are present; key/backend effectiveness remains unresolved.", prerequisite_correction: "A required binding must be missing or ineffective, or a wrong key/configuration must be accepted.", impact_correction: "Could authorize a wrong tally and payout if the prerequisite holds.", limitation_correction: "No proof/circuit/crypto execution.", dissent: null }
+    - { id: THR-0DEBF32E0A, disposition: UNRESOLVED, record_ids: [THR-0DEBF32E0A, FND-4B4F5D76C9, ASM-64F6936A94], evidence_refs: [EVD-72A633D2CC], anchor_refs: [packages/sdk/src/provable/contracts/treasury-pause-controller/multisig-signatures.ts#L22-91], reasoning: "Signed payload omits deployment/network domain.", prerequisite_correction: "Aligned signer commitment, nonce, operation parameters, and compatible account state in another domain.", impact_correction: "Cross-domain emergency command, not established same-domain nonce replay.", limitation_correction: "Deployment inventory and cross-network semantics absent.", dissent: null }
+    - { id: THR-0EC3832BA7, disposition: UNRESOLVED, record_ids: [THR-0EC3832BA7, GAP-A25D114C6F, UNR-13C729A54A], evidence_refs: [EVD-B3695707DC, EVD-5963C00DAB], anchor_refs: [packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts#L426-639, packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts#L195-337], reasoning: "Fixed batches and strict terminals exist without capacity evidence.", prerequisite_correction: "Volume, sparse ledger, service failure, or action-state availability exceeds the operational budget.", impact_correction: "Delayed/impossible finalization.", limitation_correction: "No benchmark, proofs, topology, or production volume.", dissent: null }
+    - { id: THR-56AA87E621, disposition: UNRESOLVED, record_ids: [THR-56AA87E621, SEC-EE4E9A7ADB, ASM-912B3DBDF6, ASM-FF091135AE], evidence_refs: [EVD-1D93AC4BAF, EVD-8928C709CD], anchor_refs: [packages/sdk/package.json#L8-59, packages/sdk/src/provable/contracts/treasury-owner.ts#L64-119], reasoning: "Production manifest/account/dependency resolution is absent.", prerequisite_correction: "Production differs from reviewed statics/source.", impact_correction: "Review conclusions may not apply to the effective protocol.", limitation_correction: "No deployment artifacts.", dissent: null }
+    - { id: THR-5D2535B0B5, disposition: CONFIRMED_CANDIDATE, record_ids: [THR-5D2535B0B5, FND-E683792BE2, FND-10A2C953A0], evidence_refs: [EVD-A754CEC381, EVD-CF08ADCD5E], anchor_refs: [packages/sdk/src/provable/contracts/treasury-pause-controller/treasury-pause-controller.ts#L55-85, packages/sdk/src/provable/contracts/treasury-pause-controller/treasury-pause-controller.ts#L121-145], reasoning: "Init accepts more than five and rotation stores an arbitrary commitment.", prerequisite_correction: "More than five initial keys or an unavailable/invalid next preimage.", impact_correction: "All emergency commands and repair rotation can become unusable.", limitation_correction: "External ceremony may reduce likelihood.", dissent: null }
+    - { id: THR-5F94AE7496, disposition: CONFIRMED_CANDIDATE, record_ids: [THR-5F94AE7496, FND-23916993D0, ASM-73AF207816], evidence_refs: [EVD-C7D1DB2A7C, EVD-F7DE049BDC], anchor_refs: [packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts#L556-574, packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts#L304-320], reasoning: "Constraints bind returned values/roots, not persistence success or provenance.", prerequisite_correction: "Operator/reviewer infers a host effect from proof acceptance.", impact_correction: "False assurance and recovery inconsistency, not demonstrated invalid on-chain acceptance.", limitation_correction: "Higher-level safeguards unknown.", dissent: null }
+    - { id: THR-622BA37FCF, disposition: UNRESOLVED, record_ids: [THR-622BA37FCF, ASM-F556007192, SEC-DD3B44137C], evidence_refs: [EVD-1D93AC4BAF, EVD-72A633D2CC], anchor_refs: [packages/sdk/src/logging/logger.ts#L7-56, packages/sdk/src/provable/contracts/treasury-pause-controller/treasury-pause-controller.ts#L77-81], reasoning: "Debug logging includes public keys and operational values.", prerequisite_correction: "Debug enabled and logs exposed beyond the intended operator boundary.", impact_correction: "Operational metadata exposure; no scoped private keys are logged.", limitation_correction: "Runtime logging/retention/access absent.", dissent: null }
+    - { id: THR-647A188D6B, disposition: UNRESOLVED, record_ids: [THR-647A188D6B, FND-D0C94E0DC6, ASM-D691B96D3B], evidence_refs: [EVD-E95EC38949], anchor_refs: [packages/sdk/src/provable/contracts/treasury-owner.ts#L191-254], reasoning: "Initialization-once is permission dependent.", prerequisite_correction: "Existing account accepts signed rewrite under effective permissions.", impact_correction: "Conditional proposal reset/configuration replacement.", limitation_correction: "Deployed/o1js permission behavior absent.", dissent: null }
+    - { id: THR-77C87EDE62, disposition: CONFIRMED_CANDIDATE, record_ids: [THR-77C87EDE62, FND-BBC3A2316C, ASM-A4087EF988], evidence_refs: [EVD-E1F14754F0, EVD-97F3268F92], anchor_refs: [packages/sdk/src/provable/contracts/treasury-pause-controller/multisig-signatures.ts#L97-145], reasoning: "Threshold counts positions, not distinct identities.", prerequisite_correction: "Committed participant slots repeat a key and signatures satisfy repeated positions.", impact_correction: "Fewer than three independent signers may authorize commands.", limitation_correction: "Repeated-signature behavior not executed.", dissent: null }
+    - { id: THR-902C4A0F9F, disposition: UNRESOLVED, record_ids: [THR-902C4A0F9F, FND-B5948FE3CF, ASM-0DCB6712DD], evidence_refs: [EVD-9B18A655A2, EVD-CFF488F119, EVD-5AED8D6498], anchor_refs: [packages/sdk/src/provable/contracts/treasury-owner.ts#L121-184, packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts#L164-211, packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts#L339-350], reasoning: "Slot semantics are external and quorum failure rejects before status write.", prerequisite_correction: "Boundary inclusion mismatch or otherwise valid tally below participation/no directional votes.", impact_correction: "Missed phase or UNKNOWN non-finality.", limitation_correction: "No chain execution or ratified terminal policy.", dissent: null }
+    - { id: THR-92F9C4D82A, disposition: CONFIRMED_PARTIALLY_MITIGATED, record_ids: [THR-92F9C4D82A, INV-EF3059DB8A, ASM-BD7E733FE5], evidence_refs: [EVD-F2FC321D60, EVD-DD1C7DA36F], anchor_refs: [packages/sdk/src/provable/contracts/treasury-owner.ts#L421-462, packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts#L353-384], reasoning: "Recipient, status, cap, and matching amount are locally bound.", prerequisite_correction: "Permission, account-update, atomicity, or deployment assumption fails.", impact_correction: "Direct redirection/overpayment mitigated locally; conservation remains external.", limitation_correction: "No deployed account/transaction.", dissent: null }
+    - { id: THR-A943E3380A, disposition: CONFIRMED_CANDIDATE, record_ids: [THR-A943E3380A, FND-BFFEA51091, FND-1D115F22E4], evidence_refs: [EVD-72A633D2CC, EVD-6665BB19D1, EVD-0E83AEA025], anchor_refs: [packages/sdk/src/provable/contracts/treasury-pause-controller/multisig-signatures.ts#L46-53, packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts#L386-397, packages/sdk/src/provable/contracts/treasury-owner.ts#L464-496], reasoning: "Target state is unsigned, shared result status blindly toggles, and event Bool is caller supplied.", prerequisite_correction: "Valid emergency authority acts on a final or unexpectedly changed proposal state.", impact_correction: "Finality erased, operator intent inverted, and event can misstate state.", limitation_correction: "No authoritative emergency-reset policy.", dissent: null }
+    - { id: THR-B041D07C7D, disposition: CONFIRMED_CANDIDATE, record_ids: [THR-B041D07C7D, FND-EE80C71EE3], evidence_refs: [EVD-F2FC321D60, EVD-DD1C7DA36F], anchor_refs: [packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts#L353-384], reasoning: "Zero satisfies the remaining cap and advances no state.", prerequisite_correction: "Proposal is approved and caller submits zero.", impact_correction: "Repeat events/account updates and ambiguous completion; no fund diversion.", limitation_correction: "Fees and operational policy external.", dissent: null }
+    - { id: THR-B55C2C8D2F, disposition: UNRESOLVED_WITH_SEVERITY_DISSENT, record_ids: [THR-B55C2C8D2F, FND-4C6DF9502F, GAP-FE43BADC05, ASM-03D9CA273D], evidence_refs: [EVD-177476A23F, EVD-5963C00DAB], anchor_refs: [packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts#L195-337], reasoning: "Every membership-proven account balance is aggregated to Account.delegate without token/account-class predicate.", prerequisite_correction: "Membership-valid ineligible/custom-token account exists and its balance/delegate affects a counted leaf.", impact_correction: "Potentially material quorum/approval distortion, not safely an unconditional LOW.", limitation_correction: "Mina ledger representation and policy absent.", dissent: "Raise or qualify FND-4C6DF9502F severity." }
+    - { id: THR-C66F2EDB38, disposition: UNRESOLVED, record_ids: [THR-C66F2EDB38, FND-23916993D0, FND-19EC441E53, ASM-73AF207816], evidence_refs: [EVD-C7D1DB2A7C, EVD-F7DE049BDC, EVD-C15386FB6E, EVD-817F85F79C], anchor_refs: [packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts#L556-574, packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts#L304-320, packages/sdk/src/utils/context-provider.ts#L1-14], reasoning: "Separate mutable writes and global context have no pinned recovery boundary.", prerequisite_correction: "Partial write, retry, or concurrent/shared job.", impact_correction: "Host divergence and proof-job liveness/reproducibility failure.", limitation_correction: "External orchestration/backends may mitigate.", dissent: null }
+    - { id: THR-CD2BC0B163, disposition: CONFIRMED_PARTIALLY_MITIGATED, record_ids: [THR-CD2BC0B163, FND-2184025222, UNR-13C729A54A], evidence_refs: [EVD-D43C7ED7D0, EVD-D70E747767], anchor_refs: [packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts#L30-67, packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts#L426-639], reasoning: "Duplicate weight is zero; real-key DUMMY follows non-padding action/nullifier processing.", prerequisite_correction: "Real-key DUMMY, duplicate action, or unavailable history targets.", impact_correction: "Lost participation/vote opportunity or finalization liveness, not double weight.", limitation_correction: "Mina action-state semantics external.", dissent: null }
+    - { id: THR-F283B3AF7E, disposition: CONFIRMED_CANDIDATE, record_ids: [THR-F283B3AF7E, FND-1D115F22E4, FND-37BEE2B1BA, ASM-C0AB78216E], evidence_refs: [EVD-0E83AEA025, EVD-03D20507BE], anchor_refs: [packages/sdk/src/provable/contracts/treasury-owner.ts#L464-496, packages/sdk/src/provable/account.ts#L211-392], reasoning: "Type-valid outputs may disagree with state or malformed input may become an empty account.", prerequisite_correction: "Consumer trusts output without reconciliation.", impact_correction: "False UI/operator/prover state; downstream reach unresolved.", limitation_correction: "Consumers outside closure.", dissent: null }
+
+  assumption_matrix:
+    - { id: ASM-031E77BE7F, disposition: CONFIRMED_RELIED_UPON, record_ids: [ASM-031E77BE7F, SEC-E0D95AF002], evidence_refs: [EVD-79754810F6], anchor_refs: [packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts#L248-282], reasoning: "Consumer constrains proof starts to configured empty roots; root construction/deployment match is external.", failure_correction: "Wrong roots reject valid proofs or anchor unintended genesis.", limitation_correction: "Deployment manifest absent.", dissent: null }
+    - { id: ASM-03D9CA273D, disposition: UNRESOLVED, record_ids: [ASM-03D9CA273D, FND-4C6DF9502F, GAP-FE43BADC05], evidence_refs: [EVD-177476A23F], anchor_refs: [packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts#L239-302], reasoning: "All proven balances/delegates are treated as eligible without authoritative predicate.", failure_correction: "Ineligible balances can distort quorum/approval if present.", limitation_correction: "Mina ledger and business rule absent.", dissent: "Security severity linked to this assumption must remain provisional." }
+    - { id: ASM-0DCB6712DD, disposition: UNRESOLVED, record_ids: [ASM-0DCB6712DD, INV-A0200396FA, FND-1FBF087284], evidence_refs: [EVD-BD46323DD9], anchor_refs: [packages/sdk/src/provable/contracts/treasury-owner.ts#L121-184], reasoning: "globalSlotSinceGenesis.requireBetween is visible but deployed inclusion/endpoint semantics are external.", failure_correction: "Boundary actions may be accepted/rejected in a different phase.", limitation_correction: "No chain execution.", dissent: null }
+    - { id: ASM-0E591EC647, disposition: DUPLICATE_LINEAGE, record_ids: [ASM-0E591EC647, ASM-35D9BB50D0], evidence_refs: [EVD-7BD50662A0], anchor_refs: [packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts#L83-143], reasoning: "Same dense/no-holes premise as ASM-35D9BB50D0.", failure_correction: "Do not count independently.", limitation_correction: "Supersede or alias during consolidation.", dissent: null }
+    - { id: ASM-35D9BB50D0, disposition: CONFIRMED_RELIED_UPON, record_ids: [ASM-35D9BB50D0, FND-CA0F83CE86, GAP-EF32A38D1C], evidence_refs: [EVD-2720E90D33], anchor_refs: [packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts#L83-143], reasoning: "Only immediate-next Account.empty is constrained.", failure_correction: "Sparse/non-dense ledger can omit later accounts.", limitation_correction: "Global completeness is external.", dissent: null }
+    - { id: ASM-39FFFFFD50, disposition: UNRESOLVED, record_ids: [ASM-39FFFFFD50, GAP-1DC17F1884], evidence_refs: [EVD-1D93AC4BAF, EVD-0D50A0B3BE], anchor_refs: [packages/sdk/src/provable/contracts/treasury-constants.ts#L1-15, .codebase-analysis/provable-92d90e3803a1/context/RFC_EXTRACT.md#L7-10], reasoning: "Hard-coded policy has no supplied ratification and RFC criteria are provisional/contested.", failure_correction: "Governance decisions use unapproved policy.", limitation_correction: "Requires human authority.", dissent: null }
+    - { id: ASM-3B12C3E849, disposition: CONFIRMED_RELIED_UPON, record_ids: [ASM-3B12C3E849, ASM-4B596D13E3], evidence_refs: [EVD-F211A2464E], anchor_refs: [packages/sdk/src/provable/account.ts#L22-392], reasoning: "Repository manually models Mina Account hash inputs and constants.", failure_correction: "Protocol mismatch rejects valid snapshots or commits different data.", limitation_correction: "No authoritative differential vectors.", dissent: null }
+    - { id: ASM-4B596D13E3, disposition: CONFIRMED_RELIED_UPON, record_ids: [ASM-4B596D13E3, SEC-E0D95AF002], evidence_refs: [EVD-F66F2E3B4A, EVD-B3695707DC], anchor_refs: [packages/sdk/src/provable/account.ts#L211-392, packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts#L30-659], reasoning: "Account/action/Merkle encodings are local and deployment equivalence is external.", failure_correction: "Proofs/commitments can represent different protocol data.", limitation_correction: "No runtime/differential vectors.", dissent: null }
+    - { id: ASM-503E6DE8AD, disposition: UNRESOLVED, record_ids: [ASM-503E6DE8AD, SEC-042FF4BC76, GAP-A25D114C6F], evidence_refs: [EVD-0D50A0B3BE, EVD-5963C00DAB, EVD-B3695707DC], anchor_refs: [.codebase-analysis/provable-92d90e3803a1/context/RFC_EXTRACT.md#L7-10, packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts#L35-351, packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts#L30-659], reasoning: "Permissionless/self-hostable intent depends on unavailable topology/SLO/capacity facts.", failure_correction: "Snapshot/action processing may not complete in time.", limitation_correction: "No benchmarks or services inspected.", dissent: null }
+    - { id: ASM-53F278775C, disposition: DUPLICATE_SPLIT_LINEAGE, record_ids: [ASM-53F278775C, ASM-031E77BE7F, ASM-82EB259917], evidence_refs: [EVD-11DB5D89B4, EVD-1D93AC4BAF], anchor_refs: [packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts#L59-66], reasoning: "Umbrella key/root premise is already represented by separate empty-root and verification-key assumptions.", failure_correction: "Do not independently rank after split.", limitation_correction: "Supersede umbrella or retain only as grouping node.", dissent: null }
+    - { id: ASM-557C7137A0, disposition: DUPLICATE_LINEAGE, record_ids: [ASM-557C7137A0, ASM-0DCB6712DD], evidence_refs: [EVD-9B18A655A2], anchor_refs: [packages/sdk/src/provable/contracts/treasury-owner.ts#L121-184], reasoning: "Same lifecycle slot-inclusion premise.", failure_correction: "Do not count independently.", limitation_correction: "Supersede or alias.", dissent: null }
+    - { id: ASM-64F6936A94, disposition: CONFIRMED_RELIED_UPON, record_ids: [ASM-64F6936A94, THR-0DEBF32E0A], evidence_refs: [EVD-278D27A176], anchor_refs: [packages/sdk/src/provable/contracts/treasury-pause-controller/multisig-signatures.ts#L22-91], reasoning: "Signed messages omit deployment/network identifiers.", failure_correction: "Aligned deployments can share authorization domain.", limitation_correction: "No deployment inventory.", dissent: null }
+    - { id: ASM-73AF207816, disposition: UNRESOLVED, record_ids: [ASM-73AF207816, FND-23916993D0, THR-C66F2EDB38], evidence_refs: [EVD-C7D1DB2A7C, EVD-F7DE049BDC, EVD-C15386FB6E], anchor_refs: [packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts#L556-574, packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts#L304-320, packages/sdk/src/utils/context-provider.ts#L1-14], reasoning: "Pinned interfaces do not supply isolated transactional recovery.", failure_correction: "Retry/concurrency can corrupt host job state.", limitation_correction: "Orchestration outside scope.", dissent: null }
+    - { id: ASM-79662ECECE, disposition: CONFIRMED_RELIED_UPON, record_ids: [ASM-79662ECECE, ASM-73AF207816], evidence_refs: [EVD-C15386FB6E], anchor_refs: [packages/sdk/src/utils/context-provider.ts#L1-14], reasoning: "One mutable process-global context has no lifecycle/concurrency guard.", failure_correction: "Wrong/unset/shared context can throw or cross-contaminate jobs.", limitation_correction: "Actual worker model absent.", dissent: null }
+    - { id: ASM-82EB259917, disposition: CONFIRMED_RELIED_UPON, record_ids: [ASM-82EB259917, SEC-EE4E9A7ADB], evidence_refs: [EVD-9C55001C7F], anchor_refs: [packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts#L59-66], reasoning: "Verification keys are mutable class statics, not proposal state.", failure_correction: "Wrong key rejects current proofs or accepts a different program under external semantics.", limitation_correction: "Deployment key hashes absent.", dissent: null }
+    - { id: ASM-912B3DBDF6, disposition: DUPLICATE_LINEAGE, record_ids: [ASM-912B3DBDF6, ASM-E0E1752AF7], evidence_refs: [EVD-1D93AC4BAF, EVD-1C17FE0D88], anchor_refs: [packages/sdk/package.json#L8-59], reasoning: "Same custom-o1js dependency premise.", failure_correction: "Do not count independently.", limitation_correction: "Supersede or alias.", dissent: null }
+    - { id: ASM-A4087EF988, disposition: CONFIRMED_RELIED_UPON, record_ids: [ASM-A4087EF988, FND-BBC3A2316C, FND-E683792BE2, FND-10A2C953A0], evidence_refs: [EVD-72A633D2CC], anchor_refs: [packages/sdk/src/provable/contracts/treasury-pause-controller/treasury-pause-controller.ts#L55-145, packages/sdk/src/provable/contracts/treasury-pause-controller/multisig-signatures.ts#L97-145], reasoning: "Code verifies commitment/positions but not distinct identities or next preimage availability.", failure_correction: "Threshold collapses or authority becomes irrecoverable.", limitation_correction: "Operational ceremony absent.", dissent: null }
+    - { id: ASM-B2699C5369, disposition: DUPLICATE_LINEAGE, record_ids: [ASM-B2699C5369, ASM-73AF207816], evidence_refs: [EVD-B30136F272], anchor_refs: [packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts#L304-320], reasoning: "Atomic/recoverable host writes are a subset of job isolation/recovery.", failure_correction: "Do not count independently.", limitation_correction: "Supersede or alias.", dissent: null }
+    - { id: ASM-B549EC8751, disposition: CONFIRMED_CONTRADICTED, record_ids: [ASM-B549EC8751, FND-B5948FE3CF, GAP-2124E32D06], evidence_refs: [EVD-CFF488F119, EVD-5AED8D6498], anchor_refs: [packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts#L164-211, packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts#L339-350], reasoning: "Calculator returns REJECTED but tally rejects before storing it.", failure_correction: "UNKNOWN cannot be assumed intended terminal policy.", limitation_correction: "Requires author decision.", dissent: null }
+    - { id: ASM-BD7E733FE5, disposition: CONFIRMED_RELIED_UPON, record_ids: [ASM-BD7E733FE5, SEC-FB542C27D2], evidence_refs: [EVD-2E424CAB76, EVD-11DB5D89B4], anchor_refs: [packages/sdk/src/provable/contracts/treasury-owner.ts#L191-462, packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts#L353-384], reasoning: "Nested account updates rely on protocol failure atomicity and balance conservation.", failure_correction: "Bond/payout accounting can diverge if rollback/composition differs.", limitation_correction: "Not executable in this workflow.", dissent: null }
+    - { id: ASM-C093AE5452, disposition: CONFIRMED_RELIED_UPON, record_ids: [ASM-C093AE5452, SEC-EE4E9A7ADB], evidence_refs: [EVD-8928C709CD], anchor_refs: [packages/sdk/src/provable/contracts/treasury-owner.ts#L64-119], reasoning: "Owner deploy copies mutable statics and contains permission TODO.", failure_correction: "Bad slot/controller/key/permissions can make protocol incorrect or unusable.", limitation_correction: "Manifest/account dump absent.", dissent: null }
+    - { id: ASM-C0AB78216E, disposition: CONFIRMED_RELIED_UPON, record_ids: [ASM-C0AB78216E, FND-1D115F22E4, FND-7264C0E61E], evidence_refs: [EVD-0E83AEA025, EVD-02AE7D74CF], anchor_refs: [packages/sdk/src/provable/contracts/treasury-owner.ts#L464-496, packages/sdk/test/provable/events/treasury-proposal-events.test.ts#L26-212], reasoning: "Schema correctness does not ensure state/event agreement.", failure_correction: "Consumers can present false state if they do not reconcile.", limitation_correction: "Indexer/UI absent.", dissent: null }
+    - { id: ASM-D691B96D3B, disposition: CONFIRMED_PARTIALLY_ENFORCED, record_ids: [ASM-D691B96D3B, FND-D0C94E0DC6, THR-92F9C4D82A], evidence_refs: [EVD-2E424CAB76, EVD-995A61228D], anchor_refs: [packages/sdk/src/provable/contracts/treasury-owner.ts#L64-119, packages/sdk/src/provable/contracts/treasury-owner.ts#L191-272], reasoning: "Source assigns permissions but effective deployed values and child-call semantics are external.", failure_correction: "Reset, bypass, or unusability if permissions differ.", limitation_correction: "No deployed state.", dissent: null }
+    - { id: ASM-E0E1752AF7, disposition: CONFIRMED_RELIED_UPON, record_ids: [ASM-E0E1752AF7, SEC-EE4E9A7ADB], evidence_refs: [EVD-1C17FE0D88], anchor_refs: [packages/sdk/package.json#L8-59], reasoning: "SDK uses a GitHub feature/mesa-support o1js fork.", failure_correction: "Constraint/permission/slot/account behavior may differ.", limitation_correction: "Resolved commit/dependency internals absent.", dissent: null }
+    - { id: ASM-E6AE27B10D, disposition: CONFIRMED_RELIED_UPON, record_ids: [ASM-E6AE27B10D, FND-BBC3A2316C, FND-10A2C953A0], evidence_refs: [EVD-98C59C67BD, EVD-97F3268F92], anchor_refs: [packages/sdk/src/provable/contracts/treasury-pause-controller/treasury-pause-controller.ts#L87-119, packages/sdk/src/provable/contracts/treasury-pause-controller/multisig-signatures.ts#L97-145], reasoning: "Only commitment is on-chain; ordered five-key preimage and distinctness remain host/operational.", failure_correction: "Authority unavailable or threshold lower than intended.", limitation_correction: "Publication/custody evidence absent.", dissent: null }
+    - { id: ASM-EF2D37A6EF, disposition: CONFIRMED_RELIED_UPON, record_ids: [ASM-EF2D37A6EF, SEC-E0D95AF002, SEC-10182FB352], evidence_refs: [EVD-BAD04529F7], anchor_refs: [packages/sdk/src/provable/account.ts#L1-1], reasoning: "All proof/signature/hash properties rely on external primitives/backend/canonical encodings.", failure_correction: "Invalid statements/signatures or ambiguous commitments if assumption fails.", limitation_correction: "Static review cannot establish cryptographic soundness.", dissent: null }
+    - { id: ASM-F556007192, disposition: UNRESOLVED, record_ids: [ASM-F556007192, THR-622BA37FCF], evidence_refs: [EVD-1D93AC4BAF, EVD-72A633D2CC], anchor_refs: [packages/sdk/src/logging/logger.ts#L7-56, packages/sdk/src/provable/contracts/treasury-pause-controller/treasury-pause-controller.ts#L77-81], reasoning: "Production logging/access/retention policy is absent.", failure_correction: "Metadata exposure or inadequate diagnostics.", limitation_correction: "Runtime environment absent.", dissent: null }
+    - { id: ASM-FF091135AE, disposition: UNRESOLVED, record_ids: [ASM-FF091135AE, SEC-EE4E9A7ADB, THR-56AA87E621], evidence_refs: [EVD-2E424CAB76, EVD-11DB5D89B4], anchor_refs: [packages/sdk/src/provable/contracts/treasury-owner.ts#L64-119, packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts#L59-66], reasoning: "Production state/configuration is not bound to the reviewed revision.", failure_correction: "Effective protocol differs.", limitation_correction: "No signed deployment manifest/account state/artifact hashes.", dissent: null }
+
+  finding_matrix:
+    - { id: FND-CA0F83CE86, disposition: ACTIVE_SOURCE_VISIBLE, severity: LOW, confidence: HIGH, security_relevance: DIRECT_OR_COMPOSED, record_ids: ["FND-CA0F83CE86"], evidence_refs: ["EVD-A80CE1BF98"], anchor_refs: ["packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts#L148-190", "packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts#L195-337", "packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts#L83-143"], reasoning: "Source confirms that merge ignores input exhausted flags and emits exhausted=false. Refine the impact to non-monotonic completion and liveness/composition ambiguity; omission of later accounts additionally requires the separately unresolved dense-ledger premise.", prerequisite_correction: "A proof builder passes an exhausted proof as either merge input and supplies an otherwise adjacent proof. The selected staking root has commitments that allow the adjacent digest/exhaust sequence; empty leaves suffice for no-op continuation.", impact_correction: "The public flag does not represent a monotonic terminal state. An exhausted trace can be reopened and extended, obscuring completion/capacity reasoning. If the assumed dense-ledger property is false, the same design can cross an empty hole or certify an early empty boundary without a committed account count.", limitation_correction: "Under an authoritative dense-ledger/no-holes invariant, reopening with only trailing empty leaves need not change voting balances. No proof was generated; this is a source-visible recursive state-machine finding, not a cryptographic exploit claim.", dissent: null }
+    - { id: FND-37BEE2B1BA, disposition: ACTIVE_SOURCE_VISIBLE, severity: MEDIUM, confidence: HIGH, security_relevance: DIRECT_OR_COMPOSED, record_ids: ["FND-37BEE2B1BA"], evidence_refs: ["EVD-03D20507BE"], anchor_refs: ["packages/sdk/src/provable/account.ts#L224-245"], reasoning: "Every exception from superclass deserialization produces Account.empty without a failure signal.", prerequisite_correction: "A consumer invokes Account.fromJSON with malformed or dependency-incompatible input.", impact_correction: "Consumers can continue with a valid-looking empty account, potentially omitting balance/delegation data or producing a root that does not represent the intended ledger input.", limitation_correction: "The downstream consumers outside the pinned dependency closure were not analyzed; runtime reachability and impact are unresolved.", dissent: null }
+    - { id: FND-7264C0E61E, disposition: ACTIVE_SOURCE_VISIBLE, severity: LOW, confidence: HIGH, security_relevance: DIRECT_OR_COMPOSED, record_ids: ["FND-7264C0E61E"], evidence_refs: ["EVD-02AE7D74CF"], anchor_refs: ["packages/sdk/test/provable/events/treasury-proposal-events.test.ts#L26-212"], reasoning: "The tests construct expected payloads themselves and never compare a production-emitted payload to contract state.", prerequisite_correction: "A production method supplies a type-valid but semantically inaccurate event field or a consumer relies on an unasserted tally field.", impact_correction: "Indexer-facing data can disagree with state transitions without this suite detecting it.", limitation_correction: "Production event semantics are analyzed by the contract work unit; this record describes the pinned test oracle only.", dissent: null }
+    - { id: FND-8C3BA008B7, disposition: ACTIVE_SOURCE_VISIBLE, severity: MEDIUM, confidence: HIGH, security_relevance: DIRECT_OR_COMPOSED, record_ids: ["FND-8C3BA008B7"], evidence_refs: ["EVD-37FFC4C20C"], anchor_refs: ["packages/sdk/test/integration/treasury-owner.test.ts#L264-764"], reasoning: "Later cases read shared proof variables and contract/ledger state created by earlier cases, while lines 431-490 are comments rather than test nodes.", prerequisite_correction: "A lifecycle, cleanup, failure-atomicity, pause/tally, or isolated-case regression occurs.", impact_correction: "Cases can pass or fail due to prior case state, and the break-glass interaction with the complete proposal lifecycle lacks an executable expectation.", limitation_correction: "This static analysis did not execute the suite and does not claim current failures or proof-mode equivalence.", dissent: null }
+    - { id: FND-1897280316, disposition: ACTIVE_SOURCE_VISIBLE, severity: LOW, confidence: HIGH, security_relevance: DIRECT_OR_COMPOSED, record_ids: ["FND-1897280316"], evidence_refs: ["EVD-472E3A66BD"], anchor_refs: ["packages/sdk/src/provable/merkle-tree/prefixed-merkle-tree.ts#L110-153"], reasoning: "Negative bigint values satisfy both upper-bound guards.", prerequisite_correction: "An exported PrefixedMerkleTree caller supplies a negative bigint index.", impact_correction: "Out-of-domain storage keys can be written or witnesses can be constructed from negative sibling keys; the logical root may remain unchanged while storage mutates.", limitation_correction: "Pinned ledger call sites derive non-negative UInt/public-key indices; no runtime exploitability is claimed.", dissent: null }
+    - { id: FND-19EC441E53, disposition: ACTIVE_SOURCE_VISIBLE, severity: MEDIUM, confidence: HIGH, security_relevance: DIRECT_OR_COMPOSED, record_ids: ["FND-19EC441E53"], evidence_refs: ["EVD-472E3A66BD", "EVD-817F85F79C"], anchor_refs: ["packages/sdk/src/provable/merkle-tree/prefixed-merkle-tree.ts#L110-165", "packages/sdk/src/storage/merkle-tree-storage.ts#L3-8"], reasoning: "No source-visible mechanism groups leaf and ancestor writes into one failure-atomic operation.", prerequisite_correction: "A storage set/get rejects after one or more earlier nodes were written, or fill exceeds tree capacity after valid prefixes were processed.", impact_correction: "Host storage may expose a partially updated leaf/path/root, which can invalidate later witnesses or diverge persisted state from proof-construction assumptions.", limitation_correction: "Underlying concrete stores may provide stronger atomicity externally, but no such guarantee appears in the pinned interface.", dissent: null }
+    - { id: FND-961BD4A980, disposition: ACTIVE_SOURCE_VISIBLE, severity: MEDIUM, confidence: HIGH, security_relevance: DIRECT_OR_COMPOSED, record_ids: ["FND-961BD4A980"], evidence_refs: ["EVD-2C1DE8596E"], anchor_refs: ["packages/sdk/test/provable/merkle-tree/prefixed-merkle-tree.test.ts#L10-43", "packages/sdk/src/provable/account.ts#L22-392"], reasoning: "Only the two-leaf expected-root path is directly exercised for these primitives in expanded tests.", prerequisite_correction: "Account encoding, dependency protocol constants, prefix order, bounds, or storage failure policy changes without a targeted regression test.", impact_correction: "Protocol-incompatible roots, silent parse fallback, boundary acceptance, witness errors, or partial persistence can regress without a focused oracle.", limitation_correction: "Tests outside SCOPE.yaml may exist; this finding is limited to the pinned expanded test boundary.", dissent: null }
+    - { id: FND-67861A5343, disposition: REMEDIATED_HISTORICAL_NOT_CURRENT_ISSUE, severity: HIGH, confidence: HIGH, security_relevance: DIRECT_OR_COMPOSED, record_ids: ["FND-67861A5343"], evidence_refs: ["EVD-FB46967B48", "EVD-5099700F2E"], anchor_refs: ["packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts#LUNKNOWN"], reasoning: "Current source uses UInt128 for the vulnerable intermediate products.", prerequisite_correction: "Mainnet-scale supply, approved-vote weight, or large proposal amount.", impact_correction: "Valid tally proofs could not be generated, making governance non-functional.", limitation_correction: "No arithmetic execution or proof generation was performed; dependency implementation remains assumed.", dissent: null }
+    - { id: FND-CD3FC08B49, disposition: REMEDIATED_HISTORICAL_NOT_CURRENT_ISSUE, severity: HIGH, confidence: HIGH, security_relevance: DIRECT_OR_COMPOSED, record_ids: ["FND-CD3FC08B49"], evidence_refs: ["EVD-FB46967B48", "EVD-8C7F748854"], anchor_refs: ["packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts#LUNKNOWN"], reasoning: "The reported input-controlled initialization is absent from current source and replaced by false initialization plus constrained discovery.", prerequisite_correction: "Untrusted prover supplies a reducer input history.", impact_correction: "Combined with missing on-chain history binding, fabricated actions could control governance tallies.", limitation_correction: "Static inspection does not establish circuit soundness.", dissent: null }
+    - { id: FND-1979AEB628, disposition: REMEDIATED_HISTORICAL_NOT_CURRENT_ISSUE, severity: HIGH, confidence: HIGH, security_relevance: DIRECT_OR_COMPOSED, record_ids: ["FND-1979AEB628"], evidence_refs: ["EVD-FB46967B48", "EVD-8C7F748854"], anchor_refs: ["packages/sdk/src/provable/contracts/treasury-owner.ts#LUNKNOWN"], reasoning: "Current source colocates history validation and tally and explicitly equates toActionsHash with a validated history target.", prerequisite_correction: "Untrusted prover submits crafted commit and tally proofs.", impact_correction: "Fabricated votes could change approval and authorize an unintended payout.", limitation_correction: "Static inspection does not establish Mina action-state ordering semantics beyond visible constraints.", dissent: null }
+    - { id: FND-ECA97458D5, disposition: REMEDIATED_HISTORICAL_NOT_CURRENT_ISSUE, severity: HIGH, confidence: HIGH, security_relevance: DIRECT_OR_COMPOSED, record_ids: ["FND-ECA97458D5"], evidence_refs: ["EVD-FB46967B48", "EVD-8C7F748854"], anchor_refs: ["packages/sdk/src/provable/contracts/treasury-owner.ts#LUNKNOWN"], reasoning: "Current source includes non-initial and pairwise uniqueness assertions.", prerequisite_correction: "Untrusted prover selects repeated older action-state values.", impact_correction: "Later votes could be omitted and committed tally work disrupted.", limitation_correction: "Action-state history completeness is not dynamically exercised.", dissent: null }
+    - { id: FND-A5A4858953, disposition: ACTIVE_PRIOR_AUDIT_DRIFT, severity: LOW, confidence: HIGH, security_relevance: DIRECT_OR_COMPOSED, record_ids: ["FND-A5A4858953"], evidence_refs: ["EVD-FB46967B48", "EVD-94B958AAA8"], anchor_refs: ["packages/sdk/src/provable/contracts/treasury-owner.ts#LUNKNOWN"], reasoning: "The source-visible caller and recipient remain distinct and no recipient signature is required.", prerequisite_correction: "Proposal approved and cooldown complete.", impact_correction: "A third party can force or fragment payouts, although cannot redirect them.", limitation_correction: "No runtime cost or recipient handling policy was supplied.", dissent: null }
+    - { id: FND-7BE7D38B6B, disposition: ACTIVE_PRIOR_AUDIT_DRIFT, severity: LOW, confidence: HIGH, security_relevance: DIRECT_OR_COMPOSED, record_ids: ["FND-7BE7D38B6B"], evidence_refs: ["EVD-FB46967B48", "EVD-94B958AAA8", "EVD-C70801D35C"], anchor_refs: ["packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts#LUNKNOWN", "packages/sdk/src/provable/contracts/treasury-owner.ts#LUNKNOWN"], reasoning: "Current source still includes the bond in the recipient's executable total.", prerequisite_correction: "Proposer and recipient differ and proposal succeeds.", impact_correction: "Successful proposer loses bond and recipient receives more than requested amount.", limitation_correction: "Static source/audit evidence only; deployment and runtime behavior remain UNKNOWN.", dissent: null }
+    - { id: FND-5F15694229, disposition: REMEDIATED_HISTORICAL_NOT_CURRENT_ISSUE, severity: INFORMATIONAL, confidence: HIGH, security_relevance: ASSURANCE_OR_DRIFT, record_ids: ["FND-5F15694229"], evidence_refs: ["EVD-FB46967B48", "EVD-8C7F748854"], anchor_refs: ["packages/sdk/src/provable/contracts/treasury-owner.ts#LUNKNOWN"], reasoning: "Current source has a single owner tally method containing history validation.", prerequisite_correction: "Two-step tally flow permits interleaving or inconsistent linkage.", impact_correction: "The split complicated end-to-end binding and enabled the related High action-history issue.", limitation_correction: "Account-update cost and runtime success were not measured.", dissent: null }
+    - { id: FND-1B33097A18, disposition: ACTIVE_PRIOR_AUDIT_DRIFT, severity: INFORMATIONAL, confidence: HIGH, security_relevance: ASSURANCE_OR_DRIFT, record_ids: ["FND-1B33097A18"], evidence_refs: ["EVD-FB46967B48", "EVD-C3C25357D4"], anchor_refs: ["packages/sdk/src/provable/contracts/treasury-owner.ts#LUNKNOWN"], reasoning: "Current source still omits an explicit account-newness precondition.", prerequisite_correction: "Proposal permissions change or do not reject a second signed state update.", impact_correction: "A second initialization could reset proposal state if permission assumptions change.", limitation_correction: "Current protocol rejection under default permissions was not executed.", dissent: null }
+    - { id: FND-F3C6E62E0B, disposition: ACTIVE_PRIOR_AUDIT_DRIFT, severity: INFORMATIONAL, confidence: HIGH, security_relevance: ASSURANCE_OR_DRIFT, record_ids: ["FND-F3C6E62E0B"], evidence_refs: ["EVD-FB46967B48", "EVD-D181A65EBF"], anchor_refs: ["packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts#LUNKNOWN"], reasoning: "Current transformation still has no explicit token-ID gate.", prerequisite_correction: "Delegate-field convention changes or malformed ledger data reaches the proof relation.", impact_correction: "Correctness depends implicitly on token accounts having empty delegates.", limitation_correction: "The underlying Mina ledger invariant is external to scope.", dissent: null }
+    - { id: FND-BF3449506D, disposition: ACTIVE_PRIOR_AUDIT_DRIFT, severity: INFORMATIONAL, confidence: HIGH, security_relevance: ASSURANCE_OR_DRIFT, record_ids: ["FND-BF3449506D"], evidence_refs: ["EVD-FB46967B48", "EVD-05B8A4E6FF", "EVD-C70801D35C"], anchor_refs: ["packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts#LUNKNOWN", "packages/sdk/src/provable/contracts/treasury-owner.ts#LUNKNOWN"], reasoning: "Current source still admits DUMMY through the public vote validator.", prerequisite_correction: "A real public key submits Vote.DUMMY.", impact_correction: "The voter loses its vote while its balance does not count even toward participation.", limitation_correction: "Static source/audit evidence only; deployment and runtime behavior remain UNKNOWN.", dissent: null }
+    - { id: FND-7D495DBE3F, disposition: ACTIVE_PRIOR_AUDIT_DRIFT, severity: INFORMATIONAL, confidence: HIGH, security_relevance: ASSURANCE_OR_DRIFT, record_ids: ["FND-7D495DBE3F"], evidence_refs: ["EVD-FB46967B48", "EVD-B964F79D31"], anchor_refs: ["packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts#LUNKNOWN"], reasoning: "The duplicate assertion remains in current source.", prerequisite_correction: "No additional prerequisite beyond the source-visible condition; occurrence remains unproved.", impact_correction: "No security impact; avoidable constraint and maintenance noise.", limitation_correction: "Static source/audit evidence only; deployment and runtime behavior remain UNKNOWN.", dissent: null }
+    - { id: FND-30B94DCCE0, disposition: ACTIVE_PRIOR_AUDIT_DRIFT, severity: INFORMATIONAL, confidence: HIGH, security_relevance: ASSURANCE_OR_DRIFT, record_ids: ["FND-30B94DCCE0"], evidence_refs: ["EVD-FB46967B48", "EVD-B964F79D31"], anchor_refs: ["packages/sdk/src/provable/contracts/treasury-owner.ts#LUNKNOWN", "packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts#LUNKNOWN"], reasoning: "Both verification layers remain in current source.", prerequisite_correction: "No additional prerequisite beyond the source-visible condition; occurrence remains unproved.", impact_correction: "Avoidable verification and proving overhead.", limitation_correction: "Proof cost was not measured and proofs were not executed.", dissent: null }
+    - { id: FND-3B35F91A1C, disposition: ACTIVE_PRIOR_AUDIT_DRIFT, severity: INFORMATIONAL, confidence: HIGH, security_relevance: ASSURANCE_OR_DRIFT, record_ids: ["FND-3B35F91A1C"], evidence_refs: ["EVD-FB46967B48", "EVD-C3C25357D4"], anchor_refs: ["packages/sdk/src/provable/contracts/treasury-owner.ts#LUNKNOWN"], reasoning: "Current source retains the raw Field(0) status write.", prerequisite_correction: "Enum values or app-state slot ordering change.", impact_correction: "Maintenance error could initialize an unintended execution-enabling status.", limitation_correction: "Static source/audit evidence only; deployment and runtime behavior remain UNKNOWN.", dissent: null }
+    - { id: FND-756A14D862, disposition: REMEDIATED_HISTORICAL_NOT_CURRENT_ISSUE, severity: HIGH, confidence: HIGH, security_relevance: DIRECT_OR_COMPOSED, record_ids: ["FND-756A14D862"], evidence_refs: ["EVD-FB46967B48", "EVD-5099700F2E"], anchor_refs: ["packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts#LUNKNOWN"], reasoning: "Current source explicitly constrains the index to zero.", prerequisite_correction: "Untrusted prover chooses the transformation's public start index.", impact_correction: "Opposing voters below the chosen index could be excluded from voting weight.", limitation_correction: "Recursive proof continuity is statically inspected elsewhere.", dissent: null }
+    - { id: FND-E5DB7A78F8, disposition: REMEDIATED_HISTORICAL_NOT_CURRENT_ISSUE, severity: HIGH, confidence: HIGH, security_relevance: DIRECT_OR_COMPOSED, record_ids: ["FND-E5DB7A78F8"], evidence_refs: ["EVD-FB46967B48", "EVD-5099700F2E"], anchor_refs: ["packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts#LUNKNOWN"], reasoning: "Current source explicitly constrains the initial voting root to the configured empty root.", prerequisite_correction: "Untrusted prover supplies a pre-populated initial voting ledger root.", impact_correction: "An attacker could inflate voting weight and approve an unauthorized payout.", limitation_correction: "Correct construction of the configured empty root remains an initialization assumption.", dissent: null }
+    - { id: FND-1FBF087284, disposition: ACTIVE_PRIOR_AUDIT_DRIFT, severity: LOW, confidence: HIGH, security_relevance: DIRECT_OR_COMPOSED, record_ids: ["FND-1FBF087284"], evidence_refs: ["EVD-FB46967B48", "EVD-BD46323DD9"], anchor_refs: ["packages/sdk/src/provable/contracts/treasury-owner.ts#LUNKNOWN"], reasoning: "Current source retains the audited network-slot API.", prerequisite_correction: "Transaction is included in the first block after a lifecycle boundary.", impact_correction: "A proposal or vote can be accepted one block after its intended period.", limitation_correction: "The audit supplies the o1js/Mina semantic interpretation; this run did not execute it.", dissent: null }
+    - { id: FND-C0656D649D, disposition: ACTIVE_PRIOR_AUDIT_DRIFT, severity: INFORMATIONAL, confidence: HIGH, security_relevance: ASSURANCE_OR_DRIFT, record_ids: ["FND-C0656D649D"], evidence_refs: ["EVD-FB46967B48", "EVD-C3C25357D4", "EVD-05B8A4E6FF"], anchor_refs: ["packages/sdk/src/provable/contracts/treasury-owner.ts#LUNKNOWN"], reasoning: "Current entry points still expose the reported absence of minimums.", prerequisite_correction: "Attacker pays transaction/account-creation fees.", impact_correction: "Proposal UX and proof workload can be degraded by low-value entries.", limitation_correction: "Practical spam economics and chain capacity were not measured.", dissent: null }
+    - { id: FND-8467BE9FD1, disposition: REMEDIATED_HISTORICAL_NOT_CURRENT_ISSUE, severity: MEDIUM, confidence: HIGH, security_relevance: DIRECT_OR_COMPOSED, record_ids: ["FND-8467BE9FD1"], evidence_refs: ["EVD-FB46967B48", "EVD-5099700F2E"], anchor_refs: ["packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts#LUNKNOWN"], reasoning: "Current source binds the witnessed owner account to the default token ID.", prerequisite_correction: "A custom-token account exists at the treasury owner's public key and is supplied with a valid witness.", impact_correction: "Participation and approval thresholds could be lowered or raised using the wrong balance.", limitation_correction: "Static source/audit evidence only; deployment and runtime behavior remain UNKNOWN.", dissent: null }
+    - { id: FND-3471621CD6, disposition: REMEDIATED_HISTORICAL_NOT_CURRENT_ISSUE, severity: HIGH, confidence: HIGH, security_relevance: DIRECT_OR_COMPOSED, record_ids: ["FND-3471621CD6"], evidence_refs: ["EVD-FB46967B48", "EVD-995A61228D"], anchor_refs: ["packages/sdk/src/provable/contracts/treasury-owner.ts#LUNKNOWN"], reasoning: "Current source applies permissions after superclass deployment.", prerequisite_correction: "Contract deployed using audited override order.", impact_correction: "Private-key authorization could bypass intended proof-only governance constraints.", limitation_correction: "Actual deployed account permissions are outside static source evidence.", dissent: null }
+    - { id: FND-9AA5203528, disposition: REMEDIATED_HISTORICAL_NOT_CURRENT_ISSUE, severity: MEDIUM, confidence: HIGH, security_relevance: DIRECT_OR_COMPOSED, record_ids: ["FND-9AA5203528"], evidence_refs: ["EVD-FB46967B48", "EVD-995A61228D"], anchor_refs: ["packages/sdk/src/provable/contracts/treasury-owner.ts#LUNKNOWN"], reasoning: "Current source authorizes proof-based send and receive.", prerequisite_correction: "The restrictive permissions are actually applied at deployment.", impact_correction: "The treasury could neither collect bonds nor pay approved proposals.", limitation_correction: "Deployment and runtime transfer behavior were not executed.", dissent: null }
+    - { id: FND-8DB62F78C9, disposition: ACTIVE_PRIOR_AUDIT_DRIFT, severity: INFORMATIONAL, confidence: HIGH, security_relevance: ASSURANCE_OR_DRIFT, record_ids: ["FND-8DB62F78C9"], evidence_refs: ["EVD-FB46967B48", "EVD-8D49AA6E0F"], anchor_refs: ["packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts#LUNKNOWN"], reasoning: "Current source still overloads status and resets unpaused proposals to UNKNOWN.", prerequisite_correction: "A finalized proposal is paused then unpaused.", impact_correction: "The outcome must be retallied after unpause, creating operational burden and proof-availability dependence.", limitation_correction: "Whether prior proofs remain reusable and available is operationally unresolved.", dissent: null }
+    - { id: FND-D0ABA9650D, disposition: ACTIVE_PRIOR_AUDIT_DRIFT, severity: LOW, confidence: HIGH, security_relevance: DIRECT_OR_COMPOSED, record_ids: ["FND-D0ABA9650D"], evidence_refs: ["EVD-FB46967B48", "EVD-77D32C74CA"], anchor_refs: ["packages/sdk/src/provable/contracts/treasury-pause-controller/treasury-pause-controller.ts#LUNKNOWN", "packages/sdk/src/provable/contracts/treasury-pause-controller/multisig-signatures.ts#LUNKNOWN"], reasoning: "Current signed message constructors do not include controller or network identity.", prerequisite_correction: "Same signer set and nonce exist on another controller or network; attacker is a signer who sees peer signatures.", impact_correction: "A signer may replay a threshold authorization across controller domains.", limitation_correction: "Exploitability depends on deployment reuse and signature visibility assumptions.", dissent: null }
+    - { id: FND-D889112D27, disposition: ACTIVE_PRIOR_AUDIT_DRIFT, severity: INFORMATIONAL, confidence: MEDIUM, security_relevance: ASSURANCE_OR_DRIFT, record_ids: ["FND-D889112D27"], evidence_refs: ["EVD-FB46967B48", "EVD-B964F79D31"], anchor_refs: ["packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts#LUNKNOWN", "packages/sdk/src/provable/contracts/treasury-owner.ts#LUNKNOWN"], reasoning: "Current proposal methods remain proof methods.", prerequisite_correction: "Token-owner approveBase fully prevents unapproved child updates.", impact_correction: "Additional proof generation, circuit surface, and account-update cost.", limitation_correction: "No proof cost or account-update budget was measured.", dissent: null }
+    - { id: FND-077D28F305, disposition: ACTIVE_PRIOR_AUDIT_DRIFT, severity: INFORMATIONAL, confidence: MEDIUM, security_relevance: ASSURANCE_OR_DRIFT, record_ids: ["FND-077D28F305"], evidence_refs: ["EVD-FB46967B48", "EVD-D181A65EBF"], anchor_refs: ["packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts#LUNKNOWN"], reasoning: "Current source retains the full-ledger deep-witness architecture.", prerequisite_correction: "A complete ledger must be transformed within lifecycle time.", impact_correction: "High proving cost and latency may threaten tally liveness.", limitation_correction: "The report's estimated factors are historical; no current benchmark or proof execution is permitted.", dissent: null }
+    - { id: FND-4234CF9EC6, disposition: ACTIVE_PRIOR_AUDIT_DRIFT, severity: INFORMATIONAL, confidence: MEDIUM, security_relevance: ASSURANCE_OR_DRIFT, record_ids: ["FND-4234CF9EC6"], evidence_refs: ["EVD-FB46967B48", "EVD-8D49AA6E0F"], anchor_refs: ["packages/sdk/src/provable/contracts/treasury-owner.ts#LUNKNOWN"], reasoning: "Current source still selects stakingEpochData.", prerequisite_correction: "More recent finalized nextEpochData is available and suitable for governance.", impact_correction: "Delegation and balance changes take an extra epoch to affect voting power.", limitation_correction: "The RFC does not choose stakingEpochData versus nextEpochData.", dissent: null }
+    - { id: FND-88B3C09521, disposition: ACTIVE_PRIOR_AUDIT_DRIFT, severity: INFORMATIONAL, confidence: HIGH, security_relevance: ASSURANCE_OR_DRIFT, record_ids: ["FND-88B3C09521"], evidence_refs: ["EVD-FB46967B48", "EVD-D181A65EBF"], anchor_refs: ["packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts#LUNKNOWN", "packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts#LUNKNOWN"], reasoning: "Current source still compares program inputs through Poseidon hashes.", prerequisite_correction: "No additional prerequisite beyond the source-visible condition; occurrence remains unproved.", impact_correction: "Unnecessary constraints increase proving cost and complexity.", limitation_correction: "No constraint count or proof timing was measured.", dissent: null }
+    - { id: FND-8B2DE6F23F, disposition: ACTIVE_PRIOR_AUDIT_DRIFT, severity: INFORMATIONAL, confidence: HIGH, security_relevance: ASSURANCE_OR_DRIFT, record_ids: ["FND-8B2DE6F23F"], evidence_refs: ["EVD-FB46967B48", "EVD-8D49AA6E0F", "EVD-77D32C74CA"], anchor_refs: ["packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts#LUNKNOWN", "packages/sdk/src/provable/contracts/treasury-owner.ts#LUNKNOWN", "packages/sdk/src/provable/contracts/treasury-pause-controller/multisig-signatures.ts#LUNKNOWN"], reasoning: "Current signatures and proposal transition still omit desired pause state.", prerequisite_correction: "State changes between transaction construction and inclusion, or caller/event supplies wrong paused flag.", impact_correction: "Concurrent submissions can produce the opposite state from signer intent and the event can misstate resulting state.", limitation_correction: "Concurrent transaction behavior is not executed.", dissent: null }
+    - { id: FND-E393B29703, disposition: REMEDIATED_HISTORICAL_NOT_CURRENT_ISSUE, severity: HIGH, confidence: HIGH, security_relevance: DIRECT_OR_COMPOSED, record_ids: ["FND-E393B29703"], evidence_refs: ["EVD-FB46967B48", "EVD-BD35AE3098"], anchor_refs: ["packages/sdk/src/provable/merkle-tree/prefixed-merkle-tree.ts#LUNKNOWN"], reasoning: "The current witness height is 255 rather than the vulnerable 256.", prerequisite_correction: "Attacker supplies the alternate Merkle path index congruent modulo the field order.", impact_correction: "The same identity could reach two nullifier leaves or be assigned zero voting weight via an alias.", limitation_correction: "Cryptographic and compiler correctness remain unverified.", dissent: null }
+    - { id: FND-B5948FE3CF, disposition: ACTIVE_SOURCE_VISIBLE, severity: MEDIUM, confidence: HIGH, security_relevance: DIRECT_OR_COMPOSED, record_ids: ["FND-B5948FE3CF"], evidence_refs: ["EVD-CFF488F119", "EVD-5AED8D6498", "EVD-A375409A04", "EVD-79754810F6"], anchor_refs: ["packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts#L331-350", "packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts#L331-350"], reasoning: "The status write is unreachable for these two REJECTED cases.", prerequisite_correction: "proof package is otherwise valid participation below threshold or yay+nay equals zero", impact_correction: "Proposal remains UNKNOWN rather than reaching an auditable terminal rejection; repeated submissions fail and status does not distinguish untallied from failed quorum.", limitation_correction: "The final business policy for quorum failure requires author confirmation.", dissent: null }
+    - { id: FND-4B4F5D76C9, disposition: ACTIVE_SOURCE_VISIBLE, severity: LOW, confidence: HIGH, security_relevance: DIRECT_OR_COMPOSED, record_ids: ["FND-4B4F5D76C9"], evidence_refs: ["EVD-278D27A176", "EVD-05AEF87762"], anchor_refs: ["packages/sdk/src/provable/contracts/treasury-pause-controller/multisig-signatures.ts#L22-91", "packages/sdk/src/provable/contracts/treasury-pause-controller/multisig-signatures.ts#L22-91"], reasoning: "Operation prefix, operation parameters, and nonce are the complete signed source-visible domain.", prerequisite_correction: "another deployment/network uses the same participant keys and nonce; operation parameters also align", impact_correction: "A command signature set may be replayable across aligned domains.", limitation_correction: "Cross-network signature and transaction behavior is external to the static scope.", dissent: null }
+    - { id: FND-BBC3A2316C, disposition: ACTIVE_SOURCE_VISIBLE, severity: MEDIUM, confidence: MEDIUM, security_relevance: DIRECT_OR_COMPOSED, record_ids: ["FND-BBC3A2316C"], evidence_refs: ["EVD-E1F14754F0", "EVD-97F3268F92"], anchor_refs: ["packages/sdk/src/provable/contracts/treasury-pause-controller/multisig-signatures.ts#L105-145", "packages/sdk/src/provable/contracts/treasury-pause-controller/multisig-signatures.ts#L105-145"], reasoning: "No pairwise-distinct or non-empty participant check is present.", prerequisite_correction: "initial or rotated commitment corresponds to repeated keys same signature can occupy repeated matching slots", impact_correction: "The nominal three-of-five authority can represent fewer than three independent signers.", limitation_correction: "Practical repeated-signature behavior was not executed; current tests use distinct participants.", dissent: null }
+    - { id: FND-E683792BE2, disposition: ACTIVE_SOURCE_VISIBLE, severity: MEDIUM, confidence: HIGH, security_relevance: DIRECT_OR_COMPOSED, record_ids: ["FND-E683792BE2"], evidence_refs: ["EVD-A754CEC381", "EVD-8F785412DE", "EVD-C9D82E05E4", "EVD-98C59C67BD"], anchor_refs: ["packages/sdk/src/provable/contracts/treasury-pause-controller/treasury-pause-controller.ts#L64-118", "packages/sdk/src/provable/contracts/treasury-pause-controller/treasury-pause-controller.ts#L64-84", "packages/sdk/src/provable/contracts/treasury-pause-controller/treasury-pause-controller.ts#L103-118"], reasoning: "The initialization and verification length predicates conflict.", prerequisite_correction: "deployment configures more than five participants", impact_correction: "A successfully initialized controller cannot authorize pause, unpause, toggle, or rotation.", limitation_correction: "Static source/audit evidence only; deployment and runtime behavior remain UNKNOWN.", dissent: null }
+    - { id: FND-BFFEA51091, disposition: ACTIVE_SOURCE_VISIBLE, severity: MEDIUM, confidence: HIGH, security_relevance: DIRECT_OR_COMPOSED, record_ids: ["FND-BFFEA51091"], evidence_refs: ["EVD-6665BB19D1", "EVD-B42086D92E"], anchor_refs: ["packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts#L386-397", "packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts#L386-397"], reasoning: "APPROVED/REJECTED -> PAUSED -> UNKNOWN is source-visible.", prerequisite_correction: "proposal is APPROVED or REJECTED authorized multisig toggles pause and later toggles again", impact_correction: "Finalized outcome is lost, retally becomes possible, and approved execution can be interrupted or reset.", limitation_correction: "Authoritative intent could permit emergency reset, but no supplied decision states that policy.", dissent: null }
+    - { id: FND-1D115F22E4, disposition: ACTIVE_SOURCE_VISIBLE, severity: LOW, confidence: HIGH, security_relevance: DIRECT_OR_COMPOSED, record_ids: ["FND-1D115F22E4"], evidence_refs: ["EVD-4908C76CF8", "EVD-0E83AEA025"], anchor_refs: ["packages/sdk/src/provable/contracts/treasury-owner.ts#L464-496", "packages/sdk/src/provable/contracts/treasury-owner.ts#L464-496"], reasoning: "Caller-controlled paused reaches only ProposalPauseToggledEvent.", prerequisite_correction: "caller supplies paused different from actual toggle result", impact_correction: "Indexers/operators can record a false proposal pause state.", limitation_correction: "Static source/audit evidence only; deployment and runtime behavior remain UNKNOWN.", dissent: null }
+    - { id: FND-D0C94E0DC6, disposition: ACTIVE_UNRESOLVED, severity: INFORMATIONAL, confidence: MEDIUM, security_relevance: ASSURANCE_OR_DRIFT, record_ids: ["FND-D0C94E0DC6"], evidence_refs: ["EVD-E95EC38949"], anchor_refs: ["packages/sdk/src/provable/contracts/treasury-owner.ts#L210-255"], reasoning: "The missing local binding is source-visible, but current practical feasibility depends on external permission semantics or deployed state. The finding remains visible as UNRESOLVED rather than being promoted to a current exploit claim.", prerequisite_correction: "an existing proposal token account can satisfy the signed update and installed permissions permit the app-state/key writes", impact_correction: "If external permission assumptions change or are misconfigured, proposal state could be reset or replaced.", limitation_correction: "Current o1js default permission and deployed account behavior are outside this bounded static evidence.", dissent: null }
+    - { id: FND-10A2C953A0, disposition: ACTIVE_SOURCE_VISIBLE, severity: MEDIUM, confidence: HIGH, security_relevance: DIRECT_OR_COMPOSED, record_ids: ["FND-10A2C953A0"], evidence_refs: ["EVD-CF08ADCD5E"], anchor_refs: ["packages/sdk/src/provable/contracts/treasury-pause-controller/treasury-pause-controller.ts#L121-145"], reasoning: "The new commitment is stored exactly as submitted.", prerequisite_correction: "authorized signers submit a mistyped, unavailable, duplicate-key, or otherwise invalid commitment", impact_correction: "Emergency authority can become irrecoverable after an accepted rotation.", limitation_correction: "An operational ceremony outside scope may reduce accidental risk but cannot be inferred.", dissent: null }
+    - { id: FND-996A8C6D4E, disposition: ACTIVE_SOURCE_VISIBLE, severity: LOW, confidence: HIGH, security_relevance: DIRECT_OR_COMPOSED, record_ids: ["FND-996A8C6D4E"], evidence_refs: ["EVD-1DC49074D7", "EVD-A375409A04"], anchor_refs: ["packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts#L102-126", "packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts#L102-126"], reasoning: "No nonzero assertion precedes treasuryBalance division.", prerequisite_correction: "snapshotted Treasury Owner balance is zero", impact_correction: "Tally cannot complete for a proposal created against a zero treasury balance.", limitation_correction: "Exact UInt128 division behavior is dependency-defined.", dissent: null }
+    - { id: FND-EE80C71EE3, disposition: ACTIVE_SOURCE_VISIBLE, severity: LOW, confidence: HIGH, security_relevance: DIRECT_OR_COMPOSED, record_ids: ["FND-EE80C71EE3"], evidence_refs: ["EVD-DD1C7DA36F", "EVD-F2FC321D60"], anchor_refs: ["packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts#L353-384", "packages/sdk/src/provable/contracts/treasury-owner.ts#L421-462", "packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts#L353-384"], reasoning: "UInt64 zero passes the remaining cap and adds zero to paidOutAmount.", prerequisite_correction: "proposal APPROVED amountToPayOut is zero", impact_correction: "Any sender can emit repeated execution events and account updates without changing cumulative payout.", limitation_correction: "Fees may deter spam but do not restore state/event semantics.", dissent: null }
+    - { id: FND-23916993D0, disposition: ACTIVE_SOURCE_VISIBLE, severity: MEDIUM, confidence: HIGH, security_relevance: DIRECT_OR_COMPOSED, record_ids: ["FND-23916993D0", "ASM-B2699C5369", "ASM-79662ECECE"], evidence_refs: ["EVD-C7D1DB2A7C", "EVD-F7DE049BDC", "EVD-C15386FB6E", "EVD-B30136F272", "EVD-810D58B5D2", "EVD-1D24E67049"], anchor_refs: ["packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts#L556-574", "packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts#L304-320", "packages/sdk/src/utils/context-provider.ts#L1-14", "packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts#L304-320", "packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts#L556-574", "packages/sdk/src/storage/merkle-tree-storage.ts#L1-9"], reasoning: "Source-visible writes are multiple, async, global-context-backed, and not proved effects.", prerequisite_correction: "A host write succeeds before another write, later loop iteration, constraint, proof operation, or trace persistence fails. A job retries or concurrent work reuses the same mutable context/state.", impact_correction: "Host roots/records can advance beyond the durable trace or diverge from each other, making later witness generation reject, produce different traces, or require trusted manual recovery.", limitation_correction: "Higher-level prover orchestration and concrete backends are outside the pinned closure and may provide safeguards. Proof verification itself does not require or repair host state.", dissent: null }
+    - { id: FND-4C6DF9502F, disposition: ACTIVE_WITH_SEVERITY_DISSENT, severity: LOW, confidence: HIGH, security_relevance: DIRECT_OR_COMPOSED, record_ids: ["FND-4C6DF9502F", "ASM-3B12C3E849"], evidence_refs: ["EVD-177476A23F", "EVD-FB46967B48", "EVD-B30136F272"], anchor_refs: ["packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts#L239-299", "packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts#L239-299"], reasoning: "No active tokenId or eligibility assertion precedes balance accumulation.", prerequisite_correction: "Snapshot contains a custom-token or otherwise ineligible account whose delegate/balance representation reaches the relation. That selected delegate can affect a counted voting leaf or aggregate range.", impact_correction: "Voting weights may include balances outside the intended eligible MINA staking supply or aggregate them under an unintended delegate, depending on Mina ledger representation.", limitation_correction: "Actual Mina staking-ledger inclusion and token-account delegate conventions are external. Severity is static prioritization and does not establish an exploitable deployed state.", dissent: "Recorded LOW/HIGH is provisional; use MEDIUM/MEDIUM or explicitly condition LOW on authoritative eligibility facts." }
+    - { id: FND-2237382FBA, disposition: ACTIVE_SOURCE_VISIBLE, severity: LOW, confidence: HIGH, security_relevance: DIRECT_OR_COMPOSED, record_ids: ["FND-2237382FBA"], evidence_refs: ["EVD-0CA3D36B38"], anchor_refs: ["packages/sdk/test/provable/staking-ledger-to-voting-ledger.test.ts#L11-134"], reasoning: "All active method cases assert successful outputs only.", prerequisite_correction: "A regression removes or miswires root/index/adjacency/exhaustion/eligibility checks while happy-path fixtures remain valid.", impact_correction: "Independent constraints and failure policies can regress without a targeted static test oracle, especially at the consumer genesis and host-recovery boundaries.", limitation_correction: "Tests were analyzed but not run; other out-of-scope test suites may cover some partitions.", dissent: null }
+    - { id: FND-2184025222, disposition: ACTIVE_SOURCE_VISIBLE, severity: INFORMATIONAL, confidence: HIGH, security_relevance: ASSURANCE_OR_DRIFT, record_ids: ["FND-2184025222"], evidence_refs: ["EVD-D43C7ED7D0", "EVD-D70E747767", "EVD-B3600D67DE", "EVD-C70801D35C"], anchor_refs: ["packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts#L45-87", "packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts#L544-609"], reasoning: "DUMMY/non-empty key follows the non-dummy transition but matches none of three tally selectors.", prerequisite_correction: "Public vote entry accepts DUMMY for a real voter, as current owner validation does.", impact_correction: "A voter can consume its proposal nullifier and create an action without selecting yay/nay/abstain or adding to participation.", limitation_correction: "A voter signs its own dispatch, so accidental/UX and intent divergence may dominate adversarial impact.", dissent: null }
+
+  zkp_matrix:
+    - id: ZKP-EFB3E28391
+      disposition: STATIC_BINDINGS_CONFIRMED_RUNTIME_UNKNOWN
+      record_ids: ["ZKP-EFB3E28391", "REL-00AEF1536B", "IO-1F97CF4E82"]
+      evidence_refs: ["EVD-3CEBE6B022"]
+      anchor_refs: ["packages/sdk/src/provable/contracts/treasury-pause-controller/treasury-pause-controller.ts#L105-108"]
+      value_count: 1
+      value_bindings: [{ io_id: IO-1F97CF4E82, relation_id: REL-00AEF1536B, disposition: STATIC_BOUND }]
+      reasoning: "The private participant array is bound to the stored participant commitment before signature-threshold evaluation."
+      prerequisite_correction: "Binding conclusion presumes the pinned source is compiled and keyed as intended; this was not executed."
+      impact_correction: "The listed values are source-visible constraint-bound, while proof soundness and host effects remain outside the conclusion."
+      limitation_correction: "Compiler/backend, cryptography, recursion, proof generation/verification, deployed keys, and runtime behavior remain UNKNOWN."
+      dissent: null
+    - id: ZKP-5DF7D24003
+      disposition: STATIC_BINDINGS_CONFIRMED_RUNTIME_UNKNOWN
+      record_ids: ["ZKP-5DF7D24003", "REL-EA36BC48D2", "REL-86B5C33BDA", "REL-8F24F6DAF1", "REL-1089110191", "REL-A5F59855A3", "REL-4F545BA3FC", "REL-E47D90B32A", "REL-75A476CA07", "REL-CE969D1CD9", "REL-E202BF783A", "IO-4708EC66CE", "IO-668F610724", "IO-7E445A843C", "IO-C71845C9DB", "IO-BD428B4BFE", "IO-9D3B7CAE85", "IO-3236C0037A", "IO-5CBBA7540B", "IO-FE03A006D4", "IO-F795103B44", "CL-43DA8C0600", "CL-9016ED73D7", "CL-E1DF82E30D", "CL-B5C01C5182", "CL-3D67D2EC7C"]
+      evidence_refs: ["EVD-3CEBE6B022"]
+      anchor_refs: ["packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts#L195-337"]
+      value_count: 10
+      value_bindings: [{ io_id: IO-4708EC66CE, relation_id: REL-EA36BC48D2, disposition: STATIC_BOUND }, { io_id: IO-668F610724, relation_id: REL-86B5C33BDA, disposition: STATIC_BOUND }, { io_id: IO-7E445A843C, relation_id: REL-8F24F6DAF1, disposition: STATIC_BOUND }, { io_id: IO-C71845C9DB, relation_id: REL-1089110191, disposition: STATIC_BOUND }, { io_id: IO-BD428B4BFE, relation_id: REL-A5F59855A3, disposition: STATIC_BOUND }, { io_id: IO-9D3B7CAE85, relation_id: REL-4F545BA3FC, disposition: STATIC_BOUND }, { io_id: IO-3236C0037A, relation_id: REL-E47D90B32A, disposition: STATIC_BOUND }, { io_id: IO-5CBBA7540B, relation_id: REL-75A476CA07, disposition: STATIC_BOUND }, { io_id: IO-FE03A006D4, relation_id: REL-CE969D1CD9, disposition: STATIC_BOUND }, { io_id: IO-F795103B44, relation_id: REL-E202BF783A, disposition: STATIC_BOUND }]
+      reasoning: "The field participates in the listed source-visible constraint clauses; this relation does not establish circuit soundness."
+      prerequisite_correction: "Binding conclusion presumes the pinned source is compiled and keyed as intended; this was not executed."
+      impact_correction: "The listed values are source-visible constraint-bound, while proof soundness and host effects remain outside the conclusion."
+      limitation_correction: "Compiler/backend, cryptography, recursion, proof generation/verification, deployed keys, and runtime behavior remain UNKNOWN."
+      dissent: null
+    - id: ZKP-DF018A9714
+      disposition: STATIC_BINDINGS_CONFIRMED_RUNTIME_UNKNOWN
+      record_ids: ["ZKP-DF018A9714", "REL-4E2DBDEEAD", "REL-83D83BBB4E", "REL-44D59128AF", "REL-5D9A09A125", "IO-F2FDEDAAD4", "IO-0E47C270AF", "IO-DFBE3E4B97", "IO-6FC5F32B87", "CL-26D2B7BB15", "CL-DA12027943"]
+      evidence_refs: ["EVD-3CEBE6B022"]
+      anchor_refs: ["packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts#L83-143"]
+      value_count: 4
+      value_bindings: [{ io_id: IO-F2FDEDAAD4, relation_id: REL-4E2DBDEEAD, disposition: STATIC_BOUND }, { io_id: IO-0E47C270AF, relation_id: REL-83D83BBB4E, disposition: STATIC_BOUND }, { io_id: IO-DFBE3E4B97, relation_id: REL-44D59128AF, disposition: STATIC_BOUND }, { io_id: IO-6FC5F32B87, relation_id: REL-5D9A09A125, disposition: STATIC_BOUND }]
+      reasoning: "The field participates in the listed source-visible constraint clauses; this relation does not establish circuit soundness."
+      prerequisite_correction: "Binding conclusion presumes the pinned source is compiled and keyed as intended; this was not executed."
+      impact_correction: "The listed values are source-visible constraint-bound, while proof soundness and host effects remain outside the conclusion."
+      limitation_correction: "Compiler/backend, cryptography, recursion, proof generation/verification, deployed keys, and runtime behavior remain UNKNOWN."
+      dissent: null
+    - id: ZKP-66153C8CB1
+      disposition: STATIC_BINDINGS_CONFIRMED_RUNTIME_UNKNOWN
+      record_ids: ["ZKP-66153C8CB1", "REL-41284327B7", "REL-3664E9D6F9", "REL-6B57F8E5A0", "REL-31E87AE8C0", "IO-69C74E38D3", "IO-088DC1C843", "IO-E30D4BDAFB", "IO-20DE355EF7", "CL-5C42FDBA1B", "CL-820ACD71D0", "CL-E51C01E8DF"]
+      evidence_refs: ["EVD-3CEBE6B022"]
+      anchor_refs: ["packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts#L148-190"]
+      value_count: 4
+      value_bindings: [{ io_id: IO-69C74E38D3, relation_id: REL-41284327B7, disposition: STATIC_BOUND }, { io_id: IO-088DC1C843, relation_id: REL-3664E9D6F9, disposition: STATIC_BOUND }, { io_id: IO-E30D4BDAFB, relation_id: REL-6B57F8E5A0, disposition: STATIC_BOUND }, { io_id: IO-20DE355EF7, relation_id: REL-31E87AE8C0, disposition: STATIC_BOUND }]
+      reasoning: "The field participates in the listed source-visible constraint clauses; this relation does not establish circuit soundness."
+      prerequisite_correction: "Binding conclusion presumes the pinned source is compiled and keyed as intended; this was not executed."
+      impact_correction: "The listed values are source-visible constraint-bound, while proof soundness and host effects remain outside the conclusion."
+      limitation_correction: "Compiler/backend, cryptography, recursion, proof generation/verification, deployed keys, and runtime behavior remain UNKNOWN."
+      dissent: null
+    - id: ZKP-547C93E79B
+      disposition: STATIC_BINDINGS_CONFIRMED_RUNTIME_UNKNOWN
+      record_ids: ["ZKP-547C93E79B", "REL-CE966AA43A", "REL-7C3831D8EC", "REL-DA430F1EDD", "REL-C5386D41BC", "IO-9C80690415", "IO-4B9BD5AA91", "IO-67C38AAD67", "IO-5B7DDF71A2", "CL-14F284A0F4", "CL-9DDDB05A64", "CL-96F95D8CE6", "CL-CE68CFDE0A"]
+      evidence_refs: ["EVD-3CEBE6B022"]
+      anchor_refs: ["packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts#L333-417"]
+      value_count: 4
+      value_bindings: [{ io_id: IO-9C80690415, relation_id: REL-CE966AA43A, disposition: STATIC_BOUND }, { io_id: IO-4B9BD5AA91, relation_id: REL-7C3831D8EC, disposition: STATIC_BOUND }, { io_id: IO-67C38AAD67, relation_id: REL-DA430F1EDD, disposition: STATIC_BOUND }, { io_id: IO-5B7DDF71A2, relation_id: REL-C5386D41BC, disposition: STATIC_BOUND }]
+      reasoning: "The field participates in the listed source-visible constraint clauses; this relation does not establish circuit soundness."
+      prerequisite_correction: "Binding conclusion presumes the pinned source is compiled and keyed as intended; this was not executed."
+      impact_correction: "The listed values are source-visible constraint-bound, while proof soundness and host effects remain outside the conclusion."
+      limitation_correction: "Compiler/backend, cryptography, recursion, proof generation/verification, deployed keys, and runtime behavior remain UNKNOWN."
+      dissent: null
+    - id: ZKP-BA11C90A9F
+      disposition: STATIC_BINDINGS_CONFIRMED_RUNTIME_UNKNOWN
+      record_ids: ["ZKP-BA11C90A9F", "REL-96992E7E50", "REL-D6AFDBBC16", "REL-1884583AD7", "REL-4D9D9DF877", "REL-03AA6118C2", "REL-E3A8EF7E65", "REL-5DA946B3A1", "REL-296CAFE207", "REL-5EDF6F2962", "REL-ADD56A64B3", "REL-67A94DDB19", "REL-70D1CDE363", "REL-FA211B3844", "REL-C73428091B", "REL-022A0995FF", "REL-9F87928AEA", "REL-5BAB584F4B", "REL-3CDDF609DA", "REL-6AE927936D", "REL-E1F0545D1D", "REL-7C92E212B4", "IO-626345DDF5", "IO-B0282188FD", "IO-0467289092", "IO-E9661CD282", "IO-3F0DC7DE94", "IO-13802BA54F", "IO-EC980A7F95", "IO-65764C55DD", "IO-DEB6DB3865", "IO-623DE360CA", "IO-C22A925F5B", "IO-E34414723E", "IO-A27752072E", "IO-9C3461F78B", "IO-0E41C22124", "IO-B36955C5A4", "IO-0AE4C61332", "IO-87B5865B4B", "IO-8095F5006E", "IO-5C4505832E", "IO-FEAE73D285", "CL-2311B61899", "CL-2F056FA9A9", "CL-9C7B0C38F5", "CL-61EF5A92CB", "CL-631833DB43", "CL-034C97475E", "CL-5D1DBDDB89", "CL-0966A605CA"]
+      evidence_refs: ["EVD-3CEBE6B022"]
+      anchor_refs: ["packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts#L426-639"]
+      value_count: 21
+      value_bindings: [{ io_id: IO-626345DDF5, relation_id: REL-96992E7E50, disposition: STATIC_BOUND }, { io_id: IO-B0282188FD, relation_id: REL-D6AFDBBC16, disposition: STATIC_BOUND }, { io_id: IO-0467289092, relation_id: REL-1884583AD7, disposition: STATIC_BOUND }, { io_id: IO-E9661CD282, relation_id: REL-4D9D9DF877, disposition: STATIC_BOUND }, { io_id: IO-3F0DC7DE94, relation_id: REL-03AA6118C2, disposition: STATIC_BOUND }, { io_id: IO-13802BA54F, relation_id: REL-E3A8EF7E65, disposition: STATIC_BOUND }, { io_id: IO-EC980A7F95, relation_id: REL-5DA946B3A1, disposition: STATIC_BOUND }, { io_id: IO-65764C55DD, relation_id: REL-296CAFE207, disposition: STATIC_BOUND }, { io_id: IO-DEB6DB3865, relation_id: REL-5EDF6F2962, disposition: STATIC_BOUND }, { io_id: IO-623DE360CA, relation_id: REL-ADD56A64B3, disposition: STATIC_BOUND }, { io_id: IO-C22A925F5B, relation_id: REL-67A94DDB19, disposition: STATIC_BOUND }, { io_id: IO-E34414723E, relation_id: REL-70D1CDE363, disposition: STATIC_BOUND }, { io_id: IO-A27752072E, relation_id: REL-FA211B3844, disposition: STATIC_BOUND }, { io_id: IO-9C3461F78B, relation_id: REL-C73428091B, disposition: STATIC_BOUND }, { io_id: IO-0E41C22124, relation_id: REL-022A0995FF, disposition: STATIC_BOUND }, { io_id: IO-B36955C5A4, relation_id: REL-9F87928AEA, disposition: STATIC_BOUND }, { io_id: IO-0AE4C61332, relation_id: REL-5BAB584F4B, disposition: STATIC_BOUND }, { io_id: IO-87B5865B4B, relation_id: REL-3CDDF609DA, disposition: STATIC_BOUND }, { io_id: IO-8095F5006E, relation_id: REL-6AE927936D, disposition: STATIC_BOUND }, { io_id: IO-5C4505832E, relation_id: REL-E1F0545D1D, disposition: STATIC_BOUND }, { io_id: IO-FEAE73D285, relation_id: REL-7C92E212B4, disposition: STATIC_BOUND }]
+      reasoning: "The field participates in the listed source-visible constraint clauses; this relation does not establish circuit soundness."
+      prerequisite_correction: "Binding conclusion presumes the pinned source is compiled and keyed as intended; this was not executed."
+      impact_correction: "The listed values are source-visible constraint-bound, while proof soundness and host effects remain outside the conclusion."
+      limitation_correction: "Compiler/backend, cryptography, recursion, proof generation/verification, deployed keys, and runtime behavior remain UNKNOWN."
+      dissent: null
+
+  witness_site_matrix:
+    - { site: staking.exhaust.next_account, disposition: CONSTRAINT_BOUND_READ, record_ids: [ZKP-DF018A9714, REL-0908B0F4AD, CL-DA12027943], evidence_refs: [EVD-2720E90D33], anchor_refs: [packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts#L111-118], reasoning: "Returned account is checked against the staking witness/root and empty predicate.", limitation_correction: "Only the immediate next leaf is constrained; dense/global completeness remains ASM-35D9BB50D0." }
+    - { site: staking.digest.input_account, disposition: CONSTRAINT_BOUND_READ, record_ids: [ZKP-5DF7D24003, REL-04F149788B, CL-43DA8C0600], evidence_refs: [EVD-177476A23F], anchor_refs: [packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts#L208-214], reasoning: "Witness-returned account is consumed by the hash/root relation.", limitation_correction: "Membership does not prove token/account-class eligibility." }
+    - { site: staking.digest.current_voting_account, disposition: CONSTRAINT_BOUND_READ, record_ids: [ZKP-5DF7D24003, REL-DD21A8E7A9, CL-E1DF82E30D, CL-B5C01C5182], evidence_refs: [EVD-177476A23F, EVD-B30136F272], anchor_refs: [packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts#L246-257], reasoning: "Returned voting account and witness recompute the prior voting root.", limitation_correction: "Host storage authenticity and concurrency remain external." }
+    - { site: staking.digest.voting_witness, disposition: CONSTRAINT_BOUND_READ, record_ids: [ZKP-5DF7D24003, REL-02B5E35EEA, CL-E1DF82E30D, CL-B5C01C5182], evidence_refs: [EVD-177476A23F, EVD-B30136F272], anchor_refs: [packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts#L262-270], reasoning: "Witness path is used in prior/new root computation.", limitation_correction: "Constraint binding does not prove persistence of the new root." }
+    - { site: staking.digest.host_persistence, disposition: HOST_EFFECT_NOT_PROVEN, record_ids: [REL-A9809109C5, FND-23916993D0, ASM-B2699C5369], evidence_refs: [EVD-B30136F272, EVD-C7D1DB2A7C], anchor_refs: [packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts#L310-318], reasoning: "One witness callback calls setVotingAccount and setLeaf; those mutations are not proof outputs.", limitation_correction: "Atomicity, durability, rollback, and retry behavior remain UNKNOWN." }
+    - { site: vote.reduceBatch.action_witness, disposition: CONSTRAINT_BOUND_READ, record_ids: [ZKP-BA11C90A9F, REL-549A32EEBD, CL-2F056FA9A9], evidence_refs: [EVD-D70E747767], anchor_refs: [packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts#L460-468], reasoning: "Returned action is hashed into the constrained action-state path.", limitation_correction: "Protocol action-history availability and canonical encoding remain external." }
+    - { site: vote.reduceBatch.action_state, disposition: CONSTRAINT_BOUND_READ, record_ids: [ZKP-BA11C90A9F, REL-F82E54D4F3, CL-2F056FA9A9], evidence_refs: [EVD-D70E747767], anchor_refs: [packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts#L471-481], reasoning: "Returned state participates in constrained five-state history matching.", limitation_correction: "Off-chain availability and chain finality remain UNKNOWN." }
+    - { site: vote.reduceBatch.nullifier_witness, disposition: CONSTRAINT_BOUND_READ, record_ids: [ZKP-BA11C90A9F, REL-5F2D985D2E, CL-9C7B0C38F5], evidence_refs: [EVD-D70E747767], anchor_refs: [packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts#L508-514], reasoning: "Witness path proves prior nullifier root and derives its update.", limitation_correction: "Host commit of the updated leaf is separate and unproved." }
+    - { site: vote.reduceBatch.voting_account_witness, disposition: CONSTRAINT_BOUND_READ, record_ids: [ZKP-BA11C90A9F, REL-37CDC651DC, CL-9C7B0C38F5], evidence_refs: [EVD-D70E747767], anchor_refs: [packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts#L516-524], reasoning: "Returned voting data is membership-checked against the voting root.", limitation_correction: "Snapshot provenance, eligibility, and storage availability remain external." }
+    - { site: vote.reduceBatch.nullifier_persistence, disposition: HOST_EFFECT_NOT_PROVEN, record_ids: [REL-EC2F02C65F, FND-23916993D0, ASM-73AF207816], evidence_refs: [EVD-C7D1DB2A7C, EVD-F7DE049BDC], anchor_refs: [packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts#L557-561], reasoning: "setNullifier mutates host state during proof construction.", limitation_correction: "No visible transaction, idempotence, or rollback boundary." }
+    - { site: vote.reduceBatch.tally_leaf_persistence, disposition: HOST_EFFECT_NOT_PROVEN, record_ids: [REL-EC2F02C65F, FND-23916993D0, ASM-73AF207816], evidence_refs: [EVD-C7D1DB2A7C, EVD-F7DE049BDC], anchor_refs: [packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts#L567-574], reasoning: "setLeaf is a second host mutation not represented by proof validity.", limitation_correction: "Partial failure can diverge nullifier/tally host state unless external orchestration is transactional." }
+    - { site: pause.verifySignatures.participants, disposition: CONSTRAINT_BOUND_READ, record_ids: [ZKP-EFB3E28391, REL-00AEF1536B, IO-1F97CF4E82], evidence_refs: [EVD-3CEBE6B022, EVD-8F785412DE], anchor_refs: [packages/sdk/src/provable/contracts/treasury-pause-controller/treasury-pause-controller.ts#L105-108], reasoning: "Witnessed five-position participant array is hash-bound to stored commitment before signature checks.", limitation_correction: "Distinct identities, signer availability, replay domain, and cryptographic soundness remain unproved." }
+
+  contract_boundary_matrix:
+    - boundary: treasury_owner_permissions_and_configuration
+      disposition: SOURCE_VISIBLE_DEPLOYMENT_UNKNOWN
+      record_ids: [SEC-EE4E9A7ADB, ASM-C093AE5452, ASM-D691B96D3B, ASM-FF091135AE, FND-3471621CD6, FND-9AA5203528]
+      evidence_refs: [EVD-8928C709CD, EVD-995A61228D, EVD-2E424CAB76]
+      anchor_refs: [packages/sdk/src/provable/contracts/treasury-owner.ts#L64-119]
+      reasoning: "Deploy writes slot/controller/key state and source-visible permissions, including an unresolved TODO; effective deployed account permissions and values are absent."
+      prerequisite_correction: "Any safety claim requires a revision-bound deployment manifest plus account-state dump."
+      impact_correction: "Misconfiguration can bypass intended authorization or make custody/governance unavailable."
+      limitation_correction: "No chain/deployment observation."
+    - boundary: proposal_state_and_permissions
+      disposition: LOCALLY_BOUND_WITH_POLICY_GAPS
+      record_ids: [SEC-9F3756E302, SEC-B560A051DA, THR-902C4A0F9F, THR-A943E3380A, FND-B5948FE3CF, FND-BFFEA51091]
+      evidence_refs: [EVD-CFF488F119, EVD-5AED8D6498, EVD-6665BB19D1]
+      anchor_refs: [packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts#L59-397]
+      reasoning: "Amount, recipient, roots, action states, tally and cumulative payout are state-bound, but quorum non-finality and pause finality policy remain source-visible gaps."
+      prerequisite_correction: "Finality and phase behavior depend on ratified policy and deployed permission/slot semantics."
+      impact_correction: "Some proposals may remain UNKNOWN or lose finalized outcome; direct payout redirection is locally constrained."
+      limitation_correction: "No runtime transitions executed."
+    - boundary: treasury_assets_and_account_updates
+      disposition: LOCALLY_CONSTRAINED_PROTOCOL_ATOMICITY_UNKNOWN
+      record_ids: [SEC-FB542C27D2, THR-92F9C4D82A, ASM-BD7E733FE5, FND-A5A4858953, FND-7BE7D38B6B, FND-EE80C71EE3]
+      evidence_refs: [EVD-F2FC321D60, EVD-DD1C7DA36F, EVD-94B958AAA8]
+      anchor_refs: [packages/sdk/src/provable/contracts/treasury-owner.ts#L191-462, packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts#L353-384]
+      reasoning: "Bond custody/refund and proposal payout compose nested account updates; recipient, APPROVED status, cap, debit and credit amount are locally matched."
+      prerequisite_correction: "Conservation relies on Mina account-update authorization, token ID, balance and failure-atomicity semantics."
+      impact_correction: "Source mitigates redirection/overpayment; zero-progress execution and recipient-directed bond policy remain."
+      limitation_correction: "Deployed balances, transaction success, rollback and fees are UNKNOWN."
+    - boundary: pause_controller_authority_and_state
+      disposition: PARTIALLY_BOUND_HIGH_TRUST_CONFIGURATION
+      record_ids: [SEC-10182FB352, THR-0DEBF32E0A, THR-77C87EDE62, ASM-A4087EF988, FND-BBC3A2316C, FND-E683792BE2, FND-10A2C953A0]
+      evidence_refs: [EVD-72A633D2CC, EVD-278D27A176, EVD-E1F14754F0, EVD-CF08ADCD5E]
+      anchor_refs: [packages/sdk/src/provable/contracts/treasury-pause-controller/multisig-signatures.ts#L17-145, packages/sdk/src/provable/contracts/treasury-pause-controller/treasury-pause-controller.ts#L55-216]
+      reasoning: "Commitment, operation prefix and nonce are locally bound, while five-position distinctness, exact init cardinality, next-commitment validity and deployment/network domain are not."
+      prerequisite_correction: "Security depends on a five-distinct-signer ceremony, published recoverable preimages, and deployment-domain policy."
+      impact_correction: "Threshold can collapse, replay domains can overlap, or rotation can make emergency authority unavailable."
+      limitation_correction: "Signature/crypto and deployed signer topology are UNKNOWN."
+    - boundary: events_and_indexers
+      disposition: SCHEMA_PRESENT_SEMANTIC_RECONCILIATION_REQUIRED
+      record_ids: [SEC-DD3B44137C, THR-F283B3AF7E, ASM-C0AB78216E, FND-1D115F22E4, FND-7264C0E61E]
+      evidence_refs: [EVD-0E83AEA025, EVD-02AE7D74CF, EVD-4908C76CF8]
+      anchor_refs: [packages/sdk/src/provable/contracts/treasury-owner.ts#L464-496, packages/sdk/test/provable/events/treasury-proposal-events.test.ts#L26-212]
+      reasoning: "Event types are schema-tested, but proposal pause event state is caller-supplied rather than read from committed post-state."
+      prerequisite_correction: "Consumers must reconcile events against canonical state and finality."
+      impact_correction: "Indexer/UI/operator views can misstate proposal pause/finality."
+      limitation_correction: "No consumer or event-stream runtime inspected."
+    - boundary: host_ledgers_and_proof_jobs
+      disposition: EXTERNAL_TRANSACTIONALITY_AND_AVAILABILITY
+      record_ids: [SEC-042FF4BC76, SEC-E0D95AF002, THR-C66F2EDB38, ASM-73AF207816, ASM-79662ECECE, FND-23916993D0]
+      evidence_refs: [EVD-C7D1DB2A7C, EVD-F7DE049BDC, EVD-C15386FB6E]
+      anchor_refs: [packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts#L304-320, packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts#L556-574, packages/sdk/src/utils/context-provider.ts#L1-14]
+      reasoning: "Proof construction reads and mutates host Merkle stores through callbacks and a process-global context."
+      prerequisite_correction: "Whole-system safety requires isolated, durable, atomic, idempotent and recoverable jobs."
+      impact_correction: "Partial write/retry/concurrency can cause divergence or governance liveness failure even with a valid circuit relation."
+      limitation_correction: "Concrete orchestration/storage backends are outside scope."
+
+  prior_audit_drift:
+    disposition: REVISION_BOUNDED_11_REMEDIATED_17_STILL_APPLICABLE
+    record_ids: [FND-67861A5343, FND-CD3FC08B49, FND-1979AEB628, FND-ECA97458D5, FND-5F15694229, FND-756A14D862, FND-E5DB7A78F8, FND-8467BE9FD1, FND-3471621CD6, FND-9AA5203528, FND-E393B29703, FND-A5A4858953, FND-7BE7D38B6B, FND-1B33097A18, FND-F3C6E62E0B, FND-BF3449506D, FND-7D495DBE3F, FND-30B94DCCE0, FND-3B35F91A1C, FND-1FBF087284, FND-C0656D649D, FND-8DB62F78C9, FND-D0ABA9650D, FND-D889112D27, FND-077D28F305, FND-4234CF9EC6, FND-88B3C09521, FND-8B2DE6F23F]
+    evidence_refs: [EVD-FB46967B48, EVD-5099700F2E, EVD-8C7F748854, EVD-995A61228D, EVD-8D49AA6E0F, EVD-77D32C74CA]
+    anchor_refs: [.codebase-analysis/provable-92d90e3803a1/context/ZKSECURITY_AUDIT_INDEX.md#L1-20]
+    remediated_historical_not_current_issue: [FND-67861A5343, FND-CD3FC08B49, FND-1979AEB628, FND-ECA97458D5, FND-5F15694229, FND-756A14D862, FND-E5DB7A78F8, FND-8467BE9FD1, FND-3471621CD6, FND-9AA5203528, FND-E393B29703]
+    still_applicable: [FND-A5A4858953, FND-7BE7D38B6B, FND-1B33097A18, FND-F3C6E62E0B, FND-BF3449506D, FND-7D495DBE3F, FND-30B94DCCE0, FND-3B35F91A1C, FND-1FBF087284, FND-C0656D649D, FND-8DB62F78C9, FND-D0ABA9650D, FND-D889112D27, FND-077D28F305, FND-4234CF9EC6, FND-88B3C09521, FND-8B2DE6F23F]
+    duplicate_current_groups:
+      - { record_ids: [FND-1B33097A18, FND-D0C94E0DC6], reason: "Explicit isNew guard lineage; preserve audit traceability, rank once." }
+      - { record_ids: [FND-BF3449506D, FND-2184025222], reason: "DUMMY vote lineage; current local record refines impact." }
+      - { record_ids: [FND-D0ABA9650D, FND-4B4F5D76C9], reason: "Emergency replay-domain lineage; rank once." }
+      - { record_ids: [FND-8B2DE6F23F, FND-BFFEA51091, FND-1D115F22E4], reason: "Pause target/finality/event composition; separate causes but one publication cluster." }
+      - { record_ids: [FND-8DB62F78C9, FND-BFFEA51091], reason: "Pause-finality lineage; rank once." }
+      - { record_ids: [FND-F3C6E62E0B, FND-4C6DF9502F], reason: "Ledger-account eligibility/classification lineage; local record expands beyond audit wording." }
+    reasoning: "Audit ancestry was compared against the pinned revision and raw extract; static remediation is not certification."
+    prerequisite_correction: "Audit dispositions apply only to the reviewed source revision, not deployment/runtime."
+    impact_correction: "Eleven fixed conditions are historical assurance records; seventeen remain current observations, several duplicated by local findings."
+    limitation_correction: "No proof execution, dependency differential, deployment, or chain-state verification."
+
+  failure_class_matrix:
+    - class: MISSING_CHECK_OR_BINDING
+      disposition: APPLICABLE_REVIEWED
+      record_ids: ["FND-7264C0E61E", "FND-ECA97458D5", "FND-8467BE9FD1", "FND-D0ABA9650D", "FND-D889112D27", "FND-10A2C953A0", "UNR-D5F28B1A0D", "THR-92F9C4D82A", "THR-01539B0FF5"]
+      evidence_refs: ["EVD-02AE7D74CF", "EVD-CF08ADCD5E", "EVD-995A61228D"]
+      anchor_refs: ["packages/sdk/src/provable/contracts/treasury-pause-controller/treasury-pause-controller.ts#L121-145", "packages/sdk/src/provable/contracts/treasury-owner.ts#L64-119"]
+      reasoning: "Pass-1 static evidence contains linked records for this applicable failure class; absence of runtime validation is not a safety claim. Local enforcement and composed-system consequences were rechecked against corrected context and raw anchors."
+      prerequisite_correction: "Only source-visible prerequisites in the linked current records are established; deployed occurrence is not inferred."
+      impact_correction: "Impact is bounded to linked record conclusions and may depend on external protocol, configuration, policy, host, or consumer conditions."
+      limitation_correction: "Static review only; runtime reachability, exploitability, proof/cryptographic soundness, and deployed behavior remain UNKNOWN."
+      dissent: null
+    - class: STATE_OR_FAILURE_POLICY
+      disposition: APPLICABLE_REVIEWED
+      record_ids: ["FND-CA0F83CE86", "FND-8C3BA008B7", "FND-19EC441E53", "FND-ECA97458D5", "FND-8DB62F78C9", "FND-D0ABA9650D", "FND-8B2DE6F23F", "FND-E683792BE2", "FND-BFFEA51091", "FND-1D115F22E4", "FND-EE80C71EE3", "FND-23916993D0", "GAP-B798CE8DB1", "GAP-EF32A38D1C", "GAP-22CD8BD355", "GAP-2124E32D06", "GAP-8826CA0D4C", "UNR-9EEFA83E06", "UNR-13C729A54A", "THR-C66F2EDB38", "THR-0EC3832BA7", "THR-A943E3380A", "THR-647A188D6B", "THR-01539B0FF5", "ASM-B549EC8751", "ASM-FF091135AE", "ASM-C0AB78216E", "ASM-BD7E733FE5"]
+      evidence_refs: ["EVD-A80CE1BF98", "EVD-6665BB19D1", "EVD-C7D1DB2A7C"]
+      anchor_refs: ["packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts#L83-190", "packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts#L331-397"]
+      reasoning: "Pass-1 static evidence contains linked records for this applicable failure class; absence of runtime validation is not a safety claim. Local enforcement and composed-system consequences were rechecked against corrected context and raw anchors."
+      prerequisite_correction: "Only source-visible prerequisites in the linked current records are established; deployed occurrence is not inferred."
+      impact_correction: "Impact is bounded to linked record conclusions and may depend on external protocol, configuration, policy, host, or consumer conditions."
+      limitation_correction: "Static review only; runtime reachability, exploitability, proof/cryptographic soundness, and deployed behavior remain UNKNOWN."
+      dissent: null
+    - class: IDENTITY_OR_PRIVILEGE
+      disposition: APPLICABLE_REVIEWED
+      record_ids: ["FND-A5A4858953", "FND-7BE7D38B6B", "FND-3471621CD6", "FND-9AA5203528", "FND-BBC3A2316C", "FND-E683792BE2", "GAP-4DE9FCF9CE", "GAP-721B65BE75", "UNR-D5F28B1A0D", "THR-56AA87E621", "THR-77C87EDE62", "ASM-E6AE27B10D", "ASM-912B3DBDF6", "ASM-FF091135AE", "ASM-D691B96D3B", "ASM-64F6936A94", "ASM-A4087EF988"]
+      evidence_refs: ["EVD-E1F14754F0", "EVD-97F3268F92", "EVD-CF08ADCD5E"]
+      anchor_refs: ["packages/sdk/src/provable/contracts/treasury-pause-controller/multisig-signatures.ts#L97-145", "packages/sdk/src/provable/contracts/treasury-owner.ts#L64-119"]
+      reasoning: "Pass-1 static evidence contains linked records for this applicable failure class; absence of runtime validation is not a safety claim. Local enforcement and composed-system consequences were rechecked against corrected context and raw anchors."
+      prerequisite_correction: "Only source-visible prerequisites in the linked current records are established; deployed occurrence is not inferred."
+      impact_correction: "Impact is bounded to linked record conclusions and may depend on external protocol, configuration, policy, host, or consumer conditions."
+      limitation_correction: "Static review only; runtime reachability, exploitability, proof/cryptographic soundness, and deployed behavior remain UNKNOWN."
+      dissent: null
+    - class: REPLAY_ORDER_OR_CONCURRENCY
+      disposition: APPLICABLE_REVIEWED
+      record_ids: ["FND-8C3BA008B7", "FND-7D495DBE3F", "FND-30B94DCCE0", "FND-E393B29703", "FND-4B4F5D76C9", "FND-2184025222", "GAP-7BAF881BED", "GAP-5EB38DFDA6", "THR-B041D07C7D", "THR-0DEBF32E0A", "THR-CD2BC0B163", "ASM-031E77BE7F", "ASM-64F6936A94"]
+      evidence_refs: ["EVD-278D27A176", "EVD-C7D1DB2A7C", "EVD-D70E747767"]
+      anchor_refs: ["packages/sdk/src/provable/contracts/treasury-pause-controller/multisig-signatures.ts#L22-91", "packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts#L426-609"]
+      reasoning: "Pass-1 static evidence contains linked records for this applicable failure class; absence of runtime validation is not a safety claim. Local enforcement and composed-system consequences were rechecked against corrected context and raw anchors."
+      prerequisite_correction: "Only source-visible prerequisites in the linked current records are established; deployed occurrence is not inferred."
+      impact_correction: "Impact is bounded to linked record conclusions and may depend on external protocol, configuration, policy, host, or consumer conditions."
+      limitation_correction: "Static review only; runtime reachability, exploitability, proof/cryptographic soundness, and deployed behavior remain UNKNOWN."
+      dissent: null
+    - class: ARITHMETIC_OR_ENCODING
+      disposition: APPLICABLE_REVIEWED
+      record_ids: ["FND-67861A5343", "FND-3B35F91A1C", "FND-996A8C6D4E", "UNR-C23B2D9729", "ASM-EF2D37A6EF", "ASM-4B596D13E3"]
+      evidence_refs: ["EVD-5099700F2E", "EVD-F66F2E3B4A", "EVD-B3695707DC"]
+      anchor_refs: ["packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts#L102-126", "packages/sdk/src/provable/account.ts#L211-392"]
+      reasoning: "Pass-1 static evidence contains linked records for this applicable failure class; absence of runtime validation is not a safety claim. Local enforcement and composed-system consequences were rechecked against corrected context and raw anchors."
+      prerequisite_correction: "Only source-visible prerequisites in the linked current records are established; deployed occurrence is not inferred."
+      impact_correction: "Impact is bounded to linked record conclusions and may depend on external protocol, configuration, policy, host, or consumer conditions."
+      limitation_correction: "Static review only; runtime reachability, exploitability, proof/cryptographic soundness, and deployed behavior remain UNKNOWN."
+      dissent: null
+    - class: UNTRUSTED_DATA_FLOW
+      disposition: APPLICABLE_REVIEWED
+      record_ids: ["FND-1897280316", "FND-67861A5343", "FND-23916993D0", "GAP-721B65BE75", "GAP-8826CA0D4C", "UNR-3694303308", "THR-92F9C4D82A", "THR-C66F2EDB38", "THR-5F94AE7496", "ASM-031E77BE7F", "ASM-79662ECECE", "ASM-B2699C5369", "ASM-503E6DE8AD", "ASM-73AF207816"]
+      evidence_refs: ["EVD-177476A23F", "EVD-C7D1DB2A7C", "EVD-03D20507BE"]
+      anchor_refs: ["packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts#L195-337", "packages/sdk/src/provable/account.ts#L211-245"]
+      reasoning: "Pass-1 static evidence contains linked records for this applicable failure class; absence of runtime validation is not a safety claim. Local enforcement and composed-system consequences were rechecked against corrected context and raw anchors."
+      prerequisite_correction: "Only source-visible prerequisites in the linked current records are established; deployed occurrence is not inferred."
+      impact_correction: "Impact is bounded to linked record conclusions and may depend on external protocol, configuration, policy, host, or consumer conditions."
+      limitation_correction: "Static review only; runtime reachability, exploitability, proof/cryptographic soundness, and deployed behavior remain UNKNOWN."
+      dissent: null
+    - class: PRODUCER_CONSUMER_ASYMMETRY
+      disposition: APPLICABLE_REVIEWED
+      record_ids: ["FND-CA0F83CE86", "FND-7264C0E61E", "FND-8C3BA008B7", "FND-ECA97458D5", "FND-30B94DCCE0", "FND-E5DB7A78F8", "FND-9AA5203528", "FND-D889112D27", "FND-8B2DE6F23F", "FND-1D115F22E4", "FND-EE80C71EE3", "FND-23916993D0", "FND-2237382FBA", "GAP-B798CE8DB1", "GAP-BB80E3EB16", "GAP-22CD8BD355", "GAP-2124E32D06", "GAP-A25D114C6F", "GAP-8826CA0D4C", "UNR-9EEFA83E06", "UNR-C42A921AD9", "UNR-13C729A54A", "UNR-72174E5C45", "THR-56AA87E621", "THR-C66F2EDB38", "THR-902C4A0F9F", "THR-0EC3832BA7", "THR-F283B3AF7E", "THR-A943E3380A", "THR-647A188D6B", "THR-5F94AE7496", "THR-01539B0FF5", "ASM-031E77BE7F", "ASM-79662ECECE", "ASM-53F278775C", "ASM-EF2D37A6EF", "ASM-912B3DBDF6", "ASM-FF091135AE", "ASM-73AF207816", "ASM-C0AB78216E"]
+      evidence_refs: ["EVD-0E83AEA025", "EVD-C7D1DB2A7C", "EVD-79754810F6"]
+      anchor_refs: ["packages/sdk/src/provable/contracts/treasury-owner.ts#L464-496", "packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts#L248-351"]
+      reasoning: "Pass-1 static evidence contains linked records for this applicable failure class; absence of runtime validation is not a safety claim. Local enforcement and composed-system consequences were rechecked against corrected context and raw anchors."
+      prerequisite_correction: "Only source-visible prerequisites in the linked current records are established; deployed occurrence is not inferred."
+      impact_correction: "Impact is bounded to linked record conclusions and may depend on external protocol, configuration, policy, host, or consumer conditions."
+      limitation_correction: "Static review only; runtime reachability, exploitability, proof/cryptographic soundness, and deployed behavior remain UNKNOWN."
+      dissent: null
+    - class: DEPENDENCY_OR_CONFIGURATION
+      disposition: APPLICABLE_REVIEWED
+      record_ids: ["FND-3471621CD6", "FND-9AA5203528", "FND-D0ABA9650D", "FND-4B4F5D76C9", "FND-10A2C953A0", "FND-2184025222", "GAP-4DE9FCF9CE", "GAP-935AA6FD0D", "GAP-721B65BE75", "GAP-B1C8C1A4E1", "UNR-D007DAF961", "UNR-F951787FC2", "UNR-D5F28B1A0D", "UNR-C42A921AD9", "UNR-20BC6033C1", "THR-56AA87E621", "THR-0DEBF32E0A", "THR-647A188D6B", "ASM-C093AE5452", "ASM-031E77BE7F", "ASM-E6AE27B10D", "ASM-82EB259917", "ASM-53F278775C", "ASM-912B3DBDF6", "ASM-FF091135AE", "ASM-D691B96D3B", "ASM-64F6936A94", "ASM-A4087EF988"]
+      evidence_refs: ["EVD-1C17FE0D88", "EVD-8928C709CD", "EVD-9C55001C7F"]
+      anchor_refs: ["packages/sdk/package.json#L8-59", "packages/sdk/src/provable/contracts/treasury-owner.ts#L64-119"]
+      reasoning: "Pass-1 static evidence contains linked records for this applicable failure class; absence of runtime validation is not a safety claim. Local enforcement and composed-system consequences were rechecked against corrected context and raw anchors."
+      prerequisite_correction: "Only source-visible prerequisites in the linked current records are established; deployed occurrence is not inferred."
+      impact_correction: "Impact is bounded to linked record conclusions and may depend on external protocol, configuration, policy, host, or consumer conditions."
+      limitation_correction: "Static review only; runtime reachability, exploitability, proof/cryptographic soundness, and deployed behavior remain UNKNOWN."
+      dissent: null
+    - class: INFORMATION_EXPOSURE
+      disposition: APPLICABLE_REVIEWED
+      record_ids: ["GAP-A25D114C6F", "THR-622BA37FCF", "THR-0EC3832BA7", "ASM-F556007192"]
+      evidence_refs: ["EVD-1D93AC4BAF", "EVD-72A633D2CC"]
+      anchor_refs: ["packages/sdk/src/logging/logger.ts#L7-56", "packages/sdk/src/provable/contracts/treasury-pause-controller/treasury-pause-controller.ts#L77-81"]
+      reasoning: "Pass-1 static evidence contains linked records for this applicable failure class; absence of runtime validation is not a safety claim. Local enforcement and composed-system consequences were rechecked against corrected context and raw anchors."
+      prerequisite_correction: "Only source-visible prerequisites in the linked current records are established; deployed occurrence is not inferred."
+      impact_correction: "Impact is bounded to linked record conclusions and may depend on external protocol, configuration, policy, host, or consumer conditions."
+      limitation_correction: "Static review only; runtime reachability, exploitability, proof/cryptographic soundness, and deployed behavior remain UNKNOWN."
+      dissent: null
+    - class: RESOURCE_OR_LIVENESS
+      disposition: APPLICABLE_REVIEWED
+      record_ids: ["GAP-817200738F", "GAP-A25D114C6F", "UNR-13C729A54A", "THR-0EC3832BA7", "ASM-503E6DE8AD"]
+      evidence_refs: ["EVD-5963C00DAB", "EVD-B3695707DC"]
+      anchor_refs: ["packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts#L35-351", "packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts#L30-659"]
+      reasoning: "Pass-1 static evidence contains linked records for this applicable failure class; absence of runtime validation is not a safety claim. Local enforcement and composed-system consequences were rechecked against corrected context and raw anchors."
+      prerequisite_correction: "Only source-visible prerequisites in the linked current records are established; deployed occurrence is not inferred."
+      impact_correction: "Impact is bounded to linked record conclusions and may depend on external protocol, configuration, policy, host, or consumer conditions."
+      limitation_correction: "Static review only; runtime reachability, exploitability, proof/cryptographic soundness, and deployed behavior remain UNKNOWN."
+      dissent: null
+    - class: OBSERVABILITY_OR_RECOVERY
+      disposition: APPLICABLE_REVIEWED
+      record_ids: ["FND-7264C0E61E", "FND-19EC441E53", "FND-67861A5343", "FND-CD3FC08B49", "FND-1979AEB628", "FND-ECA97458D5", "FND-A5A4858953", "FND-7BE7D38B6B", "FND-5F15694229", "FND-1B33097A18", "FND-F3C6E62E0B", "FND-BF3449506D", "FND-7D495DBE3F", "FND-30B94DCCE0", "FND-3B35F91A1C", "FND-756A14D862", "FND-E5DB7A78F8", "FND-1FBF087284", "FND-C0656D649D", "FND-8467BE9FD1", "FND-3471621CD6", "FND-9AA5203528", "FND-8DB62F78C9", "FND-D0ABA9650D", "FND-D889112D27", "FND-077D28F305", "FND-4234CF9EC6", "FND-88B3C09521", "FND-8B2DE6F23F", "FND-E393B29703", "FND-1D115F22E4", "FND-23916993D0", "GAP-B798CE8DB1", "GAP-BB80E3EB16", "GAP-BCB6F29C25", "GAP-52A3FE4758", "GAP-8826CA0D4C", "UNR-D007DAF961", "THR-902C4A0F9F", "THR-0EC3832BA7", "THR-F283B3AF7E", "THR-5D2535B0B5", "ASM-73AF207816", "ASM-C0AB78216E"]
+      evidence_refs: ["EVD-0E83AEA025", "EVD-C7D1DB2A7C", "EVD-FB46967B48"]
+      anchor_refs: ["packages/sdk/src/provable/contracts/treasury-owner.ts#L464-496", "packages/sdk/src/utils/context-provider.ts#L1-14"]
+      reasoning: "Pass-1 static evidence contains linked records for this applicable failure class; absence of runtime validation is not a safety claim. Local enforcement and composed-system consequences were rechecked against corrected context and raw anchors."
+      prerequisite_correction: "Only source-visible prerequisites in the linked current records are established; deployed occurrence is not inferred."
+      impact_correction: "Impact is bounded to linked record conclusions and may depend on external protocol, configuration, policy, host, or consumer conditions."
+      limitation_correction: "Static review only; runtime reachability, exploitability, proof/cryptographic soundness, and deployed behavior remain UNKNOWN."
+      dissent: null
+    - class: TEST_ORACLE_BLIND_SPOT
+      disposition: APPLICABLE_REVIEWED
+      record_ids: ["FND-37BEE2B1BA", "FND-7264C0E61E", "FND-8C3BA008B7", "FND-1897280316", "FND-19EC441E53", "FND-961BD4A980", "FND-2237382FBA", "GAP-BCB6F29C25", "GAP-ADD703D733", "UNR-BA7E7021CF"]
+      evidence_refs: ["EVD-02AE7D74CF", "EVD-0CA3D36B38", "EVD-37FFC4C20C"]
+      anchor_refs: ["packages/sdk/test/provable/events/treasury-proposal-events.test.ts#L26-212", "packages/sdk/test/provable/staking-ledger-to-voting-ledger.test.ts#L11-134"]
+      reasoning: "Pass-1 static evidence contains linked records for this applicable failure class; absence of runtime validation is not a safety claim. Local enforcement and composed-system consequences were rechecked against corrected context and raw anchors."
+      prerequisite_correction: "Only source-visible prerequisites in the linked current records are established; deployed occurrence is not inferred."
+      impact_correction: "Impact is bounded to linked record conclusions and may depend on external protocol, configuration, policy, host, or consumer conditions."
+      limitation_correction: "Static review only; runtime reachability, exploitability, proof/cryptographic soundness, and deployed behavior remain UNKNOWN."
+      dissent: null
+    - class: REQUIREMENT_OR_AUDIT_DRIFT
+      disposition: APPLICABLE_REVIEWED
+      record_ids: ["FND-67861A5343", "FND-CD3FC08B49", "FND-1979AEB628", "FND-ECA97458D5", "FND-A5A4858953", "FND-7BE7D38B6B", "FND-5F15694229", "FND-1B33097A18", "FND-F3C6E62E0B", "FND-BF3449506D", "FND-7D495DBE3F", "FND-30B94DCCE0", "FND-3B35F91A1C", "FND-756A14D862", "FND-E5DB7A78F8", "FND-1FBF087284", "FND-C0656D649D", "FND-8467BE9FD1", "FND-3471621CD6", "FND-9AA5203528", "FND-8DB62F78C9", "FND-D0ABA9650D", "FND-D889112D27", "FND-077D28F305", "FND-4234CF9EC6", "FND-88B3C09521", "FND-8B2DE6F23F", "FND-E393B29703", "GAP-2CA978704D", "GAP-BB80E3EB16", "GAP-96C24B88BE", "GAP-50DC9AE203", "GAP-ABC383D9C1", "GAP-935AA6FD0D", "GAP-0B47B1BC29", "GAP-48D1CB3548", "GAP-5EB38DFDA6", "GAP-721B65BE75", "GAP-B9423A0E57", "GAP-BCB6F29C25", "GAP-4B6AF1A2C6", "GAP-8C60DBC5D8", "GAP-B1C8C1A4E1", "GAP-003C868089", "GAP-9CA1247303", "GAP-E291D5E72A", "GAP-212C9A0653", "GAP-9D0D23D527", "GAP-F83C6F5411", "GAP-52A3FE4758", "GAP-22CD8BD355", "UNR-D007DAF961", "UNR-15F1A8EB0E", "UNR-743184E14A", "THR-A943E3380A"]
+      evidence_refs: ["EVD-FB46967B48", "EVD-0D50A0B3BE"]
+      anchor_refs: [".codebase-analysis/provable-92d90e3803a1/context/ZKSECURITY_AUDIT_INDEX.md#L1-20", ".codebase-analysis/provable-92d90e3803a1/context/RFC_EXTRACT.md#L1-10"]
+      reasoning: "Pass-1 static evidence contains linked records for this applicable failure class; absence of runtime validation is not a safety claim. Local enforcement and composed-system consequences were rechecked against corrected context and raw anchors."
+      prerequisite_correction: "Only source-visible prerequisites in the linked current records are established; deployed occurrence is not inferred."
+      impact_correction: "Impact is bounded to linked record conclusions and may depend on external protocol, configuration, policy, host, or consumer conditions."
+      limitation_correction: "Static review only; runtime reachability, exploitability, proof/cryptographic soundness, and deployed behavior remain UNKNOWN."
+      dissent: null
+    - class: SMART_CONTRACT_OR_ZK
+      disposition: APPLICABLE_REVIEWED
+      record_ids: ["FND-CA0F83CE86", "FND-1897280316", "FND-19EC441E53", "FND-961BD4A980", "FND-30B94DCCE0", "FND-D889112D27", "FND-E393B29703", "FND-B5948FE3CF", "FND-4B4F5D76C9", "FND-BBC3A2316C", "FND-E683792BE2", "FND-BFFEA51091", "FND-1D115F22E4", "FND-D0C94E0DC6", "FND-10A2C953A0", "FND-996A8C6D4E", "FND-EE80C71EE3", "FND-23916993D0", "FND-4C6DF9502F", "FND-2237382FBA", "FND-2184025222", "GAP-EF32A38D1C", "GAP-F83C6F5411", "GAP-52A3FE4758", "GAP-22CD8BD355", "GAP-2124E32D06", "GAP-ADD703D733", "GAP-1DC17F1884", "GAP-A25D114C6F", "GAP-8826CA0D4C", "GAP-FE43BADC05", "UNR-C23B2D9729", "UNR-F951787FC2", "UNR-1733743332", "UNR-743184E14A", "UNR-D5F28B1A0D", "UNR-0B3E825B88", "UNR-BA7E7021CF", "UNR-29788D0D91", "UNR-C42A921AD9", "UNR-20BC6033C1", "UNR-3694303308", "UNR-13C729A54A", "UNR-6384846777", "UNR-72174E5C45", "THR-C66F2EDB38", "THR-0EC3832BA7", "THR-5F94AE7496", "THR-01539B0FF5", "ASM-79662ECECE", "ASM-82EB259917", "ASM-EF2D37A6EF", "ASM-912B3DBDF6", "ASM-73AF207816", "ASM-4B596D13E3"]
+      evidence_refs: ["EVD-177476A23F", "EVD-D70E747767", "EVD-2720E90D33", "EVD-72A633D2CC"]
+      anchor_refs: ["packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts#L83-337", "packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts#L426-639"]
+      reasoning: "Pass-1 static evidence contains linked records for this applicable failure class; absence of runtime validation is not a safety claim. Local enforcement and composed-system consequences were rechecked against corrected context and raw anchors."
+      prerequisite_correction: "Only source-visible prerequisites in the linked current records are established; deployed occurrence is not inferred."
+      impact_correction: "Impact is bounded to linked record conclusions and may depend on external protocol, configuration, policy, host, or consumer conditions."
+      limitation_correction: "Static review only; runtime reachability, exploitability, proof/cryptographic soundness, and deployed behavior remain UNKNOWN."
+      dissent: "FND-4C6DF9502F severity requires explicit qualification; duplicate and remediated lineages must not inflate ranking."
+
+  proposed_amendments:
+    - stable_key: amendment:finding:voting-weight-eligibility:severity-qualification
+      disposition: ROOT_ADJUDICATION_REQUESTED
+      record_ids: [FND-4C6DF9502F, THR-B55C2C8D2F, ASM-03D9CA273D, GAP-FE43BADC05]
+      evidence_refs: [EVD-177476A23F, EVD-5963C00DAB, EVD-FB46967B48]
+      anchor_refs: [packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts#L195-337]
+      reasoning: "Change LOW/HIGH to MEDIUM/MEDIUM, or publish LOW as explicitly provisional on an authoritative fact that membership-valid ineligible/custom-token balances cannot enter the selected ledger."
+      limitation_correction: "This is an amendment candidate, not a new canonical record or exploitability claim."
+    - stable_key: amendment:assumptions:duplicate-lineage-consolidation
+      disposition: ROOT_ADJUDICATION_REQUESTED
+      record_ids: [ASM-0E591EC647, ASM-35D9BB50D0, ASM-53F278775C, ASM-031E77BE7F, ASM-82EB259917, ASM-557C7137A0, ASM-0DCB6712DD, ASM-912B3DBDF6, ASM-E0E1752AF7, ASM-B2699C5369, ASM-73AF207816]
+      evidence_refs: [EVD-7BD50662A0, EVD-79754810F6, EVD-9C55001C7F, EVD-9B18A655A2, EVD-1C17FE0D88, EVD-B30136F272]
+      anchor_refs: [packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts#L83-143, packages/sdk/src/provable/contracts/treasury-owner.ts#L121-184, packages/sdk/package.json#L8-59]
+      reasoning: "Alias or supersede five duplicate/umbrella lineages so assumption counts and risk ranking do not double count the same external premise."
+      limitation_correction: "Preserve canonical history and references during consolidation."
+    - stable_key: amendment:publication:current-versus-historical-finding-ranking
+      disposition: ROOT_ADJUDICATION_REQUESTED
+      record_ids: [FND-67861A5343, FND-CD3FC08B49, FND-1979AEB628, FND-ECA97458D5, FND-5F15694229, FND-756A14D862, FND-E5DB7A78F8, FND-8467BE9FD1, FND-3471621CD6, FND-9AA5203528, FND-E393B29703]
+      evidence_refs: [EVD-FB46967B48, EVD-5099700F2E, EVD-8C7F748854, EVD-995A61228D]
+      anchor_refs: [.codebase-analysis/provable-92d90e3803a1/context/ZKSECURITY_AUDIT_INDEX.md#L1-20]
+      reasoning: "Retain the eleven items as remediated historical audit evidence and exclude them from the current-issue severity queue."
+      limitation_correction: "RESOLVED_STATICALLY is revision-bounded, not certification."
+    - stable_key: amendment:none:new-canonical-finding
+      disposition: NO_NEW_CANONICAL_ID_PROPOSED
+      record_ids: [SEC-9F3756E302, SEC-FB542C27D2]
+      evidence_refs: [EVD-CFF488F119, EVD-DD1C7DA36F]
+      anchor_refs: [packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts#L102-384]
+      reasoning: "No additional finding candidate met the Phase-6 threshold after corrected-context and neighboring-source review; observed conditions are covered by current records."
+      limitation_correction: "This does not assert absence of defects outside static scope."
+
+  author_priorities:
+    - priority: P0
+      title: Ratify voting-weight eligibility and reassess severity
+      record_ids: [FND-4C6DF9502F, THR-B55C2C8D2F, ASM-03D9CA273D, GAP-FE43BADC05]
+      evidence_refs: [EVD-177476A23F, EVD-5963C00DAB]
+      anchor_refs: [packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts#L195-337]
+      rationale: "The circuit aggregates every membership-proven Account.balance to Account.delegate without a token/account-class predicate; impact depends on an absent Mina ledger eligibility fact."
+      question: "Which exact ledger accounts and token classes are eligible, and where is that predicate authoritatively enforced?"
+    - priority: P0
+      title: Decide proposal rejection and emergency-pause finality policy
+      record_ids: [FND-B5948FE3CF, FND-BFFEA51091, FND-1D115F22E4, THR-902C4A0F9F, THR-A943E3380A, ASM-B549EC8751]
+      evidence_refs: [EVD-CFF488F119, EVD-5AED8D6498, EVD-6665BB19D1, EVD-0E83AEA025]
+      anchor_refs: [packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts#L331-397, packages/sdk/src/provable/contracts/treasury-owner.ts#L464-496]
+      rationale: "Quorum/abstain-only failure leaves UNKNOWN, while pause toggling can erase a final result and its owner event can report caller intent rather than post-state."
+      question: "Must every tally become terminal APPROVED/REJECTED, and may emergency authority ever clear a finalized result?"
+    - priority: P0
+      title: Bind emergency authority to distinct recoverable deployment identities
+      record_ids: [FND-BBC3A2316C, FND-E683792BE2, FND-10A2C953A0, FND-4B4F5D76C9, THR-77C87EDE62, THR-0DEBF32E0A]
+      evidence_refs: [EVD-E1F14754F0, EVD-97F3268F92, EVD-CF08ADCD5E, EVD-278D27A176]
+      anchor_refs: [packages/sdk/src/provable/contracts/treasury-pause-controller/multisig-signatures.ts#L17-145, packages/sdk/src/provable/contracts/treasury-pause-controller/treasury-pause-controller.ts#L55-145]
+      rationale: "The source binds positions/commitment/nonce but not distinct identities, exact init cardinality, next-commitment viability, or deployment/network domain."
+      question: "What ceremony proves five distinct keys, publishes a recoverable ordered preimage, validates rotation, and assigns a deployment/network signature domain?"
+    - priority: P0
+      title: Supply a revision-bound production deployment manifest
+      record_ids: [ASM-FF091135AE, ASM-C093AE5452, ASM-D691B96D3B, ASM-82EB259917, SEC-EE4E9A7ADB]
+      evidence_refs: [EVD-8928C709CD, EVD-2E424CAB76, EVD-9C55001C7F]
+      anchor_refs: [packages/sdk/src/provable/contracts/treasury-owner.ts#L64-119, packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts#L59-66]
+      rationale: "Effective permissions, verification keys, empty roots, controller/owner addresses, constants and deployed bytecode are not bound to the reviewed revision."
+      question: "Can authors provide signed artifact hashes, addresses, permissions, keys, roots, constants and chain/account-state snapshots?"
+    - priority: P1
+      title: Define atomic and recoverable proof-job storage semantics
+      record_ids: [FND-23916993D0, FND-19EC441E53, THR-C66F2EDB38, ASM-73AF207816, ASM-79662ECECE]
+      evidence_refs: [EVD-C7D1DB2A7C, EVD-F7DE049BDC, EVD-C15386FB6E, EVD-817F85F79C]
+      anchor_refs: [packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts#L304-320, packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts#L556-574, packages/sdk/src/utils/context-provider.ts#L1-14]
+      rationale: "Three persistence mutations are not proof outputs and the supplied interfaces do not establish transactionality, isolation, idempotence or rollback."
+      question: "What concrete job/storage protocol atomically commits trace, nullifier, tally and voting roots across retry, crash and concurrency?"
+    - priority: P1
+      title: Ratify policy constants and prove capacity against phase deadlines
+      record_ids: [ASM-39FFFFFD50, ASM-503E6DE8AD, SEC-042FF4BC76, THR-0EC3832BA7]
+      evidence_refs: [EVD-0D50A0B3BE, EVD-5963C00DAB, EVD-B3695707DC]
+      anchor_refs: [.codebase-analysis/provable-92d90e3803a1/context/RFC_EXTRACT.md#L7-10, packages/sdk/src/provable/contracts/treasury-constants.ts#L1-15]
+      rationale: "The RFC is provisional/contested and no topology, benchmark, backlog or deadline evidence establishes permissionless snapshot/reduction completion."
+      question: "Which authority ratifies the constants, and what measured capacity/SLO shows completion before on-chain phase boundaries?"
+
+  publication_corrections:
+    - conclusion: "Publish 49 current records as 38 active/unresolved plus 11 remediated historical audit items; exclude all 10 SUPERSEDED local candidates from current totals and ranking."
+      record_ids: [FND-A9E2B8A781, FND-96F57CB8BE, FND-AABDAA9DDE, FND-09463775C7, FND-0166B772A2, FND-BB5F22E4C9, FND-914C2D8638, FND-8C5615E0BB, FND-77094EEA1D, FND-189B914DB8]
+      evidence_refs: [EVD-FB46967B48, EVD-C7D1DB2A7C, EVD-177476A23F]
+      anchor_refs: [.codebase-analysis/provable-92d90e3803a1/model/pass-2-contextual-corrected.yaml#LUNKNOWN]
+    - conclusion: "Group audit/local duplicate lineages for reader priority while preserving every audit identifier and remediation trace."
+      record_ids: [FND-1B33097A18, FND-D0C94E0DC6, FND-BF3449506D, FND-2184025222, FND-D0ABA9650D, FND-4B4F5D76C9, FND-8DB62F78C9, FND-8B2DE6F23F, FND-BFFEA51091, FND-1D115F22E4, FND-F3C6E62E0B, FND-4C6DF9502F]
+      evidence_refs: [EVD-FB46967B48, EVD-77D32C74CA, EVD-8D49AA6E0F, EVD-177476A23F]
+      anchor_refs: [.codebase-analysis/provable-92d90e3803a1/context/ZKSECURITY_AUDIT_INDEX.md#L1-20]
+    - conclusion: "Use STATIC_BOUND or source-visible constraint-bound language for all 44 ZK values; never render BOUND as circuit, cryptographic, key, proof-verification, deployment, or runtime assurance."
+      record_ids: [ZKP-EFB3E28391, ZKP-5DF7D24003, ZKP-DF018A9714, ZKP-66153C8CB1, ZKP-547C93E79B, ZKP-BA11C90A9F, ASM-EF2D37A6EF, UNR-20BC6033C1]
+      evidence_refs: [EVD-3CEBE6B022, EVD-BAD04529F7, EVD-9C55001C7F]
+      anchor_refs: [packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts#L59-66]
+    - conclusion: "Render all three witness persistence mutation sites as HOST_EFFECT_NOT_PROVEN and distinguish them from the nine constraint-bound witness reads."
+      record_ids: [REL-A9809109C5, REL-EC2F02C65F, FND-23916993D0]
+      evidence_refs: [EVD-B30136F272, EVD-C7D1DB2A7C, EVD-F7DE049BDC]
+      anchor_refs: [packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts#L310-318, packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts#L557-574]
+    - conclusion: "Qualify FND-4C6DF9502F severity and mark the five assumption duplicate lineages so they do not inflate the current risk picture."
+      record_ids: [FND-4C6DF9502F, ASM-0E591EC647, ASM-35D9BB50D0, ASM-53F278775C, ASM-031E77BE7F, ASM-82EB259917, ASM-557C7137A0, ASM-0DCB6712DD, ASM-912B3DBDF6, ASM-E0E1752AF7, ASM-B2699C5369, ASM-73AF207816]
+      evidence_refs: [EVD-177476A23F, EVD-7BD50662A0, EVD-1C17FE0D88, EVD-B30136F272]
+      anchor_refs: [packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts#L83-337, packages/sdk/package.json#L8-59]
+
+  later_assurance:
+    - conclusion: "Perform authoritative source-to-protocol differential vectors for Account/action encodings, Merkle paths, slot endpoints and custom o1js behavior."
+      record_ids: [ASM-3B12C3E849, ASM-4B596D13E3, ASM-0DCB6712DD, ASM-E0E1752AF7, UNR-C23B2D9729]
+      evidence_refs: [EVD-F211A2464E, EVD-F66F2E3B4A, EVD-1C17FE0D88]
+      anchor_refs: [packages/sdk/src/provable/account.ts#L22-392, packages/sdk/package.json#L8-59]
+    - conclusion: "Verify compiled constraints, recursion, side-loaded keys and deployed verifier equivalence under an explicitly authorized proof-assurance phase."
+      record_ids: [SEC-E0D95AF002, ASM-EF2D37A6EF, ASM-82EB259917, UNR-20BC6033C1]
+      evidence_refs: [EVD-BAD04529F7, EVD-9C55001C7F]
+      anchor_refs: [packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts#L59-66]
+    - conclusion: "Exercise failure atomicity, retry, crash, concurrency and capacity with production-equivalent storage/orchestration only after explicit runtime authorization."
+      record_ids: [FND-23916993D0, FND-19EC441E53, ASM-73AF207816, ASM-503E6DE8AD]
+      evidence_refs: [EVD-C7D1DB2A7C, EVD-817F85F79C, EVD-5963C00DAB]
+      anchor_refs: [packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts#L556-574, packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts#L304-320]
+    - conclusion: "Add policy-derived negative partitions for signer distinctness/cardinality/rotation/domain, quorum finality, pause finality/events, eligibility, zero payout, genesis roots and sparse exhaustion."
+      record_ids: [FND-2237382FBA, FND-961BD4A980, FND-8C3BA008B7, FND-7264C0E61E]
+      evidence_refs: [EVD-0CA3D36B38, EVD-37FFC4C20C, EVD-02AE7D74CF]
+      anchor_refs: [packages/sdk/test/provable/staking-ledger-to-voting-ledger.test.ts#L11-134, packages/sdk/test/integration/treasury-owner.test.ts#L1-UNKNOWN]
+
+  limitations:
+    - conclusion: "No target code, tests, build, compiler, proof, verifier, chain, transaction, database or PROOFS_ENABLED mode was executed."
+      record_ids: [UNR-20BC6033C1, ASM-EF2D37A6EF]
+      evidence_refs: [EVD-BAD04529F7]
+      anchor_refs: [packages/sdk/test/provable/context/proofs-enabled.ts#L1-UNKNOWN]
+    - conclusion: "Cryptographic/circuit soundness, runtime reachability, exploitability, production configuration, deployed permissions/keys/roots, Mina/o1js semantics, transaction atomicity and host persistence remain UNKNOWN."
+      record_ids: [ASM-EF2D37A6EF, ASM-E0E1752AF7, ASM-FF091135AE, ASM-BD7E733FE5, ASM-73AF207816, UNR-20BC6033C1]
+      evidence_refs: [EVD-BAD04529F7, EVD-1C17FE0D88, EVD-2E424CAB76, EVD-C7D1DB2A7C]
+      anchor_refs: [packages/sdk/package.json#L8-59, packages/sdk/src/provable/contracts/treasury-owner.ts#L64-119]
+    - conclusion: "RFC and prior-audit materials are hashed intent/history, not current authority, deployment evidence, or certification."
+      record_ids: [ASM-39FFFFFD50, GAP-1DC17F1884]
+      evidence_refs: [EVD-0D50A0B3BE, EVD-FB46967B48]
+      anchor_refs: [.codebase-analysis/provable-92d90e3803a1/context/RFC_EXTRACT.md#L1-10, .codebase-analysis/provable-92d90e3803a1/context/ZKSECURITY_AUDIT_INDEX.md#L1-20]
+    - conclusion: "UNKNOWN is preserved wherever authority, external component behavior, runtime evidence or consumer behavior is absent; silence is not interpreted as safety."
+      record_ids: [SEC-042FF4BC76, SEC-DD3B44137C, THR-0EC3832BA7, THR-F283B3AF7E]
+      evidence_refs: [EVD-5963C00DAB, EVD-0E83AEA025]
+      anchor_refs: [packages/sdk/src/provable/contracts/treasury-owner.ts#L464-496]
+
+  input_integrity_completion:
+    status: COMPLETE_ZERO_MUTATION
+    expected_inputs: 38
+    matched_inputs: 38
+    mutation_detected: false
+    record_ids: [WU-B16DF0D533]
+    evidence_refs: [SCOPE.yaml]
+    anchor_refs: [.codebase-analysis/provable-92d90e3803a1/SCOPE.yaml#L1-UNKNOWN]

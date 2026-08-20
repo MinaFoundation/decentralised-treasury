@@ -1,0 +1,3861 @@
+---
+bundle:
+  schema_version: 1
+  work_unit: WU-0C59177B93
+  revision: 1e27b1aea88f5ea2764db96e4b337b24fe6dbeb3
+  scope_hash: f40d76b91ec3cd8805ecdc7bebba8d43b8f317842639a7799738c37569119ab1
+  pass_2_sha256: 645101d2946d908ab1e200b78048e56957cdd63daa1f872c81897d1e83618897
+  role: phase_6_relation_io_direction_correction
+  status: COMPLETE
+  ownership:
+    output: evidence/corrections/WU-0C59177B93.yaml
+    record_groups:
+    - relations
+    - inputs_outputs
+    - zk_statements
+    canonical_model_mutated: false
+    source_or_test_mutated: false
+  assumptions:
+  - All mappings are static source/model traceability; they do not establish runtime
+    reachability, proof generation or verification, circuit or cryptographic soundness,
+    deployed keys, host transactionality, or external consumer behavior.
+  - Typed external endpoints preserve out-of-scope package, caller, prover, host-ledger,
+    Mina-account, persistence, and indexer boundaries without allocating invented
+    canonical IDs.
+  observations:
+  - The corrected Pass-2 model has 157 current relations, 105 current IO records,
+    six current method-specific ZKP records, and two superseded aggregate ZKP records.
+  - The proposal root-continuity check equates IO-1CF641A344 with IO-140ADF5967 at
+    treasury-proposal.ts:261-264.
+  - The superseded staking and vote aggregate replacement lists cross-assigned both
+    program families; the patch preserves both aggregates as history and narrows their
+    replacement lineages by program.
+changes:
+- group: relations
+  record_id: REL-8D94358D1F
+  old:
+    from_id: ZKP-0830843A1A
+    to_id: ZKP-37F3DC23FD
+  set:
+    from_id: IO-1CF641A344
+    to_id: IO-140ADF5967
+  rationale: The proposal consumer constrains equality between the staking proof public
+    output voting root and the vote proof public input voting root. This is a value-level
+    IO continuity edge, not a proof-statement-to-proof-statement binding.
+  evidence_ids:
+  - EVD-7241D16957
+  source_references:
+  - packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts:261-283
+- group: relations
+  record_id: REL-E20DC14C1E
+  old:
+    to_id: ZKP-0830843A1A
+  set:
+    to_id: ZKP-DF018A9714
+  rationale: The consumer requires the staking transformation proof to be terminally
+    exhausted; the current method-specific statement is ZKP-DF018A9714, replacing
+    the superseded aggregate without changing the recorded static conclusion.
+  evidence_ids:
+  - EVD-69F140A1C8
+  source_references:
+  - packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts:227-233
+- group: relations
+  record_id: REL-A38D47D128
+  old:
+    to_id: ZKP-37F3DC23FD
+  set:
+    to_id: ZKP-547C93E79B
+  rationale: The vote proof endpoint is normalized to the current recursive VoteReducer
+    merge statement; its base reduction predecessor remains represented by ZKP-BA11C90A9F
+    and the current recursion metadata.
+  evidence_ids:
+  - EVD-C40CC7BDB8
+  source_references:
+  - packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts:227-233
+- group: relations
+  record_id: REL-26FCFBF6F0
+  old:
+    from: packages/sdk/src/provable/account.ts
+    to: packages/sdk/src/provable/hashing-helpers.ts
+  set:
+    from_id: SRC-4A1F6AB356
+    to_id: SRC-F3FE44D20B
+  absent_before:
+  - from_id
+  - to_id
+  unset:
+  - from
+  - to
+  rationale: Both endpoints resolve to current canonical model IDs supported by the
+    relation evidence and source/test ownership; legacy path, stable-key, component-key,
+    or state-label literals are removed.
+  evidence_ids:
+  - EVD-D79183A876
+  source_references:
+  - packages/sdk/src/provable/account.ts
+- group: relations
+  record_id: REL-5191CF9309
+  old:
+    from: packages/sdk/src/provable/account.ts
+    to: o1js
+  set:
+    from_id: SRC-4A1F6AB356
+    external_to: &1
+      endpoint_type: PACKAGE_DEPENDENCY
+      name: o1js
+  absent_before:
+  - from_id
+  - external_to
+  unset:
+  - from
+  - to
+  rationale: The source endpoint resolves to a current canonical record; the other
+    endpoint is outside the canonical model and is preserved as explicitly typed external
+    metadata instead of a literal pseudo-ID.
+  evidence_ids:
+  - EVD-D6B9AA23FB
+  source_references:
+  - packages/sdk/src/provable/account.ts
+- group: relations
+  record_id: REL-568A442056
+  old:
+    from: packages/sdk/src/provable/events/treasury-proposal-events.ts
+    to: o1js
+  set:
+    from_id: SRC-58ADF841FC
+    external_to: *1
+  absent_before:
+  - from_id
+  - external_to
+  unset:
+  - from
+  - to
+  rationale: The source endpoint resolves to a current canonical record; the other
+    endpoint is outside the canonical model and is preserved as explicitly typed external
+    metadata instead of a literal pseudo-ID.
+  evidence_ids:
+  - EVD-0BE795CF19
+  source_references:
+  - packages/sdk/src/provable/events/treasury-proposal-events.ts
+- group: relations
+  record_id: REL-589CBF628B
+  old:
+    from: packages/sdk/src/provable/events/treasury-proposal-events.ts
+    to: packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts
+  set:
+    from_id: SRC-58ADF841FC
+    to_id: SRC-045B6CA381
+  absent_before:
+  - from_id
+  - to_id
+  unset:
+  - from
+  - to
+  rationale: Both endpoints resolve to current canonical model IDs supported by the
+    relation evidence and source/test ownership; legacy path, stable-key, component-key,
+    or state-label literals are removed.
+  evidence_ids:
+  - EVD-BA6F09A95B
+  source_references:
+  - packages/sdk/src/provable/events/treasury-proposal-events.ts
+- group: relations
+  record_id: REL-38BF624FF0
+  old:
+    from: packages/sdk/src/provable/hashing-helpers.ts
+    to: o1js
+  set:
+    from_id: SRC-F3FE44D20B
+    external_to: *1
+  absent_before:
+  - from_id
+  - external_to
+  unset:
+  - from
+  - to
+  rationale: The source endpoint resolves to a current canonical record; the other
+    endpoint is outside the canonical model and is preserved as explicitly typed external
+    metadata instead of a literal pseudo-ID.
+  evidence_ids:
+  - EVD-9AF2A82B11
+  source_references:
+  - packages/sdk/src/provable/hashing-helpers.ts
+- group: relations
+  record_id: REL-63B84007BB
+  old:
+    from: packages/sdk/src/provable/contracts/treasury-pause-controller/multisig-signatures.ts
+    to: packages/sdk/src/provable/hashing-helpers.ts
+  set:
+    from_id: SRC-DF069048A5
+    to_id: SRC-F3FE44D20B
+  absent_before:
+  - from_id
+  - to_id
+  unset:
+  - from
+  - to
+  rationale: Both endpoints resolve to current canonical model IDs supported by the
+    relation evidence and source/test ownership; legacy path, stable-key, component-key,
+    or state-label literals are removed.
+  evidence_ids:
+  - EVD-FA6B741A20
+  source_references:
+  - packages/sdk/src/provable/contracts/treasury-pause-controller/multisig-signatures.ts
+- group: relations
+  record_id: REL-DB7F631FEE
+  old:
+    from: packages/sdk/src/provable/contracts/treasury-pause-controller/multisig-signatures.ts
+    to: o1js
+  set:
+    from_id: SRC-DF069048A5
+    external_to: *1
+  absent_before:
+  - from_id
+  - external_to
+  unset:
+  - from
+  - to
+  rationale: The source endpoint resolves to a current canonical record; the other
+    endpoint is outside the canonical model and is preserved as explicitly typed external
+    metadata instead of a literal pseudo-ID.
+  evidence_ids:
+  - EVD-DBFE72FF4D
+  source_references:
+  - packages/sdk/src/provable/contracts/treasury-pause-controller/multisig-signatures.ts
+- group: relations
+  record_id: REL-1FB12A6A77
+  old:
+    from: packages/sdk/src/provable/contracts/treasury-pause-controller/treasury-pause-controller.ts
+    to: packages/sdk/src/logging/logger.ts
+  set:
+    from_id: SRC-B0C4273C06
+    to_id: SRC-1FAD2D3160
+  absent_before:
+  - from_id
+  - to_id
+  unset:
+  - from
+  - to
+  rationale: Both endpoints resolve to current canonical model IDs supported by the
+    relation evidence and source/test ownership; legacy path, stable-key, component-key,
+    or state-label literals are removed.
+  evidence_ids:
+  - EVD-5327C5E368
+  source_references:
+  - packages/sdk/src/provable/contracts/treasury-pause-controller/treasury-pause-controller.ts
+- group: relations
+  record_id: REL-26D4DBC387
+  old:
+    from: packages/sdk/src/provable/contracts/treasury-pause-controller/treasury-pause-controller.ts
+    to: packages/sdk/src/provable/contracts/treasury-pause-controller/multisig-signatures.ts
+  set:
+    from_id: SRC-B0C4273C06
+    to_id: SRC-DF069048A5
+  absent_before:
+  - from_id
+  - to_id
+  unset:
+  - from
+  - to
+  rationale: Both endpoints resolve to current canonical model IDs supported by the
+    relation evidence and source/test ownership; legacy path, stable-key, component-key,
+    or state-label literals are removed.
+  evidence_ids:
+  - EVD-7592298436
+  source_references:
+  - packages/sdk/src/provable/contracts/treasury-pause-controller/treasury-pause-controller.ts
+- group: relations
+  record_id: REL-3F2BE04199
+  old:
+    from: packages/sdk/src/provable/contracts/treasury-pause-controller/treasury-pause-controller.ts
+    to: o1js
+  set:
+    from_id: SRC-B0C4273C06
+    external_to: *1
+  absent_before:
+  - from_id
+  - external_to
+  unset:
+  - from
+  - to
+  rationale: The source endpoint resolves to a current canonical record; the other
+    endpoint is outside the canonical model and is preserved as explicitly typed external
+    metadata instead of a literal pseudo-ID.
+  evidence_ids:
+  - EVD-1561F05ECF
+  source_references:
+  - packages/sdk/src/provable/contracts/treasury-pause-controller/treasury-pause-controller.ts
+- group: relations
+  record_id: REL-A99FE10EDC
+  old:
+    from: packages/sdk/src/provable/merkle-tree/prefixed-merkle-tree.ts
+    to: o1js
+  set:
+    from_id: SRC-9140D57A6C
+    external_to: *1
+  absent_before:
+  - from_id
+  - external_to
+  unset:
+  - from
+  - to
+  rationale: The source endpoint resolves to a current canonical record; the other
+    endpoint is outside the canonical model and is preserved as explicitly typed external
+    metadata instead of a literal pseudo-ID.
+  evidence_ids:
+  - EVD-99D9342D94
+  source_references:
+  - packages/sdk/src/provable/merkle-tree/prefixed-merkle-tree.ts
+- group: relations
+  record_id: REL-2B644C02CF
+  old:
+    from: packages/sdk/src/provable/merkle-tree/prefixed-merkle-tree.ts
+    to: packages/sdk/src/storage/merkle-tree-storage.ts
+  set:
+    from_id: SRC-9140D57A6C
+    to_id: SRC-B5BD04FEE3
+  absent_before:
+  - from_id
+  - to_id
+  unset:
+  - from
+  - to
+  rationale: Both endpoints resolve to current canonical model IDs supported by the
+    relation evidence and source/test ownership; legacy path, stable-key, component-key,
+    or state-label literals are removed.
+  evidence_ids:
+  - EVD-2FDEDC62E5
+  source_references:
+  - packages/sdk/src/provable/merkle-tree/prefixed-merkle-tree.ts
+- group: relations
+  record_id: REL-DEA7407543
+  old:
+    from: packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts
+    to: packages/sdk/src/provable/account.ts
+  set:
+    from_id: SRC-9EBB65D4B9
+    to_id: SRC-4A1F6AB356
+  absent_before:
+  - from_id
+  - to_id
+  unset:
+  - from
+  - to
+  rationale: Both endpoints resolve to current canonical model IDs supported by the
+    relation evidence and source/test ownership; legacy path, stable-key, component-key,
+    or state-label literals are removed.
+  evidence_ids:
+  - EVD-217A6D8C94
+  source_references:
+  - packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts
+- group: relations
+  record_id: REL-C7975C3671
+  old:
+    from: packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts
+    to: packages/sdk/src/provable/contracts/treasury-constants.ts
+  set:
+    from_id: SRC-9EBB65D4B9
+    to_id: SRC-639D488B2F
+  absent_before:
+  - from_id
+  - to_id
+  unset:
+  - from
+  - to
+  rationale: Both endpoints resolve to current canonical model IDs supported by the
+    relation evidence and source/test ownership; legacy path, stable-key, component-key,
+    or state-label literals are removed.
+  evidence_ids:
+  - EVD-9C0E8C00C8
+  source_references:
+  - packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts
+- group: relations
+  record_id: REL-B4EBED13D8
+  old:
+    from: packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts
+    to: packages/sdk/src/provable/hashing-helpers.ts
+  set:
+    from_id: SRC-9EBB65D4B9
+    to_id: SRC-F3FE44D20B
+  absent_before:
+  - from_id
+  - to_id
+  unset:
+  - from
+  - to
+  rationale: Both endpoints resolve to current canonical model IDs supported by the
+    relation evidence and source/test ownership; legacy path, stable-key, component-key,
+    or state-label literals are removed.
+  evidence_ids:
+  - EVD-99D123E17D
+  source_references:
+  - packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts
+- group: relations
+  record_id: REL-EC7623BEA0
+  old:
+    from: packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts
+    to: packages/sdk/src/logging/logger.ts
+  set:
+    from_id: SRC-9EBB65D4B9
+    to_id: SRC-1FAD2D3160
+  absent_before:
+  - from_id
+  - to_id
+  unset:
+  - from
+  - to
+  rationale: Both endpoints resolve to current canonical model IDs supported by the
+    relation evidence and source/test ownership; legacy path, stable-key, component-key,
+    or state-label literals are removed.
+  evidence_ids:
+  - EVD-8237C0A803
+  source_references:
+  - packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts
+- group: relations
+  record_id: REL-E527B51106
+  old:
+    from: packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts
+    to: o1js
+  set:
+    from_id: SRC-9EBB65D4B9
+    external_to: *1
+  absent_before:
+  - from_id
+  - external_to
+  unset:
+  - from
+  - to
+  rationale: The source endpoint resolves to a current canonical record; the other
+    endpoint is outside the canonical model and is preserved as explicitly typed external
+    metadata instead of a literal pseudo-ID.
+  evidence_ids:
+  - EVD-C73E3169A1
+  source_references:
+  - packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts
+- group: relations
+  record_id: REL-00EBA2ADAB
+  old:
+    from: packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts
+    to: packages/sdk/src/provable/merkle-tree/prefixed-merkle-tree.ts
+  set:
+    from_id: SRC-9EBB65D4B9
+    to_id: SRC-9140D57A6C
+  absent_before:
+  - from_id
+  - to_id
+  unset:
+  - from
+  - to
+  rationale: Both endpoints resolve to current canonical model IDs supported by the
+    relation evidence and source/test ownership; legacy path, stable-key, component-key,
+    or state-label literals are removed.
+  evidence_ids:
+  - EVD-7B9A8B77FE
+  source_references:
+  - packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts
+- group: relations
+  record_id: REL-A3B3E26666
+  old:
+    from: packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts
+    to: packages/sdk/src/ledgers/staking-ledger/staking-ledger.ts
+  set:
+    from_id: SRC-9EBB65D4B9
+    to_id: SRC-70F3CC4F23
+  absent_before:
+  - from_id
+  - to_id
+  unset:
+  - from
+  - to
+  rationale: Both endpoints resolve to current canonical model IDs supported by the
+    relation evidence and source/test ownership; legacy path, stable-key, component-key,
+    or state-label literals are removed.
+  evidence_ids:
+  - EVD-B548ADFA1A
+  source_references:
+  - packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts
+- group: relations
+  record_id: REL-90D77C3467
+  old:
+    from: packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts
+    to: packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts
+  set:
+    from_id: SRC-9EBB65D4B9
+    to_id: SRC-C64523D77B
+  absent_before:
+  - from_id
+  - to_id
+  unset:
+  - from
+  - to
+  rationale: Both endpoints resolve to current canonical model IDs supported by the
+    relation evidence and source/test ownership; legacy path, stable-key, component-key,
+    or state-label literals are removed.
+  evidence_ids:
+  - EVD-3535FA4E52
+  source_references:
+  - packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts
+- group: relations
+  record_id: REL-276593D308
+  old:
+    from: packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts
+    to: packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts
+  set:
+    from_id: SRC-9EBB65D4B9
+    to_id: SRC-045B6CA381
+  absent_before:
+  - from_id
+  - to_id
+  unset:
+  - from
+  - to
+  rationale: Both endpoints resolve to current canonical model IDs supported by the
+    relation evidence and source/test ownership; legacy path, stable-key, component-key,
+    or state-label literals are removed.
+  evidence_ids:
+  - EVD-2BF1613495
+  source_references:
+  - packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts
+- group: relations
+  record_id: REL-6EA11DB500
+  old:
+    from: packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts
+    to: packages/sdk/src/provable/account.ts
+  set:
+    from_id: SRC-C64523D77B
+    to_id: SRC-4A1F6AB356
+  absent_before:
+  - from_id
+  - to_id
+  unset:
+  - from
+  - to
+  rationale: Both endpoints resolve to current canonical model IDs supported by the
+    relation evidence and source/test ownership; legacy path, stable-key, component-key,
+    or state-label literals are removed.
+  evidence_ids:
+  - EVD-5EA85AB571
+  source_references:
+  - packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts
+- group: relations
+  record_id: REL-A410753B86
+  old:
+    from: packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts
+    to: packages/sdk/src/utils/context-provider.ts
+  set:
+    from_id: SRC-C64523D77B
+    to_id: SRC-BA72F0CFB2
+  absent_before:
+  - from_id
+  - to_id
+  unset:
+  - from
+  - to
+  rationale: Both endpoints resolve to current canonical model IDs supported by the
+    relation evidence and source/test ownership; legacy path, stable-key, component-key,
+    or state-label literals are removed.
+  evidence_ids:
+  - EVD-A981878820
+  source_references:
+  - packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts
+- group: relations
+  record_id: REL-6C91733B3B
+  old:
+    from: packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts
+    to: packages/sdk/src/provable/hashing-helpers.ts
+  set:
+    from_id: SRC-C64523D77B
+    to_id: SRC-F3FE44D20B
+  absent_before:
+  - from_id
+  - to_id
+  unset:
+  - from
+  - to
+  rationale: Both endpoints resolve to current canonical model IDs supported by the
+    relation evidence and source/test ownership; legacy path, stable-key, component-key,
+    or state-label literals are removed.
+  evidence_ids:
+  - EVD-FE36105D52
+  source_references:
+  - packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts
+- group: relations
+  record_id: REL-40B58A67DE
+  old:
+    from: packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts
+    to: lodash
+  set:
+    from_id: SRC-C64523D77B
+    external_to:
+      endpoint_type: PACKAGE_DEPENDENCY
+      name: lodash
+  absent_before:
+  - from_id
+  - external_to
+  unset:
+  - from
+  - to
+  rationale: The source endpoint resolves to a current canonical record; the other
+    endpoint is outside the canonical model and is preserved as explicitly typed external
+    metadata instead of a literal pseudo-ID.
+  evidence_ids:
+  - EVD-17FD8C0477
+  source_references:
+  - packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts
+- group: relations
+  record_id: REL-A6AE82B9B5
+  old:
+    from: packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts
+    to: o1js
+  set:
+    from_id: SRC-C64523D77B
+    external_to: *1
+  absent_before:
+  - from_id
+  - external_to
+  unset:
+  - from
+  - to
+  rationale: The source endpoint resolves to a current canonical record; the other
+    endpoint is outside the canonical model and is preserved as explicitly typed external
+    metadata instead of a literal pseudo-ID.
+  evidence_ids:
+  - EVD-F7ED6BF51C
+  source_references:
+  - packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts
+- group: relations
+  record_id: REL-F0B89E51EA
+  old:
+    from: packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts
+    to: packages/sdk/src/provable/merkle-tree/prefixed-merkle-tree.ts
+  set:
+    from_id: SRC-C64523D77B
+    to_id: SRC-9140D57A6C
+  absent_before:
+  - from_id
+  - to_id
+  unset:
+  - from
+  - to
+  rationale: Both endpoints resolve to current canonical model IDs supported by the
+    relation evidence and source/test ownership; legacy path, stable-key, component-key,
+    or state-label literals are removed.
+  evidence_ids:
+  - EVD-C934B61211
+  source_references:
+  - packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts
+- group: relations
+  record_id: REL-299D396767
+  old:
+    from: packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts
+    to: packages/sdk/src/ledgers/staking-ledger/staking-ledger.ts
+  set:
+    from_id: SRC-C64523D77B
+    to_id: SRC-70F3CC4F23
+  absent_before:
+  - from_id
+  - to_id
+  unset:
+  - from
+  - to
+  rationale: Both endpoints resolve to current canonical model IDs supported by the
+    relation evidence and source/test ownership; legacy path, stable-key, component-key,
+    or state-label literals are removed.
+  evidence_ids:
+  - EVD-546B43B781
+  source_references:
+  - packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts
+- group: relations
+  record_id: REL-2E6A97C4F4
+  old:
+    from: packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts
+    to: packages/sdk/src/provable/voting-account.ts
+  set:
+    from_id: SRC-C64523D77B
+    to_id: SRC-457F3C87C6
+  absent_before:
+  - from_id
+  - to_id
+  unset:
+  - from
+  - to
+  rationale: Both endpoints resolve to current canonical model IDs supported by the
+    relation evidence and source/test ownership; legacy path, stable-key, component-key,
+    or state-label literals are removed.
+  evidence_ids:
+  - EVD-4C0532CE7D
+  source_references:
+  - packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts
+- group: relations
+  record_id: REL-168EF28932
+  old:
+    from: packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts
+    to: packages/sdk/src/ledgers/voting-ledger/voting-ledger.ts
+  set:
+    from_id: SRC-C64523D77B
+    to_id: SRC-3FC38F9998
+  absent_before:
+  - from_id
+  - to_id
+  unset:
+  - from
+  - to
+  rationale: Both endpoints resolve to current canonical model IDs supported by the
+    relation evidence and source/test ownership; legacy path, stable-key, component-key,
+    or state-label literals are removed.
+  evidence_ids:
+  - EVD-0B05CF7A57
+  source_references:
+  - packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts
+- group: relations
+  record_id: REL-5B79062338
+  old:
+    from: packages/sdk/src/provable/contracts/treasury-constants.ts
+    to: o1js
+  set:
+    from_id: SRC-639D488B2F
+    external_to: *1
+  absent_before:
+  - from_id
+  - external_to
+  unset:
+  - from
+  - to
+  rationale: The source endpoint resolves to a current canonical record; the other
+    endpoint is outside the canonical model and is preserved as explicitly typed external
+    metadata instead of a literal pseudo-ID.
+  evidence_ids:
+  - EVD-8F1C625343
+  source_references:
+  - packages/sdk/src/provable/contracts/treasury-constants.ts
+- group: relations
+  record_id: REL-78C89A1167
+  old:
+    from: packages/sdk/src/provable/contracts/treasury-owner.ts
+    to: packages/sdk/src/provable/account.ts
+  set:
+    from_id: SRC-5ACF00A9FC
+    to_id: SRC-4A1F6AB356
+  absent_before:
+  - from_id
+  - to_id
+  unset:
+  - from
+  - to
+  rationale: Both endpoints resolve to current canonical model IDs supported by the
+    relation evidence and source/test ownership; legacy path, stable-key, component-key,
+    or state-label literals are removed.
+  evidence_ids:
+  - EVD-501B3A11E8
+  source_references:
+  - packages/sdk/src/provable/contracts/treasury-owner.ts
+- group: relations
+  record_id: REL-5B59D6E729
+  old:
+    from: packages/sdk/src/provable/contracts/treasury-owner.ts
+    to: packages/sdk/src/provable/contracts/treasury-constants.ts
+  set:
+    from_id: SRC-5ACF00A9FC
+    to_id: SRC-639D488B2F
+  absent_before:
+  - from_id
+  - to_id
+  unset:
+  - from
+  - to
+  rationale: Both endpoints resolve to current canonical model IDs supported by the
+    relation evidence and source/test ownership; legacy path, stable-key, component-key,
+    or state-label literals are removed.
+  evidence_ids:
+  - EVD-143F30BAE9
+  source_references:
+  - packages/sdk/src/provable/contracts/treasury-owner.ts
+- group: relations
+  record_id: REL-E5F8590514
+  old:
+    from: packages/sdk/src/provable/contracts/treasury-owner.ts
+    to: packages/sdk/src/provable/events/treasury-proposal-events.ts
+  set:
+    from_id: SRC-5ACF00A9FC
+    to_id: SRC-58ADF841FC
+  absent_before:
+  - from_id
+  - to_id
+  unset:
+  - from
+  - to
+  rationale: Both endpoints resolve to current canonical model IDs supported by the
+    relation evidence and source/test ownership; legacy path, stable-key, component-key,
+    or state-label literals are removed.
+  evidence_ids:
+  - EVD-B02FDCA7A9
+  source_references:
+  - packages/sdk/src/provable/contracts/treasury-owner.ts
+- group: relations
+  record_id: REL-F7662AD13A
+  old:
+    from: packages/sdk/src/provable/contracts/treasury-owner.ts
+    to: packages/sdk/src/logging/logger.ts
+  set:
+    from_id: SRC-5ACF00A9FC
+    to_id: SRC-1FAD2D3160
+  absent_before:
+  - from_id
+  - to_id
+  unset:
+  - from
+  - to
+  rationale: Both endpoints resolve to current canonical model IDs supported by the
+    relation evidence and source/test ownership; legacy path, stable-key, component-key,
+    or state-label literals are removed.
+  evidence_ids:
+  - EVD-5BF6C08B0C
+  source_references:
+  - packages/sdk/src/provable/contracts/treasury-owner.ts
+- group: relations
+  record_id: REL-9F3429D10A
+  old:
+    from: packages/sdk/src/provable/contracts/treasury-owner.ts
+    to: packages/sdk/src/provable/contracts/treasury-pause-controller/multisig-signatures.ts
+  set:
+    from_id: SRC-5ACF00A9FC
+    to_id: SRC-DF069048A5
+  absent_before:
+  - from_id
+  - to_id
+  unset:
+  - from
+  - to
+  rationale: Both endpoints resolve to current canonical model IDs supported by the
+    relation evidence and source/test ownership; legacy path, stable-key, component-key,
+    or state-label literals are removed.
+  evidence_ids:
+  - EVD-328036A7FC
+  source_references:
+  - packages/sdk/src/provable/contracts/treasury-owner.ts
+- group: relations
+  record_id: REL-C72118BE10
+  old:
+    from: packages/sdk/src/provable/contracts/treasury-owner.ts
+    to: o1js
+  set:
+    from_id: SRC-5ACF00A9FC
+    external_to: *1
+  absent_before:
+  - from_id
+  - external_to
+  unset:
+  - from
+  - to
+  rationale: The source endpoint resolves to a current canonical record; the other
+    endpoint is outside the canonical model and is preserved as explicitly typed external
+    metadata instead of a literal pseudo-ID.
+  evidence_ids:
+  - EVD-00CD374609
+  source_references:
+  - packages/sdk/src/provable/contracts/treasury-owner.ts
+- group: relations
+  record_id: REL-08A70D7B33
+  old:
+    from: packages/sdk/src/provable/contracts/treasury-owner.ts
+    to: packages/sdk/src/provable/contracts/treasury-pause-controller/treasury-pause-controller.ts
+  set:
+    from_id: SRC-5ACF00A9FC
+    to_id: SRC-B0C4273C06
+  absent_before:
+  - from_id
+  - to_id
+  unset:
+  - from
+  - to
+  rationale: Both endpoints resolve to current canonical model IDs supported by the
+    relation evidence and source/test ownership; legacy path, stable-key, component-key,
+    or state-label literals are removed.
+  evidence_ids:
+  - EVD-0B119E094A
+  source_references:
+  - packages/sdk/src/provable/contracts/treasury-owner.ts
+- group: relations
+  record_id: REL-CE32C719DB
+  old:
+    from: packages/sdk/src/provable/contracts/treasury-owner.ts
+    to: packages/sdk/src/provable/merkle-tree/prefixed-merkle-tree.ts
+  set:
+    from_id: SRC-5ACF00A9FC
+    to_id: SRC-9140D57A6C
+  absent_before:
+  - from_id
+  - to_id
+  unset:
+  - from
+  - to
+  rationale: Both endpoints resolve to current canonical model IDs supported by the
+    relation evidence and source/test ownership; legacy path, stable-key, component-key,
+    or state-label literals are removed.
+  evidence_ids:
+  - EVD-9EF06E485C
+  source_references:
+  - packages/sdk/src/provable/contracts/treasury-owner.ts
+- group: relations
+  record_id: REL-DD43BE2BCF
+  old:
+    from: packages/sdk/src/provable/contracts/treasury-owner.ts
+    to: packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts
+  set:
+    from_id: SRC-5ACF00A9FC
+    to_id: SRC-9EBB65D4B9
+  absent_before:
+  - from_id
+  - to_id
+  unset:
+  - from
+  - to
+  rationale: Both endpoints resolve to current canonical model IDs supported by the
+    relation evidence and source/test ownership; legacy path, stable-key, component-key,
+    or state-label literals are removed.
+  evidence_ids:
+  - EVD-1C18F16803
+  source_references:
+  - packages/sdk/src/provable/contracts/treasury-owner.ts
+- group: relations
+  record_id: REL-B259F3702C
+  old:
+    from: packages/sdk/src/provable/contracts/treasury-owner.ts
+    to: packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts
+  set:
+    from_id: SRC-5ACF00A9FC
+    to_id: SRC-C64523D77B
+  absent_before:
+  - from_id
+  - to_id
+  unset:
+  - from
+  - to
+  rationale: Both endpoints resolve to current canonical model IDs supported by the
+    relation evidence and source/test ownership; legacy path, stable-key, component-key,
+    or state-label literals are removed.
+  evidence_ids:
+  - EVD-C5F60BB8F2
+  source_references:
+  - packages/sdk/src/provable/contracts/treasury-owner.ts
+- group: relations
+  record_id: REL-B26C9DEED0
+  old:
+    from: packages/sdk/src/provable/contracts/treasury-owner.ts
+    to: packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts
+  set:
+    from_id: SRC-5ACF00A9FC
+    to_id: SRC-045B6CA381
+  absent_before:
+  - from_id
+  - to_id
+  unset:
+  - from
+  - to
+  rationale: Both endpoints resolve to current canonical model IDs supported by the
+    relation evidence and source/test ownership; legacy path, stable-key, component-key,
+    or state-label literals are removed.
+  evidence_ids:
+  - EVD-92A18EC931
+  source_references:
+  - packages/sdk/src/provable/contracts/treasury-owner.ts
+- group: relations
+  record_id: REL-9FD39CA0BF
+  old:
+    from: packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts
+    to: packages/sdk/src/utils/context-provider.ts
+  set:
+    from_id: SRC-045B6CA381
+    to_id: SRC-BA72F0CFB2
+  absent_before:
+  - from_id
+  - to_id
+  unset:
+  - from
+  - to
+  rationale: Both endpoints resolve to current canonical model IDs supported by the
+    relation evidence and source/test ownership; legacy path, stable-key, component-key,
+    or state-label literals are removed.
+  evidence_ids:
+  - EVD-AA2243F703
+  source_references:
+  - packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts
+- group: relations
+  record_id: REL-E78B1A4B91
+  old:
+    from: packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts
+    to: packages/sdk/src/provable/hashing-helpers.ts
+  set:
+    from_id: SRC-045B6CA381
+    to_id: SRC-F3FE44D20B
+  absent_before:
+  - from_id
+  - to_id
+  unset:
+  - from
+  - to
+  rationale: Both endpoints resolve to current canonical model IDs supported by the
+    relation evidence and source/test ownership; legacy path, stable-key, component-key,
+    or state-label literals are removed.
+  evidence_ids:
+  - EVD-E9416393D5
+  source_references:
+  - packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts
+- group: relations
+  record_id: REL-1D6D923385
+  old:
+    from: packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts
+    to: packages/sdk/src/logging/logger.ts
+  set:
+    from_id: SRC-045B6CA381
+    to_id: SRC-1FAD2D3160
+  absent_before:
+  - from_id
+  - to_id
+  unset:
+  - from
+  - to
+  rationale: Both endpoints resolve to current canonical model IDs supported by the
+    relation evidence and source/test ownership; legacy path, stable-key, component-key,
+    or state-label literals are removed.
+  evidence_ids:
+  - EVD-ED07B38B39
+  source_references:
+  - packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts
+- group: relations
+  record_id: REL-B6B58FC464
+  old:
+    from: packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts
+    to: packages/sdk/src/ledgers/nullifier-ledger/nullifier-ledger.ts
+  set:
+    from_id: SRC-045B6CA381
+    to_id: SRC-F697D41C4C
+  absent_before:
+  - from_id
+  - to_id
+  unset:
+  - from
+  - to
+  rationale: Both endpoints resolve to current canonical model IDs supported by the
+    relation evidence and source/test ownership; legacy path, stable-key, component-key,
+    or state-label literals are removed.
+  evidence_ids:
+  - EVD-B9AD9D302C
+  source_references:
+  - packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts
+- group: relations
+  record_id: REL-18168F74F0
+  old:
+    from: packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts
+    to: o1js
+  set:
+    from_id: SRC-045B6CA381
+    external_to: *1
+  absent_before:
+  - from_id
+  - external_to
+  unset:
+  - from
+  - to
+  rationale: The source endpoint resolves to a current canonical record; the other
+    endpoint is outside the canonical model and is preserved as explicitly typed external
+    metadata instead of a literal pseudo-ID.
+  evidence_ids:
+  - EVD-15410E702B
+  source_references:
+  - packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts
+- group: relations
+  record_id: REL-091EC29FB8
+  old:
+    from: packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts
+    to: packages/sdk/src/provable/merkle-tree/prefixed-merkle-tree.ts
+  set:
+    from_id: SRC-045B6CA381
+    to_id: SRC-9140D57A6C
+  absent_before:
+  - from_id
+  - to_id
+  unset:
+  - from
+  - to
+  rationale: Both endpoints resolve to current canonical model IDs supported by the
+    relation evidence and source/test ownership; legacy path, stable-key, component-key,
+    or state-label literals are removed.
+  evidence_ids:
+  - EVD-1809F2D716
+  source_references:
+  - packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts
+- group: relations
+  record_id: REL-7EFB214FA7
+  old:
+    from: packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts
+    to: packages/sdk/src/provable/voting-account.ts
+  set:
+    from_id: SRC-045B6CA381
+    to_id: SRC-457F3C87C6
+  absent_before:
+  - from_id
+  - to_id
+  unset:
+  - from
+  - to
+  rationale: Both endpoints resolve to current canonical model IDs supported by the
+    relation evidence and source/test ownership; legacy path, stable-key, component-key,
+    or state-label literals are removed.
+  evidence_ids:
+  - EVD-EEEC54D2DF
+  source_references:
+  - packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts
+- group: relations
+  record_id: REL-CD42F66A0B
+  old:
+    from: packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts
+    to: packages/sdk/src/ledgers/voting-ledger/voting-ledger.ts
+  set:
+    from_id: SRC-045B6CA381
+    to_id: SRC-3FC38F9998
+  absent_before:
+  - from_id
+  - to_id
+  unset:
+  - from
+  - to
+  rationale: Both endpoints resolve to current canonical model IDs supported by the
+    relation evidence and source/test ownership; legacy path, stable-key, component-key,
+    or state-label literals are removed.
+  evidence_ids:
+  - EVD-8018A85CDC
+  source_references:
+  - packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts
+- group: relations
+  record_id: REL-6685F92AB7
+  old:
+    from: packages/sdk/src/provable/voting-account.ts
+    to: o1js
+  set:
+    from_id: SRC-457F3C87C6
+    external_to: *1
+  absent_before:
+  - from_id
+  - external_to
+  unset:
+  - from
+  - to
+  rationale: The source endpoint resolves to a current canonical record; the other
+    endpoint is outside the canonical model and is preserved as explicitly typed external
+    metadata instead of a literal pseudo-ID.
+  evidence_ids:
+  - EVD-545F80C319
+  source_references:
+  - packages/sdk/src/provable/voting-account.ts
+- group: relations
+  record_id: REL-A2F41756C4
+  old:
+    from: test:component:inventory:event-schemas:packages/sdk/test/provable/events/treasury-proposal-events.test.ts
+    to: component:inventory:event-schemas
+  set:
+    from_id: TST-ED3BD4CF2F
+    to_id: CMP-834A30297A
+  absent_before:
+  - from_id
+  - to_id
+  unset:
+  - from
+  - to
+  rationale: Both endpoints resolve to current canonical model IDs supported by the
+    relation evidence and source/test ownership; legacy path, stable-key, component-key,
+    or state-label literals are removed.
+  evidence_ids:
+  - EVD-333DB19C52
+  source_references:
+  - packages/sdk/test/provable/events/treasury-proposal-events.test.ts
+- group: relations
+  record_id: REL-D21BD33920
+  old:
+    from: test:component:inventory:prefixed-merkle:packages/sdk/test/provable/merkle-tree/prefixed-merkle-tree.test.ts
+    to: component:inventory:prefixed-merkle
+  set:
+    from_id: TST-318386F25F
+    to_id: CMP-2890255AE1
+  absent_before:
+  - from_id
+  - to_id
+  unset:
+  - from
+  - to
+  rationale: Both endpoints resolve to current canonical model IDs supported by the
+    relation evidence and source/test ownership; legacy path, stable-key, component-key,
+    or state-label literals are removed.
+  evidence_ids:
+  - EVD-DD5C104130
+  source_references:
+  - packages/sdk/test/provable/merkle-tree/prefixed-merkle-tree.test.ts
+- group: relations
+  record_id: REL-50D332175F
+  old:
+    from: test:component:inventory:pause-multisig:packages/sdk/test/provable/contracts/treasury-pause-controller/multisig-signatures.test.ts
+    to: component:inventory:pause-multisig
+  set:
+    from_id: TST-D1863E1F8D
+    to_id: CMP-7DB1B15B38
+  absent_before:
+  - from_id
+  - to_id
+  unset:
+  - from
+  - to
+  rationale: Both endpoints resolve to current canonical model IDs supported by the
+    relation evidence and source/test ownership; legacy path, stable-key, component-key,
+    or state-label literals are removed.
+  evidence_ids:
+  - EVD-406E8BA259
+  source_references:
+  - packages/sdk/test/provable/contracts/treasury-pause-controller/multisig-signatures.test.ts
+- group: relations
+  record_id: REL-B1A7D393B9
+  old:
+    from: test:component:inventory:pause-controller:packages/sdk/test/provable/contracts/treasury-pause-controller/treasury-pause-controller.test.ts
+    to: component:inventory:pause-multisig
+  set:
+    from_id: TST-5FC61A24DA
+    to_id: CMP-7DB1B15B38
+  absent_before:
+  - from_id
+  - to_id
+  unset:
+  - from
+  - to
+  rationale: Both endpoints resolve to current canonical model IDs supported by the
+    relation evidence and source/test ownership; legacy path, stable-key, component-key,
+    or state-label literals are removed.
+  evidence_ids:
+  - EVD-C13179E5CF
+  source_references:
+  - packages/sdk/test/provable/contracts/treasury-pause-controller/treasury-pause-controller.test.ts
+- group: relations
+  record_id: REL-F1C0CEA10E
+  old:
+    from: test:component:inventory:pause-controller:packages/sdk/test/provable/contracts/treasury-pause-controller/treasury-pause-controller.test.ts
+    to: component:inventory:pause-controller
+  set:
+    from_id: TST-5FC61A24DA
+    to_id: CMP-B6BB8BE661
+  absent_before:
+  - from_id
+  - to_id
+  unset:
+  - from
+  - to
+  rationale: Both endpoints resolve to current canonical model IDs supported by the
+    relation evidence and source/test ownership; legacy path, stable-key, component-key,
+    or state-label literals are removed.
+  evidence_ids:
+  - EVD-185442E9FD
+  source_references:
+  - packages/sdk/test/provable/contracts/treasury-pause-controller/treasury-pause-controller.test.ts
+- group: relations
+  record_id: REL-489BD1D399
+  old:
+    from: test:component:inventory:treasury-proposal:packages/sdk/test/provable/contracts/treasury-proposal/treasury-proposal.test.ts
+    to: component:inventory:treasury-proposal
+  set:
+    from_id: TST-6530589740
+    to_id: CMP-5CAF19BDCD
+  absent_before:
+  - from_id
+  - to_id
+  unset:
+  - from
+  - to
+  rationale: Both endpoints resolve to current canonical model IDs supported by the
+    relation evidence and source/test ownership; legacy path, stable-key, component-key,
+    or state-label literals are removed.
+  evidence_ids:
+  - EVD-34206FFE7C
+  source_references:
+  - packages/sdk/test/provable/contracts/treasury-proposal/treasury-proposal.test.ts
+- group: relations
+  record_id: REL-BFD88656B6
+  old:
+    from: test:component:inventory:staking-to-voting:packages/sdk/test/provable/staking-ledger-to-voting-ledger.test.ts
+    to: component:inventory:account-model
+  set:
+    from_id: TST-5A6CA56CD8
+    to_id: CMP-49180D7623
+  absent_before:
+  - from_id
+  - to_id
+  unset:
+  - from
+  - to
+  rationale: Both endpoints resolve to current canonical model IDs supported by the
+    relation evidence and source/test ownership; legacy path, stable-key, component-key,
+    or state-label literals are removed.
+  evidence_ids:
+  - EVD-EB305DF8DE
+  source_references:
+  - packages/sdk/test/provable/staking-ledger-to-voting-ledger.test.ts
+- group: relations
+  record_id: REL-172D3D004C
+  old:
+    from: test:component:inventory:staking-to-voting:packages/sdk/test/provable/staking-ledger-to-voting-ledger.test.ts
+    to: component:inventory:staking-to-voting
+  set:
+    from_id: TST-5A6CA56CD8
+    to_id: CMP-874E479BA1
+  absent_before:
+  - from_id
+  - to_id
+  unset:
+  - from
+  - to
+  rationale: Both endpoints resolve to current canonical model IDs supported by the
+    relation evidence and source/test ownership; legacy path, stable-key, component-key,
+    or state-label literals are removed.
+  evidence_ids:
+  - EVD-1C56B1E2A1
+  source_references:
+  - packages/sdk/test/provable/staking-ledger-to-voting-ledger.test.ts
+- group: relations
+  record_id: REL-F2F467DE44
+  old:
+    from: test:component:inventory:treasury-owner:packages/sdk/test/integration/treasury-owner.test.ts
+    to: component:inventory:pause-controller
+  set:
+    from_id: TST-A696D485D6
+    to_id: CMP-B6BB8BE661
+  absent_before:
+  - from_id
+  - to_id
+  unset:
+  - from
+  - to
+  rationale: Both endpoints resolve to current canonical model IDs supported by the
+    relation evidence and source/test ownership; legacy path, stable-key, component-key,
+    or state-label literals are removed.
+  evidence_ids:
+  - EVD-17247EC2B9
+  source_references:
+  - packages/sdk/test/integration/treasury-owner.test.ts
+- group: relations
+  record_id: REL-D37A248DDE
+  old:
+    from: test:component:inventory:treasury-owner:packages/sdk/test/integration/treasury-owner.test.ts
+    to: component:inventory:treasury-proposal
+  set:
+    from_id: TST-A696D485D6
+    to_id: CMP-5CAF19BDCD
+  absent_before:
+  - from_id
+  - to_id
+  unset:
+  - from
+  - to
+  rationale: Both endpoints resolve to current canonical model IDs supported by the
+    relation evidence and source/test ownership; legacy path, stable-key, component-key,
+    or state-label literals are removed.
+  evidence_ids:
+  - EVD-2007509603
+  source_references:
+  - packages/sdk/test/integration/treasury-owner.test.ts
+- group: relations
+  record_id: REL-23CCDE8537
+  old:
+    from: test:component:inventory:treasury-owner:packages/sdk/test/integration/treasury-owner.test.ts
+    to: component:inventory:staking-to-voting
+  set:
+    from_id: TST-A696D485D6
+    to_id: CMP-874E479BA1
+  absent_before:
+  - from_id
+  - to_id
+  unset:
+  - from
+  - to
+  rationale: Both endpoints resolve to current canonical model IDs supported by the
+    relation evidence and source/test ownership; legacy path, stable-key, component-key,
+    or state-label literals are removed.
+  evidence_ids:
+  - EVD-AE083D7E2B
+  source_references:
+  - packages/sdk/test/integration/treasury-owner.test.ts
+- group: relations
+  record_id: REL-BEB602A473
+  old:
+    from: test:component:inventory:treasury-owner:packages/sdk/test/integration/treasury-owner.test.ts
+    to: component:inventory:treasury-owner
+  set:
+    from_id: TST-A696D485D6
+    to_id: CMP-E155326DD2
+  absent_before:
+  - from_id
+  - to_id
+  unset:
+  - from
+  - to
+  rationale: Both endpoints resolve to current canonical model IDs supported by the
+    relation evidence and source/test ownership; legacy path, stable-key, component-key,
+    or state-label literals are removed.
+  evidence_ids:
+  - EVD-9AC3C39AB9
+  source_references:
+  - packages/sdk/test/integration/treasury-owner.test.ts
+- group: relations
+  record_id: REL-336C0CBD6F
+  old:
+    from: test:component:inventory:treasury-owner:packages/sdk/test/integration/treasury-owner.test.ts
+    to: component:inventory:vote-reducer
+  set:
+    from_id: TST-A696D485D6
+    to_id: CMP-0F476A460D
+  absent_before:
+  - from_id
+  - to_id
+  unset:
+  - from
+  - to
+  rationale: Both endpoints resolve to current canonical model IDs supported by the
+    relation evidence and source/test ownership; legacy path, stable-key, component-key,
+    or state-label literals are removed.
+  evidence_ids:
+  - EVD-48888AC771
+  source_references:
+  - packages/sdk/test/integration/treasury-owner.test.ts
+- group: relations
+  record_id: REL-C23B183670
+  old:
+    from: test:component:inventory:vote-reducer:packages/sdk/test/provable/contracts/treasury-proposal/vote-reducer.test.ts
+    to: component:inventory:hashing
+  set:
+    from_id: TST-A9E4F4D3BC
+    to_id: CMP-31D3990A1F
+  absent_before:
+  - from_id
+  - to_id
+  unset:
+  - from
+  - to
+  rationale: Both endpoints resolve to current canonical model IDs supported by the
+    relation evidence and source/test ownership; legacy path, stable-key, component-key,
+    or state-label literals are removed.
+  evidence_ids:
+  - EVD-EA3ED0A060
+  source_references:
+  - packages/sdk/test/provable/contracts/treasury-proposal/vote-reducer.test.ts
+- group: relations
+  record_id: REL-5D19ED4CA6
+  old:
+    from: test:component:inventory:vote-reducer:packages/sdk/test/provable/contracts/treasury-proposal/vote-reducer.test.ts
+    to: component:inventory:vote-reducer
+  set:
+    from_id: TST-A9E4F4D3BC
+    to_id: CMP-0F476A460D
+  absent_before:
+  - from_id
+  - to_id
+  unset:
+  - from
+  - to
+  rationale: Both endpoints resolve to current canonical model IDs supported by the
+    relation evidence and source/test ownership; legacy path, stable-key, component-key,
+    or state-label literals are removed.
+  evidence_ids:
+  - EVD-F64DBCBBA0
+  source_references:
+  - packages/sdk/test/provable/contracts/treasury-proposal/vote-reducer.test.ts
+- group: relations
+  record_id: REL-F0676059EC
+  old:
+    from: test:component:inventory:vote-reducer:packages/sdk/test/provable/contracts/treasury-proposal/vote-reducer.test.ts
+    to: component:inventory:staking-to-voting
+  set:
+    from_id: TST-A9E4F4D3BC
+    to_id: CMP-874E479BA1
+  absent_before:
+  - from_id
+  - to_id
+  unset:
+  - from
+  - to
+  rationale: Both endpoints resolve to current canonical model IDs supported by the
+    relation evidence and source/test ownership; legacy path, stable-key, component-key,
+    or state-label literals are removed.
+  evidence_ids:
+  - EVD-C316F8A2AA
+  source_references:
+  - packages/sdk/test/provable/contracts/treasury-proposal/vote-reducer.test.ts
+- group: relations
+  record_id: REL-E8C18D1D66
+  old:
+    from: packages/sdk/test/provable/events/treasury-proposal-events.test.ts
+  set:
+    from_id: SRC-C2638DBE31
+  absent_before:
+  - from_id
+  unset:
+  - from
+  rationale: Both endpoints resolve to current canonical model IDs supported by the
+    relation evidence and source/test ownership; legacy path, stable-key, component-key,
+    or state-label literals are removed.
+  evidence_ids:
+  - EVD-64C65F6710
+  source_references:
+  - packages/sdk/test/provable/events/treasury-proposal-events.test.ts
+- group: relations
+  record_id: REL-2B8B758DBD
+  old:
+    to: TreasuryProposal appState
+  set:
+    to_id: CMP-5CAF19BDCD
+  absent_before:
+  - to_id
+  unset:
+  - to
+  rationale: Both endpoints resolve to current canonical model IDs supported by the
+    relation evidence and source/test ownership; legacy path, stable-key, component-key,
+    or state-label literals are removed.
+  evidence_ids:
+  - EVD-3EFA780CA4
+  source_references:
+  - packages/sdk/src/provable/contracts/treasury-owner.ts:210-255
+- group: relations
+  record_id: REL-5802D63B62
+  old:
+    to: SideLoadedStakingLedgerToVotingLedgerProof
+  set:
+    to_id: ZKP-DF018A9714
+  absent_before:
+  - to_id
+  unset:
+  - to
+  rationale: The consumer requires the staking transformation proof to be terminally
+    exhausted; the current method-specific statement is ZKP-DF018A9714, replacing
+    the superseded aggregate without changing the recorded static conclusion.
+  evidence_ids:
+  - EVD-EAC5164121
+  source_references:
+  - packages/sdk/src/provable/contracts/treasury-owner.ts:340-342
+- group: relations
+  record_id: REL-DEAD37FEA7
+  old:
+    to: SideLoadedVoteReducerProof
+  set:
+    to_id: ZKP-547C93E79B
+  absent_before:
+  - to_id
+  unset:
+  - to
+  rationale: The vote proof endpoint is normalized to the current recursive VoteReducer
+    merge statement; its base reduction predecessor remains represented by ZKP-BA11C90A9F
+    and the current recursion metadata.
+  evidence_ids:
+  - EVD-4A51346245
+  source_references:
+  - packages/sdk/src/provable/contracts/treasury-owner.ts:335-338
+- group: relations
+  record_id: REL-3CED302334
+  old:
+    from: packages/sdk/test/integration/treasury-owner.test.ts
+  set:
+    from_id: SRC-1EF7A669E0
+  absent_before:
+  - from_id
+  unset:
+  - from
+  rationale: Both endpoints resolve to current canonical model IDs supported by the
+    relation evidence and source/test ownership; legacy path, stable-key, component-key,
+    or state-label literals are removed.
+  evidence_ids:
+  - EVD-49425938B7
+  source_references:
+  - packages/sdk/test/integration/treasury-owner.test.ts
+- group: relations
+  record_id: REL-C3A3BD30D1
+  old:
+    to: voter PublicKey account update
+  set:
+    external_to:
+      endpoint_type: MINA_ACCOUNT_UPDATE
+      name: voter PublicKey signed account update
+  absent_before:
+  - external_to
+  unset:
+  - to
+  rationale: The source endpoint resolves to a current canonical record; the other
+    endpoint is outside the canonical model and is preserved as explicitly typed external
+    metadata instead of a literal pseudo-ID.
+  evidence_ids:
+  - EVD-EB581AB9CA
+  source_references:
+  - packages/sdk/src/provable/contracts/treasury-owner.ts:312-315
+- group: relations
+  record_id: REL-DEB2AB770C
+  old:
+    from: packages/sdk/test/provable/contracts/treasury-pause-controller/treasury-pause-controller.test.ts
+  set:
+    from_id: SRC-ADD1EE03C0
+  absent_before:
+  - from_id
+  unset:
+  - from
+  rationale: Both endpoints resolve to current canonical model IDs supported by the
+    relation evidence and source/test ownership; legacy path, stable-key, component-key,
+    or state-label literals are removed.
+  evidence_ids:
+  - EVD-3C1925A19B
+  source_references:
+  - packages/sdk/test/provable/contracts/treasury-pause-controller/treasury-pause-controller.test.ts
+- group: relations
+  record_id: REL-D5F524F3C8
+  old:
+    to: recipient account balance
+  set:
+    external_to:
+      endpoint_type: MINA_ACCOUNT_STATE
+      name: recipient account balance
+  absent_before:
+  - external_to
+  unset:
+  - to
+  rationale: The source endpoint resolves to a current canonical record; the other
+    endpoint is outside the canonical model and is preserved as explicitly typed external
+    metadata instead of a literal pseudo-ID.
+  evidence_ids:
+  - EVD-3E8D2C2CAE
+  source_references:
+  - packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts:377-383
+- group: relations
+  record_id: REL-A7E0080416
+  old:
+    to: StakingLedgerToVotingLedger proof statement
+  set:
+    to_id: ZKP-DF018A9714
+  absent_before:
+  - to_id
+  unset:
+  - to
+  rationale: The consumer requires the staking transformation proof to be terminally
+    exhausted; the current method-specific statement is ZKP-DF018A9714, replacing
+    the superseded aggregate without changing the recorded static conclusion.
+  evidence_ids:
+  - EVD-486D7CAD2C
+  source_references:
+  - packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts:261-282
+- group: relations
+  record_id: REL-4810C50C7E
+  old:
+    to: VoteReducer proof statement
+  set:
+    to_id: ZKP-547C93E79B
+  absent_before:
+  - to_id
+  unset:
+  - to
+  rationale: The vote proof endpoint is normalized to the current recursive VoteReducer
+    merge statement; its base reduction predecessor remains represented by ZKP-BA11C90A9F
+    and the current recursion metadata.
+  evidence_ids:
+  - EVD-368185B3B6
+  source_references:
+  - packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts:227-264
+- group: relations
+  record_id: REL-188319D340
+  old:
+    to_id: ZKP-0830843A1A
+  set:
+    to_id: ZKP-DF018A9714
+  rationale: The consumer requires the staking transformation proof to be terminally
+    exhausted; the current method-specific statement is ZKP-DF018A9714, replacing
+    the superseded aggregate without changing the recorded static conclusion.
+  evidence_ids:
+  - EVD-BDBE008B7F
+  source_references:
+  - packages/sdk/src/provable/contracts/treasury-owner.ts:335-342
+- group: relations
+  record_id: REL-8723F51AAF
+  old:
+    to_id: ZKP-37F3DC23FD
+  set:
+    to_id: ZKP-547C93E79B
+  rationale: The vote proof endpoint is normalized to the current recursive VoteReducer
+    merge statement; its base reduction predecessor remains represented by ZKP-BA11C90A9F
+    and the current recursion metadata.
+  evidence_ids:
+  - EVD-4AAAFAD8E9
+  source_references:
+  - packages/sdk/src/provable/contracts/treasury-owner.ts:335-342
+- group: zk_statements
+  record_id: ZKP-0830843A1A
+  old:
+    superseded_by_ids:
+    - ZKP-BA11C90A9F
+    - ZKP-547C93E79B
+    - ZKP-5DF7D24003
+    - ZKP-66153C8CB1
+    - ZKP-DF018A9714
+  set:
+    superseded_by_ids: &11
+    - ZKP-5DF7D24003
+    - ZKP-66153C8CB1
+    - ZKP-DF018A9714
+  rationale: Preserve the superseded aggregate as history while restricting its replacement
+    lineage to the three current staking-transform method statements.
+  evidence_ids:
+  - EVD-3CEBE6B022
+  source_references:
+  - packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts:75-340
+- group: zk_statements
+  record_id: ZKP-37F3DC23FD
+  old:
+    superseded_by_ids:
+    - ZKP-BA11C90A9F
+    - ZKP-547C93E79B
+    - ZKP-5DF7D24003
+    - ZKP-66153C8CB1
+    - ZKP-DF018A9714
+  set:
+    superseded_by_ids: &12
+    - ZKP-BA11C90A9F
+    - ZKP-547C93E79B
+  rationale: Preserve the superseded aggregate as history while restricting its replacement
+    lineage to the two current VoteReducer method statements.
+  evidence_ids:
+  - EVD-3CEBE6B022
+  source_references:
+  - packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts:320-639
+- group: inputs_outputs
+  record_id: IO-DB06E786C6
+  old: {}
+  set:
+    producer_ids: []
+    consumer_ids:
+    - ZKP-5DF7D24003
+    - ZKP-DF018A9714
+    external_producer: &8
+      endpoint_type: HOST_LEDGER_PROVIDER
+      name: staking/voting ledger context
+    external_consumer: &9
+      endpoint_type: HOST_LEDGER_STORAGE
+      name: mutable voting-ledger persistence
+  absent_before:
+  - producer_ids
+  - consumer_ids
+  - external_producer
+  - external_consumer
+  rationale: Canonical in-scope producer/consumer IDs are recorded where source/model
+    evidence supports them, while the remaining caller, prover, host-ledger, persistence,
+    account-state, or observer boundary is typed explicitly as external. No internal
+    endpoint is invented.
+  evidence_ids:
+  - EVD-C15386FB6E
+  - EVD-B30136F272
+  source_references:
+  - packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts:35-41
+- group: inputs_outputs
+  record_id: IO-89BB105E28
+  old: {}
+  set:
+    producer_ids: []
+    consumer_ids:
+    - ZKP-5DF7D24003
+    external_producer: &2
+      endpoint_type: OFFCHAIN_PROOF_DRIVER
+      name: proof input and witness provider
+  absent_before:
+  - producer_ids
+  - consumer_ids
+  - external_producer
+  rationale: Canonical in-scope producer/consumer IDs are recorded where source/model
+    evidence supports them, while the remaining caller, prover, host-ledger, persistence,
+    account-state, or observer boundary is typed explicitly as external. No internal
+    endpoint is invented.
+  evidence_ids:
+  - EVD-B30136F272
+  source_references:
+  - packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts:43-44
+- group: inputs_outputs
+  record_id: IO-F2D67CC91F
+  old: {}
+  set:
+    producer_ids: []
+    consumer_ids: &3
+    - ZKP-5DF7D24003
+    - ZKP-DF018A9714
+    - ZKP-66153C8CB1
+    external_producer: *2
+  absent_before:
+  - producer_ids
+  - consumer_ids
+  - external_producer
+  rationale: Canonical in-scope producer/consumer IDs are recorded where source/model
+    evidence supports them, while the remaining caller, prover, host-ledger, persistence,
+    account-state, or observer boundary is typed explicitly as external. No internal
+    endpoint is invented.
+  evidence_ids:
+  - EVD-7DCF6EDFE3
+  source_references:
+  - packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts:53-57
+- group: inputs_outputs
+  record_id: IO-D2E9ED5387
+  old: {}
+  set:
+    producer_ids: []
+    consumer_ids: *3
+    external_producer: *2
+  absent_before:
+  - producer_ids
+  - consumer_ids
+  - external_producer
+  rationale: Canonical in-scope producer/consumer IDs are recorded where source/model
+    evidence supports them, while the remaining caller, prover, host-ledger, persistence,
+    account-state, or observer boundary is typed explicitly as external. No internal
+    endpoint is invented.
+  evidence_ids:
+  - EVD-7DCF6EDFE3
+  source_references:
+  - packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts:53-57
+- group: inputs_outputs
+  record_id: IO-FDFB39F445
+  old: {}
+  set:
+    producer_ids: []
+    consumer_ids: *3
+    external_producer: *2
+  absent_before:
+  - producer_ids
+  - consumer_ids
+  - external_producer
+  rationale: Canonical in-scope producer/consumer IDs are recorded where source/model
+    evidence supports them, while the remaining caller, prover, host-ledger, persistence,
+    account-state, or observer boundary is typed explicitly as external. No internal
+    endpoint is invented.
+  evidence_ids:
+  - EVD-7DCF6EDFE3
+  source_references:
+  - packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts:53-57
+- group: inputs_outputs
+  record_id: IO-A2AA3D7612
+  old: {}
+  set:
+    producer_ids: *3
+    consumer_ids:
+    - ZKP-66153C8CB1
+    - ZKP-DF018A9714
+    - BHV-1136BD4D08
+  absent_before:
+  - producer_ids
+  - consumer_ids
+  rationale: The anchored direction and owning behavior/ZK method support the listed
+    current canonical producers and consumers; the mapping remains static and does
+    not claim runtime reachability or proof execution.
+  evidence_ids:
+  - EVD-7BD50662A0
+  source_references:
+  - packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts:59-63
+- group: inputs_outputs
+  record_id: IO-AF04F2C7E5
+  old: {}
+  set:
+    producer_ids: *3
+    consumer_ids:
+    - ZKP-66153C8CB1
+    - ZKP-DF018A9714
+    - BHV-1136BD4D08
+  absent_before:
+  - producer_ids
+  - consumer_ids
+  rationale: The anchored direction and owning behavior/ZK method support the listed
+    current canonical producers and consumers; the mapping remains static and does
+    not claim runtime reachability or proof execution.
+  evidence_ids:
+  - EVD-7DCF6EDFE3
+  source_references:
+  - packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts:59-63
+- group: inputs_outputs
+  record_id: IO-1CF641A344
+  old: {}
+  set:
+    producer_ids: *3
+    consumer_ids:
+    - ZKP-66153C8CB1
+    - ZKP-DF018A9714
+    - BHV-1136BD4D08
+  absent_before:
+  - producer_ids
+  - consumer_ids
+  rationale: The anchored direction and owning behavior/ZK method support the listed
+    current canonical producers and consumers; the mapping remains static and does
+    not claim runtime reachability or proof execution.
+  evidence_ids:
+  - EVD-7DCF6EDFE3
+  source_references:
+  - packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts:59-63
+- group: inputs_outputs
+  record_id: IO-52293E36B5
+  old: {}
+  set:
+    producer_ids:
+    - BHV-80247CE73D
+    consumer_ids: []
+    external_consumer: &4
+      endpoint_type: EXTERNAL_EVENT_CONSUMER
+      name: indexer or external observer
+  absent_before:
+  - producer_ids
+  - consumer_ids
+  - external_consumer
+  rationale: Canonical in-scope producer/consumer IDs are recorded where source/model
+    evidence supports them, while the remaining caller, prover, host-ledger, persistence,
+    account-state, or observer boundary is typed explicitly as external. No internal
+    endpoint is invented.
+  evidence_ids:
+  - EVD-9352FDFD17
+  - EVD-E95EC38949
+  source_references:
+  - packages/sdk/src/provable/events/treasury-proposal-events.ts:12-27
+- group: inputs_outputs
+  record_id: IO-A50C2C8E31
+  old: {}
+  set:
+    producer_ids:
+    - BHV-5D3FCC7B93
+    consumer_ids: []
+    external_consumer: *4
+  absent_before:
+  - producer_ids
+  - consumer_ids
+  - external_consumer
+  rationale: Canonical in-scope producer/consumer IDs are recorded where source/model
+    evidence supports them, while the remaining caller, prover, host-ledger, persistence,
+    account-state, or observer boundary is typed explicitly as external. No internal
+    endpoint is invented.
+  evidence_ids:
+  - EVD-9352FDFD17
+  - EVD-0E9360A4D5
+  source_references:
+  - packages/sdk/src/provable/events/treasury-proposal-events.ts:52-59
+- group: inputs_outputs
+  record_id: IO-CA2719CA24
+  old: {}
+  set:
+    producer_ids:
+    - BHV-8FA351E512
+    consumer_ids: []
+    external_consumer: *4
+  absent_before:
+  - producer_ids
+  - consumer_ids
+  - external_consumer
+  rationale: Canonical in-scope producer/consumer IDs are recorded where source/model
+    evidence supports them, while the remaining caller, prover, host-ledger, persistence,
+    account-state, or observer boundary is typed explicitly as external. No internal
+    endpoint is invented.
+  evidence_ids:
+  - EVD-4908C76CF8
+  - EVD-9352FDFD17
+  source_references:
+  - packages/sdk/src/provable/events/treasury-proposal-events.ts:61-68
+- group: inputs_outputs
+  record_id: IO-F754025CE7
+  old: {}
+  set:
+    producer_ids:
+    - BHV-4866A87097
+    consumer_ids: []
+    external_consumer: *4
+  absent_before:
+  - producer_ids
+  - consumer_ids
+  - external_consumer
+  rationale: Canonical in-scope producer/consumer IDs are recorded where source/model
+    evidence supports them, while the remaining caller, prover, host-ledger, persistence,
+    account-state, or observer boundary is typed explicitly as external. No internal
+    endpoint is invented.
+  evidence_ids:
+  - EVD-AA3D8A203C
+  - EVD-5AED8D6498
+  source_references:
+  - packages/sdk/src/provable/events/treasury-proposal-events.ts:39-50
+- group: inputs_outputs
+  record_id: IO-C49FFCF2D2
+  old: {}
+  set:
+    producer_ids:
+    - BHV-8E9F5C3ECE
+    consumer_ids: []
+    external_consumer: *4
+  absent_before:
+  - producer_ids
+  - consumer_ids
+  - external_consumer
+  rationale: Canonical in-scope producer/consumer IDs are recorded where source/model
+    evidence supports them, while the remaining caller, prover, host-ledger, persistence,
+    account-state, or observer boundary is typed explicitly as external. No internal
+    endpoint is invented.
+  evidence_ids:
+  - EVD-9352FDFD17
+  - EVD-2598ABF031
+  source_references:
+  - packages/sdk/src/provable/events/treasury-proposal-events.ts:29-37
+- group: inputs_outputs
+  record_id: IO-69D7AB53EB
+  old: {}
+  set:
+    producer_ids:
+    - BHV-5D3FCC7B93
+    - BHV-F2207732B4
+    consumer_ids:
+    - BHV-5D3FCC7B93
+    - BHV-F2207732B4
+    external_producer: &5
+      endpoint_type: TRANSACTION_CALLER
+      name: signed transaction caller
+    external_consumer:
+      endpoint_type: MINA_ACCOUNT_STATE
+      name: recipient balance and account-update effects
+  absent_before:
+  - producer_ids
+  - consumer_ids
+  - external_producer
+  - external_consumer
+  rationale: Canonical in-scope producer/consumer IDs are recorded where source/model
+    evidence supports them, while the remaining caller, prover, host-ledger, persistence,
+    account-state, or observer boundary is typed explicitly as external. No internal
+    endpoint is invented.
+  evidence_ids:
+  - EVD-DD1C7DA36F
+  source_references:
+  - packages/sdk/src/provable/contracts/treasury-owner.ts:421-462
+  - packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts:353-384
+- group: inputs_outputs
+  record_id: IO-6B965A6F40
+  old: {}
+  set:
+    producer_ids: []
+    consumer_ids:
+    - BHV-80247CE73D
+    external_producer: *5
+  absent_before:
+  - producer_ids
+  - consumer_ids
+  - external_producer
+  rationale: Canonical in-scope producer/consumer IDs are recorded where source/model
+    evidence supports them, while the remaining caller, prover, host-ledger, persistence,
+    account-state, or observer boundary is typed explicitly as external. No internal
+    endpoint is invented.
+  evidence_ids:
+  - EVD-E95EC38949
+  source_references:
+  - packages/sdk/src/provable/contracts/treasury-owner.ts:191-272
+- group: inputs_outputs
+  record_id: IO-36024E02E3
+  old: {}
+  set:
+    producer_ids:
+    - ZKP-DF018A9714
+    - ZKP-BA11C90A9F
+    - ZKP-547C93E79B
+    consumer_ids:
+    - BHV-4866A87097
+    - BHV-1136BD4D08
+    external_producer:
+      endpoint_type: OFFCHAIN_PROOF_SERVICE
+      name: proof construction and packaging service
+  absent_before:
+  - producer_ids
+  - consumer_ids
+  - external_producer
+  rationale: Canonical in-scope producer/consumer IDs are recorded where source/model
+    evidence supports them, while the remaining caller, prover, host-ledger, persistence,
+    account-state, or observer boundary is typed explicitly as external. No internal
+    endpoint is invented.
+  evidence_ids:
+  - EVD-AA3D8A203C
+  - EVD-5AED8D6498
+  source_references:
+  - packages/sdk/src/provable/contracts/treasury-owner.ts:320-419
+  - packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts:213-351
+- group: inputs_outputs
+  record_id: IO-FD35DA69B0
+  old: {}
+  set:
+    producer_ids: []
+    consumer_ids:
+    - BHV-8E9F5C3ECE
+    external_producer:
+      endpoint_type: TRANSACTION_CALLER_AND_VOTER
+      name: transaction sender and voter signer
+  absent_before:
+  - producer_ids
+  - consumer_ids
+  - external_producer
+  rationale: Canonical in-scope producer/consumer IDs are recorded where source/model
+    evidence supports them, while the remaining caller, prover, host-ledger, persistence,
+    account-state, or observer boundary is typed explicitly as external. No internal
+    endpoint is invented.
+  evidence_ids:
+  - EVD-2598ABF031
+  source_references:
+  - packages/sdk/src/provable/contracts/treasury-owner.ts:274-318
+- group: inputs_outputs
+  record_id: IO-4EA1C35B8D
+  old: {}
+  set:
+    producer_ids: []
+    consumer_ids:
+    - BHV-F898CD867A
+    external_producer:
+      endpoint_type: EMERGENCY_MULTISIG_OPERATOR
+      name: participant signers and transaction submitter
+  absent_before:
+  - producer_ids
+  - consumer_ids
+  - external_producer
+  rationale: Canonical in-scope producer/consumer IDs are recorded where source/model
+    evidence supports them, while the remaining caller, prover, host-ledger, persistence,
+    account-state, or observer boundary is typed explicitly as external. No internal
+    endpoint is invented.
+  evidence_ids:
+  - EVD-8F785412DE
+  - EVD-E1F14754F0
+  source_references:
+  - packages/sdk/src/provable/contracts/treasury-pause-controller/multisig-signatures.ts:97-145
+  - packages/sdk/src/provable/contracts/treasury-pause-controller/treasury-pause-controller.ts:97-119
+- group: inputs_outputs
+  record_id: IO-DD1852B56B
+  old: {}
+  set:
+    producer_ids: []
+    consumer_ids:
+    - ZKP-BA11C90A9F
+    external_producer: &6
+      endpoint_type: HOST_LEDGER_PROVIDER
+      name: voting/nullifier ledger context
+    external_consumer: &10
+      endpoint_type: HOST_LEDGER_STORAGE
+      name: mutable nullifier-ledger persistence
+  absent_before:
+  - producer_ids
+  - consumer_ids
+  - external_producer
+  - external_consumer
+  rationale: Canonical in-scope producer/consumer IDs are recorded where source/model
+    evidence supports them, while the remaining caller, prover, host-ledger, persistence,
+    account-state, or observer boundary is typed explicitly as external. No internal
+    endpoint is invented.
+  evidence_ids:
+  - EVD-810D58B5D2
+  source_references:
+  - packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts:33-43
+- group: inputs_outputs
+  record_id: IO-C3A08EF697
+  old: {}
+  set:
+    producer_ids: []
+    consumer_ids:
+    - ZKP-BA11C90A9F
+    external_producer: *6
+  absent_before:
+  - producer_ids
+  - consumer_ids
+  - external_producer
+  rationale: Canonical in-scope producer/consumer IDs are recorded where source/model
+    evidence supports them, while the remaining caller, prover, host-ledger, persistence,
+    account-state, or observer boundary is typed explicitly as external. No internal
+    endpoint is invented.
+  evidence_ids:
+  - EVD-810D58B5D2
+  source_references:
+  - packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts:33-43
+- group: inputs_outputs
+  record_id: IO-D653830A9E
+  old: {}
+  set:
+    producer_ids: []
+    consumer_ids:
+    - ZKP-BA11C90A9F
+    external_producer: *2
+  absent_before:
+  - producer_ids
+  - consumer_ids
+  - external_producer
+  rationale: Canonical in-scope producer/consumer IDs are recorded where source/model
+    evidence supports them, while the remaining caller, prover, host-ledger, persistence,
+    account-state, or observer boundary is typed explicitly as external. No internal
+    endpoint is invented.
+  evidence_ids:
+  - EVD-7C3AC01219
+  - EVD-810D58B5D2
+  source_references:
+  - packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts:48-114
+- group: inputs_outputs
+  record_id: IO-1945E257FC
+  old: {}
+  set:
+    producer_ids: []
+    consumer_ids: &7
+    - ZKP-BA11C90A9F
+    - ZKP-547C93E79B
+    external_producer: *2
+  absent_before:
+  - producer_ids
+  - consumer_ids
+  - external_producer
+  rationale: Canonical in-scope producer/consumer IDs are recorded where source/model
+    evidence supports them, while the remaining caller, prover, host-ledger, persistence,
+    account-state, or observer boundary is typed explicitly as external. No internal
+    endpoint is invented.
+  evidence_ids:
+  - EVD-7C3AC01219
+  source_references:
+  - packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts:116-132
+- group: inputs_outputs
+  record_id: IO-82C055F932
+  old: {}
+  set:
+    producer_ids: []
+    consumer_ids: *7
+    external_producer: *2
+  absent_before:
+  - producer_ids
+  - consumer_ids
+  - external_producer
+  rationale: Canonical in-scope producer/consumer IDs are recorded where source/model
+    evidence supports them, while the remaining caller, prover, host-ledger, persistence,
+    account-state, or observer boundary is typed explicitly as external. No internal
+    endpoint is invented.
+  evidence_ids:
+  - EVD-7C3AC01219
+  source_references:
+  - packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts:272-277
+- group: inputs_outputs
+  record_id: IO-A0335A63F4
+  old: {}
+  set:
+    producer_ids: []
+    consumer_ids: *7
+    external_producer: *2
+  absent_before:
+  - producer_ids
+  - consumer_ids
+  - external_producer
+  rationale: Canonical in-scope producer/consumer IDs are recorded where source/model
+    evidence supports them, while the remaining caller, prover, host-ledger, persistence,
+    account-state, or observer boundary is typed explicitly as external. No internal
+    endpoint is invented.
+  evidence_ids:
+  - EVD-7C3AC01219
+  source_references:
+  - packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts:272-277
+- group: inputs_outputs
+  record_id: IO-140ADF5967
+  old: {}
+  set:
+    producer_ids: []
+    consumer_ids: *7
+    external_producer: *2
+  absent_before:
+  - producer_ids
+  - consumer_ids
+  - external_producer
+  rationale: Canonical in-scope producer/consumer IDs are recorded where source/model
+    evidence supports them, while the remaining caller, prover, host-ledger, persistence,
+    account-state, or observer boundary is typed explicitly as external. No internal
+    endpoint is invented.
+  evidence_ids:
+  - EVD-7C3AC01219
+  source_references:
+  - packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts:272-277
+- group: inputs_outputs
+  record_id: IO-62DAAB413D
+  old: {}
+  set:
+    producer_ids: *7
+    consumer_ids:
+    - ZKP-547C93E79B
+    - BHV-4866A87097
+    - BHV-1136BD4D08
+  absent_before:
+  - producer_ids
+  - consumer_ids
+  rationale: The anchored direction and owning behavior/ZK method support the listed
+    current canonical producers and consumers; the mapping remains static and does
+    not claim runtime reachability or proof execution.
+  evidence_ids:
+  - EVD-01AF09A7B3
+  source_references:
+  - packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts:137-267
+- group: inputs_outputs
+  record_id: IO-2C9ACC139E
+  old: {}
+  set:
+    producer_ids: *7
+    consumer_ids:
+    - ZKP-547C93E79B
+    - BHV-4866A87097
+    - BHV-1136BD4D08
+  absent_before:
+  - producer_ids
+  - consumer_ids
+  rationale: The anchored direction and owning behavior/ZK method support the listed
+    current canonical producers and consumers; the mapping remains static and does
+    not claim runtime reachability or proof execution.
+  evidence_ids:
+  - EVD-810D58B5D2
+  source_references:
+  - packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts:297-304
+- group: inputs_outputs
+  record_id: IO-E15D49F2A2
+  old: {}
+  set:
+    producer_ids: *7
+    consumer_ids:
+    - ZKP-547C93E79B
+    - BHV-4866A87097
+    - BHV-1136BD4D08
+  absent_before:
+  - producer_ids
+  - consumer_ids
+  rationale: The anchored direction and owning behavior/ZK method support the listed
+    current canonical producers and consumers; the mapping remains static and does
+    not claim runtime reachability or proof execution.
+  evidence_ids:
+  - EVD-7C3AC01219
+  source_references:
+  - packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts:294-304
+- group: inputs_outputs
+  record_id: IO-1F97CF4E82
+  old: {}
+  set:
+    producer_ids: []
+    consumer_ids:
+    - ZKP-EFB3E28391
+    - BHV-F898CD867A
+    external_producer:
+      endpoint_type: HOST_PARTICIPANT_PROVIDER
+      name: five private participant keys
+  absent_before:
+  - producer_ids
+  - consumer_ids
+  - external_producer
+  rationale: Canonical in-scope producer/consumer IDs are recorded where source/model
+    evidence supports them, while the remaining caller, prover, host-ledger, persistence,
+    account-state, or observer boundary is typed explicitly as external. No internal
+    endpoint is invented.
+  evidence_ids:
+  - EVD-3CEBE6B022
+  source_references:
+  - packages/sdk/src/provable/contracts/treasury-pause-controller/treasury-pause-controller.ts:105-108
+- group: inputs_outputs
+  record_id: IO-4708EC66CE
+  old: {}
+  set:
+    producer_ids:
+    - ZKP-5DF7D24003
+    consumer_ids:
+    - ZKP-66153C8CB1
+    - ZKP-DF018A9714
+  absent_before:
+  - producer_ids
+  - consumer_ids
+  rationale: The anchored direction and owning behavior/ZK method support the listed
+    current canonical producers and consumers; the mapping remains static and does
+    not claim runtime reachability or proof execution.
+  evidence_ids:
+  - EVD-3CEBE6B022
+  source_references:
+  - packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts:195-337
+- group: inputs_outputs
+  record_id: IO-668F610724
+  old: {}
+  set:
+    producer_ids:
+    - ZKP-5DF7D24003
+    consumer_ids:
+    - ZKP-66153C8CB1
+    - ZKP-DF018A9714
+  absent_before:
+  - producer_ids
+  - consumer_ids
+  rationale: The anchored direction and owning behavior/ZK method support the listed
+    current canonical producers and consumers; the mapping remains static and does
+    not claim runtime reachability or proof execution.
+  evidence_ids:
+  - EVD-3CEBE6B022
+  source_references:
+  - packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts:195-337
+- group: inputs_outputs
+  record_id: IO-7E445A843C
+  old: {}
+  set:
+    producer_ids:
+    - ZKP-5DF7D24003
+    consumer_ids:
+    - ZKP-66153C8CB1
+    - ZKP-DF018A9714
+  absent_before:
+  - producer_ids
+  - consumer_ids
+  rationale: The anchored direction and owning behavior/ZK method support the listed
+    current canonical producers and consumers; the mapping remains static and does
+    not claim runtime reachability or proof execution.
+  evidence_ids:
+  - EVD-3CEBE6B022
+  source_references:
+  - packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts:195-337
+- group: inputs_outputs
+  record_id: IO-C71845C9DB
+  old: {}
+  set:
+    producer_ids: []
+    consumer_ids:
+    - ZKP-5DF7D24003
+    external_producer: *2
+  absent_before:
+  - producer_ids
+  - consumer_ids
+  - external_producer
+  rationale: Canonical in-scope producer/consumer IDs are recorded where source/model
+    evidence supports them, while the remaining caller, prover, host-ledger, persistence,
+    account-state, or observer boundary is typed explicitly as external. No internal
+    endpoint is invented.
+  evidence_ids:
+  - EVD-3CEBE6B022
+  source_references:
+  - packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts:195-337
+- group: inputs_outputs
+  record_id: IO-BD428B4BFE
+  old: {}
+  set:
+    producer_ids: []
+    consumer_ids:
+    - ZKP-5DF7D24003
+    external_producer: *8
+  absent_before:
+  - producer_ids
+  - consumer_ids
+  - external_producer
+  rationale: Canonical in-scope producer/consumer IDs are recorded where source/model
+    evidence supports them, while the remaining caller, prover, host-ledger, persistence,
+    account-state, or observer boundary is typed explicitly as external. No internal
+    endpoint is invented.
+  evidence_ids:
+  - EVD-3CEBE6B022
+  source_references:
+  - packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts:195-337
+- group: inputs_outputs
+  record_id: IO-9D3B7CAE85
+  old: {}
+  set:
+    producer_ids: []
+    consumer_ids:
+    - ZKP-5DF7D24003
+    external_producer: *8
+  absent_before:
+  - producer_ids
+  - consumer_ids
+  - external_producer
+  rationale: Canonical in-scope producer/consumer IDs are recorded where source/model
+    evidence supports them, while the remaining caller, prover, host-ledger, persistence,
+    account-state, or observer boundary is typed explicitly as external. No internal
+    endpoint is invented.
+  evidence_ids:
+  - EVD-3CEBE6B022
+  source_references:
+  - packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts:195-337
+- group: inputs_outputs
+  record_id: IO-3236C0037A
+  old: {}
+  set:
+    producer_ids: []
+    consumer_ids:
+    - ZKP-5DF7D24003
+    external_producer: *8
+  absent_before:
+  - producer_ids
+  - consumer_ids
+  - external_producer
+  rationale: Canonical in-scope producer/consumer IDs are recorded where source/model
+    evidence supports them, while the remaining caller, prover, host-ledger, persistence,
+    account-state, or observer boundary is typed explicitly as external. No internal
+    endpoint is invented.
+  evidence_ids:
+  - EVD-3CEBE6B022
+  source_references:
+  - packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts:195-337
+- group: inputs_outputs
+  record_id: IO-5CBBA7540B
+  old: {}
+  set:
+    producer_ids: []
+    consumer_ids:
+    - ZKP-5DF7D24003
+    external_producer: *2
+  absent_before:
+  - producer_ids
+  - consumer_ids
+  - external_producer
+  rationale: Canonical in-scope producer/consumer IDs are recorded where source/model
+    evidence supports them, while the remaining caller, prover, host-ledger, persistence,
+    account-state, or observer boundary is typed explicitly as external. No internal
+    endpoint is invented.
+  evidence_ids:
+  - EVD-3CEBE6B022
+  source_references:
+  - packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts:195-337
+- group: inputs_outputs
+  record_id: IO-FE03A006D4
+  old: {}
+  set:
+    producer_ids: []
+    consumer_ids:
+    - ZKP-5DF7D24003
+    external_producer: *2
+  absent_before:
+  - producer_ids
+  - consumer_ids
+  - external_producer
+  rationale: Canonical in-scope producer/consumer IDs are recorded where source/model
+    evidence supports them, while the remaining caller, prover, host-ledger, persistence,
+    account-state, or observer boundary is typed explicitly as external. No internal
+    endpoint is invented.
+  evidence_ids:
+  - EVD-3CEBE6B022
+  source_references:
+  - packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts:195-337
+- group: inputs_outputs
+  record_id: IO-F795103B44
+  old: {}
+  set:
+    producer_ids: []
+    consumer_ids:
+    - ZKP-5DF7D24003
+    external_producer: *2
+  absent_before:
+  - producer_ids
+  - consumer_ids
+  - external_producer
+  rationale: Canonical in-scope producer/consumer IDs are recorded where source/model
+    evidence supports them, while the remaining caller, prover, host-ledger, persistence,
+    account-state, or observer boundary is typed explicitly as external. No internal
+    endpoint is invented.
+  evidence_ids:
+  - EVD-3CEBE6B022
+  source_references:
+  - packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts:195-337
+- group: inputs_outputs
+  record_id: IO-F2FDEDAAD4
+  old: {}
+  set:
+    producer_ids: []
+    consumer_ids:
+    - ZKP-DF018A9714
+    external_producer: *8
+  absent_before:
+  - producer_ids
+  - consumer_ids
+  - external_producer
+  rationale: Canonical in-scope producer/consumer IDs are recorded where source/model
+    evidence supports them, while the remaining caller, prover, host-ledger, persistence,
+    account-state, or observer boundary is typed explicitly as external. No internal
+    endpoint is invented.
+  evidence_ids:
+  - EVD-3CEBE6B022
+  source_references:
+  - packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts:83-143
+- group: inputs_outputs
+  record_id: IO-0E47C270AF
+  old: {}
+  set:
+    producer_ids: *3
+    consumer_ids:
+    - ZKP-DF018A9714
+  absent_before:
+  - producer_ids
+  - consumer_ids
+  rationale: The anchored direction and owning behavior/ZK method support the listed
+    current canonical producers and consumers; the mapping remains static and does
+    not claim runtime reachability or proof execution.
+  evidence_ids:
+  - EVD-3CEBE6B022
+  source_references:
+  - packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts:83-143
+- group: inputs_outputs
+  record_id: IO-DFBE3E4B97
+  old: {}
+  set:
+    producer_ids:
+    - ZKP-DF018A9714
+    consumer_ids:
+    - BHV-1136BD4D08
+  absent_before:
+  - producer_ids
+  - consumer_ids
+  rationale: The anchored direction and owning behavior/ZK method support the listed
+    current canonical producers and consumers; the mapping remains static and does
+    not claim runtime reachability or proof execution.
+  evidence_ids:
+  - EVD-3CEBE6B022
+  source_references:
+  - packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts:83-143
+- group: inputs_outputs
+  record_id: IO-6FC5F32B87
+  old: {}
+  set:
+    producer_ids: []
+    consumer_ids:
+    - ZKP-DF018A9714
+    external_producer: *2
+  absent_before:
+  - producer_ids
+  - consumer_ids
+  - external_producer
+  rationale: Canonical in-scope producer/consumer IDs are recorded where source/model
+    evidence supports them, while the remaining caller, prover, host-ledger, persistence,
+    account-state, or observer boundary is typed explicitly as external. No internal
+    endpoint is invented.
+  evidence_ids:
+  - EVD-3CEBE6B022
+  source_references:
+  - packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts:83-143
+- group: inputs_outputs
+  record_id: IO-69C74E38D3
+  old: {}
+  set:
+    producer_ids: *3
+    consumer_ids:
+    - ZKP-66153C8CB1
+  absent_before:
+  - producer_ids
+  - consumer_ids
+  rationale: The anchored direction and owning behavior/ZK method support the listed
+    current canonical producers and consumers; the mapping remains static and does
+    not claim runtime reachability or proof execution.
+  evidence_ids:
+  - EVD-3CEBE6B022
+  source_references:
+  - packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts:148-190
+- group: inputs_outputs
+  record_id: IO-088DC1C843
+  old: {}
+  set:
+    producer_ids: *3
+    consumer_ids:
+    - ZKP-66153C8CB1
+  absent_before:
+  - producer_ids
+  - consumer_ids
+  rationale: The anchored direction and owning behavior/ZK method support the listed
+    current canonical producers and consumers; the mapping remains static and does
+    not claim runtime reachability or proof execution.
+  evidence_ids:
+  - EVD-3CEBE6B022
+  source_references:
+  - packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts:148-190
+- group: inputs_outputs
+  record_id: IO-E30D4BDAFB
+  old: {}
+  set:
+    producer_ids:
+    - ZKP-66153C8CB1
+    consumer_ids:
+    - ZKP-66153C8CB1
+    - ZKP-DF018A9714
+  absent_before:
+  - producer_ids
+  - consumer_ids
+  rationale: The anchored direction and owning behavior/ZK method support the listed
+    current canonical producers and consumers; the mapping remains static and does
+    not claim runtime reachability or proof execution.
+  evidence_ids:
+  - EVD-3CEBE6B022
+  source_references:
+  - packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts:148-190
+- group: inputs_outputs
+  record_id: IO-20DE355EF7
+  old: {}
+  set:
+    producer_ids: []
+    consumer_ids:
+    - ZKP-66153C8CB1
+    external_producer: *2
+  absent_before:
+  - producer_ids
+  - consumer_ids
+  - external_producer
+  rationale: Canonical in-scope producer/consumer IDs are recorded where source/model
+    evidence supports them, while the remaining caller, prover, host-ledger, persistence,
+    account-state, or observer boundary is typed explicitly as external. No internal
+    endpoint is invented.
+  evidence_ids:
+  - EVD-3CEBE6B022
+  source_references:
+  - packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts:148-190
+- group: inputs_outputs
+  record_id: IO-9C80690415
+  old: {}
+  set:
+    producer_ids: *7
+    consumer_ids:
+    - ZKP-547C93E79B
+  absent_before:
+  - producer_ids
+  - consumer_ids
+  rationale: The anchored direction and owning behavior/ZK method support the listed
+    current canonical producers and consumers; the mapping remains static and does
+    not claim runtime reachability or proof execution.
+  evidence_ids:
+  - EVD-3CEBE6B022
+  source_references:
+  - packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts:333-417
+- group: inputs_outputs
+  record_id: IO-4B9BD5AA91
+  old: {}
+  set:
+    producer_ids: *7
+    consumer_ids:
+    - ZKP-547C93E79B
+  absent_before:
+  - producer_ids
+  - consumer_ids
+  rationale: The anchored direction and owning behavior/ZK method support the listed
+    current canonical producers and consumers; the mapping remains static and does
+    not claim runtime reachability or proof execution.
+  evidence_ids:
+  - EVD-3CEBE6B022
+  source_references:
+  - packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts:333-417
+- group: inputs_outputs
+  record_id: IO-67C38AAD67
+  old: {}
+  set:
+    producer_ids:
+    - ZKP-547C93E79B
+    consumer_ids:
+    - ZKP-547C93E79B
+    - BHV-4866A87097
+    - BHV-1136BD4D08
+  absent_before:
+  - producer_ids
+  - consumer_ids
+  rationale: The anchored direction and owning behavior/ZK method support the listed
+    current canonical producers and consumers; the mapping remains static and does
+    not claim runtime reachability or proof execution.
+  evidence_ids:
+  - EVD-3CEBE6B022
+  source_references:
+  - packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts:333-417
+- group: inputs_outputs
+  record_id: IO-5B7DDF71A2
+  old: {}
+  set:
+    producer_ids: []
+    consumer_ids:
+    - ZKP-547C93E79B
+    external_producer: *2
+  absent_before:
+  - producer_ids
+  - consumer_ids
+  - external_producer
+  rationale: Canonical in-scope producer/consumer IDs are recorded where source/model
+    evidence supports them, while the remaining caller, prover, host-ledger, persistence,
+    account-state, or observer boundary is typed explicitly as external. No internal
+    endpoint is invented.
+  evidence_ids:
+  - EVD-3CEBE6B022
+  source_references:
+  - packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts:333-417
+- group: inputs_outputs
+  record_id: IO-626345DDF5
+  old: {}
+  set:
+    producer_ids:
+    - ZKP-BA11C90A9F
+    consumer_ids:
+    - ZKP-547C93E79B
+    - BHV-4866A87097
+    - BHV-1136BD4D08
+  absent_before:
+  - producer_ids
+  - consumer_ids
+  rationale: The anchored direction and owning behavior/ZK method support the listed
+    current canonical producers and consumers; the mapping remains static and does
+    not claim runtime reachability or proof execution.
+  evidence_ids:
+  - EVD-3CEBE6B022
+  source_references:
+  - packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts:426-639
+- group: inputs_outputs
+  record_id: IO-B0282188FD
+  old: {}
+  set:
+    producer_ids:
+    - ZKP-BA11C90A9F
+    consumer_ids:
+    - ZKP-547C93E79B
+    - BHV-4866A87097
+    - BHV-1136BD4D08
+  absent_before:
+  - producer_ids
+  - consumer_ids
+  rationale: The anchored direction and owning behavior/ZK method support the listed
+    current canonical producers and consumers; the mapping remains static and does
+    not claim runtime reachability or proof execution.
+  evidence_ids:
+  - EVD-3CEBE6B022
+  source_references:
+  - packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts:426-639
+- group: inputs_outputs
+  record_id: IO-0467289092
+  old: {}
+  set:
+    producer_ids:
+    - ZKP-BA11C90A9F
+    consumer_ids:
+    - ZKP-547C93E79B
+    - BHV-4866A87097
+    - BHV-1136BD4D08
+  absent_before:
+  - producer_ids
+  - consumer_ids
+  rationale: The anchored direction and owning behavior/ZK method support the listed
+    current canonical producers and consumers; the mapping remains static and does
+    not claim runtime reachability or proof execution.
+  evidence_ids:
+  - EVD-3CEBE6B022
+  source_references:
+  - packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts:426-639
+- group: inputs_outputs
+  record_id: IO-E9661CD282
+  old: {}
+  set:
+    producer_ids:
+    - ZKP-BA11C90A9F
+    consumer_ids:
+    - ZKP-547C93E79B
+    - BHV-4866A87097
+    - BHV-1136BD4D08
+  absent_before:
+  - producer_ids
+  - consumer_ids
+  rationale: The anchored direction and owning behavior/ZK method support the listed
+    current canonical producers and consumers; the mapping remains static and does
+    not claim runtime reachability or proof execution.
+  evidence_ids:
+  - EVD-3CEBE6B022
+  source_references:
+  - packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts:426-639
+- group: inputs_outputs
+  record_id: IO-3F0DC7DE94
+  old: {}
+  set:
+    producer_ids:
+    - ZKP-BA11C90A9F
+    consumer_ids:
+    - ZKP-547C93E79B
+    - BHV-4866A87097
+    - BHV-1136BD4D08
+  absent_before:
+  - producer_ids
+  - consumer_ids
+  rationale: The anchored direction and owning behavior/ZK method support the listed
+    current canonical producers and consumers; the mapping remains static and does
+    not claim runtime reachability or proof execution.
+  evidence_ids:
+  - EVD-3CEBE6B022
+  source_references:
+  - packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts:426-639
+- group: inputs_outputs
+  record_id: IO-13802BA54F
+  old: {}
+  set:
+    producer_ids:
+    - ZKP-BA11C90A9F
+    consumer_ids:
+    - ZKP-547C93E79B
+    - BHV-4866A87097
+    - BHV-1136BD4D08
+  absent_before:
+  - producer_ids
+  - consumer_ids
+  rationale: The anchored direction and owning behavior/ZK method support the listed
+    current canonical producers and consumers; the mapping remains static and does
+    not claim runtime reachability or proof execution.
+  evidence_ids:
+  - EVD-3CEBE6B022
+  source_references:
+  - packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts:426-639
+- group: inputs_outputs
+  record_id: IO-EC980A7F95
+  old: {}
+  set:
+    producer_ids:
+    - ZKP-BA11C90A9F
+    consumer_ids:
+    - ZKP-547C93E79B
+    - BHV-4866A87097
+    - BHV-1136BD4D08
+  absent_before:
+  - producer_ids
+  - consumer_ids
+  rationale: The anchored direction and owning behavior/ZK method support the listed
+    current canonical producers and consumers; the mapping remains static and does
+    not claim runtime reachability or proof execution.
+  evidence_ids:
+  - EVD-3CEBE6B022
+  source_references:
+  - packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts:426-639
+- group: inputs_outputs
+  record_id: IO-65764C55DD
+  old: {}
+  set:
+    producer_ids: []
+    consumer_ids:
+    - ZKP-BA11C90A9F
+    external_producer: *6
+  absent_before:
+  - producer_ids
+  - consumer_ids
+  - external_producer
+  rationale: Canonical in-scope producer/consumer IDs are recorded where source/model
+    evidence supports them, while the remaining caller, prover, host-ledger, persistence,
+    account-state, or observer boundary is typed explicitly as external. No internal
+    endpoint is invented.
+  evidence_ids:
+  - EVD-3CEBE6B022
+  source_references:
+  - packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts:426-639
+- group: inputs_outputs
+  record_id: IO-DEB6DB3865
+  old: {}
+  set:
+    producer_ids: []
+    consumer_ids:
+    - ZKP-BA11C90A9F
+    external_producer: *6
+  absent_before:
+  - producer_ids
+  - consumer_ids
+  - external_producer
+  rationale: Canonical in-scope producer/consumer IDs are recorded where source/model
+    evidence supports them, while the remaining caller, prover, host-ledger, persistence,
+    account-state, or observer boundary is typed explicitly as external. No internal
+    endpoint is invented.
+  evidence_ids:
+  - EVD-3CEBE6B022
+  source_references:
+  - packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts:426-639
+- group: inputs_outputs
+  record_id: IO-623DE360CA
+  old: {}
+  set:
+    producer_ids: []
+    consumer_ids:
+    - ZKP-BA11C90A9F
+    external_producer: *2
+  absent_before:
+  - producer_ids
+  - consumer_ids
+  - external_producer
+  rationale: Canonical in-scope producer/consumer IDs are recorded where source/model
+    evidence supports them, while the remaining caller, prover, host-ledger, persistence,
+    account-state, or observer boundary is typed explicitly as external. No internal
+    endpoint is invented.
+  evidence_ids:
+  - EVD-3CEBE6B022
+  source_references:
+  - packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts:426-639
+- group: inputs_outputs
+  record_id: IO-C22A925F5B
+  old: {}
+  set:
+    producer_ids: []
+    consumer_ids:
+    - ZKP-BA11C90A9F
+    external_producer: *2
+  absent_before:
+  - producer_ids
+  - consumer_ids
+  - external_producer
+  rationale: Canonical in-scope producer/consumer IDs are recorded where source/model
+    evidence supports them, while the remaining caller, prover, host-ledger, persistence,
+    account-state, or observer boundary is typed explicitly as external. No internal
+    endpoint is invented.
+  evidence_ids:
+  - EVD-3CEBE6B022
+  source_references:
+  - packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts:426-639
+- group: inputs_outputs
+  record_id: IO-E34414723E
+  old: {}
+  set:
+    producer_ids: []
+    consumer_ids:
+    - ZKP-BA11C90A9F
+    external_producer: *6
+  absent_before:
+  - producer_ids
+  - consumer_ids
+  - external_producer
+  rationale: Canonical in-scope producer/consumer IDs are recorded where source/model
+    evidence supports them, while the remaining caller, prover, host-ledger, persistence,
+    account-state, or observer boundary is typed explicitly as external. No internal
+    endpoint is invented.
+  evidence_ids:
+  - EVD-3CEBE6B022
+  source_references:
+  - packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts:426-639
+- group: inputs_outputs
+  record_id: IO-A27752072E
+  old: {}
+  set:
+    producer_ids: []
+    consumer_ids:
+    - ZKP-BA11C90A9F
+    external_producer: *6
+  absent_before:
+  - producer_ids
+  - consumer_ids
+  - external_producer
+  rationale: Canonical in-scope producer/consumer IDs are recorded where source/model
+    evidence supports them, while the remaining caller, prover, host-ledger, persistence,
+    account-state, or observer boundary is typed explicitly as external. No internal
+    endpoint is invented.
+  evidence_ids:
+  - EVD-3CEBE6B022
+  source_references:
+  - packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts:426-639
+- group: inputs_outputs
+  record_id: IO-9C3461F78B
+  old: {}
+  set:
+    producer_ids: []
+    consumer_ids:
+    - ZKP-BA11C90A9F
+    external_producer: *2
+  absent_before:
+  - producer_ids
+  - consumer_ids
+  - external_producer
+  rationale: Canonical in-scope producer/consumer IDs are recorded where source/model
+    evidence supports them, while the remaining caller, prover, host-ledger, persistence,
+    account-state, or observer boundary is typed explicitly as external. No internal
+    endpoint is invented.
+  evidence_ids:
+  - EVD-3CEBE6B022
+  source_references:
+  - packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts:426-639
+- group: inputs_outputs
+  record_id: IO-0E41C22124
+  old: {}
+  set:
+    producer_ids: []
+    consumer_ids:
+    - ZKP-BA11C90A9F
+    external_producer: *2
+  absent_before:
+  - producer_ids
+  - consumer_ids
+  - external_producer
+  rationale: Canonical in-scope producer/consumer IDs are recorded where source/model
+    evidence supports them, while the remaining caller, prover, host-ledger, persistence,
+    account-state, or observer boundary is typed explicitly as external. No internal
+    endpoint is invented.
+  evidence_ids:
+  - EVD-3CEBE6B022
+  source_references:
+  - packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts:426-639
+- group: inputs_outputs
+  record_id: IO-B36955C5A4
+  old: {}
+  set:
+    producer_ids: []
+    consumer_ids:
+    - ZKP-BA11C90A9F
+    external_producer: *2
+  absent_before:
+  - producer_ids
+  - consumer_ids
+  - external_producer
+  rationale: Canonical in-scope producer/consumer IDs are recorded where source/model
+    evidence supports them, while the remaining caller, prover, host-ledger, persistence,
+    account-state, or observer boundary is typed explicitly as external. No internal
+    endpoint is invented.
+  evidence_ids:
+  - EVD-3CEBE6B022
+  source_references:
+  - packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts:426-639
+- group: inputs_outputs
+  record_id: IO-0AE4C61332
+  old: {}
+  set:
+    producer_ids: []
+    consumer_ids:
+    - ZKP-BA11C90A9F
+    external_producer: *2
+  absent_before:
+  - producer_ids
+  - consumer_ids
+  - external_producer
+  rationale: Canonical in-scope producer/consumer IDs are recorded where source/model
+    evidence supports them, while the remaining caller, prover, host-ledger, persistence,
+    account-state, or observer boundary is typed explicitly as external. No internal
+    endpoint is invented.
+  evidence_ids:
+  - EVD-3CEBE6B022
+  source_references:
+  - packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts:426-639
+- group: inputs_outputs
+  record_id: IO-87B5865B4B
+  old: {}
+  set:
+    producer_ids: []
+    consumer_ids:
+    - ZKP-BA11C90A9F
+    external_producer: *2
+  absent_before:
+  - producer_ids
+  - consumer_ids
+  - external_producer
+  rationale: Canonical in-scope producer/consumer IDs are recorded where source/model
+    evidence supports them, while the remaining caller, prover, host-ledger, persistence,
+    account-state, or observer boundary is typed explicitly as external. No internal
+    endpoint is invented.
+  evidence_ids:
+  - EVD-3CEBE6B022
+  source_references:
+  - packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts:426-639
+- group: inputs_outputs
+  record_id: IO-8095F5006E
+  old: {}
+  set:
+    producer_ids: []
+    consumer_ids:
+    - ZKP-BA11C90A9F
+    external_producer: *2
+  absent_before:
+  - producer_ids
+  - consumer_ids
+  - external_producer
+  rationale: Canonical in-scope producer/consumer IDs are recorded where source/model
+    evidence supports them, while the remaining caller, prover, host-ledger, persistence,
+    account-state, or observer boundary is typed explicitly as external. No internal
+    endpoint is invented.
+  evidence_ids:
+  - EVD-3CEBE6B022
+  source_references:
+  - packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts:426-639
+- group: inputs_outputs
+  record_id: IO-5C4505832E
+  old: {}
+  set:
+    producer_ids: []
+    consumer_ids:
+    - ZKP-BA11C90A9F
+    external_producer: *2
+  absent_before:
+  - producer_ids
+  - consumer_ids
+  - external_producer
+  rationale: Canonical in-scope producer/consumer IDs are recorded where source/model
+    evidence supports them, while the remaining caller, prover, host-ledger, persistence,
+    account-state, or observer boundary is typed explicitly as external. No internal
+    endpoint is invented.
+  evidence_ids:
+  - EVD-3CEBE6B022
+  source_references:
+  - packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts:426-639
+- group: inputs_outputs
+  record_id: IO-FEAE73D285
+  old: {}
+  set:
+    producer_ids: []
+    consumer_ids:
+    - ZKP-BA11C90A9F
+    external_producer: *2
+  absent_before:
+  - producer_ids
+  - consumer_ids
+  - external_producer
+  rationale: Canonical in-scope producer/consumer IDs are recorded where source/model
+    evidence supports them, while the remaining caller, prover, host-ledger, persistence,
+    account-state, or observer boundary is typed explicitly as external. No internal
+    endpoint is invented.
+  evidence_ids:
+  - EVD-3CEBE6B022
+  source_references:
+  - packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts:426-639
+- group: inputs_outputs
+  record_id: IO-46A1C8D782
+  old: {}
+  set:
+    producer_ids: []
+    consumer_ids:
+    - ZKP-5DF7D24003
+    external_producer: *2
+  absent_before:
+  - producer_ids
+  - consumer_ids
+  - external_producer
+  rationale: Canonical in-scope producer/consumer IDs are recorded where source/model
+    evidence supports them, while the remaining caller, prover, host-ledger, persistence,
+    account-state, or observer boundary is typed explicitly as external. No internal
+    endpoint is invented.
+  evidence_ids:
+  - EVD-177476A23F
+  source_references:
+  - packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts:195-218
+- group: inputs_outputs
+  record_id: IO-D9A49956C7
+  old: {}
+  set:
+    producer_ids: []
+    consumer_ids:
+    - ZKP-DF018A9714
+    external_producer: *8
+  absent_before:
+  - producer_ids
+  - consumer_ids
+  - external_producer
+  rationale: Canonical in-scope producer/consumer IDs are recorded where source/model
+    evidence supports them, while the remaining caller, prover, host-ledger, persistence,
+    account-state, or observer boundary is typed explicitly as external. No internal
+    endpoint is invented.
+  evidence_ids:
+  - EVD-2720E90D33
+  source_references:
+  - packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts:107-135
+- group: inputs_outputs
+  record_id: IO-D7FE8ADEAC
+  old: {}
+  set:
+    producer_ids: *3
+    consumer_ids:
+    - ZKP-66153C8CB1
+    - ZKP-DF018A9714
+    - BHV-1136BD4D08
+  absent_before:
+  - producer_ids
+  - consumer_ids
+  rationale: The anchored direction and owning behavior/ZK method support the listed
+    current canonical producers and consumers; the mapping remains static and does
+    not claim runtime reachability or proof execution.
+  evidence_ids:
+  - EVD-2720E90D33
+  source_references:
+  - packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts:59-63
+- group: inputs_outputs
+  record_id: IO-9974229C95
+  old: {}
+  set:
+    producer_ids:
+    - ZKP-5DF7D24003
+    consumer_ids: []
+    external_consumer: *9
+  absent_before:
+  - producer_ids
+  - consumer_ids
+  - external_consumer
+  rationale: Canonical in-scope producer/consumer IDs are recorded where source/model
+    evidence supports them, while the remaining caller, prover, host-ledger, persistence,
+    account-state, or observer boundary is typed explicitly as external. No internal
+    endpoint is invented.
+  evidence_ids:
+  - EVD-F7DE049BDC
+  source_references:
+  - packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts:304-320
+- group: inputs_outputs
+  record_id: IO-11EBDF4A8A
+  old: {}
+  set:
+    producer_ids: *3
+    consumer_ids:
+    - ZKP-66153C8CB1
+    - ZKP-DF018A9714
+  absent_before:
+  - producer_ids
+  - consumer_ids
+  rationale: The anchored direction and owning behavior/ZK method support the listed
+    current canonical producers and consumers; the mapping remains static and does
+    not claim runtime reachability or proof execution.
+  evidence_ids:
+  - EVD-C71179133B
+  - EVD-2720E90D33
+  source_references:
+  - packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts:83-190
+- group: inputs_outputs
+  record_id: IO-57798F0171
+  old: {}
+  set:
+    producer_ids: []
+    consumer_ids:
+    - ZKP-5DF7D24003
+    external_producer: *8
+  absent_before:
+  - producer_ids
+  - consumer_ids
+  - external_producer
+  rationale: Canonical in-scope producer/consumer IDs are recorded where source/model
+    evidence supports them, while the remaining caller, prover, host-ledger, persistence,
+    account-state, or observer boundary is typed explicitly as external. No internal
+    endpoint is invented.
+  evidence_ids:
+  - EVD-177476A23F
+  source_references:
+  - packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts:207-237
+- group: inputs_outputs
+  record_id: IO-B5D0C42BBA
+  old: {}
+  set:
+    producer_ids: []
+    consumer_ids:
+    - ZKP-5DF7D24003
+    external_producer: *2
+  absent_before:
+  - producer_ids
+  - consumer_ids
+  - external_producer
+  rationale: Canonical in-scope producer/consumer IDs are recorded where source/model
+    evidence supports them, while the remaining caller, prover, host-ledger, persistence,
+    account-state, or observer boundary is typed explicitly as external. No internal
+    endpoint is invented.
+  evidence_ids:
+  - EVD-C71179133B
+  source_references:
+  - packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts:53-57
+- group: inputs_outputs
+  record_id: IO-E7C5ED1149
+  old: {}
+  set:
+    producer_ids: []
+    consumer_ids:
+    - ZKP-5DF7D24003
+    external_producer: *2
+  absent_before:
+  - producer_ids
+  - consumer_ids
+  - external_producer
+  rationale: Canonical in-scope producer/consumer IDs are recorded where source/model
+    evidence supports them, while the remaining caller, prover, host-ledger, persistence,
+    account-state, or observer boundary is typed explicitly as external. No internal
+    endpoint is invented.
+  evidence_ids:
+  - EVD-B7C40C0F6F
+  source_references:
+  - packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts:53-57
+- group: inputs_outputs
+  record_id: IO-E8F865E1FF
+  old: {}
+  set:
+    producer_ids: []
+    consumer_ids:
+    - ZKP-5DF7D24003
+    external_producer: *2
+  absent_before:
+  - producer_ids
+  - consumer_ids
+  - external_producer
+  rationale: Canonical in-scope producer/consumer IDs are recorded where source/model
+    evidence supports them, while the remaining caller, prover, host-ledger, persistence,
+    account-state, or observer boundary is typed explicitly as external. No internal
+    endpoint is invented.
+  evidence_ids:
+  - EVD-177476A23F
+  source_references:
+  - packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts:53-57
+- group: inputs_outputs
+  record_id: IO-60A9270D22
+  old: {}
+  set:
+    producer_ids: *3
+    consumer_ids:
+    - ZKP-66153C8CB1
+    - ZKP-DF018A9714
+    - BHV-1136BD4D08
+  absent_before:
+  - producer_ids
+  - consumer_ids
+  rationale: The anchored direction and owning behavior/ZK method support the listed
+    current canonical producers and consumers; the mapping remains static and does
+    not claim runtime reachability or proof execution.
+  evidence_ids:
+  - EVD-2720E90D33
+  source_references:
+  - packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts:59-63
+- group: inputs_outputs
+  record_id: IO-51C319BC65
+  old: {}
+  set:
+    producer_ids: *3
+    consumer_ids:
+    - ZKP-66153C8CB1
+    - ZKP-DF018A9714
+    - BHV-1136BD4D08
+  absent_before:
+  - producer_ids
+  - consumer_ids
+  rationale: The anchored direction and owning behavior/ZK method support the listed
+    current canonical producers and consumers; the mapping remains static and does
+    not claim runtime reachability or proof execution.
+  evidence_ids:
+  - EVD-B7C40C0F6F
+  source_references:
+  - packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts:59-63
+- group: inputs_outputs
+  record_id: IO-BD18BAE884
+  old: {}
+  set:
+    producer_ids: []
+    consumer_ids:
+    - ZKP-5DF7D24003
+    external_producer: *8
+  absent_before:
+  - producer_ids
+  - consumer_ids
+  - external_producer
+  rationale: Canonical in-scope producer/consumer IDs are recorded where source/model
+    evidence supports them, while the remaining caller, prover, host-ledger, persistence,
+    account-state, or observer boundary is typed explicitly as external. No internal
+    endpoint is invented.
+  evidence_ids:
+  - EVD-177476A23F
+  source_references:
+  - packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts:245-259
+- group: inputs_outputs
+  record_id: IO-4216D4A05E
+  old: {}
+  set:
+    producer_ids: []
+    consumer_ids:
+    - ZKP-5DF7D24003
+    external_producer: *8
+  absent_before:
+  - producer_ids
+  - consumer_ids
+  - external_producer
+  rationale: Canonical in-scope producer/consumer IDs are recorded where source/model
+    evidence supports them, while the remaining caller, prover, host-ledger, persistence,
+    account-state, or observer boundary is typed explicitly as external. No internal
+    endpoint is invented.
+  evidence_ids:
+  - EVD-177476A23F
+  source_references:
+  - packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts:261-289
+- group: inputs_outputs
+  record_id: IO-DCDD0F8C40
+  old: {}
+  set:
+    producer_ids: []
+    consumer_ids:
+    - ZKP-BA11C90A9F
+    external_producer: *2
+  absent_before:
+  - producer_ids
+  - consumer_ids
+  - external_producer
+  rationale: Canonical in-scope producer/consumer IDs are recorded where source/model
+    evidence supports them, while the remaining caller, prover, host-ledger, persistence,
+    account-state, or observer boundary is typed explicitly as external. No internal
+    endpoint is invented.
+  evidence_ids:
+  - EVD-D43C7ED7D0
+  source_references:
+  - packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts:272-277
+- group: inputs_outputs
+  record_id: IO-C1EF5A7724
+  old: {}
+  set:
+    producer_ids: []
+    consumer_ids:
+    - ZKP-BA11C90A9F
+    external_producer: *2
+  absent_before:
+  - producer_ids
+  - consumer_ids
+  - external_producer
+  rationale: Canonical in-scope producer/consumer IDs are recorded where source/model
+    evidence supports them, while the remaining caller, prover, host-ledger, persistence,
+    account-state, or observer boundary is typed explicitly as external. No internal
+    endpoint is invented.
+  evidence_ids:
+  - EVD-D70E747767
+  source_references:
+  - packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts:272-277
+- group: inputs_outputs
+  record_id: IO-5A9F3E8AB4
+  old: {}
+  set:
+    producer_ids: []
+    consumer_ids:
+    - ZKP-BA11C90A9F
+    external_producer: *2
+  absent_before:
+  - producer_ids
+  - consumer_ids
+  - external_producer
+  rationale: Canonical in-scope producer/consumer IDs are recorded where source/model
+    evidence supports them, while the remaining caller, prover, host-ledger, persistence,
+    account-state, or observer boundary is typed explicitly as external. No internal
+    endpoint is invented.
+  evidence_ids:
+  - EVD-3CEBE6B022
+  source_references:
+  - packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts:116-132
+- group: inputs_outputs
+  record_id: IO-33EF11CDC4
+  old: {}
+  set:
+    producer_ids: []
+    consumer_ids:
+    - ZKP-BA11C90A9F
+    external_producer: *2
+  absent_before:
+  - producer_ids
+  - consumer_ids
+  - external_producer
+  rationale: Canonical in-scope producer/consumer IDs are recorded where source/model
+    evidence supports them, while the remaining caller, prover, host-ledger, persistence,
+    account-state, or observer boundary is typed explicitly as external. No internal
+    endpoint is invented.
+  evidence_ids:
+  - EVD-D70E747767
+  source_references:
+  - packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts:272-277
+- group: inputs_outputs
+  record_id: IO-1DBB80C4F3
+  old: {}
+  set:
+    producer_ids:
+    - ZKP-BA11C90A9F
+    consumer_ids:
+    - ZKP-547C93E79B
+    - BHV-4866A87097
+    - BHV-1136BD4D08
+  absent_before:
+  - producer_ids
+  - consumer_ids
+  rationale: The anchored direction and owning behavior/ZK method support the listed
+    current canonical producers and consumers; the mapping remains static and does
+    not claim runtime reachability or proof execution.
+  evidence_ids:
+  - EVD-B7C40C0F6F
+  source_references:
+  - packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts:137-267
+- group: inputs_outputs
+  record_id: IO-7B2F867805
+  old: {}
+  set:
+    producer_ids:
+    - ZKP-BA11C90A9F
+    consumer_ids: []
+    external_consumer: *10
+  absent_before:
+  - producer_ids
+  - consumer_ids
+  - external_consumer
+  rationale: Canonical in-scope producer/consumer IDs are recorded where source/model
+    evidence supports them, while the remaining caller, prover, host-ledger, persistence,
+    account-state, or observer boundary is typed explicitly as external. No internal
+    endpoint is invented.
+  evidence_ids:
+  - EVD-C7D1DB2A7C
+  source_references:
+  - packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts:556-574
+- group: inputs_outputs
+  record_id: IO-A0F8C1C59A
+  old: {}
+  set:
+    producer_ids: []
+    consumer_ids:
+    - ZKP-BA11C90A9F
+    external_producer: *6
+  absent_before:
+  - producer_ids
+  - consumer_ids
+  - external_producer
+  rationale: Canonical in-scope producer/consumer IDs are recorded where source/model
+    evidence supports them, while the remaining caller, prover, host-ledger, persistence,
+    account-state, or observer boundary is typed explicitly as external. No internal
+    endpoint is invented.
+  evidence_ids:
+  - EVD-D70E747767
+  source_references:
+  - packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts:516-542
+- group: inputs_outputs
+  record_id: IO-51ADBABB02
+  old: {}
+  set:
+    producer_ids: []
+    consumer_ids:
+    - ZKP-BA11C90A9F
+    external_producer: *6
+  absent_before:
+  - producer_ids
+  - consumer_ids
+  - external_producer
+  rationale: Canonical in-scope producer/consumer IDs are recorded where source/model
+    evidence supports them, while the remaining caller, prover, host-ledger, persistence,
+    account-state, or observer boundary is typed explicitly as external. No internal
+    endpoint is invented.
+  evidence_ids:
+  - EVD-D70E747767
+  source_references:
+  - packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts:507-514
+- group: inputs_outputs
+  record_id: IO-F1C491BFA4
+  old: {}
+  set:
+    producer_ids: []
+    consumer_ids:
+    - ZKP-BA11C90A9F
+    external_producer: *6
+  absent_before:
+  - producer_ids
+  - consumer_ids
+  - external_producer
+  rationale: Canonical in-scope producer/consumer IDs are recorded where source/model
+    evidence supports them, while the remaining caller, prover, host-ledger, persistence,
+    account-state, or observer boundary is typed explicitly as external. No internal
+    endpoint is invented.
+  evidence_ids:
+  - EVD-D70E747767
+  source_references:
+  - packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts:459-468
+- group: inputs_outputs
+  record_id: IO-1437898F9F
+  old: {}
+  set:
+    producer_ids: []
+    consumer_ids:
+    - ZKP-BA11C90A9F
+    external_producer: *6
+  absent_before:
+  - producer_ids
+  - consumer_ids
+  - external_producer
+  rationale: Canonical in-scope producer/consumer IDs are recorded where source/model
+    evidence supports them, while the remaining caller, prover, host-ledger, persistence,
+    account-state, or observer boundary is typed explicitly as external. No internal
+    endpoint is invented.
+  evidence_ids:
+  - EVD-D70E747767
+  source_references:
+  - packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts:470-505
+- group: inputs_outputs
+  record_id: IO-9F704E650F
+  old: {}
+  set:
+    producer_ids: *7
+    consumer_ids:
+    - ZKP-547C93E79B
+  absent_before:
+  - producer_ids
+  - consumer_ids
+  rationale: The anchored direction and owning behavior/ZK method support the listed
+    current canonical producers and consumers; the mapping remains static and does
+    not claim runtime reachability or proof execution.
+  evidence_ids:
+  - EVD-4F2874E860
+  source_references:
+  - packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts:333-415
+- group: inputs_outputs
+  record_id: IO-0B01C8B840
+  old: {}
+  set:
+    producer_ids: *7
+    consumer_ids:
+    - ZKP-547C93E79B
+    - BHV-4866A87097
+    - BHV-1136BD4D08
+  absent_before:
+  - producer_ids
+  - consumer_ids
+  rationale: The anchored direction and owning behavior/ZK method support the listed
+    current canonical producers and consumers; the mapping remains static and does
+    not claim runtime reachability or proof execution.
+  evidence_ids:
+  - EVD-D70E747767
+  source_references:
+  - packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts:297-304
+- group: inputs_outputs
+  record_id: IO-C65F44E217
+  old: {}
+  set:
+    producer_ids: *7
+    consumer_ids:
+    - ZKP-547C93E79B
+    - BHV-4866A87097
+    - BHV-1136BD4D08
+  absent_before:
+  - producer_ids
+  - consumer_ids
+  rationale: The anchored direction and owning behavior/ZK method support the listed
+    current canonical producers and consumers; the mapping remains static and does
+    not claim runtime reachability or proof execution.
+  evidence_ids:
+  - EVD-D43C7ED7D0
+  source_references:
+  - packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts:297-304
+- group: inputs_outputs
+  record_id: IO-CA717F12D5
+  old: {}
+  set:
+    producer_ids: []
+    consumer_ids:
+    - ZKP-BA11C90A9F
+    external_producer: *2
+  absent_before:
+  - producer_ids
+  - consumer_ids
+  - external_producer
+  rationale: Canonical in-scope producer/consumer IDs are recorded where source/model
+    evidence supports them, while the remaining caller, prover, host-ledger, persistence,
+    account-state, or observer boundary is typed explicitly as external. No internal
+    endpoint is invented.
+  evidence_ids:
+  - EVD-D70E747767
+  source_references:
+  - packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts:426-453
+- group: inputs_outputs
+  record_id: IO-2D6BC19E1D
+  old:
+    producer_ids:
+    - external storage/tracer
+  set:
+    producer_ids: []
+    external_producer:
+      endpoint_type: EXTERNAL_DATA_SOURCE
+      name: storage or tracer supplying untrusted account JSON
+  absent_before:
+  - external_producer
+  rationale: Canonical in-scope producer/consumer IDs are recorded where source/model
+    evidence supports them, while the remaining caller, prover, host-ledger, persistence,
+    account-state, or observer boundary is typed explicitly as external. No internal
+    endpoint is invented.
+  evidence_ids:
+  - EVD-03D20507BE
+  - EVD-C4D7AA9FCD
+  source_references: []
+- group: inputs_outputs
+  record_id: IO-0EA27A7BC9
+  old:
+    producer_ids:
+    - TreasuryOwnerSmartContract methods
+    consumer_ids:
+    - indexers/external observers
+  set:
+    producer_ids:
+    - BHV-80247CE73D
+    - BHV-8E9F5C3ECE
+    - BHV-4866A87097
+    - BHV-5D3FCC7B93
+    - BHV-8FA351E512
+    consumer_ids: []
+    external_consumer: *4
+  absent_before:
+  - external_consumer
+  rationale: Canonical in-scope producer/consumer IDs are recorded where source/model
+    evidence supports them, while the remaining caller, prover, host-ledger, persistence,
+    account-state, or observer boundary is typed explicitly as external. No internal
+    endpoint is invented.
+  evidence_ids:
+  - EVD-79C55B331E
+  - EVD-02AE7D74CF
+  - EVD-D1E6B5A1DC
+  source_references: []
+- group: inputs_outputs
+  record_id: IO-1AF04848D4
+  old:
+    producer_ids:
+    - ledger callers
+  set:
+    producer_ids: []
+    external_producer:
+      endpoint_type: LEDGER_CALLER
+      name: caller supplying Merkle host index
+  absent_before:
+  - external_producer
+  rationale: Canonical in-scope producer/consumer IDs are recorded where source/model
+    evidence supports them, while the remaining caller, prover, host-ledger, persistence,
+    account-state, or observer boundary is typed explicitly as external. No internal
+    endpoint is invented.
+  evidence_ids:
+  - EVD-472E3A66BD
+  - EVD-E13A45214B
+  source_references: []
+- group: inputs_outputs
+  record_id: IO-27333FB515
+  old:
+    producer_ids:
+    - PrefixedMerkleTree.getWitness
+    consumer_ids:
+    - BasePrefixedMerkleWitness.calculateRoot/calculateIndex
+  set:
+    producer_ids:
+    - BHV-DAE783F632
+    consumer_ids:
+    - BHV-DAE783F632
+  rationale: The anchored direction and owning behavior/ZK method support the listed
+    current canonical producers and consumers; the mapping remains static and does
+    not claim runtime reachability or proof execution.
+  evidence_ids:
+  - EVD-472E3A66BD
+  - EVD-F9105A0E0B
+  source_references: []
+validation:
+  status: PASS_PROPOSED_PATCH_SIMULATION
+  input_hashes:
+    SCOPE.yaml: 9344afe7d4f90951790c715b8f7ef9992aad0364510f045fedd6ea640df2ec35
+    model/pass-1.yaml: 1baa122bc91838a651da0116040b290de56f49b90e1c8688ba3712e0db7c6213
+    model/context.yaml: b08ad4cfef37e8a2f19bb2dd46d69763312a48e00e6204e7f8ec30a291afdfd1
+    model/pass-2-contextual-corrected.yaml: 645101d2946d908ab1e200b78048e56957cdd63daa1f872c81897d1e83618897
+    evidence/contextual/WU-2AD6BF0460.yaml: d06b37ab5d30376f4f17b0ba05b012d4ecaa0df3e7934604ba8642c6ebb876a3
+    evidence/contextual/WU-367D918B22.yaml: 678be159482c197f710c3d3adb7e77c431525ea2aeecf889704b65957814868a
+    evidence/contextual/WU-B16DF0D533.yaml: 98d991197f219c75ff7f1ce4fc8bff189bc5ced612c8a063bf68c46bddef6af6
+  source_integrity:
+    scoped_inputs_checked: 38
+    mismatches: []
+    recomputed_scope_hash: f40d76b91ec3cd8805ecdc7bebba8d43b8f317842639a7799738c37569119ab1
+    expected_scope_hash: f40d76b91ec3cd8805ecdc7bebba8d43b8f317842639a7799738c37569119ab1
+  relations:
+    current_total: 157
+    changed: 82
+    endpoint_errors_after_patch: []
+    typed_external_to_after_patch: 15
+    superseded_zkp_endpoint_count_after_patch: 0
+  inputs_outputs:
+    current_total: 105
+    mapped_total: 105
+    changed: 103
+    direction_errors_after_patch: []
+    with_external_producer: 62
+    with_external_consumer: 11
+    with_unresolved_direction: 0
+  zk_statements:
+    current_total: 6
+    superseded_total: 2
+    staking_aggregate_replacements: *11
+    vote_aggregate_replacements: *12
+  identity:
+    all_record_ids: 1246
+    duplicate_ids: []
+  semantic_preservation:
+    assertion_fields_changed: 0
+    effective_static_conclusion_fields_changed: 0
+    relation_type_fields_changed: 0
+    io_direction_fields_changed: 0
+  remaining_unresolved_counts:
+    relation_endpoint_structure: 0
+    io_direction_structure: 0
+    current_relations_to_superseded_zkp: 0
+    zk_runtime_or_cryptographic_assurance: 6
+    external_relation_endpoints_explicitly_typed: 15
+    io_external_producer_boundaries_explicitly_typed: 62
+    io_external_consumer_boundaries_explicitly_typed: 11
+conflicts: []
+unresolved:
+- 'All six current ZKP records retain the established static-only limitation: runtime,
+  compiler/backend, key, circuit, proof, cryptographic, deployment, and host-effect
+  assurance remain unresolved.'
+- Explicit external producer/consumer and relation endpoint metadata records scope
+  boundaries; it is structural accountability, not evidence that the external endpoint
+  behaves correctly.

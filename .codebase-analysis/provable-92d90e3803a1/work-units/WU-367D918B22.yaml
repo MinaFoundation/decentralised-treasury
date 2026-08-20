@@ -1,0 +1,28 @@
+work_unit:
+  id: "WU-367D918B22"
+  stable_key: "work-unit:challenge:phase-6-qa-static-completeness"
+  role: "challenge"
+  pass: "PASS_2"
+  revision: "1e27b1aea88f5ea2764db96e4b337b24fe6dbeb3"
+  scope_hash: "f40d76b91ec3cd8805ecdc7bebba8d43b8f317842639a7799738c37569119ab1"
+  pass_1_sha256: "1baa122bc91838a651da0116040b290de56f49b90e1c8688ba3712e0db7c6213"
+  context_sha256: "b08ad4cfef37e8a2f19bb2dd46d69763312a48e00e6204e7f8ec30a291afdfd1"
+  pass_2_sha256: "645101d2946d908ab1e200b78048e56957cdd63daa1f872c81897d1e83618897"
+  primary_paths: []
+  read_only_context_paths: []
+  owned_record_ids: []
+  owned_stable_key_prefixes: []
+  inputs:
+    scope: "SCOPE.yaml"
+    pass_2_model: "model/pass-2-contextual-corrected.yaml"
+    context_pack: "model/context.yaml"
+    pass_1_model: "model/pass-1.yaml"
+    evidence_roots: ["evidence/reconnaissance", "evidence/semantic", "evidence/challenge", "evidence/contextual"]
+    user_context: ["context/RFC_EXTRACT.md", "context/ZKSECURITY_AUDIT_INDEX.md"]
+    raw_input_membership: "Read every applicable immutable path and hash from SCOPE.yaml; re-check exact anchors before challenging a conclusion."
+  questions:
+    - "Are source, API, semantic-clause, invariant, I/O, relationship, and 95-case test mappings complete within the recorded static scope?"
+    - "Do tests genuinely encode the claimed expectations, and are missing negative, boundary, recovery, ordering, configuration, and composed partitions visible?"
+    - "Are findings, gaps, limitations, evidence classes, and static-only claims internally consistent and free of overstatement?"
+  output: "evidence/contextual/WU-367D918B22.yaml"
+  status: "COMPLETE"

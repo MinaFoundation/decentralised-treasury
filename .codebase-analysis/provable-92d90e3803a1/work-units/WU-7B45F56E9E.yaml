@@ -1,0 +1,14 @@
+work_unit:
+  id: "WU-7B45F56E9E"
+  stable_key: "work-unit:inventory:packages/sdk/src/provable"
+  role: "inventory"
+  pass: "PASS_1"
+  revision: "1e27b1aea88f5ea2764db96e4b337b24fe6dbeb3"
+  primary_paths: []
+  read_only_context_paths: ["packages/sdk/src/provable", "packages/sdk/test/provable", "packages/sdk/test/integration/treasury-owner.test.ts"]
+  owned_record_ids: []
+  owned_stable_key_prefixes: ["package:", "source:", "api:", "test:", "component:inventory:"]
+  questions:
+    - "What files, declarations, APIs, tests, callbacks, dependencies, and platform indicators exist?"
+  output: "evidence/reconnaissance/WU-7B45F56E9E.yaml"
+  status: "COMPLETE"

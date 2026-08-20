@@ -1,0 +1,579 @@
+bundle:
+  schema_version: 1
+  work_unit: WU-367D918B22
+  revision: 1e27b1aea88f5ea2764db96e4b337b24fe6dbeb3
+  scope_hash: f40d76b91ec3cd8805ecdc7bebba8d43b8f317842639a7799738c37569119ab1
+  scope_artifact_sha256: 9344afe7d4f90951790c715b8f7ef9992aad0364510f045fedd6ea640df2ec35
+  pass_1_sha256: 1baa122bc91838a651da0116040b290de56f49b90e1c8688ba3712e0db7c6213
+  context_sha256: b08ad4cfef37e8a2f19bb2dd46d69763312a48e00e6204e7f8ec30a291afdfd1
+  pass_2_sha256: 645101d2946d908ab1e200b78048e56957cdd63daa1f872c81897d1e83618897
+  role: quality_assurance_static_completeness
+  ownership:
+    primary_paths: []
+    record_ids: []
+    stable_key_prefixes: []
+    output: evidence/contextual/WU-367D918B22.yaml
+    canonical_ids_allocated: false
+  source_hashes:
+    packages/sdk/package.json: d73ba980798af63c8ac79b897ae548bd706e480286ac9f617c68f2144f394eba
+    packages/sdk/src/logging/logger.ts: ad0ff96d55f18ddf13a2a7d2fe7e5fd974a8acfd320c65a501cc3a4412b1b944
+    packages/sdk/src/ledgers/nullifier-ledger/nullifier-ledger.ts: 0b8a9038005b7aee785f75d4e0bb4fdf4cb5f945c639f35528596003ac9c36e4
+    packages/sdk/src/ledgers/staking-ledger/staking-ledger.ts: df9be11132c6cb968fe1b9857b53137d629f7d213141652bc90981b5c7c04d69
+    packages/sdk/src/ledgers/voting-ledger/voting-ledger.ts: 8405cbfde9370f4cc424efcdb32477949bf5fcf38db24926cfd0bd1f40898c52
+    packages/sdk/src/provable/account.ts: 00eabfcee24eb10380d0ffeb1e60a08a85aa650cc8a3e9140718cecbf6fd0563
+    packages/sdk/src/provable/contracts/treasury-constants.ts: c4ef6c551437e01ebe6294c51923dfedff4a198735766a37029249482d9247a6
+    packages/sdk/src/provable/contracts/treasury-owner.ts: 7c66014cee7f7a5e559b29f3b7c2790ed19c38c9a91b886c15cbbef3328d17dc
+    packages/sdk/src/provable/contracts/treasury-pause-controller/multisig-signatures.ts: 48a7c4cd41c1e9764df1329966c37f325817fa43074140c145f4f6c1ae2aa372
+    packages/sdk/src/provable/contracts/treasury-pause-controller/treasury-pause-controller.ts: f7139183b963aa496dd36df00017885c9ab6275f11accca35bfd9054260e5104
+    packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts: 95e5656d3a0d0c09a88ac9befa743517c53a98983bd1cf74b042e87bc9faf7af
+    packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts: 37c1f07a5fad41f036f999792b44bf13d4f9af280cb1439bed6a8411dfaa81cd
+    packages/sdk/src/provable/events/treasury-proposal-events.ts: 421e00244121b82a603b71b722ef35419794d0d603a264270a47a44d05a2c01d
+    packages/sdk/src/provable/hashing-helpers.ts: 8ef43c9c685339f97a667002c2f6f349071eaa53ba753c7008dc46be23396869
+    packages/sdk/src/provable/merkle-tree/prefixed-merkle-tree.ts: 870ca739cc8406070367beb86367efa64101647d130f0892b636555cbd2a5c6c
+    packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts: 4dcfc5e1f1edcc7e26cfb960f3892208efe16056a2579b14e12e2a79f0e28197
+    packages/sdk/src/provable/voting-account.ts: fe383ead1055910ace4062c56cf4c7773dead3d95733f972ef6e49b2de515454
+    packages/sdk/src/storage/in-memory/in-memory-merkle-tree-storage.ts: b4d3fc976ee94a108773f8839c03e8775843ab86a9ced5d730b84f9e12a7589b
+    packages/sdk/src/storage/keyv/keyv-merkle-tree-storage.ts: da9b8eac67d45d4a73ecbc53865986ab50bfdc34bd2a3eded3e3701b868f6d70
+    packages/sdk/src/storage/merkle-tree-storage.ts: ce5610141a8d1c7d4a5e8b83ae90dc17f6ae64e5da11e29907cdadd5c1a69539
+    packages/sdk/src/utils/context-provider.ts: cbbde1f3561ca2ee39bc7026241a09fa2659629542c527cc49271da5e924b6d4
+    packages/sdk/src/utils/public-key.ts: 4a174b2a1bc5d07a9f3f8680e47cde35d3b654eeaf924f82e0aae8cf162a9383
+    packages/sdk/test/integration/treasury-owner.test.ts: f73f778dcb2ac226c416ebfdf69117af3262fcc37f36877ea3fb7d1bd7e0f4e0
+    packages/sdk/test/provable/context/contracts/mina-local.ts: 1f1bc37d6f2fe73405b8b6d6a5044ef60de9210cebc0fc5599f0501eeae037f7
+    packages/sdk/test/provable/context/contracts/multisig-signatures-context.ts: d7ab8c5b956860cd6be820f4109fccf5b5418e17ddc6c49f8297f290d031bfe3
+    packages/sdk/test/provable/context/contracts/treasury-pause-controller-context.ts: c19bf32ccf5beaef34b5493c1fb459a2d9e5c4cccbba7c07c6dcebc570f7e0dc
+    packages/sdk/test/provable/context/contracts/treasury-proposal-context.ts: 26867da6fe78c507f120849a85c6752ad3b463124cc59393d8adc37b7e8d6463
+    packages/sdk/test/provable/context/contracts/vote-reducer-context.ts: 01d905c373575a62eb1274650fbff25a240626f993ae6127f54e2621346d49f0
+    packages/sdk/test/provable/context/proofs-enabled.ts: 8811666fcffeca3ff5a2bc4d6dbe93b208dcd242b97860390abba0f7551ce2bd
+    packages/sdk/test/provable/context/staking-ledger-to-voting-ledger-context.ts: 4195f6ebbcbee51ca421f319cd5a399d54e9f252ff76334024914f83d8afdfec
+    packages/sdk/test/provable/contracts/treasury-pause-controller/multisig-signatures.test.ts: d51e8afe43141a84650ddcff49d736a308007fb04da1ae22b72d3a65783648b2
+    packages/sdk/test/provable/contracts/treasury-pause-controller/treasury-pause-controller.test.ts: 5e4031821bafa39daf9b1b28d2aeba4daf92e1611f78e571035974ab63fbb1e5
+    packages/sdk/test/provable/contracts/treasury-proposal/treasury-proposal.test.ts: 89444ba4edfc6bf48fae0c0ef4f8b183c9c2d35f24e38e78622334adb3bed6bb
+    packages/sdk/test/provable/contracts/treasury-proposal/vote-reducer.test.ts: 7f957b454de0f6e1545fa2dc0367b53e0908bde826eb76db4099d36f4f4e8f8a
+    packages/sdk/test/provable/events/treasury-proposal-events.test.ts: 2b5204f4acf2dca9135642a242e18bf5535f46fa41526b43fb19b228d6f63f79
+    packages/sdk/test/provable/merkle-tree/prefixed-merkle-tree.test.ts: a26229c7a3247fc649d1fc8cb2212f978cc108e222ecb0f17045327285221845
+    packages/sdk/test/provable/staking-ledger-to-voting-ledger.test.ts: 988d911b4336e64ccd70009cddcb514bc93b693a1df203c6d1a15dbb98e6af0c
+    packages/sdk/tsconfig.json: 8206b547d254f2bfd7a1c89d09c5e8b2e650e2e5e52f73047c0b30285f206877
+  upstream_artifact_hashes:
+    context/RFC_EXTRACT.md: 84a7528617db2baebfd1d5a0170b11cf639bd52fb61f05c69c555ac5255c46a0
+    context/ZKSECURITY_AUDIT_INDEX.md: 8768353f7bdab76dd93067ddb5df8c749bb37e974232dfcfc397dabcd2ae60cb
+    evidence/contextual/WU-2AD6BF0460.yaml: d06b37ab5d30376f4f17b0ba05b012d4ecaa0df3e7934604ba8642c6ebb876a3
+    evidence/contextual/WU-B16DF0D533.yaml: a5021764b41c875845a61c0297455ceae66401361cae28a7fc60c0a2b7aeb15e
+  assumptions:
+    - Static inspection establishes only source-visible structure and expectations; it does not establish execution, proof, cryptographic, chain, database, or deployment behavior.
+    - Tests are expectation evidence only. Case enumeration is not a pass result, an oracle-completeness claim, or proof-mode assurance.
+    - RFC and prior-audit extracts are immutable intent/history inputs, not deployment authority or current certification.
+  observations:
+    - The corrected Pass-2 model contains all 679 current semantic records and reconciles the requested headline counts.
+    - Structural traceability defects prevent an unqualified completeness or publication-ready disposition even though substantive findings preserve major unknowns and avoid runtime overclaiming.
+  proposed_records:
+    corrections:
+      - stable_key: "correction:qa:sources:scope-role-and-parent-hierarchy"
+        action: Reclassify the eight EXPANDED_SCOPE test file records from OUT_OF_SCOPE and attach every non-file/configuration SRC record to its canonical file parent.
+      - stable_key: "correction:qa:tests:case-semantic-targets"
+        action: Map every case to the exact BHV, CL, or INV expectation in addition to any API or flow surface.
+      - stable_key: "correction:qa:relations:canonical-endpoints-and-zkp-lifecycle"
+        action: Replace noncanonical endpoints, retarget current proof relations to current method-specific ZKP records, and correct the cross-proof root-binding relation semantics.
+      - stable_key: "correction:qa:flows:owner-and-step-components"
+        action: Add owner_component_id and per-step component_id plus behavior_id where applicable for all twenty flows.
+      - stable_key: "correction:qa:io:producer-consumer-direction"
+        action: Add canonical producer and consumer references for every current IO record or explicitly mark a modeled external endpoint.
+      - stable_key: "correction:qa:requirements:implementation-and-test-traceability"
+        action: Populate implementation_ids and test_ids for all current requirements where source/flow/test mappings exist while keeping policy and deployment assurance separate.
+      - stable_key: "correction:qa:fixtures:scope-closure"
+        action: Rescope and refresh the material ledger fixture and concrete test helpers, or preserve their semantics as unresolved external fixture dependencies.
+    candidates:
+      - stable_key: "finding:qa:treasury-owner:unused-proposal-verification-key-static"
+        proposed_kind: informational_configuration_or_testability_finding
+        record_ids: [API-3E2D8706B3, BHV-80247CE73D, TST-A696D485D6, ASM-FF091135AE, UNR-C42A921AD9]
+        rationale: The owner exposes and the integration fixture assigns proposalContractVerificationKey, but createProposal installs TreasuryProposalSmartContract._verificationKey instead; the assignment is statically inert and may mislead deployment/test review.
+        anchor_refs:
+          - "packages/sdk/src/provable/contracts/treasury-owner.ts#L65-L69"
+          - "packages/sdk/src/provable/contracts/treasury-owner.ts#L247-L249"
+          - "packages/sdk/test/integration/treasury-owner.test.ts#L199-L202"
+  proposed_relations: []
+  conflicts:
+    - The source coverage declaration says twenty file records although the model contains thirty-five kind=file records plus three configuration records.
+    - Eight promoted test files are simultaneously represented as EXPANDED_SCOPE inputs and OUT_OF_SCOPE source records.
+    - Current relations retain superseded proof endpoints and noncanonical literal endpoints.
+  unresolved:
+    - Runtime behavior, test results, proof and cryptographic soundness, deployed keys/permissions/roots, host transactionality, fixture fidelity, capacity, and external protocol semantics remain unknown.
+  coverage:
+    scope_inputs_expected: 38
+    scope_inputs_rehashed_before: 38
+    scope_inputs_rehashed_after: 38
+    source_mutation_detected: false
+    corrected_semantic_records_reviewed: 679
+    test_suites_reviewed: 8
+    test_cases_reviewed: 95
+    current_findings_reviewed: 49
+    current_gaps_reviewed: 37
+    current_unresolved_reviewed: 19
+    current_zk_statements_reviewed: 6
+    represented_zk_values_reviewed: 44
+    witness_sites_reviewed: 12
+
+phase_6_review:
+  role: qa_static_completeness_challenger
+  overall_disposition: QUALIFIED_WITH_PUBLICATION_BLOCKERS
+  reviewed_universe:
+    canonical_model: model/pass-2-contextual-corrected.yaml
+    stale_model_excluded: model/pass-2-contextual.yaml
+    semantic_records: 679
+    contextual_dispositions: {CONFIRMED: 470, REFINED: 145, UNRESOLVED: 64}
+    source_scope: {inputs: 38, primary: 12, expanded_scope: 8, read_only_context: 18, current_src_records: 220}
+    current_model_counts:
+      requirements: 30
+      business_rules: 7
+      components: 11
+      apis: 12
+      behaviors: 50
+      flows: 20
+      local_flows: 12
+      cross_component_flows: 8
+      clauses: 70
+      invariants: 43
+      inputs_outputs: 105
+      relations: 157
+      test_suites: 8
+      test_cases: 95
+      findings: 49
+      gaps: 37
+      unresolved: 19
+      zk_statements: 6
+      zk_values: 44
+      witness_sites: 12
+    test_mapping_metrics:
+      active_cases: 94
+      skipped_cases: 1
+      target_references: 108
+      unique_target_ids: 20
+      unique_apis: 5
+      unique_behaviors: 10
+      unique_clauses: 0
+      unique_invariants: 4
+      unique_flows: 1
+      api_only_cases: 69
+      cases_with_behavior_clause_or_invariant: 25
+    structural_metrics:
+      source_kind_file: 35
+      source_kind_configuration: 3
+      source_symbols_and_sites_without_parent_ids: 182
+      expanded_test_file_records_marked_out_of_scope: 8
+      flows_without_owner_component_id: 20
+      flow_steps: 75
+      flow_steps_without_component_id: 75
+      flow_steps_without_behavior_id: 50
+      io_without_producer_or_consumer_mapping: 89
+      current_test_relations_with_noncanonical_endpoint: 19
+      current_depends_on_relations_with_noncanonical_endpoint: 53
+      current_relations_to_superseded_zkp: 5
+      findings_without_prerequisites: 3
+      findings_without_scope_limitations: 7
+      gaps_without_actor_or_asset_ids: 37
+      requirements_without_implementation_or_test_ids: 30
+  confirmations:
+    - stable_key: "phase6:qa:confirmation:scope-byte-membership"
+      conclusion: All thirty-eight SCOPE inputs are represented by pinned hashes and matched both pre-review and final rehash; no scoped input mutation was detected.
+      record_ids: [SRC-1EF7A669E0, SRC-C1BC86B768, SRC-ADD1EE03C0, SRC-262AA2E950, SRC-C34C2E3EFB, SRC-C2638DBE31, SRC-0F15479FFF, SRC-35F79F4F5A]
+      evidence_refs: ["SCOPE.yaml#scope.files", "READ_ONLY_GUARD.yaml#inputs"]
+      anchor_refs:
+        - ".codebase-analysis/provable-92d90e3803a1/SCOPE.yaml#L1"
+        - ".codebase-analysis/provable-92d90e3803a1/READ_ONLY_GUARD.yaml#L1"
+    - stable_key: "phase6:qa:confirmation:headline-counts"
+      conclusion: The requested counts reconcile mechanically in the corrected model, including twelve APIs, fifty current behaviors, twenty flows, seventy clauses, forty-three current invariants, 105 IO, 157 relations, and the requirement/finding/gap/unresolved sets.
+      record_ids: [API-1889CE2CD1, API-5E63FB46F2, API-C8E2E47556, API-FD2A8AB499, API-58119694A5, API-98891BC765, API-702CAD321E, API-91F8CB9F4E, API-E777547D48, API-3E2D8706B3, API-FD75421927, API-2E2E88515C]
+      evidence_refs: ["model/pass-2-contextual-corrected.yaml#records", "model/pass-2-contextual-corrected.yaml#coverage"]
+      anchor_refs:
+        - ".codebase-analysis/provable-92d90e3803a1/model/pass-2-contextual-corrected.yaml#records"
+    - stable_key: "phase6:qa:confirmation:test-case-inventory"
+      conclusion: The eight pinned suites contain ninety-five modeled cases, ninety-four active and one explicitly skipped; the integration file also contains two fully commented pause/unpause cases outside that active count.
+      record_ids: [TST-ED3BD4CF2F, TST-5FC61A24DA, TST-D1863E1F8D, TST-318386F25F, TST-5A6CA56CD8, TST-A696D485D6, TST-6530589740, TST-A9E4F4D3BC]
+      evidence_refs: ["model/pass-2-contextual-corrected.yaml#records.tests"]
+      anchor_refs:
+        - "packages/sdk/test/provable/contracts/treasury-proposal/vote-reducer.test.ts#L454-L457"
+        - "packages/sdk/test/integration/treasury-owner.test.ts#L429-L491"
+    - stable_key: "phase6:qa:confirmation:zk-static-inventory"
+      conclusion: Six current ZK statements represent forty-four value boundaries and twelve witness sites; nine reads are source-visible constraint-bound and three host mutations remain explicitly unproved.
+      record_ids: [ZKP-EFB3E28391, ZKP-5DF7D24003, ZKP-DF018A9714, ZKP-66153C8CB1, ZKP-547C93E79B, ZKP-BA11C90A9F]
+      evidence_refs: [EVD-3CEBE6B022, EVD-C7D1DB2A7C, EVD-F7DE049BDC]
+      anchor_refs:
+        - "packages/sdk/src/provable/contracts/treasury-pause-controller/treasury-pause-controller.ts#L105-L108"
+        - "packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts#L111-L320"
+        - "packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts#L460-L574"
+    - stable_key: "phase6:qa:confirmation:epistemic-bounds"
+      conclusion: Current findings and unresolved records generally preserve source/test/intent distinctions and do not claim test pass, runtime reachability, exploitability, circuit soundness, cryptographic assurance, or deployed equivalence.
+      record_ids: [UNR-BA7E7021CF, UNR-20BC6033C1, UNR-C42A921AD9, UNR-3694303308, ASM-EF2D37A6EF, ASM-FF091135AE]
+      evidence_refs: [EVD-BAD04529F7, EVD-1C17FE0D88, EVD-2E424CAB76]
+      anchor_refs:
+        - "packages/sdk/test/provable/context/proofs-enabled.ts#L1"
+        - "packages/sdk/package.json#L8-L59"
+  qualifications:
+    - stable_key: "phase6:qa:qualification:case-count-is-not-semantic-closure"
+      conclusion: Ninety-five enumerated cases are syntactically complete for the eight files, but semantic target coverage is partial because sixty-nine cases point only at APIs, no case directly targets a clause, and only ten of fifty behaviors plus four of forty-three invariants are case-targeted.
+      record_ids: [TST-ED3BD4CF2F, TST-5FC61A24DA, TST-D1863E1F8D, TST-318386F25F, TST-5A6CA56CD8, TST-A696D485D6, TST-6530589740, TST-A9E4F4D3BC]
+      evidence_refs: ["model/pass-2-contextual-corrected.yaml#records.tests.cases.target_ids"]
+      anchor_refs:
+        - "packages/sdk/test/provable/events/treasury-proposal-events.test.ts#L41-L189"
+        - "packages/sdk/test/provable/contracts/treasury-proposal/vote-reducer.test.ts#L29-L1442"
+    - stable_key: "phase6:qa:qualification:fixture-closure"
+      conclusion: >-
+        Test case syntax is pinned, but fixture semantics are not closed: the staking fixture loads an unscoped JSON ledger and several suites depend on concrete SQLite/persistent-ledger/service helpers outside the immutable membership.
+      record_ids: [TST-5A6CA56CD8, TST-A9E4F4D3BC, TST-A696D485D6, TST-318386F25F, UNR-3694303308, GAP-8826CA0D4C]
+      evidence_refs: ["SCOPE.yaml#scope.files", "model/pass-2-contextual-corrected.yaml#records.tests.fixtures"]
+      anchor_refs:
+        - "packages/sdk/test/provable/context/staking-ledger-to-voting-ledger-context.ts#L32-L48"
+        - "packages/sdk/test/integration/treasury-owner.test.ts#L1-L207"
+    - stable_key: "phase6:qa:qualification:zk-host-versus-constraint"
+      conclusion: BOUND and witness-site coverage mean source-visible constraint participation only; they do not establish compiled constraints, proof generation/verification, host persistence, key correctness, cryptography, or proof-enabled/disabled parity.
+      record_ids: [ZKP-EFB3E28391, ZKP-5DF7D24003, ZKP-DF018A9714, ZKP-66153C8CB1, ZKP-547C93E79B, ZKP-BA11C90A9F, UNR-20BC6033C1]
+      evidence_refs: [EVD-BAD04529F7, EVD-C7D1DB2A7C, EVD-F7DE049BDC]
+      anchor_refs:
+        - "packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts#L304-L320"
+        - "packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts#L556-L574"
+    - stable_key: "phase6:qa:qualification:historical-evidence"
+      conclusion: Prior-audit assertions are revision-bounded normative/history evidence, not EXTERNAL_STANDARD facts or current certification; remediated items must remain historical and applicable aliases must not double-rank current root causes.
+      record_ids: [FND-1979AEB628, FND-CD3FC08B49, FND-ECA97458D5, FND-D0ABA9650D, FND-8DB62F78C9, FND-BF3449506D]
+      evidence_refs: [EVD-FB46967B48, EVD-0D50A0B3BE]
+      anchor_refs:
+        - ".codebase-analysis/provable-92d90e3803a1/context/ZKSECURITY_AUDIT_INDEX.md#L1-L20"
+    - stable_key: "phase6:qa:qualification:substantive-findings-versus-schema"
+      conclusion: The forty-nine current findings are substantively bounded and all thirty-seven gaps state consequence/rollout/question, but empty finding prerequisite/limitation arrays and empty gap actor/asset mappings fail the stricter completion contract.
+      record_ids: [FND-7D495DBE3F, FND-30B94DCCE0, FND-88B3C09521, FND-7BE7D38B6B, FND-BF3449506D, FND-3B35F91A1C, FND-8467BE9FD1, FND-E683792BE2, FND-1D115F22E4, GAP-ADD703D733]
+      evidence_refs: ["model/pass-2-contextual-corrected.yaml#records.findings", "model/pass-2-contextual-corrected.yaml#records.gaps"]
+      anchor_refs:
+        - ".codebase-analysis/provable-92d90e3803a1/model/pass-2-contextual-corrected.yaml#records"
+  contradictions_or_dissent:
+    - stable_key: "phase6:qa:dissent:source-accountability"
+      conclusion: >-
+        Source accountability is internally contradictory: eight promoted EXPANDED_SCOPE test file records are OUT_OF_SCOPE, 182 symbols/sites lack parent_ids, and the declared twenty file records do not reconcile with thirty-five file plus three configuration records.
+      record_ids: [SRC-1EF7A669E0, SRC-C1BC86B768, SRC-ADD1EE03C0, SRC-262AA2E950, SRC-C34C2E3EFB, SRC-C2638DBE31, SRC-0F15479FFF, SRC-35F79F4F5A]
+      evidence_refs: ["SCOPE.yaml#scope.files", "model/pass-2-contextual-corrected.yaml#records.sources", "model/pass-2-contextual-corrected.yaml#coverage.source"]
+      anchor_refs:
+        - ".codebase-analysis/provable-92d90e3803a1/SCOPE.yaml#scope.files"
+        - ".codebase-analysis/provable-92d90e3803a1/model/pass-2-contextual-corrected.yaml#records.sources"
+    - stable_key: "phase6:qa:dissent:test-semantic-mapping"
+      conclusion: >-
+        Current test traceability does not satisfy case-to-expectation accountability: zero clauses are directly case-targeted, sixty-nine cases are API-only, and nineteen of twenty-one TESTS relations use stable keys, paths, or component keys rather than canonical endpoints.
+      record_ids: [TST-ED3BD4CF2F, TST-5FC61A24DA, TST-D1863E1F8D, TST-318386F25F, TST-5A6CA56CD8, TST-A696D485D6, TST-6530589740, TST-A9E4F4D3BC, REL-A2F41756C4, REL-F2F467DE44, REL-E8C18D1D66]
+      evidence_refs: ["model/pass-2-contextual-corrected.yaml#records.tests", "model/pass-2-contextual-corrected.yaml#records.relations"]
+      anchor_refs:
+        - "packages/sdk/test/integration/treasury-owner.test.ts#L264-L704"
+        - "packages/sdk/test/provable/contracts/treasury-proposal/vote-reducer.test.ts#L29-L1442"
+    - stable_key: "phase6:qa:dissent:requirement-traceability"
+      conclusion: All thirty current requirement records have empty implementation_ids and test_ids even where canonical behaviors, flows, clauses, and tests visibly map to them; requirement completeness must not be inferred from gap links alone.
+      record_ids: [REQ-8AC636D92F, REQ-1EEDB7A733, REQ-F8D28DBFF5, REQ-529C5F460D, REQ-B3FFF31BC9, REQ-87F314C527, REQ-12FA8872CA]
+      evidence_refs: ["model/pass-2-contextual-corrected.yaml#records.requirements"]
+      anchor_refs:
+        - ".codebase-analysis/provable-92d90e3803a1/model/pass-2-contextual-corrected.yaml#records.requirements"
+    - stable_key: "phase6:qa:dissent:relation-lifecycle-and-direction"
+      conclusion: Five CURRENT relations point to superseded aggregate ZKP records; the proof-root relation also models one proof statement as constraint-bound to another although the source consumer equates a staking-proof output root with a vote-proof input root. Superseded ZKP replacement lists also cross-assign both program families.
+      record_ids: [REL-8D94358D1F, REL-E20DC14C1E, REL-A38D47D128, REL-188319D340, REL-8723F51AAF, ZKP-0830843A1A, ZKP-37F3DC23FD, ZKP-5DF7D24003, ZKP-66153C8CB1, ZKP-DF018A9714, ZKP-BA11C90A9F, ZKP-547C93E79B]
+      evidence_refs: ["model/pass-2-contextual-corrected.yaml#records.relations", "model/pass-2-contextual-corrected.yaml#records.zk_statements"]
+      anchor_refs:
+        - "packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts#L227-L233"
+        - "packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts#L261-L283"
+        - "packages/sdk/src/provable/contracts/treasury-owner.ts#L335-L342"
+    - stable_key: "phase6:qa:dissent:noncanonical-relation-endpoints"
+      conclusion: Fifty-three DEPENDS_ON, nineteen TESTS, two VERIFIES, two WRITES, and one AUTHORIZES relations contain noncanonical or absent endpoints; imported/external endpoints require an explicit external-node type rather than unresolved literal strings.
+      record_ids: [REL-5802D63B62, REL-DEAD37FEA7, REL-2B8B758DBD, REL-D5F524F3C8, REL-C3A3BD30D1, REL-A2F41756C4, REL-F2F467DE44, REL-E8C18D1D66]
+      evidence_refs: ["model/pass-2-contextual-corrected.yaml#records.relations"]
+      anchor_refs:
+        - "packages/sdk/src/provable/contracts/treasury-owner.ts#L210-L255"
+        - "packages/sdk/src/provable/contracts/treasury-owner.ts#L335-L342"
+        - "packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts#L353-L384"
+    - stable_key: "phase6:qa:dissent:flow-component-schema"
+      conclusion: All twenty flows lack owner_component_id, all seventy-five steps lack component_id, and fifty steps lack behavior_id; counts of twelve local and eight cross-component flows are valid labels but component/flow diagram ownership is not publication-ready.
+      record_ids: [FLW-802D71B91D, FLW-FB5CAECCAD, FLW-FD2B1F4966, FLW-BEFDEF1197, FLW-E60ABD1745, FLW-9BA4D696D1, FLW-2F560AE009, FLW-5C8E5E0DE3, FLW-A565B35EC6, FLW-21AF7F4E4D, FLW-745B097927, FLW-9D28A6D299, FLW-6394A1B72B, FLW-5AA543472A, FLW-5E24C8B8E4, FLW-A6B92A4E6D, FLW-53B4410963, FLW-7DA083B071, FLW-9BB4E99B75, FLW-BFD5C6D535]
+      evidence_refs: ["model/pass-2-contextual-corrected.yaml#records.flows"]
+      anchor_refs:
+        - ".codebase-analysis/provable-92d90e3803a1/model/pass-2-contextual-corrected.yaml#records.flows"
+    - stable_key: "phase6:qa:dissent:io-producer-consumer"
+      conclusion: Eighty-nine of 105 current IO records have no producer or consumer mapping; all forty-four proof values have binding clauses, but binding coverage does not replace directional source/sink accountability.
+      record_ids: [IO-1F97CF4E82, IO-4708EC66CE, IO-F2FDEDAAD4, IO-69C74E38D3, IO-9C80690415, IO-626345DDF5, ZKP-EFB3E28391, ZKP-5DF7D24003, ZKP-DF018A9714, ZKP-66153C8CB1, ZKP-547C93E79B, ZKP-BA11C90A9F]
+      evidence_refs: ["model/pass-2-contextual-corrected.yaml#records.inputs_outputs", EVD-3CEBE6B022]
+      anchor_refs:
+        - "packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts#L83-L337"
+        - "packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts#L333-L639"
+    - stable_key: "phase6:qa:dissent:unbound-test-fixture"
+      conclusion: The modeled staking suite claims a first-ten-account fixture, but the loaded test-ledger-mini.json and concrete storage/service helpers are not hash-bound by SCOPE; fixture fidelity and failure behavior remain unresolved.
+      record_ids: [TST-5A6CA56CD8, TST-A9E4F4D3BC, TST-A696D485D6, TST-318386F25F, UNR-3694303308, GAP-8826CA0D4C]
+      evidence_refs: ["SCOPE.yaml#scope.files", "model/pass-2-contextual-corrected.yaml#records.tests.fixtures"]
+      anchor_refs:
+        - "packages/sdk/test/provable/context/staking-ledger-to-voting-ledger-context.ts#L32-L48"
+    - stable_key: "phase6:qa:dissent:unused-proposal-key-static"
+      conclusion: proposalContractVerificationKey is public configuration surface assigned by the integration fixture but ignored by createProposal, which installs TreasuryProposalSmartContract._verificationKey directly; the current model has no explicit finding/gap for this inert assignment.
+      record_ids: [API-3E2D8706B3, BHV-80247CE73D, TST-A696D485D6, ASM-FF091135AE, UNR-C42A921AD9]
+      evidence_refs: [EVD-E95EC38949, EVD-2E424CAB76]
+      anchor_refs:
+        - "packages/sdk/src/provable/contracts/treasury-owner.ts#L65-L69"
+        - "packages/sdk/src/provable/contracts/treasury-owner.ts#L247-L249"
+        - "packages/sdk/test/integration/treasury-owner.test.ts#L199-L202"
+  author_priorities:
+    - priority: P0
+      title: Repair canonical traceability before publication
+      record_ids: [SRC-1EF7A669E0, REL-8D94358D1F, FLW-6394A1B72B, TST-A696D485D6, IO-626345DDF5, REQ-8AC636D92F]
+      evidence_refs: ["model/pass-2-contextual-corrected.yaml#records", "SCOPE.yaml#scope.files"]
+      anchor_refs:
+        - ".codebase-analysis/provable-92d90e3803a1/model/pass-2-contextual-corrected.yaml#records"
+      rationale: Source parents/roles, requirement mappings, flow ownership, relation endpoints, test targets, and IO directions are prerequisites for auditable publication and diagrams.
+      question: Will root normalize these fields and revalidate every canonical reference before generating the authoritative model/publication?
+    - priority: P0
+      title: Close fixture membership or preserve explicit unknowns
+      record_ids: [TST-5A6CA56CD8, TST-A9E4F4D3BC, TST-A696D485D6, TST-318386F25F, UNR-3694303308, GAP-8826CA0D4C]
+      evidence_refs: ["SCOPE.yaml#scope.files"]
+      anchor_refs:
+        - "packages/sdk/test/provable/context/staking-ledger-to-voting-ledger-context.ts#L32-L48"
+      rationale: Oracle and fixture fidelity cannot be stated from test files while material JSON/backend/service behavior is outside the pinned membership.
+      question: Rescope and refresh those dependencies, or explicitly publish the suites as fixture-semantics-partial?
+    - priority: P0
+      title: Require composed adverse lifecycle expectations
+      record_ids: [TST-A696D485D6, GAP-ADD703D733, GAP-22CD8BD355, GAP-7BAF881BED, GAP-B798CE8DB1]
+      evidence_refs: [EVD-B5183C166D]
+      anchor_refs:
+        - "packages/sdk/test/integration/treasury-owner.test.ts#L264-L704"
+      rationale: The sole composed suite is ordered happy-path state, while pause/finality, quorum, payout recovery, and cross-proposal liability are not active integrated expectations.
+      question: Which adverse outcomes and exact state/event oracles are release-blocking?
+    - priority: P0
+      title: Establish host fault, retry, and proof-mode assurance
+      record_ids: [FND-23916993D0, FND-19EC441E53, GAP-A25D114C6F, GAP-8826CA0D4C, UNR-20BC6033C1]
+      evidence_refs: [EVD-C7D1DB2A7C, EVD-F7DE049BDC, EVD-C15386FB6E]
+      anchor_refs:
+        - "packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts#L304-L320"
+        - "packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts#L556-L574"
+      rationale: Callback writes, process-global context, retry, concurrency, and proof-enabled/disabled parity are principal operational blind spots.
+      question: What atomic job protocol, recovery oracle, capacity SLO, and separate proof-mode evidence are required?
+    - priority: P1
+      title: Decide the unused proposal verification-key surface
+      record_ids: [API-3E2D8706B3, BHV-80247CE73D, TST-A696D485D6, ASM-FF091135AE, UNR-C42A921AD9]
+      evidence_refs: [EVD-E95EC38949, EVD-2E424CAB76]
+      anchor_refs:
+        - "packages/sdk/src/provable/contracts/treasury-owner.ts#L65-L69"
+        - "packages/sdk/src/provable/contracts/treasury-owner.ts#L247-L249"
+        - "packages/sdk/test/integration/treasury-owner.test.ts#L199-L202"
+      rationale: A statically inert advertised configuration value can create false deployment and test assurance about the installed child verification key.
+      question: Must createProposal consume this static, or should the surface and fixture assignment be removed and the actual key source documented?
+    - priority: P1
+      title: Complete finding and gap accountability fields
+      record_ids: [FND-7D495DBE3F, FND-30B94DCCE0, FND-88B3C09521, FND-7BE7D38B6B, FND-BF3449506D, FND-E683792BE2, FND-1D115F22E4, GAP-ADD703D733]
+      evidence_refs: ["model/pass-2-contextual-corrected.yaml#records.findings", "model/pass-2-contextual-corrected.yaml#records.gaps"]
+      anchor_refs:
+        - ".codebase-analysis/provable-92d90e3803a1/model/pass-2-contextual-corrected.yaml#records"
+      rationale: Empty prerequisites, limitations, and actor/asset mappings make otherwise useful findings/gaps fail the formal completion contract.
+      question: Which canonical actor/asset representation should gaps use, and which prerequisite/limitation applies to each named finding?
+  qa_coverage_matrix:
+    - area: scope_and_sources
+      disposition: BLOCKED_STRUCTURAL
+      conclusion: All thirty-eight bytes are hash-accounted, but role significance, file counts, and parent hierarchy are inconsistent.
+      record_ids: [SRC-1EF7A669E0, SRC-C1BC86B768, SRC-ADD1EE03C0, SRC-262AA2E950, SRC-C34C2E3EFB, SRC-C2638DBE31, SRC-0F15479FFF, SRC-35F79F4F5A]
+      evidence_refs: ["SCOPE.yaml#scope.files", "model/pass-2-contextual-corrected.yaml#records.sources"]
+      anchor_refs: [".codebase-analysis/provable-92d90e3803a1/SCOPE.yaml#scope.files"]
+    - area: api_behavior_clause_invariant
+      disposition: COUNTS_RECONCILED_TRACEABILITY_PARTIAL
+      conclusion: Twelve APIs, fifty behaviors, seventy clauses, and forty-three invariants are present, but case mapping reaches only five APIs, ten behaviors, zero clauses, and four invariants.
+      record_ids: [API-3E2D8706B3, API-FD75421927, API-2E2E88515C, BHV-80247CE73D, INV-307C13CAB2, INV-41F2D0C67B]
+      evidence_refs: ["model/pass-2-contextual-corrected.yaml#records.tests.cases.target_ids"]
+      anchor_refs: ["packages/sdk/test/integration/treasury-owner.test.ts#L264-L704"]
+    - area: flows_and_diagrams
+      disposition: BLOCKED_STRUCTURAL
+      conclusion: Twenty flow narratives exist with twelve local/eight cross labels, but component ownership and step attribution are absent.
+      record_ids: [FLW-6394A1B72B, FLW-A6B92A4E6D, FLW-5E24C8B8E4, FLW-9D28A6D299, FLW-53B4410963, FLW-BFD5C6D535]
+      evidence_refs: ["model/pass-2-contextual-corrected.yaml#records.flows"]
+      anchor_refs: [".codebase-analysis/provable-92d90e3803a1/model/pass-2-contextual-corrected.yaml#records.flows"]
+    - area: io_and_relations
+      disposition: BLOCKED_STRUCTURAL
+      conclusion: All 105 IO and 157 relations are enumerated, but producer/consumer directions, canonical endpoints, and proof-record lifecycle are incomplete.
+      record_ids: [IO-626345DDF5, REL-8D94358D1F, REL-5802D63B62, REL-2B8B758DBD]
+      evidence_refs: ["model/pass-2-contextual-corrected.yaml#records.inputs_outputs", "model/pass-2-contextual-corrected.yaml#records.relations"]
+      anchor_refs: ["packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts#L227-L283"]
+    - area: requirements_business_rules_gaps_unresolved
+      disposition: COUNTS_RECONCILED_MAPPING_PARTIAL
+      conclusion: Thirty requirements, seven business rules, thirty-seven gaps, and nineteen unresolved records preserve substantive questions, but requirement implementation/test links and gap actor/asset mapping are absent.
+      record_ids: [REQ-8AC636D92F, REQ-1EEDB7A733, BR-BEF061F449, GAP-ADD703D733, UNR-BA7E7021CF]
+      evidence_refs: ["model/pass-2-contextual-corrected.yaml#records.requirements", "model/pass-2-contextual-corrected.yaml#records.gaps"]
+      anchor_refs: [".codebase-analysis/provable-92d90e3803a1/model/pass-2-contextual-corrected.yaml#records"]
+    - area: tests_and_fixtures
+      disposition: CASE_INVENTORY_COMPLETE_ORACLE_CLOSURE_PARTIAL
+      conclusion: Eight suites/ninety-five cases are enumerated, but semantic targets, fixture closure, composed negatives, recovery, configuration, and proof modes are incomplete.
+      record_ids: [TST-ED3BD4CF2F, TST-5FC61A24DA, TST-D1863E1F8D, TST-318386F25F, TST-5A6CA56CD8, TST-A696D485D6, TST-6530589740, TST-A9E4F4D3BC]
+      evidence_refs: ["model/pass-2-contextual-corrected.yaml#records.tests"]
+      anchor_refs: ["packages/sdk/test/integration/treasury-owner.test.ts#L264-L704"]
+    - area: findings
+      disposition: SUBSTANTIVELY_BOUNDED_SCHEMA_PARTIAL
+      conclusion: Forty-nine current findings are generally prerequisite-aware and non-overstated, subject to explicit empty-field repairs and historical-lineage deduplication.
+      record_ids: [FND-7D495DBE3F, FND-30B94DCCE0, FND-88B3C09521, FND-7BE7D38B6B, FND-BF3449506D, FND-E683792BE2, FND-1D115F22E4]
+      evidence_refs: ["model/pass-2-contextual-corrected.yaml#records.findings"]
+      anchor_refs: [".codebase-analysis/provable-92d90e3803a1/model/pass-2-contextual-corrected.yaml#records.findings"]
+    - area: zero_knowledge
+      disposition: STATIC_BINDINGS_COMPLETE_RUNTIME_UNKNOWN
+      conclusion: Six statements, forty-four values, and twelve witness sites are represented; proof-mode, compiler, key, cryptographic, host-effect, and deployed behavior remain unresolved.
+      record_ids: [ZKP-EFB3E28391, ZKP-5DF7D24003, ZKP-DF018A9714, ZKP-66153C8CB1, ZKP-547C93E79B, ZKP-BA11C90A9F]
+      evidence_refs: [EVD-3CEBE6B022, EVD-BAD04529F7]
+      anchor_refs: ["packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts#L83-L337", "packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts#L333-L639"]
+  test_plan_matrix:
+    - suite: event_schemas
+      cases: 5
+      disposition: SCHEMA_ONLY
+      conclusion: Round-trip/type coverage is present; production emission, ordering, post-state parity, malformed decode, and consumer recovery are absent.
+      record_ids: [TST-ED3BD4CF2F, FND-7264C0E61E, FND-1D115F22E4]
+      evidence_refs: [EVD-02AE7D74CF]
+      anchor_refs: ["packages/sdk/test/provable/events/treasury-proposal-events.test.ts#L41-L189"]
+      later_expectations: [production_emit_fetch, state_event_parity, ordering_reorg_replay, malformed_consumer_input]
+    - suite: pause_controller
+      cases: 20
+      disposition: STRONG_LOCAL_PARTIAL_COMPOSITION
+      conclusion: Local method/nonce/threshold partitions are useful; repeated identities, over-five initialization, target-state binding, rotation recovery, restart, and composed finality/events are absent.
+      record_ids: [TST-5FC61A24DA, FND-BBC3A2316C, FND-E683792BE2, FND-10A2C953A0, FND-BFFEA51091]
+      evidence_refs: [EVD-72A633D2CC]
+      anchor_refs: ["packages/sdk/test/provable/contracts/treasury-pause-controller/treasury-pause-controller.test.ts#L28-L646"]
+      later_expectations: [six_participant_init, repeated_identity_threshold, explicit_target_state, invalid_rotation_preimage, restart_recovery, proposal_state_event_parity]
+    - suite: multisig_signatures
+      cases: 28
+      disposition: STRONG_LOCAL_DOMAIN_PARTIAL
+      conclusion: Hash determinism, nonce boundaries, order, threshold, wrong signer and wrong command are covered; participant distinctness and deployment/network domain separation are absent.
+      record_ids: [TST-D1863E1F8D, FND-BBC3A2316C, FND-4B4F5D76C9]
+      evidence_refs: [EVD-278D27A176]
+      anchor_refs: ["packages/sdk/test/provable/contracts/treasury-pause-controller/multisig-signatures.test.ts#L22-L591"]
+      later_expectations: [duplicate_keys, duplicate_signature_positions, controller_domain, network_domain, rotation_domain]
+    - suite: prefixed_merkle
+      cases: 1
+      disposition: VECTOR_ONLY
+      conclusion: One two-leaf known vector is asserted; empty/sparse/update-order/height/prefix/witness/range/storage-failure and authoritative differential vectors are absent.
+      record_ids: [TST-318386F25F, BHV-4EC84F351D, INV-41F2D0C67B]
+      evidence_refs: ["model/pass-2-contextual-corrected.yaml#records.tests"]
+      anchor_refs: ["packages/sdk/test/provable/merkle-tree/prefixed-merkle-tree.test.ts#L13-L43"]
+      later_expectations: [empty_tree, sparse_tree, update_order, bad_index, prefix_height_mismatch, witness_root_parity, storage_failure_atomicity]
+    - suite: staking_to_voting
+      cases: 4
+      disposition: HAPPY_PATH_ONLY
+      conclusion: Compile/digest/merge/exhaust happy paths exist; wrong roots/indices/adjacency, sparse later account, eligibility, range/overflow, host failure/retry, and authoritative fixture fidelity are absent.
+      record_ids: [TST-5A6CA56CD8, FND-2237382FBA, FND-CA0F83CE86, FND-4C6DF9502F, GAP-EF32A38D1C, GAP-FE43BADC05]
+      evidence_refs: [EVD-0CA3D36B38, EVD-A80CE1BF98]
+      anchor_refs: ["packages/sdk/test/provable/staking-ledger-to-voting-ledger.test.ts#L26-L87"]
+      later_expectations: [wrong_start_root_index, merge_adjacency, sparse_terminal, token_account_delegate_eligibility, uint64_aggregation_bounds, host_rollback_retry]
+    - suite: treasury_owner_integration
+      cases: 8
+      disposition: ORDERED_HAPPY_PATH
+      conclusion: One shared-state approved lifecycle reaches full payout; active global/proposal pause, boundary slots, quorum/rejection, retally, adverse proof/key/root, partial/repeat/zero/overpay, cross-proposal solvency, restart, and event parity are absent.
+      record_ids: [TST-A696D485D6, GAP-ADD703D733, GAP-7BAF881BED, GAP-22CD8BD355, GAP-B798CE8DB1]
+      evidence_refs: [EVD-B5183C166D]
+      anchor_refs: ["packages/sdk/test/integration/treasury-owner.test.ts#L264-L704", "packages/sdk/test/integration/treasury-owner.test.ts#L429-L491"]
+      later_expectations: [exact_slot_boundaries, pause_unpause_composition, low_quorum_abstain_rejection, retally, wrong_proof_key_root_history, partial_zero_repeat_overpay_wrong_recipient, concurrent_liabilities, restart_event_state_parity]
+    - suite: treasury_proposal_thresholds
+      cases: 6
+      disposition: RATIO_EXAMPLES_ONLY
+      conclusion: Six amount ratios are covered; zero denominators, rounding neighbors, cap overflow, and APPROVED/REJECTED/UNKNOWN state-transition boundaries are absent.
+      record_ids: [TST-6530589740, BHV-B377C55F96, FND-996A8C6D4E, FND-B5948FE3CF]
+      evidence_refs: [EVD-CFF488F119]
+      anchor_refs: ["packages/sdk/test/provable/contracts/treasury-proposal/treasury-proposal.test.ts#L9-L54"]
+      later_expectations: [zero_treasury, zero_total_currency, rounding_neighbors, uint_bounds, participation_boundary, directional_boundary, persisted_terminal_status]
+    - suite: vote_reducer
+      cases: 23
+      disposition: GOOD_LOCAL_NEGATIVES_ONE_SKIP
+      conclusion: Root/index/history/merge negatives and padding are relatively strong; invalid enum is skipped and overflow, real-key DUMMY policy, callback rollback/retry, four/five/six cardinality, and five-state consumer composition are absent.
+      record_ids: [TST-A9E4F4D3BC, FND-2184025222, FND-19EC441E53, UNR-13C729A54A]
+      evidence_refs: [EVD-D70E747767, EVD-D43C7ED7D0]
+      anchor_refs: ["packages/sdk/test/provable/contracts/treasury-proposal/vote-reducer.test.ts#L29-L1442", "packages/sdk/test/provable/contracts/treasury-proposal/vote-reducer.test.ts#L454-L457"]
+      later_expectations: [activate_invalid_vote, four_five_six_actions, real_key_dummy_policy, tally_overflow, nullifier_write_rollback, retry_replay, five_action_history_consumer]
+  publication_corrections:
+    - stable_key: "phase6:qa:publication:source-accountability"
+      correction: Publish 12 PRIMARY plus 8 EXPANDED_SCOPE as the twenty analyzed source/test files, separately list 18 READ_ONLY_CONTEXT inputs, and do not call promoted tests OUT_OF_SCOPE; restore file-parent links for all symbols/sites.
+      record_ids: [SRC-1EF7A669E0, SRC-C1BC86B768, SRC-ADD1EE03C0, SRC-262AA2E950, SRC-C34C2E3EFB, SRC-C2638DBE31, SRC-0F15479FFF, SRC-35F79F4F5A]
+      evidence_refs: ["SCOPE.yaml#scope.files", "model/pass-2-contextual-corrected.yaml#coverage.source"]
+      anchor_refs: [".codebase-analysis/provable-92d90e3803a1/SCOPE.yaml#scope.files"]
+    - stable_key: "phase6:qa:publication:test-language"
+      correction: State exactly eight suites/ninety-five inventoried cases, ninety-four active/one skipped plus two commented integration cases; never state that tests passed or that all semantic clauses are tested.
+      record_ids: [TST-ED3BD4CF2F, TST-5FC61A24DA, TST-D1863E1F8D, TST-318386F25F, TST-5A6CA56CD8, TST-A696D485D6, TST-6530589740, TST-A9E4F4D3BC]
+      evidence_refs: ["model/pass-2-contextual-corrected.yaml#records.tests"]
+      anchor_refs: ["packages/sdk/test/integration/treasury-owner.test.ts#L429-L491", "packages/sdk/test/provable/contracts/treasury-proposal/vote-reducer.test.ts#L454-L457"]
+    - stable_key: "phase6:qa:publication:diagram-parity"
+      correction: Generate diagrams only after component ownership/endpoints are repaired; every displayed node/edge must use current canonical IDs, show direction, preserve twenty flows as twelve local/eight cross, and exclude superseded ZKP endpoints.
+      record_ids: [FLW-6394A1B72B, FLW-A6B92A4E6D, FLW-5E24C8B8E4, FLW-9D28A6D299, REL-8D94358D1F, ZKP-0830843A1A, ZKP-37F3DC23FD]
+      evidence_refs: ["model/pass-2-contextual-corrected.yaml#records.flows", "model/pass-2-contextual-corrected.yaml#records.relations"]
+      anchor_refs: ["packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts#L261-L283"]
+    - stable_key: "phase6:qa:publication:requirement-and-io-mappings"
+      correction: Show requirement-to-implementation/test links and IO producer-to-consumer direction; do not treat gap_ids or constraint bindings as substitutes for those mappings.
+      record_ids: [REQ-8AC636D92F, REQ-1EEDB7A733, IO-626345DDF5, IO-4708EC66CE]
+      evidence_refs: ["model/pass-2-contextual-corrected.yaml#records.requirements", "model/pass-2-contextual-corrected.yaml#records.inputs_outputs"]
+      anchor_refs: [".codebase-analysis/provable-92d90e3803a1/model/pass-2-contextual-corrected.yaml#records"]
+    - stable_key: "phase6:qa:publication:evidence-classes"
+      correction: Keep documented intent, test expectation, implemented static behavior, inference, prior-audit history, and unknown in distinct columns; label prior-audit statements by audited/current revision rather than EXTERNAL_STANDARD fact.
+      record_ids: [REQ-8AC636D92F, TST-A696D485D6, FND-1979AEB628, UNR-BA7E7021CF]
+      evidence_refs: [EVD-C70801D35C, EVD-B5183C166D, EVD-FB46967B48]
+      anchor_refs: [".codebase-analysis/provable-92d90e3803a1/context/RFC_EXTRACT.md#L1-L10", ".codebase-analysis/provable-92d90e3803a1/context/ZKSECURITY_AUDIT_INDEX.md#L1-L20"]
+    - stable_key: "phase6:qa:publication:findings-and-zk"
+      correction: Publish forty-nine current findings as active/unresolved versus remediated-history groups without duplicate ranking, and render all forty-four ZK values as STATIC_BOUND while three host writes are HOST_EFFECT_NOT_PROVEN.
+      record_ids: [FND-1979AEB628, FND-D0ABA9650D, ZKP-EFB3E28391, ZKP-5DF7D24003, ZKP-DF018A9714, ZKP-66153C8CB1, ZKP-547C93E79B, ZKP-BA11C90A9F]
+      evidence_refs: [EVD-FB46967B48, EVD-3CEBE6B022, EVD-C7D1DB2A7C, EVD-F7DE049BDC]
+      anchor_refs: ["packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts#L304-L320", "packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts#L556-L574"]
+  later_assurance:
+    - priority: P0
+      conclusion: Execute a composed adverse owner/proposal lifecycle matrix only in a separately authorized runtime workflow.
+      record_ids: [TST-A696D485D6, GAP-ADD703D733, GAP-7BAF881BED, GAP-22CD8BD355, GAP-B798CE8DB1]
+      evidence_refs: [EVD-B5183C166D]
+      anchor_refs: ["packages/sdk/test/integration/treasury-owner.test.ts#L264-L704"]
+      required: Exact slot endpoints; global/proposal pause; low-quorum/abstain/rejection persistence; repeat tally; wrong proof/key/root/history; partial/full/zero/repeat/over-cap/wrong-recipient/insufficient-balance payout; cross-proposal order/solvency; event-state parity.
+    - priority: P0
+      conclusion: Exercise host failure, rollback, retry, concurrency, restart, and proof-mode parity using production-equivalent backends after explicit authorization.
+      record_ids: [FND-23916993D0, FND-19EC441E53, GAP-A25D114C6F, GAP-8826CA0D4C, UNR-20BC6033C1]
+      evidence_refs: [EVD-C7D1DB2A7C, EVD-F7DE049BDC, EVD-C15386FB6E]
+      anchor_refs: ["packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts#L304-L320", "packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts#L556-L574"]
+      required: Fault injection between record/tree writes; idempotent replay; shared-context interleaving; durable trace/root parity; proof-disabled versus proof-enabled result comparison; capacity/deadline measurement.
+    - priority: P0
+      conclusion: Validate staking transformation negatives and an authoritative electorate/terminal-boundary contract.
+      record_ids: [TST-5A6CA56CD8, FND-2237382FBA, FND-CA0F83CE86, FND-4C6DF9502F, GAP-EF32A38D1C, GAP-FE43BADC05]
+      evidence_refs: [EVD-0CA3D36B38, EVD-A80CE1BF98]
+      anchor_refs: ["packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts#L83-L337"]
+      required: Wrong start/root/witness/merge adjacency; sparse later account; terminal count/density; token/account/delegate eligibility; empty delegate; UInt64 aggregation bounds; host failure recovery.
+    - priority: P1
+      conclusion: Complete vote-reducer policy and failure partitions.
+      record_ids: [TST-A9E4F4D3BC, FND-2184025222, FND-19EC441E53, UNR-13C729A54A]
+      evidence_refs: [EVD-D70E747767, EVD-D43C7ED7D0]
+      anchor_refs: ["packages/sdk/test/provable/contracts/treasury-proposal/vote-reducer.test.ts#L29-L1442"]
+      required: Activate invalid enum; 4/5/6 actions; real-key DUMMY policy; duplicate/nullifier rollback; tally overflow; retry/replay; five-state action-history consumer.
+    - priority: P1
+      conclusion: Complete emergency authority configuration, recovery, and composed-state tests.
+      record_ids: [TST-D1863E1F8D, TST-5FC61A24DA, FND-BBC3A2316C, FND-E683792BE2, FND-10A2C953A0, FND-BFFEA51091]
+      evidence_refs: [EVD-72A633D2CC, EVD-278D27A176]
+      anchor_refs: ["packages/sdk/src/provable/contracts/treasury-pause-controller/treasury-pause-controller.ts#L55-L216"]
+      required: Exactly five distinct keys; six-key rejection; controller/network domain; explicit target state; invalid/unknown rotation commitment; restart recovery; status and event preservation.
+    - priority: P1
+      conclusion: Establish primitive/configuration differential vectors and production event/state behavior.
+      record_ids: [TST-318386F25F, TST-ED3BD4CF2F, API-3E2D8706B3, ASM-3B12C3E849, ASM-FF091135AE, UNR-C42A921AD9]
+      evidence_refs: [EVD-F211A2464E, EVD-02AE7D74CF, EVD-2E424CAB76]
+      anchor_refs: ["packages/sdk/src/provable/account.ts#L22-L392", "packages/sdk/src/provable/contracts/treasury-owner.ts#L65-L69", "packages/sdk/src/provable/contracts/treasury-owner.ts#L247-L249"]
+      required: Authoritative Account/root/action vectors; malformed JSON; Merkle range/storage atomicity; signature/proof permission modes; actual proposal-key source; production event fetch/order/state parity.
+    - priority: P2
+      conclusion: Supply deployment and capacity evidence after static model repair.
+      record_ids: [ASM-FF091135AE, GAP-A25D114C6F, REQ-12FA8872CA]
+      evidence_refs: [EVD-2E424CAB76, EVD-5963C00DAB, EVD-0D50A0B3BE]
+      anchor_refs: ["packages/sdk/package.json#L8-L59", "packages/sdk/src/provable/contracts/treasury-owner.ts#L64-L119"]
+      required: Signed deployment manifest, resolved custom dependency, verification keys/roots/permissions/constants/addresses, production-scale proof budget, redundancy, retry and deadline SLO.
+  limitations:
+    - conclusion: No target TypeScript, tests, build, compiler, proof, verifier, chain, transaction, database, formatter, or PROOFS_ENABLED path was executed.
+      record_ids: [UNR-BA7E7021CF, UNR-20BC6033C1, ASM-EF2D37A6EF]
+      evidence_refs: [EVD-BAD04529F7]
+      anchor_refs: ["packages/sdk/test/provable/context/proofs-enabled.ts#L1"]
+    - conclusion: Case and source counts are static inventory facts only; they do not establish runtime coverage, branch reachability, oracle correctness, fixture fidelity, or absence of additional defects.
+      record_ids: [TST-A696D485D6, TST-A9E4F4D3BC, UNR-3694303308, GAP-ADD703D733]
+      evidence_refs: ["model/pass-2-contextual-corrected.yaml#records.tests"]
+      anchor_refs: ["packages/sdk/test/integration/treasury-owner.test.ts#L264-L704"]
+    - conclusion: Cryptographic/circuit soundness, deployed verification keys/permissions/roots, proof recursion, protocol equivalence, transaction atomicity, and host persistence remain unknown.
+      record_ids: [ASM-EF2D37A6EF, ASM-FF091135AE, ASM-73AF207816, UNR-20BC6033C1, UNR-C42A921AD9]
+      evidence_refs: [EVD-BAD04529F7, EVD-C7D1DB2A7C, EVD-F7DE049BDC]
+      anchor_refs: ["packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts#L59-L66"]
+    - conclusion: The unscoped ledger fixture/helper behavior and all external RFC/audit/deployment facts remain evidence boundaries rather than inferred guarantees.
+      record_ids: [TST-5A6CA56CD8, UNR-3694303308, ASM-FF091135AE, GAP-8826CA0D4C]
+      evidence_refs: [EVD-C70801D35C, EVD-FB46967B48]
+      anchor_refs: ["packages/sdk/test/provable/context/staking-ledger-to-voting-ledger-context.ts#L32-L48"]
+    - conclusion: Priorities and candidate corrections are root-adjudication requests, not canonical IDs, exploitability claims, test results, remediation commits, or release decisions.
+      record_ids: [FND-23916993D0, GAP-ADD703D733, UNR-C42A921AD9]
+      evidence_refs: ["evidence/contextual/WU-367D918B22.yaml#bundle.proposed_records"]
+      anchor_refs: [".codebase-analysis/provable-92d90e3803a1/evidence/contextual/WU-367D918B22.yaml#bundle.proposed_records"]
+  input_integrity_completion:
+    status: COMPLETE_ZERO_MUTATION
+    expected_inputs: 38
+    matched_inputs: 38
+    mutation_detected: false
+    record_ids: [SRC-1EF7A669E0, SRC-C1BC86B768, SRC-ADD1EE03C0, SRC-262AA2E950, SRC-C34C2E3EFB, SRC-C2638DBE31, SRC-0F15479FFF, SRC-35F79F4F5A]
+    evidence_refs: ["SCOPE.yaml#scope.files", "READ_ONLY_GUARD.yaml#inputs"]
+    anchor_refs: [".codebase-analysis/provable-92d90e3803a1/SCOPE.yaml#L1", ".codebase-analysis/provable-92d90e3803a1/READ_ONLY_GUARD.yaml#L1"]

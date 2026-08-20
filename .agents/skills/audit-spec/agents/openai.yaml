@@ -1,0 +1,6 @@
+interface:
+  display_name: "Audit specification"
+  short_description: "Threat-model and verify repository security semantics"
+  default_prompt: "Use $audit-spec to account for statically discoverable business and security semantics, build a threat model, deterministically verify atomic properties and composed attack chains in TypeScript, then present one final human-review checklist."
+policy:
+  allow_implicit_invocation: false

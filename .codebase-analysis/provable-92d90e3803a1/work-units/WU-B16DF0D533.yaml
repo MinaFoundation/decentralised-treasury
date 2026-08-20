@@ -1,0 +1,28 @@
+work_unit:
+  id: "WU-B16DF0D533"
+  stable_key: "work-unit:security:phase-6-whole-system-security-trust-coherence"
+  role: "security"
+  pass: "PASS_2"
+  revision: "1e27b1aea88f5ea2764db96e4b337b24fe6dbeb3"
+  scope_hash: "f40d76b91ec3cd8805ecdc7bebba8d43b8f317842639a7799738c37569119ab1"
+  pass_1_sha256: "1baa122bc91838a651da0116040b290de56f49b90e1c8688ba3712e0db7c6213"
+  context_sha256: "b08ad4cfef37e8a2f19bb2dd46d69763312a48e00e6204e7f8ec30a291afdfd1"
+  pass_2_sha256: "645101d2946d908ab1e200b78048e56957cdd63daa1f872c81897d1e83618897"
+  primary_paths: []
+  read_only_context_paths: []
+  owned_record_ids: []
+  owned_stable_key_prefixes: []
+  inputs:
+    scope: "SCOPE.yaml"
+    pass_2_model: "model/pass-2-contextual-corrected.yaml"
+    context_pack: "model/context.yaml"
+    pass_1_model: "model/pass-1.yaml"
+    evidence_roots: ["evidence/reconnaissance", "evidence/semantic", "evidence/challenge", "evidence/contextual"]
+    user_context: ["context/RFC_EXTRACT.md", "context/ZKSECURITY_AUDIT_INDEX.md"]
+    raw_input_membership: "Read every applicable immutable path and hash from SCOPE.yaml; re-check exact anchors before challenging a conclusion."
+  questions:
+    - "Does the whole-system model account for every protected objective, threat, trust/deployment/protocol assumption, and all fourteen required failure classes?"
+    - "Do local contract and ZK bindings preserve state, asset, authorization, replay, recursion, commitment, host-effect, permission, and configuration properties when composed?"
+    - "Are severity, prerequisites, root cause, impact, recommendations, prior-audit drift, and static limitations defensible without claiming runtime or cryptographic assurance?"
+  output: "evidence/contextual/WU-B16DF0D533.yaml"
+  status: "COMPLETE"

@@ -1,0 +1,753 @@
+bundle:
+  schema_version: 1
+  work_unit: "WU-CAB8FAE2F2"
+  revision: "1e27b1aea88f5ea2764db96e4b337b24fe6dbeb3"
+  scope_hash: "f40d76b91ec3cd8805ecdc7bebba8d43b8f317842639a7799738c37569119ab1"
+  role: "semantic"
+  tool:
+    name: "manual-static-reading-and-rg"
+    version: "repository-hosted"
+    command: "read-only nl, sed, rg, wc, and shasum; no target TypeScript execution"
+  ownership:
+    primary_paths: []
+    record_ids: []
+    stable_key_prefixes:
+      - "behavior:primitives-tests:"
+      - "flow:primitives-tests:"
+      - "clause:primitives-tests:"
+      - "invariant:primitives-tests:"
+      - "finding:primitives-tests:"
+  source_hashes:
+    "packages/sdk/src/provable/account.ts": "00eabfcee24eb10380d0ffeb1e60a08a85aa650cc8a3e9140718cecbf6fd0563"
+    "packages/sdk/src/provable/hashing-helpers.ts": "8ef43c9c685339f97a667002c2f6f349071eaa53ba753c7008dc46be23396869"
+    "packages/sdk/src/provable/merkle-tree/prefixed-merkle-tree.ts": "870ca739cc8406070367beb86367efa64101647d130f0892b636555cbd2a5c6c"
+    "packages/sdk/src/provable/voting-account.ts": "fe383ead1055910ace4062c56cf4c7773dead3d95733f972ef6e49b2de515454"
+    "packages/sdk/src/provable/events/treasury-proposal-events.ts": "421e00244121b82a603b71b722ef35419794d0d603a264270a47a44d05a2c01d"
+    "packages/sdk/src/ledgers/staking-ledger/staking-ledger.ts": "df9be11132c6cb968fe1b9857b53137d629f7d213141652bc90981b5c7c04d69"
+    "packages/sdk/src/ledgers/voting-ledger/voting-ledger.ts": "8405cbfde9370f4cc424efcdb32477949bf5fcf38db24926cfd0bd1f40898c52"
+    "packages/sdk/src/ledgers/nullifier-ledger/nullifier-ledger.ts": "0b8a9038005b7aee785f75d4e0bb4fdf4cb5f945c639f35528596003ac9c36e4"
+    "packages/sdk/src/storage/merkle-tree-storage.ts": "ce5610141a8d1c7d4a5e8b83ae90dc17f6ae64e5da11e29907cdadd5c1a69539"
+    "packages/sdk/src/storage/in-memory/in-memory-merkle-tree-storage.ts": "b4d3fc976ee94a108773f8839c03e8775843ab86a9ced5d730b84f9e12a7589b"
+    "packages/sdk/src/storage/keyv/keyv-merkle-tree-storage.ts": "da9b8eac67d45d4a73ecbc53865986ab50bfdc34bd2a3eded3e3701b868f6d70"
+    "packages/sdk/src/utils/public-key.ts": "4a174b2a1bc5d07a9f3f8680e47cde35d3b654eeaf924f82e0aae8cf162a9383"
+    "packages/sdk/test/integration/treasury-owner.test.ts": "f73f778dcb2ac226c416ebfdf69117af3262fcc37f36877ea3fb7d1bd7e0f4e0"
+    "packages/sdk/test/provable/context/contracts/mina-local.ts": "1f1bc37d6f2fe73405b8b6d6a5044ef60de9210cebc0fc5599f0501eeae037f7"
+    "packages/sdk/test/provable/context/contracts/multisig-signatures-context.ts": "d7ab8c5b956860cd6be820f4109fccf5b5418e17ddc6c49f8297f290d031bfe3"
+    "packages/sdk/test/provable/context/contracts/treasury-pause-controller-context.ts": "c19bf32ccf5beaef34b5493c1fb459a2d9e5c4cccbba7c07c6dcebc570f7e0dc"
+    "packages/sdk/test/provable/context/contracts/treasury-proposal-context.ts": "26867da6fe78c507f120849a85c6752ad3b463124cc59393d8adc37b7e8d6463"
+    "packages/sdk/test/provable/context/contracts/vote-reducer-context.ts": "01d905c373575a62eb1274650fbff25a240626f993ae6127f54e2621346d49f0"
+    "packages/sdk/test/provable/context/proofs-enabled.ts": "8811666fcffeca3ff5a2bc4d6dbe93b208dcd242b97860390abba0f7551ce2bd"
+    "packages/sdk/test/provable/context/staking-ledger-to-voting-ledger-context.ts": "4195f6ebbcbee51ca421f319cd5a399d54e9f252ff76334024914f83d8afdfec"
+    "packages/sdk/test/provable/contracts/treasury-pause-controller/multisig-signatures.test.ts": "d51e8afe43141a84650ddcff49d736a308007fb04da1ae22b72d3a65783648b2"
+    "packages/sdk/test/provable/contracts/treasury-pause-controller/treasury-pause-controller.test.ts": "5e4031821bafa39daf9b1b28d2aeba4daf92e1611f78e571035974ab63fbb1e5"
+    "packages/sdk/test/provable/contracts/treasury-proposal/treasury-proposal.test.ts": "89444ba4edfc6bf48fae0c0ef4f8b183c9c2d35f24e38e78622334adb3bed6bb"
+    "packages/sdk/test/provable/contracts/treasury-proposal/vote-reducer.test.ts": "7f957b454de0f6e1545fa2dc0367b53e0908bde826eb76db4099d36f4f4e8f8a"
+    "packages/sdk/test/provable/events/treasury-proposal-events.test.ts": "2b5204f4acf2dca9135642a242e18bf5535f46fa41526b43fb19b228d6f63f79"
+    "packages/sdk/test/provable/merkle-tree/prefixed-merkle-tree.test.ts": "a26229c7a3247fc649d1fc8cb2212f978cc108e222ecb0f17045327285221845"
+    "packages/sdk/test/provable/staking-ledger-to-voting-ledger.test.ts": "988d911b4336e64ccd70009cddcb514bc93b693a1df203c6d1a15dbb98e6af0c"
+  upstream_artifact_hashes:
+    "evidence/reconnaissance/WU-BECB8661B0.yaml": "4f7822bd725e831ef99654298d5b13cb66493b8e8378c2109c684488e0c56f7d"
+    "evidence/reconnaissance/WU-7B45F56E9E.yaml": "47a6afc2afc3104c88812a8bafb3edc0a74ebca0bd4db2cb28dfac763b0b8dc0"
+    "evidence/reconnaissance/WU-8B484B3509.yaml": "760c8855016860d8d9afd5ad97ec62b886dca9b9aba02f098039fff8132dc076"
+    "context/RFC_EXTRACT.md": "84a7528617db2baebfd1d5a0170b11cf639bd52fb61f05c69c555ac5255c46a0"
+    "context/ZKSECURITY_AUDIT_INDEX.md": "8768353f7bdab76dd93067ddb5df8c749bb37e974232dfcfc397dabcd2ae60cb"
+  assumptions:
+    - "Tests are expectation evidence only. No test, target module, proof system, compiler, build, application, or chain was executed."
+    - "o1js field packing, Struct encoding, Poseidon, prefix conversion, public-key encoding, and permission semantics are external dependency assumptions beyond source-visible calls."
+    - "Concrete storage implementations outside the pinned SCOPE.yaml ledger are not covered; only pinned interfaces/adapters and their source-visible contracts are used here."
+  observations:
+    - "Account hashing manually orders and packs Mina account fields, including nested permissions and zkApp state, before a prefixed Poseidon hash is formed by downstream staking-ledger code."
+    - "Account.fromJSON mutates an input object when its delegate is absent or empty and converts every deserialization exception into Account.empty without retaining an error signal."
+    - "PrefixedMerkleTree enforces only the upper index bound. Negative bigint indices pass both setLeaf and getWitness guards, while constructor height and prefix-array compatibility are unchecked."
+    - "Tree mutations persist the leaf and then each ancestor sequentially through an interface without a transaction or rollback contract. fill repeats this mutation per leaf."
+    - "The eight expanded test files define 95 leaf cases: 94 active and one skipped. They were mapped case-by-case below, but none supplies execution evidence in this static run."
+    - "No expanded test directly targets Account parsing/defaults/hash packing, hash-prefix helpers in isolation, VotingAccount emptiness, Merkle negative/upper bounds, witness-length/root/index calculations, storage failure atomicity, or production event emission correctness."
+    - "The integration suite is deliberately stateful and ordered: later vote, proof, tally, and execute cases depend on state and proof variables created by earlier cases; its pause/unpause cases are commented because their combined proving path was reported to stall."
+    - "Test fixtures optionally enable proofs from PROOFS_ENABLED and several helpers call compile/prove/verify if run; this analysis did not set that variable or invoke those paths."
+  proposed_records:
+    evidence:
+      - stable_key: "evidence:primitives-tests:account-model"
+        evidence_class: "IMPLEMENTED_STATIC"
+        description: "Account schemas, defaults, permissive JSON fallback, hashing inputs, and packed-field construction."
+        anchors: [{ path: "packages/sdk/src/provable/account.ts", symbol: "Timing/Permission/Permissions/Zkapp/Account/packToFields", start_line: 22, end_line: 392 }]
+        source_sha256: "00eabfcee24eb10380d0ffeb1e60a08a85aa650cc8a3e9140718cecbf6fd0563"
+        tool: { name: "manual-static-reading", version: "", command: "nl/sed/rg" }
+        limitations: ["Canonical compatibility with Mina/o1js serialization was not dynamically or differentially checked."]
+      - stable_key: "evidence:primitives-tests:hashing"
+        evidence_class: "IMPLEMENTED_STATIC"
+        description: "Domain-prefixed Poseidon helpers and nested action-list hash update."
+        anchors: [{ path: "packages/sdk/src/provable/hashing-helpers.ts", symbol: "hash helpers", start_line: 4, end_line: 36 }]
+        source_sha256: "8ef43c9c685339f97a667002c2f6f349071eaa53ba753c7008dc46be23396869"
+        tool: { name: "manual-static-reading", version: "", command: "nl/sed/rg" }
+        limitations: ["Cryptographic collision resistance and protocol-prefix compatibility are external assumptions."]
+      - stable_key: "evidence:primitives-tests:prefixed-merkle"
+        evidence_class: "IMPLEMENTED_STATIC"
+        description: "Storage-backed prefixed tree mutation/read behavior and circuit witness root/index calculations."
+        anchors: [{ path: "packages/sdk/src/provable/merkle-tree/prefixed-merkle-tree.ts", symbol: "PrefixedMerkleTree/BasePrefixedMerkleWitness", start_line: 31, end_line: 266 }]
+        source_sha256: "870ca739cc8406070367beb86367efa64101647d130f0892b636555cbd2a5c6c"
+        tool: { name: "manual-static-reading", version: "", command: "nl/sed/rg" }
+        limitations: ["Constraint soundness and storage crash behavior were not executed."]
+      - stable_key: "evidence:primitives-tests:voting-account"
+        evidence_class: "IMPLEMENTED_STATIC"
+        description: "One-field voting account, zero-value empty representation, and hash input."
+        anchors: [{ path: "packages/sdk/src/provable/voting-account.ts", symbol: "VotingAccount", start_line: 3, end_line: 17 }]
+        source_sha256: "fe383ead1055910ace4062c56cf4c7773dead3d95733f972ef6e49b2de515454"
+        tool: { name: "manual-static-reading", version: "", command: "nl/sed/rg" }
+        limitations: []
+      - stable_key: "evidence:primitives-tests:event-schemas"
+        evidence_class: "IMPLEMENTED_STATIC"
+        description: "Five shared event names and Struct payload schemas."
+        anchors: [{ path: "packages/sdk/src/provable/events/treasury-proposal-events.ts", symbol: "treasury proposal events", start_line: 4, end_line: 68 }]
+        source_sha256: "421e00244121b82a603b71b722ef35419794d0d603a264270a47a44d05a2c01d"
+        tool: { name: "manual-static-reading", version: "", command: "nl/sed/rg" }
+        limitations: ["Schema definition does not establish that production producers populate semantically correct values."]
+      - stable_key: "evidence:primitives-tests:storage-boundary"
+        evidence_class: "IMPLEMENTED_STATIC"
+        description: "Merkle storage contract, overlay caching/batching view, Keyv namespace and Field string encoding."
+        anchors:
+          - { path: "packages/sdk/src/storage/merkle-tree-storage.ts", symbol: "MerkleTreeStorage", start_line: 1, end_line: 9 }
+          - { path: "packages/sdk/src/storage/in-memory/in-memory-merkle-tree-storage.ts", symbol: "InMemoryMerkleTreeStorage", start_line: 6, end_line: 61 }
+          - { path: "packages/sdk/src/storage/keyv/keyv-merkle-tree-storage.ts", symbol: "KeyvMerkleTreeStorage", start_line: 9, end_line: 46 }
+        source_sha256: "multiple:pinned-in-source_hashes"
+        tool: { name: "manual-static-reading", version: "", command: "nl/sed/rg" }
+        limitations: ["Underlying Keyv/SQLite durability and transaction semantics are outside the pinned implementation boundary."]
+      - stable_key: "evidence:primitives-tests:ledger-indexing"
+        evidence_class: "IMPLEMENTED_STATIC"
+        description: "Base staking/voting/nullifier ledgers bind typed leaves to prefixed Merkle trees and derive voting/nullifier positions from a public-key hash."
+        anchors:
+          - { path: "packages/sdk/src/ledgers/staking-ledger/staking-ledger.ts", symbol: "BaseStakingLedger", start_line: 54, end_line: 144 }
+          - { path: "packages/sdk/src/ledgers/voting-ledger/voting-ledger.ts", symbol: "BaseVotingLedger", start_line: 281, end_line: 335 }
+          - { path: "packages/sdk/src/ledgers/nullifier-ledger/nullifier-ledger.ts", symbol: "BaseNullifierLedger", start_line: 277, end_line: 324 }
+          - { path: "packages/sdk/src/utils/public-key.ts", symbol: "publicKeyBase58ToBigInt", start_line: 3, end_line: 10 }
+        source_sha256: "multiple:pinned-in-source_hashes"
+        tool: { name: "manual-static-reading", version: "", command: "nl/sed/rg" }
+        limitations: ["Concrete account/value stores and downstream transaction orchestration are only partially inside the pinned dependency closure."]
+      - stable_key: "evidence:primitives-tests:test-fixtures"
+        evidence_class: "TEST_EXPECTATION"
+        description: "Pinned test contexts define local-chain, multisig, proposal, reducer, ledger, proof-mode, and cleanup fixtures."
+        anchors:
+          - { path: "packages/sdk/test/provable/context/contracts/mina-local.ts", symbol: "createLocalBlockchain/transaction", start_line: 3, end_line: 25 }
+          - { path: "packages/sdk/test/provable/context/contracts/multisig-signatures-context.ts", symbol: "createMultisigSignaturesTestContext", start_line: 13, end_line: 63 }
+          - { path: "packages/sdk/test/provable/context/contracts/treasury-pause-controller-context.ts", symbol: "createPauseControllerTestContext", start_line: 17, end_line: 122 }
+          - { path: "packages/sdk/test/provable/context/contracts/treasury-proposal-context.ts", symbol: "createTreasuryProposalTestContext", start_line: 4, end_line: 46 }
+          - { path: "packages/sdk/test/provable/context/contracts/vote-reducer-context.ts", symbol: "createVoteReducerTestContext", start_line: 20, end_line: 175 }
+          - { path: "packages/sdk/test/provable/context/staking-ledger-to-voting-ledger-context.ts", symbol: "createStakingLedgerToVotingLedgerTestContext", start_line: 17, end_line: 117 }
+          - { path: "packages/sdk/test/provable/context/proofs-enabled.ts", symbol: "getProofsEnabled", start_line: 1, end_line: 3 }
+        source_sha256: "multiple:pinned-in-source_hashes"
+        tool: { name: "manual-static-reading", version: "", command: "nl/sed/rg" }
+        limitations: ["Fixture behavior was read but never executed."]
+      - stable_key: "evidence:primitives-tests:test-treasury-owner"
+        evidence_class: "TEST_EXPECTATION"
+        description: "Ordered integration expectations for deployment, creation, voting, proof construction, tally, and execution."
+        anchors: [{ path: "packages/sdk/test/integration/treasury-owner.test.ts", symbol: "integration cases", start_line: 264, end_line: 764 }]
+        source_sha256: "f73f778dcb2ac226c416ebfdf69117af3262fcc37f36877ea3fb7d1bd7e0f4e0"
+        tool: { name: "manual-static-reading", version: "", command: "nl/sed/rg" }
+        limitations: ["Stateful case order and service/network fixtures reduce isolation; two pause cases are comments only."]
+      - stable_key: "evidence:primitives-tests:test-multisig"
+        evidence_class: "TEST_EXPECTATION"
+        description: "Twenty-eight threshold, message-domain, participant-order, nonce, and error expectations."
+        anchors: [{ path: "packages/sdk/test/provable/contracts/treasury-pause-controller/multisig-signatures.test.ts", symbol: "multisig cases", start_line: 13, end_line: 611 }]
+        source_sha256: "d51e8afe43141a84650ddcff49d736a308007fb04da1ae22b72d3a65783648b2"
+        tool: { name: "manual-static-reading", version: "", command: "nl/sed/rg" }
+        limitations: ["Random keys are used; controller/network domain reuse is not represented."]
+      - stable_key: "evidence:primitives-tests:test-pause-controller"
+        evidence_class: "TEST_EXPECTATION"
+        description: "Twenty pause-controller compilation, deployment, nonce, threshold, transition, key-rotation, and failure-atomicity expectations."
+        anchors: [{ path: "packages/sdk/test/provable/contracts/treasury-pause-controller/treasury-pause-controller.test.ts", symbol: "pause controller cases", start_line: 19, end_line: 659 }]
+        source_sha256: "5e4031821bafa39daf9b1b28d2aeba4daf92e1611f78e571035974ab63fbb1e5"
+        tool: { name: "manual-static-reading", version: "", command: "nl/sed/rg" }
+        limitations: ["No case binds a desired proposal pause state or exercises cross-controller/network replay."]
+      - stable_key: "evidence:primitives-tests:test-acceptance"
+        evidence_class: "TEST_EXPECTATION"
+        description: "Six table-driven acceptance-curve expectations at proposal/treasury ratios from one to one hundred percent."
+        anchors: [{ path: "packages/sdk/test/provable/contracts/treasury-proposal/treasury-proposal.test.ts", symbol: "calculate acceptance criteria", start_line: 6, end_line: 84 }]
+        source_sha256: "89444ba4edfc6bf48fae0c0ef4f8b183c9c2d35f24e38e78622334adb3bed6bb"
+        tool: { name: "manual-static-reading", version: "", command: "nl/sed/rg" }
+        limitations: ["Zero treasury, zero amount, amount greater than treasury, arithmetic maxima, rounding thresholds, and approval-status outcomes are not covered."]
+      - stable_key: "evidence:primitives-tests:test-vote-reducer"
+        evidence_class: "TEST_EXPECTATION"
+        description: "Twenty-three fixed-batch, duplicate/nullifier, root/index, action-chain, history, and merge expectations; one invalid-enum case is skipped."
+        anchors: [{ path: "packages/sdk/test/provable/contracts/treasury-proposal/vote-reducer.test.ts", symbol: "vote reducer cases", start_line: 18, end_line: 1517 }]
+        source_sha256: "7f957b454de0f6e1545fa2dc0367b53e0908bde826eb76db4099d36f4f4e8f8a"
+        tool: { name: "manual-static-reading", version: "", command: "nl/sed/rg" }
+        limitations: ["No case was run; invalid vote rejection is skipped and host persistence rollback under failure is not exercised."]
+      - stable_key: "evidence:primitives-tests:test-events"
+        evidence_class: "TEST_EXPECTATION"
+        description: "Five Struct encode/decode expectations and one mock contract schema reuse check."
+        anchors: [{ path: "packages/sdk/test/provable/events/treasury-proposal-events.test.ts", symbol: "event cases", start_line: 26, end_line: 212 }]
+        source_sha256: "2b5204f4acf2dca9135642a242e18bf5535f46fa41526b43fb19b228d6f63f79"
+        tool: { name: "manual-static-reading", version: "", command: "nl/sed/rg" }
+        limitations: ["The tally case does not individually assert lifecycleId, yayWeight, or nayWeight after decoding."]
+      - stable_key: "evidence:primitives-tests:test-merkle"
+        evidence_class: "TEST_EXPECTATION"
+        description: "One two-leaf height-two root-vector expectation through Keyv SQLite storage."
+        anchors: [{ path: "packages/sdk/test/provable/merkle-tree/prefixed-merkle-tree.test.ts", symbol: "should create a prefixed merkle tree", start_line: 10, end_line: 43 }]
+        source_sha256: "a26229c7a3247fc649d1fc8cb2212f978cc108e222ecb0f17045327285221845"
+        tool: { name: "manual-static-reading", version: "", command: "nl/sed/rg" }
+        limitations: ["No empty root, prefix mismatch, bounds, witness, fill, partial-write, overlay, or malformed storage case is present."]
+      - stable_key: "evidence:primitives-tests:test-staking-transform"
+        evidence_class: "TEST_EXPECTATION"
+        description: "Four compile, digest, merge, and exhaust expectations over two fixed batches."
+        anchors: [{ path: "packages/sdk/test/provable/staking-ledger-to-voting-ledger.test.ts", symbol: "staking ledger to voting ledger cases", start_line: 11, end_line: 134 }]
+        source_sha256: "988d911b4336e64ccd70009cddcb514bc93b693a1df203c6d1a15dbb98e6af0c"
+        tool: { name: "manual-static-reading", version: "", command: "nl/sed/rg" }
+        limitations: ["No negative continuity, wrong root/index, custom-token/delegate classification, overflow, host-write rollback, or non-exhausted terminal case is present."]
+    behaviors:
+      - stable_key: "behavior:primitives-tests:permission-parse-and-encoding"
+        title: "Parse and encode Mina permissions"
+        actor_trigger: "Ledger/configuration consumer supplies permission text or a Permissions value."
+        preconditions: ["Each permission string must be one of impossible, none, proof, signature, or either."]
+        normal_outcome: "Creates three-Boolean permission encodings and packs permissions in a fixed Mina-specific order."
+        failure_outcomes: ["Unknown permission text throws synchronously."]
+        anchors: [{ path: "packages/sdk/src/provable/account.ts", symbol: "Permission/Permissions.toHashInput", start_line: 61, end_line: 171 }]
+        semantic_status: "SUPPORTED_STATICALLY"
+        assertions: [{ text: "Permission.fromString has five accepted branches and one throwing default branch; Permissions.toHashInput orders access before send and receive independently of declaration order.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_refs: ["evidence:primitives-tests:account-model"] }]
+      - stable_key: "behavior:primitives-tests:account-json-fallback"
+        title: "Deserialize account JSON with empty-delegate adaptation"
+        actor_trigger: "A caller invokes Account.fromJSON with an untyped record."
+        preconditions: []
+        normal_outcome: "Missing/empty delegate text is temporarily replaced by pk for superclass parsing and then restored as PublicKey.empty."
+        failure_outcomes: ["Any thrown parse error is swallowed and returns Account.empty."]
+        state_effects: ["The supplied JSON object is mutated at json.delegate before parsing."]
+        anchors: [{ path: "packages/sdk/src/provable/account.ts", symbol: "Account.fromJSON", start_line: 224, end_line: 245 }]
+        semantic_status: "SUPPORTED_STATICALLY"
+        assertions: [{ text: "The fallback cannot distinguish a legitimate empty account from malformed input by return type or error channel.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_refs: ["evidence:primitives-tests:account-model"] }]
+      - stable_key: "behavior:primitives-tests:account-empty-and-hash-input"
+        title: "Construct and hash the canonical empty-account representation"
+        actor_trigger: "Ledger initialization, padding, emptiness checks, or account membership hashing."
+        normal_outcome: "Constructs hard-coded empty Mina fields, default permissions, dummy zkApp state, then serializes fields and packed values in a fixed reversed account order."
+        integration_dependencies: ["Mina base58 constants", "o1js Struct fields", "downstream hashWithPrefix and packToFields"]
+        anchors: [{ path: "packages/sdk/src/provable/account.ts", symbol: "Account.empty/isEmpty/toHashInput", start_line: 247, end_line: 308 }]
+        semantic_status: "SUPPORTED_STATICALLY"
+        assertions: [{ text: "Account.isEmpty compares Poseidon hashes of Struct fields rather than field-by-field equality.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_refs: ["evidence:primitives-tests:account-model"] }]
+      - stable_key: "behavior:primitives-tests:pack-random-oracle-input"
+        title: "Pack bounded chunks into field elements"
+        actor_trigger: "Account or zkApp hash construction invokes packToFields."
+        preconditions: ["Each supplied chunk value is assumed to fit its declared bit width; this helper does not range-check values or widths."]
+        normal_outcome: "Accumulates chunks until the next width reaches the field bit size, flushes the prior accumulator, and appends packed fields after uncompressed fields."
+        boundary_outcomes: ["A chunk that makes nextBits exactly Field.sizeInBits begins a new accumulator rather than filling the prior one.", "Zero or oversized widths are not explicitly rejected."]
+        anchors: [{ path: "packages/sdk/src/provable/account.ts", symbol: "append/packed/packToFields", start_line: 319, end_line: 392 }]
+        semantic_status: "SUPPORTED_STATICALLY"
+        assertions: [{ text: "Packing correctness relies on caller-supplied width and value range contracts.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_refs: ["evidence:primitives-tests:account-model"] }]
+      - stable_key: "behavior:primitives-tests:prefixed-action-hashing"
+        title: "Hash prefixed values and append an action"
+        actor_trigger: "Ledger hashing or vote action-chain processing supplies a prefix and fields."
+        normal_outcome: "Converts the prefix into a salted Poseidon state; action append nests an event hash inside two sequence-event prefix hashes."
+        anchors: [{ path: "packages/sdk/src/provable/hashing-helpers.ts", symbol: "hashWithPrefix/appendActionToHashList", start_line: 4, end_line: 36 }]
+        semantic_status: "SUPPORTED_STATICALLY"
+        assertions: [{ text: "Action-list ordering is represented by hashing the prior action-state hash with the new single-action sequence hash.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_refs: ["evidence:primitives-tests:hashing"] }]
+      - stable_key: "behavior:primitives-tests:merkle-empty-and-read"
+        title: "Construct default nodes and read a prefixed Merkle tree"
+        actor_trigger: "A ledger constructs a tree or reads a node, leaf, or root."
+        preconditions: ["Correct operation assumes height at least one and at least height-1 hash prefixes, but the constructor does not enforce either."]
+        normal_outcome: "Precomputes zero nodes by level and returns persisted nodes or the corresponding zero value."
+        failure_outcomes: ["Invalid levels can produce undefined despite the declared Field return type; storage failures propagate."]
+        anchors: [{ path: "packages/sdk/src/provable/merkle-tree/prefixed-merkle-tree.ts", symbol: "constructor/getNode/getLeaf/getRoot", start_line: 31, end_line: 97 }]
+        semantic_status: "SUPPORTED_STATICALLY"
+        assertions: [{ text: "Absent storage entries are semantically defaulted rather than distinguished from explicitly stored zero nodes.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_refs: ["evidence:primitives-tests:prefixed-merkle"] }]
+      - stable_key: "behavior:primitives-tests:merkle-set-leaf"
+        title: "Set a Merkle leaf and recompute ancestors"
+        actor_trigger: "A ledger or caller supplies an index and leaf."
+        preconditions: ["index must be less than leafCount; no non-negative check is present."]
+        normal_outcome: "Writes the leaf, reads sibling pairs, and writes one prefixed parent per level through the root."
+        failure_outcomes: ["An index at or above leafCount throws before writes.", "A storage error after an earlier write can leave a partial tree because no rollback interface exists."]
+        anchors: [{ path: "packages/sdk/src/provable/merkle-tree/prefixed-merkle-tree.ts", symbol: "setLeaf", start_line: 99, end_line: 130 }]
+        semantic_status: "SUPPORTED_STATICALLY"
+        assertions: [{ text: "Negative indices are statically accepted by the upper-bound-only guard and can write out-of-domain storage keys.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_refs: ["evidence:primitives-tests:prefixed-merkle"] }]
+      - stable_key: "behavior:primitives-tests:merkle-witness"
+        title: "Create and evaluate Merkle witnesses"
+        actor_trigger: "A caller requests a host witness or constructs a circuit witness."
+        preconditions: ["Host index is checked only against the upper leaf bound; circuit witness length must equal static height-1."]
+        normal_outcome: "Collects sibling/direction pairs, calculates a prefixed root for a leaf, and derives a field index from direction bits."
+        failure_outcomes: ["Upper out-of-range host index and wrong witness length throw.", "Negative host index is not rejected."]
+        anchors: [{ path: "packages/sdk/src/provable/merkle-tree/prefixed-merkle-tree.ts", symbol: "getWitness/BasePrefixedMerkleWitness", start_line: 132, end_line: 237 }]
+        semantic_status: "SUPPORTED_STATICALLY"
+        assertions: [{ text: "Height-255 witnesses encode 254 direction bits and height-36 witnesses encode 35 direction bits.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_refs: ["evidence:primitives-tests:prefixed-merkle"] }]
+      - stable_key: "behavior:primitives-tests:merkle-fill"
+        title: "Fill consecutive Merkle leaves"
+        actor_trigger: "A caller supplies an array of leaves."
+        normal_outcome: "Calls setLeaf serially for indices zero through length-1."
+        failure_outcomes: ["If the array exceeds capacity or a later write fails, earlier leaf/root mutations remain observable unless the storage layer supplies external rollback."]
+        anchors: [{ path: "packages/sdk/src/provable/merkle-tree/prefixed-merkle-tree.ts", symbol: "fill", start_line: 156, end_line: 165 }]
+        semantic_status: "SUPPORTED_STATICALLY"
+        assertions: [{ text: "fill has no preflight length check and no atomicity contract.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_refs: ["evidence:primitives-tests:prefixed-merkle", "evidence:primitives-tests:storage-boundary"] }]
+      - stable_key: "behavior:primitives-tests:voting-account-zero"
+        title: "Represent a voting account as a balance"
+        actor_trigger: "Voting-ledger initialization or hashing supplies a VotingAccount."
+        normal_outcome: "Serializes the UInt64 balance directly and identifies emptiness by equality with the zero-balance Struct hash."
+        boundary_outcomes: ["A present voting account with balance zero is indistinguishable from the empty voting-account value to isEmpty."]
+        anchors: [{ path: "packages/sdk/src/provable/voting-account.ts", symbol: "VotingAccount", start_line: 3, end_line: 17 }]
+        semantic_status: "SUPPORTED_STATICALLY"
+        assertions: [{ text: "The source itself records the zero-balance/empty ambiguity as a TODO.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_refs: ["evidence:primitives-tests:voting-account"] }]
+      - stable_key: "behavior:primitives-tests:event-schema-contract"
+        title: "Encode shared treasury event payloads"
+        actor_trigger: "Treasury Owner or an indexer fixture emits/decodes a named event."
+        normal_outcome: "Uses fixed event names and Struct field order for creation, vote dispatch, tally, execution, and pause-toggle payloads."
+        failure_outcomes: ["No domain validation is embedded in the schema; semantic correctness depends on producers."]
+        anchors: [{ path: "packages/sdk/src/provable/events/treasury-proposal-events.ts", symbol: "event constants and Structs", start_line: 4, end_line: 68 }]
+        semantic_status: "SUPPORTED_STATICALLY"
+        assertions: [{ text: "Events expose actor and proposal identifiers plus operation-specific values; proposal-created exposes both proposer and transaction sender.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_refs: ["evidence:primitives-tests:event-schemas"] }]
+      - stable_key: "behavior:primitives-tests:storage-overlay"
+        title: "Overlay Merkle node mutations in memory"
+        actor_trigger: "A tracing/batch caller reads or writes through InMemoryMerkleTreeStorage."
+        normal_outcome: "Reads overlay first, falls back to and caches the parent, writes only to overlay, exports namespaced string entries, and clears on close."
+        state_effects: ["close also closes the parent storage."]
+        anchors: [{ path: "packages/sdk/src/storage/in-memory/in-memory-merkle-tree-storage.ts", symbol: "InMemoryMerkleTreeStorage", start_line: 6, end_line: 61 }]
+        semantic_status: "SUPPORTED_STATICALLY"
+        assertions: [{ text: "The overlay does not itself flush collectEntries to the parent; a separate batch consumer must persist them.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_refs: ["evidence:primitives-tests:storage-boundary"] }]
+      - stable_key: "behavior:primitives-tests:keyv-merkle-encoding"
+        title: "Persist Merkle nodes as namespaced Field strings"
+        actor_trigger: "PrefixedMerkleTree reads or writes through KeyvMerkleTreeStorage."
+        normal_outcome: "Uses modifier-lifecycle-merkle-tree namespace, level-index keys, Field.toString writes, and Field(value) reads."
+        failure_outcomes: ["Malformed persisted values throw through Field construction; missing/falsy values default as absent."]
+        anchors: [{ path: "packages/sdk/src/storage/keyv/keyv-merkle-tree-storage.ts", symbol: "KeyvMerkleTreeStorage", start_line: 9, end_line: 46 }]
+        semantic_status: "SUPPORTED_STATICALLY"
+        assertions: [{ text: "Namespace identity depends on caller-supplied lifecycleId and one of four compile-time modifiers.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_refs: ["evidence:primitives-tests:storage-boundary"] }]
+      - stable_key: "behavior:primitives-tests:public-key-ledger-index"
+        title: "Derive voting/nullifier Merkle position from a public key"
+        actor_trigger: "Voting or nullifier ledger requests a witness or leaf update."
+        normal_outcome: "Decodes non-empty base58 keys, Poseidon-hashes their fields, and uses the result bigint as the tree index; empty key bypasses base58 parsing."
+        failure_outcomes: ["Invalid non-empty base58 text throws."]
+        anchors: [{ path: "packages/sdk/src/utils/public-key.ts", symbol: "publicKeyBase58ToBigInt", start_line: 3, end_line: 10 }]
+        semantic_status: "SUPPORTED_STATICALLY"
+        assertions: [{ text: "Voting and nullifier base ledgers share this index derivation and 255-height tree scheme.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_refs: ["evidence:primitives-tests:ledger-indexing"] }]
+    flows:
+      - stable_key: "flow:primitives-tests:staking-account-to-root"
+        flow_scope: "CROSS_COMPONENT"
+        title: "Mina account to staking-ledger root"
+        trigger: "BaseStakingLedger initializes or updates a leaf."
+        steps:
+          - { sequence: 1, operation: "Construct/receive Account and derive Account.toHashInput.", inputs: ["Account"], outputs: ["RandomOracleInput"], reads: [], writes: [], effects: [], failure_edges: ["invalid external encoding"] }
+          - { sequence: 2, operation: "Pack bounded chunks and hash with MinaAccount prefix.", inputs: ["RandomOracleInput"], outputs: ["leaf Field"], reads: [], writes: [], effects: [], failure_edges: ["packing/prefix incompatibility"] }
+          - { sequence: 3, operation: "Persist leaf and recompute prefixed ancestors.", inputs: ["index", "leaf Field"], outputs: ["root"], reads: ["sibling nodes"], writes: ["leaf and ancestors"], effects: ["storage mutation"], failure_edges: ["out-of-range or partial persistence"] }
+        terminal_outcomes: ["new staking root", "throw with zero or partial storage mutations"]
+        trust_boundaries: ["o1js canonical account encoding", "MerkleTreeStorage durability"]
+        anchors:
+          - { path: "packages/sdk/src/provable/account.ts", symbol: "Account.toHashInput/packToFields", start_line: 289, end_line: 392 }
+          - { path: "packages/sdk/src/ledgers/staking-ledger/staking-ledger.ts", symbol: "BaseStakingLedger", start_line: 105, end_line: 144 }
+        semantic_status: "SUPPORTED_STATICALLY"
+        assertions: [{ text: "The same account encoding supplies both the empty staking leaf and populated leaf hash path.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_refs: ["evidence:primitives-tests:account-model", "evidence:primitives-tests:ledger-indexing"] }]
+      - stable_key: "flow:primitives-tests:public-key-to-vote-nullifier-root"
+        flow_scope: "CROSS_COMPONENT"
+        title: "Public key to voting/nullifier root"
+        trigger: "A voting or nullifier account is witnessed or updated."
+        steps:
+          - { sequence: 1, operation: "Decode/special-case public key and Poseidon-hash its fields.", inputs: ["base58 public key"], outputs: ["bigint index"], reads: [], writes: [], effects: [], failure_edges: ["invalid base58"] }
+          - { sequence: 2, operation: "Encode VotingAccount balance or Bool nullifier under its leaf prefix.", inputs: ["typed leaf"], outputs: ["leaf Field"], reads: [], writes: [], effects: [], failure_edges: [] }
+          - { sequence: 3, operation: "Read witness or mutate prefixed tree at derived index.", inputs: ["index", "leaf"], outputs: ["witness/root"], reads: ["storage nodes"], writes: ["leaf/ancestors when updating"], effects: ["host storage mutation"], failure_edges: ["storage failure"] }
+        terminal_outcomes: ["typed witness/root", "propagated error"]
+        trust_boundaries: ["public-key canonical encoding", "shared position derivation", "storage consistency"]
+        anchors:
+          - { path: "packages/sdk/src/utils/public-key.ts", symbol: "publicKeyBase58ToBigInt", start_line: 3, end_line: 10 }
+          - { path: "packages/sdk/src/ledgers/voting-ledger/voting-ledger.ts", symbol: "BaseVotingLedger", start_line: 281, end_line: 335 }
+          - { path: "packages/sdk/src/ledgers/nullifier-ledger/nullifier-ledger.ts", symbol: "BaseNullifierLedger", start_line: 277, end_line: 324 }
+        semantic_status: "SUPPORTED_STATICALLY"
+        assertions: [{ text: "Both ledgers use the identical positional index but distinct prefixed empty/typed leaf values.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_refs: ["evidence:primitives-tests:ledger-indexing"] }]
+      - stable_key: "flow:primitives-tests:event-producer-consumer-schema"
+        flow_scope: "CROSS_COMPONENT"
+        title: "Treasury event producer-to-consumer schema"
+        trigger: "A contract emits a named payload or indexer fixture decodes it."
+        steps:
+          - { sequence: 1, operation: "Producer constructs one of five shared Structs.", inputs: ["operation values"], outputs: ["typed event"], reads: [], writes: [], effects: [], failure_edges: ["producer may supply semantically wrong but type-valid value"] }
+          - { sequence: 2, operation: "Struct fields are encoded under the fixed event name.", inputs: ["typed event"], outputs: ["field sequence"], reads: [], writes: [], effects: ["event emission in production"], failure_edges: [] }
+          - { sequence: 3, operation: "Consumer decodes fields using the same Struct.", inputs: ["field sequence"], outputs: ["decoded payload"], reads: [], writes: [], effects: [], failure_edges: ["schema/version mismatch"] }
+        terminal_outcomes: ["typed decoded event"]
+        trust_boundaries: ["production value selection", "indexer schema/version agreement"]
+        anchors:
+          - { path: "packages/sdk/src/provable/events/treasury-proposal-events.ts", symbol: "event schemas", start_line: 4, end_line: 68 }
+          - { path: "packages/sdk/test/provable/events/treasury-proposal-events.test.ts", symbol: "schema round trips", start_line: 26, end_line: 212 }
+        semantic_status: "SUPPORTED_STATICALLY"
+        assertions: [{ text: "Tests establish static encoding expectations for the shared schema, not correctness of values emitted by production methods.", evidence_class: "TEST_EXPECTATION", confidence: "HIGH", evidence_refs: ["evidence:primitives-tests:test-events"] }]
+    clauses:
+      - { stable_key: "clause:primitives-tests:permission-known-or-throw", kind: "PARSE", trigger: "Permission.fromString", outcomes: ["five recognized encodings", "throw invalid permission string"], effects: [], static_feasibility: "ALL_BRANCHES_VISIBLE", anchors: [{ path: "packages/sdk/src/provable/account.ts", symbol: "Permission.fromString", start_line: 78, end_line: 92 }], parent_behavior_stable_key: "behavior:primitives-tests:permission-parse-and-encoding", assertions: [{ text: "The switch default throws for every value outside the five literals.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_refs: ["evidence:primitives-tests:account-model"] }] }
+      - { stable_key: "clause:primitives-tests:account-empty-delegate-adaptation", kind: "DEFAULT", trigger: "delegate missing or equals PublicKey.empty base58", outcomes: ["replace json.delegate with json.pk", "restore parsed Account.delegate to PublicKey.empty"], effects: ["mutates input JSON"], static_feasibility: "BOTH_BRANCHES_VISIBLE", anchors: [{ path: "packages/sdk/src/provable/account.ts", symbol: "Account.fromJSON", start_line: 224, end_line: 240 }], parent_behavior_stable_key: "behavior:primitives-tests:account-json-fallback", assertions: [{ text: "The input record retains the replacement delegate after the call.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_refs: ["evidence:primitives-tests:account-model"] }] }
+      - { stable_key: "clause:primitives-tests:account-parse-catch-empty", kind: "CATCH", trigger: "super.fromJSON throws", outcomes: ["return Account.empty"], effects: ["discard error identity"], static_feasibility: "THROW_PATH_VISIBLE", anchors: [{ path: "packages/sdk/src/provable/account.ts", symbol: "Account.fromJSON", start_line: 236, end_line: 244 }], parent_behavior_stable_key: "behavior:primitives-tests:account-json-fallback", assertions: [{ text: "No diagnostic or failure flag escapes the catch.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_refs: ["evidence:primitives-tests:account-model"] }] }
+      - { stable_key: "clause:primitives-tests:packing-flush-boundary", kind: "BRANCH", trigger: "nextBits < Field.sizeInBits", outcomes: ["accumulate into current field", "flush prior accumulator and start a new field"], effects: ["packedBits mutation"], static_feasibility: "BOTH_BRANCHES_VISIBLE", anchors: [{ path: "packages/sdk/src/provable/account.ts", symbol: "packToFields", start_line: 369, end_line: 390 }], parent_behavior_stable_key: "behavior:primitives-tests:pack-random-oracle-input", assertions: [{ text: "Equality with Field.sizeInBits takes the flush branch.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_refs: ["evidence:primitives-tests:account-model"] }] }
+      - { stable_key: "clause:primitives-tests:merkle-read-default", kind: "DEFAULT", trigger: "storage.getNode returns nullish", outcomes: ["return level zero value", "return stored node"], effects: [], static_feasibility: "BOTH_BRANCHES_VISIBLE", anchors: [{ path: "packages/sdk/src/provable/merkle-tree/prefixed-merkle-tree.ts", symbol: "getNode", start_line: 77, end_line: 79 }], parent_behavior_stable_key: "behavior:primitives-tests:merkle-empty-and-read", assertions: [{ text: "Absent and explicitly stored default values are observationally equivalent through getNode.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_refs: ["evidence:primitives-tests:prefixed-merkle"] }] }
+      - { stable_key: "clause:primitives-tests:merkle-set-upper-bound", kind: "BOUNDARY", trigger: "index >= leafCount", outcomes: ["throw before mutation", "continue when below upper bound"], effects: [], static_feasibility: "BOTH_BRANCHES_VISIBLE", anchors: [{ path: "packages/sdk/src/provable/merkle-tree/prefixed-merkle-tree.ts", symbol: "setLeaf", start_line: 110, end_line: 116 }], parent_behavior_stable_key: "behavior:primitives-tests:merkle-set-leaf", assertions: [{ text: "The clause lacks an index < 0 branch.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_refs: ["evidence:primitives-tests:prefixed-merkle"] }] }
+      - { stable_key: "clause:primitives-tests:merkle-ancestor-mutation-loop", kind: "LOOP_PARTITION", trigger: "levels 1 through height-1", outcomes: ["read two children and write one prefixed parent per iteration", "zero iterations at height <= 1"], effects: ["sequential storage writes"], static_feasibility: "VISIBLE", anchors: [{ path: "packages/sdk/src/provable/merkle-tree/prefixed-merkle-tree.ts", symbol: "setLeaf", start_line: 116, end_line: 129 }], parent_behavior_stable_key: "behavior:primitives-tests:merkle-set-leaf", assertions: [{ text: "No rollback encloses the leaf and ancestor mutations.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_refs: ["evidence:primitives-tests:prefixed-merkle", "evidence:primitives-tests:storage-boundary"] }] }
+      - { stable_key: "clause:primitives-tests:merkle-witness-upper-bound", kind: "BOUNDARY", trigger: "index >= leafCount", outcomes: ["throw", "collect height-1 siblings"], effects: [], static_feasibility: "BOTH_BRANCHES_VISIBLE", anchors: [{ path: "packages/sdk/src/provable/merkle-tree/prefixed-merkle-tree.ts", symbol: "getWitness", start_line: 137, end_line: 153 }], parent_behavior_stable_key: "behavior:primitives-tests:merkle-witness", assertions: [{ text: "Negative input reaches the sibling loop because only the upper bound is enforced.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_refs: ["evidence:primitives-tests:prefixed-merkle"] }] }
+      - { stable_key: "clause:primitives-tests:witness-static-length", kind: "ASSERTION", trigger: "construct circuit witness", outcomes: ["throw on height mismatch", "copy siblings and directions"], effects: [], static_feasibility: "BOTH_BRANCHES_VISIBLE", anchors: [{ path: "packages/sdk/src/provable/merkle-tree/prefixed-merkle-tree.ts", symbol: "BasePrefixedMerkleWitness.constructor", start_line: 192, end_line: 202 }], parent_behavior_stable_key: "behavior:primitives-tests:merkle-witness", assertions: [{ text: "Witness length is enforced before fields are copied.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_refs: ["evidence:primitives-tests:prefixed-merkle"] }] }
+      - { stable_key: "clause:primitives-tests:fill-sequential", kind: "LOOP_PARTITION", trigger: "each supplied leaf", outcomes: ["zero leaves produce no mutation", "one or more sequential setLeaf calls"], effects: ["potential partial tree mutation"], static_feasibility: "VISIBLE", anchors: [{ path: "packages/sdk/src/provable/merkle-tree/prefixed-merkle-tree.ts", symbol: "fill", start_line: 161, end_line: 165 }], parent_behavior_stable_key: "behavior:primitives-tests:merkle-fill", assertions: [{ text: "Oversize failure occurs only when the first out-of-range index is reached, after all earlier leaves were written.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_refs: ["evidence:primitives-tests:prefixed-merkle"] }] }
+      - { stable_key: "clause:primitives-tests:overlay-read-through", kind: "BRANCH", trigger: "overlay contains node", outcomes: ["return overlay", "read parent and cache if present"], effects: ["cache parent node"], static_feasibility: "BOTH_BRANCHES_VISIBLE", anchors: [{ path: "packages/sdk/src/storage/in-memory/in-memory-merkle-tree-storage.ts", symbol: "getNode", start_line: 17, end_line: 33 }], parent_behavior_stable_key: "behavior:primitives-tests:storage-overlay", assertions: [{ text: "Parent absence is returned without a negative-cache marker.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_refs: ["evidence:primitives-tests:storage-boundary"] }] }
+      - { stable_key: "clause:primitives-tests:keyv-field-deserialize", kind: "DESERIALIZE", trigger: "Keyv get returns a truthy value", outcomes: ["construct Field", "undefined for missing/falsy value"], effects: [], static_feasibility: "BOTH_BRANCHES_VISIBLE", anchors: [{ path: "packages/sdk/src/storage/keyv/keyv-merkle-tree-storage.ts", symbol: "getNode", start_line: 35, end_line: 38 }], parent_behavior_stable_key: "behavior:primitives-tests:keyv-merkle-encoding", assertions: [{ text: "Malformed persisted values propagate Field construction failure.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_refs: ["evidence:primitives-tests:storage-boundary"] }] }
+      - { stable_key: "clause:primitives-tests:public-key-empty-default", kind: "BRANCH", trigger: "publicKey equals PublicKey.empty base58", outcomes: ["hash empty key fields", "parse and hash supplied key"], effects: [], static_feasibility: "BOTH_BRANCHES_VISIBLE", anchors: [{ path: "packages/sdk/src/utils/public-key.ts", symbol: "publicKeyBase58ToBigInt", start_line: 3, end_line: 10 }], parent_behavior_stable_key: "behavior:primitives-tests:public-key-ledger-index", assertions: [{ text: "Only the exact empty-key encoding bypasses PublicKey.fromBase58.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_refs: ["evidence:primitives-tests:ledger-indexing"] }] }
+    invariants:
+      - stable_key: "invariant:primitives-tests:account-hash-protocol-compatibility"
+        category: "SERIALIZATION"
+        statement: "Account.toHashInput, packToFields, constants, ordering, and prefixes must match the Mina ledger representation used by the snapshot root."
+        enforcement_sites: ["packages/sdk/src/provable/account.ts:27-392", "packages/sdk/src/ledgers/staking-ledger/staking-ledger.ts:105-139"]
+        violation_paths: ["field order drift", "permission encoding drift", "default constant drift", "packing width/range drift", "dependency protocol-version drift"]
+        semantic_status: "CANDIDATE"
+        assertions: [{ text: "The repository implements a fixed manual representation, but compatibility with the external protocol is not established by scoped tests.", evidence_class: "UNRESOLVED", confidence: "HIGH", evidence_refs: ["evidence:primitives-tests:account-model", "evidence:primitives-tests:ledger-indexing"] }]
+      - stable_key: "invariant:primitives-tests:parse-failure-distinguishable"
+        category: "IO_CONSISTENCY"
+        statement: "Malformed account input should remain distinguishable from a valid empty account at the deserialization boundary."
+        enforcement_sites: []
+        violation_paths: ["Account.fromJSON catch returns Account.empty"]
+        semantic_status: "PARTIAL"
+        assertions: [{ text: "The current return type and catch path collapse malformed and empty outcomes.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_refs: ["evidence:primitives-tests:account-model"] }]
+      - stable_key: "invariant:primitives-tests:packing-range-contract"
+        category: "ARITHMETIC_RANGE"
+        statement: "Every packed value must be canonical and less than 2^width, and width must be positive and compatible with field capacity."
+        enforcement_sites: ["typed UInt/Bool producers outside packToFields"]
+        violation_paths: ["exported packed/packToFields accept unchecked value-width pairs"]
+        semantic_status: "PARTIAL"
+        assertions: [{ text: "Call sites mostly supply Bool/UInt-derived fields, but the exported packing API itself adds no range constraint.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_refs: ["evidence:primitives-tests:account-model"] }]
+      - stable_key: "invariant:primitives-tests:merkle-index-domain"
+        category: "ARITHMETIC_RANGE"
+        statement: "Every host tree index must satisfy 0 <= index < leafCount."
+        enforcement_sites: ["PrefixedMerkleTree.setLeaf/getWitness upper-bound guards"]
+        violation_paths: ["negative bigint passes both guards"]
+        semantic_status: "PARTIAL"
+        assertions: [{ text: "Upper bounds are explicit; lower bounds are absent.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_refs: ["evidence:primitives-tests:prefixed-merkle"] }]
+      - stable_key: "invariant:primitives-tests:merkle-prefix-height"
+        category: "DEPENDENCY"
+        statement: "A tree of height h requires h >= 1 and one valid domain prefix for every internal level."
+        enforcement_sites: []
+        violation_paths: ["constructor accepts incompatible height/prefix arrays"]
+        semantic_status: "CANDIDATE"
+        assertions: [{ text: "Pinned ledgers supply matching constants, while the exported generic constructor does not validate the contract.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_refs: ["evidence:primitives-tests:prefixed-merkle", "evidence:primitives-tests:ledger-indexing"] }]
+      - stable_key: "invariant:primitives-tests:merkle-storage-root-consistency"
+        category: "ATOMIC_FAILURE"
+        statement: "A committed leaf update must expose either the complete old root/path or complete new root/path, not a partial ancestor chain."
+        enforcement_sites: []
+        violation_paths: ["sequential setNode failure", "oversize fill after prior leaves"]
+        semantic_status: "UNRESOLVED"
+        assertions: [{ text: "The pinned MerkleTreeStorage interface has no transaction or rollback primitive.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_refs: ["evidence:primitives-tests:prefixed-merkle", "evidence:primitives-tests:storage-boundary"] }]
+      - stable_key: "invariant:primitives-tests:witness-root-index-consistency"
+        category: "COMMITMENT_BINDING"
+        statement: "Witness direction bits must derive both the intended index and the same prefixed root for the supplied leaf."
+        enforcement_sites: ["BasePrefixedMerkleWitness.calculateRoot/calculateIndex", "downstream root/index assertions"]
+        violation_paths: ["wrong prefix sequence", "wrong leaf", "wrong path", "consumer omits root or index binding"]
+        semantic_status: "CANDIDATE"
+        assertions: [{ text: "Helpers compute both values, while binding is the responsibility of downstream ZK consumers.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_refs: ["evidence:primitives-tests:prefixed-merkle"] }]
+      - stable_key: "invariant:primitives-tests:action-hash-order"
+        category: "UNIQUENESS_REPLAY"
+        statement: "Appending the same ordered action sequence to the same initial action state must produce the same chained hash, and changing order must change the represented sequence under hash assumptions."
+        enforcement_sites: ["appendActionToHashList", "vote reducer continuity checks"]
+        violation_paths: ["prefix/order drift", "consumer uses different action field encoding"]
+        semantic_status: "CANDIDATE"
+        assertions: [{ text: "The static implementation is order-sensitive by construction; cryptographic uniqueness is an external assumption.", evidence_class: "IMPLEMENTED_STATIC", confidence: "MEDIUM", evidence_refs: ["evidence:primitives-tests:hashing", "evidence:primitives-tests:test-vote-reducer"] }]
+      - stable_key: "invariant:primitives-tests:voting-account-identity"
+        category: "STATE"
+        statement: "If existence and a zero voting balance have different semantics, the leaf encoding must distinguish them."
+        enforcement_sites: []
+        violation_paths: ["VotingAccount contains balance only and isEmpty compares against zero balance"]
+        semantic_status: "UNRESOLVED"
+        assertions: [{ text: "Current source cannot represent a distinct present-zero state; whether that distinction is required is unresolved.", evidence_class: "UNRESOLVED", confidence: "HIGH", evidence_refs: ["evidence:primitives-tests:voting-account"] }]
+      - stable_key: "invariant:primitives-tests:event-schema-and-semantic-parity"
+        category: "IO_CONSISTENCY"
+        statement: "Event name, field order, and emitted values must match consumer schema and the actual state transition."
+        enforcement_sites: ["shared Struct types", "producer source", "indexer consumers outside scope"]
+        violation_paths: ["producer emits caller-supplied value not bound to state", "schema version drift", "consumer field-order drift"]
+        semantic_status: "PARTIAL"
+        assertions: [{ text: "Shared types reduce schema drift, but tests do not validate production producer/state parity.", evidence_class: "TEST_EXPECTATION", confidence: "HIGH", evidence_refs: ["evidence:primitives-tests:event-schemas", "evidence:primitives-tests:test-events"] }]
+      - stable_key: "invariant:primitives-tests:test-results-not-promoted"
+        category: "DEPENDENCY"
+        statement: "Static test mappings must remain expectations and must not be represented as passed behavior or proof soundness."
+        enforcement_sites: ["codebase-analysis epistemic rules"]
+        violation_paths: ["publication treats test source as execution evidence"]
+        semantic_status: "EXPLICIT"
+        assertions: [{ text: "All 95 cases are mapped as TEST_EXPECTATION; none was executed by this run.", evidence_class: "TEST_EXPECTATION", confidence: "HIGH", evidence_refs: ["evidence:primitives-tests:test-treasury-owner", "evidence:primitives-tests:test-multisig", "evidence:primitives-tests:test-pause-controller", "evidence:primitives-tests:test-acceptance", "evidence:primitives-tests:test-vote-reducer", "evidence:primitives-tests:test-events", "evidence:primitives-tests:test-merkle", "evidence:primitives-tests:test-staking-transform"] }]
+    findings:
+      - stable_key: "finding:primitives-tests:account-json-silent-empty-fallback"
+        rule_id: "QUALITY.SERIALIZATION.FAIL_CLOSED_WITH_DIAGNOSTIC"
+        title: "Malformed account JSON is silently converted to an empty account"
+        category: "reliability"
+        severity: "MEDIUM"
+        confidence: "HIGH"
+        semantic_status: "OPEN"
+        prerequisites: ["A consumer invokes Account.fromJSON with malformed or dependency-incompatible input."]
+        root_cause: "A catch-all handler returns Account.empty and emits no error/result discriminator; the missing-delegate adaptation also mutates the caller's object."
+        impact: "Consumers can continue with a valid-looking empty account, potentially omitting balance/delegation data or producing a root that does not represent the intended ledger input."
+        recommendation: "Return a typed parse result or throw with field context; avoid mutating the supplied record; reserve explicit empty construction for intentional padding."
+        scope_limitations: ["The downstream consumers outside the pinned dependency closure were not analyzed; runtime reachability and impact are unresolved."]
+        security_objective_ids: []
+        threat_ids: []
+        assumption_ids: []
+        no_security_link_rationale: "Security-objective IDs are allocated by the orchestrator after preliminary merge."
+        locations: [{ path: "packages/sdk/src/provable/account.ts", symbol: "Account.fromJSON", start_line: 224, end_line: 245 }]
+        assertions: [{ text: "Every exception from superclass deserialization produces Account.empty without a failure signal.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_refs: ["evidence:primitives-tests:account-model"] }]
+      - stable_key: "finding:primitives-tests:merkle-negative-index"
+        rule_id: "QUALITY.MERKLE.INDEX_LOWER_BOUND"
+        title: "Merkle host API accepts negative indices"
+        category: "correctness"
+        severity: "LOW"
+        confidence: "HIGH"
+        semantic_status: "OPEN"
+        prerequisites: ["An exported PrefixedMerkleTree caller supplies a negative bigint index."]
+        root_cause: "setLeaf and getWitness check index >= leafCount but never index < 0."
+        impact: "Out-of-domain storage keys can be written or witnesses can be constructed from negative sibling keys; the logical root may remain unchanged while storage mutates."
+        recommendation: "Reject index < 0 before any storage access in setLeaf and getWitness, and add negative-one and exact-boundary tests."
+        scope_limitations: ["Pinned ledger call sites derive non-negative UInt/public-key indices; no runtime exploitability is claimed."]
+        security_objective_ids: []
+        threat_ids: []
+        assumption_ids: []
+        no_security_link_rationale: "Security-objective IDs are allocated by the orchestrator after preliminary merge."
+        locations: [{ path: "packages/sdk/src/provable/merkle-tree/prefixed-merkle-tree.ts", symbol: "setLeaf/getWitness", start_line: 110, end_line: 153 }]
+        assertions: [{ text: "Negative bigint values satisfy both upper-bound guards.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_refs: ["evidence:primitives-tests:prefixed-merkle"] }]
+      - stable_key: "finding:primitives-tests:merkle-partial-update-policy"
+        rule_id: "QUALITY.STATE.ATOMIC_TREE_UPDATE"
+        title: "Merkle multi-node updates have no rollback contract"
+        category: "reliability"
+        severity: "MEDIUM"
+        confidence: "HIGH"
+        semantic_status: "OPEN"
+        prerequisites: ["A storage set/get rejects after one or more earlier nodes were written, or fill exceeds tree capacity after valid prefixes were processed."]
+        root_cause: "setLeaf and fill perform sequential writes through an interface with no transaction/preflight/rollback method."
+        impact: "Host storage may expose a partially updated leaf/path/root, which can invalidate later witnesses or diverge persisted state from proof-construction assumptions."
+        recommendation: "Define an atomic batch/transaction contract or construct changes in an overlay and commit only after the full path/batch succeeds; preflight fill capacity."
+        scope_limitations: ["Underlying concrete stores may provide stronger atomicity externally, but no such guarantee appears in the pinned interface."]
+        security_objective_ids: []
+        threat_ids: []
+        assumption_ids: []
+        no_security_link_rationale: "Security-objective IDs are allocated by the orchestrator after preliminary merge."
+        locations:
+          - { path: "packages/sdk/src/provable/merkle-tree/prefixed-merkle-tree.ts", symbol: "setLeaf/fill", start_line: 110, end_line: 165 }
+          - { path: "packages/sdk/src/storage/merkle-tree-storage.ts", symbol: "MerkleTreeStorage", start_line: 3, end_line: 8 }
+        assertions: [{ text: "No source-visible mechanism groups leaf and ancestor writes into one failure-atomic operation.", evidence_class: "IMPLEMENTED_STATIC", confidence: "HIGH", evidence_refs: ["evidence:primitives-tests:prefixed-merkle", "evidence:primitives-tests:storage-boundary"] }]
+      - stable_key: "finding:primitives-tests:primitive-test-blind-spots"
+        rule_id: "QUALITY.TEST.ORACLE_PRIMITIVE_BOUNDARIES"
+        title: "Critical serialization and Merkle boundary contracts lack direct tests"
+        category: "testability"
+        severity: "MEDIUM"
+        confidence: "HIGH"
+        semantic_status: "OPEN"
+        prerequisites: ["Account encoding, dependency protocol constants, prefix order, bounds, or storage failure policy changes without a targeted regression test."]
+        root_cause: "The expanded corpus contains no direct Account/hash/VotingAccount tests and only one happy-path two-leaf Merkle root vector."
+        impact: "Protocol-incompatible roots, silent parse fallback, boundary acceptance, witness errors, or partial persistence can regress without a focused oracle."
+        recommendation: "Add deterministic vectors against authoritative Mina account/root fixtures; cover every parse/default branch, packing boundary, prefix order, empty/non-empty roots, -1/leafCount indices, witness length/root/index, malformed storage, and failure atomicity."
+        scope_limitations: ["Tests outside SCOPE.yaml may exist; this finding is limited to the pinned expanded test boundary."]
+        security_objective_ids: []
+        threat_ids: []
+        assumption_ids: []
+        no_security_link_rationale: "Security-objective IDs are allocated by the orchestrator after preliminary merge."
+        locations:
+          - { path: "packages/sdk/test/provable/merkle-tree/prefixed-merkle-tree.test.ts", symbol: "only case", start_line: 10, end_line: 43 }
+          - { path: "packages/sdk/src/provable/account.ts", symbol: "Account/packToFields", start_line: 22, end_line: 392 }
+        assertions: [{ text: "Only the two-leaf expected-root path is directly exercised for these primitives in expanded tests.", evidence_class: "TEST_EXPECTATION", confidence: "HIGH", evidence_refs: ["evidence:primitives-tests:test-merkle"] }]
+      - stable_key: "finding:primitives-tests:integration-suite-order-and-pausing-gap"
+        rule_id: "QUALITY.TEST.STATEFUL_INTEGRATION_ORACLE"
+        title: "Treasury integration expectations depend on ordered shared state and omit the composed pause path"
+        category: "testability"
+        severity: "MEDIUM"
+        confidence: "HIGH"
+        semantic_status: "OPEN"
+        prerequisites: ["A lifecycle, cleanup, failure-atomicity, pause/tally, or isolated-case regression occurs."]
+        root_cause: "Module-level contracts, ledgers, slots, and proof variables are mutated across eight serial cases; pause/unpause cases are commented because combined proving was reported to stall."
+        impact: "Cases can pass or fail due to prior case state, and the break-glass interaction with the complete proposal lifecycle lacks an executable expectation."
+        recommendation: "Retain a bounded end-to-end scenario but add isolated transition/negative suites with fresh fixtures; create a deterministic static/no-proof-mode composed pause/tally scenario in a separate authorized test workflow."
+        scope_limitations: ["This static analysis did not execute the suite and does not claim current failures or proof-mode equivalence."]
+        security_objective_ids: []
+        threat_ids: []
+        assumption_ids: []
+        no_security_link_rationale: "Security-objective IDs are allocated by the orchestrator after preliminary merge."
+        locations: [{ path: "packages/sdk/test/integration/treasury-owner.test.ts", symbol: "ordered cases and commented pause cases", start_line: 264, end_line: 764 }]
+        assertions: [{ text: "Later cases read shared proof variables and contract/ledger state created by earlier cases, while lines 431-490 are comments rather than test nodes.", evidence_class: "TEST_EXPECTATION", confidence: "HIGH", evidence_refs: ["evidence:primitives-tests:test-treasury-owner"] }]
+      - stable_key: "finding:primitives-tests:event-oracle-incomplete"
+        rule_id: "QUALITY.TEST.EVENT_PRODUCER_PARITY"
+        title: "Event tests validate schemas but not production emission semantics"
+        category: "testability"
+        severity: "LOW"
+        confidence: "HIGH"
+        semantic_status: "OPEN"
+        prerequisites: ["A production method supplies a type-valid but semantically inaccurate event field or a consumer relies on an unasserted tally field."]
+        root_cause: "Tests round-trip standalone Struct payloads through a mock contract; they do not inspect events emitted by Treasury Owner. The tally round trip omits individual assertions for lifecycleId, yayWeight, and nayWeight."
+        impact: "Indexer-facing data can disagree with state transitions without this suite detecting it."
+        recommendation: "Assert every field and add producer-level event expectations comparing emitted values to the resulting state/effects, especially proposal pause state."
+        scope_limitations: ["Production event semantics are analyzed by the contract work unit; this record describes the pinned test oracle only."]
+        security_objective_ids: []
+        threat_ids: []
+        assumption_ids: []
+        no_security_link_rationale: "Security-objective IDs are allocated by the orchestrator after preliminary merge."
+        locations: [{ path: "packages/sdk/test/provable/events/treasury-proposal-events.test.ts", symbol: "event schema tests", start_line: 26, end_line: 212 }]
+        assertions: [{ text: "The tests construct expected payloads themselves and never compare a production-emitted payload to contract state.", evidence_class: "TEST_EXPECTATION", confidence: "HIGH", evidence_refs: ["evidence:primitives-tests:test-events"] }]
+  test_mapping_amendments:
+    note: "These enrich inventory-owned TST candidates without taking duplicate canonical ownership. Every case is TEST_EXPECTATION and STATICALLY_MAPPED unless marked skipped."
+    suites:
+      - test_stable_key: "test:component:inventory:treasury-owner:packages/sdk/test/integration/treasury-owner.test.ts"
+        source_path: "packages/sdk/test/integration/treasury-owner.test.ts"
+        suite_fixture: "One module-level LocalBlockchain; SQLite-backed staking/voting/nullifier ledgers; five multisig signers; owner/controller/proposal contracts; two voters; service facade; shared proofs and mutable slots."
+        cases:
+          - { name: "should compile", line: 264, setup: "module fixture already compiled dependencies", target_stable_keys: ["api:component:inventory:treasury-owner:contract"], inputs: [], asserted: ["compile resolves; analyzeMethods is logged but not asserted"], mocks: ["LocalBlockchain"], environment: ["PROOFS_ENABLED controls module fixture"], proof_mode: "CONFIGURATION_DEPENDENT; compile if run", partitions: ["compile"], static_gaps: ["no verification-key assertion"] }
+          - { name: "should create a proposal", line: 269, setup: "deploy controller and owner; fund owner; hydrate three staking accounts; set stakingEpochData; signed bond payer", target_stable_keys: ["behavior:component:platform:treasury-owner-smart-contract:create-proposal", "behavior:component:platform:treasury-owner-smart-contract:deploy-and-lock-permissions"], inputs: ["amount=100000000000", "lifecycle=0", "recipient", "URI", "bond=amount/10"], asserted: ["controller commitment equals fixture commitment"], mocks: ["LocalBlockchain network state", "SQLite ledgers"], environment: ["sequential shared state", "transaction prove"], proof_mode: "CONFIGURATION_DEPENDENT; transaction prove if run", partitions: ["deploy", "receive", "snapshot", "create", "bond"], static_gaps: ["does not assert proposal state, permissions, event, exact post-create balances, wrong lifecycle/pause/signatures, or proposer-bond identity"] }
+          - { name: "should vote on a proposal", line: 493, setup: "depends on prior proposal; increments slot by two periods", target_stable_keys: ["behavior:component:platform:treasury-owner-smart-contract:dispatch-vote"], inputs: ["voter1", "YAY"], asserted: ["transaction send/wait completes"], mocks: ["LocalBlockchain"], environment: ["shared proposal state", "voter signature"], proof_mode: "CONFIGURATION_DEPENDENT; transaction prove if run", partitions: ["existing-voter", "yay", "voting-period"], static_gaps: ["no action/event/state assertion", "no boundary slot or missing-signature case"] }
+          - { name: "should vote on a proposal from a new account", line: 519, setup: "depends on prior vote; increments slot by one; funds account", target_stable_keys: ["behavior:component:platform:treasury-owner-smart-contract:dispatch-vote"], inputs: ["voter2", "NAY"], asserted: ["transaction send/wait completes"], mocks: ["LocalBlockchain"], environment: ["shared proposal state", "voter signature"], proof_mode: "CONFIGURATION_DEPENDENT; transaction prove if run", partitions: ["new-account", "nay"], static_gaps: ["no action/event/state assertion", "ABSTAIN and DUMMY absent"] }
+          - { name: "should fail while attempting to vote on the proposal contract directly", line: 538, setup: "construct child proposal under owner token", target_stable_keys: ["behavior:component:platform:treasury-owner-smart-contract:restrict-token-child-updates"], inputs: ["direct proposal.vote YAY", "owner.approveAccountUpdate"], asserted: ["caught message includes No external account updates allowed for this token"], mocks: ["LocalBlockchain"], environment: ["shared proposal state"], proof_mode: "CONFIGURATION_DEPENDENT; prove attempt if run", partitions: ["negative", "direct-child-call", "token-approval"], static_gaps: ["manual try/catch can dereference unassigned error if unexpectedly successful", "other external update shapes absent"] }
+          - { name: "should commit action state", line: 568, setup: "depends on two votes; advances one period; reads actions; pads to five; builds host ledgers", target_stable_keys: ["api:component:inventory:vote-reducer:program", "api:component:inventory:staking-to-voting:program", "behavior:primitives-tests:prefixed-action-hashing"], inputs: ["five staking accounts/padding", "fetched vote actions", "history target"], asserted: ["no explicit assertion; proofs assigned and verification booleans logged"], mocks: ["LocalBlockchain action archive", "SQLite ledgers"], environment: ["shared state and module-level proof variables"], proof_mode: "CONFIGURATION_DEPENDENT; digest/exhaust/reduce/verify if run", partitions: ["digest", "exhaust", "reduce", "side-loaded-conversion-preparation"], static_gaps: ["logged verification is not asserted", "no failure/rollback/continuity negative", "proof result depends on prior cases"] }
+          - { name: "should tally votes", line: 671, setup: "depends on proofs assigned by prior case and owner account witness", target_stable_keys: ["behavior:component:platform:treasury-owner-smart-contract:tally-votes"], inputs: ["side-loaded vote and staking proofs", "owner account/witness"], asserted: ["service returns tallyTxHash", "proposal status equals APPROVED"], mocks: ["LocalBlockchain through 127.0.0.1 service URL", "SQLite service"], environment: ["shared proof/contract state"], proof_mode: "CONFIGURATION_DEPENDENT; service transaction if run", partitions: ["approved", "tally"], static_gaps: ["no rejected/quorum/equality/repeat/wrong-proof/action-history negative", "no weights/event assertion"] }
+          - { name: "should execute a proposal", line: 704, setup: "depends on approved status; advances two periods", target_stable_keys: ["behavior:component:platform:treasury-owner-smart-contract:execute-payout"], inputs: ["recipient", "amount+bond", "service nonce"], asserted: ["executeTxHash", "owner balance decreased by amount+bond", "recipient balance equals amount+bond"], mocks: ["LocalBlockchain through 127.0.0.1 service URL", "SQLite service"], environment: ["shared approved proposal"], proof_mode: "CONFIGURATION_DEPENDENT; service transaction if run", partitions: ["full payout", "balance conservation", "post-cooldown"], static_gaps: ["no partial/repeat/overpay/wrong-recipient/insufficient-balance/pause case", "does not assert paidOutAmount or event", "testAccount fee balance captured but not asserted"] }
+      - test_stable_key: "test:component:inventory:pause-multisig:packages/sdk/test/provable/contracts/treasury-pause-controller/multisig-signatures.test.ts"
+        source_path: "packages/sdk/test/provable/contracts/treasury-pause-controller/multisig-signatures.test.ts"
+        suite_fixture: "Fresh random five-participant context per verification case; nonces 0,1,2,UInt32.MAXINT; empty signatures pad fixed array."
+        cases:
+          - { name: "pause hash deterministic", line: 22, setup: "same operation and nonce twice", target_stable_keys: ["api:component:inventory:pause-multisig:module"], inputs: ["TEST_NONCES"], asserted: ["hash1 == hash2"], mocks: [], environment: ["host Field operations"], proof_mode: "NO_PROOF", partitions: ["nonce boundaries"], static_gaps: ["does not compare authoritative vector"] }
+          - { name: "unpause hash deterministic", line: 35, setup: "same operation and nonce twice", target_stable_keys: ["api:component:inventory:pause-multisig:module"], inputs: ["TEST_NONCES"], asserted: ["hash1 == hash2"], mocks: [], environment: ["host Field operations"], proof_mode: "NO_PROOF", partitions: ["nonce boundaries"], static_gaps: ["does not compare authoritative vector"] }
+          - { name: "toggle hash deterministic", line: 48, setup: "same proposal key and nonce twice", target_stable_keys: ["api:component:inventory:pause-multisig:module"], inputs: ["random proposal key", "TEST_NONCES"], asserted: ["hash1 == hash2"], mocks: [], environment: ["random key"], proof_mode: "NO_PROOF", partitions: ["proposal-key", "nonce boundaries"], static_gaps: ["desired pause state is absent from both fixture and source message"] }
+          - { name: "toggle hash changes with proposal key", line: 66, setup: "two random proposal keys; same nonce", target_stable_keys: ["api:component:inventory:pause-multisig:module"], inputs: ["proposal key A/B", "nonce=1"], asserted: ["hashes differ"], mocks: [], environment: ["random keys"], proof_mode: "NO_PROOF", partitions: ["proposal identity"], static_gaps: ["no controller/network identity partition"] }
+          - { name: "rotate hash deterministic", line: 86, setup: "same old/new commitments and nonce twice", target_stable_keys: ["api:component:inventory:pause-multisig:module"], inputs: ["old=1", "new=2", "TEST_NONCES"], asserted: ["hash1 == hash2"], mocks: [], environment: ["host Field operations"], proof_mode: "NO_PROOF", partitions: ["nonce boundaries"], static_gaps: ["no vector"] }
+          - { name: "rotate hash changes with new commitment", line: 107, setup: "same old/nonce; change new", target_stable_keys: ["api:component:inventory:pause-multisig:module"], inputs: ["old=1", "new=2/3", "nonce=1"], asserted: ["hashes differ"], mocks: [], environment: [], proof_mode: "NO_PROOF", partitions: ["new commitment binding"], static_gaps: [] }
+          - { name: "rotate hash changes with old commitment", line: 129, setup: "same new/nonce; change old", target_stable_keys: ["api:component:inventory:pause-multisig:module"], inputs: ["old=1/3", "new=2", "nonce=1"], asserted: ["hashes differ"], mocks: [], environment: [], proof_mode: "NO_PROOF", partitions: ["old commitment binding"], static_gaps: [] }
+          - { name: "cross-method hashes differ", line: 153, setup: "construct pause/unpause/toggle/rotate for each nonce", target_stable_keys: ["api:component:inventory:pause-multisig:module"], inputs: ["TEST_NONCES", "proposal key", "commitments"], asserted: ["all six operation pairs differ"], mocks: [], environment: ["random proposal keys"], proof_mode: "NO_PROOF", partitions: ["operation domain separation"], static_gaps: ["finite samples do not prove collision resistance"] }
+          - { name: "pause hashes vary across nonce range", line: 185, setup: "map four nonces", target_stable_keys: ["api:component:inventory:pause-multisig:module"], inputs: ["0,1,2,MAX"], asserted: ["all pairs differ"], mocks: [], environment: [], proof_mode: "NO_PROOF", partitions: ["nonce replay"], static_gaps: ["no wrap/increment behavior"] }
+          - { name: "unpause hashes vary across nonce range", line: 199, setup: "map four nonces", target_stable_keys: ["api:component:inventory:pause-multisig:module"], inputs: ["0,1,2,MAX"], asserted: ["all pairs differ"], mocks: [], environment: [], proof_mode: "NO_PROOF", partitions: ["nonce replay"], static_gaps: ["no wrap/increment behavior"] }
+          - { name: "toggle hashes vary across nonce range", line: 213, setup: "fixed proposal key; map four nonces", target_stable_keys: ["api:component:inventory:pause-multisig:module"], inputs: ["proposal key", "0,1,2,MAX"], asserted: ["all pairs differ"], mocks: [], environment: ["random key"], proof_mode: "NO_PROOF", partitions: ["nonce replay"], static_gaps: ["no desired-state binding"] }
+          - { name: "rotate hashes vary across nonce range", line: 228, setup: "fixed commitments; map four nonces", target_stable_keys: ["api:component:inventory:pause-multisig:module"], inputs: ["old=1", "new=2", "0,1,2,MAX"], asserted: ["all pairs differ"], mocks: [], environment: [], proof_mode: "NO_PROOF", partitions: ["nonce replay"], static_gaps: [] }
+          - { name: "minimum signatures verify", line: 260, setup: "fresh five participants/commitment", target_stable_keys: ["api:component:inventory:pause-multisig:module"], inputs: ["3 valid signatures"], asserted: ["verify resolves"], mocks: [], environment: ["random participants"], proof_mode: "DIRECT_CONSTRAINT_OBJECT_CALL", partitions: ["threshold equality"], static_gaps: ["no explicit boolean/result"] }
+          - { name: "more than minimum signatures verify", line: 277, setup: "fresh context", target_stable_keys: ["api:component:inventory:pause-multisig:module"], inputs: ["4 valid signatures"], asserted: ["verify resolves"], mocks: [], environment: ["random participants"], proof_mode: "DIRECT_CONSTRAINT_OBJECT_CALL", partitions: ["threshold above"], static_gaps: [] }
+          - { name: "all signatures verify", line: 293, setup: "fresh context", target_stable_keys: ["api:component:inventory:pause-multisig:module"], inputs: ["5 valid signatures"], asserted: ["verify resolves"], mocks: [], environment: ["random participants"], proof_mode: "DIRECT_CONSTRAINT_OBJECT_CALL", partitions: ["all valid"], static_gaps: [] }
+          - { name: "non-contiguous valid signatures verify", line: 306, setup: "signers at positions 0,2,4", target_stable_keys: ["api:component:inventory:pause-multisig:module"], inputs: ["3 sparse signatures"], asserted: ["verify resolves"], mocks: [], environment: ["random participants"], proof_mode: "DIRECT_CONSTRAINT_OBJECT_CALL", partitions: ["position sparse", "threshold equality"], static_gaps: [] }
+          - { name: "insufficient signatures fail", line: 333, setup: "fresh context", target_stable_keys: ["api:component:inventory:pause-multisig:module"], inputs: ["2 valid signatures"], asserted: ["rejects NOT_ENOUGH_VALID_SIGNATURES"], mocks: [], environment: ["random participants"], proof_mode: "DIRECT_CONSTRAINT_OBJECT_CALL", partitions: ["threshold below", "negative"], static_gaps: [] }
+          - { name: "empty signatures fail", line: 354, setup: "five empty signature slots", target_stable_keys: ["api:component:inventory:pause-multisig:module"], inputs: ["0 valid signatures"], asserted: ["rejects NOT_ENOUGH_VALID_SIGNATURES"], mocks: [], environment: ["random participants"], proof_mode: "DIRECT_CONSTRAINT_OBJECT_CALL", partitions: ["zero valid", "negative"], static_gaps: [] }
+          - { name: "duplicated signatures fail", line: 373, setup: "same participant signature in slots 0 and 1", target_stable_keys: ["api:component:inventory:pause-multisig:module"], inputs: ["duplicate signature", "remaining empty"], asserted: ["rejects NOT_ENOUGH_VALID_SIGNATURES"], mocks: [], environment: ["random participants"], proof_mode: "DIRECT_CONSTRAINT_OBJECT_CALL", partitions: ["duplicate", "position binding", "negative"], static_gaps: ["three duplicate placements not separately sampled"] }
+          - { name: "mismatched data fails", line: 402, setup: "sign Field(3), verify Field(4)", target_stable_keys: ["api:component:inventory:pause-multisig:module"], inputs: ["3 signatures", "wrong data"], asserted: ["rejects NOT_ENOUGH_VALID_SIGNATURES"], mocks: [], environment: ["random participants"], proof_mode: "DIRECT_CONSTRAINT_OBJECT_CALL", partitions: ["message binding", "negative"], static_gaps: [] }
+          - { name: "changed prefix fails", line: 420, setup: "sign pause hash, verify unpause hash", target_stable_keys: ["api:component:inventory:pause-multisig:module"], inputs: ["TEST_NONCES"], asserted: ["rejects NOT_ENOUGH_VALID_SIGNATURES"], mocks: [], environment: ["random participants"], proof_mode: "DIRECT_CONSTRAINT_OBJECT_CALL", partitions: ["operation domain separation", "negative"], static_gaps: [] }
+          - { name: "other participants fail", line: 444, setup: "sign with second random participant set", target_stable_keys: ["api:component:inventory:pause-multisig:module"], inputs: ["foreign signatures", "original keys/commitment"], asserted: ["rejects NOT_ENOUGH_VALID_SIGNATURES"], mocks: [], environment: ["two random sets"], proof_mode: "DIRECT_CONSTRAINT_OBJECT_CALL", partitions: ["identity binding", "negative"], static_gaps: [] }
+          - { name: "mismatched commitment fails", line: 470, setup: "original signatures/keys with foreign commitment", target_stable_keys: ["api:component:inventory:pause-multisig:module"], inputs: ["wrong commitment"], asserted: ["rejects INVALID_MULTISIG_COMMITMENT"], mocks: [], environment: ["two random sets"], proof_mode: "DIRECT_CONSTRAINT_OBJECT_CALL", partitions: ["commitment binding", "negative"], static_gaps: [] }
+          - { name: "reordered participants with original commitment fail", line: 494, setup: "reverse keys but retain original commitment/signature slots", target_stable_keys: ["api:component:inventory:pause-multisig:module"], inputs: ["5 signatures", "reversed keys"], asserted: ["rejects NOT_ENOUGH_VALID_SIGNATURES"], mocks: [], environment: ["random participants"], proof_mode: "DIRECT_CONSTRAINT_OBJECT_CALL", partitions: ["ordering", "negative"], static_gaps: [] }
+          - { name: "reordered participants and commitment still fail against signature positions", line: 516, setup: "reverse keys and recompute commitment but retain signatures", target_stable_keys: ["api:component:inventory:pause-multisig:module"], inputs: ["reversed keys/commitment"], asserted: ["rejects NOT_ENOUGH_VALID_SIGNATURES"], mocks: [], environment: ["random participants"], proof_mode: "DIRECT_CONSTRAINT_OBJECT_CALL", partitions: ["signature slot ordering", "negative"], static_gaps: [] }
+          - { name: "shifted public-key positions fail", line: 543, setup: "cyclically shift keys", target_stable_keys: ["api:component:inventory:pause-multisig:module"], inputs: ["5 signatures", "shifted keys", "original commitment"], asserted: ["rejects NOT_ENOUGH_VALID_SIGNATURES"], mocks: [], environment: ["random participants"], proof_mode: "DIRECT_CONSTRAINT_OBJECT_CALL", partitions: ["ordering", "negative"], static_gaps: [] }
+          - { name: "empty participant list fails", line: 568, setup: "zero generated participants and empty commitment/signatures", target_stable_keys: ["api:component:inventory:pause-multisig:module"], inputs: ["empty keys"], asserted: ["rejects toGroup or NOT_ENOUGH_VALID_SIGNATURES"], mocks: [], environment: [], proof_mode: "DIRECT_CONSTRAINT_OBJECT_CALL", partitions: ["empty", "negative"], static_gaps: ["broad alternative error oracle"] }
+          - { name: "short public-key list fails", line: 591, setup: "remove final key from valid context", target_stable_keys: ["api:component:inventory:pause-multisig:module"], inputs: ["4 keys", "3 signatures"], asserted: ["rejects toGroup or NOT_ENOUGH_VALID_SIGNATURES"], mocks: [], environment: ["random participants"], proof_mode: "DIRECT_CONSTRAINT_OBJECT_CALL", partitions: ["length below", "negative"], static_gaps: ["long key list absent", "broad alternative error oracle"] }
+      - test_stable_key: "test:component:inventory:pause-controller:packages/sdk/test/provable/contracts/treasury-pause-controller/treasury-pause-controller.test.ts"
+        source_path: "packages/sdk/test/provable/contracts/treasury-pause-controller/treasury-pause-controller.test.ts"
+        suite_fixture: "One LocalBlockchain; fresh controller and random five-participant set per nested case; transaction helper proves/signs/sends/waits."
+        cases:
+          - { name: "compile", line: 28, setup: "fresh context", target_stable_keys: ["api:component:inventory:pause-controller:contract"], inputs: ["forceRecompile=true"], asserted: ["compile resolves"], mocks: ["LocalBlockchain"], environment: ["PROOFS_ENABLED-derived chain"], proof_mode: "CONFIGURATION_DEPENDENT; compile if run", partitions: ["compile"], static_gaps: ["no fixed verification-key vector"] }
+          - { name: "verification key independent of participant values", line: 32, setup: "compile before/after assigning static participants", target_stable_keys: ["api:component:inventory:pause-controller:contract"], inputs: ["empty then random participants"], asserted: ["verification-key hashes equal"], mocks: [], environment: ["compiler cache"], proof_mode: "CONFIGURATION_DEPENDENT; compile if run", partitions: ["configuration independence"], static_gaps: ["does not show deployment commitment correctness"] }
+          - { name: "deployment rejects too few participants", line: 62, setup: "static participant list empty", target_stable_keys: ["api:component:inventory:pause-controller:contract"], inputs: ["0 participants"], asserted: ["rejects NOT_ENOUGH_PARTICIPANTS"], mocks: ["LocalBlockchain"], environment: ["transaction prove"], proof_mode: "CONFIGURATION_DEPENDENT", partitions: ["participant count below", "negative"], static_gaps: ["counts 1-4 and >5 absent"] }
+          - { name: "deployment accepts enough participants and initializes state/permissions", line: 72, setup: "five participants", target_stable_keys: ["api:component:inventory:pause-controller:contract"], inputs: ["5 keys"], asserted: ["commitment", "paused=false", "all configured permissions"], mocks: ["LocalBlockchain"], environment: ["transaction prove"], proof_mode: "CONFIGURATION_DEPENDENT", partitions: ["participant count equality", "initial state", "permissions"], static_gaps: [">5 static participants not covered"] }
+          - { name: "pause succeeds with valid signatures", line: 120, setup: "deployed unpaused controller", target_stable_keys: ["api:component:inventory:pause-controller:contract"], inputs: ["current nonce", "valid signatures"], asserted: ["paused=true", "nonce +1"], mocks: ["LocalBlockchain"], environment: ["transaction prove"], proof_mode: "CONFIGURATION_DEPENDENT", partitions: ["success", "nonce increment"], static_gaps: ["repeat pause absent", "no event"] }
+          - { name: "pause rejects incorrect nonce atomically", line: 139, setup: "deployed unpaused controller", target_stable_keys: ["api:component:inventory:pause-controller:contract"], inputs: ["nonce+1", "signatures for wrong nonce"], asserted: ["rejects", "paused remains false", "nonce unchanged"], mocks: ["LocalBlockchain"], environment: ["transaction prove"], proof_mode: "CONFIGURATION_DEPENDENT", partitions: ["nonce mismatch", "atomic failure"], static_gaps: ["error identity not asserted"] }
+          - { name: "pause rejects insufficient signatures atomically", line: 163, setup: "deployed unpaused controller", target_stable_keys: ["api:component:inventory:pause-controller:contract"], inputs: ["current nonce", "2 signatures"], asserted: ["rejects threshold error", "paused false", "nonce unchanged"], mocks: ["LocalBlockchain"], environment: ["transaction prove"], proof_mode: "CONFIGURATION_DEPENDENT", partitions: ["threshold below", "atomic failure"], static_gaps: [] }
+          - { name: "unpause succeeds with valid signatures", line: 212, setup: "pause controller in beforeEach then call unpause", target_stable_keys: ["api:component:inventory:pause-controller:contract"], inputs: ["current nonce", "valid unpause signatures"], asserted: ["paused=false", "nonce +1"], mocks: ["LocalBlockchain"], environment: ["two transactions prove"], proof_mode: "CONFIGURATION_DEPENDENT", partitions: ["success", "nonce increment"], static_gaps: ["repeat unpause absent"] }
+          - { name: "unpause rejects incorrect nonce atomically", line: 231, setup: "controller paused", target_stable_keys: ["api:component:inventory:pause-controller:contract"], inputs: ["nonce+1"], asserted: ["rejects", "paused true", "nonce unchanged"], mocks: ["LocalBlockchain"], environment: ["transaction prove"], proof_mode: "CONFIGURATION_DEPENDENT", partitions: ["nonce mismatch", "atomic failure"], static_gaps: ["error identity not asserted"] }
+          - { name: "unpause rejects insufficient signatures atomically", line: 255, setup: "controller paused", target_stable_keys: ["api:component:inventory:pause-controller:contract"], inputs: ["2 signatures"], asserted: ["rejects threshold error", "paused true", "nonce unchanged"], mocks: ["LocalBlockchain"], environment: ["transaction prove"], proof_mode: "CONFIGURATION_DEPENDENT", partitions: ["threshold below", "atomic failure"], static_gaps: [] }
+          - { name: "proposal toggle authorization succeeds", line: 298, setup: "deployed controller; random proposal key", target_stable_keys: ["api:component:inventory:pause-controller:contract"], inputs: ["proposal key", "current nonce", "valid signatures"], asserted: ["nonce +1"], mocks: ["LocalBlockchain"], environment: ["transaction prove"], proof_mode: "CONFIGURATION_DEPENDENT", partitions: ["success", "proposal binding"], static_gaps: ["does not call proposal or assert paused state", "desired state absent"] }
+          - { name: "proposal toggle rejects incorrect nonce", line: 325, setup: "deployed controller", target_stable_keys: ["api:component:inventory:pause-controller:contract"], inputs: ["proposal key", "nonce+1"], asserted: ["rejects", "nonce unchanged"], mocks: ["LocalBlockchain"], environment: ["transaction prove"], proof_mode: "CONFIGURATION_DEPENDENT", partitions: ["nonce mismatch", "negative"], static_gaps: ["proposal state not involved"] }
+          - { name: "proposal toggle rejects insufficient signatures", line: 354, setup: "deployed controller", target_stable_keys: ["api:component:inventory:pause-controller:contract"], inputs: ["proposal key", "2 signatures"], asserted: ["rejects threshold error", "nonce unchanged"], mocks: ["LocalBlockchain"], environment: ["transaction prove"], proof_mode: "CONFIGURATION_DEPENDENT", partitions: ["threshold below", "negative"], static_gaps: ["proposal state not involved"] }
+          - { name: "key rotation succeeds", line: 400, setup: "deployed old set; generate new commitment", target_stable_keys: ["api:component:inventory:pause-controller:contract"], inputs: ["new commitment", "current nonce", "old-set signatures"], asserted: ["nonce +1", "commitment updated"], mocks: ["LocalBlockchain"], environment: ["transaction prove"], proof_mode: "CONFIGURATION_DEPENDENT", partitions: ["rotation success"], static_gaps: ["new participant list is off-chain only", "no event/recovery oracle"] }
+          - { name: "key rotation rejects incorrect nonce atomically", line: 440, setup: "deployed old set", target_stable_keys: ["api:component:inventory:pause-controller:contract"], inputs: ["new commitment", "nonce+1"], asserted: ["rejects", "nonce and commitment unchanged"], mocks: ["LocalBlockchain"], environment: ["transaction prove"], proof_mode: "CONFIGURATION_DEPENDENT", partitions: ["nonce mismatch", "atomic failure"], static_gaps: ["error identity not asserted"] }
+          - { name: "key rotation rejects mismatched current commitment", line: 482, setup: "sign wrong old commitment", target_stable_keys: ["api:component:inventory:pause-controller:contract"], inputs: ["wrong old=0", "new commitment", "current nonce"], asserted: ["rejects threshold error", "nonce/commitment unchanged"], mocks: ["LocalBlockchain"], environment: ["transaction prove"], proof_mode: "CONFIGURATION_DEPENDENT", partitions: ["old commitment binding", "atomic failure"], static_gaps: [] }
+          - { name: "key rotation rejects insufficient signatures", line: 525, setup: "deployed old set", target_stable_keys: ["api:component:inventory:pause-controller:contract"], inputs: ["new commitment", "2 signatures"], asserted: ["rejects threshold error", "nonce/commitment unchanged"], mocks: ["LocalBlockchain"], environment: ["transaction prove"], proof_mode: "CONFIGURATION_DEPENDENT", partitions: ["threshold below", "atomic failure"], static_gaps: [] }
+          - { name: "old keys rejected and new keys accepted after rotation", line: 568, setup: "rotate commitment then replace class-static participant list", target_stable_keys: ["api:component:inventory:pause-controller:contract"], inputs: ["old pause signatures", "new pause signatures"], asserted: ["old rejects", "new pauses", "nonce +1 on success"], mocks: ["LocalBlockchain", "manual static-list synchronization"], environment: ["multiple transaction proofs"], proof_mode: "CONFIGURATION_DEPENDENT", partitions: ["old/new authority boundary"], static_gaps: ["test manually supplies new off-chain list; restart/configuration drift absent"] }
+          - { name: "requireNotPaused allows unpaused state", line: 640, setup: "fresh deployed controller", target_stable_keys: ["api:component:inventory:pause-controller:contract"], inputs: [], asserted: ["transaction resolves"], mocks: ["LocalBlockchain"], environment: ["transaction prove"], proof_mode: "CONFIGURATION_DEPENDENT", partitions: ["unpaused"], static_gaps: [] }
+          - { name: "requireNotPaused rejects paused state", line: 646, setup: "pause then call requireNotPaused", target_stable_keys: ["api:component:inventory:pause-controller:contract"], inputs: ["valid pause signatures"], asserted: ["rejects TREASURY_PAUSED"], mocks: ["LocalBlockchain"], environment: ["multiple transaction proofs"], proof_mode: "CONFIGURATION_DEPENDENT", partitions: ["paused", "negative"], static_gaps: ["no composed owner operation"] }
+      - test_stable_key: "test:component:inventory:treasury-proposal:packages/sdk/test/provable/contracts/treasury-proposal/treasury-proposal.test.ts"
+        source_path: "packages/sdk/test/provable/contracts/treasury-proposal/treasury-proposal.test.ts"
+        suite_fixture: "Table-driven direct calls with treasuryBalance=totalCurrency=10000 and proposal ratios 1%,10%,25%,50%,90%,100%."
+        cases:
+          - { name: "1% of treasury", line: 9, setup: "direct static method", target_stable_keys: ["behavior:component:platform:treasury-proposal-smart-contract:compute-thresholds"], inputs: ["proposal=100", "treasury=10000", "currency=10000"], asserted: ["participation=2504bp", "approval=5274bp"], mocks: [], environment: ["host/direct o1js arithmetic"], proof_mode: "NO_PROOF", partitions: ["low positive ratio"], static_gaps: ["no rounding-neighbor values"] }
+          - { name: "10% of treasury", line: 18, setup: "direct static method", target_stable_keys: ["behavior:component:platform:treasury-proposal-smart-contract:compute-thresholds"], inputs: ["proposal=1000", "treasury=10000", "currency=10000"], asserted: ["participation=4068bp", "approval=6099bp"], mocks: [], environment: ["host/direct o1js arithmetic"], proof_mode: "NO_PROOF", partitions: ["10 percent"], static_gaps: ["no rounding-neighbor values"] }
+          - { name: "25% of treasury", line: 27, setup: "direct static method", target_stable_keys: ["behavior:component:platform:treasury-proposal-smart-contract:compute-thresholds"], inputs: ["proposal=2500", "treasury=10000", "currency=10000"], asserted: ["participation=4608bp", "approval=6561bp"], mocks: [], environment: ["host/direct o1js arithmetic"], proof_mode: "NO_PROOF", partitions: ["quarter"], static_gaps: [] }
+          - { name: "50% of treasury", line: 36, setup: "direct static method", target_stable_keys: ["behavior:component:platform:treasury-proposal-smart-contract:compute-thresholds"], inputs: ["proposal=5000", "treasury=10000", "currency=10000"], asserted: ["participation=4856bp", "approval=6827bp"], mocks: [], environment: ["host/direct o1js arithmetic"], proof_mode: "NO_PROOF", partitions: ["half"], static_gaps: [] }
+          - { name: "90% of treasury", line: 45, setup: "direct static method", target_stable_keys: ["behavior:component:platform:treasury-proposal-smart-contract:compute-thresholds"], inputs: ["proposal=9000", "treasury=10000", "currency=10000"], asserted: ["participation=4983bp", "approval=6979bp"], mocks: [], environment: ["host/direct o1js arithmetic"], proof_mode: "NO_PROOF", partitions: ["near cap"], static_gaps: [] }
+          - { name: "100% of treasury", line: 54, setup: "direct static method", target_stable_keys: ["behavior:component:platform:treasury-proposal-smart-contract:compute-thresholds"], inputs: ["proposal=10000", "treasury=10000", "currency=10000"], asserted: ["participation=5000bp", "approval=7000bp"], mocks: [], environment: ["host/direct o1js arithmetic"], proof_mode: "NO_PROOF", partitions: ["cap equality"], static_gaps: ["greater-than-cap, zero treasury/currency, max UInt, and calculateApprovalStatus boundaries absent"] }
+      - test_stable_key: "test:component:inventory:vote-reducer:packages/sdk/test/provable/contracts/treasury-proposal/vote-reducer.test.ts"
+        source_path: "packages/sdk/test/provable/contracts/treasury-proposal/vote-reducer.test.ts"
+        suite_fixture: "Ten generated voting accounts; SQLite in-memory voting/nullifier ledgers; fixed batch five; global voteReducerContext; dummy padding; fixture action-history target builder."
+        cases:
+          - { name: "compile", line: 29, setup: "fresh seeded context", target_stable_keys: ["api:component:inventory:vote-reducer:program"], inputs: [], asserted: ["compile resolves"], mocks: ["SQLite ledgers"], environment: ["PROOFS_ENABLED from environment"], proof_mode: "CONFIGURATION_DEPENDENT; compile if run", partitions: ["compile"], static_gaps: ["no verification-key vector"] }
+          - { name: "tally vote action batch", line: 34, setup: "five mixed YAY/NAY/ABSTAIN actions", target_stable_keys: ["api:component:inventory:vote-reducer:program", "invariant:primitives-tests:witness-root-index-consistency"], inputs: ["fixed action batch", "current roots/history targets"], asserted: ["yay/nay/abstain weights", "expected nullifier root", "all target found flags"], mocks: ["host ledgers"], environment: ["ZkProgram method if run"], proof_mode: "PROGRAM_METHOD; fixture compile mode configurable", partitions: ["all public vote types", "root mutation", "history"], static_gaps: ["host rollback and invalid account encoding absent"] }
+          - { name: "contiguous action hash output", line: 128, setup: "three real actions plus dummy padding", target_stable_keys: ["behavior:primitives-tests:prefixed-action-hashing", "api:component:inventory:vote-reducer:program"], inputs: ["ordered actions"], asserted: ["toActionsHash equals independently appended chain"], mocks: ["host ledgers"], environment: ["ZkProgram method if run"], proof_mode: "PROGRAM_METHOD", partitions: ["action-chain order", "padding"], static_gaps: ["reordered sequence comparison absent"] }
+          - { name: "all dummy actions leave roots/tallies unchanged", line: 174, setup: "five VoteAction.dummy", target_stable_keys: ["api:component:inventory:vote-reducer:program"], inputs: ["all dummy batch"], asserted: ["zero tallies", "actions hash unchanged", "nullifier root unchanged", "history flags false"], mocks: ["host ledgers"], environment: ["ZkProgram method if run"], proof_mode: "PROGRAM_METHOD", partitions: ["all dummy", "no-op"], static_gaps: ["host write call behavior not asserted"] }
+          - { name: "duplicate vote in same batch counted once", line: 237, setup: "same voter appears repeatedly", target_stable_keys: ["api:component:inventory:vote-reducer:program"], inputs: ["duplicate YAY/NAY actions"], asserted: ["first weight only", "expected nullifier root"], mocks: ["host ledgers"], environment: ["ZkProgram method if run"], proof_mode: "PROGRAM_METHOD", partitions: ["same-batch duplicate", "nullifier"], static_gaps: ["vote-order variants limited"] }
+          - { name: "already-nullified voter has zero weight", line: 306, setup: "seed nullifier true before batch", target_stable_keys: ["api:component:inventory:vote-reducer:program"], inputs: ["pre-nullified voter actions"], asserted: ["zero contribution for pre-nullified voter", "other tallies", "expected root"], mocks: ["host ledgers"], environment: ["ZkProgram method if run"], proof_mode: "PROGRAM_METHOD", partitions: ["pre-nullified", "zero weight"], static_gaps: ["policy chooses ignore rather than reject; no explicit error oracle"] }
+          - { name: "DUMMY value with non-empty public key is non-dummy", line: 380, setup: "Vote.DUMMY paired with real voter key", target_stable_keys: ["api:component:inventory:vote-reducer:program"], inputs: ["DUMMY", "non-empty key"], asserted: ["action hash advances", "nullifier root changes", "all tallies zero"], mocks: ["host ledgers"], environment: ["ZkProgram method if run"], proof_mode: "PROGRAM_METHOD", partitions: ["dummy selector boundary"], static_gaps: ["does not assert public entry-point acceptance or later vote rejection"] }
+          - { name: "out-of-range vote value", line: 454, setup: "construct Vote(Field(99))", target_stable_keys: ["api:component:inventory:vote-reducer:program"], inputs: ["invalid enum"], asserted: ["source contains intended rejection assertion, but test body is skipped"], mocks: ["host ledgers"], environment: ["t.skip"], proof_mode: "SKIPPED_SOURCE_ONLY", partitions: ["invalid enum", "negative"], static_gaps: ["not active; provides no execution expectation"] }
+          - { name: "cross-batch nullifier prevents double count", line: 529, setup: "two sequential batches with repeated voters and root handoff", target_stable_keys: ["api:component:inventory:vote-reducer:program"], inputs: ["batch1", "batch2", "proof1 output roots"], asserted: ["second-batch tallies exclude earlier voters", "expected final nullifier root"], mocks: ["host ledgers"], environment: ["two ZkProgram calls"], proof_mode: "PROGRAM_METHOD", partitions: ["cross-batch duplicate", "continuity"], static_gaps: ["no merge in this case"] }
+          - { name: "cross-batch action hash progresses", line: 622, setup: "two sequential batches", target_stable_keys: ["behavior:primitives-tests:prefixed-action-hashing", "api:component:inventory:vote-reducer:program"], inputs: ["proof1 toActionsHash as proof2 input"], asserted: ["proof2 action hash equals independent complete chain"], mocks: ["host ledgers"], environment: ["two ZkProgram calls"], proof_mode: "PROGRAM_METHOD", partitions: ["cross-batch action continuity"], static_gaps: [] }
+          - { name: "too few actions rejected", line: 689, setup: "array length below five", target_stable_keys: ["api:component:inventory:vote-reducer:program"], inputs: ["one action"], asserted: ["reduceBatch rejects"], mocks: ["host ledgers"], environment: ["runtime wrapper"], proof_mode: "PROGRAM_METHOD", partitions: ["array length below", "negative"], static_gaps: ["error identity absent"] }
+          - { name: "actions beyond batch size ignored", line: 712, setup: "six actions", target_stable_keys: ["api:component:inventory:vote-reducer:program"], inputs: ["first five plus sixth"], asserted: ["toActionsHash reflects first five only"], mocks: ["host ledgers"], environment: ["runtime wrapper accepts extra JS array"], proof_mode: "PROGRAM_METHOD", partitions: ["array length above", "truncation"], static_gaps: ["silent ignore policy may differ from intended API contract"] }
+          - { name: "mismatched voting witness index rejected", line: 770, setup: "fixture supplies witness for wrong public key", target_stable_keys: ["api:component:inventory:vote-reducer:program", "invariant:primitives-tests:witness-root-index-consistency"], inputs: ["action key", "wrong voting witness"], asserted: ["reduce rejects"], mocks: ["overridden host ledger witness"], environment: ["ZkProgram method"], proof_mode: "PROGRAM_METHOD", partitions: ["witness index mismatch", "negative"], static_gaps: ["error identity absent"] }
+          - { name: "mismatched nullifier witness index rejected", line: 825, setup: "fixture supplies wrong nullifier witness", target_stable_keys: ["api:component:inventory:vote-reducer:program", "invariant:primitives-tests:witness-root-index-consistency"], inputs: ["action key", "wrong nullifier witness"], asserted: ["reduce rejects"], mocks: ["overridden host ledger witness"], environment: ["ZkProgram method"], proof_mode: "PROGRAM_METHOD", partitions: ["witness index mismatch", "negative"], static_gaps: ["error identity absent"] }
+          - { name: "wrong voting root rejected", line: 882, setup: "public input root differs from host witness root", target_stable_keys: ["api:component:inventory:vote-reducer:program"], inputs: ["wrong voting root"], asserted: ["reduce rejects"], mocks: ["host ledgers"], environment: ["ZkProgram method"], proof_mode: "PROGRAM_METHOD", partitions: ["root binding", "negative"], static_gaps: ["error identity absent"] }
+          - { name: "wrong nullifier root rejected", line: 916, setup: "public input root differs from host witness root", target_stable_keys: ["api:component:inventory:vote-reducer:program"], inputs: ["wrong nullifier root"], asserted: ["reduce rejects"], mocks: ["host ledgers"], environment: ["ZkProgram method"], proof_mode: "PROGRAM_METHOD", partitions: ["root binding", "negative"], static_gaps: ["host mutation-on-failure not asserted"] }
+          - { name: "merge succeeds and combines tallies/history", line: 954, setup: "construct two contiguous proofs then merge", target_stable_keys: ["api:component:inventory:vote-reducer:program"], inputs: ["proof1", "proof2", "shared public input"], asserted: ["tallies add", "terminal roots/hashes equal proof2", "history flags and target equality"], mocks: ["host ledgers"], environment: ["recursive proof calls"], proof_mode: "PROGRAM_METHOD_RECURSION", partitions: ["merge success", "continuity", "history"], static_gaps: ["proof verification result implicit"] }
+          - { name: "merge rejects noncontiguous nullifier roots", line: 1110, setup: "proof2 starts from original rather than proof1 nullifier root", target_stable_keys: ["api:component:inventory:vote-reducer:program"], inputs: ["nonadjacent proofs"], asserted: ["merge rejects"], mocks: ["host ledgers"], environment: ["recursive proof calls"], proof_mode: "PROGRAM_METHOD_RECURSION", partitions: ["nullifier continuity", "negative"], static_gaps: ["error identity absent"] }
+          - { name: "merge rejects different voting roots", line: 1176, setup: "proof2 uses a different voting root", target_stable_keys: ["api:component:inventory:vote-reducer:program"], inputs: ["root-mismatched proofs"], asserted: ["merge rejects"], mocks: ["host ledgers"], environment: ["recursive proof calls"], proof_mode: "PROGRAM_METHOD_RECURSION", partitions: ["voting root equality", "negative"], static_gaps: [] }
+          - { name: "merge combines action-history found flags", line: 1250, setup: "targets found across different proofs", target_stable_keys: ["api:component:inventory:vote-reducer:program"], inputs: ["two proofs", "history target"], asserted: ["selected final found flags true"], mocks: ["host ledgers"], environment: ["recursive proof calls"], proof_mode: "PROGRAM_METHOD_RECURSION", partitions: ["history OR composition"], static_gaps: ["not every flag asserted in this focused case"] }
+          - { name: "merge rejects mismatched public input", line: 1313, setup: "call merge with a public input not equal to proof1 input", target_stable_keys: ["api:component:inventory:vote-reducer:program"], inputs: ["mismatched top-level input"], asserted: ["merge rejects"], mocks: ["host ledgers"], environment: ["recursive proof calls"], proof_mode: "PROGRAM_METHOD_RECURSION", partitions: ["public-input equality", "negative"], static_gaps: [] }
+          - { name: "merge rejects noncontiguous action hash", line: 1381, setup: "proof2 fromActionsHash does not equal proof1 output", target_stable_keys: ["api:component:inventory:vote-reducer:program", "invariant:primitives-tests:action-hash-order"], inputs: ["action-discontinuous proofs"], asserted: ["merge rejects"], mocks: ["host ledgers"], environment: ["recursive proof calls"], proof_mode: "PROGRAM_METHOD_RECURSION", partitions: ["action continuity", "negative"], static_gaps: [] }
+          - { name: "merge preserves earlier found history", line: 1442, setup: "first proof finds targets absent from later proof", target_stable_keys: ["api:component:inventory:vote-reducer:program"], inputs: ["two proofs", "history target"], asserted: ["earlier selected found flags remain true"], mocks: ["host ledgers"], environment: ["recursive proof calls"], proof_mode: "PROGRAM_METHOD_RECURSION", partitions: ["history monotonicity"], static_gaps: ["consumer uniqueness/noninitial checks belong to owner integration and are absent here"] }
+      - test_stable_key: "test:component:inventory:event-schemas:packages/sdk/test/provable/events/treasury-proposal-events.test.ts"
+        source_path: "packages/sdk/test/provable/events/treasury-proposal-events.test.ts"
+        suite_fixture: "Random public keys and in-memory Struct values; one mock SmartContract registers all names and exposes only a proposal-created emitter."
+        cases:
+          - { name: "ProposalCreated schema reuse and round trip", line: 41, setup: "analyze mock method; encode/decode constructed payload", target_stable_keys: ["behavior:primitives-tests:event-schema-contract", "invariant:primitives-tests:event-schema-and-semantic-parity"], inputs: ["all nine fields"], asserted: ["mock method exists", "all nine decoded fields equal"], mocks: ["MockIndexerFixtureContract"], environment: ["analyzeMethods if run"], proof_mode: "NO_PROOF", partitions: ["created schema", "round trip"], static_gaps: ["does not emit/fetch event or inspect production owner"] }
+          - { name: "ProposalVoteDispatched round trip", line: 105, setup: "encode/decode constructed payload", target_stable_keys: ["behavior:primitives-tests:event-schema-contract"], inputs: ["proposal", "voter", "YAY", "sender"], asserted: ["all four decoded fields equal"], mocks: [], environment: ["host Struct encoding"], proof_mode: "NO_PROOF", partitions: ["vote event", "YAY"], static_gaps: ["NAY/ABSTAIN/DUMMY values absent", "production emission absent"] }
+          - { name: "ProposalVotesTallied round trip", line: 131, setup: "encode/decode constructed payload", target_stable_keys: ["behavior:primitives-tests:event-schema-contract"], inputs: ["all seven fields"], asserted: ["proposal, abstain, result, sender equal"], mocks: [], environment: ["host Struct encoding"], proof_mode: "NO_PROOF", partitions: ["tally event"], static_gaps: ["lifecycleId, yayWeight, and nayWeight are not individually asserted", "production emission absent"] }
+          - { name: "ProposalExecuted round trip", line: 165, setup: "encode/decode constructed payload", target_stable_keys: ["behavior:primitives-tests:event-schema-contract"], inputs: ["proposal", "amount", "sender"], asserted: ["all three decoded fields equal"], mocks: [], environment: ["host Struct encoding"], proof_mode: "NO_PROOF", partitions: ["execution event"], static_gaps: ["recipient and cumulative amount are not schema fields", "production emission absent"] }
+          - { name: "ProposalPauseToggled round trip", line: 189, setup: "encode/decode constructed payload", target_stable_keys: ["behavior:primitives-tests:event-schema-contract", "invariant:primitives-tests:event-schema-and-semantic-parity"], inputs: ["proposal", "paused=true", "sender"], asserted: ["all three decoded fields equal"], mocks: [], environment: ["host Struct encoding"], proof_mode: "NO_PROOF", partitions: ["paused=true"], static_gaps: ["paused=false absent", "event value is not compared to resulting production state"] }
+      - test_stable_key: "test:component:inventory:prefixed-merkle:packages/sdk/test/provable/merkle-tree/prefixed-merkle-tree.test.ts"
+        source_path: "packages/sdk/test/provable/merkle-tree/prefixed-merkle-tree.test.ts"
+        suite_fixture: "Height-two tree, zero empty leaf, one prefix, Keyv SQLite memory store, leaves 1 and 2, fixed decimal root."
+        cases:
+          - { name: "creates expected prefixed Merkle root", line: 13, setup: "write both leaves serially", target_stable_keys: ["behavior:primitives-tests:merkle-set-leaf", "invariant:primitives-tests:merkle-prefix-height"], inputs: ["height=2", "prefix=test-prefix-0", "leaves=[1,2]"], asserted: ["root equals fixed vector"], mocks: ["in-memory SQLite Keyv"], environment: ["host storage"], proof_mode: "NO_PROOF", partitions: ["full two-leaf tree", "known vector"], static_gaps: ["empty/sparse tree, update order, -1, leafCount, fill, witness length/root/index, prefix/height mismatch, and storage failure absent"] }
+      - test_stable_key: "test:component:inventory:staking-to-voting:packages/sdk/test/provable/staking-ledger-to-voting-ledger.test.ts"
+        source_path: "packages/sdk/test/provable/staking-ledger-to-voting-ledger.test.ts"
+        suite_fixture: "First ten accounts from test-ledger-mini.json; SQLite in-memory staking/voting ledgers; fixed batch five; unique voting namespace uses time/random suffix."
+        cases:
+          - { name: "compile", line: 26, setup: "fresh hydrated ledgers", target_stable_keys: ["api:component:inventory:staking-to-voting:program"], inputs: [], asserted: ["compile resolves"], mocks: ["SQLite ledgers"], environment: ["PROOFS_ENABLED default"], proof_mode: "CONFIGURATION_DEPENDENT; compile if run", partitions: ["compile"], static_gaps: ["no verification-key vector"] }
+          - { name: "digest", line: 30, setup: "digest first five accounts", target_stable_keys: ["api:component:inventory:staking-to-voting:program", "flow:primitives-tests:staking-account-to-root"], inputs: ["accounts 0..4", "current roots", "index=0"], asserted: ["host voting root equals proof output", "input index=0", "output index=4", "exhausted=false"], mocks: ["SQLite ledgers"], environment: ["ZkProgram method if run"], proof_mode: "PROGRAM_METHOD", partitions: ["one full batch", "nonterminal"], static_gaps: ["per-delegate balances, token classification, staking membership, and host rollback not asserted"] }
+          - { name: "merge", line: 55, setup: "digest adjacent account batches then merge", target_stable_keys: ["api:component:inventory:staking-to-voting:program"], inputs: ["proof1 accounts 0..4", "proof2 accounts 5..9"], asserted: ["host voting root equals merged proof output"], mocks: ["SQLite ledgers"], environment: ["recursive ZkProgram calls"], proof_mode: "PROGRAM_METHOD_RECURSION", partitions: ["two adjacent batches", "root continuity"], static_gaps: ["indices, staking root, exhausted flag, tallied balances, and negative continuity cases not asserted"] }
+          - { name: "exhaust", line: 87, setup: "merge two batches then call exhaust", target_stable_keys: ["api:component:inventory:staking-to-voting:program"], inputs: ["merged proof", "next account expected empty"], asserted: ["exhausted=true", "public input starts 0", "output index=9"], mocks: ["SQLite ledgers"], environment: ["recursive ZkProgram calls"], proof_mode: "PROGRAM_METHOD_RECURSION", partitions: ["terminal empty next leaf", "exhausted"], static_gaps: ["wrong/nonempty next account, wrong root/witness, empty ledger, partial final batch, and host root equality after exhaust absent"] }
+  integration_candidates:
+    inputs_outputs:
+      - { stable_key: "io:primitives-tests:account-json", title: "Untrusted account JSON", direction: "INPUT", type_schema: "Record<string, any>", validation: "o1js Struct parser after delegate adaptation", default: "Account.empty on every exception", encoding: "JSON/base58/decimal fields", trust: "UNTRUSTED_OR_EXTERNAL", sensitivity: "ledger correctness", cardinality: "one account", range: "field-specific; not typed locally", failure_behavior: "silent empty fallback", producer_stable_keys: ["external storage/tracer"], consumer_stable_keys: ["behavior:primitives-tests:account-json-fallback"], evidence_refs: ["evidence:primitives-tests:account-model"] }
+      - { stable_key: "io:primitives-tests:random-oracle-input", title: "Account random-oracle input", direction: "INTERNAL", type_schema: "fieldElements[] plus [Field,width][]", validation: "caller/type-derived only", default: "empty arrays", encoding: "packed field sequence", trust: "INTERNAL", sensitivity: "ledger root", cardinality: "variable", range: "assumed value < 2^width", failure_behavior: "no explicit rejection", producer_stable_keys: ["behavior:primitives-tests:account-empty-and-hash-input"], consumer_stable_keys: ["behavior:primitives-tests:pack-random-oracle-input"], evidence_refs: ["evidence:primitives-tests:account-model"] }
+      - { stable_key: "io:primitives-tests:merkle-index", title: "Merkle host index", direction: "INPUT", type_schema: "bigint", validation: "upper bound only", default: "none", encoding: "signed JavaScript bigint used in storage key", trust: "CALLER_CONTROLLED", sensitivity: "tree storage/root", cardinality: "one", range: "intended 0..leafCount-1; negative accepted", failure_behavior: "upper overflow throws", producer_stable_keys: ["ledger callers"], consumer_stable_keys: ["behavior:primitives-tests:merkle-set-leaf", "behavior:primitives-tests:merkle-witness"], evidence_refs: ["evidence:primitives-tests:prefixed-merkle"] }
+      - { stable_key: "io:primitives-tests:merkle-witness", title: "Prefixed Merkle witness", direction: "BIDIRECTIONAL", type_schema: "height-1 sibling Fields plus Bool directions", validation: "constructor length equality", default: "none", encoding: "CircuitValue arrays", trust: "HOST_WITNESS", sensitivity: "membership and position binding", cardinality: "35 or 254 pairs in pinned ledgers", range: "Bool/Field dependency-defined", failure_behavior: "length mismatch throws", producer_stable_keys: ["PrefixedMerkleTree.getWitness"], consumer_stable_keys: ["BasePrefixedMerkleWitness.calculateRoot/calculateIndex"], evidence_refs: ["evidence:primitives-tests:prefixed-merkle"] }
+      - { stable_key: "io:primitives-tests:merkle-node-storage", title: "Persistent Merkle node", direction: "BIDIRECTIONAL", type_schema: "level-index key to Field string/value", validation: "Field(value) on Keyv reads", default: "tree zero for missing node", encoding: "decimal Field string", trust: "HOST_STORAGE", sensitivity: "root and witness correctness", cardinality: "one per path node", range: "level/index not validated by storage interface", failure_behavior: "propagated async error", producer_stable_keys: ["behavior:primitives-tests:merkle-set-leaf"], consumer_stable_keys: ["behavior:primitives-tests:merkle-empty-and-read"], evidence_refs: ["evidence:primitives-tests:storage-boundary"] }
+      - { stable_key: "io:primitives-tests:event-payloads", title: "Treasury event payloads", direction: "OUTPUT", type_schema: "five named o1js Structs", validation: "field-type encoding only", default: "none", encoding: "o1js event field arrays", trust: "CONTRACT_PRODUCED_PUBLIC", sensitivity: "governance observability", cardinality: "one per operation", range: "typed UInt/Bool/Field/PublicKey", failure_behavior: "producer constraint/transaction rejection", producer_stable_keys: ["TreasuryOwnerSmartContract methods"], consumer_stable_keys: ["indexers/external observers"], evidence_refs: ["evidence:primitives-tests:event-schemas", "evidence:primitives-tests:test-events"] }
+    relations:
+      - { stable_key: "relation:primitives-tests:account-serializes-to-staking-leaf", type: "SERIALIZES", from_stable_key: "behavior:primitives-tests:account-empty-and-hash-input", to_stable_key: "flow:primitives-tests:staking-account-to-root", precision: "exact static call chain", evidence_refs: ["evidence:primitives-tests:account-model", "evidence:primitives-tests:ledger-indexing"] }
+      - { stable_key: "relation:primitives-tests:public-key-derives-ledger-index", type: "DERIVES", from_stable_key: "behavior:primitives-tests:public-key-ledger-index", to_stable_key: "flow:primitives-tests:public-key-to-vote-nullifier-root", precision: "exact static call chain", evidence_refs: ["evidence:primitives-tests:ledger-indexing"] }
+      - { stable_key: "relation:primitives-tests:event-schema-tested-by-roundtrips", type: "TESTS", from_stable_key: "test:component:inventory:event-schemas:packages/sdk/test/provable/events/treasury-proposal-events.test.ts", to_stable_key: "behavior:primitives-tests:event-schema-contract", precision: "schema encoding only; not production values", evidence_refs: ["evidence:primitives-tests:test-events"] }
+      - { stable_key: "relation:primitives-tests:merkle-root-tested-by-vector", type: "TESTS", from_stable_key: "test:component:inventory:prefixed-merkle:packages/sdk/test/provable/merkle-tree/prefixed-merkle-tree.test.ts", to_stable_key: "behavior:primitives-tests:merkle-set-leaf", precision: "one height-two full-tree vector", evidence_refs: ["evidence:primitives-tests:test-merkle"] }
+  conflicts:
+    - "Inventory describes the out-of-range Vote value case as a test case, but it is explicitly skipped and therefore provides only a source-visible intended partition."
+    - "Event schema tests support field-layout expectations while production pause-toggle code may emit a caller-supplied paused flag that is not bound to the resulting proposal state; schema correctness does not resolve semantic parity."
+    - "A valid zero-balance VotingAccount and the designated empty VotingAccount share one encoding; whether existence must be distinct requires system-context adjudication."
+  unresolved:
+    - "Canonical equivalence of manual Account serialization, field packing, base58 constants, prefixes, and ledger roots to the deployed Mina/o1js version requires authoritative vectors or separate runtime/differential assurance."
+    - "Cryptographic soundness, prefix collision resistance, constraint completeness, proof-mode equivalence, and deployed verification keys remain unresolved by design."
+    - "Concrete storage transaction/durability guarantees and crash behavior are outside the pinned interface and were not executed."
+    - "Tests elsewhere in the repository may cover some gaps but are outside the promoted eight-file test boundary and cannot enlarge this run's claim."
+  coverage:
+    expected_paths: 27
+    accounted_paths: 27
+    expected_symbols: 0
+    accounted_symbols: 0
+    primitive_primary_paths: 5
+    direct_dependency_context_paths: 7
+    fixture_context_paths: 7
+    expanded_test_files: 8
+    test_suites_mapped: 8
+    test_cases_mapped: 95
+    active_test_cases: 94
+    skipped_test_cases: 1
+    behaviors_proposed: 14
+    flows_proposed: 3
+    clauses_proposed: 13
+    invariants_proposed: 11
+    findings_proposed: 6
+    evidence_records_proposed: 16
+    limitations:
+      - "Tests are expectation evidence only and were not executed."
+      - "Cross-component canonical IDs and test target IDs must be allocated/resolved by the orchestrator during serial merge."
+      - "The work unit proposes test mapping amendments to inventory-owned test records rather than duplicate TST ownership."
+  integrity_checks:
+    yaml_parse: "PASS"
+    bundle_source_hashes_checked: 27
+    bundle_source_hash_mismatches: 0
+    scope_files_checked: 38
+    scope_file_hash_mismatches: 0
+    scope_hash_recomputed: "f40d76b91ec3cd8805ecdc7bebba8d43b8f317842639a7799738c37569119ab1"
+    scope_hash_matches: true
+    stable_keys_checked: 73
+    duplicate_stable_keys: 0
+    test_cases_checked: 95
+    test_cases_missing_required_semantic_fields: 0
+    target_execution_performed: false
