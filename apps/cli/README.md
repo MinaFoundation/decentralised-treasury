@@ -22,6 +22,37 @@ From repo root (recommended):
 pnpm run cli -- <command> <subcommand> [options]
 ```
 
+## Ledger Signing
+
+Connect and unlock the Ledger device. Open the Mina app and enable blind
+signing. Close Ledger Live before you start the CLI command.
+
+Use a Ledger account as the fee payer and funding account:
+
+```bash
+SENDER_PUBLIC_KEY=<LEDGER_PUBLIC_KEY> pnpm run cli -- transfer \
+  --signer=ledger \
+  --recipient-public-key <RECIPIENT_PUBLIC_KEY> \
+  --amount <NANOMINA>
+```
+
+Set `FUNDING_PUBLIC_KEY` when a different Ledger account funds the transfer.
+The CLI finds both public keys in the first 100 Mina accounts on the device.
+The CLI does not accept or show a Ledger account index.
+
+Use a Ledger account for a break-glass partial signature:
+
+```bash
+LEDGER_SIGNER_PUBLIC_KEY=<PARTICIPANT_PUBLIC_KEY> pnpm run cli -- \
+  multisig-sign pause-treasury \
+  --signer=ledger \
+  --multisig-participants-public-keys <PUB1>,<PUB2>,<PUB3>,<PUB4>,<PUB5> \
+  --nonce <PAUSE_CONTROLLER_NONCE>
+```
+
+The CLI builds, signs, verifies, and broadcasts a transaction in one command.
+The Ledger only signs. The CLI sends the signed transaction to Mina.
+
 Alias (same behavior):
 
 ```bash
