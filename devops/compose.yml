@@ -163,14 +163,17 @@ services:
     # commands, the same way devops/TESTNET.md documents doing this by hand
     # (config comes from `environment:` below, not from apps/cli/.env.testnet
     # - this container doesn't need the private keys that file also holds).
-    # It never backfills older lifecycles on its own. To (re)process a
-    # specific lifecycle by hand, use `docker exec` against this same
-    # container, e.g.:
+    # It works the whole pending backlog, newest first, and retries a failed
+    # lifecycle with backoff. To force a specific lifecycle, use `docker exec`
+    # against this same container, e.g.:
     #   docker exec voting-ledger-scheduler /bin/sh devops/docker/voting-ledger-scheduler-entrypoint.sh process-lifecycle 17
+    #
+    # It selects by ledger hash and parses no epoch numbers, so it needs
+    # neither LIFECYCLE_PERIOD_DURATION nor TREASURY_DEPLOYED_AT_SLOT. The
+    # mounted directory must hold <ledgerHash>.json payloads alongside
+    # lifecycle-<id>.hash pointers naming which hash each lifecycle needs.
     command: ["/bin/sh", "devops/docker/voting-ledger-scheduler-entrypoint.sh"]
     environment:
-      LIFECYCLE_PERIOD_DURATION: ${LIFECYCLE_PERIOD_DURATION:-7140}
-      TREASURY_DEPLOYED_AT_SLOT: ${TREASURY_DEPLOYED_AT_SLOT:-0}
       PROOFS_ENABLED: ${PROOFS_ENABLED:-false}
       SQLITE_DATA_DIRECTORY: ${SQLITE_DATA_DIRECTORY:-/data/sqlite}
       STAKING_LEDGERS_DIRECTORY: /staking-ledgers

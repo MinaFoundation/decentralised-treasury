@@ -7,47 +7,53 @@
 # apps/cli/.env.testnet, since it doesn't need the private keys that file
 # also holds).
 #
-# Auto-processing only ever looks at the *newest* arrived, not-yet-done
-# lifecycle - it never scans backward through the backlog. To (re)process a
-# specific past lifecycle, run this same script by hand against the already
-# running container, e.g.:
+# This script knows nothing about Mina epochs. Mina resets the epoch number to
+# 0 at every hardfork, so an epoch number identifies a staking ledger only
+# within one era - across a fork it is ambiguous, and "highest epoch" can name
+# a ledger years out of date. The ledger *hash* is the stable identifier, and
+# it is the one the circuits actually enforce: a proposal snapshots
+# `stakingEpochData.ledger.hash` on-chain at creation, and
+# treasury-proposal.ts asserts the hydrated ledger's Merkle root equals that
+# snapshot. Hydrate from the wrong ledger and every proposal in the lifecycle
+# is unprovable.
+#
+# So the sync sidecar - not this script - decides which ledger a lifecycle
+# needs, and leaves a content-addressed store behind:
+#
+#   <STAKING_LEDGERS_DIRECTORY>/<ledgerHash>.json    payload, named by its root
+#   <STAKING_LEDGERS_DIRECTORY>/lifecycle-<id>.hash  pointer, one hash per line
+#
+# This script just follows the pointers. To (re)process a specific lifecycle by
+# hand against a running container:
 #   docker exec voting-ledger-scheduler /bin/sh devops/docker/voting-ledger-scheduler-entrypoint.sh process-lifecycle 17
 set -eu
 
 SQLITE_DATA_DIRECTORY="${SQLITE_DATA_DIRECTORY:-/data/sqlite}"
 STAKING_LEDGERS_DIRECTORY="${STAKING_LEDGERS_DIRECTORY:?Set STAKING_LEDGERS_DIRECTORY}"
-LIFECYCLE_PERIOD_DURATION="${LIFECYCLE_PERIOD_DURATION:-7140}"
-TREASURY_DEPLOYED_AT_SLOT="${TREASURY_DEPLOYED_AT_SLOT:-0}"
 POLL_INTERVAL_SECONDS="${VOTING_LEDGER_SCHEDULER_POLL_INTERVAL_SECONDS:-30}"
 
-# One treasury lifecycle spans this many staking-ledger epochs (periods).
-NUMBER_OF_PERIODS_PER_LIFECYCLE=4
+# Retry backoff for a lifecycle that failed. Doubles per attempt from the base
+# up to the cap, so a genuinely broken lifecycle stops burning ~17h of CPU on
+# every poll while still being retried without operator involvement. This is
+# the fix for the old behaviour, where a failed lifecycle was abandoned the
+# moment a newer one arrived and only `process-lifecycle` could recover it.
+FAILURE_BACKOFF_BASE_SECONDS="${FAILURE_BACKOFF_BASE_SECONDS:-300}"
+FAILURE_BACKOFF_MAX_SECONDS="${FAILURE_BACKOFF_MAX_SECONDS:-21600}"
+
+# Base58 (Mina omits 0, O, I, l), leading 'j' for a ledger hash. Anything that
+# does not match is a corrupt or truncated pointer and is refused loudly rather
+# than passed downstream as an empty string.
+LEDGER_HASH_PATTERN='^j[1-9A-HJ-NP-Za-km-z]\{40,60\}$'
+
+log_info() { echo "[voting-ledger-scheduler] $*"; }
+log_warn() { echo "[voting-ledger-scheduler] WARN $*" >&2; }
+log_error() { echo "[voting-ledger-scheduler] ERROR $*" >&2; }
 
 run_cli() {
   pnpm run cli -- "$@"
 }
 
-deployed_epoch() {
-  echo $(( TREASURY_DEPLOYED_AT_SLOT / LIFECYCLE_PERIOD_DURATION ))
-}
-
-# Prints the lifecycle id for a given epoch, or returns 1 if the epoch
-# doesn't start a lifecycle (same rule as the old TS `lifecycleIdForEpoch`).
-lifecycle_id_for_epoch() {
-  epoch=$1
-  deployed_epoch=$2
-  offset=$(( epoch - deployed_epoch ))
-  if [ "$offset" -lt 0 ] || [ $(( offset % NUMBER_OF_PERIODS_PER_LIFECYCLE )) -ne 0 ]; then
-    return 1
-  fi
-  echo $(( offset / NUMBER_OF_PERIODS_PER_LIFECYCLE ))
-}
-
-epoch_for_lifecycle_id() {
-  lifecycle_id=$1
-  deployed_epoch=$2
-  echo $(( deployed_epoch + lifecycle_id * NUMBER_OF_PERIODS_PER_LIFECYCLE ))
-}
+now_epoch_seconds() { date +%s; }
 
 db_path() {
   echo "${SQLITE_DATA_DIRECTORY}/$1.sqlite"
@@ -57,182 +63,273 @@ done_marker_path() {
   echo "$(db_path "$1").done"
 }
 
-# Scans STAKING_LEDGERS_DIRECTORY for the newest <epoch>-<hash>.tar.gz whose
-# lifecycle isn't done yet. Sets NEWEST_EPOCH/NEWEST_FILE/NEWEST_HASH/
-# NEWEST_LIFECYCLE_ID, or NEWEST_EPOCH=-1 if there's nothing to do.
-find_newest_unprocessed() {
-  deployed_epoch=$(deployed_epoch)
-  NEWEST_EPOCH=-1
-  NEWEST_FILE=""
-  NEWEST_HASH=""
-  NEWEST_LIFECYCLE_ID=""
-
-  for path in "$STAKING_LEDGERS_DIRECTORY"/*.tar.gz; do
-    [ -e "$path" ] || continue
-    file=$(basename "$path")
-    rest=${file%.tar.gz}
-    epoch=${rest%%-*}
-    hash=${rest#*-}
-    case "$epoch" in
-      ''|*[!0-9]*) continue ;;
-    esac
-    [ -n "$hash" ] || continue
-
-    lifecycle_id=$(lifecycle_id_for_epoch "$epoch" "$deployed_epoch") || continue
-    [ -e "$(done_marker_path "$lifecycle_id")" ] && continue
-
-    if [ "$epoch" -gt "$NEWEST_EPOCH" ]; then
-      NEWEST_EPOCH=$epoch
-      NEWEST_FILE=$file
-      NEWEST_HASH=$hash
-      NEWEST_LIFECYCLE_ID=$lifecycle_id
-    fi
-  done
+failed_marker_path() {
+  echo "$(db_path "$1").failed"
 }
 
-# Finds the <epoch>-<hash>.tar.gz matching the expected epoch for a given
-# lifecycle id. Sets CANDIDATE_EPOCH/CANDIDATE_FILE/CANDIDATE_HASH.
-find_candidate_for_lifecycle() {
+pointer_path() {
+  echo "${STAKING_LEDGERS_DIRECTORY}/lifecycle-$1.hash"
+}
+
+ledger_payload_path() {
+  echo "${STAKING_LEDGERS_DIRECTORY}/$1.json"
+}
+
+# Reads and validates the ledger hash a lifecycle is pinned to. Returns 1 with
+# a loud message when the pointer is missing or malformed - never an empty
+# string, which would silently hydrate nothing.
+read_pointer() {
   lifecycle_id=$1
-  deployed_epoch=$(deployed_epoch)
-  expected_epoch=$(epoch_for_lifecycle_id "$lifecycle_id" "$deployed_epoch")
-  CANDIDATE_EPOCH=""
-  CANDIDATE_FILE=""
-  CANDIDATE_HASH=""
+  path=$(pointer_path "$lifecycle_id")
 
-  for path in "$STAKING_LEDGERS_DIRECTORY"/*.tar.gz; do
-    [ -e "$path" ] || continue
-    file=$(basename "$path")
-    rest=${file%.tar.gz}
-    epoch=${rest%%-*}
-    hash=${rest#*-}
-    case "$epoch" in
-      ''|*[!0-9]*) continue ;;
-    esac
-    [ -n "$hash" ] || continue
-    [ "$epoch" -eq "$expected_epoch" ] || continue
-
-    CANDIDATE_EPOCH=$epoch
-    CANDIDATE_FILE=$file
-    CANDIDATE_HASH=$hash
-    break
-  done
-
-  if [ -z "$CANDIDATE_FILE" ]; then
-    echo "[voting-ledger-scheduler] no staking ledger file found for lifecycleId=${lifecycle_id} (expected epoch=${expected_epoch}) in ${STAKING_LEDGERS_DIRECTORY}" >&2
+  if [ ! -f "$path" ]; then
+    log_error "no pointer for lifecycleId=${lifecycle_id} at ${path} - the staking-ledgers sync has not resolved this lifecycle yet"
     return 1
+  fi
+
+  hash=$(head -n1 "$path" | tr -d ' \t\r\n')
+  if ! echo "$hash" | grep -q "$LEDGER_HASH_PATTERN"; then
+    log_error "pointer for lifecycleId=${lifecycle_id} is not a valid ledger hash: '${hash}' (from ${path})"
+    return 1
+  fi
+
+  echo "$hash"
+}
+
+# Seconds remaining before a failed lifecycle may be retried; 0 when it is due.
+failure_backoff_remaining() {
+  marker=$1
+
+  attempts=$(sed -n 's/.*"attempts": *\([0-9][0-9]*\).*/\1/p' "$marker" | head -n1)
+  last_at=$(sed -n 's/.*"lastAttemptEpochSeconds": *\([0-9][0-9]*\).*/\1/p' "$marker" | head -n1)
+  [ -n "$attempts" ] || attempts=1
+  [ -n "$last_at" ] || last_at=0
+
+  wait_seconds=$FAILURE_BACKOFF_BASE_SECONDS
+  i=1
+  while [ "$i" -lt "$attempts" ] && [ "$wait_seconds" -lt "$FAILURE_BACKOFF_MAX_SECONDS" ]; do
+    wait_seconds=$(( wait_seconds * 2 ))
+    i=$(( i + 1 ))
+  done
+  [ "$wait_seconds" -gt "$FAILURE_BACKOFF_MAX_SECONDS" ] && wait_seconds=$FAILURE_BACKOFF_MAX_SECONDS
+
+  elapsed=$(( $(now_epoch_seconds) - last_at ))
+  if [ "$elapsed" -ge "$wait_seconds" ]; then
+    echo 0
+  else
+    echo $(( wait_seconds - elapsed ))
   fi
 }
 
-# Processes one candidate end-to-end: extract, hydrate, verify hash,
-# trace-digest, mark done. Always resets any prior partial state for that
-# lifecycle first, since trace-digest always resumes from index 0 - a dirty
-# retry would replay already-committed batches against advanced state.
+record_failure() {
+  lifecycle_id=$1
+  reason=$2
+
+  marker=$(failed_marker_path "$lifecycle_id")
+  attempts=1
+  if [ -f "$marker" ]; then
+    previous=$(sed -n 's/.*"attempts": *\([0-9][0-9]*\).*/\1/p' "$marker" | head -n1)
+    [ -n "$previous" ] && attempts=$(( previous + 1 ))
+  fi
+
+  cat > "$marker" <<EOF
+{
+  "lifecycleId": "${lifecycle_id}",
+  "attempts": ${attempts},
+  "lastError": "${reason}",
+  "lastAttemptEpochSeconds": $(now_epoch_seconds),
+  "lastAttemptAt": "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+}
+EOF
+  log_error "lifecycleId=${lifecycle_id} failed (${reason}), attempt ${attempts} - retrying after backoff"
+}
+
+# Emits one pending lifecycle id per line, newest first.
+# Unlike the epoch-scanning version this replaces, it considers the whole
+# backlog rather than only the newest arrival: the sidecar's window already
+# bounds what is on disk, which was the only reason to look at one at a time.
+find_unprocessed_lifecycles() {
+  pointers_seen=0
+  payloads_missing=0
+  candidates=""
+
+  for path in "$STAKING_LEDGERS_DIRECTORY"/lifecycle-*.hash; do
+    [ -e "$path" ] || continue
+    pointers_seen=$(( pointers_seen + 1 ))
+
+    name=$(basename "$path")
+    lifecycle_id=${name#lifecycle-}
+    lifecycle_id=${lifecycle_id%.hash}
+    case "$lifecycle_id" in
+      ''|*[!0-9]*)
+        log_warn "ignoring pointer with a non-numeric lifecycle id: ${name}"
+        continue
+        ;;
+    esac
+
+    [ -e "$(done_marker_path "$lifecycle_id")" ] && continue
+
+    hash=$(read_pointer "$lifecycle_id") || continue
+
+    if [ ! -f "$(ledger_payload_path "$hash")" ]; then
+      log_warn "lifecycleId=${lifecycle_id} points at ${hash} but ${hash}.json is not present yet - waiting for the staking-ledgers sync"
+      payloads_missing=$(( payloads_missing + 1 ))
+      continue
+    fi
+
+    marker=$(failed_marker_path "$lifecycle_id")
+    if [ -f "$marker" ]; then
+      remaining=$(failure_backoff_remaining "$marker")
+      if [ "$remaining" -gt 0 ]; then
+        log_warn "lifecycleId=${lifecycle_id} is in failure backoff, ${remaining}s remaining"
+        continue
+      fi
+    fi
+
+    candidates="${candidates}${lifecycle_id}
+"
+  done
+
+  if [ "$pointers_seen" -eq 0 ]; then
+    log_warn "no lifecycle pointers found in ${STAKING_LEDGERS_DIRECTORY} - if the staking-ledgers sync is running, this means it has not resolved any lifecycle yet"
+  elif [ "$payloads_missing" -gt 0 ]; then
+    log_warn "${payloads_missing} of ${pointers_seen} lifecycle pointers have no payload on disk yet"
+  fi
+
+  [ -n "$candidates" ] || return 0
+  printf '%s' "$candidates" | sort -rn
+}
+
+# Processes one lifecycle end-to-end: hydrate, verify hash, trace-digest, mark
+# done. Always resets any prior partial state first, since trace-digest always
+# resumes from index 0 - a dirty retry would replay already-committed batches
+# against advanced state.
 process_candidate() {
-  epoch=$1
-  file=$2
-  expected_hash=$3
-  lifecycle_id=$4
+  lifecycle_id=$1
 
-  candidate_started_at=$(date +%s)
+  candidate_started_at=$(now_epoch_seconds)
+  ledger_hash=$(read_pointer "$lifecycle_id") || return 1
+  staking_ledger_path=$(ledger_payload_path "$ledger_hash")
 
-  echo "[voting-ledger-scheduler] processing epoch=${epoch} lifecycleId=${lifecycle_id} file=${file}"
+  log_info "processing lifecycleId=${lifecycle_id} ledgerHash=${ledger_hash}"
+
+  if [ ! -f "$staking_ledger_path" ]; then
+    record_failure "$lifecycle_id" "staking ledger payload ${ledger_hash}.json is missing"
+    return 1
+  fi
 
   db_path=$(db_path "$lifecycle_id")
   rm -f "$db_path" "$db_path-journal" "$db_path-wal" "$db_path-shm"
 
-  tmp_dir=$(mktemp -d)
-
-  tar -xzf "${STAKING_LEDGERS_DIRECTORY}/${file}" -C "$tmp_dir"
-  staking_ledger_path="${tmp_dir}/${epoch}.json"
-
-  step_started_at=$(date +%s)
+  step_started_at=$(now_epoch_seconds)
   if ! run_cli staking-ledger from-file \
     --lifecycle-id "$lifecycle_id" \
     --staking-ledger-path "$staking_ledger_path"; then
-    echo "[voting-ledger-scheduler] staking-ledger from-file failed for epoch=${epoch} lifecycleId=${lifecycle_id} after $(( $(date +%s) - step_started_at ))s" >&2
-    rm -rf "$tmp_dir"
+    record_failure "$lifecycle_id" "staking-ledger from-file failed after $(( $(now_epoch_seconds) - step_started_at ))s"
     return 1
   fi
-  echo "[voting-ledger-scheduler] staking-ledger from-file done for epoch=${epoch} lifecycleId=${lifecycle_id} in $(( $(date +%s) - step_started_at ))s"
+  log_info "staking-ledger from-file done for lifecycleId=${lifecycle_id} in $(( $(now_epoch_seconds) - step_started_at ))s"
 
-  step_started_at=$(date +%s)
-  if ! actual_hash=$(run_cli staking-ledger get-root-hash --lifecycle-id "$lifecycle_id"); then
-    echo "[voting-ledger-scheduler] staking-ledger get-root-hash failed for epoch=${epoch} lifecycleId=${lifecycle_id} after $(( $(date +%s) - step_started_at ))s" >&2
-    rm -rf "$tmp_dir"
+  # The CLI does the base58 comparison itself and exits non-zero on mismatch,
+  # so there is no stdout scraping here. A mismatch now means the payload is
+  # wrong or corrupt - the expected value came from the chain, not from a
+  # filename - so the payload is dropped and the sidecar re-fetches it.
+  step_started_at=$(now_epoch_seconds)
+  if ! run_cli staking-ledger get-root-hash \
+    --lifecycle-id "$lifecycle_id" \
+    --expected-root-hash "$ledger_hash"; then
+    log_error "root hash mismatch for lifecycleId=${lifecycle_id}: hydrated ledger does not root to ${ledger_hash} - discarding the payload so it is re-fetched"
+    rm -f "$staking_ledger_path"
+    record_failure "$lifecycle_id" "root hash mismatch against ${ledger_hash}"
     return 1
   fi
-  actual_hash=$(printf '%s' "$actual_hash" | tail -n1)
+  log_info "root hash verified for lifecycleId=${lifecycle_id}: ${ledger_hash} (in $(( $(now_epoch_seconds) - step_started_at ))s)"
 
-  if [ "$actual_hash" != "$expected_hash" ]; then
-    echo "[voting-ledger-scheduler] hash mismatch for epoch=${epoch} lifecycleId=${lifecycle_id}: computed=${actual_hash} expected=${expected_hash} (from filename)" >&2
-    rm -rf "$tmp_dir"
-    return 1
-  fi
-  echo "[voting-ledger-scheduler] hash verified for epoch=${epoch} lifecycleId=${lifecycle_id}: ${actual_hash} (in $(( $(date +%s) - step_started_at ))s)"
-
-  step_started_at=$(date +%s)
+  step_started_at=$(now_epoch_seconds)
   if ! run_cli staking-ledger-to-voting-ledger trace-digest --lifecycle-id "$lifecycle_id"; then
-    echo "[voting-ledger-scheduler] trace-digest failed for epoch=${epoch} lifecycleId=${lifecycle_id} after $(( $(date +%s) - step_started_at ))s" >&2
-    rm -rf "$tmp_dir"
+    record_failure "$lifecycle_id" "trace-digest failed after $(( $(now_epoch_seconds) - step_started_at ))s"
     return 1
   fi
-  echo "[voting-ledger-scheduler] trace-digest done for epoch=${epoch} lifecycleId=${lifecycle_id} in $(( $(date +%s) - step_started_at ))s"
+  log_info "trace-digest done for lifecycleId=${lifecycle_id} in $(( $(now_epoch_seconds) - step_started_at ))s"
 
-  rm -rf "$tmp_dir"
+  rm -f "$(failed_marker_path "$lifecycle_id")"
 
-  processed_at=$(date -u +%Y-%m-%dT%H:%M:%SZ)
   cat > "$(done_marker_path "$lifecycle_id")" <<EOF
 {
   "lifecycleId": "${lifecycle_id}",
-  "epoch": ${epoch},
-  "ledgerHash": "${expected_hash}",
-  "processedAt": "${processed_at}"
+  "ledgerHash": "${ledger_hash}",
+  "processedAt": "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 }
 EOF
 
-  echo "[voting-ledger-scheduler] done epoch=${epoch} lifecycleId=${lifecycle_id} totalElapsedSeconds=$(( $(date +%s) - candidate_started_at ))"
+  log_info "done lifecycleId=${lifecycle_id} totalElapsedSeconds=$(( $(now_epoch_seconds) - candidate_started_at ))"
 }
 
-# Single-shot check: process the newest arrived lifecycle if it hasn't been
-# done yet, otherwise do nothing.
-process_newest() {
-  find_newest_unprocessed
-  if [ "$NEWEST_EPOCH" -lt 0 ]; then
-    echo "[voting-ledger-scheduler] no new lifecycle to process"
+# Single-shot pass over every pending lifecycle, newest first.
+process_pending() {
+  pending=$(find_unprocessed_lifecycles)
+
+  if [ -z "$pending" ]; then
+    log_info "no lifecycle to process"
     return 0
   fi
-  process_candidate "$NEWEST_EPOCH" "$NEWEST_FILE" "$NEWEST_HASH" "$NEWEST_LIFECYCLE_ID"
+
+  # Deliberately not `echo "$pending" | while read`: a pipeline runs the loop
+  # in a subshell and the counters below would be discarded. Lifecycle ids are
+  # numeric, so the default IFS split is safe here.
+  selected=0
+  succeeded=0
+  failed=0
+  for lifecycle_id in $pending; do
+    selected=$(( selected + 1 ))
+    if process_candidate "$lifecycle_id"; then
+      succeeded=$(( succeeded + 1 ))
+    else
+      failed=$(( failed + 1 ))
+    fi
+  done
+
+  log_info "cycle summary: selected=${selected} succeeded=${succeeded} failed=${failed}"
+  [ "$failed" -eq 0 ]
 }
 
-# Processes one explicitly named lifecycle end-to-end. This is the manual
-# entry point for reprocessing a lifecycle a previous automatic run skipped
-# or crashed on - there is no automatic backward scan of the backlog.
 process_lifecycle() {
-  lifecycle_id=$1
-  find_candidate_for_lifecycle "$lifecycle_id" || return 1
-  process_candidate "$CANDIDATE_EPOCH" "$CANDIDATE_FILE" "$CANDIDATE_HASH" "$lifecycle_id"
+  process_candidate "$1"
+}
+
+startup_banner() {
+  log_info "starting poll loop (interval=${POLL_INTERVAL_SECONDS}s)"
+  log_info "  sqliteDataDirectory=${SQLITE_DATA_DIRECTORY}"
+  log_info "  stakingLedgersDirectory=${STAKING_LEDGERS_DIRECTORY}"
+  log_info "  failureBackoff=${FAILURE_BACKOFF_BASE_SECONDS}s..${FAILURE_BACKOFF_MAX_SECONDS}s"
+  log_info "  selection is keyed on ledger hash; this container parses no epoch numbers"
 }
 
 case "${1:-}" in
+  process-pending)
+    # One pass over the backlog and exit. The poll loop below does the same
+    # thing on a timer; this is the entry point for a one-shot run or for
+    # inspecting what a cycle would do.
+    process_pending
+    ;;
   process-lifecycle)
     lifecycle_id="${2:?Usage: voting-ledger-scheduler-entrypoint.sh process-lifecycle <lifecycle-id>}"
     process_lifecycle "$lifecycle_id"
     ;;
   "")
-    echo "[voting-ledger-scheduler] starting poll loop (interval=${POLL_INTERVAL_SECONDS}s)"
+    startup_banner
     while true; do
-      if process_newest; then
+      if process_pending; then
         :
       else
         status=$?
-        echo "[voting-ledger-scheduler] process-newest cycle exited with status ${status} - will retry next cycle" >&2
+        log_error "process-pending cycle exited with status ${status} - will retry next cycle"
       fi
       sleep "$POLL_INTERVAL_SECONDS"
     done
     ;;
   *)
-    echo "Usage: voting-ledger-scheduler-entrypoint.sh [process-lifecycle <lifecycle-id>]" >&2
-    exit 1
+    echo "Usage: voting-ledger-scheduler-entrypoint.sh [process-pending | process-lifecycle <lifecycle-id>]" >&2
+    exit 64
     ;;
 esac

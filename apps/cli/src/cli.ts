@@ -11,7 +11,6 @@ import proposalCommandFactory from "./commands/proposal.js";
 import voteReducerCommandFactory from "./commands/vote-reducer.js";
 import multisigSignCommandFactory from "./commands/multisig-sign.js";
 import transferCommandFactory from "./commands/transfer.js";
-import votingLedgerSchedulerCommandFactory from "./commands/voting-ledger-scheduler.js";
 import minaLedgerParityCommandFactory from "./commands/mina-ledger-parity.js";
 
 export function createProgram(): Command {
@@ -29,7 +28,6 @@ export function createProgram(): Command {
     lightnetCommandFactory,
     generateKeypairsCommandFactory,
     transferCommandFactory,
-    votingLedgerSchedulerCommandFactory,
     minaLedgerParityCommandFactory,
   ].forEach((commandFactory) => commandFactory(program));
 
