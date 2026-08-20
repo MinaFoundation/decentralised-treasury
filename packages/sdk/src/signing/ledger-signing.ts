@@ -1,7 +1,9 @@
 import { Client as MinaSignerClient, type NetworkId } from "mina-signer";
 import {
   Field,
+  Group,
   Mina,
+  Poseidon,
   PublicKey,
   Signature,
   Transaction,
@@ -61,6 +63,31 @@ function activeNetworkId(): NetworkId {
 
 function ledgerNetworkId(networkId: NetworkId): number {
   return networkId === "mainnet" ? 1 : 0;
+}
+
+function verifyFieldSignature(
+  signature: Signature,
+  publicKey: PublicKey,
+  field: Field,
+  networkId: NetworkId,
+): boolean {
+  const point = publicKey.toGroup();
+  const prefix =
+    networkId === "mainnet" ? "MinaSignatureMainnet" : "CodaSignature*******";
+  const challenge = Poseidon.hashWithPrefix(prefix, [
+    field,
+    point.x,
+    point.y,
+    signature.r,
+  ]);
+  const reconstructed = point
+    .scale(challenge)
+    .neg()
+    .add(Group.generator.scale(signature.s));
+  return reconstructed.x
+    .equals(signature.r)
+    .and(reconstructed.y.isEven())
+    .toBoolean();
 }
 
 async function findLedgerAccounts(
@@ -174,10 +201,7 @@ export async function signTransactionWithLedgerClient(
       field,
       ledgerNetworkId(networkId),
     );
-    if (
-      networkId !== "mainnet" &&
-      !signature.verify(account.publicKey, [field]).toBoolean()
-    ) {
+    if (!verifyFieldSignature(signature, account.publicKey, field, networkId)) {
       throw new Error(`Ledger returned an invalid signature for ${publicKey}`);
     }
     const encoded = signature.toBase58();
