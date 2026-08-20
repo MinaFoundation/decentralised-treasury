@@ -4,6 +4,7 @@ import { useEffect, useRef } from "react";
 import { useAppShellStore } from "../../app-shell/store/app-shell-store";
 import { useEndpointSettingsStore } from "../../endpoint-settings/store/endpoint-settings-store";
 import { useMinaBlockStore } from "../../mina-blocks/store/mina-block-store";
+import { getRuntimeConfig } from "../../runtime-config/lib/get-runtime-config";
 import { useTreasuryStore } from "../../treasury/store/treasury-store";
 import { fetchMinaAccountBalanceNanomina } from "../lib/mina-accounts";
 
@@ -18,8 +19,7 @@ export function useTreasuryHeaderBalance(): void {
   const loadedIdentityRef = useRef<string | null>(null);
 
   useEffect(() => {
-    const treasuryOwnerAddress =
-      process.env.NEXT_PUBLIC_TREASURY_OWNER_CONTRACT_ADDRESS;
+    const treasuryOwnerAddress = getRuntimeConfig().treasuryOwnerContractAddress;
 
     if (!hydrated || !minaNodeUrl || !treasuryOwnerAddress) {
       loadedIdentityRef.current = null;

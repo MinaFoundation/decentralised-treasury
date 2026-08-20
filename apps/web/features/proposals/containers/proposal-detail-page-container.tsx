@@ -10,6 +10,7 @@ import { withMinimumLoadingDuration } from "../../app-shell/lib/minimum-loading-
 import { useAppShellStore } from "../../app-shell/store/app-shell-store";
 import { useEndpointSettingsState } from "../../endpoint-settings/store/endpoint-settings-store.selectors";
 import { useMinaBlockStore } from "../../mina-blocks/store/mina-block-store";
+import { getRuntimeConfig } from "../../runtime-config/lib/get-runtime-config";
 import { useTreasuryState } from "../../treasury/store/treasury-store.selectors";
 import { useWalletSession } from "../../treasury-header/hooks/use-wallet-session";
 import {
@@ -272,7 +273,7 @@ function logWalletSubmissionTransaction(
 }
 
 function resolveProofsEnabled(): boolean {
-  const rawValue = process.env.NEXT_PUBLIC_PROOFS_ENABLED;
+  const rawValue = getRuntimeConfig().proofsEnabled;
   const resolved = rawValue !== "false";
   console.info("[proposal-prover][config] proposal detail proofs flag", {
     rawValue,
@@ -843,7 +844,7 @@ export function ProposalDetailPageContainer({
       votingWeight: wallet.accountInfo?.votingWeight,
       minaNodeUrl: settings.value.minaNodeUrl,
       treasuryOwnerContractAddress:
-        process.env.NEXT_PUBLIC_TREASURY_OWNER_CONTRACT_ADDRESS ?? "",
+        getRuntimeConfig().treasuryOwnerContractAddress ?? "",
     });
     setPreparedVoteFlow(null);
     preparedVoteFlowRef.current = null;
@@ -954,7 +955,7 @@ export function ProposalDetailPageContainer({
             senderAddress: wallet.address ?? null,
             minaNodeUrl: settings.value.minaNodeUrl,
             treasuryOwnerContractAddress:
-              process.env.NEXT_PUBLIC_TREASURY_OWNER_CONTRACT_ADDRESS ?? "",
+              getRuntimeConfig().treasuryOwnerContractAddress ?? "",
           });
           setPreparedExecuteFlow(null);
           preparedExecuteFlowRef.current = null;

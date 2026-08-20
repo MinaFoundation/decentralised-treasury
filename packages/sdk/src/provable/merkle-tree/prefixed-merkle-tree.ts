@@ -6,12 +6,8 @@ import { CircuitValue, arrayProp, Poseidon, Field, Bool, Provable } from "o1js";
 import { MerkleTreeStorage } from "../../storage/merkle-tree-storage.js";
 
 // external API
-export {
-  Witness,
-  PrefixedMerkleTree,
-  PrefixedMerkleWitness,
-  BasePrefixedMerkleWitness,
-};
+export type { Witness };
+export { PrefixedMerkleTree, PrefixedMerkleWitness, BasePrefixedMerkleWitness };
 
 // internal API
 export { conditionalSwap };
@@ -45,10 +41,13 @@ class PrefixedMerkleTree {
   ) {
     this.zeroes = new Array(height);
     this.zeroes[0] = emptyLeafHash;
+    // non-null: hashPrefixes/zeroes are always sized to (height - 1) / height
+    // by every caller (see accountLedgerHashPrefixes etc.), so indices in
+    // this height-bounded loop are always populated.
     for (let i = 1; i < height; i += 1) {
-      this.zeroes[i] = Poseidon.hashWithPrefix(this.hashPrefixes[i - 1], [
-        this.zeroes[i - 1],
-        this.zeroes[i - 1],
+      this.zeroes[i] = Poseidon.hashWithPrefix(this.hashPrefixes[i - 1]!, [
+        this.zeroes[i - 1]!,
+        this.zeroes[i - 1]!,
       ]);
     }
   }
@@ -75,7 +74,9 @@ class PrefixedMerkleTree {
    * @returns The data of the node.
    */
   async getNode(level: number, index: bigint): Promise<Field> {
-    return (await this.storage.getNode(level, index)) ?? this.zeroes[level];
+    // non-null: callers only ever pass level in [0, height - 1], which the
+    // constructor always populates in `zeroes`.
+    return (await this.storage.getNode(level, index)) ?? this.zeroes[level]!;
     // return this.nodes[level]?.[index.toString()] ?? this.zeroes[level];
   }
 
@@ -124,7 +125,7 @@ class PrefixedMerkleTree {
       await this.setNode(
         level,
         currIndex,
-        Poseidon.hashWithPrefix(this.hashPrefixes[level - 1], [left, right]),
+        Poseidon.hashWithPrefix(this.hashPrefixes[level - 1]!, [left, right]),
       );
     }
   }
@@ -166,7 +167,7 @@ class PrefixedMerkleTree {
     }
 
     for (let index = 0; index < leaves.length; index++) {
-      await this.setNode(0, BigInt(index), leaves[index]);
+      await this.setNode(0, BigInt(index), leaves[index]!);
     }
 
     let populatedWidth = leaves.length;
@@ -179,7 +180,7 @@ class PrefixedMerkleTree {
         await this.setNode(
           level,
           parentIndex,
-          Poseidon.hashWithPrefix(this.hashPrefixes[level - 1], [left, right]),
+          Poseidon.hashWithPrefix(this.hashPrefixes[level - 1]!, [left, right]),
         );
       }
       populatedWidth = parentWidth;
@@ -232,10 +233,12 @@ class BasePrefixedMerkleWitness extends CircuitValue {
     let hash = leaf;
     let n = this.height();
 
+    // non-null: path/isLeft are arrayProp-sized to (height - 1), matching
+    // this loop's range, and hashPrefixes is sized the same way by callers.
     for (let i = 1; i < n; ++i) {
-      let isLeft = this.isLeft[i - 1];
-      const [left, right] = conditionalSwap(isLeft, hash, this.path[i - 1]);
-      hash = Poseidon.hashWithPrefix(hashPrefixes[i - 1], [left, right]);
+      let isLeft = this.isLeft[i - 1]!;
+      const [left, right] = conditionalSwap(isLeft, hash, this.path[i - 1]!);
+      hash = Poseidon.hashWithPrefix(hashPrefixes[i - 1]!, [left, right]);
     }
 
     return hash;
@@ -251,7 +254,7 @@ class BasePrefixedMerkleWitness extends CircuitValue {
     let n = this.height();
 
     for (let i = 1; i < n; ++i) {
-      index = Provable.if(this.isLeft[i - 1], index, index.add(powerOfTwo));
+      index = Provable.if(this.isLeft[i - 1]!, index, index.add(powerOfTwo));
       powerOfTwo = powerOfTwo.mul(2);
     }
 

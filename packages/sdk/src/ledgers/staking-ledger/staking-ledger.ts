@@ -163,7 +163,7 @@ export abstract class BaseStakingLedger implements StakingLedger {
     }
 
     for (let i = 0; i < accountsToHydrate.length; i++) {
-      const account = accountsToHydrate[i];
+      const account = accountsToHydrate[i]!;
       const index = BigInt(i + startIndex);
       await this.setAccount(index, account);
       onHydrateAccountComplete?.(index, account);
@@ -188,7 +188,7 @@ export abstract class BaseStakingLedger implements StakingLedger {
     }
 
     for (let i = 0; i < accountsToHydrate.length; i++) {
-      const account = accountsToHydrate[i];
+      const account = accountsToHydrate[i]!;
       const treeIndex = BigInt(i + startIndex);
       await this.setLeaf(treeIndex, account);
       onHydrateLeafComplete?.(treeIndex, account);
@@ -213,7 +213,7 @@ export abstract class BaseStakingLedger implements StakingLedger {
       readStream
         .pipe(parser())
         .pipe(streamArray())
-        .on("data", ({ value }) => {
+        .on("data", ({ value }: { key: number; value: any }) => {
           accountCount++;
           const index = accountCount;
 
@@ -235,7 +235,7 @@ export abstract class BaseStakingLedger implements StakingLedger {
             reject(error);
           }
         })
-        .on("error", (error) => {
+        .on("error", (error: Error) => {
           logger.error("Error reading staking ledger", error);
           reject(error);
         });
@@ -299,12 +299,16 @@ export abstract class BaseStakingLedger implements StakingLedger {
       }),
       zkapp: value.zkapp
         ? new Zkapp({
-            appState: value.zkapp.app_state.map((state) => Field(state)),
+            appState: value.zkapp.app_state.map((state: any) => Field(state)),
+            // A zkApp account can carry app state without a verification key -
+            // the field is absent, not null, for ~18% of devnet accounts. Match
+            // Zkapp.empty() rather than handing undefined to fromData, which
+            // fails deep inside o1js with "Cannot read properties of undefined".
             verificationKey: value.zkapp.verification_key
               ? await VerificationKey.fromData(value.zkapp.verification_key)
               : VerificationKey.dummySync(),
             zkappVersion: Field(value.zkapp.zkapp_version),
-            actionState: value.zkapp.action_state.map((action) =>
+            actionState: value.zkapp.action_state.map((action: any) =>
               Field(action),
             ),
             lastActionSlot: Field(value.zkapp.last_action_slot),

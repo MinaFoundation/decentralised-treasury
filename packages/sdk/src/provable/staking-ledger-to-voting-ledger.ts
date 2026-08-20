@@ -132,7 +132,7 @@ export const StakingLedgerToVotingLedger = ZkProgram({
 
         // assert that the empty placeholder we're working with is indeed part of the staking ledger
         calculatedRoot.assertEquals(input.stakingLedgerRoot);
-        calculatedIndex.assertEquals(nextIndex.toFields()[0]);
+        calculatedIndex.assertEquals(nextIndex.toFields()[0]!);
 
         return {
           publicOutput: {
@@ -202,7 +202,8 @@ export const StakingLedgerToVotingLedger = ZkProgram({
         let { index, stakingLedgerRoot, votingLedgerRoot } = publicInput;
 
         for (let i = 0; i < ACCOUNT_BATCH_SIZE; i++) {
-          const account = accounts[i];
+          // non-null: accounts is a Provable.Array fixed at ACCOUNT_BATCH_SIZE.
+          const account = accounts[i]!;
 
           // check if account is in the staking ledger
           let accountWitness = await Provable.witnessAsync(
@@ -225,7 +226,7 @@ export const StakingLedgerToVotingLedger = ZkProgram({
 
           // assert that we're working with an account at the correct index
           calculatedStakingLedgerIndex.assertEquals(
-            index.toFields()[0],
+            index.toFields()[0]!,
             StakingLedgerToVotingLedgerErrors.stakingLedgerIndexMismatch,
           );
 

@@ -10,9 +10,10 @@ import type {
   PrepareVoteProposalTransactionInput,
   SerializedProposalCompileArtifacts,
 } from "../lib/proposal-prover-runtime";
+import { getRuntimeConfig } from "../../runtime-config/lib/get-runtime-config";
 import type {
   ProposalProverWorkerRequest,
-  ProposalProverWorkerRequestWithoutId,
+  ProposalProverWorkerRequestInput,
   ProposalProverWorkerResponse,
   ProposalProverWorkerStatus,
 } from "../lib/proposal-prover-worker.types";
@@ -124,14 +125,22 @@ export function useProposalProverWorker(proofsEnabled: boolean) {
   }, []);
 
   const sendRequest = useCallback(
-    (request: ProposalProverWorkerRequestWithoutId): Promise<ProposalProverWorkerResponse> => {
+    (request: ProposalProverWorkerRequestInput): Promise<ProposalProverWorkerResponse> => {
       const worker = workerRef.current;
       if (!worker) {
         return Promise.reject(new Error("Proposal prover worker is not available."));
       }
 
       const id = crypto.randomUUID();
-      const message = { ...request, id } as ProposalProverWorkerRequest;
+      // The worker's global scope never saw the page's bootstrap script, so it
+      // cannot resolve configuration on its own - hand it ours with every
+      // message. Read per request rather than captured once, so a config the
+      // page updates is picked up without recreating the worker.
+      const message = {
+        ...request,
+        id,
+        runtimeConfig: getRuntimeConfig(),
+      } as ProposalProverWorkerRequest;
 
       return new Promise((resolve, reject) => {
         pendingRequestsRef.current.set(id, { resolve, reject });

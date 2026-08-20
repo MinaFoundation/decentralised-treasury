@@ -1,24 +1,28 @@
 import { create } from "zustand";
+import { getRuntimeConfig } from "../../runtime-config/lib/get-runtime-config";
 import type {
   EndpointSettingsState,
   EndpointSettingsStore,
 } from "./endpoint-settings-store.types";
 
-export const defaultEndpointSettings: EndpointSettingsState["value"] = {
-  networkId: process.env.NEXT_PUBLIC_NETWORK_ID ?? "MAINNET",
-  apiUrl:
-    process.env.NEXT_PUBLIC_TREASURY_API_URL ??
-    process.env.NEXT_PUBLIC_API_URL ??
-    "http://127.0.0.1:3100/api",
-  indexerApiUrl:
-    process.env.NEXT_PUBLIC_INDEXER_API_URL ?? "http://127.0.0.1:3100/indexer",
-  processorApiUrl:
-    process.env.NEXT_PUBLIC_PROCESSOR_API_URL ??
-    "http://127.0.0.1:3100/processor",
-  minaNodeUrl:
-    process.env.NEXT_PUBLIC_MINA_NODE_URL ??
-    "http://127.0.0.1:3100/mina/graphql",
-};
+/**
+ * The endpoints this deployment was configured with, before any per-browser
+ * override stored by `useEndpointSettings` is layered on top.
+ */
+export function createDefaultEndpointSettings(): EndpointSettingsState["value"] {
+  const config = getRuntimeConfig();
+
+  return {
+    networkId: config.networkId,
+    apiUrl: config.apiUrl,
+    indexerApiUrl: config.indexerApiUrl,
+    processorApiUrl: config.processorApiUrl,
+    minaNodeUrl: config.minaNodeUrl,
+  };
+}
+
+export const defaultEndpointSettings: EndpointSettingsState["value"] =
+  createDefaultEndpointSettings();
 
 export const initialEndpointSettingsState: EndpointSettingsState = {
   value: defaultEndpointSettings,

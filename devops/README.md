@@ -28,9 +28,13 @@ The Compose stack runs the application services only:
 - Postgres
 - one-shot API migration init
 - Caddy reverse proxy
+- staking-ledger-to-voting-ledger witness tracing (`voting-ledger-scheduler`)
 
-The Compose stack does not run a Mina node, archive node, Redis, SDK tracing
-pipeline, or proof workers. Those run outside the app stack.
+The Compose stack does not run a Mina node or archive node — those run outside
+the app stack. Redis and the staking-ledger-to-voting-ledger proof workers
+(`redis`, `proving-worker`, `proving-scheduler`) are also outside the default
+stack, but available opt-in behind the `proving` Compose profile — see
+"Automated Proving" in `devops/TESTNET.md`.
 
 ## Security Defaults
 
@@ -100,6 +104,11 @@ The CLI uses host-facing URLs. Compose containers use
 `host.docker.internal` when the Mina daemon and archive node run on the Docker
 host. The browser uses full URLs through the local Caddy web origin.
 
+The `NEXT_PUBLIC_*` values reach the browser at container start rather than
+being compiled in, so changing one no longer needs an image rebuild - restart
+the web service and the new value is served. See [PUBLISHING.md](PUBLISHING.md)
+for the full list and for building images another operator can run.
+
 `.env.compose.example` is kept for manual Compose experiments that use a single
 env file. Do not use it as the primary testnet runbook unless you intentionally
 want to bypass the generated family env layout.
@@ -117,6 +126,14 @@ pnpm testnet:down
 pnpm testnet:reset
 pnpm testnet:logs
 pnpm testnet:config
+```
+
+Add the opt-in `proving` profile (Redis + proving-worker cluster +
+proving-scheduler — see "Automated Proving" in `devops/TESTNET.md`):
+
+```bash
+pnpm testnet:up:proving
+pnpm testnet:up:proving:build
 ```
 
 Local blockchain simulator family:
