@@ -35,6 +35,83 @@ cd apps/cli
 pnpm run mina-treasury -- <command> <subcommand> [options]
 ```
 
+## Compare Mina And o1js Ledger Hashes
+
+The `mina-ledger-parity` command generates accounts with the OCaml Mina binary.
+It hashes the same ledger with Mina and the o1js staking ledger implementation.
+The command exits with an error if the Base58 ledger roots differ.
+The account count can be any integer from 0 through 100,000.
+
+Add `--check-circuit` to run the staking-to-voting ledger circuit in memory.
+This mode uses `Provable.runAndCheck` and the raw circuit method.
+It does not compile the ZkProgram.
+It does not create or verify a proof.
+The check does these operations:
+
+- It supplies the o1js staking root as the circuit public input.
+- It requires that this input root equals the OCaml Mina staking root.
+- It checks each staking account and Merkle witness in batches of five.
+- It compares the circuit voting root with a separate voting-ledger result.
+- It checks that the first leaf after the final padded batch is empty.
+
+The circuit check is opt-in because the voting Merkle tree has height 255.
+Its cost grows with the account count.
+Use small datasets for fast local checks.
+
+The automated circuit suite uses eight deterministic variations.
+It hashes every variation with OCaml Mina before it runs the circuit.
+It covers partial and exact batches, padded batches, shared and cyclic delegates,
+custom tokens with empty delegates, zero and maximum balances, mixed zkApp
+state, and real non-empty verification keys from the test ledger.
+
+By default, 50 percent of the accounts contain zkApp state.
+The generator adds entropy to these account fields:
+
+- app state and action state
+- zkApp version, URI, proved state, and last action slot
+- permissions, nonce, receipt chain hash, and voting target
+- delegate, token ID, token symbol, and timing fields
+
+The generated zkApp accounts use an absent verification key.
+Mina and o1js represent this value with the protocol dummy verification-key hash.
+
+```bash
+pnpm run cli -- mina-ledger-parity \
+  --account-count 100 \
+  --zkapp-percentage 75 \
+  --seed test-dataset-001 \
+  --mina-binary /absolute/path/to/mina
+```
+
+Run the fast no-proof circuit check on a small dataset:
+
+```bash
+pnpm run cli -- mina-ledger-parity \
+  --account-count 5 \
+  --check-circuit \
+  --seed circuit-check-001
+```
+
+Set `MINA_BINARY` instead of `--mina-binary` if necessary.
+The command also detects the sibling `../mina/single-node-devnet/bin/mina` build.
+
+Use these options to control balances and keep the generated ledger:
+
+```bash
+pnpm run cli -- mina-ledger-parity \
+  --account-count 100 \
+  --min-balance 1 \
+  --max-balance 100 \
+  --ledger-output-path /tmp/mina-test-ledger.json
+```
+
+If `--seed` is absent, the command creates and reports a random seed.
+The seed controls the enriched fields, but Mina still creates random keypairs.
+Keep the ledger file when you must reproduce the complete dataset.
+
+Use a Mina binary whose protocol version matches the o1js implementation.
+The Mina binary sets the protocol ledger depth used by the comparison.
+
 For testnet and demo operator flows, prefer the generated env families from
 `devops/TESTNET.md` or `DEMO.md`, for example:
 
@@ -527,6 +604,7 @@ pnpm run cli -- multisig-sign --help
 pnpm run cli -- vote-reducer --help
 pnpm run cli -- staking-ledger --help
 pnpm run cli -- staking-ledger-to-voting-ledger --help
+pnpm run cli -- mina-ledger-parity --help
 pnpm run cli -- worker --help
 pnpm run cli -- transfer --help
 ```

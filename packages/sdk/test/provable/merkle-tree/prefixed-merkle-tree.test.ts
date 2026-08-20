@@ -30,7 +30,7 @@ it("should create a prefixed merkle tree", async () => {
     height,
     emptyLeafHash,
     hashPrefixes,
-    merkleTreeStorage
+    merkleTreeStorage,
   );
 
   for (let i = 0; i < values.length; i++) {
@@ -38,6 +38,30 @@ it("should create a prefixed merkle tree", async () => {
   }
   const root = await tree.getRoot();
   assert(root?.toString() === expectedRoot, "root does not match");
+  await merkleTreeStorage.close();
+  await store.disconnect();
+});
+
+it("bulk fill produces the same prefixed merkle root", async () => {
+  const store = new KeyvSqlite({ uri: "sqlite://:memory:" });
+  const keyv = new Keyv({ store });
+  keyv.disconnect = async () => {};
+  const merkleTreeStorage = new KeyvMerkleTreeStorage(
+    keyv,
+    "test",
+    "test",
+    new KeyvSqliteCounter(store),
+  );
+  const tree = new PrefixedMerkleTree(
+    2,
+    Field(0),
+    ["test-prefix-0"],
+    merkleTreeStorage,
+  );
+
+  await tree.fill([Field(1), Field(2)]);
+
+  assert.equal((await tree.getRoot()).toString(), expectedRoot);
   await merkleTreeStorage.close();
   await store.disconnect();
 });

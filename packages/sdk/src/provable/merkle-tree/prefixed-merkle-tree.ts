@@ -159,8 +159,30 @@ class PrefixedMerkleTree {
    * @param leaves Values to fill the leaves with.
    */
   async fill(leaves: Field[]): Promise<void> {
+    if (BigInt(leaves.length) > this.leafCount) {
+      throw new Error(
+        `${leaves.length} leaves exceed the tree capacity of ${this.leafCount}.`,
+      );
+    }
+
     for (let index = 0; index < leaves.length; index++) {
-      await this.setLeaf(BigInt(index), leaves[index]);
+      await this.setNode(0, BigInt(index), leaves[index]);
+    }
+
+    let populatedWidth = leaves.length;
+    for (let level = 1; level < this.height && populatedWidth > 0; level++) {
+      const parentWidth = Math.ceil(populatedWidth / 2);
+      for (let index = 0; index < parentWidth; index++) {
+        const parentIndex = BigInt(index);
+        const left = await this.getNode(level - 1, parentIndex * 2n);
+        const right = await this.getNode(level - 1, parentIndex * 2n + 1n);
+        await this.setNode(
+          level,
+          parentIndex,
+          Poseidon.hashWithPrefix(this.hashPrefixes[level - 1], [left, right]),
+        );
+      }
+      populatedWidth = parentWidth;
     }
   }
 

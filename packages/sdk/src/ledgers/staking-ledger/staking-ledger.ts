@@ -47,7 +47,8 @@ function parseMinaAmountToNanomina(value: string | number): bigint {
   }
   const paddedFractionalPart = fractionalPart.padEnd(MINA_DECIMAL_PLACES, "0");
   return (
-    BigInt(wholePart || "0") * NANOMINA_PER_MINA + BigInt(paddedFractionalPart || "0")
+    BigInt(wholePart || "0") * NANOMINA_PER_MINA +
+    BigInt(paddedFractionalPart || "0")
   );
 }
 
@@ -242,7 +243,7 @@ export abstract class BaseStakingLedger implements StakingLedger {
   }
 
   // TODO: should be typed to match the JSON schema
-  private async parseStakingLedgerAccount(value: any): Promise<Account> {
+  public async parseStakingLedgerAccount(value: any): Promise<Account> {
     return new Account({
       pk: PublicKey.fromBase58(value.pk),
       tokenId: TokenId.fromBase58(value.token),
@@ -299,9 +300,9 @@ export abstract class BaseStakingLedger implements StakingLedger {
       zkapp: value.zkapp
         ? new Zkapp({
             appState: value.zkapp.app_state.map((state) => Field(state)),
-            verificationKey: await VerificationKey.fromData(
-              value.zkapp.verification_key,
-            ),
+            verificationKey: value.zkapp.verification_key
+              ? await VerificationKey.fromData(value.zkapp.verification_key)
+              : VerificationKey.dummySync(),
             zkappVersion: Field(value.zkapp.zkapp_version),
             actionState: value.zkapp.action_state.map((action) =>
               Field(action),
