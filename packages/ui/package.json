@@ -57,6 +57,6 @@
     "tailwind-merge": "^3.5.0"
   },
   "peerDependencies": {
-    "o1js": "github:maht0rz/o1js#feature/mesa-support"
+    "o1js": "github:maht0rz/o1js#23cb007e89880a8345e6797f40790ef479d70f7c"
   }
 }
