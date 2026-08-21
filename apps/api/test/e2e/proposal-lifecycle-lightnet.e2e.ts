@@ -806,6 +806,7 @@ describe("lightnet e2e: proposal lifecycle API monitoring", {
           pollPendingIntervalMs: POLL_INTERVAL_MS,
           pollCanonicalIntervalMs: 5_000,
           blockBatchSize: 10,
+          startHeight: 0,
           pendingOverlapBlocks: 20,
           canonicalOverlapBlocks: 100,
           orphanDepthBlocks: 30,

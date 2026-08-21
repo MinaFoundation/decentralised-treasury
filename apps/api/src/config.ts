@@ -6,6 +6,7 @@ const DEFAULT_INDEXER_API_PORT = 4_001;
 const DEFAULT_POLL_PENDING_INTERVAL_MS = 5_000;
 const DEFAULT_POLL_CANONICAL_INTERVAL_MS = 15_000;
 const DEFAULT_EVENTS_BLOCK_BATCH_SIZE = 10;
+const DEFAULT_EVENTS_START_HEIGHT = 0;
 const DEFAULT_PENDING_OVERLAP_BLOCKS = 20;
 const DEFAULT_CANONICAL_OVERLAP_BLOCKS = 100;
 const DEFAULT_ORPHAN_DEPTH_BLOCKS = 30;
@@ -37,6 +38,7 @@ export interface ApiConfig {
   pollPendingIntervalMs: number;
   pollCanonicalIntervalMs: number;
   eventsBlockBatchSize: number;
+  eventsStartHeight: number;
   pendingOverlapBlocks: number;
   canonicalOverlapBlocks: number;
   orphanDepthBlocks: number;
@@ -231,6 +233,15 @@ export function loadApiConfig(
       ["EVENTS_BLOCK_BATCH_SIZE"],
       env,
       DEFAULT_EVENTS_BLOCK_BATCH_SIZE,
+    ),
+    // First block the indexer looks at on a cold start. Defaults to 0, which
+    // walks the whole chain: on a long-lived network that is hundreds of
+    // thousands of archive queries returning nothing, because no treasury event
+    // can predate the treasury's own deployment. Set it to the deployment block.
+    eventsStartHeight: readNonNegativeIntEnv(
+      ["EVENTS_START_HEIGHT"],
+      env,
+      DEFAULT_EVENTS_START_HEIGHT,
     ),
     pendingOverlapBlocks: readNonNegativeIntEnv(
       ["PENDING_OVERLAP_BLOCKS"],

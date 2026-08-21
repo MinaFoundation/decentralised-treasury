@@ -71,6 +71,7 @@ describe("EventsIndexer", () => {
       pollPendingIntervalMs: 60_000,
       pollCanonicalIntervalMs: 60_000,
       blockBatchSize: 10,
+      startHeight: 0,
       pendingOverlapBlocks: 20,
       canonicalOverlapBlocks: 5,
       orphanDepthBlocks: 30,
@@ -109,6 +110,7 @@ describe("EventsIndexer", () => {
       pollPendingIntervalMs: 60_000,
       pollCanonicalIntervalMs: 60_000,
       blockBatchSize: 10,
+      startHeight: 0,
       pendingOverlapBlocks: 20,
       canonicalOverlapBlocks: 5,
       orphanDepthBlocks: 30,
@@ -126,6 +128,7 @@ describe("EventsIndexer", () => {
       pollPendingIntervalMs: 60_000,
       pollCanonicalIntervalMs: 60_000,
       blockBatchSize: 10,
+      startHeight: 0,
       pendingOverlapBlocks: 20,
       canonicalOverlapBlocks: 5,
       orphanDepthBlocks: 30,
@@ -151,6 +154,7 @@ describe("EventsIndexer", () => {
       pollPendingIntervalMs: 60_000,
       pollCanonicalIntervalMs: 60_000,
       blockBatchSize: 10,
+      startHeight: 0,
       pendingOverlapBlocks: 20,
       canonicalOverlapBlocks: 5,
       orphanDepthBlocks: 30,
@@ -179,5 +183,47 @@ describe("EventsIndexer", () => {
 
     const orphanedRows = await indexer.sweepOrphanedPendingEvents();
     assert.equal(orphanedRows, 1);
+  });
+
+  it("starts polling without waiting for the initial catch-up", async () => {
+    // A slow archive stands in for a cold start against a long chain, where the
+    // canonical pass takes many minutes. start() used to await that pass before
+    // installing the timers, so pending indexing did not begin until it finished.
+    let releaseArchive: (() => void) | undefined;
+    const archiveGate = new Promise<void>((resolve) => {
+      releaseArchive = resolve;
+    });
+    const slowArchive = {
+      getMaxBlockHeights: async () => {
+        await archiveGate;
+        return { canonicalMaxBlockHeight: 0, pendingMaxBlockHeight: 0 };
+      },
+      fetchEvents: async () => [],
+    };
+
+    const indexer = new EventsIndexer(slowArchive, repository, {
+      pollPendingIntervalMs: 60_000,
+      pollCanonicalIntervalMs: 60_000,
+      blockBatchSize: 10,
+      startHeight: 0,
+      pendingOverlapBlocks: 0,
+      canonicalOverlapBlocks: 0,
+      orphanDepthBlocks: 30,
+    });
+
+    try {
+      await Promise.race([
+        indexer.start(),
+        new Promise((_resolve, reject) =>
+          setTimeout(
+            () => reject(new Error("start() blocked on the initial catch-up")),
+            1_000,
+          ).unref(),
+        ),
+      ]);
+    } finally {
+      releaseArchive?.();
+      await indexer.stop();
+    }
   });
 });

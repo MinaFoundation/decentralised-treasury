@@ -385,6 +385,7 @@ describe(
             pollPendingIntervalMs: 250,
             pollCanonicalIntervalMs: 250,
             blockBatchSize: 10,
+            startHeight: 0,
             pendingOverlapBlocks: 20,
             canonicalOverlapBlocks: 100,
             orphanDepthBlocks: 30,

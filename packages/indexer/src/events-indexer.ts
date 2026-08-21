@@ -12,6 +12,7 @@ interface EventsIndexerOptions {
   pollPendingIntervalMs: number;
   pollCanonicalIntervalMs: number;
   blockBatchSize: number;
+  startHeight: number;
   pendingOverlapBlocks: number;
   canonicalOverlapBlocks: number;
   orphanDepthBlocks: number;
@@ -32,6 +33,7 @@ export interface EventsIndexerConfig {
   pollPendingIntervalMs: number;
   pollCanonicalIntervalMs: number;
   eventsBlockBatchSize: number;
+  eventsStartHeight: number;
   pendingOverlapBlocks: number;
   canonicalOverlapBlocks: number;
   orphanDepthBlocks: number;
@@ -65,6 +67,7 @@ export class EventsIndexer {
       pollPendingIntervalMs: config.pollPendingIntervalMs,
       pollCanonicalIntervalMs: config.pollCanonicalIntervalMs,
       blockBatchSize: config.eventsBlockBatchSize,
+      startHeight: config.eventsStartHeight,
       pendingOverlapBlocks: config.pendingOverlapBlocks,
       canonicalOverlapBlocks: config.canonicalOverlapBlocks,
       orphanDepthBlocks: config.orphanDepthBlocks,
@@ -83,10 +86,18 @@ export class EventsIndexer {
     }
 
     await this.repository.initialize();
-    await this.syncPendingOnce();
-    await this.syncCanonicalOnce();
-    await this.sweepOrphanedPendingEvents();
 
+    // Install the pollers *before* the initial catch-up, and do not await it.
+    //
+    // syncStatusOnce drains all the way to the archive head in a single call, so
+    // awaiting the canonical pass here left the pending timer uninstalled for as
+    // long as that pass took. On a cold start against a long chain that is over
+    // an hour, during which nothing new is indexed at all and every downstream
+    // consumer - proposal projection, content attachment - simply stalls.
+    //
+    // Overlap is safe: each sync has its own in-flight guard, so a tick that
+    // lands during the catch-up is a no-op, and pending/canonical already ran
+    // concurrently in steady state on their two independent intervals.
     this.pendingTimer = setInterval(() => {
       void this.syncPendingOnce();
     }, this.options.pollPendingIntervalMs);
@@ -97,6 +108,12 @@ export class EventsIndexer {
       void this.sweepOrphanedPendingEvents();
     }, this.options.pollCanonicalIntervalMs);
     this.bindSignalHandlers();
+
+    // Kick off an immediate first pass rather than waiting out one interval.
+    void this.syncPendingOnce();
+    void this.syncCanonicalOnce();
+    void this.sweepOrphanedPendingEvents();
+
     console.log(
       `[events-indexer] started (pendingInterval=${this.options.pollPendingIntervalMs}ms, canonicalInterval=${this.options.pollCanonicalIntervalMs}ms, blockBatchSize=${this.options.blockBatchSize}, pendingOverlap=${this.options.pendingOverlapBlocks}, canonicalOverlap=${this.options.canonicalOverlapBlocks}, orphanDepth=${this.options.orphanDepthBlocks})`,
     );
@@ -203,7 +220,9 @@ export class EventsIndexer {
         : maxHeights.canonicalMaxBlockHeight;
 
     const cursor = await this.repository.getCursor(input.cursorName);
-    let from = 0;
+    // Only used on a cold start; once a cursor exists it always wins, so raising
+    // this later never skips blocks that were already being tracked.
+    let from = this.options.startHeight;
     if (cursor !== null) {
       from =
         input.overlapBlocks > 0

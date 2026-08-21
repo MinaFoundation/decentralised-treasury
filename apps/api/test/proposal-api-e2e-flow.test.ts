@@ -597,6 +597,7 @@ describe("proposal API e2e flow", () => {
       pollPendingIntervalMs: 60_000,
       pollCanonicalIntervalMs: 60_000,
       blockBatchSize: 10,
+      startHeight: 0,
       pendingOverlapBlocks: 20,
       canonicalOverlapBlocks: 1,
       orphanDepthBlocks: 30,
