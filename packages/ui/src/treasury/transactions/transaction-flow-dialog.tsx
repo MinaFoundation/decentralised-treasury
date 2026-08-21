@@ -530,13 +530,21 @@ export function TreasuryTransactionFlowDialog({
       }
 
       const resolvedError = normalizeError(error);
+      // The active step decides where the failure happened; the sign-and-send
+      // phase only refines *that* step into compiling/proving/awaitingSignature.
+      //
+      // Consulting the phase first was wrong: it is never cleared once the send
+      // succeeds, so it stayed at "awaitingSignature" for the rest of the run and
+      // shadowed the real step. A proposal whose content attachment failed was
+      // reported as "Sign & send failed" for a transaction that had already been
+      // included - inviting the user to retry and create a second proposal, and
+      // pay a second bond.
       const failedStageId =
-        signAndSendPhaseRef.current ??
-        (activeStepRef.current === "waitForInclusion"
+        activeStepRef.current === "waitForInclusion"
           ? "awaitingInclusion"
           : activeStepRef.current === "postContent"
             ? "postingContent"
-            : null);
+            : (signAndSendPhaseRef.current ?? null);
       console.error("[transaction-flow] step failed", {
         kind,
         failedStageId,
