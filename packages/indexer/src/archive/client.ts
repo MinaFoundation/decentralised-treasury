@@ -158,7 +158,20 @@ export class ArchiveClient {
         tokenId: ARCHIVE_DEFAULT_TOKEN_ID,
         status: options.status,
         from: options.from,
-        to: options.to,
+        // The archive treats `to` as EXCLUSIVE. Passing our inclusive upper
+        // bound straight through silently dropped every event in the last block
+        // of each batch, and the cursor then advanced past it. Verified against
+        // archive-node-api on devnet with an event at block 546331:
+        //
+        //   from=546320 to=546331 -> 0 events
+        //   from=546320 to=546332 -> 1 event
+        //
+        // The pendingOverlapBlocks rescan hid this, because the block stopped
+        // being last on a later pass - but only after a delay, and not at all
+        // with an overlap of 0. Requesting one past our bound is also correct if
+        // the archive is ever inclusive: the extra block is simply upserted, and
+        // the cursor is still set from our own `to`.
+        to: options.to + 1,
       },
     };
 
