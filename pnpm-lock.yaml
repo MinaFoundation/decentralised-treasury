@@ -117,9 +117,6 @@ importers:
       o1js:
         specifier: github:maht0rz/o1js#feature/mesa-support
         version: https://codeload.github.com/maht0rz/o1js/tar.gz/3054643b26659b75ad40ece6909cd03db4fadc1e
-      tar:
-        specifier: ^7.5.13
-        version: 7.5.13
     devDependencies:
       '@ledgerhq/hw-transport-mocker':
         specifier: 6.31.0
