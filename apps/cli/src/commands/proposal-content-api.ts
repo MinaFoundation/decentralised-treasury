@@ -58,7 +58,17 @@ export async function submitProposalContents({
   timeoutMs = DEFAULT_SUBMISSION_TIMEOUT_MS,
   retryDelayMs = DEFAULT_RETRY_DELAY_MS,
 }: SubmitProposalContentsOptions): Promise<SubmitProposalContentsResponse> {
-  const endpoint = new URL(`/proposals/${encodeURIComponent(proposalPublicKey)}/content`, apiUrl);
+  // Resolve against the base *including* its path. A leading slash here would
+  // make the URL root-relative and silently discard any prefix, so an api-url
+  // of https://host/api would POST to https://host/proposals/... - which, behind
+  // a path-stripping proxy, lands on the web app and returns an HTML 404 the
+  // retry loop cannot recognise. The trailing slash keeps the last path segment
+  // from being replaced.
+  const base = apiUrl.endsWith("/") ? apiUrl : `${apiUrl}/`;
+  const endpoint = new URL(
+    `proposals/${encodeURIComponent(proposalPublicKey)}/content`,
+    base,
+  );
   const deadline = Date.now() + timeoutMs;
   let lastErrorMessage = "Proposal content submission failed.";
 
