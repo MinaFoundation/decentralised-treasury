@@ -94,6 +94,19 @@ export class ArchiveEventEntity {
   })
   indexedAt!: Date;
 
+  // NOTE: the real column is timestamptz(3) - see the
+  // cursor-timestamp-millisecond-precision migration, which is the source of
+  // truth here (synchronize is off). The precision is deliberately not declared
+  // on the decorator because the unit tests build their schema from the entities
+  // against pg-mem, which cannot express a precision on timestamptz.
+  //
+  // Millisecond precision on purpose. Postgres timestamptz defaults to
+  // microseconds, which a JavaScript Date cannot represent: the processor reads
+  // this value, truncates it to milliseconds on the way through Date, and sends
+  // it back as its keyset cursor. `updated_at > cursor` was then true for the
+  // very row the cursor pointed at, so that event was refetched and reprocessed
+  // on every poll, forever. Matching the column to what the client can express
+  // makes the comparison exact.
   @UpdateDateColumn({
     type: "timestamptz",
     name: "updated_at",

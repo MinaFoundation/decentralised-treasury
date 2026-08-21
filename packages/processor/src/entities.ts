@@ -13,6 +13,8 @@ export class ProcessorOffsetEntity {
   })
   processorName!: string;
 
+  // Real column is timestamptz(3), set by migration; see the note on
+  // ArchiveEventEntity.updatedAt for why it is not declared here.
   @Column({
     type: "timestamptz",
     name: "last_seen_updated_at",
