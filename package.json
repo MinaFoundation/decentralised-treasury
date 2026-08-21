@@ -53,7 +53,7 @@
     "commitizen": "^4.3.1",
     "cz-git": "^1.12.0",
     "husky": "^9.1.7",
-    "o1js": "github:maht0rz/o1js#feature/mesa-support",
+    "o1js": "github:maht0rz/o1js#23cb007e89880a8345e6797f40790ef479d70f7c",
     "prettier": "^3.6.2",
     "turbo": "^2.5.6",
     "typescript": "5.9.2"
