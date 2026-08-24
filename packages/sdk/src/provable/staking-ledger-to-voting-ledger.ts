@@ -6,9 +6,9 @@ import {
   MerkleTree,
   Poseidon,
   Provable,
-  PublicKey,
   SelfProof,
   Struct,
+  TokenId,
   // TODO: replace with UInt36 or larger, since the ledger is height 36
   UInt64,
   ZkProgram,
@@ -237,11 +237,8 @@ export const StakingLedgerToVotingLedger = ZkProgram({
               StakingLedgerToVotingLedgerErrors.stakingLedgerRootMismatch,
             );
 
-          // TODO: fix the logic for determining if its a token account, once we start using the real account struct
-          // token accounts have empty delegates, other accounts have either self address or a real delegate address
-          // token accounts should have their delegates set to empty, but we need to confirm this with someone from o1labs
           const delegateAddress = account.delegate; // TODO: why is this optional in TS?
-          // const isMinaAccount = delegateAddress.equals(PublicKey.empty()).not();
+          const isMinaAccount = account.tokenId.equals(TokenId.default);
 
           // load the voting account associated with the delegate address and ensure its valid given the voting ledger root
           const votingAccount = await Provable.witnessAsync(
@@ -289,8 +286,14 @@ export const StakingLedgerToVotingLedger = ZkProgram({
               StakingLedgerToVotingLedgerErrors.votingLedgerRootMismatch,
             );
 
+          const balanceToAdd = Provable.if(
+            isMinaAccount,
+            account.balance,
+            UInt64.zero,
+          );
+
           // append updated delegate account to the new voting weight ledger
-          votingAccount.balance = votingAccount.balance.add(account.balance);
+          votingAccount.balance = votingAccount.balance.add(balanceToAdd);
 
           const updatedVotingAccountHash = hashWithPrefix(
             votingAccountHashPrefix,
@@ -349,4 +352,5 @@ export class SideLoadedStakingLedgerToVotingLedgerProof extends DynamicProof<
   static maxProofsVerified = 2 as const;
 }
 
-export class StakingLedgerToVotingLedgerProof extends StakingLedgerToVotingLedger.Proof {}
+export class StakingLedgerToVotingLedgerProof
+  extends StakingLedgerToVotingLedger.Proof {}

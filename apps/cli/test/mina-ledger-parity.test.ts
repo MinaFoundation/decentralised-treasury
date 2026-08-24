@@ -137,6 +137,8 @@ test("checks high-entropy staking-to-voting circuit variations", async (t) => {
     customTokens[index].token = TokenId.toBase58(Field(10_000 + index));
     customTokens[index].delegate = undefined;
   });
+  customTokens[1].balance = "191712214.936721048";
+  customTokens[4].balance = "18446739073.709551615";
 
   const balanceEdges = rich(5, "circuit-balance-edges", 0);
   const balances = [

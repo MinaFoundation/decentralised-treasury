@@ -12,12 +12,12 @@ The `StakingLedgerToVotingLedger` circuit has two externally visible relationshi
 - The **operator / prover** scans staking accounts, constructs the voting ledger root transition, and produces the final recursive proof.
 - **Treasury tallying zkApps** verify `SideLoadedStakingLedgerToVotingLedgerProof` and bind its public input/output to proposal tally rules.
 
-The circuit must establish that the transformation is tied to the epoch staking ledger root, starts with an empty voting ledger root, scans the staking ledger in order, aggregates each account balance into the account's delegate, reaches ledger exhaustion, and outputs the final voting ledger root to be used by voting consumers. In treasury proposal tallying, that staking ledger root must be linked back to the on-chain `stakingEpochDataLedgerHash` precondition, so an incorrect account, delegate, or witness cannot satisfy the consumer's staking-epoch ledger check.
+The circuit must establish that the transformation is tied to the epoch staking ledger root, starts with an empty voting ledger root, scans the staking ledger in order, aggregates each default-token account balance into the account's delegate, ignores custom-token balances, reaches ledger exhaustion, and outputs the final voting ledger root to be used by voting consumers. In treasury proposal tallying, that staking ledger root must be linked back to the on-chain `stakingEpochDataLedgerHash` precondition, so an incorrect account, delegate, token id, or witness cannot satisfy the consumer's staking-epoch ledger check.
 
 ## Scope
 
 - Proving the staking-ledger-to-voting-ledger transformation for one epoch ledger.
-- Aggregating staking balances into delegate-keyed voting weights.
+- Aggregating native MINA staking balances into delegate-keyed voting weights.
 - Recursively composing ledger-scan segments into one final proof.
 - Exposing public input/output fields that downstream components can rely on.
 - Describing the proof continuity required to produce the side-loaded proof verified by treasury zkApps.
@@ -26,11 +26,11 @@ The circuit must establish that the transformation is tied to the epoch staking 
 
 ### Ledger Transformation
 
-Tallying requires delegated stake weights as voting power, while this circuit must scan the Mina staking ledger as an indexed sequence of account leaves. The operator produces a side-loaded proof of the transformation from an epoch staking ledger and an empty voting ledger into a final voting ledger root. Each scanned staking account must contribute its balance to the voting account keyed by its delegate, composing all stake delegated to the same public key into one voting balance. The circuit output must commit to the resulting root so vote-reducer proofs can consume delegated balances without re-scanning the Mina L1 ledger.
+Tallying requires delegated native MINA stake as voting power, while this circuit must scan the Mina staking ledger as an indexed sequence of account leaves. The operator produces a side-loaded proof of the transformation from an epoch staking ledger and an empty voting ledger into a final voting ledger root. Each scanned default-token account must contribute its balance to the voting account keyed by its delegate, composing all native stake delegated to the same public key into one voting balance. The circuit output must commit to the resulting root so vote-reducer proofs can consume delegated balances without re-scanning the Mina L1 ledger.
 
-### Custom Token Account Delegates
+### Custom Token Accounts
 
-Custom token accounts use the empty public key as their delegate, so their treatment determines whether completion can be inferred from balance totals. The transformation must let a custom token account contribute its balance to the voting account keyed by `PublicKey.empty()`, and the proof must advance through that account like any other staking ledger entry.
+Custom-token balances use token-specific units and must not contribute to native MINA voting power. The transformation must identify eligible accounts with `account.tokenId.equals(TokenId.default)`. It must add zero for every custom-token account while still proving the account's staking-ledger inclusion and advancing the staking index.
 
 ### Recursive Composition
 
@@ -50,7 +50,6 @@ The trace must be produced by dry-running the circuit with proofs disabled. That
 
 ### Constants and configuration
 
-
 | Name                                                                                                 | Meaning                                                                                                                                                                    |
 | ---------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Staking ledger root                                                                                  | Epoch staking ledger root used as the fixed source ledger                                                                                                                  |
@@ -66,7 +65,6 @@ The trace must be produced by dry-running the circuit with proofs disabled. That
 | Staking Merkle path prefixes `MinaMklTree000******` through `MinaMklTree034******`                   | Per-level prefixes for staking ledger root calculation                                                                                                                     |
 | Voting Merkle path prefixes `TreasuryMklTree000******` through `TreasuryMklTree254******`            | Per-level prefixes for voting ledger root calculation                                                                                                                      |
 | Side-loaded proof depth `maxProofsVerified = 2`                                                      | Treasury zkApp-verifiable `SideLoadedStakingLedgerToVotingLedgerProof` can verify the recursive proof inside treasury zkApps                                               |
-
 
 ### Staking ledger input
 
@@ -168,7 +166,7 @@ A three-account staking ledger JSON from `apps/cli/.data/dev/ledger.json` looks 
 
 Each staking ledger account must be treated as a full Mina account commitment, not as a reduced `{ publicKey, balance, delegate }` record. The staking leaf hash includes the account public key, token id and symbol, balance, nonce, receipt chain hash, delegate, `voting_for`, timing, permissions, and a zkApp substructure hash.
 
-The circuit must use only `balance` and `delegate` to update the voting ledger, but the staking witness must bind every account field to the Mina L1 staking ledger root. This keeps zkApp account fields preserved in the source commitment even though they do not create separate voting behavior.
+The circuit must use `tokenId` to select eligible default-token accounts, then use `balance` and `delegate` to update the voting ledger. The staking witness must bind every account field to the Mina L1 staking ledger root. This keeps custom-token and zkApp account fields preserved in the source commitment even when they do not create voting weight.
 
 Accounts without zkApp state must use the canonical empty zkApp value: empty app state, dummy verification key, initial action state, empty version/slot/proved-state values, and the empty zkApp URI hash listed in constants. Empty staking positions must be proven with the full `Account.empty()` value, not by checking a missing JSON entry.
 
@@ -194,7 +192,7 @@ class StakingLedgerToVotingLedgerProgramOutput extends Struct({
 
 ### Delegate Mapping
 
-The transformation must read each staking ledger account's `delegate` field and use that public key as the voting ledger key. This is required because the voting ledger represents delegated stake, not the staking account's own public key.
+For each default-token staking account, the transformation must read the account's `delegate` field and use that public key as the voting ledger key. This is required because the voting ledger represents delegated native stake, not the staking account's own public key. Custom-token accounts must add zero regardless of their delegate value.
 
 The voting ledger index must be derived from the delegate public key. In-circuit the proof asserts the voting witness index equals `Poseidon.hash(delegate.toFields())`; off-chain witness providers must use the same delegate-derived index.
 
@@ -216,7 +214,7 @@ const StakingLedgerToVotingLedger = ZkProgram({
 });
 ```
 
-`digest` must prove a bounded, consecutive staking-ledger segment and update delegated voting weights. It must consume exactly five `Account` private inputs, verify each account at the expected staking index under the fixed `stakingLedgerRoot`, verify the delegate's voting account under the rolling `votingLedgerRoot`, add the staking balance into that voting account, and output the last processed index with `exhausted = false`.
+`digest` must prove a bounded, consecutive staking-ledger segment and update delegated voting weights. It must consume exactly five `Account` private inputs, verify each account at the expected staking index under the fixed `stakingLedgerRoot`, verify the delegate's voting account under the rolling `votingLedgerRoot`, add the balance only when the account uses `TokenId.default`, and output the last processed index with `exhausted = false`.
 
 `merge` must compose adjacent proof segments while preserving root continuity. The outer public input must match the first proof's public input, both proofs must share the same staking ledger root, the first output index plus one must equal the second input index, and the first output voting root must equal the second input voting root. A merge output must never be exhausted.
 
@@ -228,7 +226,6 @@ const StakingLedgerToVotingLedger = ZkProgram({
 
 The context provides witness and update surfaces:
 
-
 | Context surface                                    | Consumed by               | Purpose                                                                                              |
 | -------------------------------------------------- | ------------------------- | ---------------------------------------------------------------------------------------------------- |
 | `stakingLedger.getWitness(index)`                  | `digest`, `exhaust`       | Supplies a `PrefixedMerkleWitness36` for the current staking account or the post-range empty account |
@@ -236,7 +233,6 @@ The context provides witness and update surfaces:
 | `votingLedger.getWitness(delegate)`                | `digest`                  | Supplies a `PrefixedMerkleWitness255` for the delegate-derived voting account index                  |
 | `votingLedger.setVotingAccount(delegate, account)` | `digest` witness callback | Records the updated voting account for later off-chain steps                                         |
 | `votingLedger.setLeaf(delegate, account)`          | `digest` witness callback | Advances the off-chain voting ledger so the next digest step can witness against the updated root    |
-
 
 `digest` must read staking witnesses, voting accounts, and voting witnesses from context. It must constrain staking witnesses against `publicInput.stakingLedgerRoot`, constrain voting witnesses against the rolling `votingLedgerRoot`, and then write the updated delegate voting account back to the context. Those writes are an off-chain obligation: they keep the prover's context aligned with the public output root that the circuit returns, but they are not trusted unless the next witness/root checks succeed.
 
@@ -250,7 +246,7 @@ For each `digest` account, the operator must provide:
 - A `PrefixedMerkleWitness36` proving that account is included at that index under `stakingLedgerRoot`.
 - The delegate's current voting account.
 - A `PrefixedMerkleWitness255` proving that voting account at the delegate-derived voting index under the current `votingLedgerRoot`.
-- The updated voting root after adding the staking account balance to the delegate's voting balance.
+- The updated voting root after adding the default-token staking balance, or after adding zero for a custom-token account.
 
 For `exhaust`, the operator must provide a staking witness proving that `Account.empty()` is included at the first index after the processed proof range.
 
@@ -267,14 +263,12 @@ The final proof remains valid only when `exhaust` proves post-range emptiness.
 
 ### Errors
 
-
-| Message                                          | Meaning                                                                             |
-| ------------------------------------------------ | ----------------------------------------------------------------------------------- |
-| `staking ledger tree account index not matching` | A staking witness does not point to the expected sequential account index           |
-| `staking ledger tree account root not matching`  | A staking account witness does not resolve to the fixed public staking ledger root  |
-| `voting ledger witness index not matching`       | A voting witness does not point to the delegate-derived voting ledger index         |
-| `voting ledger root does not match`              | A voting account witness does not resolve to the rolling voting ledger root         |
-
+| Message                                          | Meaning                                                                            |
+| ------------------------------------------------ | ---------------------------------------------------------------------------------- |
+| `staking ledger tree account index not matching` | A staking witness does not point to the expected sequential account index          |
+| `staking ledger tree account root not matching`  | A staking account witness does not resolve to the fixed public staking ledger root |
+| `voting ledger witness index not matching`       | A voting witness does not point to the delegate-derived voting ledger index        |
+| `voting ledger root does not match`              | A voting account witness does not resolve to the rolling voting ledger root        |
 
 ### Consumer proof binding
 
@@ -295,6 +289,7 @@ Treasury proposal tallying is the known consumer binding. This proof must expose
 - Exhaustion rejects when the next staking index is not proven as `Account.empty()`.
 - Non-adjacent merges, root mismatches, and exhaustion against a non-empty next staking position are rejected.
 - Completion is proven by exhaustion, not by comparing accumulated voting weight to total currency.
+- Only accounts with `TokenId.default` contribute voting weight; custom-token accounts still advance the proven staking-ledger scan.
 - The final side-loaded proof is consumable by treasury zkApps with proof depth `2`.
 - The final proof exposes the staking root, exhaustion flag, and voting root fields required for treasury proposal tallying to bind the vote reducer input root to the proof output voting root.
 
@@ -302,7 +297,7 @@ Treasury proposal tallying is the known consumer binding. This proof must expose
 
 ### Delegate-Keyed Voting Ledger
 
-Staking accounts become voting weights through their delegate. The voting ledger is keyed by delegate because the transformation produces delegated stake, not one voting entry per staking account.
+Default-token staking accounts become voting weights through their delegate. The voting ledger is keyed by delegate because the transformation produces delegated native stake, not one voting entry per staking account.
 
 This means many staking accounts can contribute to the same voting account.
 
@@ -325,7 +320,7 @@ Consumers receive one recursive proof with stable public I/O, while the transfor
 - Only the exhaustion stage can mark the final proof complete.
 - Exhaustion means the first staking ledger position after the processed proof range is proven as `Account.empty()`.
 - The final voting ledger root is the transformation output exposed to downstream consumers.
-- Custom token accounts map to the empty public key unless the transformation explicitly filters them before accumulation.
+- Custom-token accounts contribute zero voting weight, independent of their delegate representation.
 - The completion signal is staking-ledger exhaustion, not total currency.
 
 ## Related specs

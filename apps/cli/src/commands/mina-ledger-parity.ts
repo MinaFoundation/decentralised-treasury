@@ -499,6 +499,9 @@ export async function computeO1jsLedgerRoot(
 async function computeExpectedVotingRoot(accounts: Account[]): Promise<Field> {
   const balancesByDelegate = new Map<string, bigint>();
   for (const account of accounts) {
+    if (!account.tokenId.equals(TokenId.default).toBoolean()) {
+      continue;
+    }
     const delegate = account.delegate.toBase58();
     balancesByDelegate.set(
       delegate,

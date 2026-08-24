@@ -6,7 +6,10 @@ import {
 } from "../../src/provable/staking-ledger-to-voting-ledger.js";
 import { Account } from "../../src/provable/account.js";
 import { createStakingLedgerToVotingLedgerTestContext } from "./context/staking-ledger-to-voting-ledger-context.js";
-import { Provable } from "o1js";
+import { Field, Provable, PublicKey, TokenId, UInt64 } from "o1js";
+
+const DEVNET_EMPTY_DELEGATE_BALANCE_BEFORE_OVERFLOW = 191_712_214_936_721_048n;
+const DEVNET_CUSTOM_TOKEN_BALANCE = 18_446_739_073_709_551_615n;
 
 test("staking ledger to voting ledger", async (t) => {
   let context: Awaited<
@@ -51,6 +54,79 @@ test("staking ledger to voting ledger", async (t) => {
       "digest proof should not be exhausted",
     );
   });
+
+  await t.test(
+    "ignores custom-token balances that overflow when combined",
+    async () => {
+      const { testAccounts, digest, votingLedger, stakingLedger } = context;
+      const customBalances = [
+        DEVNET_EMPTY_DELEGATE_BALANCE_BEFORE_OVERFLOW,
+        DEVNET_CUSTOM_TOKEN_BALANCE,
+        1n,
+        2n,
+        3n,
+      ];
+
+      for (let index = 0; index < ACCOUNT_BATCH_SIZE; index++) {
+        const account = testAccounts[index]!;
+        account.tokenId = Field(10_000 + index);
+        account.delegate = PublicKey.empty();
+        account.balance = UInt64.from(customBalances[index]!);
+        await stakingLedger.setAccount(BigInt(index), account);
+        await stakingLedger.setLeaf(BigInt(index), account);
+      }
+
+      const initialVotingLedgerRoot = await votingLedger.getRoot();
+      const proof = await digest(testAccounts.slice(0, ACCOUNT_BATCH_SIZE));
+
+      assert.equal(
+        proof.publicOutput.votingLedgerRoot.toString(),
+        initialVotingLedgerRoot.toString(),
+        "custom-token accounts must not change the voting ledger root",
+      );
+      assert.equal(
+        (
+          await votingLedger.getVotingAccount(PublicKey.empty().toBase58())
+        ).balance.toBigInt(),
+        0n,
+        "custom-token balances must not accumulate under the empty delegate",
+      );
+    },
+  );
+
+  await t.test(
+    "uses token id rather than delegate shape to select voting balances",
+    async () => {
+      const { testAccounts, digest, votingLedger, stakingLedger } = context;
+      const sharedDelegate = testAccounts[1]!.pk;
+
+      for (let index = 0; index < ACCOUNT_BATCH_SIZE; index++) {
+        const account = testAccounts[index]!;
+        account.balance = UInt64.zero;
+        if (index === 0) {
+          account.tokenId = Field(20_000);
+          account.delegate = sharedDelegate;
+          account.balance = UInt64.from(DEVNET_CUSTOM_TOKEN_BALANCE);
+        } else if (index === 1) {
+          account.tokenId = TokenId.default;
+          account.delegate = sharedDelegate;
+          account.balance = UInt64.from(25n);
+        }
+        await stakingLedger.setAccount(BigInt(index), account);
+        await stakingLedger.setLeaf(BigInt(index), account);
+      }
+
+      await digest(testAccounts.slice(0, ACCOUNT_BATCH_SIZE));
+
+      assert.equal(
+        (
+          await votingLedger.getVotingAccount(sharedDelegate.toBase58())
+        ).balance.toBigInt(),
+        25n,
+        "only the default-token account must contribute to voting weight",
+      );
+    },
+  );
 
   await t.test("merge", async () => {
     const { testAccounts, digest, votingLedger, stakingLedger } = context;
