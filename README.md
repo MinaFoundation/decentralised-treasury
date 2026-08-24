@@ -57,9 +57,12 @@ pnpm install
 
 The workspace uses an `o1js` fork from GitHub:
 
-- `git+https://github.com/maht0rz/o1js.git#feature/mesa-support`
+- `git+https://github.com/maht0rz/o1js.git#87bc121acad6ba4d81df499e49ff44800c130ded`
 
-This is referenced by `apps/cli`, `apps/api`, and `packages/sdk`.
+This commit is based on `o1js@3.0.0`. It includes Mesa support and
+the native Node.js prover.
+
+The workspace packages use this pinned commit.
 
 ## Common Workspace Commands
 

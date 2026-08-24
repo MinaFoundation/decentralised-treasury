@@ -51,6 +51,6 @@
     "typescript": "5.9.2"
   },
   "peerDependencies": {
-    "o1js": "github:maht0rz/o1js#23cb007e89880a8345e6797f40790ef479d70f7c"
+    "o1js": "github:maht0rz/o1js#87bc121acad6ba4d81df499e49ff44800c130ded"
   }
 }
