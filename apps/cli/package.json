@@ -15,8 +15,9 @@
     "test:ledger:device": "LEDGER_TEST_MODE=device node --loader ts-node/esm --test test/ledger/ledger-local-blockchain.test.ts"
   },
   "dependencies": {
-    "@ledgerhq/hw-transport-node-hid": "6.33.0",
+    "@aws-sdk/client-s3": "^3.1117.0",
     "@keyv/sqlite": "^4.0.8",
+    "@ledgerhq/hw-transport-node-hid": "6.33.0",
     "@repo/sdk": "workspace:*",
     "@zondax/ledger-mina-js": "0.2.0",
     "commander": "^14.0.0"

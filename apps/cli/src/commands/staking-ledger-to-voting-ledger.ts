@@ -1,9 +1,15 @@
 import { Command, Option } from "commander";
 import { SqliteStakingLedgerToVotingLedgerService } from "@repo/sdk/src/services/sqlite/sqlite-staking-ledger-to-voting-ledger-service.js";
+import { getSqliteDbPath } from "@repo/sdk/src/storage/sqlite/sqlite-db-path.js";
 import { logger, provableLog } from "@repo/sdk/src/index.js";
-import { mkdir, writeFile } from "node:fs/promises";
+import { mkdir, unlink, writeFile } from "node:fs/promises";
 import { dirname } from "node:path";
 import { parseIntOption } from "./option-parsers.js";
+import {
+  cleanCheckpoint,
+  pullCheckpoint,
+  pushCheckpoint,
+} from "../lib/s3-checkpoint.js";
 
 interface BaseOptions {
   lifecycleId: string;
@@ -69,32 +75,178 @@ export async function traceDigest({
   lifecycleId,
   startIndex,
   endIndex,
+  checkpointInterval,
+  checkpointS3Uri,
+  ledgerHash,
 }: Pick<BaseOptions, "lifecycleId"> & {
   startIndex?: number;
   endIndex?: number;
+  checkpointInterval?: number;
+  checkpointS3Uri?: string;
+  ledgerHash?: string;
 }) {
+  if (checkpointS3Uri && !checkpointInterval) {
+    throw new Error(
+      "--checkpoint-s3-uri requires --checkpoint-interval to be set",
+    );
+  }
+  const checkpointEnabled = Boolean(checkpointS3Uri && checkpointInterval);
+
   const startedAt = Date.now();
   let tracedCount = 0;
+  let lastTracedIndex = (startIndex ?? 0) - 1;
   logger.info(
-    `[staking-ledger-to-voting-ledger:trace-digest] starting (lifecycleId=${lifecycleId}, startIndex=${String(startIndex ?? 0)}, endIndex=${String(endIndex ?? Infinity)})`,
+    `[staking-ledger-to-voting-ledger:trace-digest] starting (lifecycleId=${lifecycleId}, startIndex=${String(startIndex ?? 0)}, endIndex=${String(endIndex ?? Infinity)}${checkpointEnabled ? `, checkpointInterval=${checkpointInterval}` : ""})`,
   );
+  const service = new SqliteStakingLedgerToVotingLedgerService({
+    lifecycleId,
+  });
+  let sigtermHandler: (() => void) | undefined;
+  try {
+    await service.start();
+
+    if (checkpointEnabled && ledgerHash) {
+      await service.writeCheckpointLedgerHash(ledgerHash);
+    }
+
+    // Serializes checkpoints (never two in flight) and gives a single promise
+    // to await at the end, so the process never exits with an upload still
+    // in progress. A failed checkpoint is logged and swallowed - losing one
+    // interval's snapshot should not fail an otherwise-successful run, since
+    // the previous checkpoint (or a from-scratch restart) is still available.
+    let checkpointChain: Promise<void> = Promise.resolve();
+    const scheduleCheckpoint = (index: number): Promise<void> => {
+      checkpointChain = checkpointChain
+        .then(async () => {
+          await service.checkpointWal();
+          await pushCheckpoint(checkpointS3Uri!, lifecycleId, getSqliteDbPath(lifecycleId));
+          logger.info(
+            `[staking-ledger-to-voting-ledger:trace-digest] checkpointed lifecycleId=${lifecycleId} through index=${index}`,
+          );
+        })
+        .catch((error) => {
+          logger.error(
+            `[staking-ledger-to-voting-ledger:trace-digest] checkpoint at index=${index} failed: ${String(error)} - continuing without it`,
+          );
+        });
+      return checkpointChain;
+    };
+
+    if (checkpointEnabled) {
+      // Kubernetes sends SIGTERM before a spot reclaim tears the pod down, so
+      // taking one immediate checkpoint here bounds the lost work to whatever
+      // happens between this handler and the grace period expiring, rather
+      // than the full interval - the periodic checkpoint below is the
+      // fallback for a hard kill that skips SIGTERM entirely.
+      sigtermHandler = () => {
+        logger.info(
+          "[staking-ledger-to-voting-ledger:trace-digest] SIGTERM received - checkpointing before exit",
+        );
+        void scheduleCheckpoint(lastTracedIndex).finally(() => {
+          process.exit(143);
+        });
+      };
+      process.once("SIGTERM", sigtermHandler);
+    }
+
+    let sinceCheckpoint = 0;
+    await service.traceDigest(startIndex, endIndex, (index) => {
+      tracedCount += 1;
+      lastTracedIndex = index;
+      logger.info(
+        `[staking-ledger-to-voting-ledger:trace-digest] traced index=${index} (count=${tracedCount})`,
+      );
+      if (checkpointEnabled) {
+        sinceCheckpoint += 1;
+        if (sinceCheckpoint >= checkpointInterval!) {
+          sinceCheckpoint = 0;
+          void scheduleCheckpoint(index);
+        }
+      }
+    });
+
+    if (checkpointEnabled) {
+      // Covers the tail: the run may finish partway through an interval, and
+      // that last partial batch would otherwise never get checkpointed.
+      await scheduleCheckpoint(lastTracedIndex);
+    }
+
+    logger.info(
+      `[staking-ledger-to-voting-ledger:trace-digest] done (count=${tracedCount}, elapsedMs=${Date.now() - startedAt})`,
+    );
+  } finally {
+    if (sigtermHandler) {
+      process.removeListener("SIGTERM", sigtermHandler);
+    }
+    await service.close();
+  }
+}
+
+// Attempts to resume lifecycleId's trace-digest from its last checkpoint.
+// Prints RESUME_INDEX=<n> and leaves a validated, downloaded checkpoint in
+// place when one exists and matches expectedLedgerHash; otherwise prints
+// FRESH and leaves no local file behind (removing one that failed to
+// validate), so the caller always starts clean in that case.
+export async function checkpointRestore({
+  lifecycleId,
+  expectedLedgerHash,
+  s3Uri,
+}: {
+  lifecycleId: string;
+  expectedLedgerHash: string;
+  s3Uri: string;
+}) {
+  const destinationPath = getSqliteDbPath(lifecycleId);
+  const found = await pullCheckpoint(s3Uri, lifecycleId, destinationPath);
+  if (!found) {
+    logger.info(
+      `[staking-ledger-to-voting-ledger:checkpoint-restore] no checkpoint for lifecycleId=${lifecycleId}`,
+    );
+    process.stdout.write("FRESH\n");
+    return;
+  }
+
+  let resumeIndex: number | undefined;
   const service = new SqliteStakingLedgerToVotingLedgerService({
     lifecycleId,
   });
   try {
     await service.start();
-    await service.traceDigest(startIndex, endIndex, (index) => {
-      tracedCount += 1;
+    const storedLedgerHash = await service.readCheckpointLedgerHash();
+    if (storedLedgerHash === expectedLedgerHash) {
+      resumeIndex = await service.getTracedIndexCount();
+    } else {
       logger.info(
-        `[staking-ledger-to-voting-ledger:trace-digest] traced index=${index} (count=${tracedCount})`,
+        `[staking-ledger-to-voting-ledger:checkpoint-restore] checkpoint for lifecycleId=${lifecycleId} was for ledgerHash=${String(storedLedgerHash)}, expected ${expectedLedgerHash} - discarding`,
       );
-    });
-    logger.info(
-      `[staking-ledger-to-voting-ledger:trace-digest] done (count=${tracedCount}, elapsedMs=${Date.now() - startedAt})`,
-    );
+    }
   } finally {
     await service.close();
   }
+
+  if (resumeIndex === undefined) {
+    await unlink(destinationPath).catch(() => {});
+    process.stdout.write("FRESH\n");
+    return;
+  }
+
+  logger.info(
+    `[staking-ledger-to-voting-ledger:checkpoint-restore] restored lifecycleId=${lifecycleId} at index=${resumeIndex}`,
+  );
+  process.stdout.write(`RESUME_INDEX=${resumeIndex}\n`);
+}
+
+export async function checkpointClean({
+  lifecycleId,
+  s3Uri,
+}: {
+  lifecycleId: string;
+  s3Uri: string;
+}) {
+  await cleanCheckpoint(s3Uri, lifecycleId);
+  logger.info(
+    `[staking-ledger-to-voting-ledger:checkpoint-clean] removed checkpoint for lifecycleId=${lifecycleId} (if any existed)`,
+  );
 }
 
 export async function proveDigest({
@@ -244,7 +396,69 @@ export default function stakingLedgerToVotingLedgerCommandFactory(
         .env("END_INDEX")
         .argParser(parseIntOption),
     )
+    .addOption(
+      new Option(
+        "--checkpoint-interval <checkpoint-interval>",
+        "Indices between S3 checkpoints. Requires --checkpoint-s3-uri.",
+      )
+        .env("CHECKPOINT_INTERVAL")
+        .argParser(parseIntOption),
+    )
+    .addOption(
+      new Option(
+        "--checkpoint-s3-uri <checkpoint-s3-uri>",
+        "S3 URI prefix to checkpoint progress under, e.g. s3://bucket/devnet",
+      ).env("CHECKPOINT_S3_URI"),
+    )
+    .addOption(
+      new Option(
+        "--ledger-hash <ledger-hash>",
+        "Ledger hash this run traces, recorded in the checkpoint for later validation",
+      ).env("LEDGER_HASH"),
+    )
     .action(traceDigest);
+
+  command
+    .command("checkpoint-restore")
+    .addOption(
+      new Option("--lifecycle-id <lifecycle-id>", "Lifecycle ID")
+        .env("LIFECYCLE_ID")
+        .makeOptionMandatory(),
+    )
+    .addOption(
+      new Option(
+        "--expected-ledger-hash <expected-ledger-hash>",
+        "Ledger hash the restored checkpoint must match to be resumable",
+      )
+        .env("EXPECTED_LEDGER_HASH")
+        .makeOptionMandatory(),
+    )
+    .addOption(
+      new Option(
+        "--s3-uri <s3-uri>",
+        "S3 URI prefix checkpoints are stored under",
+      )
+        .env("CHECKPOINT_S3_URI")
+        .makeOptionMandatory(),
+    )
+    .action(checkpointRestore);
+
+  command
+    .command("checkpoint-clean")
+    .addOption(
+      new Option("--lifecycle-id <lifecycle-id>", "Lifecycle ID")
+        .env("LIFECYCLE_ID")
+        .makeOptionMandatory(),
+    )
+    .addOption(
+      new Option(
+        "--s3-uri <s3-uri>",
+        "S3 URI prefix checkpoints are stored under",
+      )
+        .env("CHECKPOINT_S3_URI")
+        .makeOptionMandatory(),
+    )
+    .action(checkpointClean);
 
   command
     .command("prove-digest")

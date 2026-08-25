@@ -213,6 +213,63 @@ export class SqliteStakingLedgerToVotingLedgerService
     return this.prover;
   }
 
+  // Number of trace rows written so far. Trace-digest writes exactly one row
+  // per index, synchronously, before advancing - so this doubles as the next
+  // unwritten index, which is what a checkpoint restore resumes from.
+  public async getTracedIndexCount(): Promise<number> {
+    if (!this.traceStorage) {
+      throw new Error(
+        "SqliteStakingLedgerToVotingLedgerService.start() must be called before getTracedIndexCount()",
+      );
+    }
+    return this.traceStorage.count();
+  }
+
+  // Forces every WAL-resident commit into the main database file and empties
+  // the WAL, so the .sqlite file alone (no accompanying -wal/-shm) is a
+  // complete, self-consistent snapshot safe to copy or upload. Needed because
+  // applyFastSqlitePragmas() runs in WAL mode: without this, a mid-run copy of
+  // the plain .sqlite file can silently miss the most recently committed rows.
+  public async checkpointWal(): Promise<void> {
+    if (!this.sqliteStore) {
+      throw new Error(
+        "SqliteStakingLedgerToVotingLedgerService.start() must be called before checkpointWal()",
+      );
+    }
+    await this.sqliteStore.query("PRAGMA wal_checkpoint(TRUNCATE)");
+  }
+
+  // Tags the database with the ledger hash it was hydrated against, so a
+  // later checkpoint restore can tell a compatible checkpoint from one left
+  // over for a lifecycle that has since been re-pointed at a different ledger.
+  public async writeCheckpointLedgerHash(ledgerHash: string): Promise<void> {
+    await this.ensureCheckpointMetaTable();
+    await this.sqliteStore!.query(
+      `INSERT INTO checkpoint_meta (key, value) VALUES ('ledgerHash', ?)
+       ON CONFLICT(key) DO UPDATE SET value = excluded.value`,
+      ledgerHash,
+    );
+  }
+
+  public async readCheckpointLedgerHash(): Promise<string | undefined> {
+    await this.ensureCheckpointMetaTable();
+    const rows = (await this.sqliteStore!.query(
+      "SELECT value FROM checkpoint_meta WHERE key = 'ledgerHash'",
+    )) as { value?: string }[];
+    return rows[0]?.value;
+  }
+
+  private async ensureCheckpointMetaTable(): Promise<void> {
+    if (!this.sqliteStore) {
+      throw new Error(
+        "SqliteStakingLedgerToVotingLedgerService.start() must be called before touching checkpoint_meta",
+      );
+    }
+    await this.sqliteStore.query(
+      "CREATE TABLE IF NOT EXISTS checkpoint_meta (key TEXT PRIMARY KEY, value TEXT NOT NULL)",
+    );
+  }
+
   public async close(): Promise<void> {
     await this.stakingLedger?.close();
     await this.votingLedger?.close();

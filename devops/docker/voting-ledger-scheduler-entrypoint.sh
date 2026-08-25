@@ -40,6 +40,22 @@ POLL_INTERVAL_SECONDS="${VOTING_LEDGER_SCHEDULER_POLL_INTERVAL_SECONDS:-30}"
 FAILURE_BACKOFF_BASE_SECONDS="${FAILURE_BACKOFF_BASE_SECONDS:-300}"
 FAILURE_BACKOFF_MAX_SECONDS="${FAILURE_BACKOFF_MAX_SECONDS:-21600}"
 
+# Optional trace-digest checkpointing. Off unless both are set (and
+# CHECKPOINT_INTERVAL is a positive integer) - unset is the same as today's
+# behaviour: hydrate, verify, trace-digest start-to-finish in one CLI call.
+# When on, a run interrupted mid-trace-digest resumes from its last
+# checkpoint instead of restarting from index 0, which is what makes running
+# this workload on spot capacity viable - see `checkpointing_enabled()` and
+# the branch on `resume_index` in process_candidate().
+CHECKPOINT_S3_URI="${CHECKPOINT_S3_URI:-}"
+CHECKPOINT_INTERVAL="${CHECKPOINT_INTERVAL:-}"
+
+checkpointing_enabled() {
+  [ -n "$CHECKPOINT_S3_URI" ] || return 1
+  [ -n "$CHECKPOINT_INTERVAL" ] || return 1
+  [ "$CHECKPOINT_INTERVAL" -gt 0 ] 2>/dev/null
+}
+
 # Base58 (Mina omits 0, O, I, l), leading 'j' for a ledger hash. Anything that
 # does not match is a corrupt or truncated pointer and is refused loudly rather
 # than passed downstream as an empty string.
@@ -201,9 +217,13 @@ find_unprocessed_lifecycles() {
 }
 
 # Processes one lifecycle end-to-end: hydrate, verify hash, trace-digest, mark
-# done. Always resets any prior partial state first, since trace-digest always
-# resumes from index 0 - a dirty retry would replay already-committed batches
-# against advanced state.
+# done. Without checkpointing, always resets any prior partial state first,
+# since trace-digest then always resumes from index 0 - a dirty retry would
+# replay already-committed batches against advanced state. With checkpointing
+# on, a checkpoint restore is attempted first; hydration only runs when there
+# is none to resume from (checkpoint-restore validates the checkpoint is for
+# this exact ledger hash before trusting it, so a stale one from a re-pointed
+# lifecycle is discarded rather than resumed).
 process_candidate() {
   lifecycle_id=$1
 
@@ -219,38 +239,73 @@ process_candidate() {
   fi
 
   db_path=$(db_path "$lifecycle_id")
-  rm -f "$db_path" "$db_path-journal" "$db_path-wal" "$db_path-shm"
 
-  step_started_at=$(now_epoch_seconds)
-  if ! run_cli staking-ledger from-file \
-    --lifecycle-id "$lifecycle_id" \
-    --staking-ledger-path "$staking_ledger_path"; then
-    record_failure "$lifecycle_id" "staking-ledger from-file failed after $(( $(now_epoch_seconds) - step_started_at ))s"
-    return 1
+  resume_index=""
+  if checkpointing_enabled; then
+    if restore_output=$(run_cli staking-ledger-to-voting-ledger checkpoint-restore \
+      --lifecycle-id "$lifecycle_id" \
+      --expected-ledger-hash "$ledger_hash" \
+      --s3-uri "$CHECKPOINT_S3_URI"); then
+      resume_index=$(printf '%s\n' "$restore_output" | sed -n 's/^RESUME_INDEX=\([0-9][0-9]*\)$/\1/p')
+    else
+      log_warn "checkpoint-restore failed for lifecycleId=${lifecycle_id} - falling back to a fresh hydration"
+    fi
   fi
-  log_info "staking-ledger from-file done for lifecycleId=${lifecycle_id} in $(( $(now_epoch_seconds) - step_started_at ))s"
 
-  # The CLI does the base58 comparison itself and exits non-zero on mismatch,
-  # so there is no stdout scraping here. A mismatch now means the payload is
-  # wrong or corrupt - the expected value came from the chain, not from a
-  # filename - so the payload is dropped and the sidecar re-fetches it.
-  step_started_at=$(now_epoch_seconds)
-  if ! run_cli staking-ledger get-root-hash \
-    --lifecycle-id "$lifecycle_id" \
-    --expected-root-hash "$ledger_hash"; then
-    log_error "root hash mismatch for lifecycleId=${lifecycle_id}: hydrated ledger does not root to ${ledger_hash} - discarding the payload so it is re-fetched"
-    rm -f "$staking_ledger_path"
-    record_failure "$lifecycle_id" "root hash mismatch against ${ledger_hash}"
-    return 1
+  if [ -n "$resume_index" ]; then
+    log_info "resuming lifecycleId=${lifecycle_id} from checkpoint at index=${resume_index} (skipping hydration)"
+  else
+    rm -f "$db_path" "$db_path-journal" "$db_path-wal" "$db_path-shm"
+
+    step_started_at=$(now_epoch_seconds)
+    if ! run_cli staking-ledger from-file \
+      --lifecycle-id "$lifecycle_id" \
+      --staking-ledger-path "$staking_ledger_path"; then
+      record_failure "$lifecycle_id" "staking-ledger from-file failed after $(( $(now_epoch_seconds) - step_started_at ))s"
+      return 1
+    fi
+    log_info "staking-ledger from-file done for lifecycleId=${lifecycle_id} in $(( $(now_epoch_seconds) - step_started_at ))s"
+
+    # The CLI does the base58 comparison itself and exits non-zero on mismatch,
+    # so there is no stdout scraping here. A mismatch now means the payload is
+    # wrong or corrupt - the expected value came from the chain, not from a
+    # filename - so the payload is dropped and the sidecar re-fetches it.
+    step_started_at=$(now_epoch_seconds)
+    if ! run_cli staking-ledger get-root-hash \
+      --lifecycle-id "$lifecycle_id" \
+      --expected-root-hash "$ledger_hash"; then
+      log_error "root hash mismatch for lifecycleId=${lifecycle_id}: hydrated ledger does not root to ${ledger_hash} - discarding the payload so it is re-fetched"
+      rm -f "$staking_ledger_path"
+      record_failure "$lifecycle_id" "root hash mismatch against ${ledger_hash}"
+      return 1
+    fi
+    log_info "root hash verified for lifecycleId=${lifecycle_id}: ${ledger_hash} (in $(( $(now_epoch_seconds) - step_started_at ))s)"
+
+    resume_index=0
   fi
-  log_info "root hash verified for lifecycleId=${lifecycle_id}: ${ledger_hash} (in $(( $(now_epoch_seconds) - step_started_at ))s)"
 
   step_started_at=$(now_epoch_seconds)
-  if ! run_cli staking-ledger-to-voting-ledger trace-digest --lifecycle-id "$lifecycle_id"; then
+  set -- staking-ledger-to-voting-ledger trace-digest \
+    --lifecycle-id "$lifecycle_id" \
+    --start-index "$resume_index"
+  if checkpointing_enabled; then
+    set -- "$@" \
+      --checkpoint-interval "$CHECKPOINT_INTERVAL" \
+      --checkpoint-s3-uri "$CHECKPOINT_S3_URI" \
+      --ledger-hash "$ledger_hash"
+  fi
+  if ! run_cli "$@"; then
     record_failure "$lifecycle_id" "trace-digest failed after $(( $(now_epoch_seconds) - step_started_at ))s"
     return 1
   fi
   log_info "trace-digest done for lifecycleId=${lifecycle_id} in $(( $(now_epoch_seconds) - step_started_at ))s"
+
+  if checkpointing_enabled; then
+    run_cli staking-ledger-to-voting-ledger checkpoint-clean \
+      --lifecycle-id "$lifecycle_id" \
+      --s3-uri "$CHECKPOINT_S3_URI" \
+      || log_warn "failed to remove the checkpoint for lifecycleId=${lifecycle_id} - it will sit in S3 until overwritten by a future run"
+  fi
 
   rm -f "$(failed_marker_path "$lifecycle_id")"
 
@@ -303,6 +358,11 @@ startup_banner() {
   log_info "  stakingLedgersDirectory=${STAKING_LEDGERS_DIRECTORY}"
   log_info "  failureBackoff=${FAILURE_BACKOFF_BASE_SECONDS}s..${FAILURE_BACKOFF_MAX_SECONDS}s"
   log_info "  selection is keyed on ledger hash; this container parses no epoch numbers"
+  if checkpointing_enabled; then
+    log_info "  checkpointing enabled: interval=${CHECKPOINT_INTERVAL} indices, s3Uri=${CHECKPOINT_S3_URI}"
+  else
+    log_info "  checkpointing disabled: an interrupted trace-digest restarts from index 0"
+  fi
 }
 
 case "${1:-}" in
