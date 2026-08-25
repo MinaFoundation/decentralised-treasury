@@ -19,6 +19,7 @@
     "@keyv/sqlite": "^4.0.8",
     "@ledgerhq/hw-transport-node-hid": "6.33.0",
     "@repo/sdk": "workspace:*",
+    "@smithy/node-http-handler": "^4.11.3",
     "@zondax/ledger-mina-js": "0.2.0",
     "commander": "^14.0.0"
   },

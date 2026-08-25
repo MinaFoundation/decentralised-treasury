@@ -109,27 +109,40 @@ export async function traceDigest({
       await service.writeCheckpointLedgerHash(ledgerHash);
     }
 
-    // Serializes checkpoints (never two in flight) and gives a single promise
-    // to await at the end, so the process never exits with an upload still
-    // in progress. A failed checkpoint is logged and swallowed - losing one
-    // interval's snapshot should not fail an otherwise-successful run, since
-    // the previous checkpoint (or a from-scratch restart) is still available.
-    let checkpointChain: Promise<void> = Promise.resolve();
+    // Never runs two checkpoints concurrently, and never queues one behind
+    // another indefinitely. pushCheckpoint() has a hard timeout, so a stuck
+    // attempt (observed happening in practice - an upload that neither
+    // completed nor rejected) always eventually clears; a serial queue
+    // instead let that one stuck attempt silently block every checkpoint for
+    // the rest of the run, since each new one just piled up behind it. A
+    // failed checkpoint is logged and swallowed - losing one interval's
+    // snapshot should not fail an otherwise-successful run, since the
+    // previous checkpoint (or a from-scratch restart) is still available.
+    let checkpointInFlight: Promise<void> | null = null;
+    const runCheckpoint = async (index: number): Promise<void> => {
+      try {
+        await service.checkpointWal();
+        await pushCheckpoint(checkpointS3Uri!, lifecycleId, getSqliteDbPath(lifecycleId));
+        logger.info(
+          `[staking-ledger-to-voting-ledger:trace-digest] checkpointed lifecycleId=${lifecycleId} through index=${index}`,
+        );
+      } catch (error) {
+        logger.error(
+          `[staking-ledger-to-voting-ledger:trace-digest] checkpoint at index=${index} failed: ${String(error)} - continuing without it`,
+        );
+      }
+    };
     const scheduleCheckpoint = (index: number): Promise<void> => {
-      checkpointChain = checkpointChain
-        .then(async () => {
-          await service.checkpointWal();
-          await pushCheckpoint(checkpointS3Uri!, lifecycleId, getSqliteDbPath(lifecycleId));
-          logger.info(
-            `[staking-ledger-to-voting-ledger:trace-digest] checkpointed lifecycleId=${lifecycleId} through index=${index}`,
-          );
-        })
-        .catch((error) => {
-          logger.error(
-            `[staking-ledger-to-voting-ledger:trace-digest] checkpoint at index=${index} failed: ${String(error)} - continuing without it`,
-          );
-        });
-      return checkpointChain;
+      if (checkpointInFlight) {
+        return checkpointInFlight;
+      }
+      const attempt = runCheckpoint(index).finally(() => {
+        if (checkpointInFlight === attempt) {
+          checkpointInFlight = null;
+        }
+      });
+      checkpointInFlight = attempt;
+      return attempt;
     };
 
     if (checkpointEnabled) {

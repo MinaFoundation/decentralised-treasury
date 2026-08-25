@@ -4,9 +4,19 @@ import {
   PutObjectCommand,
   S3Client,
 } from "@aws-sdk/client-s3";
+import { NodeHttpHandler } from "@smithy/node-http-handler";
 import { createReadStream, createWriteStream } from "node:fs";
 import { pipeline } from "node:stream/promises";
 import type { Readable } from "node:stream";
+
+// A checkpoint upload observed hanging indefinitely in practice (no error, no
+// completion - the process just sat there), which stalled every checkpoint
+// for the rest of a run since scheduleCheckpoint() in the CLI command chains
+// attempts onto one promise. requestTimeout bounds a single HTTP
+// request/response; a hang isn't guaranteed to trip it (it depends on where
+// the stall happens), so callers additionally race every send() against
+// CHECKPOINT_UPLOAD_TIMEOUT_MS via AbortController as a hard backstop.
+const CHECKPOINT_UPLOAD_TIMEOUT_MS = 10 * 60 * 1000;
 
 // Trace-digest checkpoints are a resumability aid, not the published voting
 // ledger: they live under a distinct sub-prefix with a distinct suffix
@@ -41,13 +51,36 @@ function checkpointLocation(prefixUri: string, lifecycleId: string): S3Location 
 
 let cachedClient: S3Client | undefined;
 function client(): S3Client {
-  cachedClient ??= new S3Client({});
+  cachedClient ??= new S3Client({
+    requestHandler: new NodeHttpHandler({
+      requestTimeout: CHECKPOINT_UPLOAD_TIMEOUT_MS,
+      connectionTimeout: 30_000,
+    }),
+  });
   return cachedClient;
 }
 
 function isNotFound(error: unknown): boolean {
   const name = (error as { name?: string } | undefined)?.name;
   return name === "NoSuchKey" || name === "NotFound";
+}
+
+// Hard backstop: aborts the command if it hasn't settled within timeoutMs,
+// regardless of what the underlying HTTP client's own timeout does or doesn't
+// catch. Without this, a hung request never rejects, so a promise chain that
+// serializes attempts (as the trace-digest checkpoint scheduler does) can get
+// stuck behind it forever.
+async function withTimeout<T>(
+  run: (signal: AbortSignal) => Promise<T>,
+  timeoutMs: number,
+): Promise<T> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    return await run(controller.signal);
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
 // Downloads the checkpoint for lifecycleId to destinationPath. Returns false
@@ -59,8 +92,12 @@ export async function pullCheckpoint(
 ): Promise<boolean> {
   const { bucket, key } = checkpointLocation(prefixUri, lifecycleId);
   try {
-    const response = await client().send(
-      new GetObjectCommand({ Bucket: bucket, Key: key }),
+    const response = await withTimeout(
+      (signal) =>
+        client().send(new GetObjectCommand({ Bucket: bucket, Key: key }), {
+          abortSignal: signal,
+        }),
+      CHECKPOINT_UPLOAD_TIMEOUT_MS,
     );
     if (!response.Body) {
       return false;
@@ -84,12 +121,17 @@ export async function pushCheckpoint(
   sourcePath: string,
 ): Promise<void> {
   const { bucket, key } = checkpointLocation(prefixUri, lifecycleId);
-  await client().send(
-    new PutObjectCommand({
-      Bucket: bucket,
-      Key: key,
-      Body: createReadStream(sourcePath),
-    }),
+  await withTimeout(
+    (signal) =>
+      client().send(
+        new PutObjectCommand({
+          Bucket: bucket,
+          Key: key,
+          Body: createReadStream(sourcePath),
+        }),
+        { abortSignal: signal },
+      ),
+    CHECKPOINT_UPLOAD_TIMEOUT_MS,
   );
 }
 
@@ -100,7 +142,13 @@ export async function cleanCheckpoint(
 ): Promise<void> {
   const { bucket, key } = checkpointLocation(prefixUri, lifecycleId);
   try {
-    await client().send(new DeleteObjectCommand({ Bucket: bucket, Key: key }));
+    await withTimeout(
+      (signal) =>
+        client().send(new DeleteObjectCommand({ Bucket: bucket, Key: key }), {
+          abortSignal: signal,
+        }),
+      CHECKPOINT_UPLOAD_TIMEOUT_MS,
+    );
   } catch (error) {
     if (!isNotFound(error)) {
       throw error;
