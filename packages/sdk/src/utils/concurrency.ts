@@ -12,6 +12,36 @@
 // grows linearly with ledger size rather than with available proving
 // capacity, and reliably exhausted the default V8 heap long before the
 // ledger did.
+// A counting semaphore for work that is driven by callbacks/recursion rather
+// than a pullable list of items - forEachWithConcurrency's pull-based loop
+// doesn't fit that shape. `acquire()` resolves once fewer than `limit`
+// holders are active; `release()` frees the slot for the next waiter.
+export class Semaphore {
+  private active = 0;
+  private readonly waiters: Array<() => void> = [];
+
+  constructor(private readonly limit: number) {
+    if (limit < 1) {
+      throw new Error(`concurrency limit must be at least 1, got ${limit}`);
+    }
+  }
+
+  async acquire(): Promise<void> {
+    if (this.active < this.limit) {
+      this.active++;
+      return;
+    }
+    await new Promise<void>((resolve) => this.waiters.push(resolve));
+    this.active++;
+  }
+
+  release(): void {
+    this.active--;
+    const next = this.waiters.shift();
+    next?.();
+  }
+}
+
 export async function forEachWithConcurrency<T>(
   items: AsyncIterable<T> | Iterable<T>,
   limit: number,

@@ -2,6 +2,7 @@ import { Task, TaskQueue } from "../task-queue.js";
 import { BatchStorage } from "../../storage/batch-storage.js";
 import { KeyValueBatchStorage } from "../../storage/batch-key-value-storage.js";
 import { provableLog } from "../../logging/logger.js";
+import { Semaphore } from "../../utils/concurrency.js";
 
 export interface MergeProofStorage<ProofType> extends BatchStorage {
   getProof(id: string): Promise<ProofType | undefined>;
@@ -15,6 +16,15 @@ export interface MergeProofStorage<ProofType> extends BatchStorage {
 }
 
 export abstract class MergeProofOrchestrator<ProofType> {
+  // Same reasoning as StakingLedgerToVotingLedgerProver.DEFAULT_DIGEST_CONCURRENCY:
+  // merge() used to fire an addTask() for every mergeable pair it found while
+  // seeding its pending-proof list, with no bound on how many were in flight
+  // at once - each holding a pair of deserialized proof objects and a set of
+  // queue-event listeners alive until that specific merge completed. For an
+  // 18,000+ leaf tree that is the same unbounded-heap-growth shape as the
+  // digest bug, just with heavier payloads per in-flight item.
+  public static readonly DEFAULT_MERGE_CONCURRENCY = 256;
+
   private static asMergeTaskOutput<ProofType>(value: unknown) {
     return value as { proof: ProofType };
   }
@@ -45,6 +55,7 @@ export abstract class MergeProofOrchestrator<ProofType> {
 
   public async merge(
     onMergeComplete?: (index: number, proof: ProofType) => void,
+    concurrency: number = MergeProofOrchestrator.DEFAULT_MERGE_CONCURRENCY,
   ) {
     // let availableWorkers = WORKER_COUNT;
     let mergeCount = await this.proofStorage.mergeCount();
@@ -76,6 +87,7 @@ export abstract class MergeProofOrchestrator<ProofType> {
     let callbackQueue: Promise<void> = Promise.resolve();
     let callbackError: Error | undefined;
     const mergeTaskPromises: Promise<void>[] = [];
+    const mergeSemaphore = new Semaphore(concurrency);
 
     await this.taskQueue.obliterate();
 
@@ -104,6 +116,13 @@ export abstract class MergeProofOrchestrator<ProofType> {
       // await waitForWorkers();
       //   availableWorkers--;
       provableLog("adding merge task", proof1.index, proof2.index);
+
+      // Bounds how many merge tasks (and their held proof pairs / queue-event
+      // listeners) this process keeps in flight at once - see
+      // DEFAULT_MERGE_CONCURRENCY. Acquired here rather than at the top of
+      // merge() so the pending-proof bookkeeping above still runs
+      // immediately; only the actual enqueue waits for a free slot.
+      await mergeSemaphore.acquire();
 
       const taskPromise = this.taskQueue
         .addTask(
@@ -158,6 +177,9 @@ export abstract class MergeProofOrchestrator<ProofType> {
           // addPendingProof(proof2);
           callbackError =
             error instanceof Error ? error : new Error(String(error));
+        })
+        .finally(() => {
+          mergeSemaphore.release();
         });
       mergeTaskPromises.push(taskPromise);
     };
