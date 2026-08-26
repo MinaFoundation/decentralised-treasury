@@ -15,6 +15,8 @@ import { ReplayableVotingLedger } from "../../ledgers/voting-ledger/replayable-v
 import { StakingLedgerToVotingLedgerMergeTask } from "../tasks/staking-ledger-to-voting-ledger-merge-task.js";
 import { MergeProofOrchestrator } from "./merge-proof-orchestrator.js";
 import { KeyValueBatchStorage } from "../../storage/batch-key-value-storage.js";
+import { forEachWithConcurrency } from "../../utils/concurrency.js";
+import { StakingLedgerToVotingLedgerDigestTrace } from "../tracing/staking-ledger-to-voting-ledger-tracer.js";
 
 export type StakingLedgerToVotingLedgerTaskQueue = TaskQueue<{
   stakingLedgerToVotingLedgerDigest: typeof StakingLedgerToVotingLedgerDigestTask;
@@ -65,6 +67,14 @@ export class StakingLedgerToVotingLedgerProver extends MergeProofOrchestrator<Si
     );
   }
 
+  // How many stakingLedgerToVotingLedgerDigest tasks digest() keeps in
+  // flight at once. Each in-flight task retains its serialized trace
+  // payload and a pair of redis queue-event listeners in this process's own
+  // heap until that specific job completes - so this, not the size of the
+  // ledger, is what memory scales with. 256 keeps a full proving-worker
+  // fleet fed many times over while staying trivially small in heap terms.
+  public static readonly DEFAULT_DIGEST_CONCURRENCY = 256;
+
   constructor(
     public stakingLedger: StakingLedger,
     public traceStorage: StakingLedgerToVotingLedgerDigestTraceStorage,
@@ -91,57 +101,86 @@ export class StakingLedgerToVotingLedgerProver extends MergeProofOrchestrator<Si
         StakingLedgerToVotingLedgerProgramOutput
       >,
     ) => void,
+    concurrency: number = StakingLedgerToVotingLedgerProver.DEFAULT_DIGEST_CONCURRENCY,
   ) {
-    const taskPromises: Promise<void>[] = [];
     let callbackQueue: Promise<void> = Promise.resolve();
     let callbackError: Error | undefined;
 
+    // Only clears the redis queue - proofs already persisted to
+    // proofStorage (by a prior attempt at this same range, e.g. one an
+    // earlier crash interrupted before it reached endIndex) are untouched
+    // and get skipped below rather than re-proved.
     await this.taskQueue.obliterate();
 
-    for (let i = startIndex; i <= endIndex; i++) {
-      const trace = await this.traceStorage.getTrace(i);
-      // no more traces to digest, stop proving
-      if (!trace) break;
+    await forEachWithConcurrency(
+      this.pendingTraces(startIndex, endIndex),
+      concurrency,
+      async ({ index, trace }) => {
+        // A previous attempt already proved this index - most likely a
+        // restart from startIndex after a crash partway through the range,
+        // since obliterate() above only ever clears in-flight work, never
+        // proofStorage. Skipping the round trip through redis is what makes
+        // restarting from startIndex cheap instead of redoing the whole
+        // range every time.
+        if (await this.proofStorage.getProof(index.toString())) {
+          return;
+        }
 
-      const taskPromise = this.taskQueue.addTask(
-        "stakingLedgerToVotingLedgerDigest",
-        {
-          trace,
-          traceId: i,
-        },
-        async (result) => {
-          callbackQueue = callbackQueue
-            .then(async () => {
-              const sideLoadedProof =
-                await SideLoadedStakingLedgerToVotingLedgerProof.fromJSON(
-                  result.proof.toJSON(),
+        await this.taskQueue.addTask(
+          "stakingLedgerToVotingLedgerDigest",
+          {
+            trace,
+            traceId: index,
+          },
+          async (result) => {
+            callbackQueue = callbackQueue
+              .then(async () => {
+                const sideLoadedProof =
+                  await SideLoadedStakingLedgerToVotingLedgerProof.fromJSON(
+                    result.proof.toJSON(),
+                  );
+                await this.proofStorage.setProof(
+                  result.traceId.toString(),
+                  sideLoadedProof,
                 );
-              await this.proofStorage.setProof(
-                result.traceId.toString(),
-                sideLoadedProof,
-              );
 
-              const entries = this.proofStorage.collectEntries();
-              await this.batchWriter.setMany(entries);
-              this.proofStorage.clearEntries();
+                const entries = this.proofStorage.collectEntries();
+                await this.batchWriter.setMany(entries);
+                this.proofStorage.clearEntries();
 
-              onDigestComplete?.(result.traceId, result.proof);
-            })
-            .catch((error: unknown) => {
-              callbackError =
-                error instanceof Error ? error : new Error(String(error));
-            });
-        },
-      );
+                onDigestComplete?.(result.traceId, result.proof);
+              })
+              .catch((error: unknown) => {
+                callbackError =
+                  error instanceof Error ? error : new Error(String(error));
+              });
+          },
+        );
+      },
+    );
 
-      taskPromises.push(taskPromise);
-    }
-
-    await this.taskQueue.waitUntilEmpty();
-    await Promise.all(taskPromises);
     await callbackQueue;
     if (callbackError) {
       throw callbackError;
+    }
+  }
+
+  // Lazily reads one trace at a time, capping how far ahead of the redis
+  // queue this ever gets - paired with forEachWithConcurrency's own bound
+  // in digest(), so at most `concurrency` traces are ever held in memory
+  // waiting on a task slot.
+  private async *pendingTraces(
+    startIndex: number,
+    endIndex: number,
+  ): AsyncGenerator<{
+    index: number;
+    trace: StakingLedgerToVotingLedgerDigestTrace;
+  }> {
+    for (let i = startIndex; i <= endIndex; i++) {
+      const trace = await this.traceStorage.getTrace(i);
+      // no more traces to digest, stop proving
+      if (!trace) return;
+      yield { index: i, trace };
     }
   }
 
