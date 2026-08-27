@@ -401,9 +401,10 @@ export class ProposalCreatedEventHandler implements EventProcessorHandler {
     }
     const treasuryAccount = await service.getAccountByPublicKey(treasuryOwnerPublicKey);
     if (!treasuryAccount) {
-      throw new Error(
+      console.warn(
         `[proposal-processor] treasury account missing in staking ledger for lifecycleId=${lifecycleId} publicKey=${treasuryOwnerPublicKey}`,
       );
+      return null;
     }
     const balance = (
       treasuryAccount.account as unknown as {

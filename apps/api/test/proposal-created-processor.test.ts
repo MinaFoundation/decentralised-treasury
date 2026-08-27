@@ -10,7 +10,10 @@ import { ProposalEntity } from "../src/processors/proposals/proposal-entity.js";
 import { VoteNullifierEntity } from "../src/processors/proposals/vote-nullifier-entity.js";
 import { VoteTallyEntity } from "../src/processors/proposals/vote-tally-entity.js";
 import { VoteEntity } from "../src/processors/proposals/vote-entity.js";
-import { LIFECYCLE_DATA_UNAVAILABLE_ERROR } from "../src/staking-ledger/lifecycle-staking-ledger-service-registry.js";
+import {
+  LIFECYCLE_DATA_UNAVAILABLE_ERROR,
+  type StakingLedgerServiceLookup,
+} from "../src/staking-ledger/lifecycle-staking-ledger-service-registry.js";
 import { createInMemoryDataSource } from "./support/create-in-memory-data-source.js";
 
 function buildProposalCreatedEvent(): ArchiveEventEntity {
@@ -166,6 +169,36 @@ describe("ProposalCreatedEventHandler", () => {
         getService: async () => {
           throw new Error(LIFECYCLE_DATA_UNAVAILABLE_ERROR);
         },
+      },
+    });
+
+    assert.equal(
+      await dataSource.transaction(
+        async (manager) => await handler.tryHandle(event, manager),
+      ),
+      true,
+    );
+
+    const proposal = await dataSource.getRepository(ProposalEntity).findOneBy({
+      proposalPublicKey: "proposal-public-key-1",
+    });
+    assert.ok(proposal);
+    assert.equal(proposal?.requiredParticipationBp, null);
+    assert.equal(proposal?.requiredApprovalBp, null);
+    assert.equal(proposal?.requiredParticipation, null);
+  });
+
+  it("projects proposalCreated when the treasury account is absent from the lifecycle's staking ledger", async () => {
+    const event = buildProposalCreatedEvent();
+    const handler = new ProposalCreatedEventHandler({
+      treasuryOwnerPublicKey: "treasury-owner-public-key",
+      stakingLedgerServices: {
+        getService: async () =>
+          ({
+            getAccountByPublicKey: async () => null,
+          }) as unknown as Awaited<
+            ReturnType<StakingLedgerServiceLookup["getService"]>
+          >,
       },
     });
 
