@@ -1,9 +1,9 @@
 import {
   DeleteObjectCommand,
   GetObjectCommand,
-  PutObjectCommand,
   S3Client,
 } from "@aws-sdk/client-s3";
+import { Upload } from "@aws-sdk/lib-storage";
 import { NodeHttpHandler } from "@smithy/node-http-handler";
 import { createReadStream, createWriteStream } from "node:fs";
 import { pipeline } from "node:stream/promises";
@@ -115,24 +115,39 @@ export async function pullCheckpoint(
 // Uploads sourcePath as the checkpoint for lifecycleId, overwriting any prior
 // checkpoint. Caller is responsible for the file being a complete, consistent
 // snapshot (i.e. WAL-checkpointed) before calling this.
+//
+// Checkpoints for a mature lifecycle run into the gigabytes, and a plain
+// PutObjectCommand streams that as one HTTP request: any transient error
+// mid-stream (observed in practice as S3 InternalError / IncompleteBody)
+// fails the entire multi-GB transfer with nothing to retry but starting over
+// from byte zero. Uploading through lib-storage's Upload instead splits the
+// file into parts and retries a failed part on its own, so a single blip
+// doesn't cost the whole checkpoint.
 export async function pushCheckpoint(
   prefixUri: string,
   lifecycleId: string,
   sourcePath: string,
 ): Promise<void> {
   const { bucket, key } = checkpointLocation(prefixUri, lifecycleId);
-  await withTimeout(
-    (signal) =>
-      client().send(
-        new PutObjectCommand({
-          Bucket: bucket,
-          Key: key,
-          Body: createReadStream(sourcePath),
-        }),
-        { abortSignal: signal },
-      ),
+  const controller = new AbortController();
+  const timer = setTimeout(
+    () => controller.abort(),
     CHECKPOINT_UPLOAD_TIMEOUT_MS,
   );
+  try {
+    const upload = new Upload({
+      client: client(),
+      params: {
+        Bucket: bucket,
+        Key: key,
+        Body: createReadStream(sourcePath),
+      },
+      abortController: controller,
+    });
+    await upload.done();
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
 // Removes the checkpoint for lifecycleId. Safe to call when none exists.

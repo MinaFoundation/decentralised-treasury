@@ -16,6 +16,7 @@
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1117.0",
+    "@aws-sdk/lib-storage": "3.1117.0",
     "@keyv/sqlite": "^4.0.8",
     "@ledgerhq/hw-transport-node-hid": "6.33.0",
     "@repo/sdk": "workspace:*",
