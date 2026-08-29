@@ -2,7 +2,7 @@ import { Command, Option } from "commander";
 import { SqliteStakingLedgerToVotingLedgerService } from "@repo/sdk/src/services/sqlite/sqlite-staking-ledger-to-voting-ledger-service.js";
 import { getSqliteDbPath } from "@repo/sdk/src/storage/sqlite/sqlite-db-path.js";
 import { logger, provableLog } from "@repo/sdk/src/index.js";
-import { mkdir, unlink, writeFile } from "node:fs/promises";
+import { copyFile, mkdir, unlink, writeFile } from "node:fs/promises";
 import { dirname } from "node:path";
 import { parseIntOption } from "./option-parsers.js";
 import {
@@ -120,9 +120,25 @@ export async function traceDigest({
     // previous checkpoint (or a from-scratch restart) is still available.
     let checkpointInFlight: Promise<void> | null = null;
     const runCheckpoint = async (index: number): Promise<void> => {
+      // checkpointWal() truncates the WAL into the main .sqlite file, giving
+      // a complete snapshot at that instant - but tracing keeps running
+      // underneath the (unawaited) upload, and SQLite's own automatic WAL
+      // checkpoint (default threshold ~1000 pages) can fire mid-upload and
+      // rewrite that same file out from under a multipart Upload that's
+      // mid-stream, changing its size after the part count was already
+      // planned ("Expected N part(s) but uploaded M part(s)", observed in
+      // practice). Snapshotting to an immutable copy first means the file
+      // pushCheckpoint() reads can never change while it's reading it.
+      const sqliteDbPath = getSqliteDbPath(lifecycleId);
+      const snapshotPath = `${sqliteDbPath}.checkpoint-snapshot`;
       try {
         await service.checkpointWal();
-        await pushCheckpoint(checkpointS3Uri!, lifecycleId, getSqliteDbPath(lifecycleId));
+        await copyFile(sqliteDbPath, snapshotPath);
+        try {
+          await pushCheckpoint(checkpointS3Uri!, lifecycleId, snapshotPath);
+        } finally {
+          await unlink(snapshotPath).catch(() => {});
+        }
         logger.info(
           `[staking-ledger-to-voting-ledger:trace-digest] checkpointed lifecycleId=${lifecycleId} through index=${index}`,
         );
