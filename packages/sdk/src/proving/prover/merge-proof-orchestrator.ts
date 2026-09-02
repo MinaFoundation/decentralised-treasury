@@ -136,17 +136,21 @@ export abstract class MergeProofOrchestrator<ProofType> {
                 const typedResult =
                   MergeProofOrchestrator.asMergeTaskOutput<ProofType>(result);
                 //   availableWorkers++;
-                mergeCount = await this.proofStorage.mergeCount();
+                // Index this merge proof by the count of those already
+                // stored. Reads and writes here are serialized through
+                // callbackQueue, so no other completion can claim the same id
+                // between the count and the write below.
+                const mergeIndex = await this.proofStorage.mergeCount();
 
-                provableLog("setting merge proof", mergeCount);
+                provableLog("setting merge proof", mergeIndex);
 
                 proofs.push({
                   proof: typedResult.proof,
-                  index: `merge-${mergeCount.toString()}`,
+                  index: `merge-${mergeIndex.toString()}`,
                 });
 
                 await this.proofStorage.setMergeProof(
-                  `merge-${mergeCount.toString()}`,
+                  `merge-${mergeIndex.toString()}`,
                   typedResult.proof,
                 );
 
@@ -157,7 +161,10 @@ export abstract class MergeProofOrchestrator<ProofType> {
                 await this.batchWriter.setMany(entries);
                 this.proofStorage.clearEntries();
 
-                mergeCount = await this.proofStorage.mergeCount();
+                // The write above added exactly one merge proof, so the new
+                // total follows arithmetically. Re-querying it was a second
+                // namespace count per merged pair for a value already known.
+                mergeCount = mergeIndex + 1;
 
                 onMergeComplete?.(mergeCount, typedResult.proof);
 
