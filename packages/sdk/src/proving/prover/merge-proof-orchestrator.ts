@@ -203,7 +203,15 @@ export abstract class MergeProofOrchestrator<ProofType> {
         running.add(task);
         void task.finally(() => {
           running.delete(task);
-          schedule();
+          // Nothing awaits the promise `finally` returns, so a throw from
+          // findMergeableProofs in here would surface as an unhandled
+          // rejection and take the process down instead of failing merge().
+          try {
+            schedule();
+          } catch (error: unknown) {
+            failure ??=
+              error instanceof Error ? error : new Error(String(error));
+          }
         });
       }
     };
@@ -222,10 +230,13 @@ export abstract class MergeProofOrchestrator<ProofType> {
     }
 
     if (pending.length !== 1) {
+      // Capped: a ledger-sized run can leave thousands of fragments, and the
+      // first handful identify the gap just as well as all of them do.
+      const shown = pending.slice(0, 10).map(({ index }) => index);
+      const remainder = pending.length - shown.length;
+
       throw new Error(
-        `Merge stalled: ${pending.length.toString()} disjoint proofs remain after ${completed.toString()} of ${expectedMergeCount.toString()} merges (${reused.toString()} reused). The base proofs do not form one contiguous chain: ${pending
-          .map(({ index }) => index)
-          .join(", ")}`,
+        `Merge stalled: ${pending.length.toString()} disjoint proofs remain after ${completed.toString()} of ${expectedMergeCount.toString()} merges (${reused.toString()} reused). The base proofs do not form one contiguous chain: ${shown.join(", ")}${remainder > 0 ? ` and ${remainder.toString()} more` : ""}`,
       );
     }
 
