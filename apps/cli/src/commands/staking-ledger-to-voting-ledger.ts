@@ -345,8 +345,22 @@ export async function proveMerge({
         `[staking-ledger-to-voting-ledger:prove-merge] merged step=${index} (mergeCount=${mergeCount})`,
       );
     });
+    // A merged proof is only meaningful if it covers the ledger from index 0.
+    // Writing an interior node here is how a lifecycle published a
+    // plausible-looking <id>-merge.json spanning a few hundred accounts, which
+    // then only surfaced as an assertEquals failure over in prove-exhaust.
+    const mergedFrom = mergedProof.publicInput.index.toBigInt();
+    const mergedTo = mergedProof.publicOutput.index.toBigInt();
+    if (mergedFrom !== 0n) {
+      throw new Error(
+        `[staking-ledger-to-voting-ledger:prove-merge] merged proof spans ${mergedFrom.toString()}..${mergedTo.toString()}, expected it to start at 0 - refusing to write a partial proof to ${proofOutputPath ?? "storage"}`,
+      );
+    }
+    logger.info(
+      `[staking-ledger-to-voting-ledger:prove-merge] root proof spans 0..${mergedTo.toString()}`,
+    );
+
     const mergedProofJson = mergedProof.toJSON();
-    provableLog("mergedProof", mergedProofJson);
     if (proofOutputPath) {
       await mkdir(dirname(proofOutputPath), { recursive: true });
       await writeFile(
@@ -404,9 +418,7 @@ export default function stakingLedgerToVotingLedgerCommandFactory(
 ) {
   const command = program.command("staking-ledger-to-voting-ledger");
 
-  command
-    .command("compile")
-    .action(compile);
+  command.command("compile").action(compile);
 
   command
     .command("trace-digest")
