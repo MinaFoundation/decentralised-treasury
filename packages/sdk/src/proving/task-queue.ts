@@ -20,6 +20,8 @@ export class TaskQueue<Tasks extends Record<string, Task<unknown, unknown>>> {
   public events: QueueEvents;
   private readonly defaultAttempts: number;
   private readonly defaultBackoffMs: number;
+  private readonly keepCompleted: number;
+  private readonly keepFailed: number;
   public constructor(
     public queueName: string,
     public tasks: Tasks,
@@ -27,6 +29,8 @@ export class TaskQueue<Tasks extends Record<string, Task<unknown, unknown>>> {
   ) {
     this.defaultAttempts = Number(process.env.TASK_ATTEMPTS ?? 5);
     this.defaultBackoffMs = Number(process.env.TASK_BACKOFF_MS ?? 1000);
+    this.keepCompleted = Number(process.env.TASK_KEEP_COMPLETED ?? 100);
+    this.keepFailed = Number(process.env.TASK_KEEP_FAILED ?? 200);
 
     this.queue = new Queue(queueName, {
       connection,
@@ -36,6 +40,14 @@ export class TaskQueue<Tasks extends Record<string, Task<unknown, unknown>>> {
           type: "exponential",
           delay: this.defaultBackoffMs,
         },
+        // Finished jobs hold their whole serialized output (proof payloads run
+        // to ~145KB), so retaining them without a bound fills the redis volume
+        // and eventually wedges the queue on MISCONF. Dropping them is safe:
+        // onTaskComplete below resolves from the QueueEvents `completed`
+        // payload, never by reading the job back, so no caller needs the hash
+        // to survive completion. The counts keep a small tail for debugging.
+        removeOnComplete: { count: this.keepCompleted },
+        removeOnFail: { count: this.keepFailed },
       },
     });
 
