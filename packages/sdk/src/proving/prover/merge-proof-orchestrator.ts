@@ -100,13 +100,7 @@ export abstract class MergeProofOrchestrator<ProofType> {
       throw new Error("No base proofs found. Run proving before merge().");
     }
 
-    // The pending forest is seeded from the base proofs alone, and from that
-    // point on it - not the merge namespace - is the only authority on what
-    // still needs merging. Nothing is ever enumerated out of the merge
-    // namespace, only read back by exact id, so entries an earlier
-    // interrupted run left behind cannot steer this one.
-    const pending: Array<{ index: string; proof: ProofType }> = [];
-    for (let index = 0; index < baseProofCount; index++) {
+    const readBaseProof = async (index: number) => {
       const id = index.toString();
       const proof = await this.proofStorage.getProof(id);
 
@@ -116,11 +110,11 @@ export abstract class MergeProofOrchestrator<ProofType> {
         );
       }
 
-      pending.push({ index: id, proof });
-    }
+      return { index: id, proof };
+    };
 
-    if (pending.length === 1) {
-      const root = pending[0]!.proof;
+    if (baseProofCount === 1) {
+      const { proof: root } = await readBaseProof(0);
       await this.persist(async () => {
         await this.proofStorage.setMergeProof(
           MergeProofOrchestrator.ROOT_PROOF_ID,
@@ -135,6 +129,12 @@ export abstract class MergeProofOrchestrator<ProofType> {
     const expectedMergeCount = baseProofCount - 1;
     provableLog("merge", { baseProofCount, expectedMergeCount });
 
+    // The pending forest - never the merge namespace - is the only authority
+    // on what still needs merging. Nothing is enumerated out of that
+    // namespace, only read back by exact id, so entries an earlier interrupted
+    // run left behind cannot steer this one.
+    const pending: Array<{ index: string; proof: ProofType }> = [];
+    let nextBaseIndex = 0;
     const running = new Set<Promise<void>>();
     let completed = 0;
     let reused = 0;
@@ -181,14 +181,28 @@ export abstract class MergeProofOrchestrator<ProofType> {
       onMergeComplete?.(completed, merged);
     };
 
-    // Pairs are chosen and spliced out synchronously, so no two in-flight
-    // merges can ever claim the same pending proof. `running.size` is what
-    // bounds how many merges - and so how many held proof pairs and queue-event
+    // Base proofs are pulled in on demand - only when the pending forest has
+    // no mergeable pair and there is capacity to act on a new one - so
+    // `pending` holds a handful of fragments rather than the whole leaf set.
+    // Reading all baseProofCount proofs up front instead OOM-killed the 2Gi
+    // proving-scheduler on an 18,400-leaf ledger: deserialized proofs are far
+    // heavier than the ~35KB they occupy in storage.
+    //
+    // Pairs are then chosen and spliced out synchronously, so no two in-flight
+    // merges can ever claim the same pending proof, and `running.size` bounds
+    // how many merges - and so how many held proof pairs and queue-event
     // listeners - exist at once; see DEFAULT_MERGE_CONCURRENCY.
-    const schedule = (): void => {
+    const pumpOnce = async (): Promise<void> => {
       while (!failure && running.size < concurrency) {
-        const { proof1, proof2 } = this.findMergeableProofs(pending);
+        let pair = this.findMergeableProofs(pending);
 
+        while (!pair.proof1 && nextBaseIndex < baseProofCount) {
+          pending.push(await readBaseProof(nextBaseIndex));
+          nextBaseIndex++;
+          pair = this.findMergeableProofs(pending);
+        }
+
+        const { proof1, proof2 } = pair;
         if (!proof1 || !proof2) {
           return;
         }
@@ -203,26 +217,37 @@ export abstract class MergeProofOrchestrator<ProofType> {
         running.add(task);
         void task.finally(() => {
           running.delete(task);
-          // Nothing awaits the promise `finally` returns, so a throw from
-          // findMergeableProofs in here would surface as an unhandled
-          // rejection and take the process down instead of failing merge().
-          try {
-            schedule();
-          } catch (error: unknown) {
-            failure ??=
-              error instanceof Error ? error : new Error(String(error));
-          }
+          void pump();
         });
       }
     };
 
-    schedule();
+    // Pumps are serialized through one chain rather than run concurrently, so
+    // two of them cannot claim the same pending proof. Awaiting the chain is
+    // also what makes the drain loop below safe: a pump woken by a completing
+    // merge may still be awaiting a base-proof read, and the tasks it is about
+    // to register would otherwise not exist yet when `running.size` is tested.
+    let pumpChain: Promise<void> = Promise.resolve();
+    const pump = (): Promise<void> => {
+      pumpChain = pumpChain.then(async () => {
+        try {
+          await pumpOnce();
+        } catch (error: unknown) {
+          failure ??= error instanceof Error ? error : new Error(String(error));
+        }
+      });
+
+      return pumpChain;
+    };
+
+    await pump();
 
     // Every task is wrapped in a .catch above, so none of these reject and
     // the loop always drains - a failure stops new work being scheduled
     // rather than abandoning merges that are already in flight.
     while (running.size > 0) {
       await Promise.race(Array.from(running));
+      await pumpChain;
     }
 
     if (failure) {
@@ -236,7 +261,7 @@ export abstract class MergeProofOrchestrator<ProofType> {
       const remainder = pending.length - shown.length;
 
       throw new Error(
-        `Merge stalled: ${pending.length.toString()} disjoint proofs remain after ${completed.toString()} of ${expectedMergeCount.toString()} merges (${reused.toString()} reused). The base proofs do not form one contiguous chain: ${shown.join(", ")}${remainder > 0 ? ` and ${remainder.toString()} more` : ""}`,
+        `Merge stalled: ${pending.length.toString()} disjoint proofs remain after ${completed.toString()} of ${expectedMergeCount.toString()} merges (${reused.toString()} reused, ${nextBaseIndex.toString()} of ${baseProofCount.toString()} base proofs read). The base proofs do not form one contiguous chain: ${shown.join(", ")}${remainder > 0 ? ` and ${remainder.toString()} more` : ""}`,
       );
     }
 

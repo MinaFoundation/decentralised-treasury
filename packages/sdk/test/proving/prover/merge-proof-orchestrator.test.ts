@@ -29,6 +29,9 @@ class FakeProofStorage implements MergeProofStorage<SpanProof> {
   public readonly base = new Map<string, SpanProof>();
   public readonly merges = new Map<string, SpanProof>();
   public readonly merged = new Set<string>();
+  // Ordered log of base-proof reads and merge enqueues, so a test can assert
+  // that leaves are pulled in as merging consumes them rather than all at once.
+  public readonly events: string[] = [];
 
   constructor(baseProofCount: number) {
     for (let index = 0; index < baseProofCount; index++) {
@@ -37,6 +40,7 @@ class FakeProofStorage implements MergeProofStorage<SpanProof> {
   }
 
   async getProof(id: string) {
+    this.events.push("read");
     return this.base.get(id);
   }
   async setProof(id: string, proof: SpanProof) {
@@ -91,10 +95,13 @@ function fakeBatchWriter(storage: FakeProofStorage): KeyValueBatchStorage {
 // Joins the two spans it is handed. `failAfter` makes it start throwing part
 // way through, standing in for the pod restart that used to leave the merge
 // namespace inconsistent.
-function fakeTaskQueue(state: {
-  proved: number;
-  failAfter: number;
-}): AnyTaskQueue {
+function fakeTaskQueue(
+  state: {
+    proved: number;
+    failAfter: number;
+  },
+  events?: string[],
+): AnyTaskQueue {
   return {
     async obliterate() {},
     async addTask(
@@ -105,6 +112,7 @@ function fakeTaskQueue(state: {
       if (state.proved >= state.failAfter) {
         throw new Error("worker died");
       }
+      events?.push("merge");
       state.proved++;
       await onTaskComplete?.({
         proof: { from: input.proofs[1].from, to: input.proofs[2].to },
@@ -151,6 +159,42 @@ it("reduces every base proof to a single root spanning the whole range", async (
 
   assert.deepStrictEqual(root, { from: 0, to: 15 });
   assert.strictEqual(state.proved, 15, "16 leaves take exactly 15 merges");
+});
+
+it("pulls base proofs in as merging consumes them, not all up front", async () => {
+  // Reading every leaf before merging anything is what OOM-killed the 2Gi
+  // proving-scheduler: 18,400 deserialized proofs resident at once. With a
+  // concurrency of 2 the first merge must be reachable after a couple of
+  // reads, and reads must stay interleaved with merges for the whole run.
+  const storage = new FakeProofStorage(64);
+  const state = { proved: 0, failAfter: Infinity };
+
+  const root = await orchestrator(
+    storage,
+    fakeTaskQueue(state, storage.events),
+  ).merge(undefined, 2);
+
+  assert.deepStrictEqual(root, { from: 0, to: 63 });
+
+  const firstMerge = storage.events.indexOf("merge");
+  assert.ok(
+    firstMerge >= 0 && firstMerge <= 4,
+    `first merge should follow a couple of reads, was event ${firstMerge.toString()} of ${storage.events.length.toString()}`,
+  );
+
+  // Peak unconsumed leaves: every merge takes two pending proofs, so this is
+  // how far reading is allowed to run ahead of merging. It is the number that
+  // decides peak heap, and it must not scale with the leaf count.
+  let outstanding = 0;
+  let peak = 0;
+  for (const event of storage.events) {
+    outstanding += event === "read" ? 1 : -2;
+    peak = Math.max(peak, outstanding);
+  }
+  assert.ok(
+    peak <= 8,
+    `reading should not run ahead of merging, peaked at ${peak.toString()} unconsumed leaves of 64`,
+  );
 });
 
 it("publishes the root under ROOT_PROOF_ID so exhaust never has to guess", async () => {
