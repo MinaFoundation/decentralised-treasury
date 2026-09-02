@@ -31,17 +31,30 @@ export class StakingLedgerToVotingLedgerProver extends MergeProofOrchestrator<Si
     proofStorage: StakingLedgerToVotingLedgerProofStorage;
   }): Promise<SideLoadedStakingLedgerToVotingLedgerProof> {
     const { stakingLedger, proofStorage } = params;
-    const mergeCount = await proofStorage.mergeCount();
-    if (mergeCount <= 0) {
+
+    // Only ever the root merge() published, never an id derived from a count.
+    // Reading `merge-${mergeCount - 1}` used to pick whichever merge happened
+    // to be written last, which on any resumed merge is an interior node
+    // covering a sliver of the ledger - exhaust then witnesses an index that
+    // is not empty and dies on assertEquals every time it runs.
+    const mergedProof = await proofStorage.getMergeProof(
+      MergeProofOrchestrator.ROOT_PROOF_ID,
+    );
+    if (!mergedProof) {
       throw new Error(
-        "No merged proof found. Run proveMerge() before proveExhaust().",
+        "No root merge proof found. Run proveMerge() to completion before proveExhaust().",
       );
     }
 
-    const mergedProofId = `merge-${(mergeCount - 1).toString()}`;
-    const mergedProof = await proofStorage.getMergeProof(mergedProofId);
-    if (!mergedProof) {
-      throw new Error(`Missing merged proof with id ${mergedProofId}`);
+    // The root spans the whole staking ledger, so it starts at index 0. A
+    // proof that does not is an interior node that reached storage under the
+    // root id, and proving exhaust on top of it would produce a proof the
+    // treasury contract rejects rather than an error here.
+    const rootInputIndex = mergedProof.publicInput.index.toBigInt();
+    if (rootInputIndex !== 0n) {
+      throw new Error(
+        `Root merge proof starts at index ${rootInputIndex.toString()}, expected 0 - the merge did not cover the whole staking ledger.`,
+      );
     }
 
     stakingLedgerToVotingLedgerContext.set({
@@ -54,8 +67,12 @@ export class StakingLedgerToVotingLedgerProver extends MergeProofOrchestrator<Si
     await StakingLedgerToVotingLedger.compile({
       proofsEnabled: process.env.PROOFS_ENABLED === "true",
     });
+    // The span, not the proof - dumping the whole root proof here put ~25KB of
+    // base64 in front of every prove-exhaust failure and told you nothing
+    // about which part of the ledger it actually covered.
     Provable.log("proving exhaust", {
-      mergedProof
+      from: rootInputIndex.toString(),
+      to: mergedProof.publicOutput.index.toBigInt().toString(),
     });
     const exhaustedProof = await StakingLedgerToVotingLedger.exhaust(
       mergedProof.publicInput,
