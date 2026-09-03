@@ -1,0 +1,290 @@
+---
+# Values marked <REPLACE: ...> are environment specific and must be filled in
+# before applying. They are written to be obviously wrong rather than silently
+# wrong.
+environments:
+  default:
+    values:
+      - namespace: devnet
+        # Public origin. The browser bundle is built with same-origin API
+        # paths, so /api, /indexer, /processor and /mina hang off this host.
+        host: "<REPLACE: treasury.example.com>"
+        certificateArn: "<REPLACE: ACM certificate ARN>"
+        # Mina daemon GraphQL (runbook 1b). Must be an FQDN and plain HTTP:
+        # the /mina/ route 502s on a bare name, and sends no SNI, so an HTTPS
+        # upstream fails the handshake.
+        minaNodeUpstream: http://graphql-proxy.devnet.svc.cluster.local:3085
+        # Archive node API (runbook 1a).
+        archiveNodeUrl: http://archive-node-api:8080
+
+---
+releases:
+  - name: decentralized-treasury
+    namespace: {{ .Values.namespace }}
+    # For devnet or mainnet. For the 21-lifecycles-per-epoch speedrun, use:
+    #   git::https://github.com/MinaFoundation/helm-charts.git@decentralized-treasury?ref=spike/decentralized-treasury-lifecycle-speedrun
+    chart: git::https://github.com/MinaFoundation/helm-charts.git@decentralized-treasury?ref=decentralized-treasury-0.2.5
+    values:
+      - verification-keys.yaml
+      - fullnameOverride: decentralized-treasury
+        # Also the S3 key prefix for the sqlite and proofs buckets, which keeps
+        # one network's lifecycle ids from colliding with another's.
+        network: devnet
+
+        # Every service runs its own minafoundation/dt-* image on this tag.
+        # Tags are commit SHAs plus `latest`; see
+        # https://hub.docker.com/u/minafoundation
+        image:
+          tag: latest
+          pullPolicy: Always
+
+        # Chart bug: the chart sets runAsNonRoot with no runAsUser, and the
+        # dt-* images name their user (`USER node`). Without this the container
+        # is refused. Drop once the chart sets it itself.
+        securityContext:
+          runAsUser: 1000
+
+        serviceAccount:
+          annotations: {}
+            # AWS only. IRSA role granting access to the S3 buckets below.
+            # Omit entirely on other clouds and grant S3 access another way.
+            # eks.amazonaws.com/role-arn: "<REPLACE: IAM role ARN>"
+
+        s3:
+          region: "<REPLACE: us-east-1>"
+          sqliteBucket: "<REPLACE: sqlite bucket name>"
+          proofsBucket: "<REPLACE: proofs bucket name>"
+
+        # Database. Exactly one of the two blocks below may be enabled.
+        #
+        # A managed database (RDS, Cloud SQL, ...) is recommended: the bundled
+        # subchart puts treasury data on a cluster PVC, where losing the volume
+        # loses the data.
+        #
+        # To use the bundled one instead, flip the two `enabled` flags and set:
+        #   postgresql:
+        #     enabled: true
+        #     auth:
+        #       password: "<REPLACE: database password>"
+        #     primary:
+        #       persistence:
+        #         storageClass: "<REPLACE: storage class>"
+        postgresql:
+          enabled: false
+
+        externalDatabase:
+          enabled: true
+          host: "<REPLACE: database hostname>"
+          port: 5432
+          username: treasury
+          password: "<REPLACE: database password>"
+          database: treasury_api
+
+        config:
+          archiveNodeUrl: {{ .Values.archiveNodeUrl }}
+          # Read server-side for slotSinceGenesis, slotsPerEpoch and the
+          # staking ledger hash. Distinct from proxy.minaNodeUpstream, which is
+          # what the browser talks to.
+          minaNodeUrl: http://graphql-proxy:3085/graphql
+          # Emitted by `treasury-owner deploy`. A wrong address indexes nothing
+          # at all rather than erroring.
+          treasuryOwnerContractAddress: "<REPLACE: treasury owner public key>"
+          corsAllowedOrigins:
+            - https://{{ .Values.host }}
+          # Must match what was compiled and deployed. 7140 = one Mina epoch
+          # per period, so a four-period lifecycle is four epochs.
+          lifecyclePeriodDuration: 7140
+          # Must match the value passed to `treasury-owner deploy`, which wrote
+          # it to contract state. First slot of an epoch.
+          treasuryDeployedAtSlot: "<REPLACE: deploy slot>"
+          proofsEnabled: true
+
+        indexer:
+          pollPendingIntervalMs: 5000
+          pollCanonicalIntervalMs: 15000
+          # First block a cold start scans. Set just below the treasury's
+          # deploy block: without it the indexer walks from genesis and nothing
+          # is indexed until that pass finishes.
+          extraEnvVars:
+            - name: EVENTS_START_HEIGHT
+              value: "<REPLACE: block height just below the deploy>"
+
+        processor:
+          pollIntervalMs: 2000
+
+        # Builds the voting ledgers and publishes the lifecycle SQLite
+        # databases. The sole producer of that data.
+        votingLedgerScheduler:
+          enabled: true
+          # trace-digest checkpoints progress to S3 every N indices, so an
+          # eviction costs at most one interval rather than the whole run.
+          checkpoint:
+            intervalIndices: 500
+          # Staking ledgers from the in-cluster provider (runbook 1c).
+          stakingLedgers:
+            source: http
+            bucket: http://mina-staking-ledgers-provider:8080
+          # Latest lifecycle only, counted back from the newest available.
+          stakingLedgersKeepLastN: 1
+          # Specific lifecycles to (re)build, replacing the window above.
+          # Idempotent, so an entry that already exists is skipped.
+          lifecycleIds: []
+          # from-file and trace-digest run inline here, single-threaded, and
+          # everything downstream waits on them. See runbook 2d.
+          resources:
+            requests:
+              cpu: 2
+              memory: 8Gi
+            limits:
+              memory: 24Gi
+
+        proving:
+          enabled: true
+          redis:
+            enabled: true
+            # Keeps the BullMQ queue across a restart or eviction. Without it
+            # the queue comes back empty and in-flight digest/merge progress is
+            # re-enqueued from scratch. See runbook 2d.
+            persistence:
+              enabled: true
+              storageClass: "<REPLACE: storage class>"
+              size: 1Gi
+            # Starts as the image's redis user; as root its entrypoint tries
+            # setpriv, which `capabilities: drop [ALL]` makes impossible.
+            securityContext:
+              runAsUser: 999
+          # Walks unproven lifecycles oldest-first and queues a job per
+          # lifecycle. One replica, pinned by the chart.
+          scheduler:
+            enabled: true
+            resources:
+              requests:
+                cpu: 250m
+                memory: 768Mi
+              limits:
+                memory: 2Gi
+            extraEnvVars:
+              - name: NODE_OPTIONS
+                value: "--max-old-space-size=1536"
+              # prove-exhaust runs inline in this pod, not on a worker.
+              - name: O1JS_BACKEND
+                value: "native"
+          # The proving cluster. BullMQ hands each queued job to whichever
+          # replica is free, so maxReplicas is the parallelism.
+          worker:
+            enabled: true
+            replicaCount: 3
+            # Scales to 0 between lifecycles; the scheduler's sidecar scales it
+            # back to min(maxReplicas, pendingJobs) when the queue fills.
+            autoscale:
+              enabled: true
+              minReplicas: 0
+              # Sized for a full devnet-scale ledger (~92k accounts). Each
+              # replica takes a whole node, so this is the one value here that
+              # turns directly into machines.
+              maxReplicas: 32
+            # o1js proving is multi-threaded and wants a whole large machine
+            # per worker: the node floor sizes the instance, the anti-affinity
+            # stops two workers sharing one. The instance-cpu key below is
+            # Karpenter-specific - replace it off Karpenter or workers stay
+            # Pending.
+            affinity:
+              nodeAffinity:
+                requiredDuringSchedulingIgnoredDuringExecution:
+                  nodeSelectorTerms:
+                    - matchExpressions:
+                        - key: karpenter.k8s.aws/instance-cpu
+                          operator: Gt
+                          values: ["15"]
+              podAntiAffinity:
+                requiredDuringSchedulingIgnoredDuringExecution:
+                  - labelSelector:
+                      matchExpressions:
+                        - key: app.kubernetes.io/component
+                          operator: In
+                          values: ["proving-worker"]
+                        - key: app.kubernetes.io/instance
+                          operator: In
+                          values: ["decentralized-treasury"]
+                    topologyKey: kubernetes.io/hostname
+            resources:
+              requests:
+                cpu: 10
+                memory: 8Gi
+              limits:
+                memory: 24Gi
+            # o1js's native (Rust/N-API) backend instead of the wasm default.
+            extraEnvVars:
+              - name: O1JS_BACKEND
+                value: "native"
+
+        web:
+          publicBaseUrl: https://{{ .Values.host }}
+          publicEnv:
+            NEXT_PUBLIC_SLOT_DURATION_MS: "90000"
+            NEXT_PUBLIC_NETWORK_ID: DEVNET
+
+        # Strips path prefixes ahead of the APIs, which serve at the root.
+        # Load balancers cannot do this themselves.
+        proxy:
+          enabled: true
+          replicaCount: 2
+          minaNodeUpstream: {{ .Values.minaNodeUpstream }}
+          # Fronts the staking ledgers provider (runbook 1c) on this same host.
+          # /sqlite and /proofs are routed by the chart itself.
+          extraServices:
+            - key: staking-ledgers
+              host: mina-staking-ledgers-provider
+              port: 8080
+
+        # Chart bug (through 0.2.5): the proxy routes /sqlite and /proofs to
+        # the proving-scheduler, but the chart ships no Service for it. nginx
+        # refuses to boot on an unresolvable upstream, so without this the
+        # whole ingress goes down. Drop once the chart creates the Service.
+        extraObjects:
+          - apiVersion: v1
+            kind: Service
+            metadata:
+              name: decentralized-treasury-proving-scheduler
+              labels:
+                app.kubernetes.io/name: decentralized-treasury
+                app.kubernetes.io/instance: decentralized-treasury
+                app.kubernetes.io/component: proving-scheduler
+            spec:
+              type: ClusterIP
+              ports:
+                - name: http
+                  port: 8080
+                  targetPort: http
+                  protocol: TCP
+              selector:
+                app.kubernetes.io/name: decentralized-treasury
+                app.kubernetes.io/instance: decentralized-treasury
+                app.kubernetes.io/component: proving-scheduler
+
+        # AWS ALB. Replace the annotations to match your ingress controller.
+        ingress:
+          enabled: true
+          mode: proxy
+          className: alb
+          host: {{ .Values.host }}
+          annotations:
+            alb.ingress.kubernetes.io/backend-protocol: HTTP
+            alb.ingress.kubernetes.io/certificate-arn: {{ .Values.certificateArn }}
+            # The proxy's own endpoint, so a target only leaves the load
+            # balancer when the proxy itself is unhealthy.
+            alb.ingress.kubernetes.io/healthcheck-path: /healthz
+            alb.ingress.kubernetes.io/listen-ports: '[{"HTTP":80}, {"HTTPS":443}]'
+            alb.ingress.kubernetes.io/scheme: internet-facing
+            alb.ingress.kubernetes.io/ssl-redirect: '443'
+            alb.ingress.kubernetes.io/target-type: ip
+
+        # Scheduling for everything this chart runs. Every workload here is
+        # restartable, so spot is both safe and much cheaper for the proving
+        # burst. These are Karpenter's label keys - your nodes must actually
+        # carry matching labels and taints or nothing schedules. See runbook 2c,
+        # "Run it on spot".
+        nodeSelector:
+          karpenter.sh/nodepool: amd64-spot
+          karpenter.sh/capacity-type: spot
+        tolerations: [{key: karpenter.sh/nodepool, operator: Exists, effect: NoSchedule}]

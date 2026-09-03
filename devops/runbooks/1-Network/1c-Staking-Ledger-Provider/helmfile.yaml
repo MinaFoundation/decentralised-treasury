@@ -1,0 +1,41 @@
+---
+releases:
+  - name: mina-staking-ledgers-provider
+    namespace: devnet
+    chart: git::https://github.com/MinaFoundation/helm-charts.git@mina-staking-ledgers-provider?ref=mina-staking-ledgers-provider-0.1.1
+    values:
+      # The treasury chart defaults to exactly this Service name.
+      - fullnameOverride: mina-staking-ledgers-provider
+
+        # Daemon pods to export from (runbook 1b). Every match is probed and
+        # the first reporting Synced is used.
+        minaNodeLabel: queryableNode=true
+        minaContainer: mina
+
+        # Cheap probe, used only to decide whether there is work to do. The
+        # hash that names an export is re-read from the pod it came from.
+        minaNodeUrl: http://graphql-proxy:3085/graphql
+
+        pollIntervalSeconds: 3600
+
+        # next(N) is byte-identical to staking(N+1), so exporting it early
+        # gives consumers up to a full epoch of head start.
+        exportNextEpoch: true
+
+        # A lifecycle can need a ledger several epochs old, and one the daemon
+        # has moved past cannot be re-exported at any price.
+        keepLastN: 8
+
+        persistence:
+          storageClass: ebs-gp3-encrypted
+          size: 20Gi
+
+        # Scheduling. The volume is zonal and ReadWriteOnce, so a replacement
+        # pod must come up in the volume's AZ. Adjust or remove for your
+        # cluster.
+        nodeSelector:
+          karpenter.sh/nodepool: amd64-spot
+        tolerations:
+          - key: karpenter.sh/nodepool
+            operator: Exists
+            effect: NoSchedule
