@@ -1,10 +1,6 @@
-import type {
-  PrivateKey,
-  PublicKey,
-  UInt64,
-  VerificationKey,
-} from "o1js";
+import type { PrivateKey, PublicKey, UInt64, VerificationKey } from "o1js";
 import type { MultisigSignatures } from "../provable/contracts/treasury-pause-controller/multisig-signatures.js";
+import type { TransactionSigner } from "./transaction-signing.js";
 
 export interface CompilePauseControllerOptions {
   proofsEnabled?: boolean;
@@ -17,8 +13,11 @@ export interface CompilePauseControllerResult {
 
 export interface DeployPauseControllerOptions {
   minaNodeUrl: string;
-  senderPrivateKey: PrivateKey;
-  pauseControllerPrivateKey: PrivateKey;
+  senderPrivateKey?: PrivateKey;
+  senderPublicKey?: PublicKey;
+  pauseControllerPrivateKey?: PrivateKey;
+  pauseControllerPublicKey?: PublicKey;
+  transactionSigner?: TransactionSigner;
   multisigParticipantsPublicKeys: PublicKey[];
   fee?: UInt64;
   nonce?: number;
@@ -33,7 +32,9 @@ export interface DeployPauseControllerResult {
 
 export interface PauseTreasuryOptions {
   minaNodeUrl: string;
-  senderPrivateKey: PrivateKey;
+  senderPrivateKey?: PrivateKey;
+  senderPublicKey?: PublicKey;
+  transactionSigner?: TransactionSigner;
   pauseControllerPublicKey: PublicKey;
   multisigParticipantsPublicKeys: PublicKey[];
   signatures: MultisigSignatures;
@@ -52,7 +53,9 @@ export interface PauseTreasuryResult {
 
 export interface UnpauseTreasuryOptions {
   minaNodeUrl: string;
-  senderPrivateKey: PrivateKey;
+  senderPrivateKey?: PrivateKey;
+  senderPublicKey?: PublicKey;
+  transactionSigner?: TransactionSigner;
   pauseControllerPublicKey: PublicKey;
   multisigParticipantsPublicKeys: PublicKey[];
   signatures: MultisigSignatures;
@@ -71,7 +74,9 @@ export interface UnpauseTreasuryResult {
 
 export interface TogglePauseProposalOptions {
   minaNodeUrl: string;
-  senderPrivateKey: PrivateKey;
+  senderPrivateKey?: PrivateKey;
+  senderPublicKey?: PublicKey;
+  transactionSigner?: TransactionSigner;
   treasuryOwnerPublicKey: PublicKey;
   pauseControllerPublicKey: PublicKey;
   proposalPublicKey: PublicKey;
@@ -93,7 +98,9 @@ export interface TogglePauseProposalResult {
 
 export interface RotateMultisigKeysOptions {
   minaNodeUrl: string;
-  senderPrivateKey: PrivateKey;
+  senderPrivateKey?: PrivateKey;
+  senderPublicKey?: PublicKey;
+  transactionSigner?: TransactionSigner;
   pauseControllerPublicKey: PublicKey;
   currentMultisigParticipantsPublicKeys: PublicKey[];
   signatures: MultisigSignatures;
@@ -128,9 +135,13 @@ export interface PauseControllerService {
   compile(
     options?: CompilePauseControllerOptions,
   ): Promise<CompilePauseControllerResult>;
-  deploy(options: DeployPauseControllerOptions): Promise<DeployPauseControllerResult>;
+  deploy(
+    options: DeployPauseControllerOptions,
+  ): Promise<DeployPauseControllerResult>;
   pauseTreasury(options: PauseTreasuryOptions): Promise<PauseTreasuryResult>;
-  unpauseTreasury(options: UnpauseTreasuryOptions): Promise<UnpauseTreasuryResult>;
+  unpauseTreasury(
+    options: UnpauseTreasuryOptions,
+  ): Promise<UnpauseTreasuryResult>;
   togglePauseProposal(
     options: TogglePauseProposalOptions,
   ): Promise<TogglePauseProposalResult>;
@@ -141,4 +152,3 @@ export interface PauseControllerService {
     options: GetPauseControllerStateOptions,
   ): Promise<GetPauseControllerStateResult>;
 }
-

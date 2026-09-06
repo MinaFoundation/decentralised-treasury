@@ -36,6 +36,10 @@ import {
   type UnpauseTreasuryResult,
 } from "../pause-controller-service.js";
 import { logger } from "../../index.js";
+import {
+  requireInMemoryPrivateKeys,
+  resolveSigningPublicKey,
+} from "../transaction-signing.js";
 
 export class SqlitePauseControllerService implements PauseControllerService {
   private seedParticipantsForCompile() {
@@ -71,7 +75,10 @@ export class SqlitePauseControllerService implements PauseControllerService {
   ): Promise<DeployPauseControllerResult> {
     const {
       senderPrivateKey,
+      senderPublicKey: suppliedSenderPublicKey,
       pauseControllerPrivateKey,
+      pauseControllerPublicKey: suppliedPauseControllerPublicKey,
+      transactionSigner,
       multisigParticipantsPublicKeys,
       fee,
       nonce,
@@ -86,8 +93,23 @@ export class SqlitePauseControllerService implements PauseControllerService {
     TreasuryPauseControllerSmartContract.multisigParticipants =
       multisigParticipantsPublicKeys;
 
-    const senderPublicKey = senderPrivateKey.toPublicKey();
-    const pauseControllerPublicKey = pauseControllerPrivateKey.toPublicKey();
+    const senderPublicKey = resolveSigningPublicKey({
+      label: "Sender",
+      privateKey: senderPrivateKey,
+      publicKey: suppliedSenderPublicKey,
+    });
+    const pauseControllerPublicKey = resolveSigningPublicKey({
+      label: "Pause controller",
+      privateKey: pauseControllerPrivateKey,
+      publicKey: suppliedPauseControllerPublicKey,
+    });
+    const signingKeys = requireInMemoryPrivateKeys({
+      transactionSigner,
+      keys: [
+        { label: "Sender", privateKey: senderPrivateKey },
+        { label: "Pause controller", privateKey: pauseControllerPrivateKey },
+      ],
+    });
     const pauseController = new TreasuryPauseControllerSmartContract(
       pauseControllerPublicKey,
     );
@@ -104,9 +126,13 @@ export class SqlitePauseControllerService implements PauseControllerService {
         await pauseController.deploy();
       },
     );
-    deployTx.sign([senderPrivateKey, pauseControllerPrivateKey]);
-    await deployTx.prove();
-    const deployPendingTx = await this.sendTransaction(deployTx, { wait });
+    const provedDeployTx = await deployTx.prove();
+    const signedDeployTx = transactionSigner
+      ? await transactionSigner(provedDeployTx)
+      : provedDeployTx.sign(signingKeys);
+    const deployPendingTx = await this.sendTransaction(signedDeployTx, {
+      wait,
+    });
 
     return {
       pauseControllerAddress: pauseControllerPublicKey.toBase58(),
@@ -119,6 +145,8 @@ export class SqlitePauseControllerService implements PauseControllerService {
   ): Promise<PauseTreasuryResult> {
     const {
       senderPrivateKey,
+      senderPublicKey: suppliedSenderPublicKey,
+      transactionSigner,
       pauseControllerPublicKey,
       multisigParticipantsPublicKeys,
       signatures,
@@ -141,7 +169,15 @@ export class SqlitePauseControllerService implements PauseControllerService {
       pauseControllerPublicKey,
       nonce,
     );
-    const senderPublicKey = senderPrivateKey.toPublicKey();
+    const senderPublicKey = resolveSigningPublicKey({
+      label: "Sender",
+      privateKey: senderPrivateKey,
+      publicKey: suppliedSenderPublicKey,
+    });
+    const signingKeys = requireInMemoryPrivateKeys({
+      transactionSigner,
+      keys: [{ label: "Sender", privateKey: senderPrivateKey }],
+    });
 
     const pauseTx = await Mina.transaction(
       {
@@ -154,9 +190,11 @@ export class SqlitePauseControllerService implements PauseControllerService {
         await pauseController.pauseTreasury(signatures, resolvedNonce);
       },
     );
-    pauseTx.sign([senderPrivateKey]);
-    await pauseTx.prove();
-    const pausePendingTx = await this.sendTransaction(pauseTx, { wait });
+    const provedPauseTx = await pauseTx.prove();
+    const signedPauseTx = transactionSigner
+      ? await transactionSigner(provedPauseTx)
+      : provedPauseTx.sign(signingKeys);
+    const pausePendingTx = await this.sendTransaction(signedPauseTx, { wait });
 
     return {
       pauseControllerAddress: pauseControllerPublicKey.toBase58(),
@@ -171,6 +209,8 @@ export class SqlitePauseControllerService implements PauseControllerService {
   ): Promise<UnpauseTreasuryResult> {
     const {
       senderPrivateKey,
+      senderPublicKey: suppliedSenderPublicKey,
+      transactionSigner,
       pauseControllerPublicKey,
       multisigParticipantsPublicKeys,
       signatures,
@@ -193,7 +233,15 @@ export class SqlitePauseControllerService implements PauseControllerService {
       pauseControllerPublicKey,
       nonce,
     );
-    const senderPublicKey = senderPrivateKey.toPublicKey();
+    const senderPublicKey = resolveSigningPublicKey({
+      label: "Sender",
+      privateKey: senderPrivateKey,
+      publicKey: suppliedSenderPublicKey,
+    });
+    const signingKeys = requireInMemoryPrivateKeys({
+      transactionSigner,
+      keys: [{ label: "Sender", privateKey: senderPrivateKey }],
+    });
 
     const unpauseTx = await Mina.transaction(
       {
@@ -206,9 +254,13 @@ export class SqlitePauseControllerService implements PauseControllerService {
         await pauseController.unpauseTreasury(signatures, resolvedNonce);
       },
     );
-    unpauseTx.sign([senderPrivateKey]);
-    await unpauseTx.prove();
-    const unpausePendingTx = await this.sendTransaction(unpauseTx, { wait });
+    const provedUnpauseTx = await unpauseTx.prove();
+    const signedUnpauseTx = transactionSigner
+      ? await transactionSigner(provedUnpauseTx)
+      : provedUnpauseTx.sign(signingKeys);
+    const unpausePendingTx = await this.sendTransaction(signedUnpauseTx, {
+      wait,
+    });
 
     return {
       pauseControllerAddress: pauseControllerPublicKey.toBase58(),
@@ -223,6 +275,8 @@ export class SqlitePauseControllerService implements PauseControllerService {
   ): Promise<TogglePauseProposalResult> {
     const {
       senderPrivateKey,
+      senderPublicKey: suppliedSenderPublicKey,
+      transactionSigner,
       treasuryOwnerPublicKey,
       pauseControllerPublicKey,
       proposalPublicKey,
@@ -325,7 +379,15 @@ export class SqlitePauseControllerService implements PauseControllerService {
     // const pausedAfterToggle = !currentProposalStatus
     //   .equals(ProposalStatus.PAUSED)
     //   .toBoolean();
-    const senderPublicKey = senderPrivateKey.toPublicKey();
+    const senderPublicKey = resolveSigningPublicKey({
+      label: "Sender",
+      privateKey: senderPrivateKey,
+      publicKey: suppliedSenderPublicKey,
+    });
+    const signingKeys = requireInMemoryPrivateKeys({
+      transactionSigner,
+      keys: [{ label: "Sender", privateKey: senderPrivateKey }],
+    });
 
     const togglePauseProposalTx = await Mina.transaction(
       {
@@ -343,11 +405,16 @@ export class SqlitePauseControllerService implements PauseControllerService {
         );
       },
     );
-    togglePauseProposalTx.sign([senderPrivateKey]);
-    await togglePauseProposalTx.prove();
-    const togglePendingTx = await this.sendTransaction(togglePauseProposalTx, {
-      wait,
-    });
+    const provedTogglePauseProposalTx = await togglePauseProposalTx.prove();
+    const signedTogglePauseProposalTx = transactionSigner
+      ? await transactionSigner(provedTogglePauseProposalTx)
+      : provedTogglePauseProposalTx.sign(signingKeys);
+    const togglePendingTx = await this.sendTransaction(
+      signedTogglePauseProposalTx,
+      {
+        wait,
+      },
+    );
 
     return {
       treasuryOwnerAddress: treasuryOwnerPublicKey.toBase58(),
@@ -363,6 +430,8 @@ export class SqlitePauseControllerService implements PauseControllerService {
   ): Promise<RotateMultisigKeysResult> {
     const {
       senderPrivateKey,
+      senderPublicKey: suppliedSenderPublicKey,
+      transactionSigner,
       pauseControllerPublicKey,
       currentMultisigParticipantsPublicKeys,
       signatures,
@@ -399,7 +468,15 @@ export class SqlitePauseControllerService implements PauseControllerService {
     const newMultisigCommitment = MultisigSignatures.createCommitment(
       newMultisigParticipantsPublicKeys,
     );
-    const senderPublicKey = senderPrivateKey.toPublicKey();
+    const senderPublicKey = resolveSigningPublicKey({
+      label: "Sender",
+      privateKey: senderPrivateKey,
+      publicKey: suppliedSenderPublicKey,
+    });
+    const signingKeys = requireInMemoryPrivateKeys({
+      transactionSigner,
+      keys: [{ label: "Sender", privateKey: senderPrivateKey }],
+    });
 
     const rotateMultisigKeysTx = await Mina.transaction(
       {
@@ -416,11 +493,16 @@ export class SqlitePauseControllerService implements PauseControllerService {
         );
       },
     );
-    rotateMultisigKeysTx.sign([senderPrivateKey]);
-    await rotateMultisigKeysTx.prove();
-    const rotatePendingTx = await this.sendTransaction(rotateMultisigKeysTx, {
-      wait,
-    });
+    const provedRotateMultisigKeysTx = await rotateMultisigKeysTx.prove();
+    const signedRotateMultisigKeysTx = transactionSigner
+      ? await transactionSigner(provedRotateMultisigKeysTx)
+      : provedRotateMultisigKeysTx.sign(signingKeys);
+    const rotatePendingTx = await this.sendTransaction(
+      signedRotateMultisigKeysTx,
+      {
+        wait,
+      },
+    );
 
     return {
       pauseControllerAddress: pauseControllerPublicKey.toBase58(),

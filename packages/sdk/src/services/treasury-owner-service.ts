@@ -10,6 +10,8 @@ import { Account } from "../provable/account.js";
 import { PrefixedMerkleWitness36 } from "../provable/merkle-tree/prefixed-merkle-tree.js";
 import { SideLoadedVoteReducerProof } from "../provable/contracts/treasury-proposal/vote-reducer.js";
 import { SideLoadedStakingLedgerToVotingLedgerProof } from "../provable/staking-ledger-to-voting-ledger.js";
+import type { TransactionSigner } from "./transaction-signing.js";
+import type { TreasuryOwnerWithdrawalPermission } from "../provable/contracts/treasury-owner.js";
 
 export interface CompileTreasuryOwnerOptions {
   proofsEnabled?: boolean;
@@ -29,10 +31,15 @@ export interface CompileTreasuryOwnerResult {
 
 export interface DeployTreasuryOwnerOptions {
   minaNodeUrl: string;
-  senderPrivateKey: PrivateKey;
-  treasuryOwnerPrivateKey: PrivateKey;
-  pauseControllerPrivateKey: PrivateKey;
+  senderPrivateKey?: PrivateKey;
+  senderPublicKey?: PublicKey;
+  treasuryOwnerPrivateKey?: PrivateKey;
+  treasuryOwnerPublicKey?: PublicKey;
+  pauseControllerPrivateKey?: PrivateKey;
+  pauseControllerPublicKey?: PublicKey;
+  transactionSigner?: TransactionSigner;
   treasuryDeployedAtSlot: UInt32;
+  withdrawalPermission?: TreasuryOwnerWithdrawalPermission;
   multisigParticipantsPublicKeys: PublicKey[];
   allowDeployToExistingAccount?: boolean;
   fee?: UInt64;
@@ -45,15 +52,19 @@ export interface DeployTreasuryOwnerOptions {
 export interface DeployTreasuryOwnerResult {
   pauseControllerAddress: string;
   treasuryOwnerAddress: string;
+  withdrawalPermission: TreasuryOwnerWithdrawalPermission;
   pauseControllerTxHash?: string;
   treasuryOwnerTxHash?: string;
 }
 
 export interface CreateTreasuryProposalOptions {
   minaNodeUrl: string;
-  senderPrivateKey: PrivateKey;
+  senderPrivateKey?: PrivateKey;
+  senderPublicKey?: PublicKey;
   treasuryOwnerPublicKey: PublicKey;
-  proposalPrivateKey: PrivateKey;
+  proposalPrivateKey?: PrivateKey;
+  proposalPublicKey?: PublicKey;
+  transactionSigner?: TransactionSigner;
   proposalLifecycleId: UInt32;
   recipientPublicKey: PublicKey;
   amount: UInt64;
@@ -74,10 +85,13 @@ export type ProposalVote = "yay" | "nay" | "abstain";
 
 export interface VoteTreasuryProposalOptions {
   minaNodeUrl: string;
-  senderPrivateKey: PrivateKey;
+  senderPrivateKey?: PrivateKey;
+  senderPublicKey?: PublicKey;
   treasuryOwnerPublicKey: PublicKey;
   proposalPublicKey: PublicKey;
-  voterPrivateKey: PrivateKey;
+  voterPrivateKey?: PrivateKey;
+  voterPublicKey?: PublicKey;
+  transactionSigner?: TransactionSigner;
   vote: ProposalVote;
   fee?: UInt64;
   nonce?: number;
@@ -92,7 +106,9 @@ export interface VoteTreasuryProposalResult {
 
 export interface TallyVotesTreasuryProposalOptions {
   minaNodeUrl: string;
-  senderPrivateKey: PrivateKey;
+  senderPrivateKey?: PrivateKey;
+  senderPublicKey?: PublicKey;
+  transactionSigner?: TransactionSigner;
   treasuryOwnerPublicKey: PublicKey;
   proposalPublicKey: PublicKey;
   voteReducerProof: SideLoadedVoteReducerProof;
@@ -112,7 +128,9 @@ export interface TallyVotesTreasuryProposalResult {
 
 export interface ExecuteTreasuryProposalOptions {
   minaNodeUrl: string;
-  senderPrivateKey: PrivateKey;
+  senderPrivateKey?: PrivateKey;
+  senderPublicKey?: PublicKey;
+  transactionSigner?: TransactionSigner;
   treasuryOwnerPublicKey: PublicKey;
   proposalPublicKey: PublicKey;
   recipientPublicKey: PublicKey;
@@ -132,8 +150,11 @@ export interface ExecuteTreasuryProposalResult {
 
 export interface TransferToTreasuryOptions {
   minaNodeUrl: string;
-  senderPrivateKey: PrivateKey;
+  senderPrivateKey?: PrivateKey;
+  senderPublicKey?: PublicKey;
   fundingPrivateKey?: PrivateKey;
+  fundingPublicKey?: PublicKey;
+  transactionSigner?: TransactionSigner;
   treasuryOwnerPublicKey: PublicKey;
   amount: UInt64;
   fee?: UInt64;
@@ -151,6 +172,30 @@ export interface TransferToTreasuryResult {
   transferTxHash?: string;
 }
 
+export interface EmergencyWithdrawOptions {
+  minaNodeUrl: string;
+  senderPrivateKey?: PrivateKey;
+  senderPublicKey?: PublicKey;
+  treasuryOwnerPrivateKey?: PrivateKey;
+  treasuryOwnerPublicKey?: PublicKey;
+  transactionSigner?: TransactionSigner;
+  recipientPublicKey: PublicKey;
+  amount: UInt64;
+  fee?: UInt64;
+  nonce?: number;
+  memo?: string;
+  wait?: boolean;
+}
+
+export interface EmergencyWithdrawResult {
+  authorization: "treasury-owner-signature";
+  sender: string;
+  from: string;
+  to: string;
+  amount: string;
+  emergencyWithdrawalTxHash?: string;
+}
+
 export interface GetTreasuryOwnerStateOptions {
   minaNodeUrl: string;
   treasuryOwnerPublicKey: PublicKey;
@@ -161,6 +206,9 @@ export interface GetTreasuryOwnerStateResult {
   treasuryOwnerTokenId: string;
   treasuryDeployedAtSlot: string;
   pauseControllerPublicKey: string;
+  withdrawalPermission: TreasuryOwnerWithdrawalPermission | "custom";
+  accessPermission: string;
+  sendPermission: string;
 }
 
 export interface GetTreasuryProposalStateOptions {
@@ -209,7 +257,9 @@ export interface TreasuryOwnerService {
   compile(
     options?: CompileTreasuryOwnerOptions,
   ): Promise<CompileTreasuryOwnerResult>;
-  deploy(options: DeployTreasuryOwnerOptions): Promise<DeployTreasuryOwnerResult>;
+  deploy(
+    options: DeployTreasuryOwnerOptions,
+  ): Promise<DeployTreasuryOwnerResult>;
   createProposal(
     options: CreateTreasuryProposalOptions,
   ): Promise<CreateTreasuryProposalResult>;
@@ -225,6 +275,9 @@ export interface TreasuryOwnerService {
   transferToTreasury(
     options: TransferToTreasuryOptions,
   ): Promise<TransferToTreasuryResult>;
+  emergencyWithdraw(
+    options: EmergencyWithdrawOptions,
+  ): Promise<EmergencyWithdrawResult>;
   getTreasuryOwnerState(
     options: GetTreasuryOwnerStateOptions,
   ): Promise<GetTreasuryOwnerStateResult>;

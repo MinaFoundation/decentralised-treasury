@@ -51,6 +51,43 @@ import {
 // 7140 slots = ~2 weeks, this is the mainnet configuration
 export const LIFECYCLE_PERIOD_DURATION = UInt32.from(7140);
 
+export const TREASURY_OWNER_WITHDRAWAL_PERMISSIONS = [
+  "proof",
+  "proofOrSignature",
+] as const;
+export type TreasuryOwnerWithdrawalPermission =
+  (typeof TREASURY_OWNER_WITHDRAWAL_PERMISSIONS)[number];
+export const DEFAULT_TREASURY_OWNER_WITHDRAWAL_PERMISSION: TreasuryOwnerWithdrawalPermission =
+  "proof";
+
+export function createTreasuryOwnerPermissions(
+  withdrawalPermission: TreasuryOwnerWithdrawalPermission = DEFAULT_TREASURY_OWNER_WITHDRAWAL_PERMISSION,
+): Permissions {
+  if (
+    withdrawalPermission !== "proof" &&
+    withdrawalPermission !== "proofOrSignature"
+  ) {
+    throw new Error(
+      `Unsupported Treasury Owner withdrawal permission: ${String(withdrawalPermission)}`,
+    );
+  }
+  const withdrawalAuthorization =
+    withdrawalPermission === "proofOrSignature"
+      ? Permissions.proofOrSignature()
+      : Permissions.proof();
+
+  return {
+    ...Permissions.allImpossible(),
+    editState: Permissions.proof(),
+    access: withdrawalAuthorization,
+    incrementNonce: Permissions.proofOrSignature(),
+    setVerificationKey:
+      Permissions.VerificationKey.impossibleDuringCurrentVersion(),
+    send: withdrawalAuthorization,
+    receive: Permissions.proof(),
+  };
+}
+
 export class LifecyclePeriod extends UInt32 {
   // doubles as execution period too
   public static PROPOSAL = new LifecyclePeriod(0);
@@ -61,7 +98,6 @@ export class LifecyclePeriod extends UInt32 {
   public static NUMBER_OF_PERIODS = UInt32.from(4);
 }
 
-// TODO: set correct starting permissions
 export class TreasuryOwnerSmartContract extends TokenContract {
   public static proposalContractVerificationKey?: {
     data: string;
@@ -71,17 +107,6 @@ export class TreasuryOwnerSmartContract extends TokenContract {
   public static lifecyclePeriodDuration = LIFECYCLE_PERIOD_DURATION;
   public static treasuryDeployedAtSlot: UInt32;
   public static pauseControllerPublicKey: PublicKey;
-
-  public static permissions: Permissions = {
-    ...Permissions.allImpossible(),
-    editState: Permissions.proof(),
-    access: Permissions.proof(),
-    incrementNonce: Permissions.proofOrSignature(),
-    setVerificationKey:
-      Permissions.VerificationKey.impossibleDuringCurrentVersion(),
-    send: Permissions.proof(),
-    receive: Permissions.proof(),
-  };
 
   @state(UInt32) treasuryDeployedAtSlot = State<UInt32>();
   @state(PublicKey) pauseControllerPublicKey = State<PublicKey>();
@@ -108,8 +133,18 @@ export class TreasuryOwnerSmartContract extends TokenContract {
   }
 
   public async deploy() {
+    await this.deployWithWithdrawalPermission(
+      DEFAULT_TREASURY_OWNER_WITHDRAWAL_PERMISSION,
+    );
+  }
+
+  public async deployWithWithdrawalPermission(
+    withdrawalPermission: TreasuryOwnerWithdrawalPermission,
+  ) {
     await super.deploy();
-    this.account.permissions.set(TreasuryOwnerSmartContract.permissions);
+    this.account.permissions.set(
+      createTreasuryOwnerPermissions(withdrawalPermission),
+    );
     this.treasuryDeployedAtSlot.set(
       TreasuryOwnerSmartContract.treasuryDeployedAtSlot,
     );
@@ -362,7 +397,11 @@ export class TreasuryOwnerSmartContract extends TokenContract {
       actionStateHistory.actionStateFive,
     ];
 
-    for (let actionStateIndex = 0; actionStateIndex < actionStates.length; actionStateIndex++) {
+    for (
+      let actionStateIndex = 0;
+      actionStateIndex < actionStates.length;
+      actionStateIndex++
+    ) {
       const actionStateUpdate = AccountUpdate.create(
         proposalPublicKey,
         this.deriveTokenId(),
@@ -375,9 +414,7 @@ export class TreasuryOwnerSmartContract extends TokenContract {
       actionState.hash
         .equals(Reducer.initialActionState)
         .not()
-        .assertTrue(
-          "Action state hash must not be the initial action state",
-        );
+        .assertTrue("Action state hash must not be the initial action state");
 
       for (
         let compareIndex = actionStateIndex + 1;
