@@ -9,13 +9,25 @@ import {
   UpdateDateColumn,
 } from "typeorm";
 import type { Relation } from "typeorm";
+import { Check } from "typeorm";
+import { UINT32_NUMBER_TRANSFORMER } from "@repo/indexer";
 import { ProposalEntity } from "./proposal-entity.js";
 
 @Entity({ name: "processor_proposal_executions" })
-@Index("ux_processor_proposal_executions_archive_event_id", ["archiveEventId"], {
-  unique: true,
-})
-@Index("ix_processor_proposal_executions_proposal_public_key", ["proposalPublicKey"])
+@Index(
+  "ux_processor_proposal_executions_archive_event_id",
+  ["archiveEventId"],
+  {
+    unique: true,
+  },
+)
+@Index("ix_processor_proposal_executions_proposal_public_key", [
+  "proposalPublicKey",
+])
+@Check(
+  "CK_processor_proposal_executions_lifecycle_id_uint32",
+  `"lifecycle_id" BETWEEN 0 AND 4294967295`,
+)
 export class ProposalExecutionEntity {
   @PrimaryGeneratedColumn({
     type: "bigint",
@@ -36,8 +48,9 @@ export class ProposalExecutionEntity {
   proposalPublicKey!: string;
 
   @Column({
-    type: "integer",
+    type: "bigint",
     name: "lifecycle_id",
+    transformer: UINT32_NUMBER_TRANSFORMER,
   })
   lifecycleId!: number;
 
@@ -89,6 +102,13 @@ export class ProposalExecutionEntity {
     nullable: true,
   })
   blockHeight!: number | null;
+
+  @Column({
+    type: "integer",
+    name: "block_event_index",
+    default: 0,
+  })
+  blockEventIndex!: number;
 
   @Column({
     type: "text",

@@ -1,18 +1,16 @@
 import {
+  Check,
   Column,
   CreateDateColumn,
   Entity,
   Index,
   JoinColumn,
   ManyToOne,
-  OneToMany,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from "typeorm";
 import type { Relation } from "typeorm";
 import { ProposalEntity } from "./proposal-entity.js";
-import { VoteEntity } from "./vote-entity.js";
-import { VoteNullifierEntity } from "./vote-nullifier-entity.js";
 
 export type VoteTallyVoteResult = "approved" | "rejected";
 export type VoteTallyCreatedByEventType =
@@ -21,17 +19,46 @@ export type VoteTallyCreatedByEventType =
 
 @Entity({ name: "processor_vote_tallies" })
 @Index(
-  "ux_processor_vote_tallies_proposal_public_key_block_height",
+  "ux_processor_vote_tallies_running_proposal_block_height",
   ["proposalPublicKey", "blockHeight"],
-  { unique: true },
+  {
+    unique: true,
+    where: `"created_by_event_type" = 'proposalVoteDispatched'`,
+  },
 )
 @Index("ix_processor_vote_tallies_proposal_public_key", ["proposalPublicKey"])
+@Check(
+  "CK_processor_vote_tallies_source_status",
+  `"source_status" IN ('pending', 'canonical', 'orphaned')`,
+)
 export class VoteTallyEntity {
   @PrimaryGeneratedColumn({
     type: "bigint",
     name: "id",
   })
   id!: string;
+
+  @Column({
+    type: "text",
+    name: "archive_event_id",
+    nullable: true,
+  })
+  @Index("ux_processor_vote_tallies_archive_event_id", { unique: true })
+  archiveEventId!: string | null;
+
+  @Column({
+    type: "text",
+    name: "source_status",
+    default: "pending",
+  })
+  sourceStatus!: string;
+
+  @Column({
+    type: "integer",
+    name: "block_event_index",
+    default: 0,
+  })
+  blockEventIndex!: number;
 
   @Column({
     type: "text",
@@ -123,12 +150,6 @@ export class VoteTallyEntity {
     referencedColumnName: "proposalPublicKey",
   })
   proposal!: Relation<ProposalEntity>;
-
-  @OneToMany(() => VoteEntity, (vote) => vote.voteTally)
-  votes!: Relation<VoteEntity[]>;
-
-  @OneToMany(() => VoteNullifierEntity, (nullifier) => nullifier.voteTally)
-  nullifiers!: Relation<VoteNullifierEntity[]>;
 
   @CreateDateColumn({
     type: "timestamptz",

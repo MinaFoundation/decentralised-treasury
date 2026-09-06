@@ -10,21 +10,18 @@ import {
 } from "typeorm";
 import type { Relation } from "typeorm";
 import { ProposalEntity } from "./proposal-entity.js";
-import { VoteTallyEntity } from "./vote-tally-entity.js";
 
 export type VoteLabel = "dummy" | "yay" | "nay" | "abstain";
 
 @Entity({ name: "processor_votes" })
 @Index("ix_processor_votes_proposal_public_key", ["proposalPublicKey"])
-@Index(
-  "ix_processor_votes_proposal_public_key_voter_public_key",
-  ["proposalPublicKey", "voterPublicKey"],
-)
-@Index(
-  "ux_processor_votes_archive_event_id",
-  ["archiveEventId"],
-  { unique: true },
-)
+@Index("ix_processor_votes_proposal_public_key_voter_public_key", [
+  "proposalPublicKey",
+  "voterPublicKey",
+])
+@Index("ux_processor_votes_archive_event_id", ["archiveEventId"], {
+  unique: true,
+})
 export class VoteEntity {
   @PrimaryGeneratedColumn({
     type: "bigint",
@@ -70,6 +67,13 @@ export class VoteEntity {
   blockHeight!: number | null;
 
   @Column({
+    type: "integer",
+    name: "block_event_index",
+    default: 0,
+  })
+  blockEventIndex!: number;
+
+  @Column({
     type: "boolean",
     name: "is_nullified",
     default: false,
@@ -82,7 +86,7 @@ export class VoteEntity {
   })
   status!: string;
 
-  @ManyToOne(() => ProposalEntity, {
+  @ManyToOne(() => ProposalEntity, (proposal) => proposal.votes, {
     onDelete: "CASCADE",
   })
   @JoinColumn({
@@ -90,22 +94,6 @@ export class VoteEntity {
     referencedColumnName: "proposalPublicKey",
   })
   proposal!: Relation<ProposalEntity>;
-
-  @ManyToOne(() => VoteTallyEntity, (voteTally) => voteTally.votes, {
-    nullable: true,
-    onDelete: "CASCADE",
-  })
-  @JoinColumn([
-    {
-      name: "proposal_public_key",
-      referencedColumnName: "proposalPublicKey",
-    },
-    {
-      name: "block_height",
-      referencedColumnName: "blockHeight",
-    },
-  ])
-  voteTally!: Relation<VoteTallyEntity> | null;
 
   @CreateDateColumn({
     type: "timestamptz",

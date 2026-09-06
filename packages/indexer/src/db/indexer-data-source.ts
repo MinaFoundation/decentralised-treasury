@@ -1,5 +1,10 @@
 import { DataSource } from "typeorm";
-import { ArchiveEventEntity, IndexerCursorEntity } from "../entities.js";
+import {
+  ArchiveEventEntity,
+  ArchiveEventRejectionEntity,
+  IndexerCursorEntity,
+  IndexerRuntimeStatusEntity,
+} from "../entities.js";
 
 export interface IndexerDatabaseConfig {
   databaseUrl: string;
@@ -14,6 +19,11 @@ export function createIndexerDataSource(
     url: config.databaseUrl,
     schema: config.databaseSchema,
     synchronize: false,
-    entities: [ArchiveEventEntity, IndexerCursorEntity],
+    entities: [
+      ArchiveEventEntity,
+      ArchiveEventRejectionEntity,
+      IndexerCursorEntity,
+      IndexerRuntimeStatusEntity,
+    ],
   });
 }

@@ -1,6 +1,10 @@
 import { ArchiveEventEntity } from "@repo/indexer";
 import { DataSource, type EntitySchema } from "typeorm";
-import { ProcessorOffsetEntity } from "./entities.js";
+import {
+  ProcessorEventFailureEntity,
+  ProcessorOffsetEntity,
+  ProcessorRuntimeStatusEntity,
+} from "./entities.js";
 
 export type ProcessorEntitySchema = Function | string | EntitySchema;
 
@@ -12,6 +16,8 @@ export interface ProcessorDatabaseConfig {
 export const PROCESSOR_INTERNAL_ENTITIES: ProcessorEntitySchema[] = [
   ArchiveEventEntity,
   ProcessorOffsetEntity,
+  ProcessorEventFailureEntity,
+  ProcessorRuntimeStatusEntity,
 ];
 
 export function createProcessorDataSource(

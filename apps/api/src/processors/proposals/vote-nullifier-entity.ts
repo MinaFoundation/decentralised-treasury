@@ -10,11 +10,12 @@ import {
 } from "typeorm";
 import type { Relation } from "typeorm";
 import { ProposalEntity } from "./proposal-entity.js";
-import { VoteTallyEntity } from "./vote-tally-entity.js";
 import type { VoteLabel } from "./vote-entity.js";
 
 @Entity({ name: "processor_vote_nullifiers" })
-@Index("ix_processor_vote_nullifiers_proposal_public_key", ["proposalPublicKey"])
+@Index("ix_processor_vote_nullifiers_proposal_public_key", [
+  "proposalPublicKey",
+])
 @Index(
   "ux_processor_vote_nullifiers_proposal_public_key_voter_public_key",
   ["proposalPublicKey", "voterPublicKey"],
@@ -66,7 +67,7 @@ export class VoteNullifierEntity {
   })
   blockHeight!: number;
 
-  @ManyToOne(() => ProposalEntity, {
+  @ManyToOne(() => ProposalEntity, (proposal) => proposal.voteNullifiers, {
     onDelete: "CASCADE",
   })
   @JoinColumn({
@@ -74,21 +75,6 @@ export class VoteNullifierEntity {
     referencedColumnName: "proposalPublicKey",
   })
   proposal!: Relation<ProposalEntity>;
-
-  @ManyToOne(() => VoteTallyEntity, (voteTally) => voteTally.nullifiers, {
-    onDelete: "CASCADE",
-  })
-  @JoinColumn([
-    {
-      name: "proposal_public_key",
-      referencedColumnName: "proposalPublicKey",
-    },
-    {
-      name: "block_height",
-      referencedColumnName: "blockHeight",
-    },
-  ])
-  voteTally!: Relation<VoteTallyEntity>;
 
   @CreateDateColumn({
     type: "timestamptz",
