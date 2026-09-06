@@ -85,7 +85,12 @@ describe("proposal detail pagination", () => {
       limit: 5,
       offset: 5,
       nextOffset: 10,
-      items: [{ id: "vote-6", voterPublicKey: "B62qvoter" }],
+      items: [
+        {
+          id: "vote-6",
+          voterPublicKey: "B62qvoter",
+        },
+      ],
     });
     expect(fetchMock).toHaveBeenCalledWith(
       "http://127.0.0.1:3100/api/proposals/B62qproposal%2Fkey/votes?limit=5&offset=5",
@@ -104,8 +109,10 @@ describe("proposal detail pagination", () => {
             {
               id: "execution-1",
               senderPublicKey: "B62qexecutor",
-              paidOutAmount: "500",
-              remainingAmount: "500",
+              amountToPayOut: "1250000001",
+              paidOutAmount: "1250000001",
+              remainingAmount: "0",
+              status: "pending",
             },
           ],
         }),
@@ -122,7 +129,16 @@ describe("proposal detail pagination", () => {
       limit: 2,
       offset: 0,
       nextOffset: 2,
-      items: [{ id: "execution-1", senderPublicKey: "B62qexecutor" }],
+      items: [
+        {
+          id: "execution-1",
+          senderPublicKey: "B62qexecutor",
+          amountToPayOut: "1250000001",
+          paidOutAmount: "1250000001",
+          remainingAmount: "0",
+          status: "pending",
+        },
+      ],
     });
     expect(fetchMock).toHaveBeenCalledWith(
       "http://127.0.0.1:3100/api/proposals/B62qproposal/executions?limit=2&offset=0",
@@ -216,6 +232,75 @@ describe("mapProposalItemToEntry", () => {
       }).period,
     ).toBe("Proposal");
   });
+
+  it("maps active tallies and observation metadata", () => {
+    const runningVoteTally = {
+      blockHeight: 101,
+      yayWeight: "10",
+      nayWeight: "2",
+      abstainWeight: "1",
+      createdByEventType: "proposalVoteDispatched" as const,
+      voteResult: "approved" as const,
+    };
+    const finalVoteTally = {
+      ...runningVoteTally,
+      archiveEventId: "event-final-pending",
+      blockEventIndex: 4,
+      sourceStatus: "pending" as const,
+      blockHeight: 103,
+      createdByEventType: "proposalVotesTallied" as const,
+    };
+
+    expect(
+      mapProposalItemToEntry({
+        id: "proposal-status",
+        status: "canonical",
+        stage: "Passed",
+        contractStatus: "approved",
+        contractStatusFinality: "pending",
+        contractStatusSourceEventId: "event-status",
+        statusAsOfBlockHeight: 103,
+        creationObservationStatus: "canonical",
+        runningVoteTally,
+        finalVoteTally,
+        latestVoteTally: finalVoteTally,
+        isPaused: true,
+      }),
+    ).toMatchObject({
+      contractStatus: "approved",
+      contractStatusFinality: "pending",
+      contractStatusSourceEventId: "event-status",
+      statusAsOfBlockHeight: 103,
+      creationObservationStatus: "canonical",
+      runningVoteTally,
+      finalVoteTally,
+      isPaused: true,
+    });
+  });
+
+  it("preserves the active contract status and exact paused state", () => {
+    expect(
+      mapProposalItemToEntry({
+        id: "proposal-paused",
+        contractStatus: "paused",
+        contractStatusFinality: "pending",
+        isPaused: true,
+      }),
+    ).toMatchObject({
+      contractStatus: "paused",
+      contractStatusFinality: "pending",
+      isPaused: true,
+    });
+  });
+
+  it("does not use the observation status as the contract stage", () => {
+    expect(
+      mapProposalItemToEntry({
+        id: "proposal-pending-observation",
+        status: "pending",
+      }).stage,
+    ).toBe("Unknown");
+  });
 });
 
 describe("inferProposalPeriod", () => {
@@ -242,13 +327,16 @@ describe("mapProposalItemToDetailProposal", () => {
         senderPublicKey: "B62qsender",
         recipient: "B62qrecipient",
         amount: "120000000000000",
-        status: "Voting",
+        stage: "Voting",
         createdAt: "2026-01-01T00:00:00.000Z",
         createdAtBlockHeight: 123,
         createdAtBlockTimestamp: "2026-01-01T00:00:00.000Z",
         zkAppUriHash: "zk-hash",
         stakingEpochDataLedgerHash: "ledger-hash",
         paidOutAmount: "0",
+        totalPayoutAmount: "132000000000000",
+        remainingPayoutAmount: "132000000000000",
+        payoutAmountIntegrity: false,
         contents: "# Proposal Title\n\nBody",
       }),
     ).toMatchObject({
@@ -264,6 +352,9 @@ describe("mapProposalItemToDetailProposal", () => {
       zkAppUriHash: "zk-hash",
       stakingEpochDataLedgerHash: "ledger-hash",
       paidOutAmount: "0",
+      totalPayoutAmount: "132000000000000",
+      remainingPayoutAmount: "132000000000000",
+      payoutAmountIntegrity: false,
       contents: "# Proposal Title\n\nBody",
     });
   });

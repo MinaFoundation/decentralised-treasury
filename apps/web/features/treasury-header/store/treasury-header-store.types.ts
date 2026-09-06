@@ -1,5 +1,6 @@
 import type { TreasuryProposalTableEntry } from "@repo/ui/treasury-proposals-table";
 import type { WalletConnectButtonProps } from "@repo/ui/wallet-connect-button";
+import type { WalletDetail } from "../../wallet/wallet-provider";
 
 export interface TreasuryHeaderSearchState {
   query: string;
@@ -11,8 +12,8 @@ export interface TreasuryHeaderSearchState {
 export interface TreasuryHeaderWalletState {
   loading: boolean;
   status: WalletConnectButtonProps["status"];
-  isAuroInstalled?: boolean;
   address?: string;
+  details?: WalletDetail[];
   accountInfo?: WalletConnectButtonProps["accountInfo"];
   accountInfoLoading: boolean;
   error: string | null;

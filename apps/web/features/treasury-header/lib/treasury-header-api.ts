@@ -25,7 +25,7 @@ export interface ProposalApiItem {
   amount?: string;
   requestedAmount?: string;
   recipient?: string | null;
-  status?: string;
+  status?: "pending" | "canonical";
   stage?: string;
   period?: string;
   createdAt?: string;
@@ -37,7 +37,17 @@ export interface ProposalApiItem {
   requiredParticipationBp?: string | null;
   requiredApprovalBp?: string | null;
   requiredParticipation?: string | null;
+  contractStatus?: TreasuryProposalTableEntry["contractStatus"];
+  contractStatusFinality?: TreasuryProposalTableEntry["contractStatusFinality"];
+  contractStatusSourceEventId?: string | null;
+  statusAsOfBlockHeight?: number | null;
+  creationObservationStatus?: TreasuryProposalTableEntry["creationObservationStatus"];
+  runningVoteTally?: TreasuryProposalTableEntry["runningVoteTally"];
+  finalVoteTally?: TreasuryProposalTableEntry["finalVoteTally"];
   paidOutAmount?: string | null;
+  totalPayoutAmount?: string | null;
+  remainingPayoutAmount?: string | null;
+  payoutAmountIntegrity?: boolean | null;
   contents?: string | null;
   updatedAt?: string | null;
   latestVoteTally?: TreasuryProposalTableEntry["latestVoteTally"];
@@ -63,10 +73,10 @@ interface ProposalVotesResponse {
     proposalPublicKey?: string;
     voterPublicKey?: string;
     vote?: string;
-    voteWeight?: string;
+    voteWeight: string;
     blockHeight?: number | null;
-    isNullified?: boolean;
-    status?: string | null;
+    isNullified: boolean;
+    status?: "pending" | "canonical" | null;
     createdAt?: string | null;
   }>;
 }
@@ -83,10 +93,10 @@ interface ProposalExecutionsResponse {
     amountToPayOut?: string;
     bondAmount?: string | null;
     senderPublicKey?: string | null;
-    paidOutAmount?: string;
-    remainingAmount?: string;
+    paidOutAmount: string;
+    remainingAmount: string;
     blockHeight?: number | null;
-    status?: string | null;
+    status?: "pending" | "canonical" | null;
     createdAt?: string | null;
   }>;
 }
@@ -181,7 +191,6 @@ export function inferProposalPeriod(value: string | undefined): string {
     normalized.length === 0 ||
     normalized === "pending" ||
     normalized === "canonical" ||
-    normalized === "orphaned" ||
     normalized === "unknown"
   ) {
     // Default to proposal while lifecycle context is still hydrating.
@@ -244,11 +253,15 @@ function inferPausedState(
 export function mapProposalItemToEntry(
   item: ProposalApiItem,
 ): TreasuryProposalTableEntry {
-  const stage = item.stage ?? item.status ?? "Unknown";
+  const stage = item.stage ?? "Unknown";
   const period = item.period ?? inferProposalPeriod(stage);
   const title =
     extractTitleFromMarkdown(item.contents) ?? item.title ?? item.id;
-  const isPaused = inferPausedState(stage, item.isPaused);
+  const isPaused =
+    item.isPaused ??
+    (item.contractStatus
+      ? item.contractStatus.toLowerCase() === "paused"
+      : inferPausedState(stage, undefined));
 
   return {
     id: item.id,
@@ -266,6 +279,13 @@ export function mapProposalItemToEntry(
     requiredParticipationBp: item.requiredParticipationBp,
     requiredApprovalBp: item.requiredApprovalBp,
     requiredParticipation: item.requiredParticipation,
+    contractStatus: item.contractStatus,
+    contractStatusFinality: item.contractStatusFinality,
+    contractStatusSourceEventId: item.contractStatusSourceEventId,
+    statusAsOfBlockHeight: item.statusAsOfBlockHeight,
+    creationObservationStatus: item.creationObservationStatus,
+    runningVoteTally: item.runningVoteTally,
+    finalVoteTally: item.finalVoteTally,
     latestVoteTally: item.latestVoteTally,
     isPaused,
   };
@@ -282,6 +302,9 @@ export function mapProposalItemToDetailProposal(
     zkAppUriHash: item.zkAppUriHash,
     stakingEpochDataLedgerHash: item.stakingEpochDataLedgerHash,
     paidOutAmount: item.paidOutAmount,
+    totalPayoutAmount: item.totalPayoutAmount,
+    remainingPayoutAmount: item.remainingPayoutAmount,
+    payoutAmountIntegrity: item.payoutAmountIntegrity,
     contents: item.contents,
     updatedAt: item.updatedAt,
     createdAtBlockTimestamp: item.createdAtBlockTimestamp,
@@ -433,7 +456,7 @@ export async function fetchProposalVotesPage(
     id: item.id,
     voterPublicKey: item.voterPublicKey ?? "-",
     vote: item.vote ?? "-",
-    voteWeight: item.voteWeight ?? "0",
+    voteWeight: item.voteWeight,
     blockHeight: item.blockHeight ?? null,
     isNullified: item.isNullified,
     status: item.status ?? null,
@@ -485,8 +508,8 @@ export async function fetchProposalExecutionsPage(
     amountToPayOut: item.amountToPayOut ?? "0",
     bondAmount: item.bondAmount ?? null,
     senderPublicKey: item.senderPublicKey ?? null,
-    paidOutAmount: item.paidOutAmount ?? "0",
-    remainingAmount: item.remainingAmount ?? "0",
+    paidOutAmount: item.paidOutAmount,
+    remainingAmount: item.remainingAmount,
     blockHeight: item.blockHeight ?? null,
     status: item.status ?? null,
   }));

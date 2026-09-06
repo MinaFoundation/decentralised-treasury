@@ -15,8 +15,8 @@ export function createInitialTreasuryHeaderStoreState(): TreasuryHeaderStoreStat
     wallet: {
       loading: false,
       status: "disconnected",
-      isAuroInstalled: undefined,
       address: undefined,
+      details: undefined,
       accountInfo: undefined,
       accountInfoLoading: false,
       error: null,

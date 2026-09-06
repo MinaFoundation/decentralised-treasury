@@ -54,7 +54,6 @@ describe("useWalletAccountInfo", () => {
     useTreasuryHeaderStore.getState().setWalletState({
       status: "connected",
       address: "B62qwallet",
-      isAuroInstalled: true,
     });
   });
 

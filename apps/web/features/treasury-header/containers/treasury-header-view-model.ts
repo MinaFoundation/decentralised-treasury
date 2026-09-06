@@ -17,7 +17,6 @@ interface BuildTreasuryHeaderPropsInput {
   forceRefresh: () => void;
   connectWallet: () => void | Promise<void>;
   disconnectWallet: () => void;
-  openInstallWallet: () => void;
   push: (href: string) => void;
   selectDraftProposal: (draftId: string) => void;
   deleteDraftProposal?: (draftId: string) => void;
@@ -49,13 +48,12 @@ export function buildTreasuryHeaderProps(
     walletLoading: input.wallet.loading,
     walletConnectStatus: input.wallet.status,
     walletAddress: input.wallet.address,
+    walletDetails: input.wallet.details,
     walletAccountInfo: input.wallet.accountInfo,
     walletAccountInfoLoading: input.wallet.accountInfoLoading,
-    isAuroInstalled: input.wallet.isAuroInstalled,
     onConnectWalletClick: () => {
       void input.connectWallet();
     },
-    onInstallWalletClick: input.openInstallWallet,
     onDisconnectWalletClick: input.disconnectWallet,
     onCreateProposalClick: () => input.push(createProposalHref),
     draftProposals: input.draftProposals,

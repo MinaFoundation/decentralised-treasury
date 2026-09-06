@@ -8,7 +8,6 @@ describe("buildTreasuryHeaderProps", () => {
     const forceRefresh = vi.fn();
     const connectWallet = vi.fn();
     const disconnectWallet = vi.fn();
-    const openInstallWallet = vi.fn();
     const setSearchQuery = vi.fn();
     const selectDraftProposal = vi.fn();
     const deleteDraftProposal = vi.fn();
@@ -57,7 +56,6 @@ describe("buildTreasuryHeaderProps", () => {
       wallet: {
         loading: false,
         status: "connected",
-        isAuroInstalled: true,
         address: "B62qwallet",
         accountInfo: {
           minaBalance: "4.2 MINA",
@@ -71,7 +69,6 @@ describe("buildTreasuryHeaderProps", () => {
       forceRefresh,
       connectWallet,
       disconnectWallet,
-      openInstallWallet,
       push,
       selectDraftProposal,
       deleteDraftProposal,
@@ -123,8 +120,6 @@ describe("buildTreasuryHeaderProps", () => {
     props.onDisconnectWalletClick?.();
     expect(disconnectWallet).toHaveBeenCalledTimes(1);
 
-    props.onInstallWalletClick?.();
-    expect(openInstallWallet).toHaveBeenCalledTimes(1);
 
     props.onDraftProposalDelete?.("D-5");
     expect(deleteDraftProposal).toHaveBeenCalledWith("D-5");
@@ -171,7 +166,6 @@ describe("buildTreasuryHeaderProps", () => {
       forceRefresh: vi.fn(),
       connectWallet: vi.fn(),
       disconnectWallet: vi.fn(),
-      openInstallWallet: vi.fn(),
       push: vi.fn(),
       selectDraftProposal: vi.fn(),
     });

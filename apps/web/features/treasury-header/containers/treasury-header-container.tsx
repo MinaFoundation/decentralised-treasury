@@ -17,8 +17,6 @@ import { useTreasuryHeaderStore } from "../store/treasury-header-store";
 import { useMinaBlockStore } from "../../mina-blocks/store/mina-block-store";
 import { useProposalDrafts } from "../../proposals/hooks/use-proposal-drafts";
 
-const AURO_INSTALL_URL = "https://www.aurowallet.com/";
-
 export function TreasuryHeaderContainer() {
   const router = useRouter();
   const pathname = usePathname();
@@ -52,9 +50,6 @@ export function TreasuryHeaderContainer() {
         forceRefresh,
         connectWallet,
         disconnectWallet,
-        openInstallWallet: () => {
-          window.open(AURO_INSTALL_URL, "_blank", "noopener,noreferrer");
-        },
         push: router.push,
         selectDraftProposal: (draftId) => {
           const from = pathname === "/" ? "dashboard" : "proposals";
