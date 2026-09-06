@@ -45,7 +45,7 @@ interface LedgerAccount {
   publicKey: PublicKey;
 }
 
-const LEDGER_ACCOUNT_SCAN_LIMIT = 100;
+export type LedgerAccountIndices = ReadonlyMap<string, number>;
 
 function responseError(
   operation: string,
@@ -99,38 +99,46 @@ function verifyFieldSignature(
     .toBoolean();
 }
 
-async function findLedgerAccounts(
+function validateAccountIndex(accountIndex: number): void {
+  if (
+    !Number.isSafeInteger(accountIndex) ||
+    accountIndex < 0 ||
+    accountIndex > 0xffff_ffff
+  ) {
+    throw new Error(
+      `Ledger account index must be an integer from 0 through 4294967295, got ${String(accountIndex)}`,
+    );
+  }
+}
+
+async function resolveLedgerAccounts(
   ledger: LedgerSigningClient,
   expectedPublicKeys: ReadonlySet<string>,
+  accountIndices: LedgerAccountIndices,
 ): Promise<Map<string, LedgerAccount>> {
   const found = new Map<string, LedgerAccount>();
 
-  for (
-    let accountIndex = 0;
-    accountIndex < LEDGER_ACCOUNT_SCAN_LIMIT &&
-    found.size < expectedPublicKeys.size;
-    accountIndex += 1
-  ) {
-    const response = await ledger.getAddress(accountIndex, false);
+  for (const expectedPublicKey of expectedPublicKeys) {
+    const accountIndex = accountIndices.get(expectedPublicKey);
+    if (accountIndex === undefined) {
+      throw new Error(
+        `Ledger account index is required for ${expectedPublicKey}`,
+      );
+    }
+    validateAccountIndex(accountIndex);
+    const response = await ledger.getAddress(accountIndex, true);
     if (response.returnCode !== "9000" || !response.publicKey) {
       throw responseError("address request", response);
     }
-    if (!expectedPublicKeys.has(response.publicKey)) {
-      continue;
+    if (response.publicKey !== expectedPublicKey) {
+      throw new Error(
+        `Ledger account index ${accountIndex} returned ${response.publicKey}, expected ${expectedPublicKey}`,
+      );
     }
-    found.set(response.publicKey, {
+    found.set(expectedPublicKey, {
       accountIndex,
-      publicKey: PublicKey.fromBase58(response.publicKey),
+      publicKey: PublicKey.fromBase58(expectedPublicKey),
     });
-  }
-
-  const missing = [...expectedPublicKeys].filter(
-    (publicKey) => !found.has(publicKey),
-  );
-  if (missing.length > 0) {
-    throw new Error(
-      `Ledger does not contain the required public key${missing.length === 1 ? "" : "s"} within its first ${LEDGER_ACCOUNT_SCAN_LIMIT} Mina accounts: ${missing.join(", ")}`,
-    );
   }
 
   return found;
@@ -173,21 +181,39 @@ function requiredTransactionPublicKeys(command: ZkappCommandJson): Set<string> {
 
 /**
  * Internal transport-neutral implementation used by the CLI and browser
- * wrappers. Application transaction code consumes only signTxWithLedger(tx).
+ * wrappers. The caller supplies one verified Ledger index for each signer.
  *
  * @internal
  */
 export async function signTransactionWithLedgerClient(
   transaction: { toJSON(): string },
   ledger: LedgerSigningClient,
+  accountIndices: LedgerAccountIndices,
+  requestedNetworkId?: NetworkId,
 ): Promise<ReturnType<typeof Transaction.fromJSON>> {
   const command = JSON.parse(transaction.toJSON()) as ZkappCommandJson;
-  const networkId = activeNetworkId();
+  const networkId = requestedNetworkId ?? activeNetworkId();
   const minaSigner = new MinaSignerClient({ network: networkId, era: "mesa" });
   const commitments = minaSigner.getZkappCommandCommitmentsFromJSON(command);
-  const accounts = await findLedgerAccounts(
+  const requiredPublicKeys = requiredTransactionPublicKeys(command);
+  const ledgerPublicKeys = new Set(accountIndices.keys());
+  const feePayerPublicKey = command.feePayer.body.publicKey;
+  if (!ledgerPublicKeys.has(feePayerPublicKey)) {
+    throw new Error(
+      `Ledger account index is required for fee payer ${feePayerPublicKey}`,
+    );
+  }
+  for (const publicKey of ledgerPublicKeys) {
+    if (!requiredPublicKeys.has(publicKey)) {
+      throw new Error(
+        `Ledger signer ${publicKey} does not own a required transaction signature`,
+      );
+    }
+  }
+  const accounts = await resolveLedgerAccounts(
     ledger,
-    requiredTransactionPublicKeys(command),
+    ledgerPublicKeys,
+    accountIndices,
   );
   const signatureCache = new Map<string, string>();
 
@@ -197,7 +223,7 @@ export async function signTransactionWithLedgerClient(
   ): Promise<string> => {
     const account = accounts.get(publicKey);
     if (!account) {
-      throw new Error(`Ledger account discovery failed for ${publicKey}`);
+      throw new Error(`Ledger account index resolution failed for ${publicKey}`);
     }
     const cacheKey = `${account.accountIndex}:${commitment.toString()}`;
     const cached = signatureCache.get(cacheKey);
@@ -224,7 +250,12 @@ export async function signTransactionWithLedgerClient(
   );
 
   for (const update of command.accountUpdates) {
-    if (!update.body.authorizationKind.isSigned) continue;
+    if (
+      !update.body.authorizationKind.isSigned ||
+      !ledgerPublicKeys.has(update.body.publicKey)
+    ) {
+      continue;
+    }
     const commitment = update.body.useFullCommitment
       ? commitments.fullCommitment
       : commitments.commitment;
@@ -239,7 +270,7 @@ export async function signTransactionWithLedgerClient(
 
 /**
  * Internal transport-neutral implementation used by the CLI and browser
- * wrappers. Break-glass field signatures use the o1js message domain.
+ * wrappers. Break-glass field signatures use one explicit Ledger index.
  *
  * @internal
  */
@@ -247,12 +278,17 @@ export async function signFieldWithLedgerClient(
   field: Field,
   ledger: LedgerSigningClient,
   expectedPublicKey: PublicKey,
+  accountIndex: number,
 ): Promise<Signature> {
   const publicKey = expectedPublicKey.toBase58();
-  const accounts = await findLedgerAccounts(ledger, new Set([publicKey]));
+  const accounts = await resolveLedgerAccounts(
+    ledger,
+    new Set([publicKey]),
+    new Map([[publicKey, accountIndex]]),
+  );
   const account = accounts.get(publicKey);
   if (!account) {
-    throw new Error(`Ledger account discovery failed for ${publicKey}`);
+    throw new Error(`Ledger account index resolution failed for ${publicKey}`);
   }
 
   const signature = await signFieldAtAccount(ledger, account, field, 0);

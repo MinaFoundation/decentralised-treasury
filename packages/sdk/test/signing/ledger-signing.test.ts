@@ -83,10 +83,12 @@ test("accepts valid mainnet Ledger field signatures", async () => {
   }
 
   const ledger: LedgerSigningClient = {
-    async getAddress() {
+    async getAddress(accountIndex) {
+      assert.equal(accountIndex, 7);
       return { returnCode: "9000", publicKey: publicKey.toBase58() };
     },
-    async signFieldElement(_account, networkId, bytes) {
+    async signFieldElement(accountIndex, networkId, bytes) {
+      assert.equal(accountIndex, 7);
       assert.equal(networkId, 1);
       const signature = signatures.get(fieldFromBytes(bytes).toString());
       assert(signature, "expected a prepared mainnet signature");
@@ -95,7 +97,11 @@ test("accepts valid mainnet Ledger field signatures", async () => {
     },
   };
 
-  const result = await signTransactionWithLedgerClient(transaction, ledger);
+  const result = await signTransactionWithLedgerClient(
+    transaction,
+    ledger,
+    new Map([[publicKey.toBase58(), 7]]),
+  );
   assert.equal(
     JSON.parse(result.toJSON()).feePayer.authorization,
     signedCommand.feePayer.authorization,
@@ -107,10 +113,12 @@ test("rejects a testnet-domain signature for a mainnet transaction", async () =>
   const publicKey: PublicKey = privateKey.toPublicKey();
   const transaction = await createSignedMainnetTransaction(privateKey);
   const ledger: LedgerSigningClient = {
-    async getAddress() {
+    async getAddress(accountIndex) {
+      assert.equal(accountIndex, 9);
       return { returnCode: "9000", publicKey: publicKey.toBase58() };
     },
-    async signFieldElement(_account, networkId, bytes) {
+    async signFieldElement(accountIndex, networkId, bytes) {
+      assert.equal(accountIndex, 9);
       assert.equal(networkId, 1);
       const signature = Signature.create(privateKey, [fieldFromBytes(bytes)]);
       const json = signature.toJSON();
@@ -119,7 +127,112 @@ test("rejects a testnet-domain signature for a mainnet transaction", async () =>
   };
 
   await assert.rejects(
-    signTransactionWithLedgerClient(transaction, ledger),
+    signTransactionWithLedgerClient(
+      transaction,
+      ledger,
+      new Map([[publicKey.toBase58(), 9]]),
+    ),
     /invalid signature/,
+  );
+});
+
+test("rejects a Ledger index that returns another public key", async () => {
+  const privateKey = PrivateKey.random();
+  const publicKey = privateKey.toPublicKey();
+  const transaction = await createSignedMainnetTransaction(privateKey);
+  const ledger: LedgerSigningClient = {
+    async getAddress(accountIndex) {
+      assert.equal(accountIndex, 4);
+      return {
+        returnCode: "9000",
+        publicKey: PrivateKey.random().toPublicKey().toBase58(),
+      };
+    },
+    async signFieldElement() {
+      throw new Error("must not sign with a mismatched account index");
+    },
+  };
+
+  await assert.rejects(
+    signTransactionWithLedgerClient(
+      transaction,
+      ledger,
+      new Map([[publicKey.toBase58(), 4]]),
+    ),
+    /returned .* expected/,
+  );
+});
+
+test("preserves signatures owned by another signing provider", async () => {
+  const feePayerKey = PrivateKey.random();
+  const otherSignerKey = PrivateKey.random();
+  const local = await Mina.LocalBlockchain({ proofsEnabled: false });
+  Mina.setActiveInstance(local);
+  local.addAccount(feePayerKey.toPublicKey(), "100000000000");
+  local.addAccount(otherSignerKey.toPublicKey(), "100000000000");
+  const transaction = await Mina.transaction(
+    { sender: feePayerKey.toPublicKey(), fee: UInt64.from(100_000_000) },
+    async () => {
+      AccountUpdate.createSigned(otherSignerKey.toPublicKey());
+    },
+  );
+  Mina.setActiveInstance(
+    Mina.Network({
+      mina: "http://127.0.0.1:1/graphql",
+      networkId: "devnet",
+    }),
+  );
+  transaction.sign([feePayerKey, otherSignerKey]);
+  const original = JSON.parse(transaction.toJSON()) as {
+    feePayer: { authorization: string };
+    accountUpdates: Array<{ authorization: { signature?: string } }>;
+  };
+  const feePayerSignature = Signature.fromBase58(
+    original.feePayer.authorization,
+  );
+  const ledger: LedgerSigningClient = {
+    async getAddress(accountIndex) {
+      assert.equal(accountIndex, 5);
+      return {
+        returnCode: "9000",
+        publicKey: feePayerKey.toPublicKey().toBase58(),
+      };
+    },
+    async signFieldElement() {
+      const json = feePayerSignature.toJSON();
+      return { returnCode: "9000", field: json.r, scalar: json.s };
+    },
+  };
+
+  const signed = await signTransactionWithLedgerClient(
+    transaction,
+    ledger,
+    new Map([[feePayerKey.toPublicKey().toBase58(), 5]]),
+  );
+  const result = JSON.parse(signed.toJSON()) as typeof original;
+
+  assert.equal(
+    result.accountUpdates[0]?.authorization.signature,
+    original.accountUpdates[0]?.authorization.signature,
+  );
+});
+
+test("requires the Ledger signer map to contain the fee payer", async () => {
+  const privateKey = PrivateKey.random();
+  const transaction = await createSignedMainnetTransaction(privateKey);
+  await assert.rejects(
+    signTransactionWithLedgerClient(
+      transaction,
+      {
+        async getAddress() {
+          throw new Error("must not open Ledger");
+        },
+        async signFieldElement() {
+          throw new Error("must not sign");
+        },
+      },
+      new Map(),
+    ),
+    /required for fee payer/,
   );
 });
