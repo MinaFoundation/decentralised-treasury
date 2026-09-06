@@ -1,0 +1,102 @@
+:root {
+  --ifm-color-primary: #e83f20;
+  --ifm-color-primary-dark: #d73518;
+  --ifm-color-primary-darker: #ca3217;
+  --ifm-color-primary-darkest: #a62913;
+  --ifm-color-primary-light: #ed593e;
+  --ifm-color-primary-lighter: #ef674f;
+  --ifm-color-primary-lightest: #f48e7c;
+  --ifm-background-color: #ffffff;
+  --ifm-background-surface-color: #ffffff;
+  --ifm-font-color-base: #2e2e2e;
+  --ifm-heading-color: #233039;
+  --ifm-navbar-background-color: rgb(255 255 255 / 92%);
+  --ifm-footer-background-color: #233039;
+  --ifm-global-radius: 0.8rem;
+  --ifm-code-font-size: 0.92rem;
+  --background: 0 0% 100%;
+  --foreground: 0 0% 18%;
+  --card: 0 0% 100%;
+  --card-foreground: 0 0% 18%;
+  --primary: 11 100% 62%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 0 0% 96%;
+  --secondary-foreground: 0 0% 18%;
+  --muted: 0 0% 96%;
+  --muted-foreground: 0 0% 46%;
+  --accent: 0 0% 94%;
+  --accent-foreground: 0 0% 18%;
+  --border: 0 0% 90%;
+  --input: 0 0% 90%;
+  --ring: 18 95% 68%;
+  --radius: 0.8rem;
+  --brand-orange: 11 100% 62%;
+  --brand-pink: 339 85% 50%;
+  --brand-mint: 157 56% 76%;
+  --brand-lavender: 0 0% 94%;
+  --brand-sky: 194 65% 76%;
+  --brand-dark: 205 23% 16%;
+}
+
+[data-theme="dark"] {
+  --ifm-color-primary: #ff765d;
+  --ifm-color-primary-dark: #ff5f42;
+  --ifm-color-primary-darker: #ff5435;
+  --ifm-color-primary-darkest: #f72c07;
+  --ifm-color-primary-light: #ff8d78;
+  --ifm-color-primary-lighter: #ff9885;
+  --ifm-color-primary-lightest: #ffc0b4;
+  --ifm-background-color: #172127;
+  --ifm-background-surface-color: #233039;
+  --ifm-font-color-base: #f4f4f4;
+  --ifm-heading-color: #ffffff;
+  --ifm-navbar-background-color: rgb(23 33 39 / 94%);
+  --ifm-footer-background-color: #11191e;
+}
+
+.navbar {
+  border-bottom: 1px solid var(--ifm-color-emphasis-200);
+  box-shadow: none;
+  backdrop-filter: blur(14px);
+}
+
+.navbar__title {
+  color: var(--ifm-heading-color);
+  font-weight: 700;
+  letter-spacing: -0.025em;
+}
+
+.navbar__treasury-app-link {
+  margin-left: 0.5rem;
+  padding: 0.55rem 0.9rem !important;
+  color: white !important;
+  background: hsl(var(--brand-dark));
+  border-radius: calc(var(--radius) - 2px);
+}
+
+[data-theme="dark"] .navbar__treasury-app-link {
+  color: hsl(var(--brand-dark)) !important;
+  background: hsl(var(--brand-orange));
+}
+
+.footer--dark {
+  --ifm-footer-link-color: #dce4e8;
+  --ifm-footer-title-color: #ffffff;
+}
+
+.theme-doc-markdown h1 {
+  letter-spacing: -0.025em;
+}
+
+.theme-doc-markdown blockquote {
+  border-left-color: var(--ifm-color-primary);
+}
+
+code {
+  border: 1px solid var(--ifm-color-emphasis-200);
+}
+
+::selection {
+  color: hsl(var(--brand-dark));
+  background: hsl(var(--brand-mint));
+}
