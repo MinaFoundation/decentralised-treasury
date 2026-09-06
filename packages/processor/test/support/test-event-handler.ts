@@ -30,11 +30,17 @@ function decodeProjectionPayload(
 
 export class TestProjectionEventHandler implements EventProcessorHandler {
   public readonly eventType = "testProjectionCreated";
+  public attemptCount = 0;
+  public rejectEvents = false;
 
   public async tryHandle(
     event: ArchiveEventEntity,
     manager: EntityManager,
   ): Promise<boolean> {
+    this.attemptCount += 1;
+    if (this.rejectEvents) {
+      return false;
+    }
     const repository = manager.getRepository(TestProjectionEntity);
     const payload = decodeProjectionPayload(event);
     if (!payload) {
