@@ -11,7 +11,7 @@
     "start": "NODE_NO_WARNINGS=1 node --loader ../sdk/node_modules/ts-node/esm.mjs src/server.ts",
     "dev": "NODE_NO_WARNINGS=1 node --loader ../sdk/node_modules/ts-node/esm.mjs src/server.ts",
     "seed:proposal-created": "NODE_NO_WARNINGS=1 node --loader ../sdk/node_modules/ts-node/esm.mjs test/fixtures/submit-proposal-created-from-separate-process.ts ${MINA_BASE_URL:-http://127.0.0.1:8080}",
-    "check-types": "../sdk/node_modules/.bin/tsc --noEmit",
+    "check-types": "tsc --noEmit",
     "test": "NODE_NO_WARNINGS=1 node --loader ../sdk/node_modules/ts-node/esm.mjs --test \"test/**/*.test.ts\""
   }
 }
