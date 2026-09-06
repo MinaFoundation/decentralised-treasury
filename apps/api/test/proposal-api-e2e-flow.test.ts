@@ -14,12 +14,29 @@ import {
   EventProcessorRouter,
   EventsProcessor,
   IndexerEventsApiClient,
+  ProcessorEventFailureEntity,
   ProcessorCrudApiServer,
 } from "@repo/processor";
+import {
+  ProposalCreatedEvent,
+  ProposalExecutedEvent,
+  ProposalVoteDispatchedEvent,
+  ProposalVotesTalliedEvent,
+  PROPOSAL_CREATED_EVENT_NAME,
+  PROPOSAL_EXECUTED_EVENT_NAME,
+  PROPOSAL_PAUSE_TOGGLED_EVENT_NAME,
+  PROPOSAL_VOTE_DISPATCHED_EVENT_NAME,
+  PROPOSAL_VOTES_TALLIED_EVENT_NAME,
+} from "@repo/sdk/src/provable/events/treasury-proposal-events.js";
+import { Vote } from "@repo/sdk/src/provable/contracts/treasury-proposal/vote-reducer.js";
+import { Field, PrivateKey, PublicKey, UInt32, UInt64 } from "o1js";
 import { ProposalCreatedEventHandler } from "../src/processors/proposals/proposal-created-event-handler.js";
+import { ProposalContentEntity } from "../src/processors/proposals/proposal-content-entity.js";
 import { ProposalExecutedEventHandler } from "../src/processors/proposals/proposal-executed-event-handler.js";
 import { ProposalExecutionEntity } from "../src/processors/proposals/proposal-execution-entity.js";
+import { ProposalEventFactEntity } from "../src/processors/proposals/proposal-event-fact-entity.js";
 import { ProposalEntity } from "../src/processors/proposals/proposal-entity.js";
+import { ProposalProjectionReplayEntity } from "../src/processors/proposals/proposal-projection-replay-entity.js";
 import {
   type VotingLedgerService,
   type VotingLedgerServiceLookup,
@@ -34,24 +51,24 @@ import { createInMemoryDataSource } from "./support/create-in-memory-data-source
 type VoteLabel = "yay" | "nay" | "abstain";
 type VoteResult = "approved" | "rejected";
 
-const KNOWN_EVENT_TYPES = [
-  "proposalCreated",
-  "proposalVoteDispatched",
-  "proposalVotesTallied",
-  "proposalExecuted",
-] as const;
+type KnownEventType =
+  | typeof PROPOSAL_CREATED_EVENT_NAME
+  | typeof PROPOSAL_EXECUTED_EVENT_NAME
+  | typeof PROPOSAL_PAUSE_TOGGLED_EVENT_NAME
+  | typeof PROPOSAL_VOTE_DISPATCHED_EVENT_NAME
+  | typeof PROPOSAL_VOTES_TALLIED_EVENT_NAME;
 
-const EVENT_TYPE_INDEX: Record<(typeof KNOWN_EVENT_TYPES)[number], string> = {
-  proposalCreated: "0",
-  proposalVoteDispatched: "1",
-  proposalVotesTallied: "2",
-  proposalExecuted: "3",
-};
+const KNOWN_EVENT_TYPES: KnownEventType[] = [
+  PROPOSAL_CREATED_EVENT_NAME,
+  PROPOSAL_EXECUTED_EVENT_NAME,
+  PROPOSAL_PAUSE_TOGGLED_EVENT_NAME,
+  PROPOSAL_VOTE_DISPATCHED_EVENT_NAME,
+  PROPOSAL_VOTES_TALLIED_EVENT_NAME,
+].sort((left, right) => left.localeCompare(right));
 
-const PROPOSAL_CREATED_DATA_FIELD_COUNT = 10;
-const PROPOSAL_VOTE_DISPATCHED_DATA_FIELD_COUNT = 6;
-const PROPOSAL_VOTES_TALLIED_DATA_FIELD_COUNT = 14;
-const PROPOSAL_EXECUTED_DATA_FIELD_COUNT = 9;
+const EVENT_TYPE_INDEX = Object.fromEntries(
+  KNOWN_EVENT_TYPES.map((eventType, index) => [eventType, String(index)]),
+) as Record<KnownEventType, string>;
 
 interface ProposalCrudRow {
   proposalPublicKey: string;
@@ -81,8 +98,6 @@ interface VoteTallyCrudRow {
   totalParticipatingVotes: string | null;
   approvalBp: string | null;
   voteResult: VoteResult | null;
-  votes?: VoteCrudRow[];
-  nullifiers?: VoteNullifierCrudRow[];
 }
 
 interface VoteNullifierCrudRow {
@@ -159,7 +174,9 @@ function getAvailablePort(): Promise<number> {
     server.listen(0, "127.0.0.1", () => {
       const address = server.address();
       if (!address || typeof address === "string") {
-        server.close(() => reject(new Error("Unable to resolve ephemeral port")));
+        server.close(() =>
+          reject(new Error("Unable to resolve ephemeral port")),
+        );
         return;
       }
       const { port } = address;
@@ -175,7 +192,9 @@ function getAvailablePort(): Promise<number> {
 }
 
 class StubVotingLedgerService implements VotingLedgerService {
-  public constructor(private readonly weightByVoter = new Map<string, bigint>()) {}
+  public constructor(
+    private readonly weightByVoter = new Map<string, bigint>(),
+  ) {}
 
   public async start(): Promise<void> {}
 
@@ -221,13 +240,16 @@ function createTestProposalApprovalMath() {
       );
       const participationCurveDenominator =
         ratioBp +
-        (CURVE_CONSTANT_PARTICIPATION_BP * (BASIS_POINTS - ratioBp)) / BASIS_POINTS;
+        (CURVE_CONSTANT_PARTICIPATION_BP * (BASIS_POINTS - ratioBp)) /
+          BASIS_POINTS;
       const participationCurveBp =
         (ratioBp * BASIS_POINTS) / participationCurveDenominator;
 
       const approvalCurveDenominator =
-        ratioBp + (CURVE_CONSTANT_APPROVAL_BP * (BASIS_POINTS - ratioBp)) / BASIS_POINTS;
-      const approvalCurveBp = (ratioBp * BASIS_POINTS) / approvalCurveDenominator;
+        ratioBp +
+        (CURVE_CONSTANT_APPROVAL_BP * (BASIS_POINTS - ratioBp)) / BASIS_POINTS;
+      const approvalCurveBp =
+        (ratioBp * BASIS_POINTS) / approvalCurveDenominator;
 
       const requiredParticipationBp =
         MIN_PARTICIPATION_BP +
@@ -253,13 +275,16 @@ function createTestProposalApprovalMath() {
       requiredApprovalBp: bigint;
     }): Promise<"approved" | "rejected"> {
       const totalParticipatingVotes = input.yay + input.nay + input.abstain;
-      const participationMet = totalParticipatingVotes >= input.requiredParticipation;
+      const participationMet =
+        totalParticipatingVotes >= input.requiredParticipation;
       const totalVotes = input.yay + input.nay;
       const hasApprovalVotes = totalVotes > 0n;
       const safeTotalVotes = hasApprovalVotes ? totalVotes : 1n;
       const approvalBp = (input.yay * BASIS_POINTS) / safeTotalVotes;
       const approved =
-        participationMet && hasApprovalVotes && approvalBp >= input.requiredApprovalBp;
+        participationMet &&
+        hasApprovalVotes &&
+        approvalBp >= input.requiredApprovalBp;
       return approved ? "approved" : "rejected";
     },
   };
@@ -272,7 +297,10 @@ class FakeArchiveSource {
   private readonly pendingEvents: ArchiveEventOutput[] = [];
   private readonly canonicalEvents: ArchiveEventOutput[] = [];
 
-  public push(status: "PENDING" | "CANONICAL", event: ArchiveEventOutput): void {
+  public push(
+    status: "PENDING" | "CANONICAL",
+    event: ArchiveEventOutput,
+  ): void {
     const height = event.blockInfo.height;
     if (status === "PENDING") {
       this.pendingEvents.push(event);
@@ -291,7 +319,9 @@ class FakeArchiveSource {
     };
   }
 
-  public async fetchEvents(options: FetchEventsOptions): Promise<ArchiveEventOutput[]> {
+  public async fetchEvents(
+    options: FetchEventsOptions,
+  ): Promise<ArchiveEventOutput[]> {
     const source =
       options.status === "PENDING" ? this.pendingEvents : this.canonicalEvents;
     return source.filter((event) => {
@@ -351,38 +381,33 @@ class ProposalCreatedInputEvent extends InputEvent {
   public toArchiveEventOutput(): ArchiveEventOutput {
     const eventData = this.buildBaseArchiveEventData(
       "proposalCreated",
-      buildMockContractFieldValues(
-        this.accountUpdateId,
-        PROPOSAL_CREATED_DATA_FIELD_COUNT,
-      ),
+      ProposalCreatedEvent.toFields(
+        new ProposalCreatedEvent({
+          proposalPublicKey: PublicKey.fromBase58(
+            this.payload.proposalPublicKey,
+          ),
+          lifecycleId: UInt32.from(this.payload.lifecycleId),
+          amount: UInt64.from(this.payload.amount),
+          recipient: PublicKey.fromBase58(this.payload.recipient),
+          zkAppUriHash: Field(this.payload.zkAppUriHash),
+          stakingEpochDataLedgerHash: Field(
+            this.payload.stakingEpochDataLedgerHash,
+          ),
+          stakingEpochDataLedgerTotalCurrency: UInt64.from(
+            this.payload.stakingEpochDataLedgerTotalCurrency,
+          ),
+          proposerPublicKey: PublicKey.fromBase58(this.payload.senderPublicKey),
+          senderPublicKey: PublicKey.fromBase58(this.payload.senderPublicKey),
+        }),
+      ).map((field) => field.toString()),
     );
-    const eventDataWithPayload = eventData as ArchiveEventData & {
-      proposalPublicKey: string;
-      lifecycleId: number;
-      amount: string;
-      recipient: string;
-      zkAppUriHash: string;
-      stakingEpochDataLedgerHash: string;
-      stakingEpochDataLedgerTotalCurrency: string;
-      senderPublicKey: string;
-    };
-    eventDataWithPayload.proposalPublicKey = this.payload.proposalPublicKey;
-    eventDataWithPayload.lifecycleId = this.payload.lifecycleId;
-    eventDataWithPayload.amount = this.payload.amount;
-    eventDataWithPayload.recipient = this.payload.recipient;
-    eventDataWithPayload.zkAppUriHash = this.payload.zkAppUriHash;
-    eventDataWithPayload.stakingEpochDataLedgerHash =
-      this.payload.stakingEpochDataLedgerHash;
-    eventDataWithPayload.stakingEpochDataLedgerTotalCurrency =
-      this.payload.stakingEpochDataLedgerTotalCurrency;
-    eventDataWithPayload.senderPublicKey = this.payload.senderPublicKey;
 
     return {
       blockInfo: {
         height: this.blockHeight,
         timestamp: this.buildTimestamp(),
       },
-      eventData: [eventDataWithPayload],
+      eventData: [eventData],
     };
   }
 }
@@ -403,37 +428,32 @@ class ProposalVoteDispatchedInputEvent extends InputEvent {
   }
 
   public toArchiveEventOutput(): ArchiveEventOutput {
-    const fieldValues = buildMockContractFieldValues(
-      this.accountUpdateId,
-      PROPOSAL_VOTE_DISPATCHED_DATA_FIELD_COUNT,
-    );
-    fieldValues[fieldValues.length - 1] =
+    const vote =
       this.payload.vote === "yay"
-        ? "1"
+        ? Vote.YAY
         : this.payload.vote === "nay"
-          ? "2"
-          : "3";
+          ? Vote.NAY
+          : Vote.ABSTRAIN;
     const eventData = this.buildBaseArchiveEventData(
       "proposalVoteDispatched",
-      fieldValues,
+      ProposalVoteDispatchedEvent.toFields(
+        new ProposalVoteDispatchedEvent({
+          proposalPublicKey: PublicKey.fromBase58(
+            this.payload.proposalPublicKey,
+          ),
+          voterPublicKey: PublicKey.fromBase58(this.payload.voterPublicKey),
+          vote,
+          senderPublicKey: PublicKey.fromBase58(this.payload.senderPublicKey),
+        }),
+      ).map((field) => field.toString()),
     );
-    const eventDataWithPayload = eventData as ArchiveEventData & {
-      proposalPublicKey: string;
-      voterPublicKey: string;
-      vote: VoteLabel;
-      senderPublicKey: string;
-    };
-    eventDataWithPayload.proposalPublicKey = this.payload.proposalPublicKey;
-    eventDataWithPayload.voterPublicKey = this.payload.voterPublicKey;
-    eventDataWithPayload.vote = this.payload.vote;
-    eventDataWithPayload.senderPublicKey = this.payload.senderPublicKey;
 
     return {
       blockInfo: {
         height: this.blockHeight,
         timestamp: this.buildTimestamp(),
       },
-      eventData: [eventDataWithPayload],
+      eventData: [eventData],
     };
   }
 }
@@ -464,40 +484,29 @@ class ProposalVotesTalliedInputEvent extends InputEvent {
   }
 
   public toArchiveEventOutput(): ArchiveEventOutput {
-    const fieldValues = buildMockContractFieldValues(
-      this.accountUpdateId,
-      PROPOSAL_VOTES_TALLIED_DATA_FIELD_COUNT,
-    );
-    fieldValues[fieldValues.length - 1] =
-      this.payload.voteResult === "approved" ? "1" : "2";
     const eventData = this.buildBaseArchiveEventData(
       "proposalVotesTallied",
-      fieldValues,
+      ProposalVotesTalliedEvent.toFields(
+        new ProposalVotesTalliedEvent({
+          proposalPublicKey: PublicKey.fromBase58(
+            this.payload.proposalPublicKey,
+          ),
+          lifecycleId: UInt32.from(this.payload.lifecycleId),
+          yayWeight: UInt64.from(this.payload.yayWeight),
+          nayWeight: UInt64.from(this.payload.nayWeight),
+          abstainWeight: UInt64.from(this.payload.abstainWeight),
+          voteResult: Field(this.payload.voteResult === "approved" ? 1 : 2),
+          senderPublicKey: PublicKey.fromBase58(this.payload.senderPublicKey),
+        }),
+      ).map((field) => field.toString()),
     );
-    const eventDataWithPayload = eventData as ArchiveEventData & {
-      proposalPublicKey: string;
-      lifecycleId: number;
-      proposalAmount: string;
-      treasuryBalance: string;
-      yayWeight: string;
-      nayWeight: string;
-      abstainWeight: string;
-      requiredParticipationBp: string;
-      requiredApprovalBp: string;
-      requiredParticipation: string;
-      totalParticipatingVotes: string;
-      approvalBp: string;
-      voteResult: VoteResult;
-      senderPublicKey: string;
-    };
-    Object.assign(eventDataWithPayload, this.payload);
 
     return {
       blockInfo: {
         height: this.blockHeight,
         timestamp: this.buildTimestamp(),
       },
-      eventData: [eventDataWithPayload],
+      eventData: [eventData],
     };
   }
 }
@@ -525,58 +534,47 @@ class ProposalExecutedInputEvent extends InputEvent {
   public toArchiveEventOutput(): ArchiveEventOutput {
     const eventData = this.buildBaseArchiveEventData(
       "proposalExecuted",
-      buildMockContractFieldValues(
-        this.accountUpdateId,
-        PROPOSAL_EXECUTED_DATA_FIELD_COUNT,
-      ),
+      ProposalExecutedEvent.toFields(
+        new ProposalExecutedEvent({
+          proposalPublicKey: PublicKey.fromBase58(
+            this.payload.proposalPublicKey,
+          ),
+          amountToPayOut: UInt64.from(this.payload.amountToPayOut),
+          senderPublicKey: PublicKey.fromBase58(this.payload.senderPublicKey),
+        }),
+      ).map((field) => field.toString()),
     );
-    const eventDataWithPayload = eventData as ArchiveEventData & {
-      proposalPublicKey: string;
-      lifecycleId: number;
-      recipient: string;
-      amountToPayOut: string;
-      proposalAmount: string;
-      bondAmount: string;
-      senderPublicKey: string;
-      paidOutAmount: string;
-      remainingAmount: string;
-    };
-    Object.assign(eventDataWithPayload, this.payload);
 
     return {
       blockInfo: {
         height: this.blockHeight,
         timestamp: this.buildTimestamp(),
       },
-      eventData: [eventDataWithPayload],
+      eventData: [eventData],
     };
   }
 }
 
-function buildMockContractFieldValues(seed: string, count: number): string[] {
-  const seedNumber = Number.parseInt(seed, 10);
-  const base = Number.isFinite(seedNumber) ? seedNumber * 1_000 : 1_000;
-  return Array.from({ length: count }, (_value, index) => String(base + index + 1));
-}
-
 async function fetchSnapshot(processorApiBase: string): Promise<ApiSnapshot> {
-  const [proposals, votes, nullifiers, tallies, executions] = await Promise.all([
-    fetchCrudRows<ProposalCrudRow>(
-      `${processorApiBase}/proposals?join=voteTallies&join=voteTallies.votes&join=voteTallies.nullifiers&join=executions&sort=proposalPublicKey,ASC&limit=200`,
-    ),
-    fetchCrudRows<VoteCrudRow>(
-      `${processorApiBase}/votes?sort=proposalPublicKey,ASC&sort=voterPublicKey,ASC&sort=vote,ASC&limit=200`,
-    ),
-    fetchCrudRows<VoteNullifierCrudRow>(
-      `${processorApiBase}/vote-nullifiers?sort=proposalPublicKey,ASC&sort=voterPublicKey,ASC&limit=200`,
-    ),
-    fetchCrudRows<VoteTallyCrudRow>(
-      `${processorApiBase}/vote-tallies?sort=proposalPublicKey,ASC&sort=blockHeight,ASC&limit=200`,
-    ),
-    fetchCrudRows<ProposalExecutionCrudRow>(
-      `${processorApiBase}/proposal-executions?sort=proposalPublicKey,ASC&sort=blockHeight,ASC&limit=200`,
-    ),
-  ]);
+  const [proposals, votes, nullifiers, tallies, executions] = await Promise.all(
+    [
+      fetchCrudRows<ProposalCrudRow>(
+        `${processorApiBase}/proposals?join=voteTallies&join=executions&sort=proposalPublicKey,ASC&limit=200`,
+      ),
+      fetchCrudRows<VoteCrudRow>(
+        `${processorApiBase}/votes?sort=proposalPublicKey,ASC&sort=voterPublicKey,ASC&sort=vote,ASC&limit=200`,
+      ),
+      fetchCrudRows<VoteNullifierCrudRow>(
+        `${processorApiBase}/vote-nullifiers?sort=proposalPublicKey,ASC&sort=voterPublicKey,ASC&limit=200`,
+      ),
+      fetchCrudRows<VoteTallyCrudRow>(
+        `${processorApiBase}/vote-tallies?sort=proposalPublicKey,ASC&sort=blockHeight,ASC&limit=200`,
+      ),
+      fetchCrudRows<ProposalExecutionCrudRow>(
+        `${processorApiBase}/proposal-executions?sort=proposalPublicKey,ASC&sort=blockHeight,ASC&limit=200`,
+      ),
+    ],
+  );
   return { proposals, votes, nullifiers, tallies, executions };
 }
 
@@ -584,10 +582,13 @@ describe("proposal API e2e flow", () => {
   it("indexes and projects create/vote/tally/execute flow event-by-event", async () => {
     const dataSource = createInMemoryDataSource("public", [
       ProposalEntity,
+      ProposalContentEntity,
       ProposalExecutionEntity,
       VoteEntity,
       VoteNullifierEntity,
       VoteTallyEntity,
+      ProposalEventFactEntity,
+      ProposalProjectionReplayEntity,
     ]);
     const repository = new EventsRepository(dataSource, "public", {
       knownEventTypes: [...KNOWN_EVENT_TYPES],
@@ -612,7 +613,7 @@ describe("proposal API e2e flow", () => {
 
       const indexerApiPort = await getAvailablePort();
       const processorApiPort = await getAvailablePort();
-      const processorApiBase = `http://127.0.0.1:${processorApiPort}`;
+      const processorApiBase = `http://127.0.0.1:${processorApiPort}/processor`;
       const indexerApiBase = `http://127.0.0.1:${indexerApiPort}`;
 
       eventsApiServer = new EventsApiServer(repository, {
@@ -622,14 +623,34 @@ describe("proposal API e2e flow", () => {
       });
       await eventsApiServer.start();
 
+      const proposalOnePublicKey = PrivateKey.random().toPublicKey().toBase58();
+      const proposalTwoPublicKey = PrivateKey.random().toPublicKey().toBase58();
+      const proposalThreePublicKey = PrivateKey.random()
+        .toPublicKey()
+        .toBase58();
+      const recipientOnePublicKey = PrivateKey.random()
+        .toPublicKey()
+        .toBase58();
+      const recipientTwoPublicKey = PrivateKey.random()
+        .toPublicKey()
+        .toBase58();
+      const recipientThreePublicKey = PrivateKey.random()
+        .toPublicKey()
+        .toBase58();
+      const voterOnePublicKey = PrivateKey.random().toPublicKey().toBase58();
+      const voterTwoPublicKey = PrivateKey.random().toPublicKey().toBase58();
+      const voterThreePublicKey = PrivateKey.random().toPublicKey().toBase58();
+      const voterFourPublicKey = PrivateKey.random().toPublicKey().toBase58();
+      const senderPublicKey = PrivateKey.random().toPublicKey().toBase58();
+
       const votingWeights = new Map<string, Map<string, bigint>>([
         [
           "2",
           new Map<string, bigint>([
-            ["voter-1", 11n],
-            ["voter-2", 7n],
-            ["voter-3", 5n],
-            ["voter-4", 13n],
+            [voterOnePublicKey, 11n],
+            [voterTwoPublicKey, 7n],
+            [voterThreePublicKey, 7n],
+            [voterFourPublicKey, 13n],
           ]),
         ],
       ]);
@@ -665,6 +686,10 @@ describe("proposal API e2e flow", () => {
           new ProposalVoteDispatchedEventHandler(
             new StubVotingLedgerServiceLookup(votingWeights),
             createTestProposalApprovalMath(),
+            {
+              resolveTreasuryBalanceForLifecycle: async (lifecycleId) =>
+                lifecycleId === 2 ? "20" : null,
+            },
           ),
           new ProposalVotesTalliedEventHandler(),
           new ProposalExecutedEventHandler(),
@@ -696,58 +721,59 @@ describe("proposal API e2e flow", () => {
       });
       await processorCrudApiServer.start();
 
-      const proposalOnePublicKey = "proposal-public-key-1";
-      const proposalTwoPublicKey = "proposal-public-key-2";
-      const proposalThreePublicKey = "proposal-public-key-3";
-
       const events = {
-        createProposalOne: new ProposalCreatedInputEvent("tx-create-1", "1", 100, {
-          proposalPublicKey: proposalOnePublicKey,
-          lifecycleId: 2,
-          amount: "500000000",
-          recipient: "recipient-public-key-1",
-          zkAppUriHash: "123456",
-          stakingEpochDataLedgerHash: "999",
-          stakingEpochDataLedgerTotalCurrency: "20",
-          senderPublicKey: "sender-public-key-create-1",
-        }),
+        createProposalOne: new ProposalCreatedInputEvent(
+          "tx-create-1",
+          "1",
+          100,
+          {
+            proposalPublicKey: proposalOnePublicKey,
+            lifecycleId: 2,
+            amount: "500000000",
+            recipient: recipientOnePublicKey,
+            zkAppUriHash: "123456",
+            stakingEpochDataLedgerHash: "999",
+            stakingEpochDataLedgerTotalCurrency: "20",
+            senderPublicKey,
+          },
+        ),
         voteProposalOneYay: new ProposalVoteDispatchedInputEvent(
           "tx-vote-1",
           "2",
           101,
           {
             proposalPublicKey: proposalOnePublicKey,
-            voterPublicKey: "voter-1",
+            voterPublicKey: voterOnePublicKey,
             vote: "yay",
-            senderPublicKey: "sender-public-key-vote-1",
+            senderPublicKey,
           },
         ),
         voteProposalOneAbstain: new ProposalVoteDispatchedInputEvent(
           "tx-vote-2",
           "3",
-          101,
+          102,
           {
             proposalPublicKey: proposalOnePublicKey,
-            voterPublicKey: "voter-2",
+            voterPublicKey: voterTwoPublicKey,
             vote: "abstain",
-            senderPublicKey: "sender-public-key-vote-2",
+            senderPublicKey,
           },
         ),
         voteProposalOneDuplicate: new ProposalVoteDispatchedInputEvent(
           "tx-vote-3",
           "4",
-          101,
+          103,
           {
             proposalPublicKey: proposalOnePublicKey,
-            voterPublicKey: "voter-1",
+            voterPublicKey: voterOnePublicKey,
             vote: "nay",
-            senderPublicKey: "sender-public-key-vote-3",
+            senderPublicKey,
           },
         ),
         tallyProposalOne: new ProposalVotesTalliedInputEvent(
           "tx-tally-1",
           "5",
-          101,
+          104,
           {
             proposalPublicKey: proposalOnePublicKey,
             lifecycleId: 2,
@@ -762,20 +788,25 @@ describe("proposal API e2e flow", () => {
             totalParticipatingVotes: "18",
             approvalBp: "10000",
             voteResult: "approved",
-            senderPublicKey: "sender-public-key-tally-1",
+            senderPublicKey,
           },
         ),
-        executeProposalOne: new ProposalExecutedInputEvent("tx-exec-1", "6", 130, {
-          proposalPublicKey: proposalOnePublicKey,
-          lifecycleId: 2,
-          recipient: "recipient-public-key-1",
-          amountToPayOut: "100000000",
-          proposalAmount: "500000000",
-          bondAmount: "50000000",
-          senderPublicKey: "sender-public-key-1",
-          paidOutAmount: "100000000",
-          remainingAmount: "450000000",
-        }),
+        executeProposalOne: new ProposalExecutedInputEvent(
+          "tx-exec-1",
+          "6",
+          130,
+          {
+            proposalPublicKey: proposalOnePublicKey,
+            lifecycleId: 2,
+            recipient: recipientOnePublicKey,
+            amountToPayOut: "100000000",
+            proposalAmount: "500000000",
+            bondAmount: "50000000",
+            senderPublicKey,
+            paidOutAmount: "100000000",
+            remainingAmount: "450000000",
+          },
+        ),
         executeProposalOneAgain: new ProposalExecutedInputEvent(
           "tx-exec-2",
           "11",
@@ -783,34 +814,39 @@ describe("proposal API e2e flow", () => {
           {
             proposalPublicKey: proposalOnePublicKey,
             lifecycleId: 2,
-            recipient: "recipient-public-key-1",
+            recipient: recipientOnePublicKey,
             amountToPayOut: "150000000",
             proposalAmount: "500000000",
             bondAmount: "50000000",
-            senderPublicKey: "sender-public-key-1",
+            senderPublicKey,
             paidOutAmount: "250000000",
             remainingAmount: "300000000",
           },
         ),
-        createProposalTwo: new ProposalCreatedInputEvent("tx-create-2", "7", 140, {
-          proposalPublicKey: proposalTwoPublicKey,
-          lifecycleId: 2,
-          amount: "300000000",
-          recipient: "recipient-public-key-2",
-          zkAppUriHash: "654321",
-          stakingEpochDataLedgerHash: "777",
-          stakingEpochDataLedgerTotalCurrency: "20",
-          senderPublicKey: "sender-public-key-create-2",
-        }),
+        createProposalTwo: new ProposalCreatedInputEvent(
+          "tx-create-2",
+          "7",
+          140,
+          {
+            proposalPublicKey: proposalTwoPublicKey,
+            lifecycleId: 2,
+            amount: "300000000",
+            recipient: recipientTwoPublicKey,
+            zkAppUriHash: "654321",
+            stakingEpochDataLedgerHash: "777",
+            stakingEpochDataLedgerTotalCurrency: "20",
+            senderPublicKey,
+          },
+        ),
         voteProposalTwoNay: new ProposalVoteDispatchedInputEvent(
           "tx-vote-4",
           "8",
           141,
           {
             proposalPublicKey: proposalTwoPublicKey,
-            voterPublicKey: "voter-3",
+            voterPublicKey: voterThreePublicKey,
             vote: "nay",
-            senderPublicKey: "sender-public-key-vote-4",
+            senderPublicKey,
           },
         ),
         voteProposalTwoYay: new ProposalVoteDispatchedInputEvent(
@@ -819,9 +855,9 @@ describe("proposal API e2e flow", () => {
           141,
           {
             proposalPublicKey: proposalTwoPublicKey,
-            voterPublicKey: "voter-4",
+            voterPublicKey: voterFourPublicKey,
             vote: "yay",
-            senderPublicKey: "sender-public-key-vote-5",
+            senderPublicKey,
           },
         ),
         tallyProposalTwo: new ProposalVotesTalliedInputEvent(
@@ -834,15 +870,15 @@ describe("proposal API e2e flow", () => {
             proposalAmount: "300000000",
             treasuryBalance: "20",
             yayWeight: "13",
-            nayWeight: "5",
+            nayWeight: "7",
             abstainWeight: "0",
             requiredParticipationBp: "3000",
             requiredApprovalBp: "8000",
             requiredParticipation: "20",
-            totalParticipatingVotes: "18",
-            approvalBp: "7222",
+            totalParticipatingVotes: "20",
+            approvalBp: "6500",
             voteResult: "rejected",
-            senderPublicKey: "sender-public-key-tally-2",
+            senderPublicKey,
           },
         ),
         createProposalThree: new ProposalCreatedInputEvent(
@@ -853,32 +889,54 @@ describe("proposal API e2e flow", () => {
             proposalPublicKey: proposalThreePublicKey,
             lifecycleId: 2,
             amount: "100000000",
-            recipient: "recipient-public-key-3",
+            recipient: recipientThreePublicKey,
             zkAppUriHash: "123123",
             stakingEpochDataLedgerHash: "888",
             stakingEpochDataLedgerTotalCurrency: "20",
-            senderPublicKey: "sender-public-key-create-3",
+            senderPublicKey,
+          },
+        ),
+        voteProposalThreeYay: new ProposalVoteDispatchedInputEvent(
+          "tx-vote-6",
+          "13",
+          161,
+          {
+            proposalPublicKey: proposalThreePublicKey,
+            voterPublicKey: voterOnePublicKey,
+            vote: "yay",
+            senderPublicKey,
+          },
+        ),
+        voteProposalThreeNay: new ProposalVoteDispatchedInputEvent(
+          "tx-vote-7",
+          "14",
+          162,
+          {
+            proposalPublicKey: proposalThreePublicKey,
+            voterPublicKey: voterFourPublicKey,
+            vote: "nay",
+            senderPublicKey,
           },
         ),
         tallyProposalThree: new ProposalVotesTalliedInputEvent(
           "tx-tally-3",
-          "13",
-          161,
+          "15",
+          163,
           {
             proposalPublicKey: proposalThreePublicKey,
             lifecycleId: 2,
             proposalAmount: "100000000",
             treasuryBalance: "20",
-            yayWeight: "0",
-            nayWeight: "0",
+            yayWeight: "11",
+            nayWeight: "13",
             abstainWeight: "0",
             requiredParticipationBp: "1000",
             requiredApprovalBp: "6000",
             requiredParticipation: "2",
-            totalParticipatingVotes: "0",
-            approvalBp: "0",
+            totalParticipatingVotes: "24",
+            approvalBp: "4583",
             voteResult: "rejected",
-            senderPublicKey: "sender-public-key-tally-3",
+            senderPublicKey,
           },
         ),
       };
@@ -897,7 +955,8 @@ describe("proposal API e2e flow", () => {
           },
           assertSnapshot: (snapshot) => {
             const proposal = snapshot.proposals.find(
-              (candidate) => candidate.proposalPublicKey === proposalOnePublicKey,
+              (candidate) =>
+                candidate.proposalPublicKey === proposalOnePublicKey,
             );
             assert.ok(proposal);
             assert.equal(proposal?.paidOutAmount, "0");
@@ -917,13 +976,13 @@ describe("proposal API e2e flow", () => {
         },
         {
           name: "voteProposalOneAbstain",
-          note: "second unique voter updates same block tally",
+          note: "second unique voter adds the next block tally",
           event: events.voteProposalOneAbstain,
           expectedCounts: {
             proposals: 1,
             votes: 2,
             nullifiers: 2,
-            tallies: 1,
+            tallies: 2,
             executions: 0,
           },
         },
@@ -935,14 +994,14 @@ describe("proposal API e2e flow", () => {
             proposals: 1,
             votes: 3,
             nullifiers: 2,
-            tallies: 1,
+            tallies: 3,
             executions: 0,
           },
           assertSnapshot: (snapshot) => {
             const duplicateVote = snapshot.votes.find(
               (vote) =>
                 vote.proposalPublicKey === proposalOnePublicKey &&
-                vote.voterPublicKey === "voter-1" &&
+                vote.voterPublicKey === voterOnePublicKey &&
                 vote.vote === "nay",
             );
             assert.ok(duplicateVote);
@@ -957,14 +1016,14 @@ describe("proposal API e2e flow", () => {
             proposals: 1,
             votes: 3,
             nullifiers: 2,
-            tallies: 1,
+            tallies: 4,
             executions: 0,
           },
           assertSnapshot: (snapshot) => {
             const tally = snapshot.tallies.find(
               (candidate) =>
                 candidate.proposalPublicKey === proposalOnePublicKey &&
-                candidate.blockHeight === 101,
+                candidate.blockHeight === 104,
             );
             assert.ok(tally);
             assert.equal(tally?.yayWeight, "11");
@@ -985,20 +1044,22 @@ describe("proposal API e2e flow", () => {
             proposals: 1,
             votes: 3,
             nullifiers: 2,
-            tallies: 1,
+            tallies: 4,
             executions: 1,
           },
           assertSnapshot: (snapshot) => {
             const execution = snapshot.executions.find(
-              (candidate) => candidate.proposalPublicKey === proposalOnePublicKey,
+              (candidate) =>
+                candidate.proposalPublicKey === proposalOnePublicKey,
             );
             assert.ok(execution);
             assert.equal(execution?.amountToPayOut, "100000000");
             assert.equal(execution?.remainingAmount, "450000000");
-            assert.equal(execution?.senderPublicKey, "sender-public-key-1");
+            assert.equal(execution?.senderPublicKey, senderPublicKey);
 
             const proposal = snapshot.proposals.find(
-              (candidate) => candidate.proposalPublicKey === proposalOnePublicKey,
+              (candidate) =>
+                candidate.proposalPublicKey === proposalOnePublicKey,
             );
             assert.ok(proposal);
             assert.equal(proposal?.paidOutAmount, "100000000");
@@ -1012,12 +1073,13 @@ describe("proposal API e2e flow", () => {
             proposals: 1,
             votes: 3,
             nullifiers: 2,
-            tallies: 1,
+            tallies: 4,
             executions: 2,
           },
           assertSnapshot: (snapshot) => {
             const proposal = snapshot.proposals.find(
-              (candidate) => candidate.proposalPublicKey === proposalOnePublicKey,
+              (candidate) =>
+                candidate.proposalPublicKey === proposalOnePublicKey,
             );
             assert.ok(proposal);
             assert.equal(proposal?.paidOutAmount, "250000000");
@@ -1031,7 +1093,7 @@ describe("proposal API e2e flow", () => {
             proposals: 2,
             votes: 3,
             nullifiers: 2,
-            tallies: 1,
+            tallies: 4,
             executions: 2,
           },
         },
@@ -1043,7 +1105,7 @@ describe("proposal API e2e flow", () => {
             proposals: 2,
             votes: 4,
             nullifiers: 3,
-            tallies: 2,
+            tallies: 5,
             executions: 2,
           },
         },
@@ -1055,7 +1117,7 @@ describe("proposal API e2e flow", () => {
             proposals: 2,
             votes: 5,
             nullifiers: 4,
-            tallies: 2,
+            tallies: 5,
             executions: 2,
           },
         },
@@ -1067,7 +1129,7 @@ describe("proposal API e2e flow", () => {
             proposals: 2,
             votes: 5,
             nullifiers: 4,
-            tallies: 2,
+            tallies: 5,
             executions: 2,
           },
           assertSnapshot: (snapshot) => {
@@ -1078,41 +1140,65 @@ describe("proposal API e2e flow", () => {
             );
             assert.ok(tally);
             assert.equal(tally?.yayWeight, "13");
-            assert.equal(tally?.nayWeight, "5");
+            assert.equal(tally?.nayWeight, "7");
             assert.equal(tally?.abstainWeight, "0");
             assert.equal(tally?.createdByEventType, "proposalVotesTallied");
             assert.equal(tally?.voteResult, "rejected");
-            assert.equal(tally?.approvalBp, "7222");
+            assert.equal(tally?.approvalBp, "6500");
           },
         },
         {
           name: "createProposalThree",
-          note: "third proposal is created for tally-only projection checks",
+          note: "third proposal has a contract-reachable rejected vote flow",
           event: events.createProposalThree,
           expectedCounts: {
             proposals: 3,
             votes: 5,
             nullifiers: 4,
-            tallies: 2,
+            tallies: 5,
+            executions: 2,
+          },
+        },
+        {
+          name: "voteProposalThreeYay",
+          note: "third proposal receives a yay vote",
+          event: events.voteProposalThreeYay,
+          expectedCounts: {
+            proposals: 3,
+            votes: 6,
+            nullifiers: 5,
+            tallies: 6,
+            executions: 2,
+          },
+        },
+        {
+          name: "voteProposalThreeNay",
+          note: "third proposal receives a nay vote",
+          event: events.voteProposalThreeNay,
+          expectedCounts: {
+            proposals: 3,
+            votes: 7,
+            nullifiers: 6,
+            tallies: 7,
             executions: 2,
           },
         },
         {
           name: "tallyProposalThree",
-          note: "on-chain tally without prior votes can be queried distinctly",
+          note: "third proposal records a contract-reachable rejected tally",
           event: events.tallyProposalThree,
           expectedCounts: {
             proposals: 3,
-            votes: 5,
-            nullifiers: 4,
-            tallies: 3,
+            votes: 7,
+            nullifiers: 6,
+            tallies: 8,
             executions: 2,
           },
           assertSnapshot: (snapshot) => {
             const tally = snapshot.tallies.find(
               (candidate) =>
                 candidate.proposalPublicKey === proposalThreePublicKey &&
-                candidate.blockHeight === 161,
+                candidate.blockHeight === 163,
             );
             assert.ok(tally);
             assert.equal(tally?.createdByEventType, "proposalVotesTallied");
@@ -1124,7 +1210,20 @@ describe("proposal API e2e flow", () => {
       for (const step of flow) {
         archiveSource.push("CANONICAL", step.event.toArchiveEventOutput());
         await indexer.syncCanonicalOnce();
-        assert.equal(await processor.processOnce(), 1, `expected one row after ${step.name}`);
+        const processedRows = await processor.processOnce();
+        const failures =
+          processedRows === 1
+            ? []
+            : await dataSource
+                .getRepository(ProcessorEventFailureEntity)
+                .findBy({ processorName: "proposal-api-e2e-flow-test" });
+        assert.equal(
+          processedRows,
+          1,
+          `expected one row after ${step.name}: ${failures
+            .map((failure) => failure.boundedErrorMessage)
+            .join("; ")}`,
+        );
 
         const snapshot = await fetchSnapshot(processorApiBase);
         assert.equal(
@@ -1168,9 +1267,10 @@ describe("proposal API e2e flow", () => {
         `${indexerApiBase}/events?eventTypes=proposalVotesTallied&includeUnknown=false&limit=200`,
       );
       assert.equal(talliedSourceEventsResponse.status, 200);
-      const talliedSourceEventsPayload = (await talliedSourceEventsResponse.json()) as {
-        items?: unknown[];
-      };
+      const talliedSourceEventsPayload =
+        (await talliedSourceEventsResponse.json()) as {
+          items?: unknown[];
+        };
       assert.equal(talliedSourceEventsPayload.items?.length ?? 0, 3);
 
       const finalSnapshot = await fetchSnapshot(processorApiBase);
@@ -1179,7 +1279,7 @@ describe("proposal API e2e flow", () => {
       );
       assert.ok(proposalOne);
       assert.equal(proposalOne?.paidOutAmount, "250000000");
-      assert.equal(proposalOne?.voteTallies?.length ?? 0, 1);
+      assert.equal(proposalOne?.voteTallies?.length ?? 0, 4);
       assert.equal(proposalOne?.executions?.length ?? 0, 2);
 
       const proposalTwo = finalSnapshot.proposals.find(
@@ -1195,7 +1295,7 @@ describe("proposal API e2e flow", () => {
       );
       assert.ok(proposalThree);
       assert.equal(proposalThree?.paidOutAmount, "0");
-      assert.equal(proposalThree?.voteTallies?.length ?? 0, 1);
+      assert.equal(proposalThree?.voteTallies?.length ?? 0, 3);
       assert.equal(proposalThree?.executions?.length ?? 0, 0);
 
       const onChainOnlyTallies = finalSnapshot.tallies.filter(
@@ -1204,7 +1304,11 @@ describe("proposal API e2e flow", () => {
       assert.equal(onChainOnlyTallies.length, 3);
       assert.deepEqual(
         onChainOnlyTallies.map((tally) => tally.proposalPublicKey).sort(),
-        [proposalOnePublicKey, proposalTwoPublicKey, proposalThreePublicKey].sort(),
+        [
+          proposalOnePublicKey,
+          proposalTwoPublicKey,
+          proposalThreePublicKey,
+        ].sort(),
       );
 
       await processor.stop();

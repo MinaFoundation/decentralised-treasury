@@ -34,6 +34,7 @@ import {
   ProcessorCrudApiServer,
 } from "@repo/processor";
 import { ProposalCreatedEventHandler } from "../../src/processors/proposals/proposal-created-event-handler.js";
+import { ProposalEventFactEntity } from "../../src/processors/proposals/proposal-event-fact-entity.js";
 import { ProposalExecutionEntity } from "../../src/processors/proposals/proposal-execution-entity.js";
 import { ProposalEntity } from "../../src/processors/proposals/proposal-entity.js";
 import { VoteEntity } from "../../src/processors/proposals/vote-entity.js";
@@ -42,17 +43,24 @@ import { VoteTallyEntity } from "../../src/processors/proposals/vote-tally-entit
 import { createInMemoryDataSource } from "../support/create-in-memory-data-source.js";
 import { LightnetProposalCreatedFixtureContract } from "../contracts/lightnet-proposal-created-fixture-contract.js";
 
-const RUN_LOCAL_BLOCKCHAIN_E2E = process.env.RUN_LOCAL_BLOCKCHAIN_E2E === "true";
+const RUN_LOCAL_BLOCKCHAIN_E2E =
+  process.env.RUN_LOCAL_BLOCKCHAIN_E2E === "true";
 const ARCHIVE_REQUEST_TIMEOUT_MS = 15_000;
 const TX_FEE = UInt64.from(200_000_000);
 const LOCAL_BLOCKCHAIN_PACKAGE_DIRECTORY = fileURLToPath(
   new URL("../../../../packages/local-blockchain", import.meta.url),
 );
 const LOCAL_BLOCKCHAIN_LOADER_PATH = fileURLToPath(
-  new URL("../../../../packages/sdk/node_modules/ts-node/esm.mjs", import.meta.url),
+  new URL(
+    "../../../../packages/sdk/node_modules/ts-node/esm.mjs",
+    import.meta.url,
+  ),
 );
 const LOCAL_BLOCKCHAIN_SERVER_ENTRY_POINT = fileURLToPath(
-  new URL("../../../../packages/local-blockchain/src/server.ts", import.meta.url),
+  new URL(
+    "../../../../packages/local-blockchain/src/server.ts",
+    import.meta.url,
+  ),
 );
 const LOCAL_BLOCKCHAIN_PROOF_ENV = {
   PROOFS_ENABLED: "false",
@@ -99,7 +107,9 @@ function getAvailablePort(): Promise<number> {
     server.listen(0, "127.0.0.1", () => {
       const address = server.address();
       if (!address || typeof address === "string") {
-        server.close(() => reject(new Error("Unable to resolve ephemeral port")));
+        server.close(() =>
+          reject(new Error("Unable to resolve ephemeral port")),
+        );
         return;
       }
       server.close((error) => {
@@ -120,18 +130,25 @@ function spawnNodeProcess(
   env: NodeJS.ProcessEnv,
   workingDirectory: string,
 ): ChildProcess {
-  return spawn(process.execPath, ["--loader", loaderPath, entryPoint, ...args], {
-    cwd: workingDirectory,
-    env: {
-      ...process.env,
-      ...env,
-      NODE_NO_WARNINGS: "1",
+  return spawn(
+    process.execPath,
+    ["--loader", loaderPath, entryPoint, ...args],
+    {
+      cwd: workingDirectory,
+      env: {
+        ...process.env,
+        ...env,
+        NODE_NO_WARNINGS: "1",
+      },
+      stdio: ["ignore", "pipe", "pipe"],
     },
-    stdio: ["ignore", "pipe", "pipe"],
-  });
+  );
 }
 
-async function waitForHealth(baseUrl: string, timeoutMs = 30_000): Promise<void> {
+async function waitForHealth(
+  baseUrl: string,
+  timeoutMs = 30_000,
+): Promise<void> {
   const startedAt = Date.now();
   while (Date.now() - startedAt < timeoutMs) {
     try {
@@ -180,8 +197,9 @@ async function fetchProjectedProposalFromCrudApi(
     const payload = (await response.json()) as unknown;
     const items = extractCrudItems<ProposalCrudRow>(payload);
     return (
-      items.find((proposal) => proposal.proposalPublicKey === proposalPublicKey) ??
-      null
+      items.find(
+        (proposal) => proposal.proposalPublicKey === proposalPublicKey,
+      ) ?? null
     );
   } catch {
     return null;
@@ -208,8 +226,8 @@ describe(
         LOCAL_BLOCKCHAIN_SERVER_ENTRY_POINT,
         [],
         {
-          PORT: String(localBlockchainPort),
-          ARCHIVE_PORT: String(localArchivePort),
+          MINA_NODE_PORT: String(localBlockchainPort),
+          MINA_ARCHIVE_PORT: String(localArchivePort),
           ...LOCAL_BLOCKCHAIN_PROOF_ENV,
         },
         LOCAL_BLOCKCHAIN_PACKAGE_DIRECTORY,
@@ -257,11 +275,16 @@ describe(
       { timeout: 180_000 },
       async () => {
         const sender = adminState?.testAccounts[0];
-        assert.ok(sender, "expected local blockchain to expose a funded test account");
+        assert.ok(
+          sender,
+          "expected local blockchain to expose a funded test account",
+        );
 
         const senderPrivateKey = PrivateKey.fromBase58(sender.privateKey);
         const senderPublicKey = senderPrivateKey.toPublicKey();
-        const senderAccount = await fetchAccount({ publicKey: senderPublicKey });
+        const senderAccount = await fetchAccount({
+          publicKey: senderPublicKey,
+        });
         if (senderAccount.error) {
           throw new Error(
             `Sender account is not available on local blockchain: ${String(senderAccount.error)}`,
@@ -298,7 +321,10 @@ describe(
         const contractAccountAfterDeploy = await fetchAccount({
           publicKey: deployTargetPublicKey,
         });
-        if (contractAccountAfterDeploy.error || !contractAccountAfterDeploy.account) {
+        if (
+          contractAccountAfterDeploy.error ||
+          !contractAccountAfterDeploy.account
+        ) {
           throw new Error(
             `Expected deployed contract account to be fetchable before emit, got: ${String(contractAccountAfterDeploy.error)}`,
           );
@@ -331,7 +357,9 @@ describe(
           TreasuryProposalSmartContract.calculateAcceptanceCriteria(
             UInt128.from(BigInt(expectedProposal.amount)),
             UInt128.from(BigInt(expectedTreasuryBalance)),
-            UInt64.from(BigInt(expectedProposal.stakingEpochDataLedgerTotalCurrency)),
+            UInt64.from(
+              BigInt(expectedProposal.stakingEpochDataLedgerTotalCurrency),
+            ),
           );
 
         const archiveClient = new ArchiveClient(localArchiveBaseUrl, {
@@ -370,6 +398,7 @@ describe(
 
           dataSource = createInMemoryDataSource("public", [
             ProposalEntity,
+            ProposalEventFactEntity,
             ProposalExecutionEntity,
             VoteEntity,
             VoteNullifierEntity,
@@ -399,7 +428,8 @@ describe(
             dataSource,
             new EventProcessorRouter([
               new ProposalCreatedEventHandler({
-                resolveTreasuryBalanceForLifecycle: async () => expectedTreasuryBalance,
+                resolveTreasuryBalanceForLifecycle: async () =>
+                  expectedTreasuryBalance,
               }),
             ]),
             {
@@ -457,10 +487,19 @@ describe(
             projectedProposal?.proposalPublicKey,
             expectedProposal.proposalPublicKey,
           );
-          assert.equal(projectedProposal?.lifecycleId, expectedProposal.lifecycleId);
+          assert.equal(
+            projectedProposal?.lifecycleId,
+            expectedProposal.lifecycleId,
+          );
           assert.equal(projectedProposal?.amount, expectedProposal.amount);
-          assert.equal(projectedProposal?.recipient, expectedProposal.recipient);
-          assert.equal(projectedProposal?.zkAppUriHash, expectedProposal.zkAppUriHash);
+          assert.equal(
+            projectedProposal?.recipient,
+            expectedProposal.recipient,
+          );
+          assert.equal(
+            projectedProposal?.zkAppUriHash,
+            expectedProposal.zkAppUriHash,
+          );
           assert.equal(
             projectedProposal?.stakingEpochDataLedgerHash ?? null,
             expectedProposal.stakingEpochDataLedgerHash,
@@ -482,20 +521,30 @@ describe(
             expectedAcceptanceCriteria.requiredParticipation.toString(),
           );
 
-          assert.ok(dataSource, "expected processor datasource to be initialized");
-          const proposalRow = await dataSource.getRepository(ProposalEntity).findOneBy({
-            proposalPublicKey: expectedProposal.proposalPublicKey,
-          });
+          assert.ok(
+            dataSource,
+            "expected processor datasource to be initialized",
+          );
+          const proposalRow = await dataSource
+            .getRepository(ProposalEntity)
+            .findOneBy({
+              proposalPublicKey: expectedProposal.proposalPublicKey,
+            });
           assert.ok(
             proposalRow,
             "expected proposal row to be available in processor datasource",
           );
 
-          const sourceEvent = await dataSource.getRepository(ArchiveEventEntity).findOne({
-            where: { eventType: PROPOSAL_CREATED_EVENT_NAME },
-            order: { updatedAt: "DESC", id: "DESC" },
-          });
-          assert.ok(sourceEvent, "expected indexed proposalCreated source event");
+          const sourceEvent = await dataSource
+            .getRepository(ArchiveEventEntity)
+            .findOne({
+              where: { eventType: PROPOSAL_CREATED_EVENT_NAME },
+              order: { updatedAt: "DESC", id: "DESC" },
+            });
+          assert.ok(
+            sourceEvent,
+            "expected indexed proposalCreated source event",
+          );
           assert.equal(
             proposalRow?.createdAtBlockHeight,
             sourceEvent?.blockHeight ?? null,
