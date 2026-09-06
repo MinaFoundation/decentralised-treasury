@@ -1,108 +1,112 @@
 # 2c — Deploy Stack
 
-One command, then a verification pass. Everything on-chain already happened in
-`2b`; this runs the treasury stack in the cluster and is the equivalent of
-`pnpm testnet:up` for a local run.
+This runbook deploys the treasury stack and verifies the deployment. Runbook
+`2b` completes all on-chain operations before this procedure. This cluster
+deployment is equivalent to `pnpm testnet:up` for a local deployment.
 
 ## Prerequisites
 
-From `2b`:
+Get these values and artifacts from runbook `2b`:
 
-- the **treasury owner address** emitted by `treasury-owner deploy`
-- the **block height** that deploy landed at
-- `verification-keys.yaml` in this directory, populated from the `browserEnv`
-  output of `treasury-owner compile`
-- a treasury that has been funded, so there is something to show
+- the **treasury owner address** from `treasury-owner deploy`;
+- the deployment **block height**;
+- the `verification-keys.yaml` file in this directory, with values from the
+  `browserEnv` output of `treasury-owner compile`;
+- a funded treasury with a balance that the applications can show.
 
-## 1. Deploy The Stack
+## 1. Deploy the stack
 
 ### Fill in the placeholders
 
-Every `<REPLACE: ...>` in `helmfile.yaml` must be set first:
+Set each `<REPLACE: ...>` value in `helmfile.yaml` before deployment:
 
-| Value | From |
-| --- | --- |
-| `host` | Your public hostname for the treasury UI |
-| `certificateArn` | Your TLS certificate |
-| `namespace`, `minaNodeUpstream` | The namespace holding `graphql-proxy` (runbook `1b`) |
-| `s3.region`, `sqliteBucket`, `proofsBucket` | Buckets for lifecycle SQLite and proofs |
-| `externalDatabase.host` / `password` | Your managed database |
-| `proving.redis.persistence.storageClass` | A storage class for the proving queue volume (see `2d`) |
-| `config.treasuryOwnerContractAddress` | `treasury-owner deploy` output (`2b`) |
-| `config.treasuryDeployedAtSlot` | The value `2b` deployed with |
-| `indexer.extraEnvVars` `EVENTS_START_HEIGHT` | Just below the deploy block height (`2b`) |
+| Value                                        | From                                                    |
+| -------------------------------------------- | ------------------------------------------------------- |
+| `host`                                       | Your public hostname for the treasury UI                |
+| `certificateArn`                             | Your TLS certificate                                    |
+| `namespace`, `minaNodeUpstream`              | The namespace holding `graphql-proxy` (runbook `1b`)    |
+| `s3.region`, `sqliteBucket`, `proofsBucket`  | Buckets for lifecycle SQLite and proofs                 |
+| `externalDatabase.host` / `password`         | Your managed database                                   |
+| `proving.redis.persistence.storageClass`     | A storage class for the proving queue volume (see `2d`) |
+| `config.treasuryOwnerContractAddress`        | `treasury-owner deploy` output (`2b`)                   |
+| `config.treasuryDeployedAtSlot`              | The value `2b` deployed with                            |
+| `indexer.extraEnvVars` `EVENTS_START_HEIGHT` | Just below the deploy block height (`2b`)               |
 
-Also confirm `verification-keys.yaml` is filled in. Without it the web app
-cannot create, vote, tally or execute proposals.
+Confirm that `verification-keys.yaml` contains all required values. Without
+these values, the web application cannot create, vote, tally, or execute
+proposals.
 
 ### Use a managed database
 
-The helmfile ships with `postgresql.enabled: false` and `externalDatabase`
-pointed at a managed instance (RDS, Cloud SQL, ...) on purpose.
+The helmfile sets `postgresql.enabled: false`. The `externalDatabase` value
+identifies a managed instance such as RDS or Cloud SQL.
 
-Proposal text is held in this database, not on-chain. If the volume behind a
-bundled Postgres is lost, that content is gone — the on-chain record survives,
-but what each proposal actually *said* does not. A managed database survives the
-cluster and brings backups and point-in-time restore with it.
+The database stores proposal text. Mina does not store the proposal text
+on-chain. If the bundled Postgres volume is lost, the proposal text is lost.
+The on-chain proposal record remains, but its text is not available. A managed
+database is independent of the cluster. The managed database also supplies
+backups and point-in-time restore.
 
-Exactly one of the two may be enabled — the helmfile carries the bundled
-alternative as a commented block if you want it instead. How the password gets
-into the values is your environment's business: a plain value, a sealed secret,
-an external-secrets operator, whatever you already use.
+Enable exactly one database option. The helmfile contains the bundled option as
+a commented block. Use a password method that is valid for the environment.
+Examples include a plain value, a sealed secret, or an external-secrets
+operator.
 
-### Run it on spot
+### Use spot capacity
 
-Spot is the preferred way to run this stack, for two reasons that reinforce each
-other:
+Spot capacity is the preferred option for this stack for these reasons:
 
-- **Everything here is restartable.** The schedulers resume from their S3
-  markers, `trace-digest` checkpoints every 500 indices, already-computed proofs
-  are persisted in the lifecycle's sqlite, BullMQ requeues a job whose worker
-  vanished, and the APIs are stateless. An interruption costs time, not work.
-  Runbook `2d` covers the mechanics.
-- **The compute is expensive and bursty.** During `prove-digest` the proving
-  cluster wants up to 32 nodes of 16+ vCPU each, and between lifecycles it wants
-  none — `minReplicas: 0` releases them. Paying on-demand for a burst that large,
-  on work that tolerates being interrupted, is money for nothing.
+- **The workloads include restart and resume mechanisms.** The schedulers read
+  S3 markers. `trace-digest` creates a checkpoint after each 500 indices. The
+  lifecycle SQLite file stores computed proofs. BullMQ can requeue a stalled
+  job. The APIs are stateless. These mechanisms reduce repeated work, but they
+  do not guarantee recovery from each interruption. Verify the artifacts after
+  an interruption. Rebuild a lifecycle if its SQLite state or marker state is
+  invalid. Runbook `2d` gives the recovery details.
+- **The compute load is expensive and intermittent.** During `prove-digest`, the
+  proving cluster can use up to 32 nodes. Each node has 16 or more vCPUs. Between
+  lifecycles, `minReplicas: 0` releases all proving nodes. Spot capacity reduces
+  the cost of this interruptible compute load.
 
-The helmfile expresses this with a `nodeSelector` and `tolerations` on every
-workload. **Those are labels on your nodes, and nothing schedules until the
-nodes actually carry them.** The shipped values use Karpenter's keys, which
-exist only if you run Karpenter:
+The helmfile sets a `nodeSelector` and `tolerations` on each workload. **The
+nodes must have the specified labels before Kubernetes can schedule the
+workloads.** The supplied values use Karpenter keys. These keys exist only in a
+cluster that uses Karpenter:
 
 ```yaml
 nodeSelector:
   karpenter.sh/nodepool: amd64-spot
   karpenter.sh/capacity-type: spot
-tolerations: [{key: karpenter.sh/nodepool, operator: Exists, effect: NoSchedule}]
+tolerations:
+  [{ key: karpenter.sh/nodepool, operator: Exists, effect: NoSchedule }]
 ```
 
-Start by seeing what your nodes already advertise:
+First, examine the labels on the nodes:
 
 ```bash
 kubectl get nodes --show-labels | tr ',' '\n' | grep -iE "capacity|spot|preempt"
 ```
 
-Most managed platforms label spot capacity for you. Confirm against your own
-cluster rather than trusting the table:
+Most managed platforms add labels to spot capacity. Confirm the labels in the
+cluster. Do not use the table without this confirmation:
 
-| Platform | Label |
-| --- | --- |
-| Karpenter | `karpenter.sh/capacity-type=spot` |
-| EKS managed node group | `eks.amazonaws.com/capacityType=SPOT` |
-| GKE Spot VMs | `cloud.google.com/gke-spot=true` |
-| AKS spot | `kubernetes.azure.com/scalesetpriority=spot` |
+| Platform               | Label                                        |
+| ---------------------- | -------------------------------------------- |
+| Karpenter              | `karpenter.sh/capacity-type=spot`            |
+| EKS managed node group | `eks.amazonaws.com/capacityType=SPOT`        |
+| GKE Spot VMs           | `cloud.google.com/gke-spot=true`             |
+| AKS spot               | `kubernetes.azure.com/scalesetpriority=spot` |
 
-If nothing suitable exists, label and taint the nodes yourself:
+If the nodes do not have suitable labels, add a label and a taint:
 
 ```bash
 kubectl label node <node> workload=treasury-spot
 kubectl taint node <node> workload=treasury-spot:NoSchedule
 ```
 
-The label is what attracts these pods; the **taint is what keeps everything else
-off those nodes**, so an interruption only takes down workloads that expect it.
-Then match both in the values:
+The label selects these nodes for the pods. The **taint prevents other workloads
+from using these nodes**. Therefore, an interruption affects only workloads
+that accept spot interruptions. Match the label and taint in the values:
 
 ```yaml
 nodeSelector:
@@ -114,37 +118,40 @@ tolerations:
     effect: NoSchedule
 ```
 
-Two things to fix up if you are not on Karpenter:
+If the cluster does not use Karpenter, make these two changes:
 
-- `proving.worker.affinity` floors the instance at 16 vCPU using
-  `karpenter.k8s.aws/instance-cpu`. That key will not exist, and because the rule
-  is `required...`, every worker stays `Pending`. Replace it with something your
-  nodes do expose — `node.kubernetes.io/instance-type` with an explicit list of
-  sizes — or drop the `nodeAffinity` block and keep only the `podAntiAffinity`,
-  which is what actually stops two workers sharing a host.
-- `votingLedgerScheduler` and `proving.worker` each restate scheduling rather
-  than inheriting the chart-wide values, so a change has to be made in all three
-  places.
+- `proving.worker.affinity` uses `karpenter.k8s.aws/instance-cpu` to require at
+  least 16 vCPUs. Other clusters do not have this key. Because the rule is
+  `required...`, each worker remains `Pending`. Replace the key with a label
+  that the nodes supply. For example, use `node.kubernetes.io/instance-type`
+  with an explicit list of sizes. You can also remove the `nodeAffinity` block.
+  Keep `podAntiAffinity` to prevent two workers from sharing one host.
+- `votingLedgerScheduler` and `proving.worker` define their own scheduling
+  values. They do not inherit the chart-wide values. Apply the scheduling
+  change in all three locations.
 
-The one workload that does *not* want spot is a database. That is moot while
-`postgresql.enabled: false`, but if you switch to the bundled subchart, give it
-on-demand nodes and remember its volume is zonal.
+Do not run the database on spot capacity. This restriction has no effect while
+`postgresql.enabled: false`. If you enable the bundled subchart, use on-demand
+nodes for the database. The database volume is zonal.
 
-### Other things to check
+### Check other settings
 
-- **`EVENTS_START_HEIGHT` matters.** Without it a cold indexer walks from
-  genesis. That is not merely slow: until the pass finishes the pending path
-  does not run, so nothing new is indexed and proposal content attachment
-  cannot succeed at all. An existing cursor always wins, so it only has any
-  effect on a database that has not indexed yet.
-- **Chart ref.** `decentralized-treasury-0.2.5` for devnet or mainnet. For the
-  21-lifecycles-per-epoch speedrun, point at the
-  `spike/decentralized-treasury-lifecycle-speedrun` branch instead — a branch,
-  not a tag, so a render can pick up chart changes you did not make.
-- **`serviceAccount.annotations`** carries an AWS IRSA role in the example.
-  Remove it entirely on other clouds and grant the S3 access another way.
-- **`ingress.annotations`** are AWS ALB specific. Replace them to match your
-  own ingress controller.
+- **Set `EVENTS_START_HEIGHT`.** Without this value, a new indexer starts at
+  genesis. The pending path does not run before this first pass finishes. During
+  this pass, the indexer does not index new data and cannot attach proposal
+  content. An existing cursor takes precedence over `EVENTS_START_HEIGHT`.
+  Therefore, this value affects only a database that does not have an indexer
+  cursor.
+- **Select the chart reference.** Use `decentralized-treasury-0.2.5` for devnet
+  or mainnet. For the 21-lifecycles-per-epoch speed test, use the
+  `spike/decentralized-treasury-lifecycle-speedrun` branch. This value is a
+  branch, not a tag. Thus, a render can include chart changes that the operator
+  did not select.
+- **Configure `serviceAccount.annotations`.** The example contains an AWS IRSA
+  role. On other cloud platforms, remove this annotation and use a different
+  method to grant S3 access.
+- **Configure `ingress.annotations`.** The supplied annotations are specific to
+  AWS ALB. Replace the annotations for the selected ingress controller.
 
 ### Apply
 
@@ -154,12 +161,14 @@ helmfile template . | kubectl diff -f -
 helmfile template . | kubectl apply -f -
 ```
 
-Read the diff in full before applying. There is no ArgoCD — nothing reconciles
-on its own, and nothing is deployed until this apply runs.
+Read the complete diff before you apply it. This deployment does not use
+ArgoCD. No automatic reconciliation occurs. The apply command starts the
+deployment.
 
-`image.tag: latest` is mutable, so **a re-apply after a new image is published
-changes nothing** — the tag string is identical, so Kubernetes sees no change to
-the pod template. Force the pull:
+`image.tag: latest` is mutable. **A second apply after the publication of a new
+image does not change the deployment.** The tag string remains identical, so
+Kubernetes does not detect a pod-template change. Use this command to force a
+new image pull:
 
 ```bash
 kubectl rollout restart deploy -n <namespace> -l app.kubernetes.io/instance=decentralized-treasury
@@ -167,18 +176,18 @@ kubectl rollout restart deploy -n <namespace> -l app.kubernetes.io/instance=dece
 
 ## 2. Test
 
-Pods first:
+First, check the pods:
 
 ```bash
 kubectl get pods -n <namespace> | grep decentralized-treasury
 ```
 
-Expect `api`, `indexer`, `indexer-api`, `processor`, `processor-api`,
-`proving-scheduler`, `proxy`, `web` and `redis` Running, `api-migrate`
-Complete, and `proving-worker` at 0 replicas when there is nothing to prove —
-that is the autoscaler at rest, not a failure.
+Confirm that `api`, `indexer`, `indexer-api`, `processor`, `processor-api`,
+`proving-scheduler`, `proxy`, `web`, and `redis` are Running. Confirm that
+`api-migrate` is Complete. When no proof work exists, `proving-worker` has 0
+replicas. This state shows that the autoscaler is at rest. It is not a failure.
 
-Then the public endpoints, all of which should return `200`:
+Then, confirm that each public endpoint returns `200`:
 
 ```bash
 H=https://<your host>
@@ -188,48 +197,61 @@ for p in /healthz /api/healthz /indexer/healthz /indexer/status \
 done
 ```
 
-The two `/status` endpoints are the ones that actually tell you the stack is
-working, not merely up:
+The two `/status` endpoints show operational progress. The health endpoints
+show only that the services are running:
 
 ```bash
 curl -s "$H/indexer/status"
 ```
 
 ```json
-{"ok":true,"archive":{"canonicalMaxBlockHeight":552840,"pendingMaxBlockHeight":553130},
- "pendingCursor":553130,"canonicalCursor":552840,
- "remainingPendingBlocks":0,"remainingCanonicalBlocks":0}
+{
+  "ok": true,
+  "archive": {
+    "canonicalMaxBlockHeight": 552840,
+    "pendingMaxBlockHeight": 553130
+  },
+  "pendingCursor": 553130,
+  "canonicalCursor": 552840,
+  "remainingPendingBlocks": 0,
+  "remainingCanonicalBlocks": 0
+}
 ```
 
-`remainingPendingBlocks` and `remainingCanonicalBlocks` at `0` mean the indexer
-has caught up with the archive. A large, slowly-falling number on a fresh
-deployment usually means `EVENTS_START_HEIGHT` is unset or far too low.
+When `remainingPendingBlocks` and `remainingCanonicalBlocks` are `0`, the
+indexer has processed the archive data. On a new deployment, a large value that
+decreases slowly usually shows an unset or low `EVENTS_START_HEIGHT`.
 
 ```bash
 curl -s "$H/processor/status"
 ```
 
 ```json
-{"ok":true,"processorName":"proposal-processor",
- "offset":{"lastSeenEventId":"3238","updatedAt":"..."},"remainingEvents":0}
+{
+  "ok": true,
+  "processorName": "proposal-processor",
+  "offset": { "lastSeenEventId": "3238", "updatedAt": "..." },
+  "remainingEvents": 0
+}
 ```
 
-Finally open `https://<your host>` and confirm the UI loads and shows treasury
-state. If the page renders but proposal actions fail, the verification keys are
-missing or were compiled at a different `LIFECYCLE_PERIOD_DURATION`.
+Finally, open `https://<your host>`. Confirm that the UI loads and shows the
+treasury state. If the page loads but proposal actions fail, check the
+verification keys. The keys can be absent or compiled with a different
+`LIFECYCLE_PERIOD_DURATION`.
 
 ## Troubleshooting
 
-| Symptom | Cause / fix |
-| --- | --- |
-| Whole ingress 502s | The proving-scheduler Service is missing — nginx refuses to boot on an unresolvable upstream. Keep the `extraObjects` workaround. |
-| `/mina/graphql` 502s, other routes fine | `minaNodeUpstream` must be an FQDN, not a bare Service name. |
-| UI loads, proposals fail | `verification-keys.yaml` empty, or keys from the wrong network or duration. |
-| Indexer never catches up | `EVENTS_START_HEIGHT` unset, so it is walking from genesis. |
-| Pods `CreateContainerConfigError` | The `securityContext.runAsUser: 1000` workaround was dropped. |
-| Pods stay `Pending` | The nodes carry no label matching `nodeSelector`, or the taint has no matching toleration. Check with `kubectl describe pod`, then see "Run it on spot". |
-| Only `proving-worker` stays `Pending` | Its `nodeAffinity` requires the Karpenter-only `karpenter.k8s.aws/instance-cpu` key. Replace or remove that rule. |
-| Re-apply deploys no new code | `latest` is unchanged as a string. Roll out a restart. |
+| Symptom                                               | Cause / fix                                                                                                                                                    |
+| ----------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| All ingress routes return 502                         | The proving-scheduler Service is absent. nginx does not start when it cannot resolve the upstream. Keep the `extraObjects` workaround.                         |
+| `/mina/graphql` returns 502, but other routes respond | `minaNodeUpstream` must be an FQDN, not a Service name without a domain.                                                                                       |
+| The UI loads, but proposal actions fail               | `verification-keys.yaml` is empty, or the keys use an incorrect network or duration.                                                                           |
+| The indexer does not process all archive data         | `EVENTS_START_HEIGHT` is unset, so the indexer starts at genesis.                                                                                              |
+| Pods show `CreateContainerConfigError`                | The `securityContext.runAsUser: 1000` workaround is absent.                                                                                                    |
+| Pods remain `Pending`                                 | The nodes do not have the `nodeSelector` label, or the taint does not have a matching toleration. Check `kubectl describe pod`. Then, see "Use spot capacity". |
+| Only `proving-worker` remains `Pending`               | Its `nodeAffinity` requires the Karpenter-only `karpenter.k8s.aws/instance-cpu` key. Replace or remove this rule.                                              |
+| A second apply does not deploy new code               | The `latest` tag string did not change. Start a rollout restart.                                                                                               |
 
 ## References
 

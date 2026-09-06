@@ -1,0 +1,99 @@
+---
+releases:
+- name: node-0
+  chart: git::https://github.com/MinaFoundation/helm-charts.git@mina-daemon?ref=mina-daemon-2.1.1
+  values:
+    - deployment:
+        testnet: devnet
+        name: devnet-node-0
+        image: minaprotocol/mina-daemon:4.0.0-6965b50-bookworm-devnet
+        peerListURL: https://bootnodes.minaprotocol.com/networks/devnet.txt
+      podLabels:
+        # Required by Staking Ledger Provider
+        queryableNode: "true"
+      node:
+        name: node-0
+        role: node
+        replicas: 1
+        # Adds the `exposeGraphql: "true"` pod label that the graphql-proxy
+        # Service below selects on. Without it the proxy has no endpoints.
+        exposeGraphql: true
+        logLevel: Error
+        fileLogLevel: Error
+        libp2pKeys:
+          enabled: true
+          create: true
+        archive:
+          enabled: true
+          address: archive:3086
+      readinessProbe:
+        # The chart's 1200s default leaves the pod unready long after it is
+        # actually Synced.
+        initialDelaySeconds: 120
+        periodSeconds: 30
+        timeoutSeconds: 25
+      resources:
+        memoryRequest: 16Gi
+        cpuRequest: 4
+        memoryLimit: 24Gi
+        cpuLimit: 6
+
+# Public GraphQL endpoint for the daemon: just a Service and an Ingress, hence
+# the `raw` chart. The Service points straight at the node-0 pod.
+- name: graphql-proxy
+  chart: git::https://github.com/MinaFoundation/helm-charts.git@raw
+  values:
+    - resources:
+        - apiVersion: v1
+          kind: Service
+          metadata:
+            name: graphql-proxy
+            labels:
+              app: graphql-proxy
+          spec:
+            type: ClusterIP
+            # Matches the label the mina-daemon chart adds when
+            # node.exposeGraphql is true.
+            selector:
+              exposeGraphql: "true"
+            ports:
+              # Read-only proxy served by the graphql-public-proxy sidecar.
+              - name: proxy
+                protocol: TCP
+                port: 3000
+                targetPort: 3000
+              # Full daemon GraphQL.
+              - name: graphql
+                protocol: TCP
+                port: 3085
+                targetPort: 3085
+
+        # EXAMPLE ONLY - the values below are environment specific and the
+        # placeholders will not work as written. Replace the host and the
+        # certificate ARN, and adjust the annotations to your ingress
+        # controller, before applying. Drop this resource entirely if the
+        # endpoint does not need to be public.
+        - apiVersion: networking.k8s.io/v1
+          kind: Ingress
+          metadata:
+            name: graphql-proxy
+            annotations:
+              alb.ingress.kubernetes.io/backend-protocol: HTTP
+              alb.ingress.kubernetes.io/scheme: internet-facing
+              alb.ingress.kubernetes.io/target-type: ip
+              alb.ingress.kubernetes.io/listen-ports: '[{"HTTPS":443}]'
+              alb.ingress.kubernetes.io/certificate-arn: "<REPLACE: ACM certificate ARN>"
+          spec:
+            ingressClassName: alb
+            rules:
+            # e.g. https://devnet.minaprotocol.network/graphql
+            - host: "<REPLACE: devnet.example.com>"
+              http:
+                paths:
+                - path: /
+                  pathType: Prefix
+                  backend:
+                    service:
+                      name: graphql-proxy
+                      port:
+                        number: 3085

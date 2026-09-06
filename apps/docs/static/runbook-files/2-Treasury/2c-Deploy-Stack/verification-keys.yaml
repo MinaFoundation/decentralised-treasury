@@ -1,0 +1,18 @@
+# Proving artefacts for the web frontend, kept out of helmfile.yaml because each
+# verification key is a single multi-kilobyte line.
+#
+# Paste the `browserEnv` values emitted by `treasury-owner compile` (runbook 2b).
+# The keys are specific to the LIFECYCLE_PERIOD_DURATION they were compiled at,
+# so never copy this file between networks or between two different durations -
+# wrong keys fail at proof time, long after a successful deploy.
+#
+# The chart drops empty entries, so a value left unset renders as absent rather
+# than as an empty string, and the web app fails at proposal actions instead of
+# at startup. Fill in all five.
+web:
+  publicEnv:
+    NEXT_PUBLIC_VOTE_REDUCER_VERIFICATION_KEY_JSON: '<REPLACE: {"data":"...","hash":"..."}>'
+    NEXT_PUBLIC_STAKING_LEDGER_TO_VOTING_LEDGER_VERIFICATION_KEY_JSON: '<REPLACE: {"data":"...","hash":"..."}>'
+    NEXT_PUBLIC_TREASURY_PROPOSAL_VERIFICATION_KEY_JSON: '<REPLACE: {"data":"...","hash":"..."}>'
+    NEXT_PUBLIC_EMPTY_VOTING_LEDGER_ROOT: '<REPLACE: decimal field element>'
+    NEXT_PUBLIC_EMPTY_NULLIFIER_ROOT: '<REPLACE: decimal field element>'
