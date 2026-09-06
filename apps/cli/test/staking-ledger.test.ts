@@ -7,7 +7,7 @@ import { SqliteStakingLedgerService } from "@repo/sdk/src/services/sqlite/sqlite
 import { runCli } from "./utils/cli-test-utils.js";
 
 const MINI_LEDGER_PATH = fileURLToPath(
-  new URL("../../sdk/test/test-ledger-mini.json", import.meta.url),
+  new URL("../../../packages/sdk/test/test-ledger-mini.json", import.meta.url),
 );
 const FIXTURES_DIRECTORY = fileURLToPath(new URL("./fixtures", import.meta.url));
 const STAKING_LEDGER_FIXTURE_LIFECYCLE_ID = "cli-staking-ledger-mini-fixture";

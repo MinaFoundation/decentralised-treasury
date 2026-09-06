@@ -11,8 +11,15 @@ it("should create a keyv account storage", async () => {
   const store = new KeyvSqlite({ uri: "sqlite://:memory:" });
   const keyv = new Keyv({ store });
   keyv.disconnect = async () => {};
+  const publicKeyIndexKeyv = new Keyv({ store });
+  publicKeyIndexKeyv.disconnect = async () => {};
   const counter = new KeyvSqliteCounter(store);
-  const accountStorage = new KeyvAccountStorage(keyv, "test", counter);
+  const accountStorage = new KeyvAccountStorage(
+    keyv,
+    "test",
+    counter,
+    publicKeyIndexKeyv,
+  );
 
   const account = Account.empty();
   account.pk = PrivateKey.random().toPublicKey();

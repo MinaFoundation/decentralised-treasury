@@ -40,6 +40,7 @@ const PROPOSAL_MARKDOWN_CONTENT = `# CLI E2E Proposal
 This proposal is created from markdown content.
 `;
 const LIFECYCLE_PERIOD_DURATION = 60;
+const PROPOSAL_START_LEAD_SLOTS = 60;
 
 const PROPOSAL_VOTE = "yay";
 const VOTER_PRIVATE_KEY =
@@ -305,9 +306,9 @@ describe("proposal create e2e", { concurrency: 1 }, () => {
       PrivateKey.random().toPublicKey(),
     );
     const currentSlot = await getCurrentGlobalSlot();
-    // Start lifecycle 0 in the near future so proposal create can run
-    // immediately after deploy and still be within the proposal phase window.
-    treasuryDeployedAtSlot = currentSlot + LIFECYCLE_PERIOD_DURATION;
+    // Deploy before lifecycle 0 starts. The create step waits for this lower
+    // bound so Lightnet does not reject the contract slot precondition.
+    treasuryDeployedAtSlot = currentSlot + PROPOSAL_START_LEAD_SLOTS;
     logTestStep(
       PROPOSAL_TEST_NAME,
       "setup: deploying treasury owner for proposal test",
@@ -327,6 +328,7 @@ describe("proposal create e2e", { concurrency: 1 }, () => {
       streamOutput: true,
       streamLabel: "proposal create setup deploy",
       envOverrides: {
+        SENDER_PRIVATE_KEY: VOTER_PRIVATE_KEY,
         TREASURY_OWNER_PRIVATE_KEY: treasuryOwnerPrivateKey.toBase58(),
         PAUSE_CONTROLLER_PRIVATE_KEY: pauseControllerPrivateKey.toBase58(),
         TREASURY_DEPLOYED_AT_SLOT: String(treasuryDeployedAtSlot),
@@ -368,6 +370,10 @@ describe("proposal create e2e", { concurrency: 1 }, () => {
       0,
       "proposal e2e expects lifecycle id 0",
     );
+    const currentSlot = await getCurrentGlobalSlot();
+    if (currentSlot < treasuryDeployedAtSlot) {
+      await waitForGlobalSlot(treasuryDeployedAtSlot, 300_000);
+    }
 
     logTestStep(PROPOSAL_TEST_NAME, "running proposal create CLI command", {
       treasuryOwnerPublicKey,
@@ -387,6 +393,7 @@ describe("proposal create e2e", { concurrency: 1 }, () => {
       streamOutput: true,
       streamLabel: "proposal create e2e",
       envOverrides: {
+        SENDER_PRIVATE_KEY: VOTER_PRIVATE_KEY,
         TREASURY_API_URL: contentApi.url,
         TREASURY_OWNER_PUBLIC_KEY: treasuryOwnerPublicKey,
         PROPOSAL_LIFECYCLE_ID: String(proposalLifecycleId),
@@ -478,6 +485,7 @@ describe("proposal create e2e", { concurrency: 1 }, () => {
       streamOutput: true,
       streamLabel: "proposal vote e2e",
       envOverrides: {
+        SENDER_PRIVATE_KEY: VOTER_PRIVATE_KEY,
         TREASURY_OWNER_PUBLIC_KEY: treasuryOwnerPublicKey,
         PROPOSAL_PUBLIC_KEY: createdProposalPublicKey,
         VOTER_PRIVATE_KEY: voterPrivateKey.toBase58(),

@@ -508,7 +508,7 @@ test("multisig signature verification", async (t) => {
               context.getCommitment()!,
               reorderedParticipants.map((participant) => participant.publicKey),
             ),
-          new RegExp(MultisigSignaturesErrors.NOT_ENOUGH_VALID_SIGNATURES),
+          new RegExp(MultisigSignaturesErrors.INVALID_MULTISIG_COMMITMENT),
         );
       },
     );
@@ -560,7 +560,7 @@ test("multisig signature verification", async (t) => {
               context.getCommitment()!,
               shiftedPublicKeys,
             ),
-          new RegExp(MultisigSignaturesErrors.NOT_ENOUGH_VALID_SIGNATURES),
+          new RegExp(MultisigSignaturesErrors.INVALID_MULTISIG_COMMITMENT),
         );
       },
     );
@@ -601,9 +601,7 @@ test("multisig signature verification", async (t) => {
         await assert.rejects(
           async () =>
             signatures.verify(data, context.getCommitment()!, shortPublicKeys),
-          new RegExp(
-            `toGroup|${MultisigSignaturesErrors.NOT_ENOUGH_VALID_SIGNATURES}`,
-          ),
+          new RegExp(MultisigSignaturesErrors.INVALID_MULTISIG_COMMITMENT),
         );
       },
     );

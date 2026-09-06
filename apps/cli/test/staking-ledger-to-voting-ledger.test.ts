@@ -17,7 +17,7 @@ const runSdkCli = (args: string[]) => runCli(args);
 const FIXTURES_DIRECTORY = fileURLToPath(new URL("./fixtures", import.meta.url));
 const SQLITE_FIXTURE_DIRECTORY = join(FIXTURES_DIRECTORY, ".data", "sqlite");
 const MINI_LEDGER_PATH = fileURLToPath(
-  new URL("../../sdk/test/test-ledger-mini.json", import.meta.url),
+  new URL("../../../packages/sdk/test/test-ledger-mini.json", import.meta.url),
 );
 const STAKING_LEDGER_TO_VOTING_LEDGER_FIXTURE_LIFECYCLE_ID =
   "cli-staking-to-voting-ledger-mini-fixture";
