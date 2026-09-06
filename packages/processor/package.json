@@ -9,7 +9,9 @@
   },
   "scripts": {
     "check-types": "tsc --noEmit",
-    "test": "node --loader ts-node/esm --test \"test/**/*.test.ts\""
+    "test": "node --loader ts-node/esm --test \"test/**/*.test.ts\"",
+    "test:unit": "node --loader ts-node/esm --test \"test/**/*.test.ts\"",
+    "test:coverage": "node ../../devops/scripts/run-node-test-coverage.mjs \"--include=src/**/*.ts\" \"--test-pattern=test/**/*.test.ts\""
   },
   "dependencies": {
     "@dataui/crud": "^5.3.4",

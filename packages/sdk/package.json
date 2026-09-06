@@ -13,11 +13,11 @@
     "docker:up": "docker compose -f docker/docker-compose.yml up",
     "docker:down": "docker compose -f docker/docker-compose.yml down",
     "test": "NODE_NO_WARNINGS=1 node --loader ts-node/esm --test",
-    "test:all": "NODE_NO_WARNINGS=1 node --loader ts-node/esm --test ./test/**/*.test.ts",
+    "test:all": "NODE_NO_WARNINGS=1 node --loader ts-node/esm --test './test/**/*.test.ts'",
     "test:watch": "NODE_NO_WARNINGS=1 NODE_OPTIONS='--trace-uncaught' node --loader ts-node/esm --watch --test",
-    "test:watch:all": "NODE_NO_WARNINGS=1 node --loader ts-node/esm --watch --test ./test/**/*.test.ts",
+    "test:watch:all": "NODE_NO_WARNINGS=1 node --loader ts-node/esm --watch --test './test/**/*.test.ts'",
     "test:proofs-enabled": "NODE_NO_WARNINGS=1 PROOFS_ENABLED=true node --loader ts-node/esm --test",
-    "test:proofs-enabled:all": "NODE_NO_WARNINGS=1 PROOFS_ENABLED=true node --loader ts-node/esm --test ./test/**/*.test.ts",
+    "test:proofs-enabled:all": "NODE_NO_WARNINGS=1 PROOFS_ENABLED=true node --loader ts-node/esm --test './test/**/*.test.ts'",
     "docker:build:local-o1js": "docker build -t decentralized-treasury-worker --progress=plain --file ./docker/worker.Dockerfile --build-context o1js=../../../o1js ."
   },
   "dependencies": {
