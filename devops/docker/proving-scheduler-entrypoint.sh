@@ -21,17 +21,23 @@
 # complete, so lifecycles are proved strictly one at a time regardless of
 # how many worker replicas are draining the queue.
 #
-# To (re)prove a specific lifecycle by hand, run this same script by hand
-# against the already running container, e.g.:
-#   docker exec proving-scheduler /bin/sh devops/docker/proving-scheduler-entrypoint.sh process-lifecycle 17
+# For a one-shot recovery, stop the scheduler service. Then use
+# `docker compose run --rm --no-deps proving-scheduler` with this script and
+# the `process-lifecycle` argument. Start the scheduler after the command exits.
 set -eu
 
 SQLITE_DATA_DIRECTORY="${SQLITE_DATA_DIRECTORY:-/data/sqlite}"
 PROVING_OUTPUT_DIRECTORY="${PROVING_OUTPUT_DIRECTORY:-${SQLITE_DATA_DIRECTORY}/proofs}"
 PROVING_QUEUE_NAME="${PROVING_QUEUE_NAME:-staking-ledger-to-voting-ledger}"
+PROOFS_ENABLED="${PROOFS_ENABLED:-false}"
 REDIS_HOST="${REDIS_HOST:?Set REDIS_HOST}"
 REDIS_PORT="${REDIS_PORT:?Set REDIS_PORT}"
 POLL_INTERVAL_SECONDS="${PROVING_SCHEDULER_POLL_INTERVAL_SECONDS:-30}"
+
+if [ "$PROOFS_ENABLED" != "true" ]; then
+  echo "[proving-scheduler] PROOFS_ENABLED must be true; no proof or .sqlite.proven marker was created" >&2
+  exit 1
+fi
 
 run_cli() {
   pnpm run cli -- "$@"

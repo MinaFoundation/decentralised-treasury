@@ -6,9 +6,10 @@
 #   ./devops/scripts/publish-images.sh v1.4.0           # explicit tag
 #   NAMESPACE=myorg ./devops/scripts/publish-images.sh  # somewhere other than Docker Hub minafoundation
 #
-# Two images are built, for linux/amd64 and linux/arm64:
+# Three image targets are built, for linux/amd64 and linux/arm64:
 #
 #   dt-web            the slim Next.js standalone UI (Dockerfile target `web`)
+#   dt-backoffice     the offline-first signing UI (Dockerfile target `backoffice`)
 #   dt-api, dt-api-migrate, dt-indexer, dt-indexer-api,
 #   dt-processor, dt-processor-api, dt-voting-ledger-scheduler,
 #   dt-proving-worker, dt-proving-scheduler
@@ -34,6 +35,7 @@ MOVE_LATEST="${MOVE_LATEST:-true}"
 BUILDER="${BUILDER:-treasury-publisher}"
 
 WEB_REPOS=("dt-web")
+BACKOFFICE_REPOS=("dt-backoffice")
 SERVICES_REPOS=(
   "dt-api"
   "dt-api-migrate"
@@ -108,6 +110,7 @@ build_image() {
 }
 
 build_image web "${WEB_REPOS[@]}"
+build_image backoffice "${BACKOFFICE_REPOS[@]}"
 build_image base "${SERVICES_REPOS[@]}"
 
 echo
@@ -115,6 +118,7 @@ if [ "$PUSH" = "true" ]; then
   echo "Published tag '$TAG' from commit $BUILD_SHA."
   echo "Verify the published architectures with:"
   echo "  docker buildx imagetools inspect $NAMESPACE/dt-web:$TAG"
+  echo "  docker buildx imagetools inspect $NAMESPACE/dt-backoffice:$TAG"
 else
   echo "Built '$TAG' for $PLATFORMS without publishing."
 fi

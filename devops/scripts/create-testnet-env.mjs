@@ -424,6 +424,7 @@ function buildCliEnvFile(options, roles) {
     ...section("Treasury owner zkApp account"),
     formatEnvLine("TREASURY_OWNER_PRIVATE_KEY", roles.treasuryOwner.privateKey),
     formatEnvLine("TREASURY_OWNER_PUBLIC_KEY", roles.treasuryOwner.publicKey),
+    formatEnvLine("TREASURY_WITHDRAWAL_PERMISSION", "proof"),
     formatEnvLine(
       "TREASURY_OWNER_CONTRACT_ADDRESS",
       roles.treasuryOwner.publicKey,

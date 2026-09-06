@@ -943,12 +943,11 @@ async function deployTreasury(adminState) {
     "local-blockchain admin state did not include a sender",
   );
 
-  const keys = await generateKeypairs(9);
+  const keys = await generateKeypairs(8);
   const treasuryOwner = keys[0];
   const pauseController = keys[1];
   const multisigParticipants = keys.slice(2, 7);
-  const proposal = keys[7];
-  const recipient = keys[8];
+  const recipient = keys[7];
   const currentSlot = Number(adminState.currentSlot ?? 0);
   const deployedAtSlot =
     currentSlot + Number.parseInt(LIFECYCLE_PERIOD_DURATION, 10);
@@ -1003,7 +1002,6 @@ async function deployTreasury(adminState) {
   return {
     sender,
     treasuryOwner,
-    proposal,
     recipient,
     deployResult,
     stateResult,
@@ -1011,7 +1009,7 @@ async function deployTreasury(adminState) {
   };
 }
 
-async function createProposal({ sender, treasuryOwner, proposal, recipient }) {
+async function createProposal({ sender, treasuryOwner, recipient }) {
   await mkdir(TEST_DATA_DIRECTORY, { recursive: true });
   const proposalContents = [
     `# ${PROPOSAL_TITLE}`,
@@ -1026,7 +1024,6 @@ async function createProposal({ sender, treasuryOwner, proposal, recipient }) {
     TREASURY_API_URL: contentApi.url,
     SENDER_PRIVATE_KEY: sender.privateKey,
     TREASURY_OWNER_PUBLIC_KEY: treasuryOwner.publicKey,
-    PROPOSAL_PRIVATE_KEY: proposal.privateKey,
     PROPOSAL_LIFECYCLE_ID: "0",
     RECIPIENT_PUBLIC_KEY: recipient.publicKey,
     PROPOSAL_AMOUNT,
@@ -1041,8 +1038,14 @@ async function createProposal({ sender, treasuryOwner, proposal, recipient }) {
     "proposal create",
   );
   assert(
-    createResult.proposalAddress === proposal.publicKey,
-    "proposal create output proposalAddress did not match generated keypair",
+    createResult.proposalAddress,
+    "proposal create output missing address",
+  );
+  assert(
+    createOutput.stderr.includes(
+      "The CLI generated an in-memory keypair for deployment and will discard the private key after this command",
+    ),
+    "proposal create did not warn about its generated deployment key",
   );
   assert(createResult.proposalTxHash, "proposal create output missing tx hash");
   assert(

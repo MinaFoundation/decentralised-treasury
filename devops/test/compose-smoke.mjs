@@ -176,6 +176,10 @@ function composeEnv() {
     DATABASE_URL: `postgres://${postgresUser}:${postgresPassword}@postgres:5432/${postgresDb}`,
     DATABASE_SCHEMA: "public",
     ARCHIVE_NODE_URL: `http://host.docker.internal:${archivePort}/graphql`,
+    TREASURY_OWNER_CONTRACT_ADDRESS:
+      "B62qpExe8CAaGkR4HRxyXvkziQpE6Aq3U71MJLHivP8pCsiDk1BbU9Z",
+    NEXT_PUBLIC_TREASURY_OWNER_CONTRACT_ADDRESS:
+      "B62qpExe8CAaGkR4HRxyXvkziQpE6Aq3U71MJLHivP8pCsiDk1BbU9Z",
     NEXT_PUBLIC_MINA_NODE_URL: `http://127.0.0.1:${nodePort}/graphql`,
     NEXT_PUBLIC_TREASURY_API_URL: `http://127.0.0.1:${proxyApiPort}`,
     NEXT_PUBLIC_INDEXER_API_URL: `http://127.0.0.1:${proxyIndexerPort}`,

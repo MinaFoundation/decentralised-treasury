@@ -17,6 +17,7 @@ const BROWSER_PROVER_ENV_KEYS = [
 const COMMON_OUTPUTS = [
   ["devops", "devops"],
   ["api", "apps/api"],
+  ["backoffice", "apps/backoffice"],
   ["web", "apps/web"],
   ["cli", "apps/cli"],
 ];
@@ -255,6 +256,7 @@ function createPlaceholderValues({ config, existing, options }) {
   const existingCli = existing.cli;
   const existingDevops = existing.devops;
   const existingWeb = existing.web;
+  const existingBackoffice = existing.backoffice ?? {};
   const endpoints = resolveEndpointValues({ config, options });
 
   const postgresUser = "postgres";
@@ -341,6 +343,8 @@ function createPlaceholderValues({ config, existing, options }) {
 
   BROWSER_PROVER_ENV_KEYS.forEach((key) => {
     values[`PRESERVE_${key}`] = existingWeb[key] ?? "";
+    values[`PRESERVE_BACKOFFICE_${key}`] =
+      firstNonEmpty(existingBackoffice[key], existingWeb[key]) ?? "";
   });
 
   return values;

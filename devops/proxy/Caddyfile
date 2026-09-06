@@ -49,3 +49,16 @@ http://:{$PROXY_PROCESSOR_PORT:4102} {
 	encode zstd gzip
 	reverse_proxy processor-api:4002
 }
+
+http://:{$PROXY_BACKOFFICE_PORT:3200} {
+	encode zstd gzip
+
+	handle /mina/* {
+		route {
+			uri strip_prefix /mina
+			reverse_proxy {$MINA_NODE_PROXY_UPSTREAM}
+		}
+	}
+
+	reverse_proxy backoffice:{$BACKOFFICE_PORT:3200}
+}

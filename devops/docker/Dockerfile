@@ -33,6 +33,7 @@ USER node
 
 COPY --chown=node:node package.json pnpm-lock.yaml pnpm-workspace.yaml turbo.json ./
 COPY --chown=node:node apps/api/package.json apps/api/package.json
+COPY --chown=node:node apps/backoffice/package.json apps/backoffice/package.json
 COPY --chown=node:node apps/cli/package.json apps/cli/package.json
 COPY --chown=node:node apps/docs/package.json apps/docs/package.json
 COPY --chown=node:node apps/web/package.json apps/web/package.json
@@ -48,7 +49,7 @@ RUN pnpm install --frozen-lockfile
 
 COPY --chown=node:node . .
 
-EXPOSE 3100 4000 4001 4002 4003 8080 8282
+EXPOSE 3100 3200 4000 4001 4002 4003 8080 8282
 
 # Compiles the Next.js bundle. Deliberately runs with no NEXT_PUBLIC_* variables
 # set: any that were present here would be inlined into the client bundle by
@@ -94,3 +95,35 @@ COPY --from=web-build --chown=node:node /app/apps/web/public ./apps/web/public
 EXPOSE 3100
 
 CMD ["node", "apps/web/server.js"]
+
+FROM base AS backoffice-build
+
+RUN mkdir -p apps/backoffice/.next
+
+RUN --mount=type=cache,target=/app/apps/backoffice/.next/cache,uid=1000,gid=1000 \
+  pnpm --dir apps/backoffice run build
+
+FROM node:24.6.0-bookworm-slim AS backoffice
+
+ARG BUILD_SHA=unknown
+
+LABEL org.opencontainers.image.revision=$BUILD_SHA
+LABEL org.opencontainers.image.title="Mina Decentralized Treasury back office"
+LABEL org.opencontainers.image.description="Break-glass operator UI for the Mina decentralized treasury."
+
+ENV NODE_ENV=production
+ENV NODE_NO_WARNINGS=1
+ENV BUILD_SHA=$BUILD_SHA
+ENV PORT=3200
+ENV HOSTNAME=0.0.0.0
+
+WORKDIR /app
+
+USER node
+
+COPY --from=backoffice-build --chown=node:node /app/apps/backoffice/.next/standalone ./
+COPY --from=backoffice-build --chown=node:node /app/apps/backoffice/.next/static ./apps/backoffice/.next/static
+
+EXPOSE 3200
+
+CMD ["node", "apps/backoffice/server.js"]
