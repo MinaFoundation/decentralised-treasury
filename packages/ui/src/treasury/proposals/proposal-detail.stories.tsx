@@ -182,22 +182,22 @@ const failedProposal: TreasuryProposalDetailProposal = {
   paidOutAmount: "0 MINA",
   contents:
     "## Overview\n\nA mentorship and office-hours program for governance contributors.\n\n## Outcome\n\nParticipation remained below the required threshold.",
-  stakingEpochDataLedgerTotalCurrency: "250000",
+  stakingEpochDataLedgerTotalCurrency: "250,000 MINA",
   requiredParticipationBp: "2000",
   requiredApprovalBp: "5500",
-  requiredParticipation: "50000",
+  requiredParticipation: "50,000 MINA",
   latestVoteTally: {
     blockHeight: 450355,
-    yayWeight: "0",
-    nayWeight: "0",
+    yayWeight: "10,000 MINA",
+    nayWeight: "50,000 MINA",
     abstainWeight: "0",
     createdByEventType: "proposalVotesTallied",
     requiredParticipationBp: "2000",
     requiredApprovalBp: "5500",
-    requiredParticipation: "50000",
-    totalParticipatingVotes: "0",
-    approvalBp: "0",
-    voteResult: null,
+    requiredParticipation: "50,000 MINA",
+    totalParticipatingVotes: "60,000 MINA",
+    approvalBp: "1666",
+    voteResult: "rejected",
   },
 };
 
@@ -420,8 +420,8 @@ export const PassedDetailReadyForPayout = {
   ),
 };
 
-export const PassedDetailConnectWalletForPayout = {
-  name: "Passed Detail / Connect Wallet For Payout",
+export const PassedDetailConnectFundedWalletForPayout = {
+  name: "Passed Detail / Connect Funded Wallet For Payout",
   render: () => (
     <StoryFrame>
       <TreasuryProposalDetail
@@ -429,9 +429,9 @@ export const PassedDetailConnectWalletForPayout = {
         votes={passingVotes}
         executions={[]}
         contentVerificationStatus="verified"
-        hasConnectedProposerWallet={false}
+        hasConnectedWallet={false}
         onLifecycleClick={onLifecycleClick}
-        onConnectProposerWalletClick={() => {}}
+        onConnectWalletClick={() => {}}
       />
     </StoryFrame>
   ),

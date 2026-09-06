@@ -342,7 +342,7 @@ describe("TreasuryProposalsTable", () => {
     expect(screen.queryByText("-")).toBeNull();
   });
 
-  it("shows abandoned when a cooldown proposal has no votes", () => {
+  it("shows an awaiting result when a cooldown proposal has no contract result", () => {
     render(
       <TreasuryCooldownPeriodTable
         entries={[
@@ -350,23 +350,18 @@ describe("TreasuryProposalsTable", () => {
             ...entries[1]!,
             id: "P-5",
             title: "Epsilon proposal",
-            latestVoteTally: {
-              blockHeight: 449901,
-              yayWeight: "0",
-              nayWeight: "0",
-              abstainWeight: "0",
-              createdByEventType: "proposalVotesTallied",
-              voteResult: null,
-            },
+            contractStatus: "unknown",
+            contractStatusFinality: "canonical",
+            latestVoteTally: null,
           },
         ]}
       />,
     );
 
-    expect(screen.getByText("Abandoned")).toBeTruthy();
+    expect(screen.getByText("Awaiting on-chain result")).toBeTruthy();
   });
 
-  it("shows failed in cooldown when participation quorum is not met", () => {
+  it("does not invent a final result when participation quorum is not met", () => {
     render(
       <TreasuryCooldownPeriodTable
         entries={[
@@ -376,12 +371,14 @@ describe("TreasuryProposalsTable", () => {
             title: "Iota proposal",
             stakingEpochDataLedgerTotalCurrency: toNanomina(100),
             requiredParticipationBp: "7000",
-            latestVoteTally: {
+            contractStatus: "unknown",
+            contractStatusFinality: "canonical",
+            runningVoteTally: {
               blockHeight: 449902,
               yayWeight: toNanomina(40),
               nayWeight: toNanomina(5),
               abstainWeight: toNanomina(5),
-              createdByEventType: "proposalVotesTallied",
+              createdByEventType: "proposalVoteDispatched",
               voteResult: "approved",
             },
           },
@@ -389,7 +386,33 @@ describe("TreasuryProposalsTable", () => {
       />,
     );
 
-    expect(screen.getByText("Failed")).toBeTruthy();
+    expect(screen.getByText("Awaiting on-chain result")).toBeTruthy();
+  });
+
+  it("does not invent a final result for an all-abstain cooldown tally", () => {
+    render(
+      <TreasuryCooldownPeriodTable
+        entries={[
+          {
+            ...entries[1]!,
+            id: "P-all-abstain",
+            title: "All-abstain proposal",
+            contractStatus: "unknown",
+            contractStatusFinality: "canonical",
+            runningVoteTally: {
+              blockHeight: 449902,
+              yayWeight: "0",
+              nayWeight: "0",
+              abstainWeight: toNanomina(80),
+              createdByEventType: "proposalVoteDispatched",
+              voteResult: "rejected",
+            },
+          },
+        ]}
+      />,
+    );
+
+    expect(screen.getByText("Awaiting on-chain result")).toBeTruthy();
   });
 
   it("shows failing in cooldown when dispatched tally misses participation quorum", () => {
@@ -493,7 +516,7 @@ describe("TreasuryProposalsTable", () => {
     expect(screen.getByText("Waiting for votes")).toBeTruthy();
   });
 
-  it("keeps vetoed as dominant state even without explicit isPaused flag", () => {
+  it("keeps paused as dominant legacy state without an explicit flag", () => {
     render(
       <TreasuryProposalsTable
         entries={[
@@ -510,8 +533,192 @@ describe("TreasuryProposalsTable", () => {
       />,
     );
 
-    expect(screen.getByText("VETOED")).toBeTruthy();
+    expect(screen.getByText("PAUSED")).toBeTruthy();
     expect(screen.queryByText("New")).toBeNull();
+  });
+
+  it("prefers an exact false paused flag over a stale paused status", () => {
+    render(
+      <TreasuryProposalsTable
+        statusDerivationPeriod="proposal"
+        entries={[
+          {
+            ...entries[0]!,
+            id: "P-exact-not-paused",
+            contractStatus: "paused",
+            isPaused: false,
+          },
+        ]}
+      />,
+    );
+
+    expect(screen.getByText("New")).toBeTruthy();
+    expect(screen.queryByText("PAUSED")).toBeNull();
+  });
+
+  it("uses current contract status instead of a stale latest tally", () => {
+    render(
+      <TreasuryCooldownPeriodTable
+        entries={[
+          {
+            ...entries[1]!,
+            id: "P-reset",
+            title: "Reset proposal",
+            contractStatus: "unknown",
+            contractStatusFinality: "canonical",
+            finalVoteTally: null,
+          },
+        ]}
+      />,
+    );
+
+    expect(screen.getByText("Awaiting on-chain result")).toBeTruthy();
+    expect(screen.queryByText("Passed")).toBeNull();
+  });
+
+  it("uses pending final tallies as the current result", () => {
+    render(
+      <TreasuryCooldownPeriodTable
+        entries={[
+          {
+            ...entries[1]!,
+            id: "P-pending-approved",
+            title: "Pending approved proposal",
+            contractStatus: "approved",
+            contractStatusFinality: "pending",
+            finalVoteTally: {
+              ...entries[1]!.latestVoteTally!,
+              sourceStatus: "pending",
+            },
+          },
+          {
+            ...entries[1]!,
+            id: "P-pending-rejected",
+            title: "Pending rejected proposal",
+            contractStatus: "rejected",
+            contractStatusFinality: "pending",
+            finalVoteTally: {
+              ...entries[1]!.latestVoteTally!,
+              voteResult: "rejected",
+              sourceStatus: "pending",
+            },
+          },
+        ]}
+      />,
+    );
+
+    expect(screen.getByText("Passed")).toBeTruthy();
+    expect(screen.getByText("Failed")).toBeTruthy();
+  });
+
+  it("uses a pending running tally as the current voting tally", () => {
+    render(
+      <TreasuryVotingPeriodTable
+        entries={[
+          {
+            ...entries[0]!,
+            id: "P-pending-running-tally",
+            runningVoteTally: {
+              ...entries[0]!.latestVoteTally!,
+              sourceStatus: "pending",
+            },
+            latestVoteTally: null,
+          },
+        ]}
+      />,
+    );
+
+    expect(screen.getByText("Passing")).toBeTruthy();
+  });
+
+  it("prefers the exact paused flag over the current status", () => {
+    render(
+      <TreasuryCooldownPeriodTable
+        entries={[
+          {
+            ...entries[1]!,
+            id: "P-current-status-paused",
+            contractStatus: "unknown",
+            contractStatusFinality: "pending",
+            isPaused: true,
+          },
+        ]}
+      />,
+    );
+
+    expect(screen.getByText("PAUSED")).toBeTruthy();
+  });
+
+  it("does not treat missing acceptance criteria as satisfied", () => {
+    render(
+      <TreasuryVotingPeriodTable
+        entries={[
+          {
+            ...entries[0]!,
+            id: "P-missing-criteria",
+            requiredParticipationBp: null,
+            requiredApprovalBp: null,
+            requiredParticipation: null,
+            latestVoteTally: {
+              ...entries[0]!.latestVoteTally!,
+              requiredParticipationBp: null,
+              requiredApprovalBp: null,
+              requiredParticipation: null,
+            },
+          },
+        ]}
+      />,
+    );
+
+    expect(screen.getByText("Waiting for votes")).toBeTruthy();
+    expect(screen.queryByText("Passing")).toBeNull();
+  });
+
+  it("does not infer a passed final tally without approval criteria", () => {
+    render(
+      <TreasuryCooldownPeriodTable
+        entries={[
+          {
+            ...entries[1]!,
+            id: "P-final-missing-approval",
+            contractStatus: undefined,
+            contractStatusFinality: undefined,
+            requiredApprovalBp: null,
+            finalVoteTally: {
+              ...entries[1]!.latestVoteTally!,
+              requiredApprovalBp: null,
+            },
+          },
+        ]}
+      />,
+    );
+
+    expect(screen.getByText("Failed")).toBeTruthy();
+    expect(screen.queryByText("Passed")).toBeNull();
+  });
+
+  it("compares participation weights with bigint precision", () => {
+    render(
+      <TreasuryVotingPeriodTable
+        entries={[
+          {
+            ...entries[0]!,
+            id: "P-large-weight",
+            requiredParticipation: "9007199254740993",
+            requiredApprovalBp: "5000",
+            latestVoteTally: {
+              ...entries[0]!.latestVoteTally!,
+              yayWeight: "9007199254740992",
+              nayWeight: "0",
+              abstainWeight: "0",
+            },
+          },
+        ]}
+      />,
+    );
+
+    expect(screen.getByText("Waiting for votes")).toBeTruthy();
+    expect(screen.queryByText("Passing")).toBeNull();
   });
 
   it("shows failing when quorum is met but approval threshold is not", () => {

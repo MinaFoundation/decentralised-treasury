@@ -75,12 +75,14 @@ function sleep(ms: number, signal?: AbortSignal): Promise<void> {
 async function isZkappTransactionIncluded(
   minaNodeUrl: string,
   transactionHash: string,
+  signal?: AbortSignal,
 ): Promise<boolean> {
   const response = await fetch(resolveEndpointUrl(minaNodeUrl), {
     method: "POST",
     headers: {
       "content-type": "application/json",
     },
+    signal,
     body: JSON.stringify({
       query: BEST_CHAIN_ZKAPP_HASHES_QUERY,
       variables: {
@@ -121,7 +123,9 @@ export async function waitForTransactionInclusion(
   while (true) {
     signal?.throwIfAborted();
 
-    if (await isZkappTransactionIncluded(minaNodeUrl, transactionHash)) {
+    if (
+      await isZkappTransactionIncluded(minaNodeUrl, transactionHash, signal)
+    ) {
       return;
     }
     if (Date.now() - startedAt >= timeoutMs) {

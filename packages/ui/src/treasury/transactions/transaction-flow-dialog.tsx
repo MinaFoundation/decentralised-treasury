@@ -53,6 +53,7 @@ export interface TreasuryTransactionFlowContext {
   fee: string;
   nonce?: number;
   memo: string;
+  signal: AbortSignal;
 }
 
 export interface TreasuryTransactionSendResult {
@@ -157,6 +158,7 @@ export function TreasuryTransactionFlowDialog({
   const descriptionId = useId();
   const showPostContentStep = typeof onPostInclusion === "function";
   const runIdRef = useRef(0);
+  const abortControllerRef = useRef<AbortController | null>(null);
   const activeStepRef = useRef<TreasuryTransactionFlowStepId | null>(null);
   const signAndSendPhaseRef = useRef<
     "compiling" | "proving" | "awaitingSignature" | null
@@ -198,6 +200,8 @@ export function TreasuryTransactionFlowDialog({
 
   useEffect(
     () => () => {
+      abortControllerRef.current?.abort();
+      abortControllerRef.current = null;
       runIdRef.current += 1;
     },
     [],
@@ -258,8 +262,6 @@ export function TreasuryTransactionFlowDialog({
   const isRunning = activeStep !== null;
   const isWaitingForInclusion = activeStep === "waitForInclusion";
   const isLockedWhileRunning = preventCloseWhileRunning && isRunning;
-  const showBackgroundWaitingNotice =
-    !preventCloseWhileRunning && !open && isWaitingForInclusion;
   const showCompletionNotification =
     !open && completion && !notificationDismissed;
   const normalizedAutoCloseDelaySeconds =
@@ -355,10 +357,32 @@ export function TreasuryTransactionFlowDialog({
     onCompleteRef.current?.(completionResult);
   }, [shouldAutoCloseAfterCompletion]);
 
+  const cancelActiveRun = useCallback((): void => {
+    const controller = abortControllerRef.current;
+    if (!controller) {
+      return;
+    }
+    abortControllerRef.current = null;
+    controller.abort();
+    runIdRef.current += 1;
+    activeStepRef.current = null;
+    signAndSendPhaseRef.current = null;
+    setActiveStep(null);
+    setSignAndSendPhase(null);
+    setStepStatuses(createInitialStepStatuses());
+  }, []);
+
   const closeDialog = useCallback((): void => {
+    cancelActiveRun();
     emitDeferredCompletionIfNeeded();
     onOpenChangeRef.current(false);
-  }, [emitDeferredCompletionIfNeeded]);
+  }, [cancelActiveRun, emitDeferredCompletionIfNeeded]);
+
+  useEffect(() => {
+    if (!open) {
+      cancelActiveRun();
+    }
+  }, [cancelActiveRun, open]);
 
   useEffect(() => {
     if (!open || !completion || !shouldAutoCloseAfterCompletion) {
@@ -418,6 +442,9 @@ export function TreasuryTransactionFlowDialog({
       return;
     }
 
+    abortControllerRef.current?.abort();
+    const abortController = new AbortController();
+    abortControllerRef.current = abortController;
     const currentRunId = runIdRef.current + 1;
     runIdRef.current = currentRunId;
     setStepStatuses({
@@ -444,6 +471,7 @@ export function TreasuryTransactionFlowDialog({
       fee: fee.trim(),
       nonce: parsedNonce ?? undefined,
       memo: memo.trim(),
+      signal: abortController.signal,
     };
 
     let signAndSendResult: TreasuryTransactionSendResult = {};
@@ -516,6 +544,9 @@ export function TreasuryTransactionFlowDialog({
       setSignAndSendPhase(null);
       setCompletion(completionResult);
       completionRef.current = completionResult;
+      if (abortControllerRef.current === abortController) {
+        abortControllerRef.current = null;
+      }
       completionCallbackInvokedRef.current = false;
       if (shouldAutoCloseAfterCompletion) {
         setAutoCloseCancelled(false);
@@ -527,6 +558,10 @@ export function TreasuryTransactionFlowDialog({
     } catch (error) {
       if (runIdRef.current !== currentRunId) {
         return;
+      }
+
+      if (abortControllerRef.current === abortController) {
+        abortControllerRef.current = null;
       }
 
       const resolvedError = normalizeError(error);
@@ -780,8 +815,8 @@ export function TreasuryTransactionFlowDialog({
                           "Close disabled until content is posted",
                       })
                     : intl.formatMessage({
-                        id: "ui.transactionFlow.closeAndWait",
-                        defaultMessage: "Close and keep waiting",
+                        id: "ui.transactionFlow.closeAndStopWaiting",
+                        defaultMessage: "Close and stop waiting",
                       })
                   : activeStep === "postContent" && preventCloseWhileRunning
                     ? intl.formatMessage({
@@ -840,40 +875,6 @@ export function TreasuryTransactionFlowDialog({
           </div>
         </DialogContent>
       </Dialog>
-
-      {showBackgroundWaitingNotice ? (
-        <FixedNotificationCard variant="default">
-          <div className="flex items-start justify-between gap-3">
-            <div className="space-y-1">
-              <p className="text-sm font-medium text-foreground">
-                {intl.formatMessage({
-                  id: "ui.transactionFlow.backgroundWaitingTitle",
-                  defaultMessage: "Waiting for inclusion in background",
-                })}
-              </p>
-              <p className="text-sm text-muted-foreground">
-                {transactionHash
-                  ? intl.formatMessage(
-                      {
-                        id: "ui.transactionFlow.backgroundWaitingHash",
-                        defaultMessage: "Monitoring transaction {hash}.",
-                      },
-                      { hash: transactionHash },
-                    )
-                  : intl.formatMessage({
-                      id: "ui.transactionFlow.backgroundWaitingBody",
-                      defaultMessage:
-                        "The transaction has been sent and is still being monitored.",
-                    })}
-              </p>
-            </div>
-            <LoaderCircle
-              className="h-4 w-4 shrink-0 animate-spin text-primary"
-              aria-hidden="true"
-            />
-          </div>
-        </FixedNotificationCard>
-      ) : null}
 
       {showCompletionNotification ? (
         <FixedNotificationCard variant="success">
@@ -1265,7 +1266,7 @@ function TransactionFlowCenteredProgress({
                     ? intl.formatMessage({
                         id: "ui.transactionFlow.awaitingSignatureBody",
                         defaultMessage:
-                          "Auro should now be open. Approve the transaction there to continue.",
+                          "Confirm the transaction in your connected wallet to continue.",
                       })
                     : currentStage === "postingContent"
                       ? intl.formatMessage({
@@ -1567,7 +1568,7 @@ function getStepDefinitions(intl: ReturnType<typeof useTreasuryIntl>): Array<{
       description: intl.formatMessage({
         id: "ui.transactionFlow.stepSignAndSendDescription",
         defaultMessage:
-          "Compile and prove first, then request a wallet signature and broadcast automatically through Auro.",
+          "Compile and prove first, then request a wallet signature and broadcast automatically.",
       }),
     },
     {

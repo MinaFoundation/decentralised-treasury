@@ -3,11 +3,13 @@ import {
   hashMarkdownContentToZkappUri,
 } from "@repo/sdk/src/utils/proposal-content-hash.js";
 import { getRuntimeConfig } from "../../runtime-config/lib/get-runtime-config";
+import { resolveMinaNetworkId } from "../../endpoint-settings/lib/mina-network-id";
 
 const MINA_DECIMALS = 1_000_000_000n;
 
 export interface PrepareCreateProposalTransactionInput {
   minaNodeUrl: string;
+  networkId?: string;
   treasuryOwnerContractAddress: string;
   senderAddress: string;
   lifecycleId: number;
@@ -39,6 +41,7 @@ export type ProposalVoteChoice = "yay" | "nay" | "abstain";
 
 export interface PrepareVoteProposalTransactionInput {
   minaNodeUrl: string;
+  networkId?: string;
   treasuryOwnerContractAddress: string;
   senderAddress: string;
   proposalPublicKey: string;
@@ -69,6 +72,7 @@ interface ConstructedExecuteProposalTransaction {
 
 export interface PrepareExecuteProposalTransactionInput {
   minaNodeUrl: string;
+  networkId?: string;
   treasuryOwnerContractAddress: string;
   senderAddress: string;
   proposalPublicKey: string;
@@ -659,7 +663,10 @@ async function constructCreateProposalTransactionInCurrentThread(
   });
 
   Mina.setActiveInstance(
-    Mina.Network(resolveProverEndpointUrl(input.minaNodeUrl)),
+    Mina.Network({
+      mina: resolveProverEndpointUrl(input.minaNodeUrl),
+      networkId: resolveMinaNetworkId(input.networkId ?? "DEVNET"),
+    }),
   );
 
   console.info("[proposal-prover][create] fetch sender account start", {
@@ -725,8 +732,8 @@ async function constructCreateProposalTransactionInCurrentThread(
     {
       sender: senderPublicKey,
       fee: feeNanomina,
-      // nonce: input.nonce,
-      // memo: input.memo,
+      nonce: input.nonce,
+      memo: input.memo,
     },
     async () => {
       AccountUpdate.fundNewAccount(senderPublicKey, 1);
@@ -844,7 +851,10 @@ async function constructVoteProposalTransactionInCurrentThread(
   const feeNanomina = Number(parseDecimalMinaToNanomina(input.fee));
 
   Mina.setActiveInstance(
-    Mina.Network(resolveProverEndpointUrl(input.minaNodeUrl)),
+    Mina.Network({
+      mina: resolveProverEndpointUrl(input.minaNodeUrl),
+      networkId: resolveMinaNetworkId(input.networkId ?? "DEVNET"),
+    }),
   );
 
   const treasuryOwner = new TreasuryOwnerSmartContract(treasuryOwnerPublicKey);
@@ -997,7 +1007,10 @@ async function constructExecuteProposalTransactionInCurrentThread(
   const feeNanomina = Number(parseDecimalMinaToNanomina(input.fee));
 
   Mina.setActiveInstance(
-    Mina.Network(resolveProverEndpointUrl(input.minaNodeUrl)),
+    Mina.Network({
+      mina: resolveProverEndpointUrl(input.minaNodeUrl),
+      networkId: resolveMinaNetworkId(input.networkId ?? "DEVNET"),
+    }),
   );
 
   const treasuryOwner = new TreasuryOwnerSmartContract(treasuryOwnerPublicKey);

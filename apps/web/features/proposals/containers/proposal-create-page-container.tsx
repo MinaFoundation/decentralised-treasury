@@ -18,7 +18,6 @@ import { useEndpointSettingsState } from "../../endpoint-settings/store/endpoint
 import { getRuntimeConfig } from "../../runtime-config/lib/get-runtime-config";
 import { useProposalDrafts } from "../hooks/use-proposal-drafts";
 import { useProposalProverWorker } from "../hooks/use-proposal-prover-worker";
-import { signWithAuroWalletAndSubmitZkapp } from "../lib/auro-wallet-zkapp-submission";
 import { submitProposalContents } from "../lib/proposal-content-submission";
 import {
   removeProposalContentRetryRecord,
@@ -199,7 +198,7 @@ export function ProposalCreatePageContainer({
   previousPage = "proposals",
 }: ProposalCreatePageContainerProps): JSX.Element {
   const router = useRouter();
-  const { wallet, connectWallet } = useWalletSession();
+  const { wallet, connectWallet, signAndSubmitZkapp } = useWalletSession();
   const settings = useEndpointSettingsState();
   const treasury = useTreasuryState();
   const setAppError = useAppShellStore((state) => state.setError);
@@ -354,11 +353,11 @@ export function ProposalCreatePageContainer({
           )}
           submitLabel="Create proposal transaction"
           preventCloseWhileRunning
-          onCompile={async () => {
+          onCompile={async (context) => {
             if (!hasRequiredConfig) {
               throw new Error("Proposal creation is not configured.");
             }
-            await compile();
+            await compile(context.signal);
           }}
           onProve={async (context) => {
             if (!hasRequiredConfig || resolvedLifecycleId == null) {
@@ -368,19 +367,23 @@ export function ProposalCreatePageContainer({
             }
 
             const { preparedTransaction, provedTransactionJson } =
-              await buildAndProveCreateProposal({
-                minaNodeUrl: settings.value.minaNodeUrl,
-                treasuryOwnerContractAddress: treasuryOwnerAddress,
-                senderAddress:
-                  submissionDraft.proposerAddress ?? context.senderAddress,
-                lifecycleId: resolvedLifecycleId,
-                recipient: submissionDraft.recipient,
-                amount: submissionDraft.amount,
-                contents: submissionDraft.content,
-                fee: context.fee,
-                nonce: context.nonce,
-                memo: context.memo,
-              });
+              await buildAndProveCreateProposal(
+                {
+                  minaNodeUrl: settings.value.minaNodeUrl,
+                  networkId: settings.value.networkId,
+                  treasuryOwnerContractAddress: treasuryOwnerAddress,
+                  senderAddress:
+                    submissionDraft.proposerAddress ?? context.senderAddress,
+                  lifecycleId: resolvedLifecycleId,
+                  recipient: submissionDraft.recipient,
+                  amount: submissionDraft.amount,
+                  contents: submissionDraft.content,
+                  fee: context.fee,
+                  nonce: context.nonce,
+                  memo: context.memo,
+                },
+                context.signal,
+              );
             const nextPreparedFlow: PreparedCreateProposalFlow = {
               draft: submissionDraft,
               preparedTransaction,
@@ -406,17 +409,19 @@ export function ProposalCreatePageContainer({
             }
 
             logWalletSubmissionTransaction(
-              "create proposal before Auro wallet sign",
+              "create proposal before wallet sign",
               preparedFlowRef.current.provedTransactionJson,
             );
-            const hash = await signWithAuroWalletAndSubmitZkapp(
-              settings.value.minaNodeUrl,
-              preparedFlowRef.current.provedTransactionJson,
-              context.senderAddress,
-              context.fee,
-              context.memo,
-              context.nonce,
-            );
+            const hash = await signAndSubmitZkapp({
+              minaNodeUrl: settings.value.minaNodeUrl,
+              networkId: settings.value.networkId ?? "DEVNET",
+              transactionJson: preparedFlowRef.current.provedTransactionJson,
+              expectedSenderAddress: context.senderAddress,
+              fee: context.fee,
+              memo: context.memo,
+              nonce: context.nonce,
+              signal: context.signal,
+            });
 
             if (preparedFlowRef.current) {
               updateProposalContentRetryRecord(
@@ -437,14 +442,19 @@ export function ProposalCreatePageContainer({
               hash,
             };
           }}
-          onWaitForInclusion={async ({ hash }) => {
+          onWaitForInclusion={async (context) => {
+            const { hash } = context;
             if (!hash) {
               throw new Error("Transaction hash is missing.");
             }
-            await waitForTransactionInclusion(settings.value.minaNodeUrl, hash);
+            await waitForTransactionInclusion(
+              settings.value.minaNodeUrl,
+              hash,
+              context.signal,
+            );
             return { hash };
           }}
-          onPostInclusion={async () => {
+          onPostInclusion={async (context) => {
             if (!preparedFlowRef.current?.preparedTransaction) {
               throw new Error("Prepared proposal metadata is missing.");
             }
@@ -463,6 +473,7 @@ export function ProposalCreatePageContainer({
                 apiUrl: settings.value.apiUrl,
                 proposalPublicKey,
                 contents: activeSubmissionDraft.content,
+                signal: context.signal,
               });
               removeProposalContentRetryRecord(proposalPublicKey);
             } catch (error) {

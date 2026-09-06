@@ -65,7 +65,7 @@ describe("TreasuryProposalDetail", () => {
       vote: "yay",
       voteWeight: toNanomina(92450),
       blockHeight: 450918 + index,
-      status: "Counted",
+      status: index % 2 === 0 ? "pending" : "canonical",
     }));
 
     render(
@@ -83,7 +83,7 @@ describe("TreasuryProposalDetail", () => {
             paidOutAmount: toNanomina(80000),
             remainingAmount: toNanomina(40000),
             blockHeight: 451010,
-            status: "Partially executed",
+            status: "pending",
           },
         ]}
         contentVerificationStatus="verified"
@@ -326,26 +326,22 @@ describe("TreasuryProposalDetail", () => {
     ).toBeGreaterThan(0);
   });
 
-  it("shows an empty vote summary bar when the proposal is abandoned", () => {
+  it("shows an empty vote summary while it awaits an on-chain result", () => {
     render(
       <TreasuryProposalDetail
         proposal={{
           ...proposal,
           period: "Cooldown",
-          latestVoteTally: {
-            ...proposal.latestVoteTally!,
-            yayWeight: "0",
-            nayWeight: "0",
-            abstainWeight: "0",
-            totalParticipatingVotes: "0",
-            createdByEventType: "proposalVotesTallied",
-            voteResult: null,
-          },
+          contractStatus: "unknown",
+          contractStatusFinality: "canonical",
+          latestVoteTally: null,
         }}
       />,
     );
 
-    expect(screen.getByText("Abandoned")).toBeTruthy();
+    expect(
+      screen.getAllByText("Awaiting on-chain result").length,
+    ).toBeGreaterThan(0);
     expect(
       document.querySelector('[data-component="proposal-empty-vote-summary"]'),
     ).toBeTruthy();
@@ -359,6 +355,8 @@ describe("TreasuryProposalDetail", () => {
           ...proposal,
           stage: "Passed",
           period: "Cooldown",
+          contractStatus: "approved",
+          contractStatusFinality: "canonical",
           latestVoteTally: {
             ...proposal.latestVoteTally!,
             createdByEventType: "proposalVotesTallied",
@@ -385,6 +383,8 @@ describe("TreasuryProposalDetail", () => {
           ...proposal,
           stage: "Passed",
           period: "Voting",
+          contractStatus: "approved",
+          contractStatusFinality: "canonical",
           latestVoteTally: {
             ...proposal.latestVoteTally!,
             createdByEventType: "proposalVotesTallied",
@@ -409,12 +409,15 @@ describe("TreasuryProposalDetail", () => {
           ...proposal,
           stage: "Passed",
           period: "Cooldown",
+          contractStatus: "approved",
+          contractStatusFinality: "canonical",
           latestVoteTally: {
             ...proposal.latestVoteTally!,
             createdByEventType: "proposalVotesTallied",
           },
         }}
         currentLifecycleId={(proposal.lifecycleId ?? 0) + 1}
+        connectedWalletMinaBalance="1 MINA"
         executions={[]}
         onExecutePayoutClick={onExecutePayoutClick}
       />,
@@ -438,12 +441,15 @@ describe("TreasuryProposalDetail", () => {
           ...proposal,
           stage: "Passed",
           period: "Cooldown",
+          contractStatus: "approved",
+          contractStatusFinality: "canonical",
           latestVoteTally: {
             ...proposal.latestVoteTally!,
             createdByEventType: "proposalVotesTallied",
           },
         }}
         currentLifecycleId={(proposal.lifecycleId ?? 0) + 1}
+        connectedWalletMinaBalance="1 MINA"
         executions={[]}
         executionsPagination={{
           page: 2,
@@ -460,13 +466,15 @@ describe("TreasuryProposalDetail", () => {
     ).toBeTruthy();
   });
 
-  it("shows an execution warning until an on-chain tally has been submitted", () => {
+  it("shows an execution warning until a canonical result is available", () => {
     render(
       <TreasuryProposalDetail
         proposal={{
           ...proposal,
           stage: "Passed",
           period: "Cooldown",
+          contractStatus: "unknown",
+          contractStatusFinality: "canonical",
           latestVoteTally: {
             ...proposal.latestVoteTally!,
             createdByEventType: "proposalVoteDispatched",
@@ -475,15 +483,17 @@ describe("TreasuryProposalDetail", () => {
       />,
     );
 
-    expect(screen.getByText("Awaiting on-chain tally submission")).toBeTruthy();
+    expect(
+      screen.getAllByText("Awaiting on-chain result").length,
+    ).toBeGreaterThan(0);
     expect(
       screen.getByText(
-        "Voting has ended, but execution stays locked until the final on-chain tally is submitted.",
+        "The contract does not currently contain a final result. Execution stays locked.",
       ),
     ).toBeTruthy();
     expect(
       screen
-        .getByRole("button", { name: "Submit tally first" })
+        .getByRole("button", { name: "Await result" })
         .hasAttribute("disabled"),
     ).toBe(true);
   });
@@ -497,12 +507,15 @@ describe("TreasuryProposalDetail", () => {
           ...proposal,
           stage: "Passed",
           period: "Executed",
+          contractStatus: "approved",
+          contractStatusFinality: "canonical",
           latestVoteTally: {
             ...proposal.latestVoteTally!,
             createdByEventType: "proposalVotesTallied",
           },
         }}
         executions={[]}
+        connectedWalletMinaBalance="1 MINA"
         onExecutePayoutClick={onExecutePayoutClick}
       />,
     );
@@ -519,6 +532,277 @@ describe("TreasuryProposalDetail", () => {
     expect(onExecutePayoutClick).toHaveBeenCalledWith("132000");
   });
 
+  it("keeps execution locked after approved, paused, and reset to unknown", () => {
+    const onExecutePayoutClick = vi.fn();
+    const staleFinalVoteTally = {
+      ...proposal.latestVoteTally!,
+      createdByEventType: "proposalVotesTallied" as const,
+      voteResult: "approved" as const,
+    };
+
+    render(
+      <TreasuryProposalDetail
+        proposal={{
+          ...proposal,
+          stage: "Passed",
+          period: "Cooldown",
+          contractStatus: "unknown",
+          contractStatusFinality: "canonical",
+          runningVoteTally: null,
+          finalVoteTally: null,
+          latestVoteTally: staleFinalVoteTally,
+        }}
+        currentLifecycleId={(proposal.lifecycleId ?? 0) + 1}
+        onExecutePayoutClick={onExecutePayoutClick}
+      />,
+    );
+
+    expect(
+      screen.getAllByText("Awaiting on-chain result").length,
+    ).toBeGreaterThan(0);
+    expect(screen.queryByText("Passed")).toBeNull();
+    expect(screen.getByRole("button", { name: "Await result" })).toHaveProperty(
+      "disabled",
+      true,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Await result" }));
+    expect(onExecutePayoutClick).not.toHaveBeenCalled();
+  });
+
+  it("uses a pending approved result as the current result", () => {
+    const onExecutePayoutClick = vi.fn();
+
+    render(
+      <TreasuryProposalDetail
+        proposal={{
+          ...proposal,
+          period: "Cooldown",
+          contractStatus: "approved",
+          contractStatusFinality: "pending",
+          finalVoteTally: {
+            ...proposal.latestVoteTally!,
+            createdByEventType: "proposalVotesTallied",
+            sourceStatus: "pending",
+          },
+        }}
+        currentLifecycleId={(proposal.lifecycleId ?? 0) + 1}
+        connectedWalletMinaBalance="1 MINA"
+        onExecutePayoutClick={onExecutePayoutClick}
+      />,
+    );
+
+    expect(screen.getByText("Passed")).toBeTruthy();
+    expect(screen.getByText("Ready")).toBeTruthy();
+    expect(
+      screen.getByRole("button", { name: "Execute proposal" }),
+    ).toHaveProperty("disabled", false);
+    fireEvent.click(screen.getByRole("button", { name: "Execute proposal" }));
+    expect(onExecutePayoutClick).toHaveBeenCalledWith("132000");
+  });
+
+  it("uses the current approved status without a canonical duplicate", () => {
+    render(
+      <TreasuryProposalDetail
+        proposal={{
+          ...proposal,
+          stage: "Passed",
+          period: "Cooldown",
+          contractStatus: "approved",
+          contractStatusFinality: "canonical",
+        }}
+        currentLifecycleId={(proposal.lifecycleId ?? 0) + 1}
+        connectedWalletMinaBalance="1 MINA"
+      />,
+    );
+
+    expect(screen.getByText("Ready")).toBeTruthy();
+    expect(
+      screen.getByRole("button", { name: "Execute proposal" }),
+    ).toHaveProperty("disabled", false);
+  });
+
+  it("requires a funded wallet for execution", () => {
+    const onConnectWalletClick = vi.fn();
+
+    render(
+      <TreasuryProposalDetail
+        proposal={{
+          ...proposal,
+          stage: "Passed",
+          period: "Cooldown",
+          contractStatus: "approved",
+          contractStatusFinality: "canonical",
+        }}
+        currentLifecycleId={(proposal.lifecycleId ?? 0) + 1}
+        hasConnectedWallet
+        connectedWalletMinaBalance="0 MINA"
+        onConnectWalletClick={onConnectWalletClick}
+      />,
+    );
+
+    expect(
+      screen.getByText(
+        "Connect a funded wallet before executing or paying out this proposal.",
+      ),
+    ).toBeTruthy();
+    fireEvent.click(
+      screen.getByRole("button", { name: "Connect funded wallet to execute" }),
+    );
+    expect(onConnectWalletClick).toHaveBeenCalledOnce();
+  });
+
+  it("keeps exact nanomina precision for the bond and payout input", () => {
+    const onExecutePayoutClick = vi.fn();
+
+    render(
+      <TreasuryProposalDetail
+        proposal={{
+          ...proposal,
+          requestedAmount: "10000000001",
+          paidOutAmount: "0",
+          stage: "Passed",
+          period: "Cooldown",
+          contractStatus: "approved",
+          contractStatusFinality: "canonical",
+          finalVoteTally: {
+            ...proposal.latestVoteTally!,
+            createdByEventType: "proposalVotesTallied",
+          },
+        }}
+        currentLifecycleId={(proposal.lifecycleId ?? 0) + 1}
+        connectedWalletMinaBalance="1 MINA"
+        onExecutePayoutClick={onExecutePayoutClick}
+      />,
+    );
+
+    expect(screen.getAllByText("1 MINA").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("11.000000001 MINA").length).toBeGreaterThan(0);
+    expect(
+      (screen.getByLabelText("Payout amount") as HTMLInputElement).value,
+    ).toBe("11.000000001");
+    fireEvent.click(screen.getByRole("button", { name: "Execute proposal" }));
+    expect(onExecutePayoutClick).toHaveBeenCalledWith("11.000000001");
+  });
+
+  it("uses the exact remaining payout supplied by the API", () => {
+    const onExecutePayoutClick = vi.fn();
+
+    render(
+      <TreasuryProposalDetail
+        proposal={{
+          ...proposal,
+          requestedAmount: "9007199254740993",
+          paidOutAmount: "9907919180215091",
+          totalPayoutAmount: "9907919180215092",
+          remainingPayoutAmount: "1",
+          stage: "Passed",
+          period: "Cooldown",
+          contractStatus: "approved",
+          contractStatusFinality: "canonical",
+          finalVoteTally: {
+            ...proposal.latestVoteTally!,
+            createdByEventType: "proposalVotesTallied",
+          },
+        }}
+        currentLifecycleId={(proposal.lifecycleId ?? 0) + 1}
+        connectedWalletMinaBalance="1 MINA"
+        onExecutePayoutClick={onExecutePayoutClick}
+      />,
+    );
+
+    expect(
+      (screen.getByLabelText("Payout amount") as HTMLInputElement).value,
+    ).toBe("0.000000001");
+    fireEvent.click(screen.getByRole("button", { name: "Execute proposal" }));
+    expect(onExecutePayoutClick).toHaveBeenCalledWith("0.000000001");
+  });
+
+  it("disables execution when payout data fails its integrity check", () => {
+    const onExecutePayoutClick = vi.fn();
+
+    render(
+      <TreasuryProposalDetail
+        proposal={{
+          ...proposal,
+          paidOutAmount: "9907919180215092",
+          totalPayoutAmount: "9907919180215091",
+          remainingPayoutAmount: "0",
+          payoutAmountIntegrity: false,
+          stage: "Passed",
+          period: "Cooldown",
+          contractStatus: "approved",
+          contractStatusFinality: "canonical",
+          finalVoteTally: {
+            ...proposal.latestVoteTally!,
+            createdByEventType: "proposalVotesTallied",
+          },
+        }}
+        currentLifecycleId={(proposal.lifecycleId ?? 0) + 1}
+        onExecutePayoutClick={onExecutePayoutClick}
+      />,
+    );
+
+    expect(screen.getByText("Unavailable")).toBeTruthy();
+    expect(
+      screen.getByText(
+        "Payout data is inconsistent. Execution is unavailable.",
+      ),
+    ).toBeTruthy();
+    expect(
+      screen.queryByText("This proposal has already been fully paid out."),
+    ).toBeNull();
+    const executeButton = screen.getByRole("button", {
+      name: "Payout unavailable",
+    });
+    expect(executeButton.hasAttribute("disabled")).toBe(true);
+    fireEvent.click(executeButton);
+    expect(onExecutePayoutClick).not.toHaveBeenCalled();
+  });
+
+  it("shows each execution amount instead of the cumulative paid amount", () => {
+    render(
+      <TreasuryProposalDetail
+        proposal={proposal}
+        executions={[
+          {
+            id: "execution-exact",
+            recipient: proposal.recipient!,
+            amountToPayOut: toNanomina(1),
+            paidOutAmount: toNanomina(2),
+            remainingAmount: toNanomina(3),
+            status: "pending",
+          },
+        ]}
+      />,
+    );
+
+    expect(screen.getByText("1 MINA")).toBeTruthy();
+    expect(screen.queryByText("2 MINA")).toBeNull();
+    expect(screen.getByText("pending")).toBeTruthy();
+  });
+
+  it("shows a concrete pending vote weight", () => {
+    render(
+      <TreasuryProposalDetail
+        proposal={proposal}
+        votes={[
+          {
+            id: "vote-pending",
+            voterPublicKey: "B62qvoter-pending",
+            vote: "yay",
+            voteWeight: toNanomina(7),
+            isNullified: false,
+            status: "pending",
+          },
+        ]}
+      />,
+    );
+
+    const voteRow = screen.getByText("B62qvoter-pending").closest("tr");
+    expect(voteRow).not.toBeNull();
+    expect(voteRow?.textContent).toContain("7 MINA");
+  });
+
   it("validates payout amount against the remaining payout", () => {
     render(
       <TreasuryProposalDetail
@@ -526,12 +810,15 @@ describe("TreasuryProposalDetail", () => {
           ...proposal,
           stage: "Passed",
           period: "Executed",
+          contractStatus: "approved",
+          contractStatusFinality: "canonical",
           latestVoteTally: {
             ...proposal.latestVoteTally!,
             createdByEventType: "proposalVotesTallied",
           },
         }}
         executions={[]}
+        connectedWalletMinaBalance="1 MINA"
       />,
     );
 
@@ -551,8 +838,8 @@ describe("TreasuryProposalDetail", () => {
     ).toBe(true);
   });
 
-  it("requires the proposer wallet to be connected before execution", () => {
-    const onConnectProposerWalletClick = vi.fn();
+  it("lets a funded connected non-proposer wallet execute", () => {
+    const onExecutePayoutClick = vi.fn();
 
     render(
       <TreasuryProposalDetail
@@ -560,28 +847,22 @@ describe("TreasuryProposalDetail", () => {
           ...proposal,
           stage: "Passed",
           period: "Executed",
+          contractStatus: "approved",
+          contractStatusFinality: "canonical",
           latestVoteTally: {
             ...proposal.latestVoteTally!,
             createdByEventType: "proposalVotesTallied",
           },
         }}
         executions={[]}
-        hasConnectedProposerWallet={false}
-        onConnectProposerWalletClick={onConnectProposerWalletClick}
+        hasConnectedWallet
+        connectedWalletMinaBalance="1 MINA"
+        onExecutePayoutClick={onExecutePayoutClick}
       />,
     );
 
-    expect(
-      screen.getByText(
-        "Connect the proposer wallet before executing or paying out this proposal.",
-      ),
-    ).toBeTruthy();
-    fireEvent.click(
-      screen.getByRole("button", {
-        name: "Connect recipient wallet to execute",
-      }),
-    );
-    expect(onConnectProposerWalletClick).toHaveBeenCalledOnce();
+    fireEvent.click(screen.getByRole("button", { name: "Execute proposal" }));
+    expect(onExecutePayoutClick).toHaveBeenCalledWith("132000");
   });
 
   it("shows a paused warning and disables vote actions when a voting proposal is paused", () => {
@@ -598,11 +879,11 @@ describe("TreasuryProposalDetail", () => {
       />,
     );
 
-    expect(screen.getAllByText("VETOED").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("Proposal vetoed").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("PAUSED").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Proposal paused").length).toBeGreaterThan(0);
     expect(
       screen.getByText(
-        "Voting and execution actions are disabled for this vetoed proposal.",
+        "Voting and execution actions are disabled for this paused proposal.",
       ),
     ).toBeTruthy();
     expect(
@@ -629,7 +910,41 @@ describe("TreasuryProposalDetail", () => {
     expect(onVoteAbstainClick).not.toHaveBeenCalled();
   });
 
-  it("treats paused stage as vetoed when isPaused is missing", () => {
+  it("disables governance actions when the treasury is paused", () => {
+    const onVoteYayClick = vi.fn();
+    const onExecutePayoutClick = vi.fn();
+
+    render(
+      <TreasuryProposalDetail
+        proposal={proposal}
+        treasuryPaused
+        onVoteYayClick={onVoteYayClick}
+        onExecutePayoutClick={onExecutePayoutClick}
+      />,
+    );
+
+    expect(screen.getAllByText("Treasury paused").length).toBeGreaterThan(0);
+    expect(
+      document.querySelector('[data-component="treasury-paused-banner"]'),
+    ).toBeTruthy();
+    expect(
+      document.querySelector('[data-component="treasury-paused-overlay"]'),
+    ).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Yay" })).toHaveProperty(
+      "disabled",
+      true,
+    );
+    expect(
+      screen.getByRole("button", { name: "Treasury paused" }),
+    ).toHaveProperty("disabled", true);
+
+    fireEvent.click(screen.getByRole("button", { name: "Yay" }));
+    fireEvent.click(screen.getByRole("button", { name: "Treasury paused" }));
+    expect(onVoteYayClick).not.toHaveBeenCalled();
+    expect(onExecutePayoutClick).not.toHaveBeenCalled();
+  });
+
+  it("treats a legacy paused stage as paused when isPaused is missing", () => {
     render(
       <TreasuryProposalDetail
         proposal={{
@@ -642,8 +957,8 @@ describe("TreasuryProposalDetail", () => {
       />,
     );
 
-    expect(screen.getAllByText("VETOED").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("Proposal vetoed").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("PAUSED").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Proposal paused").length).toBeGreaterThan(0);
     expect(
       document.querySelector('[data-component="proposal-paused-banner"]'),
     ).toBeTruthy();
@@ -669,10 +984,10 @@ describe("TreasuryProposalDetail", () => {
       />,
     );
 
-    expect(screen.getAllByText("VETOED").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("PAUSED").length).toBeGreaterThan(0);
     expect(
       screen.getByText(
-        "This proposal has been vetoed. Voting and execution actions are disabled.",
+        "This proposal is paused. Voting and execution actions are disabled.",
       ),
     ).toBeTruthy();
     expect(
@@ -680,11 +995,11 @@ describe("TreasuryProposalDetail", () => {
     ).toBe(true);
     expect(
       screen
-        .getByRole("button", { name: "Proposal vetoed" })
+        .getByRole("button", { name: "Proposal paused" })
         .hasAttribute("disabled"),
     ).toBe(true);
 
-    fireEvent.click(screen.getByRole("button", { name: "Proposal vetoed" }));
+    fireEvent.click(screen.getByRole("button", { name: "Proposal paused" }));
     expect(onExecutePayoutClick).not.toHaveBeenCalled();
   });
 

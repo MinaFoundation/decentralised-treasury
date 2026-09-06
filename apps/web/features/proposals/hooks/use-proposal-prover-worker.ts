@@ -21,6 +21,7 @@ import type {
 interface PendingRequestHandlers {
   resolve: (value: ProposalProverWorkerResponse) => void;
   reject: (error: Error) => void;
+  cleanup?: () => void;
 }
 
 function toWorkerError(
@@ -45,10 +46,14 @@ const INITIAL_STATUS: ProposalProverWorkerStatus = {
 
 export function useProposalProverWorker(proofsEnabled: boolean) {
   const workerRef = useRef<Worker | null>(null);
-  const pendingRequestsRef = useRef<Map<string, PendingRequestHandlers>>(new Map());
-  const [status, setStatus] = useState<ProposalProverWorkerStatus>(INITIAL_STATUS);
+  const pendingRequestsRef = useRef<Map<string, PendingRequestHandlers>>(
+    new Map(),
+  );
+  const [status, setStatus] =
+    useState<ProposalProverWorkerStatus>(INITIAL_STATUS);
   const [compileArtifacts, setCompileArtifacts] =
     useState<SerializedProposalCompileArtifacts | null>(null);
+  const [workerGeneration, setWorkerGeneration] = useState(0);
 
   useEffect(() => {
     const worker = new Worker(
@@ -64,7 +69,9 @@ export function useProposalProverWorker(proofsEnabled: boolean) {
         ok: response.ok,
         phase: response.status.phase,
         ready: response.status.ready,
-        hasCompileArtifacts: response.ok ? Boolean(response.compileArtifacts) : false,
+        hasCompileArtifacts: response.ok
+          ? Boolean(response.compileArtifacts)
+          : false,
         hasPreparedCreateProposalTransaction: response.ok
           ? Boolean(response.preparedCreateProposalTransaction)
           : false,
@@ -74,7 +81,9 @@ export function useProposalProverWorker(proofsEnabled: boolean) {
         hasPreparedExecuteProposalTransaction: response.ok
           ? Boolean(response.preparedExecuteProposalTransaction)
           : false,
-        transactionJsonType: response.ok ? typeof response.transactionJson : undefined,
+        transactionJsonType: response.ok
+          ? typeof response.transactionJson
+          : undefined,
         transactionJsonLength:
           response.ok && typeof response.transactionJson === "string"
             ? response.transactionJson.length
@@ -89,12 +98,16 @@ export function useProposalProverWorker(proofsEnabled: boolean) {
         return;
       }
       pendingRequestsRef.current.delete(response.id);
+      pending.cleanup?.();
       if (response.ok) {
         pending.resolve(response);
         return;
       }
       pending.reject(
-        toWorkerError(response.error, "Proposal prover worker returned an unknown error."),
+        toWorkerError(
+          response.error,
+          "Proposal prover worker returned an unknown error.",
+        ),
       );
     };
 
@@ -118,17 +131,28 @@ export function useProposalProverWorker(proofsEnabled: boolean) {
       worker.terminate();
       workerRef.current = null;
       for (const pending of pendingRequestsRef.current.values()) {
+        pending.cleanup?.();
         pending.reject(new Error("Proposal prover worker was terminated."));
       }
       pendingRequestsRef.current.clear();
     };
-  }, []);
+  }, [workerGeneration]);
 
   const sendRequest = useCallback(
-    (request: ProposalProverWorkerRequestInput): Promise<ProposalProverWorkerResponse> => {
+    (
+      request: ProposalProverWorkerRequestInput,
+      signal?: AbortSignal,
+    ): Promise<ProposalProverWorkerResponse> => {
+      if (signal?.aborted) {
+        return Promise.reject(
+          signal.reason ?? new DOMException("Aborted", "AbortError"),
+        );
+      }
       const worker = workerRef.current;
       if (!worker) {
-        return Promise.reject(new Error("Proposal prover worker is not available."));
+        return Promise.reject(
+          new Error("Proposal prover worker is not available."),
+        );
       }
 
       const id = crypto.randomUUID();
@@ -143,11 +167,36 @@ export function useProposalProverWorker(proofsEnabled: boolean) {
       } as ProposalProverWorkerRequest;
 
       return new Promise((resolve, reject) => {
-        pendingRequestsRef.current.set(id, { resolve, reject });
+        const handleAbort = () => {
+          if (!pendingRequestsRef.current.has(id)) {
+            return;
+          }
+          const abortError =
+            signal?.reason instanceof Error
+              ? signal.reason
+              : new DOMException("Aborted", "AbortError");
+          workerRef.current?.terminate();
+          workerRef.current = null;
+          for (const pending of pendingRequestsRef.current.values()) {
+            pending.cleanup?.();
+            pending.reject(abortError);
+          }
+          pendingRequestsRef.current.clear();
+          setStatus(INITIAL_STATUS);
+          setCompileArtifacts(null);
+          setWorkerGeneration((current) => current + 1);
+        };
+        signal?.addEventListener("abort", handleAbort, { once: true });
+        pendingRequestsRef.current.set(id, {
+          resolve,
+          reject,
+          cleanup: () => signal?.removeEventListener("abort", handleAbort),
+        });
         console.info("[proposal-prover][main] posting worker request", {
           id,
           type: request.type,
-          proofsEnabled: "proofsEnabled" in request ? request.proofsEnabled : undefined,
+          proofsEnabled:
+            "proofsEnabled" in request ? request.proofsEnabled : undefined,
           hasCreateProposalInput:
             request.type === "buildAndProveCreateProposal" ||
             request.type === "buildAndProveVoteProposal" ||
@@ -155,9 +204,12 @@ export function useProposalProverWorker(proofsEnabled: boolean) {
               ? Boolean(request.input)
               : undefined,
           transactionJsonType:
-            request.type === "proveTransactionJson" ? typeof request.transactionJson : undefined,
+            request.type === "proveTransactionJson"
+              ? typeof request.transactionJson
+              : undefined,
           transactionJsonLength:
-            request.type === "proveTransactionJson" && typeof request.transactionJson === "string"
+            request.type === "proveTransactionJson" &&
+            typeof request.transactionJson === "string"
               ? request.transactionJson.length
               : undefined,
         });
@@ -174,6 +226,7 @@ export function useProposalProverWorker(proofsEnabled: boolean) {
                 : undefined,
           });
           pendingRequestsRef.current.delete(id);
+          signal?.removeEventListener("abort", handleAbort);
           reject(toWorkerError(error));
         }
       });
@@ -189,24 +242,35 @@ export function useProposalProverWorker(proofsEnabled: boolean) {
     return response.status;
   }, [sendRequest]);
 
-  const compile = useCallback(async () => {
-    const response = await sendRequest({ type: "compile", proofsEnabled });
-    if (!response.ok || !response.compileArtifacts) {
-      throw new Error("Proposal compile did not return compile artifacts.");
-    }
-    setCompileArtifacts(response.compileArtifacts);
-    return response.compileArtifacts;
-  }, [proofsEnabled, sendRequest]);
+  const compile = useCallback(
+    async (signal?: AbortSignal) => {
+      const response = await sendRequest(
+        { type: "compile", proofsEnabled },
+        signal,
+      );
+      if (!response.ok || !response.compileArtifacts) {
+        throw new Error("Proposal compile did not return compile artifacts.");
+      }
+      setCompileArtifacts(response.compileArtifacts);
+      return response.compileArtifacts;
+    },
+    [proofsEnabled, sendRequest],
+  );
 
   const proveTransactionJson = useCallback(
-    async (transactionJson: string) => {
-      const response = await sendRequest({
-        type: "proveTransactionJson",
-        transactionJson,
-        proofsEnabled: true,
-      });
+    async (transactionJson: string, signal?: AbortSignal) => {
+      const response = await sendRequest(
+        {
+          type: "proveTransactionJson",
+          transactionJson,
+          proofsEnabled: true,
+        },
+        signal,
+      );
       if (!response.ok || !response.transactionJson) {
-        throw new Error("Proposal prover worker did not return a proved transaction.");
+        throw new Error(
+          "Proposal prover worker did not return a proved transaction.",
+        );
       }
       if (response.compileArtifacts) {
         setCompileArtifacts(response.compileArtifacts);
@@ -217,15 +281,21 @@ export function useProposalProverWorker(proofsEnabled: boolean) {
   );
 
   const buildAndProveCreateProposal = useCallback(
-    async (input: PrepareCreateProposalTransactionInput): Promise<{
+    async (
+      input: PrepareCreateProposalTransactionInput,
+      signal?: AbortSignal,
+    ): Promise<{
       preparedTransaction: PreparedCreateProposalTransaction;
       provedTransactionJson: string;
     }> => {
-      const response = await sendRequest({
-        type: "buildAndProveCreateProposal",
-        input,
-        proofsEnabled: true,
-      });
+      const response = await sendRequest(
+        {
+          type: "buildAndProveCreateProposal",
+          input,
+          proofsEnabled: true,
+        },
+        signal,
+      );
       if (
         !response.ok ||
         !response.preparedCreateProposalTransaction ||
@@ -247,15 +317,21 @@ export function useProposalProverWorker(proofsEnabled: boolean) {
   );
 
   const buildAndProveVoteProposal = useCallback(
-    async (input: PrepareVoteProposalTransactionInput): Promise<{
+    async (
+      input: PrepareVoteProposalTransactionInput,
+      signal?: AbortSignal,
+    ): Promise<{
       preparedTransaction: PreparedVoteProposalTransaction;
       provedTransactionJson: string;
     }> => {
-      const response = await sendRequest({
-        type: "buildAndProveVoteProposal",
-        input,
-        proofsEnabled: true,
-      });
+      const response = await sendRequest(
+        {
+          type: "buildAndProveVoteProposal",
+          input,
+          proofsEnabled: true,
+        },
+        signal,
+      );
       if (
         !response.ok ||
         !response.preparedVoteProposalTransaction ||
@@ -277,15 +353,21 @@ export function useProposalProverWorker(proofsEnabled: boolean) {
   );
 
   const buildAndProveExecuteProposal = useCallback(
-    async (input: PrepareExecuteProposalTransactionInput): Promise<{
+    async (
+      input: PrepareExecuteProposalTransactionInput,
+      signal?: AbortSignal,
+    ): Promise<{
       preparedTransaction: PreparedExecuteProposalTransaction;
       provedTransactionJson: string;
     }> => {
-      const response = await sendRequest({
-        type: "buildAndProveExecuteProposal",
-        input,
-        proofsEnabled: true,
-      });
+      const response = await sendRequest(
+        {
+          type: "buildAndProveExecuteProposal",
+          input,
+          proofsEnabled: true,
+        },
+        signal,
+      );
       if (
         !response.ok ||
         !response.preparedExecuteProposalTransaction ||

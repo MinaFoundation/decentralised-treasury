@@ -26,7 +26,6 @@ import {
   type ProposalVoteChoice,
 } from "../lib/proposal-prover-runtime";
 import { useProposalProverWorker } from "../hooks/use-proposal-prover-worker";
-import { signWithAuroWalletAndSubmitZkapp } from "../lib/auro-wallet-zkapp-submission";
 import { submitProposalContents } from "../lib/proposal-content-submission";
 import {
   getProposalContentRetryRecord,
@@ -400,7 +399,7 @@ export function ProposalDetailPageContainer({
   const router = useRouter();
   const settings = useEndpointSettingsState();
   const treasury = useTreasuryState();
-  const { wallet, connectWallet } = useWalletSession();
+  const { wallet, connectWallet, signAndSubmitZkapp } = useWalletSession();
   const refreshToken = useMinaBlockStore((state) => state.refreshToken);
   const forceRefresh = useMinaBlockStore((state) => state.forceRefresh);
   const setAppError = useAppShellStore((state) => state.setError);
@@ -724,14 +723,6 @@ export function ProposalDetailPageContainer({
         : null,
     [proposal, treasury.currentLifecycleId, treasury.currentPeriod],
   );
-  const hasConnectedProposerWallet = useMemo(
-    () =>
-      hasConnectedWallet &&
-      wallet.address != null &&
-      presentedProposal?.proposer != null &&
-      wallet.address === presentedProposal.proposer,
-    [hasConnectedWallet, presentedProposal?.proposer, wallet.address],
-  );
   useEffect(() => {
     preparedVoteFlowRef.current = preparedVoteFlow;
   }, [preparedVoteFlow]);
@@ -919,13 +910,11 @@ export function ProposalDetailPageContainer({
         contentRetryLastAttemptAt={
           matchingContentRetryRecord?.lastAttemptAt ?? null
         }
+        treasuryPaused={treasury.paused}
         hasConnectedWallet={hasConnectedWallet}
+        connectedWalletMinaBalance={wallet.accountInfo?.minaBalance}
         connectedWalletVotingWeight={wallet.accountInfo?.votingWeight}
-        hasConnectedProposerWallet={hasConnectedProposerWallet}
         onConnectWalletClick={() => {
-          void connectWallet();
-        }}
-        onConnectProposerWalletClick={() => {
           void connectWallet();
         }}
         onVoteYayClick={() => {
@@ -983,31 +972,35 @@ export function ProposalDetailPageContainer({
             voteSession.vote,
             voteSession.votingWeight,
           )}
-          onCompile={async () => {
+          onCompile={async (context) => {
             if (
               !voteSession.minaNodeUrl ||
               !voteSession.treasuryOwnerContractAddress
             ) {
               throw new Error("Proposal transaction configuration is missing.");
             }
-            await compile();
+            await compile(context.signal);
           }}
           onProve={async (context) => {
             if (!voteSession.proposal.proposalAddress) {
               throw new Error("Proposal vote details are missing.");
             }
             const { preparedTransaction, provedTransactionJson } =
-              await buildAndProveVoteProposal({
-                minaNodeUrl: voteSession.minaNodeUrl,
-                treasuryOwnerContractAddress:
-                  voteSession.treasuryOwnerContractAddress,
-                senderAddress: context.senderAddress,
-                proposalPublicKey: voteSession.proposal.proposalAddress,
-                vote: voteSession.vote,
-                fee: context.fee,
-                nonce: context.nonce,
-                memo: context.memo,
-              });
+              await buildAndProveVoteProposal(
+                {
+                  minaNodeUrl: voteSession.minaNodeUrl,
+                  networkId: settings.value.networkId,
+                  treasuryOwnerContractAddress:
+                    voteSession.treasuryOwnerContractAddress,
+                  senderAddress: context.senderAddress,
+                  proposalPublicKey: voteSession.proposal.proposalAddress,
+                  vote: voteSession.vote,
+                  fee: context.fee,
+                  nonce: context.nonce,
+                  memo: context.memo,
+                },
+                context.signal,
+              );
             const nextPreparedVoteFlow: PreparedVoteFlow = {
               routeProposalId: voteSession.routeProposalId,
               vote: voteSession.vote,
@@ -1040,17 +1033,19 @@ export function ProposalDetailPageContainer({
               nonce: context.nonce,
             });
             logWalletSubmissionTransaction(
-              "vote before Auro wallet sign",
+              "vote before wallet sign",
               activePreparedVote.provedTransactionJson,
             );
-            const hash = await signWithAuroWalletAndSubmitZkapp(
-              voteSession.minaNodeUrl,
-              activePreparedVote.provedTransactionJson,
-              context.senderAddress,
-              context.fee,
-              context.memo,
-              context.nonce,
-            );
+            const hash = await signAndSubmitZkapp({
+              minaNodeUrl: voteSession.minaNodeUrl,
+              networkId: settings.value.networkId ?? "DEVNET",
+              transactionJson: activePreparedVote.provedTransactionJson,
+              expectedSenderAddress: context.senderAddress,
+              fee: context.fee,
+              memo: context.memo,
+              nonce: context.nonce,
+              signal: context.signal,
+            });
             if (preparedVoteFlowRef.current) {
               preparedVoteFlowRef.current = {
                 ...preparedVoteFlowRef.current,
@@ -1060,11 +1055,16 @@ export function ProposalDetailPageContainer({
             }
             return { hash };
           }}
-          onWaitForInclusion={async ({ hash }) => {
+          onWaitForInclusion={async (context) => {
+            const { hash } = context;
             if (!hash) {
               throw new Error("Transaction hash is missing.");
             }
-            await waitForTransactionInclusion(voteSession.minaNodeUrl, hash);
+            await waitForTransactionInclusion(
+              voteSession.minaNodeUrl,
+              hash,
+              context.signal,
+            );
             return { hash };
           }}
           onComplete={() => {
@@ -1096,14 +1096,14 @@ export function ProposalDetailPageContainer({
             executeSession.proposal.recipient ?? "-",
             executeSession.amount,
           )}
-          onCompile={async () => {
+          onCompile={async (context) => {
             if (
               !executeSession.minaNodeUrl ||
               !executeSession.treasuryOwnerContractAddress
             ) {
               throw new Error("Proposal transaction configuration is missing.");
             }
-            await compile();
+            await compile(context.signal);
           }}
           onProve={async (context) => {
             if (
@@ -1113,18 +1113,22 @@ export function ProposalDetailPageContainer({
               throw new Error("Proposal execution details are missing.");
             }
             const { preparedTransaction, provedTransactionJson } =
-              await buildAndProveExecuteProposal({
-                minaNodeUrl: executeSession.minaNodeUrl,
-                treasuryOwnerContractAddress:
-                  executeSession.treasuryOwnerContractAddress,
-                senderAddress: context.senderAddress,
-                proposalPublicKey: executeSession.proposal.proposalAddress,
-                recipient: executeSession.proposal.recipient,
-                amount: executeSession.amount,
-                fee: context.fee,
-                nonce: context.nonce,
-                memo: context.memo,
-              });
+              await buildAndProveExecuteProposal(
+                {
+                  minaNodeUrl: executeSession.minaNodeUrl,
+                  networkId: settings.value.networkId,
+                  treasuryOwnerContractAddress:
+                    executeSession.treasuryOwnerContractAddress,
+                  senderAddress: context.senderAddress,
+                  proposalPublicKey: executeSession.proposal.proposalAddress,
+                  recipient: executeSession.proposal.recipient,
+                  amount: executeSession.amount,
+                  fee: context.fee,
+                  nonce: context.nonce,
+                  memo: context.memo,
+                },
+                context.signal,
+              );
             const nextPreparedExecuteFlow: PreparedExecuteFlow = {
               routeProposalId: executeSession.routeProposalId,
               amount: executeSession.amount,
@@ -1150,17 +1154,19 @@ export function ProposalDetailPageContainer({
               );
             }
             logWalletSubmissionTransaction(
-              "execute before Auro wallet sign",
+              "execute before wallet sign",
               activePreparedExecution.provedTransactionJson,
             );
-            const hash = await signWithAuroWalletAndSubmitZkapp(
-              executeSession.minaNodeUrl,
-              activePreparedExecution.provedTransactionJson,
-              context.senderAddress,
-              context.fee,
-              context.memo,
-              context.nonce,
-            );
+            const hash = await signAndSubmitZkapp({
+              minaNodeUrl: executeSession.minaNodeUrl,
+              networkId: settings.value.networkId ?? "DEVNET",
+              transactionJson: activePreparedExecution.provedTransactionJson,
+              expectedSenderAddress: context.senderAddress,
+              fee: context.fee,
+              memo: context.memo,
+              nonce: context.nonce,
+              signal: context.signal,
+            });
             if (preparedExecuteFlowRef.current) {
               preparedExecuteFlowRef.current = {
                 ...preparedExecuteFlowRef.current,
@@ -1170,11 +1176,16 @@ export function ProposalDetailPageContainer({
             }
             return { hash };
           }}
-          onWaitForInclusion={async ({ hash }) => {
+          onWaitForInclusion={async (context) => {
+            const { hash } = context;
             if (!hash) {
               throw new Error("Transaction hash is missing.");
             }
-            await waitForTransactionInclusion(executeSession.minaNodeUrl, hash);
+            await waitForTransactionInclusion(
+              executeSession.minaNodeUrl,
+              hash,
+              context.signal,
+            );
             return { hash };
           }}
           onComplete={() => {

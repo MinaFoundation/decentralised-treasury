@@ -57,6 +57,29 @@ describe("TreasuryTransactionFlowDialog", () => {
     expect(screen.getByText("Try again")).toBeTruthy();
   });
 
+  it("uses provider-neutral guidance while it waits for a signature", async () => {
+    render(
+      <TreasuryTransactionFlowDialog
+        open
+        onOpenChange={() => {}}
+        kind="vote"
+        senderAddress="B62qrecipientPassExample111111111111111111111111111111111"
+        onCompile={async () => {}}
+        onProve={async () => {}}
+        onSignAndSend={() => new Promise(() => undefined)}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: /sign and send/i }));
+
+    expect(
+      await screen.findByText(
+        "Confirm the transaction in your connected wallet to continue.",
+      ),
+    ).toBeTruthy();
+    expect(screen.queryByText(/Auro should now be open/i)).toBeNull();
+  });
+
   it("does not continue a transaction flow after the modal is remounted", async () => {
     let resolveProof: (() => void) | undefined;
     const onSignAndSend = vi.fn();
@@ -132,56 +155,79 @@ describe("TreasuryTransactionFlowDialog", () => {
     expect(updatedOnSignAndSend).not.toHaveBeenCalled();
   });
 
-  it("keeps waiting in the background after the dialog closes", async () => {
-    const inclusionResolver: {
-      current:
-        | null
-        | ((value: { hash?: string; blockHeight?: number }) => void);
-    } = {
-      current: null,
-    };
-
+  it("aborts active work when the dialog closes", async () => {
+    const onOpenChange = vi.fn();
+    const onSignAndSend = vi.fn();
+    let proofSignal: AbortSignal | undefined;
     render(
-      <BackgroundWaitingHarness
-        onWaitForInclusion={() =>
-          new Promise((resolve) => {
-            inclusionResolver.current = resolve;
+      <TreasuryTransactionFlowDialog
+        open
+        onOpenChange={onOpenChange}
+        kind="vote"
+        senderAddress="B62qrecipientPassExample111111111111111111111111111111111"
+        onCompile={async () => {}}
+        onProve={(context) =>
+          new Promise<void>((_resolve, reject) => {
+            proofSignal = context.signal;
+            context.signal.addEventListener(
+              "abort",
+              () => reject(new DOMException("Aborted", "AbortError")),
+              { once: true },
+            );
+          })
+        }
+        onSignAndSend={onSignAndSend}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: /sign and send/i }));
+    await waitFor(() => {
+      expect(proofSignal).toBeDefined();
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: "Close" }));
+
+    expect(proofSignal?.aborted).toBe(true);
+    expect(onOpenChange).toHaveBeenCalledWith(false);
+    expect(onSignAndSend).not.toHaveBeenCalled();
+  });
+
+  it("stops inclusion monitoring when the dialog closes", async () => {
+    const onOpenChange = vi.fn();
+    let inclusionSignal: AbortSignal | undefined;
+    render(
+      <TreasuryTransactionFlowDialog
+        open
+        onOpenChange={onOpenChange}
+        kind="executeProposal"
+        senderAddress="B62qrecipientPassExample111111111111111111111111111111111"
+        onCompile={async () => {}}
+        onProve={async () => {}}
+        onSignAndSend={async () => ({ hash: "5JuHash" })}
+        onWaitForInclusion={(context) =>
+          new Promise((_resolve, reject) => {
+            inclusionSignal = context.signal;
+            context.signal.addEventListener(
+              "abort",
+              () => reject(new DOMException("Aborted", "AbortError")),
+              { once: true },
+            );
           })
         }
       />,
     );
 
     fireEvent.click(screen.getByRole("button", { name: /sign and send/i }));
-
-    await screen.findByRole("button", { name: "Close and keep waiting" });
-
-    fireEvent.click(
-      screen.getByRole("button", { name: "Close and keep waiting" }),
-    );
-
-    expect(
-      screen.getByText("Waiting for inclusion in background"),
-    ).toBeTruthy();
-
-    if (!inclusionResolver.current) {
-      throw new Error("Expected inclusion resolver to be available.");
-    }
-
-    inclusionResolver.current({
-      hash: "5JuDexecuteHashTest111111111111111111111111111111111111111",
-      blockHeight: 452043,
+    const closeButton = await screen.findByRole("button", {
+      name: "Close and stop waiting",
     });
+    fireEvent.click(closeButton);
 
+    expect(inclusionSignal?.aborted).toBe(true);
+    expect(onOpenChange).toHaveBeenCalledWith(false);
     expect(
-      await screen.findByText(
-        "The network included the transaction at block #452043.",
-      ),
-    ).toBeTruthy();
-    expect(
-      screen.getByText(
-        "5JuDexecuteHashTest111111111111111111111111111111111111111",
-      ),
-    ).toBeTruthy();
+      screen.queryByText("Waiting for inclusion in background"),
+    ).toBeNull();
   });
 
   it("waits for proposal content posting before completing create proposal flow", async () => {
@@ -358,38 +404,6 @@ describe("TreasuryTransactionFlowDialog", () => {
     expect(screen.getByText("dialog closed")).toBeTruthy();
   });
 });
-
-function BackgroundWaitingHarness({
-  onWaitForInclusion,
-}: {
-  onWaitForInclusion: (args: { hash?: string }) => Promise<{
-    hash?: string;
-    blockHeight?: number;
-  }>;
-}) {
-  const [open, setOpen] = useState(true);
-
-  return (
-    <TreasuryTransactionFlowDialog
-      open={open}
-      onOpenChange={setOpen}
-      kind="executeProposal"
-      senderAddress="B62qrecipientPassExample111111111111111111111111111111111"
-      submitLabel="Start transaction"
-      defaultNonce="12"
-      summaryItems={[
-        { label: "Proposal", value: "P-128" },
-        { label: "Amount", value: "82,500 MINA" },
-      ]}
-      onCompile={async () => {}}
-      onProve={async () => {}}
-      onSignAndSend={async () => ({
-        hash: "5JuDexecuteHashTest111111111111111111111111111111111111111",
-      })}
-      onWaitForInclusion={onWaitForInclusion}
-    />
-  );
-}
 
 function RerenderingParentHarness({
   onDialogClosed,

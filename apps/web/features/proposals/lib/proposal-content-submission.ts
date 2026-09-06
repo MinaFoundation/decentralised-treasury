@@ -13,6 +13,7 @@ interface SubmitProposalContentsOptions {
   contents: string;
   timeoutMs?: number;
   retryDelayMs?: number;
+  signal?: AbortSignal;
 }
 
 interface SubmitProposalContentsResponse {
@@ -49,13 +50,26 @@ function isRetryableContentSubmissionFailure(
     typeof payload === "object" &&
     payload !== null &&
     "error" in payload &&
-    (payload as { error?: unknown }).error === PROPOSAL_CONTENT_PROPOSAL_NOT_FOUND_ERROR
+    (payload as { error?: unknown }).error ===
+      PROPOSAL_CONTENT_PROPOSAL_NOT_FOUND_ERROR
   );
 }
 
-function sleep(ms: number): Promise<void> {
-  return new Promise((resolve) => {
-    window.setTimeout(resolve, ms);
+function sleep(ms: number, signal?: AbortSignal): Promise<void> {
+  return new Promise((resolve, reject) => {
+    if (signal?.aborted) {
+      reject(signal.reason ?? new DOMException("Aborted", "AbortError"));
+      return;
+    }
+    const timeout = window.setTimeout(() => {
+      signal?.removeEventListener("abort", handleAbort);
+      resolve();
+    }, ms);
+    const handleAbort = () => {
+      window.clearTimeout(timeout);
+      reject(signal?.reason ?? new DOMException("Aborted", "AbortError"));
+    };
+    signal?.addEventListener("abort", handleAbort, { once: true });
   });
 }
 
@@ -65,6 +79,7 @@ export async function submitProposalContents({
   contents,
   timeoutMs = DEFAULT_SUBMISSION_TIMEOUT_MS,
   retryDelayMs = DEFAULT_RETRY_DELAY_MS,
+  signal,
 }: SubmitProposalContentsOptions): Promise<SubmitProposalContentsResponse> {
   const endpoint = resolveEndpointUrl(
     apiUrl,
@@ -74,11 +89,13 @@ export async function submitProposalContents({
   let lastErrorMessage = "Proposal content submission failed.";
 
   while (Date.now() <= deadline) {
+    signal?.throwIfAborted();
     const response = await fetch(endpoint, {
       method: "POST",
       headers: {
         "content-type": "application/json",
       },
+      signal,
       body: JSON.stringify({ contents }),
     });
     const payload = await readJsonResponse(response);
@@ -92,12 +109,16 @@ export async function submitProposalContents({
         typeof payload === "object" && payload !== null && "error" in payload
           ? String((payload as { error?: unknown }).error)
           : `Proposal content submission retryable failure: ${response.status}`;
-      await sleep(retryDelayMs);
+      await sleep(retryDelayMs, signal);
       continue;
     }
 
     const detail =
-      typeof payload === "string" ? payload : payload ? JSON.stringify(payload) : response.statusText;
+      typeof payload === "string"
+        ? payload
+        : payload
+          ? JSON.stringify(payload)
+          : response.statusText;
     throw new Error(
       `Failed to submit proposal contents: ${response.status}${detail ? ` ${detail}` : ""}`,
     );

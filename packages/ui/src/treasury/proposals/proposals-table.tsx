@@ -54,9 +54,24 @@ export interface TreasuryProposalTableEntry {
   requiredParticipationBp?: string | null;
   requiredApprovalBp?: string | null;
   requiredParticipation?: string | null;
+  contractStatus?: TreasuryProposalContractStatus | null;
+  contractStatusFinality?: TreasuryProposalObservationStatus | null;
+  contractStatusSourceEventId?: string | null;
+  statusAsOfBlockHeight?: number | null;
+  creationObservationStatus?: TreasuryProposalObservationStatus | null;
+  runningVoteTally?: TreasuryProposalLatestVoteTally | null;
+  finalVoteTally?: TreasuryProposalLatestVoteTally | null;
   latestVoteTally?: TreasuryProposalLatestVoteTally | null;
   isPaused?: boolean;
 }
+
+export type TreasuryProposalContractStatus =
+  | "unknown"
+  | "approved"
+  | "rejected"
+  | "paused";
+
+export type TreasuryProposalObservationStatus = "pending" | "canonical";
 
 export interface TreasuryProposalVoteSummary {
   yay: number;
@@ -65,6 +80,9 @@ export interface TreasuryProposalVoteSummary {
 }
 
 export interface TreasuryProposalLatestVoteTally {
+  archiveEventId?: string;
+  blockEventIndex?: number;
+  sourceStatus?: TreasuryProposalObservationStatus;
   blockHeight: number;
   yayWeight: string;
   nayWeight: string;
@@ -339,11 +357,18 @@ export function resolveStageDescription(
         "Voting closed without any votes being cast for this proposal.",
     });
   }
+  if (normalized === "awaiting on-chain result") {
+    return intl.formatMessage({
+      id: "ui.proposalsTable.statusDescription.awaitingOnChainResult",
+      defaultMessage:
+        "The contract does not currently contain a final result for this proposal.",
+    });
+  }
   if (normalized === "paused" || normalized === "vetoed") {
     return intl.formatMessage({
       id: "ui.proposalsTable.statusDescription.paused",
       defaultMessage:
-        "This proposal has been vetoed. Voting and execution actions are disabled.",
+        "This proposal is paused. Voting and execution actions are disabled.",
     });
   }
 
@@ -401,14 +426,35 @@ export function resolveVoteSummary(
   if (entry.voteSummary) {
     return entry.voteSummary;
   }
-  if (!entry.latestVoteTally) {
+  const voteTally = resolveDisplayVoteTally(entry);
+  if (!voteTally) {
     return undefined;
   }
   return {
-    yay: parseVoteWeight(entry.latestVoteTally.yayWeight),
-    nay: parseVoteWeight(entry.latestVoteTally.nayWeight),
-    abstain: parseVoteWeight(entry.latestVoteTally.abstainWeight),
+    yay: parseVoteWeight(voteTally.yayWeight),
+    nay: parseVoteWeight(voteTally.nayWeight),
+    abstain: parseVoteWeight(voteTally.abstainWeight),
   };
+}
+
+export function resolveDisplayVoteTally(
+  entry: TreasuryProposalTableEntry,
+): TreasuryProposalLatestVoteTally | null {
+  const period = parsePeriodValue(entry.period);
+  if (period === "voting") {
+    return (
+      entry.runningVoteTally ??
+      entry.finalVoteTally ??
+      entry.latestVoteTally ??
+      null
+    );
+  }
+  return (
+    entry.finalVoteTally ??
+    entry.runningVoteTally ??
+    entry.latestVoteTally ??
+    null
+  );
 }
 
 export function resolveEligibleVotingWeight(
@@ -421,26 +467,29 @@ export function resolveEligibleVotingWeight(
 export function resolveParticipationRequirement(
   entry: TreasuryProposalTableEntry,
 ): string | null {
+  const voteTally = resolveDisplayVoteTally(entry);
   return (
     formatBasisPointsPercent(entry.requiredParticipationBp) ??
-    formatBasisPointsPercent(entry.latestVoteTally?.requiredParticipationBp)
+    formatBasisPointsPercent(voteTally?.requiredParticipationBp)
   );
 }
 
 export function resolveApprovalRequirement(
   entry: TreasuryProposalTableEntry,
 ): string | null {
+  const voteTally = resolveDisplayVoteTally(entry);
   return (
     formatBasisPointsPercent(entry.requiredApprovalBp) ??
-    formatBasisPointsPercent(entry.latestVoteTally?.requiredApprovalBp)
+    formatBasisPointsPercent(voteTally?.requiredApprovalBp)
   );
 }
 
 export function resolveRequiredParticipationWeight(
   entry: TreasuryProposalTableEntry,
 ): number | null {
+  const voteTally = resolveDisplayVoteTally(entry);
   const directRequirement = parseVoteWeight(
-    entry.requiredParticipation ?? entry.latestVoteTally?.requiredParticipation,
+    entry.requiredParticipation ?? voteTally?.requiredParticipation,
   );
   if (directRequirement > 0) {
     return directRequirement;
@@ -448,8 +497,7 @@ export function resolveRequiredParticipationWeight(
 
   const eligibleVotingWeight = resolveEligibleVotingWeight(entry);
   const requiredParticipationBp = parseBasisPointsValue(
-    entry.requiredParticipationBp ??
-      entry.latestVoteTally?.requiredParticipationBp,
+    entry.requiredParticipationBp ?? voteTally?.requiredParticipationBp,
   );
   if (!eligibleVotingWeight || requiredParticipationBp <= 0) {
     return null;
@@ -461,10 +509,49 @@ export function resolveRequiredParticipationWeight(
 export function resolveRequiredApprovalBpValue(
   entry: TreasuryProposalTableEntry,
 ): number | null {
+  const voteTally = resolveDisplayVoteTally(entry);
   const requiredApprovalBp = parseBasisPointsValue(
-    entry.requiredApprovalBp ?? entry.latestVoteTally?.requiredApprovalBp,
+    entry.requiredApprovalBp ?? voteTally?.requiredApprovalBp,
   );
   return requiredApprovalBp > 0 ? requiredApprovalBp : null;
+}
+
+function parseUnsignedInteger(value: string | undefined | null): bigint | null {
+  const normalized = value?.trim();
+  return normalized && /^\d+$/.test(normalized) ? BigInt(normalized) : null;
+}
+
+function resolveRequiredParticipationWeightExact(
+  entry: TreasuryProposalTableEntry,
+): bigint | null {
+  const voteTally = resolveDisplayVoteTally(entry);
+  const directRequirement = parseUnsignedInteger(
+    entry.requiredParticipation ?? voteTally?.requiredParticipation,
+  );
+  if (directRequirement !== null) {
+    return directRequirement;
+  }
+
+  const eligibleVotingWeight = parseUnsignedInteger(
+    entry.stakingEpochDataLedgerTotalCurrency,
+  );
+  const requiredParticipationBp = parseUnsignedInteger(
+    entry.requiredParticipationBp ?? voteTally?.requiredParticipationBp,
+  );
+  if (eligibleVotingWeight === null || requiredParticipationBp === null) {
+    return null;
+  }
+
+  return (eligibleVotingWeight * requiredParticipationBp) / 10_000n;
+}
+
+function resolveRequiredApprovalBpExact(
+  entry: TreasuryProposalTableEntry,
+): bigint | null {
+  const voteTally = resolveDisplayVoteTally(entry);
+  return parseUnsignedInteger(
+    entry.requiredApprovalBp ?? voteTally?.requiredApprovalBp,
+  );
 }
 
 export function formatRatioPercent(
@@ -521,15 +608,26 @@ export function resolveDerivedStage(
   statusDerivationPeriod?: TreasuryProposalPeriodId,
 ): string {
   const normalizedStage = entry.stage.trim().toLowerCase();
+  const contractStatus = normalizeContractStatus(entry.contractStatus);
   if (
-    entry.isPaused ||
-    normalizedStage.includes("paused") ||
-    normalizedStage.includes("vetoed")
+    entry.isPaused === true ||
+    (entry.isPaused === undefined &&
+      (contractStatus === "paused" ||
+        (contractStatus === null &&
+          (normalizedStage.includes("paused") ||
+            normalizedStage.includes("vetoed")))))
   ) {
-    return "VETOED";
+    return "PAUSED";
   }
   const effectivePeriod =
     statusDerivationPeriod ?? parsePeriodValue(entry.period) ?? null;
+
+  if (contractStatus === "approved") {
+    return "Passed";
+  }
+  if (contractStatus === "rejected") {
+    return "Failed";
+  }
 
   if (effectivePeriod === "proposal") {
     return "New";
@@ -538,7 +636,16 @@ export function resolveDerivedStage(
     return "Exploration";
   }
 
-  const latestVoteTally = entry.latestVoteTally;
+  if (contractStatus === "unknown" && effectivePeriod === "cooldown") {
+    return "Awaiting on-chain result";
+  }
+
+  const latestVoteTally =
+    effectivePeriod === "voting"
+      ? (entry.runningVoteTally ?? entry.latestVoteTally)
+      : (entry.finalVoteTally ??
+        entry.runningVoteTally ??
+        entry.latestVoteTally);
   if (!latestVoteTally) {
     if (effectivePeriod === "voting") {
       return "Waiting for votes";
@@ -553,26 +660,25 @@ export function resolveDerivedStage(
     return entry.stage;
   }
 
-  const hasVotes =
-    parseVoteWeight(latestVoteTally.yayWeight) > 0 ||
-    parseVoteWeight(latestVoteTally.nayWeight) > 0 ||
-    parseVoteWeight(latestVoteTally.abstainWeight) > 0;
-  const yayWeight = parseVoteWeight(latestVoteTally.yayWeight);
-  const nayWeight = parseVoteWeight(latestVoteTally.nayWeight);
-  const abstainWeight = parseVoteWeight(latestVoteTally.abstainWeight);
-  const hasDecisiveVotes = yayWeight > 0 || nayWeight > 0;
+  const yayWeight = parseUnsignedInteger(latestVoteTally.yayWeight) ?? 0n;
+  const nayWeight = parseUnsignedInteger(latestVoteTally.nayWeight) ?? 0n;
+  const abstainWeight =
+    parseUnsignedInteger(latestVoteTally.abstainWeight) ?? 0n;
+  const hasVotes = yayWeight > 0n || nayWeight > 0n || abstainWeight > 0n;
+  const hasDecisiveVotes = yayWeight > 0n || nayWeight > 0n;
   const totalParticipatingWeight = yayWeight + nayWeight + abstainWeight;
-  const requiredParticipationWeight = resolveRequiredParticipationWeight(entry);
-  const requiredApprovalBp = resolveRequiredApprovalBpValue(entry);
+  const requiredParticipationWeight =
+    resolveRequiredParticipationWeightExact(entry);
+  const requiredApprovalBp = resolveRequiredApprovalBpExact(entry);
   const approvalBp =
-    yayWeight + nayWeight > 0
-      ? (yayWeight * 10_000) / (yayWeight + nayWeight)
-      : 0;
+    yayWeight + nayWeight > 0n
+      ? (yayWeight * 10_000n) / (yayWeight + nayWeight)
+      : 0n;
   const participationMet =
-    requiredParticipationWeight === null ||
+    requiredParticipationWeight !== null &&
     totalParticipatingWeight >= requiredParticipationWeight;
   const approvalMet =
-    requiredApprovalBp === null || approvalBp >= requiredApprovalBp;
+    requiredApprovalBp !== null && approvalBp >= requiredApprovalBp;
 
   if (!hasVotes) {
     if (effectivePeriod === "cooldown") {
@@ -582,7 +688,7 @@ export function resolveDerivedStage(
   }
 
   if (latestVoteTally.createdByEventType === "proposalVotesTallied") {
-    if (!participationMet) {
+    if (!hasDecisiveVotes || !participationMet || !approvalMet) {
       return "Failed";
     }
     return latestVoteTally.voteResult === "approved" ? "Passed" : "Failed";
@@ -603,6 +709,21 @@ export function resolveDerivedStage(
   }
 
   return entry.stage;
+}
+
+function normalizeContractStatus(
+  value: TreasuryProposalContractStatus | string | undefined | null,
+): TreasuryProposalContractStatus | null {
+  const normalized = value?.trim().toLowerCase();
+  if (
+    normalized === "unknown" ||
+    normalized === "approved" ||
+    normalized === "rejected" ||
+    normalized === "paused"
+  ) {
+    return normalized;
+  }
+  return null;
 }
 
 export function TreasuryProposalsTable({
