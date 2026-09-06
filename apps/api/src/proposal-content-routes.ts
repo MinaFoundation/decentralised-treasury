@@ -5,11 +5,13 @@ import {
 } from "@repo/sdk/src/utils/proposal-content-hash.js";
 import { profanity } from "@2toad/profanity";
 import type { DataSource } from "typeorm";
+import { qualifyTableName, resolveDatabaseSchema } from "./database-schema.js";
 
 export const DEFAULT_PROPOSAL_CONTENT_MAX_CHARS = 32 * 1024;
 export const PROPOSAL_CONTENT_REQUIRED_ERROR =
   "contents must be a non-empty markdown string";
-export const PROPOSAL_CONTENT_TOO_LARGE_ERROR = "contents exceeds maximum allowed length";
+export const PROPOSAL_CONTENT_TOO_LARGE_ERROR =
+  "contents exceeds maximum allowed length";
 export const PROPOSAL_CONTENT_EXPLICIT_LANGUAGE_ERROR =
   "contents contains prohibited explicit language";
 export const PROPOSAL_CONTENT_PROPOSAL_NOT_FOUND_ERROR =
@@ -26,6 +28,7 @@ interface ProposalContentRow {
 
 interface ProposalContentRoutesOptions {
   dataSource: DataSource;
+  databaseSchema?: string;
   maxProposalContentsChars?: number;
   containsExplicitLanguage?: (markdown: string) => boolean;
   hashMarkdownToProposalZkAppUriHash?: (
@@ -44,7 +47,7 @@ interface ProposalContentsValidationFailure {
   contentChars?: number;
 }
 
-function isMissingProcessorProposalsTable(error: unknown): boolean {
+function isMissingProposalContentTable(error: unknown): boolean {
   if (!error || typeof error !== "object") {
     return false;
   }
@@ -53,9 +56,12 @@ function isMissingProcessorProposalsTable(error: unknown): boolean {
     return true;
   }
   const message =
-    "message" in error ? String((error as { message?: unknown }).message ?? "") : "";
+    "message" in error
+      ? String((error as { message?: unknown }).message ?? "")
+      : "";
   return (
-    message.includes("processor_proposals") &&
+    (message.includes("processor_proposals") ||
+      message.includes("processor_proposal_contents")) &&
     (message.includes("does not exist") || message.includes("relation"))
   );
 }
@@ -114,14 +120,27 @@ async function defaultHashMarkdownToProposalZkAppUriHash(
 
 export function createProposalContentRoutes({
   dataSource,
+  databaseSchema,
   maxProposalContentsChars = DEFAULT_PROPOSAL_CONTENT_MAX_CHARS,
   containsExplicitLanguage = (markdown: string) => profanity.exists(markdown),
   hashMarkdownToProposalZkAppUriHash = defaultHashMarkdownToProposalZkAppUriHash,
-}: ProposalContentRoutesOptions): NonNullable<EventsApiServerOptions["registerRoutes"]> {
+}: ProposalContentRoutesOptions): NonNullable<
+  EventsApiServerOptions["registerRoutes"]
+> {
+  const proposalsTable = qualifyTableName(
+    resolveDatabaseSchema(dataSource, databaseSchema),
+    "processor_proposals",
+  );
+  const proposalContentsTable = qualifyTableName(
+    resolveDatabaseSchema(dataSource, databaseSchema),
+    "processor_proposal_contents",
+  );
+
   return (app) => {
     app.post("/proposals/content/verify", async (request, response) => {
-      const contents = (request.body as { contents?: unknown } | null | undefined)
-        ?.contents;
+      const contents = (
+        request.body as { contents?: unknown } | null | undefined
+      )?.contents;
       const validation = validateProposalContents(
         contents,
         maxProposalContentsChars,
@@ -143,14 +162,18 @@ export function createProposalContentRoutes({
 
     app.post("/proposals/:id/content", async (request, response) => {
       const proposalPublicKey = request.params?.id;
-      if (typeof proposalPublicKey !== "string" || proposalPublicKey.trim().length === 0) {
+      if (
+        typeof proposalPublicKey !== "string" ||
+        proposalPublicKey.trim().length === 0
+      ) {
         response.status(400).json({
           error: "proposal id must be a non-empty proposal public key",
         });
         return;
       }
-      const contents = (request.body as { contents?: unknown } | null | undefined)
-        ?.contents;
+      const contents = (
+        request.body as { contents?: unknown } | null | undefined
+      )?.contents;
       const validation = validateProposalContents(
         contents,
         maxProposalContentsChars,
@@ -164,9 +187,13 @@ export function createProposalContentRoutes({
 
       let hashResult: ProposalContentHashResult;
       try {
-        hashResult = await hashMarkdownToProposalZkAppUriHash(validatedContents);
+        hashResult =
+          await hashMarkdownToProposalZkAppUriHash(validatedContents);
       } catch (error) {
-        console.error("[indexer-api] failed to hash proposal markdown contents", error);
+        console.error(
+          "[app-api] failed to hash proposal markdown contents",
+          error,
+        );
         response.status(500).json({
           error: "Internal server error",
         });
@@ -174,16 +201,53 @@ export function createProposalContentRoutes({
       }
 
       try {
-        const proposals = (await dataSource.query(
-          `SELECT "proposal_public_key"
-           FROM "processor_proposals"
-           WHERE "proposal_public_key" = $1
-             AND "zkapp_uri_hash" = $2
-           LIMIT 1`,
-          [proposalPublicKey, hashResult.zkAppUriHash],
-        )) as ProposalContentRow[];
+        const updatedProposals = await dataSource.transaction(
+          async (manager) => {
+            const matchResult = (await manager.query(
+              `SELECT "proposal_public_key"
+               FROM ${proposalsTable}
+               WHERE "proposal_public_key" = $1
+                 AND "zkapp_uri_hash" = $2
+               FOR UPDATE`,
+              [proposalPublicKey, hashResult.zkAppUriHash],
+            )) as ProposalContentRow[] | [ProposalContentRow[], number];
+            const matchingProposals = Array.isArray(matchResult[0])
+              ? matchResult[0]
+              : (matchResult as ProposalContentRow[]);
+            if (!matchingProposals.length) {
+              return matchingProposals;
+            }
 
-        if (!proposals.length) {
+            await manager.query(
+              `INSERT INTO ${proposalContentsTable} (
+               "proposal_public_key",
+               "zkapp_uri_hash",
+               "contents",
+               "created_at",
+               "updated_at"
+             ) VALUES ($1, $2, $3, NOW(), NOW())
+             ON CONFLICT ("proposal_public_key", "zkapp_uri_hash")
+             DO UPDATE SET
+               "contents" = EXCLUDED."contents",
+               "updated_at" = NOW()`,
+              [proposalPublicKey, hashResult.zkAppUriHash, validatedContents],
+            );
+            const updateResult = (await manager.query(
+              `UPDATE ${proposalsTable}
+               SET "contents" = $1,
+                   "updated_at" = NOW()
+               WHERE "proposal_public_key" = $2
+                 AND "zkapp_uri_hash" = $3
+               RETURNING "proposal_public_key"`,
+              [validatedContents, proposalPublicKey, hashResult.zkAppUriHash],
+            )) as ProposalContentRow[] | [ProposalContentRow[], number];
+            return Array.isArray(updateResult[0])
+              ? updateResult[0]
+              : (updateResult as ProposalContentRow[]);
+          },
+        );
+
+        if (!updatedProposals.length) {
           response.status(404).json({
             error: PROPOSAL_CONTENT_PROPOSAL_NOT_FOUND_ERROR,
             proposalPublicKey,
@@ -193,15 +257,6 @@ export function createProposalContentRoutes({
           return;
         }
 
-        await dataSource.query(
-          `UPDATE "processor_proposals"
-           SET "contents" = $1,
-               "updated_at" = NOW()
-           WHERE "proposal_public_key" = $2
-             AND "zkapp_uri_hash" = $3`,
-          [validatedContents, proposalPublicKey, hashResult.zkAppUriHash],
-        );
-
         response.json({
           ok: true,
           contentChars,
@@ -210,13 +265,13 @@ export function createProposalContentRoutes({
           zkAppUriHash: hashResult.zkAppUriHash,
         });
       } catch (error) {
-        if (isMissingProcessorProposalsTable(error)) {
+        if (isMissingProposalContentTable(error)) {
           response.status(503).json({
             error: "proposal content API is unavailable",
           });
           return;
         }
-        console.error("[indexer-api] failed to upsert proposal contents", error);
+        console.error("[app-api] failed to store proposal contents", error);
         response.status(500).json({
           error: "Internal server error",
         });

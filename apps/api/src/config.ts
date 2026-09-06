@@ -82,8 +82,12 @@ function readPositiveIntEnv(
     if (!raw) {
       continue;
     }
-    const parsed = Number.parseInt(raw, 10);
-    if (!Number.isFinite(parsed) || parsed <= 0) {
+    const normalized = raw.trim();
+    if (!/^\d+$/.test(normalized)) {
+      throw new Error(`${name} must be a positive integer`);
+    }
+    const parsed = Number(normalized);
+    if (!Number.isSafeInteger(parsed) || parsed <= 0) {
       throw new Error(`${name} must be a positive integer`);
     }
     return parsed;
@@ -101,8 +105,12 @@ function readNonNegativeIntEnv(
     if (!raw) {
       continue;
     }
-    const parsed = Number.parseInt(raw, 10);
-    if (!Number.isFinite(parsed) || parsed < 0) {
+    const normalized = raw.trim();
+    if (!/^\d+$/.test(normalized)) {
+      throw new Error(`${name} must be a non-negative integer`);
+    }
+    const parsed = Number(normalized);
+    if (!Number.isSafeInteger(parsed)) {
       throw new Error(`${name} must be a non-negative integer`);
     }
     return parsed;

@@ -16,5 +16,6 @@
     "logError": true,
     "pretty": true
   },
-  "include": ["./src", "./test", "./scripts"]
+  "include": ["./src", "./test", "./scripts"],
+  "exclude": ["./test/fixtures/local-treasury-playwright-server.ts"]
 }

@@ -1,11 +1,14 @@
 import type { EventsApiServerOptions } from "@repo/indexer";
 import type { DataSource } from "typeorm";
+import { qualifyTableName, resolveDatabaseSchema } from "./database-schema.js";
+import { calculateProposalPayoutAmounts } from "./proposal-payout.js";
 
 const DEFAULT_PROPOSAL_LIST_LIMIT = 20;
 const DEFAULT_PROPOSAL_LIST_MAX = 200;
 
 interface ProposalListRoutesOptions {
   dataSource: DataSource;
+  databaseSchema?: string;
   pageLimitDefault?: number;
   pageLimitMax?: number;
 }
@@ -24,6 +27,11 @@ interface ProposalListQueryRow {
   required_approval_bp: string | null;
   required_participation: string | null;
   status: string;
+  contract_status: "unknown" | "approved" | "rejected" | "paused";
+  contract_status_finality: "pending" | "canonical";
+  contract_status_source_event_id: string | null;
+  contract_status_block_height: number | null;
+  creation_observation_status: string;
   is_paused: boolean | number;
   paid_out_amount: string;
   contents: string | null;
@@ -34,8 +42,11 @@ interface ProposalListQueryRow {
 }
 
 interface ProposalListVoteTallyRow {
+  archive_event_id: string | null;
   proposal_public_key: string;
   block_height: number;
+  block_event_index: number;
+  source_status: string;
   yay_weight: string;
   nay_weight: string;
   abstain_weight: string;
@@ -48,6 +59,12 @@ interface ProposalListVoteTallyRow {
   vote_result: string | null;
 }
 
+interface ProposalVoteTallyViews {
+  latest: ProposalListVoteTallyRow | null;
+  running: ProposalListVoteTallyRow | null;
+  finals: ProposalListVoteTallyRow[];
+}
+
 interface ProposalVoteRow {
   id: string | number;
   proposal_public_key: string;
@@ -55,6 +72,7 @@ interface ProposalVoteRow {
   vote: string;
   vote_weight: string;
   block_height: number | null;
+  block_event_index: number;
   is_nullified: boolean | number;
   status: string;
   created_at: string | Date;
@@ -70,6 +88,7 @@ interface ProposalExecutionRow {
   paid_out_amount: string;
   remaining_amount: string;
   block_height: number | null;
+  block_event_index: number;
   status: string;
   created_at: string | Date;
 }
@@ -89,22 +108,36 @@ function parsePositiveInt(
   fallback: number,
   max: number,
 ): number {
-  if (typeof value !== "string" || value.trim().length === 0) {
+  if (value === undefined || value === null || value === "") {
     return fallback;
   }
-  const parsed = Number.parseInt(value, 10);
-  if (!Number.isFinite(parsed) || parsed <= 0) {
+  if (typeof value !== "string" || value.trim().length === 0) {
+    throw new RequestValidationError("limit must be a positive integer");
+  }
+  const normalized = value.trim();
+  if (!/^\d+$/.test(normalized)) {
+    throw new RequestValidationError("limit must be a positive integer");
+  }
+  const parsed = Number(normalized);
+  if (!Number.isSafeInteger(parsed) || parsed <= 0) {
     throw new RequestValidationError("limit must be a positive integer");
   }
   return Math.min(parsed, max);
 }
 
 function parseNonNegativeInt(value: unknown, fallback: number): number {
-  if (typeof value !== "string" || value.trim().length === 0) {
+  if (value === undefined || value === null || value === "") {
     return fallback;
   }
-  const parsed = Number.parseInt(value, 10);
-  if (!Number.isFinite(parsed) || parsed < 0) {
+  if (typeof value !== "string" || value.trim().length === 0) {
+    throw new RequestValidationError("offset must be a non-negative integer");
+  }
+  const normalized = value.trim();
+  if (!/^\d+$/.test(normalized)) {
+    throw new RequestValidationError("offset must be a non-negative integer");
+  }
+  const parsed = Number(normalized);
+  if (!Number.isSafeInteger(parsed)) {
     throw new RequestValidationError("offset must be a non-negative integer");
   }
   return parsed;
@@ -119,7 +152,13 @@ function parseOptionalLifecycleId(value: unknown): number | null {
       "lifecycleId must be a non-negative integer",
     );
   }
-  return Number.parseInt(value, 10);
+  const parsed = Number(value.trim());
+  if (!Number.isSafeInteger(parsed)) {
+    throw new RequestValidationError(
+      "lifecycleId must be a non-negative integer",
+    );
+  }
+  return parsed;
 }
 
 function parseSortValues(value: unknown): string[] {
@@ -210,10 +249,11 @@ function isMissingProcessorProposalsTable(error: unknown): boolean {
 async function proposalExists(
   dataSource: DataSource,
   proposalPublicKey: string,
+  proposalsTable: string,
 ): Promise<boolean> {
   const rows = (await dataSource.query(
     `SELECT 1
-    FROM "processor_proposals"
+    FROM ${proposalsTable}
     WHERE "proposal_public_key" = $1
     LIMIT 1`,
     [proposalPublicKey],
@@ -221,10 +261,11 @@ async function proposalExists(
   return rows.length > 0;
 }
 
-async function loadLatestVoteTallies(
+async function loadVoteTallyViews(
   dataSource: DataSource,
   proposalPublicKeys: string[],
-): Promise<Map<string, ProposalListVoteTallyRow>> {
+  voteTalliesTable: string,
+): Promise<Map<string, ProposalVoteTallyViews>> {
   if (proposalPublicKeys.length === 0) {
     return new Map();
   }
@@ -234,8 +275,11 @@ async function loadLatestVoteTallies(
     .join(", ");
   const rows = (await dataSource.query(
     `SELECT
+      "archive_event_id",
       "proposal_public_key",
       "block_height",
+      "block_event_index",
+      "source_status",
       "yay_weight",
       "nay_weight",
       "abstain_weight",
@@ -246,25 +290,96 @@ async function loadLatestVoteTallies(
       "total_participating_votes",
       "approval_bp",
       "vote_result"
-    FROM "processor_vote_tallies"
+    FROM ${voteTalliesTable}
     WHERE "proposal_public_key" IN (${placeholders})
-    ORDER BY "proposal_public_key" ASC, "block_height" DESC, "created_at" DESC, "id" DESC`,
+    ORDER BY "proposal_public_key" ASC, "block_height" DESC, "block_event_index" DESC, "created_at" DESC, "id" DESC`,
     proposalPublicKeys,
   )) as ProposalListVoteTallyRow[];
 
-  const latestTallies = new Map<string, ProposalListVoteTallyRow>();
+  const views = new Map<string, ProposalVoteTallyViews>();
   for (const row of rows) {
-    if (!latestTallies.has(row.proposal_public_key)) {
-      latestTallies.set(row.proposal_public_key, row);
+    if (row.source_status === "orphaned") {
+      continue;
     }
+    const view = views.get(row.proposal_public_key) ?? {
+      latest: null,
+      running: null,
+      finals: [],
+    };
+    view.latest ??= row;
+    if (row.created_by_event_type === "proposalVoteDispatched") {
+      view.running ??= row;
+    }
+    if (row.created_by_event_type === "proposalVotesTallied") {
+      view.finals.push(row);
+    }
+    views.set(row.proposal_public_key, view);
   }
-  return latestTallies;
+  return views;
+}
+
+function selectHistoricalFinal(
+  candidates: ProposalListVoteTallyRow[],
+  sourceEventId: string,
+): ProposalListVoteTallyRow | null {
+  const historical = candidates.filter(
+    (tally) => tally.archive_event_id !== sourceEventId,
+  );
+  if (historical.length === 0) {
+    return null;
+  }
+  return historical[0]!;
+}
+
+function mapVoteTally(
+  row: ProposalListVoteTallyRow | null | undefined,
+  includeProvenance = false,
+) {
+  return row
+    ? {
+        ...(includeProvenance
+          ? {
+              archiveEventId: row.archive_event_id,
+              blockEventIndex: row.block_event_index,
+              sourceStatus: row.source_status,
+            }
+          : {}),
+        blockHeight: row.block_height,
+        yayWeight: row.yay_weight,
+        nayWeight: row.nay_weight,
+        abstainWeight: row.abstain_weight,
+        createdByEventType: row.created_by_event_type,
+        requiredParticipationBp: row.required_participation_bp,
+        requiredApprovalBp: row.required_approval_bp,
+        requiredParticipation: row.required_participation,
+        totalParticipatingVotes: row.total_participating_votes,
+        approvalBp: row.approval_bp,
+        voteResult: row.vote_result,
+      }
+    : null;
 }
 
 function mapProposalRow(
   row: ProposalListQueryRow,
-  latestVoteTally: ProposalListVoteTallyRow | undefined,
+  tallyViews: ProposalVoteTallyViews | undefined,
 ) {
+  const currentFinal = tallyViews?.finals.find(
+    (tally) =>
+      row.contract_status_source_event_id !== null &&
+      tally.archive_event_id === row.contract_status_source_event_id &&
+      (row.contract_status === "approved" ||
+        row.contract_status === "rejected"),
+  );
+  const contractStatusRequiresCurrentFinal =
+    row.contract_status === "approved" || row.contract_status === "rejected";
+  const historicalFinal =
+    row.contract_status_source_event_id !== null &&
+    (!contractStatusRequiresCurrentFinal || currentFinal !== undefined)
+      ? selectHistoricalFinal(
+          tallyViews?.finals ?? [],
+          row.contract_status_source_event_id,
+        )
+      : null;
   return {
     id: String(row.id),
     proposalPublicKey: row.proposal_public_key,
@@ -280,38 +395,48 @@ function mapProposalRow(
     requiredApprovalBp: row.required_approval_bp,
     requiredParticipation: row.required_participation,
     status: row.status,
+    creationObservationStatus: row.creation_observation_status,
+    contractStatus: row.contract_status,
+    contractStatusFinality: row.contract_status_finality,
+    contractStatusSourceEventId: row.contract_status_source_event_id,
+    statusAsOfBlockHeight: row.contract_status_block_height,
     isPaused: Boolean(row.is_paused),
     paidOutAmount: row.paid_out_amount,
+    ...calculateProposalPayoutAmounts(row.amount, row.paid_out_amount),
     contents: row.contents,
     createdAtBlockHeight: row.created_at_block_height,
     createdAtBlockTimestamp: toIsoString(row.created_at_block_timestamp),
     createdAt: toIsoString(row.created_at),
     updatedAt: toIsoString(row.updated_at),
-    latestVoteTally: latestVoteTally
-      ? {
-          blockHeight: latestVoteTally.block_height,
-          yayWeight: latestVoteTally.yay_weight,
-          nayWeight: latestVoteTally.nay_weight,
-          abstainWeight: latestVoteTally.abstain_weight,
-          createdByEventType: latestVoteTally.created_by_event_type,
-          requiredParticipationBp: latestVoteTally.required_participation_bp,
-          requiredApprovalBp: latestVoteTally.required_approval_bp,
-          requiredParticipation: latestVoteTally.required_participation,
-          totalParticipatingVotes: latestVoteTally.total_participating_votes,
-          approvalBp: latestVoteTally.approval_bp,
-          voteResult: latestVoteTally.vote_result,
-        }
-      : null,
+    latestVoteTally: mapVoteTally(tallyViews?.latest),
+    runningVoteTally: mapVoteTally(tallyViews?.running, true),
+    finalVoteTally: mapVoteTally(currentFinal, true),
+    historicalFinalVoteTally: mapVoteTally(historicalFinal, true),
   };
 }
 
 export function createProposalListRoutes({
   dataSource,
+  databaseSchema,
   pageLimitDefault = DEFAULT_PROPOSAL_LIST_LIMIT,
   pageLimitMax = DEFAULT_PROPOSAL_LIST_MAX,
 }: ProposalListRoutesOptions) {
   const resolvedPageLimitDefault = Math.max(1, pageLimitDefault);
   const resolvedPageLimitMax = Math.max(resolvedPageLimitDefault, pageLimitMax);
+  const resolvedSchema = resolveDatabaseSchema(dataSource, databaseSchema);
+  const proposalsTable = qualifyTableName(
+    resolvedSchema,
+    "processor_proposals",
+  );
+  const voteTalliesTable = qualifyTableName(
+    resolvedSchema,
+    "processor_vote_tallies",
+  );
+  const votesTable = qualifyTableName(resolvedSchema, "processor_votes");
+  const executionsTable = qualifyTableName(
+    resolvedSchema,
+    "processor_proposal_executions",
+  );
 
   return (
     app: Parameters<NonNullable<EventsApiServerOptions["registerRoutes"]>>[0],
@@ -337,7 +462,7 @@ export function createProposalListRoutes({
         const countParameters = [...queryParameters];
         const totalCountRow = (await dataSource.query(
           `SELECT COUNT(*)::int AS count
-          FROM "processor_proposals" proposals
+          FROM ${proposalsTable} proposals
           ${whereClause}`,
           countParameters,
         )) as Array<{ count: number | string }>;
@@ -359,6 +484,11 @@ export function createProposalListRoutes({
             proposals."required_approval_bp",
             proposals."required_participation",
             proposals."status",
+            proposals."contract_status",
+            proposals."contract_status_finality",
+            proposals."contract_status_source_event_id",
+            proposals."contract_status_block_height",
+            proposals."creation_observation_status",
             proposals."is_paused",
             proposals."paid_out_amount",
             proposals."contents",
@@ -366,7 +496,7 @@ export function createProposalListRoutes({
             proposals."created_at_block_timestamp",
             proposals."created_at",
             proposals."updated_at"
-          FROM "processor_proposals" proposals
+          FROM ${proposalsTable} proposals
           ${whereClause}
           ORDER BY ${orderByClause}
           LIMIT $${queryParameters.length - 1}
@@ -376,12 +506,13 @@ export function createProposalListRoutes({
 
         const hasMore = rows.length > limit;
         const visibleRows = rows.slice(0, limit);
-        const latestTallies = await loadLatestVoteTallies(
+        const tallyViews = await loadVoteTallyViews(
           dataSource,
           visibleRows.map((row) => row.proposal_public_key),
+          voteTalliesTable,
         );
         const items = visibleRows.map((row) =>
-          mapProposalRow(row, latestTallies.get(row.proposal_public_key)),
+          mapProposalRow(row, tallyViews.get(row.proposal_public_key)),
         );
 
         response.json({
@@ -430,6 +561,11 @@ export function createProposalListRoutes({
             proposals."required_approval_bp",
             proposals."required_participation",
             proposals."status",
+            proposals."contract_status",
+            proposals."contract_status_finality",
+            proposals."contract_status_source_event_id",
+            proposals."contract_status_block_height",
+            proposals."creation_observation_status",
             proposals."is_paused",
             proposals."paid_out_amount",
             proposals."contents",
@@ -437,7 +573,7 @@ export function createProposalListRoutes({
             proposals."created_at_block_timestamp",
             proposals."created_at",
             proposals."updated_at"
-          FROM "processor_proposals" proposals
+          FROM ${proposalsTable} proposals
           WHERE proposals."proposal_public_key" = $1
              OR CAST(proposals."id" AS TEXT) = $1
           LIMIT 1`,
@@ -451,11 +587,13 @@ export function createProposalListRoutes({
           return;
         }
 
-        const latestTallies = await loadLatestVoteTallies(dataSource, [
-          row.proposal_public_key,
-        ]);
+        const tallyViews = await loadVoteTallyViews(
+          dataSource,
+          [row.proposal_public_key],
+          voteTalliesTable,
+        );
         response.json(
-          mapProposalRow(row, latestTallies.get(row.proposal_public_key)),
+          mapProposalRow(row, tallyViews.get(row.proposal_public_key)),
         );
       } catch (error) {
         if (isMissingProcessorProposalsTable(error)) {
@@ -476,7 +614,11 @@ export function createProposalListRoutes({
       async (request, response) => {
         try {
           const { proposalPublicKey } = request.params;
-          const exists = await proposalExists(dataSource, proposalPublicKey);
+          const exists = await proposalExists(
+            dataSource,
+            proposalPublicKey,
+            proposalsTable,
+          );
           if (!exists) {
             response.status(404).json({
               error: "Proposal not found",
@@ -492,10 +634,10 @@ export function createProposalListRoutes({
           const offset = parseNonNegativeInt(request.query.offset, 0);
           const totalCountRow = (await dataSource.query(
             `SELECT COUNT(*)::int AS count
-          FROM "processor_votes"
+          FROM ${votesTable}
           WHERE "proposal_public_key" = $1
-            AND "is_nullified" = false
-            AND "status" <> 'orphaned'`,
+            AND "status" <> 'orphaned'
+            AND "is_nullified" = false`,
             [proposalPublicKey],
           )) as Array<{ count: number | string }>;
           const total = Number(totalCountRow[0]?.count ?? 0);
@@ -507,14 +649,15 @@ export function createProposalListRoutes({
             "vote",
             "vote_weight",
             "block_height",
+            "block_event_index",
             "is_nullified",
             "status",
             "created_at"
-          FROM "processor_votes"
+          FROM ${votesTable}
           WHERE "proposal_public_key" = $1
-            AND "is_nullified" = false
             AND "status" <> 'orphaned'
-          ORDER BY "block_height" DESC NULLS LAST, "created_at" DESC, "id" DESC
+            AND "is_nullified" = false
+          ORDER BY "block_height" DESC NULLS LAST, "block_event_index" DESC, "id" DESC
           LIMIT $2 OFFSET $3`,
             [proposalPublicKey, limit + 1, offset],
           )) as ProposalVoteRow[];
@@ -533,6 +676,7 @@ export function createProposalListRoutes({
               vote: row.vote,
               voteWeight: row.vote_weight,
               blockHeight: row.block_height,
+              blockEventIndex: row.block_event_index,
               isNullified: Boolean(row.is_nullified),
               status: row.status,
               createdAt: toIsoString(row.created_at),
@@ -565,7 +709,11 @@ export function createProposalListRoutes({
       async (request, response) => {
         try {
           const { proposalPublicKey } = request.params;
-          const exists = await proposalExists(dataSource, proposalPublicKey);
+          const exists = await proposalExists(
+            dataSource,
+            proposalPublicKey,
+            proposalsTable,
+          );
           if (!exists) {
             response.status(404).json({
               error: "Proposal not found",
@@ -581,7 +729,7 @@ export function createProposalListRoutes({
           const offset = parseNonNegativeInt(request.query.offset, 0);
           const totalCountRow = (await dataSource.query(
             `SELECT COUNT(*)::int AS count
-          FROM "processor_proposal_executions"
+          FROM ${executionsTable}
           WHERE "proposal_public_key" = $1
             AND "status" <> 'orphaned'`,
             [proposalPublicKey],
@@ -598,12 +746,13 @@ export function createProposalListRoutes({
             "paid_out_amount",
             "remaining_amount",
             "block_height",
+            "block_event_index",
             "status",
             "created_at"
-          FROM "processor_proposal_executions"
+          FROM ${executionsTable}
           WHERE "proposal_public_key" = $1
             AND "status" <> 'orphaned'
-          ORDER BY "block_height" DESC NULLS LAST, "created_at" DESC, "id" DESC
+          ORDER BY "block_height" DESC NULLS LAST, "block_event_index" DESC, "id" DESC
           LIMIT $2 OFFSET $3`,
             [proposalPublicKey, limit + 1, offset],
           )) as ProposalExecutionRow[];
@@ -625,6 +774,7 @@ export function createProposalListRoutes({
               paidOutAmount: row.paid_out_amount,
               remainingAmount: row.remaining_amount,
               blockHeight: row.block_height,
+              blockEventIndex: row.block_event_index,
               status: row.status,
               createdAt: toIsoString(row.created_at),
             })),

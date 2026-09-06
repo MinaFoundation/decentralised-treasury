@@ -64,33 +64,56 @@ function parseStringList(value: unknown): string[] {
     return [];
   }
   return value
-    .filter((item): item is string => typeof item === "string" && item.trim().length > 0)
+    .filter(
+      (item): item is string =>
+        typeof item === "string" && item.trim().length > 0,
+    )
     .map((item) => item.trim());
 }
 
-function parsePositiveInt(value: unknown, fallback: number, max: number): number {
-  if (typeof value !== "string" || value.trim().length === 0) {
+function parsePositiveInt(
+  value: unknown,
+  fallback: number,
+  max: number,
+): number {
+  if (value === undefined || value === null || value === "") {
     return fallback;
   }
-  const parsed = Number.parseInt(value, 10);
-  if (!Number.isFinite(parsed) || parsed <= 0) {
+  if (typeof value !== "string" || value.trim().length === 0) {
+    throw new RequestValidationError("limit must be a positive integer");
+  }
+  const normalized = value.trim();
+  if (!/^\d+$/.test(normalized)) {
+    throw new RequestValidationError("limit must be a positive integer");
+  }
+  const parsed = Number(normalized);
+  if (!Number.isSafeInteger(parsed) || parsed <= 0) {
     throw new RequestValidationError("limit must be a positive integer");
   }
   return Math.min(parsed, max);
 }
 
 function parseNonNegativeInt(value: unknown, fallback: number): number {
-  if (typeof value !== "string" || value.trim().length === 0) {
+  if (value === undefined || value === null || value === "") {
     return fallback;
   }
-  const parsed = Number.parseInt(value, 10);
-  if (!Number.isFinite(parsed) || parsed < 0) {
+  if (typeof value !== "string" || value.trim().length === 0) {
+    throw new RequestValidationError("offset must be a non-negative integer");
+  }
+  const normalized = value.trim();
+  if (!/^\d+$/.test(normalized)) {
+    throw new RequestValidationError("offset must be a non-negative integer");
+  }
+  const parsed = Number(normalized);
+  if (!Number.isSafeInteger(parsed)) {
     throw new RequestValidationError("offset must be a non-negative integer");
   }
   return parsed;
 }
 
-function buildDefaultSort(fields: string[]): Array<{ field: string; order: SortDirection }> {
+function buildDefaultSort(
+  fields: string[],
+): Array<{ field: string; order: SortDirection }> {
   const fieldSet = new Set(fields);
   const sort: Array<{ field: string; order: SortDirection }> = [];
 
@@ -109,20 +132,29 @@ function buildDefaultSort(fields: string[]): Array<{ field: string; order: SortD
   return sort;
 }
 
-function parseSortList(metadata: EntityMetadata, value: unknown): FindOptionsOrder<ObjectLiteral> {
+function parseSortList(
+  metadata: EntityMetadata,
+  value: unknown,
+): FindOptionsOrder<ObjectLiteral> {
   const order: Record<string, SortDirection> = {};
-  const allowedFields = new Set(metadata.columns.map((column) => column.propertyName));
+  const allowedFields = new Set(
+    metadata.columns.map((column) => column.propertyName),
+  );
   const seenFields = new Set<string>();
   const rawSorts = parseStringList(value);
 
   for (const rawSort of rawSorts) {
     const [field, rawDirection = "ASC"] = rawSort.split(",");
     if (!field || !allowedFields.has(field)) {
-      throw new RequestValidationError(`unsupported sort field: ${field || rawSort}`);
+      throw new RequestValidationError(
+        `unsupported sort field: ${field || rawSort}`,
+      );
     }
     const direction = rawDirection.toUpperCase();
     if (direction !== "ASC" && direction !== "DESC") {
-      throw new RequestValidationError(`unsupported sort direction: ${rawDirection}`);
+      throw new RequestValidationError(
+        `unsupported sort direction: ${rawDirection}`,
+      );
     }
     order[field] = direction;
     seenFields.add(field);
@@ -143,7 +175,9 @@ function appendJoinPath(
   metadata: EntityMetadata,
   relationPath: string,
 ): void {
-  const segments = relationPath.split(".").filter((segment) => segment.length > 0);
+  const segments = relationPath
+    .split(".")
+    .filter((segment) => segment.length > 0);
   if (segments.length === 0) {
     throw new RequestValidationError("join must reference a relation path");
   }
@@ -156,7 +190,9 @@ function appendJoinPath(
       (candidate) => candidate.propertyName === segment,
     );
     if (!relation) {
-      throw new RequestValidationError(`unsupported join path: ${relationPath}`);
+      throw new RequestValidationError(
+        `unsupported join path: ${relationPath}`,
+      );
     }
     const existing = currentNode[segment];
     if (existing === undefined || existing === true) {
@@ -182,7 +218,10 @@ function toPage(offset: number, limit: number): number {
   return Math.floor(offset / limit) + 1;
 }
 
-function createWhereByPrimaryColumn(metadata: EntityMetadata, id: string): Record<string, string> {
+function createWhereByPrimaryColumn(
+  metadata: EntityMetadata,
+  id: string,
+): Record<string, string> {
   const primaryColumn = metadata.primaryColumns[0];
   if (!primaryColumn) {
     throw new Error(`Entity ${metadata.name} does not expose a primary column`);
@@ -196,15 +235,13 @@ export function createProcessorCrudRoutes({
   dataSource,
   pageLimitDefault = DEFAULT_PAGE_LIMIT,
   pageLimitMax = DEFAULT_PAGE_LIMIT_MAX,
-}: ProcessorCrudRoutesOptions): NonNullable<EventsApiServerOptions["registerRoutes"]> {
+}: ProcessorCrudRoutesOptions): NonNullable<
+  EventsApiServerOptions["registerRoutes"]
+> {
   const resolvedPageLimitDefault = Math.max(1, pageLimitDefault);
   const resolvedPageLimitMax = Math.max(resolvedPageLimitDefault, pageLimitMax);
 
   return (app) => {
-    app.get("/healthz", (_request, response) => {
-      response.json({ ok: true });
-    });
-
     for (const { entity, routePath } of EXPOSED_ENTITIES) {
       const basePath = `/${routePath}`;
 
@@ -263,7 +300,10 @@ export function createProcessorCrudRoutes({
             response.status(400).json({ error: error.message });
             return;
           }
-          console.error(`[processor-api] failed to fetch ${basePath} by id`, error);
+          console.error(
+            `[processor-api] failed to fetch ${basePath} by id`,
+            error,
+          );
           response.status(500).json({ error: "Internal server error" });
         }
       });

@@ -1,12 +1,16 @@
 import type { EventsApiServerOptions } from "@repo/indexer";
 import type { DataSource } from "typeorm";
+import { qualifyTableName, resolveDatabaseSchema } from "./database-schema.js";
+import { calculateProposalPayoutAmounts } from "./proposal-payout.js";
 
 const DEFAULT_PROPOSAL_SEARCH_LIMIT = 20;
 
-export const PROPOSAL_SEARCH_QUERY_REQUIRED_ERROR = "q must be a non-empty string";
+export const PROPOSAL_SEARCH_QUERY_REQUIRED_ERROR =
+  "q must be a non-empty string";
 
 interface ProposalSearchRoutesOptions {
   dataSource: DataSource;
+  databaseSchema?: string;
   pageLimitDefault?: number;
   pageLimitMax?: number;
 }
@@ -25,6 +29,11 @@ interface ProposalSearchQueryRow {
   required_approval_bp: string | null;
   required_participation: string | null;
   status: string;
+  contract_status: "unknown" | "approved" | "rejected" | "paused";
+  contract_status_finality: "pending" | "canonical";
+  contract_status_source_event_id: string | null;
+  contract_status_block_height: number | null;
+  creation_observation_status: string;
   is_paused: boolean | number;
   paid_out_amount: string;
   contents: string | null;
@@ -37,8 +46,11 @@ interface ProposalSearchQueryRow {
 }
 
 interface ProposalSearchVoteTallyRow {
+  archive_event_id: string | null;
   proposal_public_key: string;
   block_height: number;
+  block_event_index: number;
+  source_status: string;
   yay_weight: string;
   nay_weight: string;
   abstain_weight: string;
@@ -51,6 +63,12 @@ interface ProposalSearchVoteTallyRow {
   vote_result: string | null;
 }
 
+interface ProposalSearchTallyViews {
+  latest: ProposalSearchVoteTallyRow | null;
+  running: ProposalSearchVoteTallyRow | null;
+  finals: ProposalSearchVoteTallyRow[];
+}
+
 class RequestValidationError extends Error {}
 
 function parseSearchQuery(value: unknown): string {
@@ -60,23 +78,41 @@ function parseSearchQuery(value: unknown): string {
   return value.trim();
 }
 
-function parsePositiveInt(value: unknown, fallback: number, max: number): number {
-  if (typeof value !== "string" || value.trim().length === 0) {
+function parsePositiveInt(
+  value: unknown,
+  fallback: number,
+  max: number,
+): number {
+  if (value === undefined || value === null || value === "") {
     return fallback;
   }
-  const parsed = Number.parseInt(value, 10);
-  if (!Number.isFinite(parsed) || parsed <= 0) {
+  if (typeof value !== "string" || value.trim().length === 0) {
+    throw new RequestValidationError("limit must be a positive integer");
+  }
+  const normalized = value.trim();
+  if (!/^\d+$/.test(normalized)) {
+    throw new RequestValidationError("limit must be a positive integer");
+  }
+  const parsed = Number(normalized);
+  if (!Number.isSafeInteger(parsed) || parsed <= 0) {
     throw new RequestValidationError("limit must be a positive integer");
   }
   return Math.min(parsed, max);
 }
 
 function parseNonNegativeInt(value: unknown, fallback: number): number {
-  if (typeof value !== "string" || value.trim().length === 0) {
+  if (value === undefined || value === null || value === "") {
     return fallback;
   }
-  const parsed = Number.parseInt(value, 10);
-  if (!Number.isFinite(parsed) || parsed < 0) {
+  if (typeof value !== "string" || value.trim().length === 0) {
+    throw new RequestValidationError("offset must be a non-negative integer");
+  }
+  const normalized = value.trim();
+  if (!/^\d+$/.test(normalized)) {
+    throw new RequestValidationError("offset must be a non-negative integer");
+  }
+  const parsed = Number(normalized);
+  if (!Number.isSafeInteger(parsed)) {
     throw new RequestValidationError("offset must be a non-negative integer");
   }
   return parsed;
@@ -86,7 +122,9 @@ function toIsoString(value: string | Date | null): string | null {
   if (value === null) {
     return null;
   }
-  return value instanceof Date ? value.toISOString() : new Date(value).toISOString();
+  return value instanceof Date
+    ? value.toISOString()
+    : new Date(value).toISOString();
 }
 
 function isMissingProcessorProposalsTable(error: unknown): boolean {
@@ -98,7 +136,9 @@ function isMissingProcessorProposalsTable(error: unknown): boolean {
     return true;
   }
   const message =
-    "message" in error ? String((error as { message?: unknown }).message ?? "") : "";
+    "message" in error
+      ? String((error as { message?: unknown }).message ?? "")
+      : "";
   return (
     message.includes("processor_proposals") &&
     (message.includes("does not exist") || message.includes("relation"))
@@ -132,6 +172,15 @@ function tokenizeSearchQuery(query: string): string[] {
   );
 }
 
+function compareBigintIdsDescending(
+  left: string | number,
+  right: string | number,
+): number {
+  const leftId = BigInt(String(left));
+  const rightId = BigInt(String(right));
+  return leftId < rightId ? 1 : leftId > rightId ? -1 : 0;
+}
+
 function buildSearchableTextFromRow(row: ProposalSearchQueryRow): string {
   return [
     row.id,
@@ -147,6 +196,9 @@ function buildSearchableTextFromRow(row: ProposalSearchQueryRow): string {
     row.required_approval_bp,
     row.required_participation,
     row.status,
+    row.contract_status,
+    row.contract_status_finality,
+    row.creation_observation_status,
     row.is_paused,
     row.paid_out_amount,
     row.contents,
@@ -174,6 +226,9 @@ function buildSearchableTextExpression(alias: string): string {
     coalesce(${alias}."required_approval_bp", ''),
     coalesce(${alias}."required_participation", ''),
     coalesce(${alias}."status", ''),
+    coalesce(${alias}."contract_status", ''),
+    coalesce(${alias}."contract_status_finality", ''),
+    coalesce(${alias}."creation_observation_status", ''),
     coalesce(${alias}."is_paused"::text, ''),
     coalesce(${alias}."paid_out_amount", ''),
     coalesce(${alias}."contents", ''),
@@ -184,19 +239,25 @@ function buildSearchableTextExpression(alias: string): string {
   )`;
 }
 
-async function loadLatestVoteTallies(
+async function loadVoteTallyViews(
   dataSource: DataSource,
   proposalPublicKeys: string[],
-): Promise<Map<string, ProposalSearchVoteTallyRow>> {
+  voteTalliesTable: string,
+): Promise<Map<string, ProposalSearchTallyViews>> {
   if (proposalPublicKeys.length === 0) {
     return new Map();
   }
 
-  const placeholders = proposalPublicKeys.map((_, index) => `$${index + 1}`).join(", ");
+  const placeholders = proposalPublicKeys
+    .map((_, index) => `$${index + 1}`)
+    .join(", ");
   const rows = (await dataSource.query(
     `SELECT
+      "archive_event_id",
       "proposal_public_key",
       "block_height",
+      "block_event_index",
+      "source_status",
       "yay_weight",
       "nay_weight",
       "abstain_weight",
@@ -207,23 +268,78 @@ async function loadLatestVoteTallies(
       "total_participating_votes",
       "approval_bp",
       "vote_result"
-    FROM "processor_vote_tallies"
+    FROM ${voteTalliesTable}
     WHERE "proposal_public_key" IN (${placeholders})
-    ORDER BY "proposal_public_key" ASC, "block_height" DESC, "id" DESC`,
+    ORDER BY "proposal_public_key" ASC, "block_height" DESC, "block_event_index" DESC, "id" DESC`,
     proposalPublicKeys,
   )) as ProposalSearchVoteTallyRow[];
 
-  const latestTallies = new Map<string, ProposalSearchVoteTallyRow>();
+  const views = new Map<string, ProposalSearchTallyViews>();
   for (const row of rows) {
-    if (!latestTallies.has(row.proposal_public_key)) {
-      latestTallies.set(row.proposal_public_key, row);
+    if (row.source_status === "orphaned") {
+      continue;
     }
+    const view = views.get(row.proposal_public_key) ?? {
+      latest: null,
+      running: null,
+      finals: [],
+    };
+    view.latest ??= row;
+    if (row.created_by_event_type === "proposalVoteDispatched") {
+      view.running ??= row;
+    }
+    if (row.created_by_event_type === "proposalVotesTallied") {
+      view.finals.push(row);
+    }
+    views.set(row.proposal_public_key, view);
   }
-  return latestTallies;
+  return views;
+}
+
+function selectHistoricalFinal(
+  candidates: ProposalSearchVoteTallyRow[],
+  sourceEventId: string,
+): ProposalSearchVoteTallyRow | null {
+  const historical = candidates.filter(
+    (tally) => tally.archive_event_id !== sourceEventId,
+  );
+  if (historical.length === 0) {
+    return null;
+  }
+  return historical[0]!;
+}
+
+function mapVoteTally(
+  row: ProposalSearchVoteTallyRow | null | undefined,
+  includeProvenance = false,
+) {
+  return row
+    ? {
+        ...(includeProvenance
+          ? {
+              archiveEventId: row.archive_event_id,
+              blockEventIndex: row.block_event_index,
+              sourceStatus: row.source_status,
+            }
+          : {}),
+        blockHeight: row.block_height,
+        yayWeight: row.yay_weight,
+        nayWeight: row.nay_weight,
+        abstainWeight: row.abstain_weight,
+        createdByEventType: row.created_by_event_type,
+        requiredParticipationBp: row.required_participation_bp,
+        requiredApprovalBp: row.required_approval_bp,
+        requiredParticipation: row.required_participation,
+        totalParticipatingVotes: row.total_participating_votes,
+        approvalBp: row.approval_bp,
+        voteResult: row.vote_result,
+      }
+    : null;
 }
 
 async function queryProposalsWithFullTextSearch(
   dataSource: DataSource,
+  proposalsTable: string,
   query: string,
   phrasePattern: string,
   limit: number,
@@ -246,6 +362,11 @@ async function queryProposalsWithFullTextSearch(
         p."required_approval_bp",
         p."required_participation",
         p."status",
+        p."contract_status",
+        p."contract_status_finality",
+        p."contract_status_source_event_id",
+        p."contract_status_block_height",
+        p."creation_observation_status",
         p."is_paused",
         p."paid_out_amount",
         p."contents",
@@ -254,7 +375,7 @@ async function queryProposalsWithFullTextSearch(
         p."created_at",
         p."updated_at",
         ${searchableTextExpression} AS "searchable_text"
-      FROM "processor_proposals" p
+      FROM ${proposalsTable} p
     )
     SELECT
       "id",
@@ -270,6 +391,11 @@ async function queryProposalsWithFullTextSearch(
       "required_approval_bp",
       "required_participation",
       "status",
+      "contract_status",
+      "contract_status_finality",
+      "contract_status_source_event_id",
+      "contract_status_block_height",
+      "creation_observation_status",
       "is_paused",
       "paid_out_amount",
       "contents",
@@ -303,6 +429,7 @@ async function queryProposalsWithFullTextSearch(
 
 async function queryProposalsWithSubstringFallback(
   dataSource: DataSource,
+  proposalsTable: string,
   query: string,
   limit: number,
   offset: number,
@@ -322,6 +449,11 @@ async function queryProposalsWithSubstringFallback(
       "required_approval_bp",
       "required_participation",
       "status",
+      "contract_status",
+      "contract_status_finality",
+      "contract_status_source_event_id",
+      "contract_status_block_height",
+      "creation_observation_status",
       "is_paused",
       "paid_out_amount",
       "contents",
@@ -329,7 +461,7 @@ async function queryProposalsWithSubstringFallback(
       "created_at_block_timestamp",
       "created_at",
       "updated_at"
-    FROM "processor_proposals"
+    FROM ${proposalsTable}
     ORDER BY
       "created_at_block_height" DESC NULLS LAST,
       "id" DESC`,
@@ -354,7 +486,8 @@ async function queryProposalsWithSubstringFallback(
     .filter((row) => row.matches)
     .sort((a, b) => {
       const exactPhraseDiff =
-        Number(Boolean(b.exact_phrase_match)) - Number(Boolean(a.exact_phrase_match));
+        Number(Boolean(b.exact_phrase_match)) -
+        Number(Boolean(a.exact_phrase_match));
       if (exactPhraseDiff !== 0) {
         return exactPhraseDiff;
       }
@@ -364,7 +497,7 @@ async function queryProposalsWithSubstringFallback(
       if (blockHeightDiff !== 0) {
         return blockHeightDiff;
       }
-      return Number(b.id) - Number(a.id);
+      return compareBigintIdsDescending(a.id, b.id);
     })
     .slice(offset, offset + limit)
     .map(({ matches: _matches, ...row }) => row);
@@ -372,9 +505,22 @@ async function queryProposalsWithSubstringFallback(
 
 export function createProposalSearchRoutes({
   dataSource,
+  databaseSchema,
   pageLimitDefault = DEFAULT_PROPOSAL_SEARCH_LIMIT,
   pageLimitMax = DEFAULT_PROPOSAL_SEARCH_LIMIT,
-}: ProposalSearchRoutesOptions): NonNullable<EventsApiServerOptions["registerRoutes"]> {
+}: ProposalSearchRoutesOptions): NonNullable<
+  EventsApiServerOptions["registerRoutes"]
+> {
+  const resolvedSchema = resolveDatabaseSchema(dataSource, databaseSchema);
+  const proposalsTable = qualifyTableName(
+    resolvedSchema,
+    "processor_proposals",
+  );
+  const voteTalliesTable = qualifyTableName(
+    resolvedSchema,
+    "processor_vote_tallies",
+  );
+
   return (app) => {
     app.get("/proposals/search", async (request, response) => {
       let query: string;
@@ -383,7 +529,11 @@ export function createProposalSearchRoutes({
 
       try {
         query = parseSearchQuery(request.query.q);
-        limit = parsePositiveInt(request.query.limit, pageLimitDefault, pageLimitMax);
+        limit = parsePositiveInt(
+          request.query.limit,
+          pageLimitDefault,
+          pageLimitMax,
+        );
         offset = parseNonNegativeInt(request.query.offset, 0);
       } catch (error) {
         if (error instanceof RequestValidationError) {
@@ -392,7 +542,10 @@ export function createProposalSearchRoutes({
           });
           return;
         }
-        console.error("[indexer-api] failed to parse proposal search query", error);
+        console.error(
+          "[indexer-api] failed to parse proposal search query",
+          error,
+        );
         response.status(500).json({
           error: "Internal server error",
         });
@@ -406,6 +559,7 @@ export function createProposalSearchRoutes({
         try {
           rows = await queryProposalsWithFullTextSearch(
             dataSource,
+            proposalsTable,
             query,
             phrasePattern,
             limit + 1,
@@ -417,6 +571,7 @@ export function createProposalSearchRoutes({
           }
           rows = await queryProposalsWithSubstringFallback(
             dataSource,
+            proposalsTable,
             query,
             limit + 1,
             offset,
@@ -425,12 +580,35 @@ export function createProposalSearchRoutes({
 
         const hasMore = rows.length > limit;
         const visibleRows = rows.slice(0, limit);
-        const latestTallies = await loadLatestVoteTallies(
+        const tallyViewsByProposal = await loadVoteTallyViews(
           dataSource,
           visibleRows.map((row) => row.proposal_public_key),
+          voteTalliesTable,
         );
         const items = visibleRows.map((row) => {
-          const latestVoteTally = latestTallies.get(row.proposal_public_key);
+          const tallyViews = tallyViewsByProposal.get(row.proposal_public_key);
+          const currentFinal = tallyViews?.finals.find(
+            (tally) =>
+              row.contract_status_source_event_id !== null &&
+              tally.archive_event_id === row.contract_status_source_event_id &&
+              (row.contract_status === "approved" ||
+                row.contract_status === "rejected"),
+          );
+          const contractStatusRequiresCurrentFinal =
+            row.contract_status === "approved" ||
+            row.contract_status === "rejected";
+          const historicalFinal =
+            row.contract_status_source_event_id !== null &&
+            (!contractStatusRequiresCurrentFinal || currentFinal !== undefined)
+              ? selectHistoricalFinal(
+                  tallyViews?.finals ?? [],
+                  row.contract_status_source_event_id,
+                )
+              : null;
+          const payoutAmounts = calculateProposalPayoutAmounts(
+            row.amount,
+            row.paid_out_amount,
+          );
           return {
             id: String(row.id),
             proposalPublicKey: row.proposal_public_key,
@@ -440,35 +618,33 @@ export function createProposalSearchRoutes({
             senderPublicKey: row.sender_public_key,
             zkAppUriHash: row.zkapp_uri_hash,
             stakingEpochDataLedgerHash: row.staking_epoch_data_ledger_hash,
-            stakingEpochDataLedgerTotalCurrency: row.staking_epoch_data_ledger_total_currency,
+            stakingEpochDataLedgerTotalCurrency:
+              row.staking_epoch_data_ledger_total_currency,
             requiredParticipationBp: row.required_participation_bp,
             requiredApprovalBp: row.required_approval_bp,
             requiredParticipation: row.required_participation,
             status: row.status,
+            creationObservationStatus: row.creation_observation_status,
+            contractStatus: row.contract_status,
+            contractStatusFinality: row.contract_status_finality,
+            contractStatusSourceEventId: row.contract_status_source_event_id,
+            statusAsOfBlockHeight: row.contract_status_block_height,
             isPaused: Boolean(row.is_paused),
             paidOutAmount: row.paid_out_amount,
+            ...payoutAmounts,
             contents: row.contents,
             createdAtBlockHeight: row.created_at_block_height,
-            createdAtBlockTimestamp: toIsoString(row.created_at_block_timestamp),
+            createdAtBlockTimestamp: toIsoString(
+              row.created_at_block_timestamp,
+            ),
             createdAt: toIsoString(row.created_at),
             updatedAt: toIsoString(row.updated_at),
             searchRank: Number(row.search_rank ?? 0),
-            latestVoteTally: latestVoteTally
-            ? {
-                blockHeight: latestVoteTally.block_height,
-                yayWeight: latestVoteTally.yay_weight,
-                nayWeight: latestVoteTally.nay_weight,
-                abstainWeight: latestVoteTally.abstain_weight,
-                createdByEventType: latestVoteTally.created_by_event_type,
-                requiredParticipationBp: latestVoteTally.required_participation_bp,
-                requiredApprovalBp: latestVoteTally.required_approval_bp,
-                requiredParticipation: latestVoteTally.required_participation,
-                totalParticipatingVotes: latestVoteTally.total_participating_votes,
-                approvalBp: latestVoteTally.approval_bp,
-                voteResult: latestVoteTally.vote_result,
-              }
-            : null,
-        };
+            latestVoteTally: mapVoteTally(tallyViews?.latest),
+            runningVoteTally: mapVoteTally(tallyViews?.running, true),
+            finalVoteTally: mapVoteTally(currentFinal, true),
+            historicalFinalVoteTally: mapVoteTally(historicalFinal, true),
+          };
         });
 
         response.json({

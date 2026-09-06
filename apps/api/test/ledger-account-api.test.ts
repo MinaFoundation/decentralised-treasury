@@ -2,7 +2,11 @@ import assert from "node:assert/strict";
 import { createServer } from "node:net";
 import { afterEach, describe, it } from "node:test";
 import { EventsApiServer } from "@repo/indexer";
-import type { ArchiveEventEntity, EventsPageQuery, EventsRepository } from "@repo/indexer";
+import type {
+  ArchiveEventEntity,
+  EventsPageQuery,
+  EventsRepository,
+} from "@repo/indexer";
 import { Account } from "@repo/sdk/src/provable/account.js";
 import { PUBLIC_KEY_VALIDATION_ERROR } from "../src/public-key-validation.js";
 import {
@@ -40,7 +44,9 @@ function createRepositoryStub(): EventsRepository {
   return {
     async initialize(): Promise<void> {},
     async close(): Promise<void> {},
-    async getEventsPage(_query: EventsPageQuery): Promise<ArchiveEventEntity[]> {
+    async getEventsPage(
+      _query: EventsPageQuery,
+    ): Promise<ArchiveEventEntity[]> {
       return [];
     },
   } as unknown as EventsRepository;
@@ -53,7 +59,9 @@ function getAvailablePort(): Promise<number> {
     server.listen(0, "127.0.0.1", () => {
       const address = server.address();
       if (!address || typeof address === "string") {
-        server.close(() => reject(new Error("Unable to resolve ephemeral port")));
+        server.close(() =>
+          reject(new Error("Unable to resolve ephemeral port")),
+        );
         return;
       }
       const { port } = address;
@@ -188,7 +196,10 @@ describe("ledger account endpoints", () => {
       async getAccount(): Promise<Account> {
         return accountCodec.empty();
       },
-      async getAccountByPublicKey(): Promise<{ index: bigint; account: Account } | null> {
+      async getAccountByPublicKey(): Promise<{
+        index: bigint;
+        account: Account;
+      } | null> {
         return null;
       },
       async getWitness(): Promise<never> {
@@ -333,6 +344,14 @@ describe("ledger account endpoints", () => {
     );
     assert.equal(invalidLifecycleResponse.status, 400);
     assert.deepEqual(await invalidLifecycleResponse.json(), {
+      error: LIFECYCLE_ID_VALIDATION_ERROR,
+    });
+
+    const overflowLifecycleResponse = await fetch(
+      `http://127.0.0.1:${port}/voting-ledger/lifecycles/4294967296/accounts/abc`,
+    );
+    assert.equal(overflowLifecycleResponse.status, 400);
+    assert.deepEqual(await overflowLifecycleResponse.json(), {
       error: LIFECYCLE_ID_VALIDATION_ERROR,
     });
 

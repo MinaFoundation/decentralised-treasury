@@ -10,6 +10,7 @@ import {
   PROPOSAL_CONTENT_REQUIRED_ERROR,
   PROPOSAL_CONTENT_TOO_LARGE_ERROR,
 } from "../src/proposal-content-routes.js";
+import { ProposalContentEntity } from "../src/processors/proposals/proposal-content-entity.js";
 import { ProposalExecutionEntity } from "../src/processors/proposals/proposal-execution-entity.js";
 import { ProposalEntity } from "../src/processors/proposals/proposal-entity.js";
 import { VoteEntity } from "../src/processors/proposals/vote-entity.js";
@@ -24,7 +25,9 @@ function getAvailablePort(): Promise<number> {
     server.listen(0, "127.0.0.1", () => {
       const address = server.address();
       if (!address || typeof address === "string") {
-        server.close(() => reject(new Error("Unable to resolve ephemeral port")));
+        server.close(() =>
+          reject(new Error("Unable to resolve ephemeral port")),
+        );
         return;
       }
       const { port } = address;
@@ -59,6 +62,87 @@ describe("proposal content endpoint", () => {
     }
   });
 
+  it("qualifies both atomic content tables with the configured schema", async () => {
+    type ProposalContentRow = { proposal_public_key: string };
+    const statements: string[] = [];
+    const fakeDataSource = {
+      options: { schema: "public" },
+      transaction: async (
+        callback: (manager: {
+          query: (statement: string) => Promise<ProposalContentRow[]>;
+        }) => Promise<unknown>,
+      ) =>
+        await callback({
+          query: async (statement: string) => {
+            statements.push(statement);
+            if (statement.includes("SELECT") || statement.includes("UPDATE")) {
+              return [{ proposal_public_key: "proposal-key" }];
+            }
+            return [];
+          },
+        }),
+    } as unknown as DataSource;
+    let contentHandler:
+      | ((request: unknown, response: unknown) => Promise<void>)
+      | undefined;
+    const app = {
+      post: (path: string, handler: typeof contentHandler) => {
+        if (path === "/proposals/:id/content") {
+          contentHandler = handler;
+        }
+      },
+    };
+    createProposalContentRoutes({
+      dataSource: fakeDataSource,
+      databaseSchema: "tenant_api",
+      containsExplicitLanguage: () => false,
+      hashMarkdownToProposalZkAppUriHash: async () => ({
+        zkAppUri: "urn:test",
+        zkAppUriHash: "content-hash",
+      }),
+    })(app as never);
+    let statusCode = 200;
+    let payload: unknown;
+    await contentHandler?.(
+      { params: { id: "proposal-key" }, body: { contents: "# Proposal" } },
+      {
+        status: (value: number) => {
+          statusCode = value;
+          return {
+            json: (body: unknown) => {
+              payload = body;
+            },
+          };
+        },
+        json: (body: unknown) => {
+          payload = body;
+        },
+      },
+    );
+
+    assert.equal(statusCode, 200);
+    assert.deepEqual(payload, {
+      ok: true,
+      contentChars: 10,
+      proposalPublicKey: "proposal-key",
+      zkAppUri: "urn:test",
+      zkAppUriHash: "content-hash",
+    });
+    assert.equal(statements.length, 3);
+    assert.match(
+      statements[0] ?? "",
+      /FROM "tenant_api"\."processor_proposals"/,
+    );
+    assert.match(
+      statements[1] ?? "",
+      /INSERT INTO "tenant_api"\."processor_proposal_contents"/,
+    );
+    assert.match(
+      statements[2] ?? "",
+      /UPDATE "tenant_api"\."processor_proposals"/,
+    );
+  });
+
   it("verifies markdown profanity with the same submission rules", async () => {
     const port = await getAvailablePort();
 
@@ -83,7 +167,9 @@ describe("proposal content endpoint", () => {
         dataSource,
         maxProposalContentsChars: 8,
         hashMarkdownToProposalZkAppUriHash: async () => {
-          throw new Error("hashing should not run for profanity verify endpoint");
+          throw new Error(
+            "hashing should not run for profanity verify endpoint",
+          );
         },
       }),
     });
@@ -135,7 +221,7 @@ describe("proposal content endpoint", () => {
     });
   });
 
-  it("stores markdown contents on matching proposal zkapp uri hash", async () => {
+  it("stores hash-bound markdown content atomically with the current projection", async () => {
     const port = await getAvailablePort();
     const proposalPublicKey = "proposal-public-key-1";
     const zkAppUriHash = "123456789";
@@ -201,11 +287,41 @@ describe("proposal content endpoint", () => {
     assert.equal(payload.ok, true);
     assert.equal(payload.zkAppUriHash, zkAppUriHash);
     assert.equal(payload.proposalPublicKey, proposalPublicKey);
-
-    const updatedProposal = await dataSource.getRepository(ProposalEntity).findOneBy({
-      proposalPublicKey,
-    });
+    const updatedProposal = await dataSource
+      .getRepository(ProposalEntity)
+      .findOneBy({
+        proposalPublicKey,
+      });
     assert.equal(updatedProposal?.contents, contents);
+    const storedContent = await dataSource
+      .getRepository(ProposalContentEntity)
+      .findOneBy({ proposalPublicKey, zkAppUriHash });
+    assert.equal(storedContent?.contents, contents);
+
+    await dataSource
+      .getRepository(ProposalEntity)
+      .update({ proposalPublicKey }, { contents: null });
+    await dataSource.query(`DROP TABLE "processor_proposal_contents"`);
+
+    const unavailableResponse = await fetch(
+      `http://127.0.0.1:${port}/proposals/${encodeURIComponent(proposalPublicKey)}/content`,
+      {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({ contents }),
+      },
+    );
+    assert.equal(unavailableResponse.status, 503);
+    assert.equal(
+      (
+        await dataSource
+          .getRepository(ProposalEntity)
+          .findOneByOrFail({ proposalPublicKey })
+      ).contents,
+      null,
+    );
   });
 
   it("returns 400 when contents is invalid or too large", async () => {
@@ -313,6 +429,10 @@ describe("proposal content endpoint", () => {
     assert.equal(response.status, 404);
     const payload = (await response.json()) as { error?: string };
     assert.equal(payload.error, PROPOSAL_CONTENT_PROPOSAL_NOT_FOUND_ERROR);
+    assert.equal(
+      await dataSource.getRepository(ProposalContentEntity).count(),
+      0,
+    );
   });
 
   it("returns 400 when contents contains explicit language", async () => {
@@ -338,7 +458,9 @@ describe("proposal content endpoint", () => {
       registerRoutes: createProposalContentRoutes({
         dataSource,
         hashMarkdownToProposalZkAppUriHash: async () => {
-          throw new Error("hashing should not run for blocked explicit content");
+          throw new Error(
+            "hashing should not run for blocked explicit content",
+          );
         },
       }),
     });

@@ -3,7 +3,11 @@ import { createServer } from "node:net";
 import { afterEach, describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
 import { EventsApiServer } from "@repo/indexer";
-import type { ArchiveEventEntity, EventsPageQuery, EventsRepository } from "@repo/indexer";
+import type {
+  ArchiveEventEntity,
+  EventsPageQuery,
+  EventsRepository,
+} from "@repo/indexer";
 import { Account, packToFields } from "@repo/sdk/src/provable/account.js";
 import { hashWithPrefix } from "@repo/sdk/src/provable/hashing-helpers.js";
 import { PrefixedMerkleWitness36 } from "@repo/sdk/src/provable/merkle-tree/prefixed-merkle-tree.js";
@@ -24,7 +28,10 @@ import {
 } from "../src/staking-ledger/staking-ledger-witness-routes.js";
 
 const LIGHTNET_STAKING_LEDGER_PATH = fileURLToPath(
-  new URL("../../cli/test/fixtures/staking-epoch-ledger-lightnet.json", import.meta.url),
+  new URL(
+    "../../cli/test/fixtures/staking-epoch-ledger-lightnet.json",
+    import.meta.url,
+  ),
 );
 const TEST_LIFECYCLE_ID = "42";
 const TEST_WITNESS_INDEX = 9;
@@ -33,7 +40,9 @@ function createRepositoryStub(): EventsRepository {
   return {
     async initialize(): Promise<void> {},
     async close(): Promise<void> {},
-    async getEventsPage(_query: EventsPageQuery): Promise<ArchiveEventEntity[]> {
+    async getEventsPage(
+      _query: EventsPageQuery,
+    ): Promise<ArchiveEventEntity[]> {
       return [];
     },
   } as unknown as EventsRepository;
@@ -77,7 +86,9 @@ async function fetchWitnessPayload(
   return (await response.json()) as StakingLedgerWitnessPayload;
 }
 
-function computeRootFromWitnessPayload(payload: StakingLedgerWitnessPayload): string {
+function computeRootFromWitnessPayload(
+  payload: StakingLedgerWitnessPayload,
+): string {
   const account = Account.fromJSON(payload.account);
   const witness = PrefixedMerkleWitness36.fromJSON(payload.witness);
   const leaf = hashWithPrefix(
@@ -89,7 +100,8 @@ function computeRootFromWitnessPayload(payload: StakingLedgerWitnessPayload): st
 
 describe("staking ledger witness endpoint", () => {
   let server: EventsApiServer | null = null;
-  let stakingLedgerServices: LifecycleStakingLedgerServiceRegistry | null = null;
+  let stakingLedgerServices: LifecycleStakingLedgerServiceRegistry | null =
+    null;
 
   afterEach(async () => {
     if (server) {
@@ -107,11 +119,12 @@ describe("staking ledger witness endpoint", () => {
     { timeout: 120_000 },
     async () => {
       const port = await getAvailablePort();
-      const services = new LifecycleStakingLedgerServiceRegistry((lifecycleId) =>
-        new SqliteStakingLedgerService({
-          lifecycleId,
-          inMemory: true,
-        }),
+      const services = new LifecycleStakingLedgerServiceRegistry(
+        (lifecycleId) =>
+          new SqliteStakingLedgerService({
+            lifecycleId,
+            inMemory: true,
+          }),
       );
       stakingLedgerServices = services;
 
@@ -148,9 +161,11 @@ describe("staking ledger witness endpoint", () => {
 
   it("returns 404 when lifecycle sqlite file is missing", async () => {
     const port = await getAvailablePort();
-    const services = new LifecycleStakingLedgerServiceRegistry((lifecycleId) => {
-      throw new LifecycleStakingLedgerFileNotFoundError(lifecycleId);
-    });
+    const services = new LifecycleStakingLedgerServiceRegistry(
+      (lifecycleId) => {
+        throw new LifecycleStakingLedgerFileNotFoundError(lifecycleId);
+      },
+    );
     stakingLedgerServices = services;
 
     server = new EventsApiServer(createRepositoryStub(), {
@@ -180,13 +195,14 @@ describe("staking ledger witness endpoint", () => {
     });
   });
 
-  it("returns 400 when lifecycle id is not an unsigned 64-bit integer", async () => {
+  it("returns 400 when lifecycle id is outside the UInt32 domain", async () => {
     const port = await getAvailablePort();
-    const services = new LifecycleStakingLedgerServiceRegistry((lifecycleId) =>
-      new SqliteStakingLedgerService({
-        lifecycleId,
-        inMemory: true,
-      }),
+    const services = new LifecycleStakingLedgerServiceRegistry(
+      (lifecycleId) =>
+        new SqliteStakingLedgerService({
+          lifecycleId,
+          inMemory: true,
+        }),
     );
     stakingLedgerServices = services;
 
@@ -211,6 +227,14 @@ describe("staking ledger witness endpoint", () => {
       error?: string;
     };
     assert.deepEqual(payload, {
+      error: LIFECYCLE_ID_VALIDATION_ERROR,
+    });
+
+    const overflowResponse = await fetch(
+      `http://127.0.0.1:${port}/staking-ledger/lifecycles/4294967296/witnesses/0`,
+    );
+    assert.equal(overflowResponse.status, 400);
+    assert.deepEqual(await overflowResponse.json(), {
       error: LIFECYCLE_ID_VALIDATION_ERROR,
     });
   });

@@ -18,7 +18,9 @@ function getAvailablePort(): Promise<number> {
     server.listen(0, "127.0.0.1", () => {
       const address = server.address();
       if (!address || typeof address === "string") {
-        server.close(() => reject(new Error("Unable to resolve ephemeral port")));
+        server.close(() =>
+          reject(new Error("Unable to resolve ephemeral port")),
+        );
         return;
       }
       const { port } = address;
@@ -103,6 +105,7 @@ describe("processor CRUD routes on main API", () => {
       vote: "yay",
       voteWeight: "10",
       blockHeight: 501,
+      blockEventIndex: 4,
       isNullified: false,
       status: "canonical",
     });
@@ -126,8 +129,27 @@ describe("processor CRUD routes on main API", () => {
       paidOutAmount: "840000",
       remainingAmount: "0",
       blockHeight: 520,
+      blockEventIndex: 5,
       status: "canonical",
     });
+    const proposal = await dataSource
+      .getRepository(ProposalEntity)
+      .findOneByOrFail({ proposalPublicKey: "B62qproposal-1" });
+    const vote = await dataSource
+      .getRepository(VoteEntity)
+      .findOneByOrFail({ archiveEventId: "archive-vote-1" });
+    const nullifier = await dataSource
+      .getRepository(VoteNullifierEntity)
+      .findOneByOrFail({ sourceEventId: "archive-nullifier-1" });
+    const tally = await dataSource
+      .getRepository(VoteTallyEntity)
+      .findOneByOrFail({
+        proposalPublicKey: "B62qproposal-1",
+        blockHeight: 501,
+      });
+    const execution = await dataSource
+      .getRepository(ProposalExecutionEntity)
+      .findOneByOrFail({ archiveEventId: "archive-execution-1" });
 
     server = new EventsApiServer(repository, {
       port,
@@ -140,7 +162,7 @@ describe("processor CRUD routes on main API", () => {
     await server.start();
 
     const response = await fetch(
-      `http://127.0.0.1:${port}/proposals?join=voteTallies&join=voteTallies.votes&join=voteTallies.nullifiers&join=executions&sort=proposalPublicKey,ASC&limit=10`,
+      `http://127.0.0.1:${port}/proposals?join=voteTallies&join=votes&join=voteNullifiers&join=executions&sort=proposalPublicKey,ASC&limit=10`,
     );
     assert.equal(response.status, 200);
 
@@ -149,10 +171,13 @@ describe("processor CRUD routes on main API", () => {
         proposalPublicKey: string;
         voteTallies: Array<{
           blockHeight: number;
-          votes: Array<{ voterPublicKey: string }>;
-          nullifiers: Array<{ voterPublicKey: string }>;
         }>;
-        executions: Array<{ remainingAmount: string }>;
+        votes: Array<{ voterPublicKey: string; blockEventIndex: number }>;
+        voteNullifiers: Array<{ voterPublicKey: string }>;
+        executions: Array<{
+          remainingAmount: string;
+          blockEventIndex: number;
+        }>;
       }>;
       count: number;
       total: number;
@@ -167,12 +192,79 @@ describe("processor CRUD routes on main API", () => {
     assert.equal(payload.data[0]?.proposalPublicKey, "B62qproposal-1");
     assert.equal(payload.data[0]?.voteTallies.length, 1);
     assert.equal(payload.data[0]?.voteTallies[0]?.blockHeight, 501);
-    assert.equal(payload.data[0]?.voteTallies[0]?.votes[0]?.voterPublicKey, "B62qvoter-1");
+    assert.equal(payload.data[0]?.votes[0]?.voterPublicKey, "B62qvoter-1");
+    assert.equal(payload.data[0]?.votes[0]?.blockEventIndex, 4);
     assert.equal(
-      payload.data[0]?.voteTallies[0]?.nullifiers[0]?.voterPublicKey,
+      payload.data[0]?.voteNullifiers[0]?.voterPublicKey,
       "B62qvoter-2",
     );
     assert.equal(payload.data[0]?.executions[0]?.remainingAmount, "0");
+    assert.equal(payload.data[0]?.executions[0]?.blockEventIndex, 5);
+
+    const detailCases: Array<{
+      path: string;
+      id: string;
+      expectedField: string;
+      expectedValue: unknown;
+    }> = [
+      {
+        path: "proposals",
+        id: proposal.id,
+        expectedField: "proposalPublicKey",
+        expectedValue: "B62qproposal-1",
+      },
+      {
+        path: "votes",
+        id: vote.id,
+        expectedField: "blockEventIndex",
+        expectedValue: 4,
+      },
+      {
+        path: "vote-nullifiers",
+        id: nullifier.id,
+        expectedField: "sourceEventId",
+        expectedValue: "archive-nullifier-1",
+      },
+      {
+        path: "vote-tallies",
+        id: tally.id,
+        expectedField: "blockHeight",
+        expectedValue: 501,
+      },
+      {
+        path: "proposal-executions",
+        id: execution.id,
+        expectedField: "blockEventIndex",
+        expectedValue: 5,
+      },
+    ];
+    for (const detailCase of detailCases) {
+      const detailResponse = await fetch(
+        `http://127.0.0.1:${port}/${detailCase.path}/${encodeURIComponent(detailCase.id)}`,
+      );
+      assert.equal(detailResponse.status, 200, detailCase.path);
+      const detail = (await detailResponse.json()) as Record<string, unknown>;
+      assert.equal(
+        detail[detailCase.expectedField],
+        detailCase.expectedValue,
+        detailCase.path,
+      );
+    }
+
+    const missingDetailResponse = await fetch(
+      `http://127.0.0.1:${port}/votes/999999`,
+    );
+    assert.equal(missingDetailResponse.status, 404);
+    assert.deepEqual(await missingDetailResponse.json(), {
+      error: "Not found",
+    });
+
+    for (const query of ["limit=10items", "offset=1.5", "limit=1&limit=2"]) {
+      const invalidResponse = await fetch(
+        `http://127.0.0.1:${port}/votes?${query}`,
+      );
+      assert.equal(invalidResponse.status, 400, query);
+    }
 
     const healthzResponse = await fetch(`http://127.0.0.1:${port}/healthz`);
     assert.equal(healthzResponse.status, 200);

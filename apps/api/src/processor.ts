@@ -1,39 +1,78 @@
 import "reflect-metadata";
 import { EventsProcessor } from "@repo/processor";
 import { TreasuryOwnerSmartContract } from "@repo/sdk/src/provable/contracts/treasury-owner.js";
-import { loadApiConfig } from "./config.js";
+import { pathToFileURL } from "node:url";
+import { type ApiConfig, loadApiConfig } from "./config.js";
 import { ProposalCreatedEventHandler } from "./processors/proposals/proposal-created-event-handler.js";
 import { ProposalPauseToggledEventHandler } from "./processors/proposals/proposal-pause-toggled-event-handler.js";
 import { ProposalExecutedEventHandler } from "./processors/proposals/proposal-executed-event-handler.js";
-import { LifecycleVotingLedgerServiceRegistry } from "./processors/proposals/lifecycle-voting-ledger-service-registry.js";
+import { ProposalProjectionReconciler } from "./processors/proposals/proposal-projection-reconciler.js";
+import { rewindProposalProjectionReplay } from "./processors/proposals/proposal-projection-replay-entity.js";
+import type { LifecycleVotingLedgerServiceRegistry } from "./processors/proposals/lifecycle-voting-ledger-service-registry.js";
 import { ProposalVoteDispatchedEventHandler } from "./processors/proposals/proposal-vote-dispatched-event-handler.js";
 import { ProposalVotesTalliedEventHandler } from "./processors/proposals/proposal-votes-tallied-event-handler.js";
 import { proposalProcessorOutputEntities } from "./processors/proposals/processor-output-entities.js";
 import { LifecycleStakingLedgerServiceRegistry } from "./staking-ledger/lifecycle-staking-ledger-service-registry.js";
 
-async function main(): Promise<void> {
-  const config = loadApiConfig({
-    treasuryOwnerContractClass: TreasuryOwnerSmartContract,
-  });
-  const stakingLedgerServices = new LifecycleStakingLedgerServiceRegistry();
-  const votingLedgerServices = new LifecycleVotingLedgerServiceRegistry();
+interface ProcessorWorker {
+  start(): Promise<void>;
+  stop(): Promise<void>;
+  retryBlockedEvent(): Promise<number>;
+}
+
+export interface ProcessorWorkerRuntimeDependencies {
+  config: ApiConfig;
+  stakingLedgerServices?: LifecycleStakingLedgerServiceRegistry;
+  votingLedgerServices?: LifecycleVotingLedgerServiceRegistry;
+  proposalProjectionReconciler?: ProposalProjectionReconciler;
+  processorFactory?: (
+    config: Parameters<typeof EventsProcessor.fromConfig>[0],
+    setup: Parameters<typeof EventsProcessor.fromConfig>[1],
+  ) => ProcessorWorker;
+}
+
+export interface ProcessorWorkerRuntime {
+  start(): Promise<void>;
+  retryBlockedEvent(): Promise<number>;
+  stop(): Promise<void>;
+}
+
+export function createProcessorWorkerRuntime({
+  config,
+  stakingLedgerServices = new LifecycleStakingLedgerServiceRegistry(),
+  votingLedgerServices,
+  proposalProjectionReconciler = new ProposalProjectionReconciler(),
+  processorFactory = (processorConfig, setup) =>
+    EventsProcessor.fromConfig(processorConfig, setup),
+}: ProcessorWorkerRuntimeDependencies): ProcessorWorkerRuntime {
   const setup = {
     handlers: [
-      new ProposalCreatedEventHandler({
-        stakingLedgerServices,
-        treasuryOwnerPublicKey: config.treasuryOwnerContractAddress,
-      }),
-      new ProposalPauseToggledEventHandler(),
-      new ProposalVoteDispatchedEventHandler(votingLedgerServices, undefined, {
-        stakingLedgerServices,
-        treasuryOwnerPublicKey: config.treasuryOwnerContractAddress,
-      }),
-      new ProposalVotesTalliedEventHandler(),
-      new ProposalExecutedEventHandler(),
+      new ProposalCreatedEventHandler(
+        {
+          stakingLedgerServices,
+          treasuryOwnerPublicKey: config.treasuryOwnerContractAddress,
+        },
+        proposalProjectionReconciler,
+      ),
+      new ProposalPauseToggledEventHandler(proposalProjectionReconciler),
+      new ProposalVoteDispatchedEventHandler(
+        undefined,
+        undefined,
+        {
+          stakingLedgerServices,
+          treasuryOwnerPublicKey: config.treasuryOwnerContractAddress,
+        },
+        proposalProjectionReconciler,
+      ),
+      new ProposalVotesTalliedEventHandler(proposalProjectionReconciler),
+      new ProposalExecutedEventHandler(proposalProjectionReconciler),
     ],
     outputEntitySchemas: proposalProcessorOutputEntities,
+    beforeProcessing: async ({ manager, processorName }) => {
+      await rewindProposalProjectionReplay(manager, processorName);
+    },
   };
-  const processor = EventsProcessor.fromConfig(
+  const processor = processorFactory(
     {
       databaseUrl: config.databaseUrl,
       databaseSchema: config.databaseSchema,
@@ -51,33 +90,95 @@ async function main(): Promise<void> {
       return await shutdownPromise;
     }
     shutdownPromise = (async () => {
-      await Promise.allSettled([
-        processor.stop(),
-        stakingLedgerServices.close(),
-        votingLedgerServices.close(),
-      ]);
+      const shutdownTasks = [processor.stop(), stakingLedgerServices.close()];
+      if (votingLedgerServices) {
+        // Retained only for callers that explicitly inject this legacy test dependency.
+        shutdownTasks.push(votingLedgerServices.close());
+      }
+      await Promise.allSettled(shutdownTasks);
     })();
     await shutdownPromise;
   };
 
-  process.once("SIGINT", () => {
-    console.log("[events-processor] received SIGINT, shutting down");
-    void shutdown().finally(() => process.exit(0));
-  });
-  process.once("SIGTERM", () => {
-    console.log("[events-processor] received SIGTERM, shutting down");
-    void shutdown().finally(() => process.exit(0));
-  });
-
-  try {
-    await processor.start();
-  } catch (error) {
-    await shutdown();
-    throw error;
-  }
+  return {
+    async start(): Promise<void> {
+      try {
+        await processor.start();
+      } catch (error) {
+        await shutdown();
+        throw error;
+      }
+    },
+    retryBlockedEvent: () => processor.retryBlockedEvent(),
+    stop: shutdown,
+  };
 }
 
-main().catch((error) => {
-  console.error("[events-processor] startup failed", error);
-  process.exit(1);
-});
+type ShutdownSignal = "SIGINT" | "SIGTERM";
+
+export interface ProcessorWorkerMainDependencies {
+  loadConfig?: () => ApiConfig;
+  createRuntime?: (
+    dependencies: ProcessorWorkerRuntimeDependencies,
+  ) => ProcessorWorkerRuntime;
+  registerSignal?: (signal: ShutdownSignal, listener: () => void) => void;
+  exit?: (code: number) => void;
+  log?: (message: string) => void;
+}
+
+export async function main(
+  args = process.argv.slice(2),
+  {
+    loadConfig = () =>
+      loadApiConfig({
+        treasuryOwnerContractClass: TreasuryOwnerSmartContract,
+      }),
+    createRuntime = createProcessorWorkerRuntime,
+    registerSignal = (signal, listener) => process.once(signal, listener),
+    exit = (code) => process.exit(code),
+    log = console.log,
+  }: ProcessorWorkerMainDependencies = {},
+): Promise<void> {
+  const retryBlocked = args.length === 1 && args[0] === "--retry-blocked";
+  if (args.length > 0 && !retryBlocked) {
+    throw new Error(`Unknown processor arguments: ${args.join(" ")}`);
+  }
+
+  const config = loadConfig();
+  const runtime = createRuntime({ config });
+
+  if (retryBlocked) {
+    try {
+      const processedRows = await runtime.retryBlockedEvent();
+      if (processedRows < 1) {
+        throw new Error(
+          "No blocked processor event was resolved. Inspect processor_event_failures and processor_runtime_status.",
+        );
+      }
+      log(
+        `[events-processor] explicit retry succeeded (processedRows=${processedRows})`,
+      );
+    } finally {
+      await runtime.stop();
+    }
+    return;
+  }
+  registerSignal("SIGINT", () => {
+    log("[events-processor] received SIGINT, shutting down");
+    void runtime.stop().finally(() => exit(0));
+  });
+  registerSignal("SIGTERM", () => {
+    log("[events-processor] received SIGTERM, shutting down");
+    void runtime.stop().finally(() => exit(0));
+  });
+
+  await runtime.start();
+}
+
+const entrypointPath = process.argv[1];
+if (entrypointPath && import.meta.url === pathToFileURL(entrypointPath).href) {
+  main().catch((error) => {
+    console.error("[events-processor] startup failed", error);
+    process.exit(1);
+  });
+}
