@@ -4,7 +4,10 @@ import type { StorybookConfig } from "@storybook/react-webpack5";
 const ownSrcGlob = path.join(__dirname, "../src/**/*.{ts,tsx}");
 
 const config: StorybookConfig = {
-  stories: ["../src/**/*.stories.@(ts|tsx)"],
+  stories: [
+    "../src/**/*.stories.@(ts|tsx)",
+    "../../../apps/backoffice/**/*.stories.@(ts|tsx)",
+  ],
   addons: ["@storybook/addon-essentials"],
   framework: {
     name: "@storybook/react-webpack5",
@@ -43,10 +46,15 @@ const config: StorybookConfig = {
           return loader.includes("postcss-loader");
         }
 
-        if (typeof loader === "object" && loader !== null && "loader" in loader) {
+        if (
+          typeof loader === "object" &&
+          loader !== null &&
+          "loader" in loader
+        ) {
           const loaderName = (loader as { loader?: unknown }).loader;
           return (
-            typeof loaderName === "string" && loaderName.includes("postcss-loader")
+            typeof loaderName === "string" &&
+            loaderName.includes("postcss-loader")
           );
         }
 
@@ -62,9 +70,15 @@ const config: StorybookConfig = {
           return loader.includes("css-loader");
         }
 
-        if (typeof loader === "object" && loader !== null && "loader" in loader) {
+        if (
+          typeof loader === "object" &&
+          loader !== null &&
+          "loader" in loader
+        ) {
           const loaderName = (loader as { loader?: unknown }).loader;
-          return typeof loaderName === "string" && loaderName.includes("css-loader");
+          return (
+            typeof loaderName === "string" && loaderName.includes("css-loader")
+          );
         }
 
         return false;
@@ -102,11 +116,7 @@ const config: StorybookConfig = {
         ".mjs": [".mjs", ".mts"],
         ".cjs": [".cjs", ".cts"],
       },
-      extensions: [
-        ...(baseConfig.resolve?.extensions ?? []),
-        ".ts",
-        ".tsx",
-      ],
+      extensions: [...(baseConfig.resolve?.extensions ?? []), ".ts", ".tsx"],
     };
 
     return baseConfig;

@@ -4,10 +4,9 @@ import tailwindcssAnimate from "tailwindcss-animate";
 const config = {
   darkMode: ["class"],
   content: [
-    "./src/**/*.{ts,tsx}",
-    "./.storybook/**/*.{ts,tsx}",
-    "../../apps/backoffice/features/**/*.{ts,tsx}",
-    "../../apps/web/features/wallet/containers/wallet-connection-dialog.tsx",
+    "./app/**/*.{ts,tsx}",
+    "./features/**/*.{ts,tsx}",
+    "../../packages/ui/src/**/*.{ts,tsx}",
   ],
   theme: {
     extend: {
@@ -36,10 +35,6 @@ const config = {
         accent: {
           DEFAULT: "hsl(var(--accent))",
           foreground: "hsl(var(--accent-foreground))",
-        },
-        popover: {
-          DEFAULT: "hsl(var(--popover))",
-          foreground: "hsl(var(--popover-foreground))",
         },
         card: {
           DEFAULT: "hsl(var(--card))",

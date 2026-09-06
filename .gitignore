@@ -66,6 +66,8 @@ apps/cli/.env.testnet
 apps/cli/.env.local-blockchain
 apps/web/.env.testnet
 apps/web/.env.local-blockchain
+apps/backoffice/.env.testnet
+apps/backoffice/.env.local-blockchain
 packages/local-blockchain/.env.testnet
 packages/local-blockchain/.env.local-blockchain
 devops/.env.dev
