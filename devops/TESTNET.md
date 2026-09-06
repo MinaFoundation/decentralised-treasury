@@ -1,20 +1,23 @@
 # Testnet Operator Runbook
 
 Use this guide to run the treasury Compose stack against a Mina testnet node and
-archive node. It is the primary operator path. For a local simulator demo, use
-`DEMO.md`. For starting a local Mina daemon and archive node first, use
-`devops/TESTNET_MINA_NODE.md`.
+archive node. It is the Compose operator path. For a local simulator demo, use
+`DEMO.md`. For a local Mina daemon and archive node, use
+`devops/TESTNET_MINA_NODE.md`. For the Kubernetes infrastructure path, use
+`devops/runbooks/README.md`.
 
 ## What This Runbook Starts
 
 The Compose stack starts the treasury app services only:
 
 - web UI
+- Backoffice UI
 - app API
 - indexer API
 - processor API
 - indexer runtime
 - processor runtime
+- voting-ledger scheduler
 - Postgres
 - Caddy reverse proxy
 
@@ -26,22 +29,31 @@ tracing machines. Those are external inputs.
 This is the shortest path to a running local operator stack:
 
 ```bash
+node --version # Must be 22.19.5 or later.
+pnpm --version # Must be 9.0.0.
 CI=true pnpm install --frozen-lockfile
 pnpm env:bootstrap testnet -- --sender-private-key <FUNDED_TESTNET_PRIVATE_KEY>
-# Review apps/api/.env.testnet, apps/cli/.env.testnet, apps/web/.env.testnet.
+# Review apps/api/.env.testnet, apps/backoffice/.env.testnet, apps/cli/.env.testnet, and apps/web/.env.testnet.
 dotenvx run -f apps/cli/.env.testnet -- pnpm run cli -- treasury-owner compile
-# Copy emitted browserEnv values into apps/web/.env.testnet.
+# Copy emitted browserEnv values into apps/web/.env.testnet and apps/backoffice/.env.testnet.
 dotenvx run -f apps/cli/.env.testnet -- pnpm run cli -- treasury-owner deploy
 dotenvx run -f apps/cli/.env.testnet -- pnpm run cli -- treasury-owner fund-treasury --amount 1000000000000
 pnpm testnet:up:build
 curl http://127.0.0.1:4100/healthz
-# Visit http://127.0.0.1:3100 in your browser.
+# Visit http://127.0.0.1:3100 and http://127.0.0.1:3200 in your browser.
 ```
 
 If the funded sender key is already present in `apps/cli/.env.testnet`, rerun
 `pnpm testnet:env` instead of passing `--sender-private-key`.
 
 ## 1. Prepare External Testnet Services
+
+The Compose stack consumes Mina and Archive endpoints. You can use an external
+provider, the local node procedure, or the Kubernetes procedures:
+
+- `devops/runbooks/1-Network/1a-Archive-Node/README.md`
+- `devops/runbooks/1-Network/1b-Mina-Daemon/README.md`
+- `devops/runbooks/1-Network/1c-Staking-Ledger-Provider/README.md`
 
 Before bootstrapping, make sure you have:
 
@@ -118,6 +130,7 @@ This writes ignored package-local files:
 ```text
 devops/.env.testnet
 apps/api/.env.testnet
+apps/backoffice/.env.testnet
 apps/cli/.env.testnet
 apps/web/.env.testnet
 ```
@@ -167,6 +180,15 @@ NEXT_PUBLIC_MINA_NODE_URL=http://127.0.0.1:3100/mina/graphql
 NEXT_PUBLIC_NETWORK_ID=DEVNET
 ```
 
+Check `apps/backoffice/.env.testnet`:
+
+```text
+NEXT_PUBLIC_MINA_NODE_URL=http://127.0.0.1:3200/mina/graphql
+NEXT_PUBLIC_TREASURY_OWNER_CONTRACT_ADDRESS=<generated treasury owner public key>
+NEXT_PUBLIC_MULTISIG_PARTICIPANTS_PUBLIC_KEYS=<five ordered public keys>
+NEXT_PUBLIC_NETWORK_ID=DEVNET
+```
+
 Check `devops/.env.testnet`:
 
 ```text
@@ -202,7 +224,8 @@ dotenvx run -f apps/cli/.env.testnet -- \
   pnpm run cli -- treasury-owner compile
 ```
 
-Copy the emitted `browserEnv` values into `apps/web/.env.testnet`:
+Copy the emitted `browserEnv` values into `apps/web/.env.testnet` and
+`apps/backoffice/.env.testnet`:
 
 ```text
 NEXT_PUBLIC_LIFECYCLE_PERIOD_DURATION=...
@@ -253,10 +276,9 @@ dotenvx run -f apps/cli/.env.testnet -- \
   --amount 1000000000000
 ```
 
-The generated treasury owner address is already written into
-`apps/api/.env.testnet`, `apps/web/.env.testnet`, and `apps/cli/.env.testnet`.
-If you manually replace the treasury owner keypair, copy the deployed address
-into those files before starting Compose.
+The generated treasury owner address is already in the API, Backoffice, CLI,
+and web environment files. If you replace the Treasury Owner keypair, copy the
+deployed address into all four files before you start Compose.
 
 ## 7. Start And Verify Compose
 
@@ -272,8 +294,8 @@ If the image is missing or code changed, rebuild and start:
 pnpm testnet:up:build
 ```
 
-This starts Postgres, runs API migrations, and then starts API, indexer,
-processor, web, and the local Caddy reverse proxy.
+This starts Postgres and runs API migrations. It then starts the APIs, indexer,
+processor, scheduler, web, Backoffice, and the local Caddy reverse proxy.
 
 Verify the stack through Caddy:
 
@@ -289,6 +311,7 @@ Open the UI:
 
 ```text
 http://127.0.0.1:3100
+http://127.0.0.1:3200
 ```
 
 Follow logs:
@@ -369,13 +392,6 @@ section after the stack is healthy.
 
 ### Create A Proposal
 
-Generate a proposal keypair:
-
-```bash
-dotenvx run -f apps/cli/.env.testnet -- \
-  pnpm run cli -- generate-keypair --json
-```
-
 Create proposal content:
 
 ```bash
@@ -388,19 +404,39 @@ Transfer 100 MINA from the treasury to the recipient.
 EOF
 ```
 
+Validate the exact Markdown before you create its on-chain commitment:
+
+```bash
+jq -Rs '{contents:.}' .data/testnet/proposal.md \
+  | curl --fail-with-body -sS -X POST \
+      http://127.0.0.1:4100/proposals/content/verify \
+      -H 'content-type: application/json' \
+      --data-binary @- \
+  | jq -e '.ok == true and .passesSubmissionChecks == true'
+```
+
+Continue only when the final command prints `true` and exits successfully.
+
 Submit the proposal during the proposal creation period:
 
 ```bash
 dotenvx run -f apps/cli/.env.testnet -- \
   pnpm run cli -- proposal create \
-  --proposal-private-key <PROPOSAL_PRIVATE_KEY> \
   --proposal-lifecycle-id 0 \
   --recipient-public-key <RECIPIENT_PUBLIC_KEY> \
   --amount 100000000000 \
   --content-file .data/testnet/proposal.md
 ```
 
-Keep the proposal public key from the output.
+You can supply `--proposal-private-key` for a predetermined address. If it is
+absent, the CLI generates the Proposal keypair in memory and discards the key
+after deployment. It prints a warning because Proposal permissions make this
+private key unusable after deployment. Keep `proposalAddress` from the output
+for later operations.
+
+After inclusion, the CLI submits the exact Markdown to the App API. It retries
+HTTP `503` and the specific missing-projection HTTP `404` for up to 60 seconds.
+It does not retry network failures or other HTTP responses.
 
 ### Vote
 
@@ -438,6 +474,10 @@ dotenvx run -f apps/cli/.env.testnet -- \
   --proposal-public-key <PROPOSAL_PUBLIC_KEY> \
   --multisig-signatures <SIG1>,<SIG2>,<SIG3>,<SIG4>,<SIG5>
 ```
+
+The `multisig-sign --nonce` value is the Pause Controller action nonce. Do not
+copy this value to the state-changing submit command. The current submit option
+also sets the fee-payer transaction nonce.
 
 Empty positional slots are allowed with consecutive commas.
 
@@ -492,27 +532,59 @@ treasury lifecycle (`epoch == deployedEpoch + 4 * lifecycleId`, given
 3. runs `staking-ledger-to-voting-ledger trace-digest`,
 4. and writes `<lifecycleId>.sqlite.done` as a completion marker.
 
-This only ever looks at the *newest* arrived lifecycle — it never scans
-backward through the backlog, so a lifecycle that failed or was skipped (e.g.
-a hash mismatch) is **not** retried automatically. To (re)process a specific
-lifecycle by hand, run the same CLI command against the already-running
-container:
+Each poll selects the newest unprocessed lifecycle. A failed lifecycle remains
+selectable, but newer unfinished snapshots have priority. Use a stopped
+one-shot process when an earlier lifecycle must run first.
+
+Stop the scheduler, API, and processor before the one-shot process:
 
 ```bash
-docker exec voting-ledger-scheduler /bin/sh \
-  devops/docker/voting-ledger-scheduler-entrypoint.sh process-lifecycle 17
+docker compose \
+  --env-file devops/.env.testnet \
+  --env-file apps/api/.env.testnet \
+  --env-file apps/backoffice/.env.testnet \
+  --env-file apps/web/.env.testnet \
+  -f devops/compose.yml \
+  --profile proxy \
+  stop voting-ledger-scheduler api processor
+
+docker compose \
+  --env-file devops/.env.testnet \
+  --env-file apps/api/.env.testnet \
+  --env-file apps/backoffice/.env.testnet \
+  --env-file apps/web/.env.testnet \
+  -f devops/compose.yml \
+  --profile proxy \
+  run --rm --no-deps voting-ledger-scheduler \
+  /bin/sh \
+  devops/docker/voting-ledger-scheduler-entrypoint.sh \
+  process-lifecycle 17
 ```
 
 `process-lifecycle` always wipes that lifecycle's SQLite state first, so a
 retry after a crash or hash mismatch starts clean rather than replaying
 already-committed batches against advanced state.
 
+Check `<SQLITE_DATA_HOST_PATH>/17.sqlite.done`. Keep the three services stopped
+when the one-shot process fails. After successful verification, start them:
+
+```bash
+docker compose \
+  --env-file devops/.env.testnet \
+  --env-file apps/api/.env.testnet \
+  --env-file apps/backoffice/.env.testnet \
+  --env-file apps/web/.env.testnet \
+  -f devops/compose.yml \
+  --profile proxy \
+  start api processor voting-ledger-scheduler
+```
+
 Check `docker compose ... logs -f voting-ledger-scheduler` to follow progress,
 and `<SQLITE_DATA_HOST_PATH>/<lifecycleId>.sqlite.done` to confirm a given
 lifecycle is ready. A hash mismatch or crash is logged with its exit status
 (the poll loop captures the CLI subprocess's real exit code, including
-128+signal for a signal kill) and that lifecycle is left unprocessed until
-someone runs `process-lifecycle` for it by hand.
+128+signal for a signal kill). The lifecycle remains selectable during a later
+poll.
 
 The container runs as the non-root `node` user (uid 1000) for hardening. If
 `SQLITE_DATA_HOST_PATH` doesn't exist yet, Docker creates it as `root` on first
@@ -527,11 +599,13 @@ chown -R 1000:1000 "$SQLITE_DATA_HOST_PATH"
 
 ### Automated Proving (`proving` Profile)
 
-Tracing alone isn't enough to tally votes — each lifecycle also needs an
-*exhausted* proof, which means running the actual SNARK circuit
+Tracing alone is not sufficient to tally votes. Each lifecycle also needs an
+_exhausted_ proof, which means running the actual SNARK circuit
 (`prove-digest` → `prove-merge` → `prove-exhaust`) against Redis and one or
 more BullMQ workers. This is opt-in, since it starts Redis and adds real
-compute cost: bring the stack up with `pnpm testnet:up:proving` (or add
+compute cost. Set `PROOFS_ENABLED=true` in `devops/.env.testnet` and
+`apps/api/.env.testnet`. Then bring the stack up with
+`pnpm testnet:up:proving` (or add
 `--profile proving` to `docker compose ... up` yourself) instead of the plain
 `pnpm testnet:up`.
 
@@ -563,17 +637,51 @@ Check `docker compose ... logs -f proving-scheduler` to follow progress, and
 `<SQLITE_DATA_HOST_PATH>/proofs/<lifecycleId>-exhausted.json` /
 `<SQLITE_DATA_HOST_PATH>/<lifecycleId>.sqlite.proven` to confirm a given
 lifecycle is proved. As with `voting-ledger-scheduler`, a failure is logged
-and the lifecycle is retried on the next poll cycle rather than skipped; to
-reprove a specific lifecycle by hand, run:
+and the lifecycle is retried on the next poll cycle rather than skipped.
+
+Keep Redis and the proof workers active. Stop the scheduler before a one-shot
+proof process:
 
 ```bash
-docker exec proving-scheduler /bin/sh \
-  devops/docker/proving-scheduler-entrypoint.sh process-lifecycle 17
+docker compose \
+  --env-file devops/.env.testnet \
+  --env-file apps/api/.env.testnet \
+  --env-file apps/backoffice/.env.testnet \
+  --env-file apps/web/.env.testnet \
+  -f devops/compose.yml \
+  --profile proving \
+  stop proving-scheduler
+
+docker compose \
+  --env-file devops/.env.testnet \
+  --env-file apps/api/.env.testnet \
+  --env-file apps/backoffice/.env.testnet \
+  --env-file apps/web/.env.testnet \
+  -f devops/compose.yml \
+  --profile proving \
+  run --rm --no-deps proving-scheduler \
+  /bin/sh \
+  devops/docker/proving-scheduler-entrypoint.sh \
+  process-lifecycle 17
 ```
 
-`PROOFS_ENABLED` defaults to `true` for `proving-worker` specifically
-(diverging from the stack-wide default of `false`), since the only reason to
-run this service is to produce real proofs.
+Confirm the exhausted proof and `17.sqlite.proven`. Keep the scheduler stopped
+when the one-shot process fails. After successful verification, start it:
+
+```bash
+docker compose \
+  --env-file devops/.env.testnet \
+  --env-file apps/api/.env.testnet \
+  --env-file apps/backoffice/.env.testnet \
+  --env-file apps/web/.env.testnet \
+  -f devops/compose.yml \
+  --profile proving \
+  start proving-scheduler
+```
+
+The proving scheduler and workers default to `PROOFS_ENABLED=false`. The
+scheduler exits before proving or marker creation unless this value is exactly
+`true`.
 
 The steps below remain useful for one-off runs, debugging a specific lifecycle,
 or networks where nothing populates `STAKING_LEDGERS_HOST_PATH` automatically
@@ -729,4 +837,5 @@ dotenvx run -f apps/cli/.env.testnet -- \
   `.data/testnet-sqlite/<lifecycleId>.sqlite` exists on the host.
 - If you rotate keys after deploying, redeploy before starting Compose, or copy
   the already-deployed treasury owner address into `apps/api/.env.testnet`,
-  `apps/web/.env.testnet`, and `apps/cli/.env.testnet`.
+  `apps/backoffice/.env.testnet`, `apps/web/.env.testnet`, and
+  `apps/cli/.env.testnet`.

@@ -34,12 +34,13 @@ The script refuses to run on a dirty working tree, because the tag would not
 identify the code inside the image. Override with `ALLOW_DIRTY=true` only for
 throwaway builds.
 
-It builds two images for `linux/amd64` and `linux/arm64`:
+It builds three image targets for `linux/amd64` and `linux/arm64`:
 
-| Dockerfile target | Pushed to | Contents |
-| --- | --- | --- |
-| `web` | `dt-web` | Next.js standalone server, static assets, public dir |
-| `base` | `dt-api`, `dt-api-migrate`, `dt-indexer`, `dt-indexer-api`, `dt-processor`, `dt-processor-api` | the pnpm workspace; services differ only by the command compose runs |
+| Dockerfile target | Pushed to                                                                                                                                                                 | Contents                                                                      |
+| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
+| `web`             | `dt-web`                                                                                                                                                                  | Next.js standalone server, static assets, public dir                          |
+| `backoffice`      | `dt-backoffice`                                                                                                                                                           | Offline-first signer and submitter UI                                         |
+| `base`            | `dt-api`, `dt-api-migrate`, `dt-indexer`, `dt-indexer-api`, `dt-processor`, `dt-processor-api`, `dt-voting-ledger-scheduler`, `dt-proving-worker`, `dt-proving-scheduler` | the pnpm workspace; services differ only by the command the orchestrator runs |
 
 Useful overrides:
 
@@ -87,18 +88,18 @@ Every value is optional; the fallback applies when the variable is unset **or
 blank**. Where two names are listed, the first wins and the second is the name
 the backend services already use, so a single variable can configure both.
 
-| Variable (first match wins) | Fallback | Purpose |
-| --- | --- | --- |
-| `NEXT_PUBLIC_TREASURY_API_URL`, `NEXT_PUBLIC_API_URL` | `http://127.0.0.1:3100/api` | treasury API, as reached **from the browser** |
-| `NEXT_PUBLIC_INDEXER_API_URL` | `http://127.0.0.1:3100/indexer` | indexer API |
-| `NEXT_PUBLIC_PROCESSOR_API_URL` | `http://127.0.0.1:3100/processor` | processor API |
-| `NEXT_PUBLIC_MINA_NODE_URL` | `http://127.0.0.1:3100/mina/graphql` | Mina GraphQL endpoint |
-| `NEXT_PUBLIC_NETWORK_ID` | `MAINNET` | network label shown in the UI |
-| `NEXT_PUBLIC_TREASURY_OWNER_CONTRACT_ADDRESS`, `TREASURY_OWNER_CONTRACT_ADDRESS` | *(none)* | treasury owner contract; balance and actions are disabled without it |
-| `NEXT_PUBLIC_LIFECYCLE_PERIOD_DURATION`, `LIFECYCLE_PERIOD_DURATION` | *(none)* | slots per lifecycle period |
-| `NEXT_PUBLIC_SLOT_DURATION_MS` | *(none)* | slot duration, for countdowns |
-| `NEXT_PUBLIC_PROOFS_ENABLED` | *(none)* | `false` disables browser proving; any other value enables it |
-| `NEXT_PUBLIC_BUILD_SHA`, `BUILD_SHA` | `unknown` | revision shown in the footer; baked into the image at build time |
+| Variable (first match wins)                                                      | Fallback                             | Purpose                                                              |
+| -------------------------------------------------------------------------------- | ------------------------------------ | -------------------------------------------------------------------- |
+| `NEXT_PUBLIC_TREASURY_API_URL`, `NEXT_PUBLIC_API_URL`                            | `http://127.0.0.1:3100/api`          | treasury API, as reached **from the browser**                        |
+| `NEXT_PUBLIC_INDEXER_API_URL`                                                    | `http://127.0.0.1:3100/indexer`      | indexer API                                                          |
+| `NEXT_PUBLIC_PROCESSOR_API_URL`                                                  | `http://127.0.0.1:3100/processor`    | processor API                                                        |
+| `NEXT_PUBLIC_MINA_NODE_URL`                                                      | `http://127.0.0.1:3100/mina/graphql` | Mina GraphQL endpoint                                                |
+| `NEXT_PUBLIC_NETWORK_ID`                                                         | `MAINNET`                            | network label shown in the UI                                        |
+| `NEXT_PUBLIC_TREASURY_OWNER_CONTRACT_ADDRESS`, `TREASURY_OWNER_CONTRACT_ADDRESS` | _(none)_                             | treasury owner contract; balance and actions are disabled without it |
+| `NEXT_PUBLIC_LIFECYCLE_PERIOD_DURATION`, `LIFECYCLE_PERIOD_DURATION`             | _(none)_                             | slots per lifecycle period                                           |
+| `NEXT_PUBLIC_SLOT_DURATION_MS`                                                   | _(none)_                             | slot duration, for countdowns                                        |
+| `NEXT_PUBLIC_PROOFS_ENABLED`                                                     | _(none)_                             | `false` disables browser proving; any other value enables it         |
+| `NEXT_PUBLIC_BUILD_SHA`, `BUILD_SHA`                                             | `unknown`                            | revision shown in the footer; baked into the image at build time     |
 
 Browser proving additionally needs the artifacts emitted by the treasury-owner
 CLI `compile` command. Proving fails with an explicit "Missing required browser
@@ -130,6 +131,7 @@ instead:
 ```sh
 export APP_IMAGE=minafoundation/dt-api:<tag>
 export WEB_IMAGE=minafoundation/dt-web:<tag>
+export BACKOFFICE_IMAGE=minafoundation/dt-backoffice:<tag>
 pnpm testnet:up      # already passes --no-build
 ```
 

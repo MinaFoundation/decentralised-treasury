@@ -1,16 +1,17 @@
-# DevOps Compose Reference
+# DevOps Reference
 
-This directory owns the Docker Compose stack and operator support files for the
-treasury web/API runtime. It is reference material. For a real testnet run,
-start with `devops/TESTNET.md`. For the fastest local simulator walkthrough,
-start with `DEMO.md`.
+This directory contains two deployment paths and their operator support files.
+Use `devops/runbooks/README.md` for the Kubernetes infrastructure path. Use
+`devops/TESTNET.md` for the Compose testnet path. For the fastest local
+simulator walkthrough, use `DEMO.md`.
 
 ## Which Document To Use
 
 | Goal                                                              | Start here                           |
 | ----------------------------------------------------------------- | ------------------------------------ |
+| Provision the complete Kubernetes infrastructure                  | `devops/runbooks/README.md`          |
 | Run the local simulator demo                                      | `DEMO.md`                            |
-| Run the treasury stack against a Mina testnet node                | `devops/TESTNET.md`                  |
+| Run the Compose stack against a Mina testnet node                 | `devops/TESTNET.md`                  |
 | Start a local Mina daemon and archive node                        | `devops/TESTNET_MINA_NODE.md`        |
 | Inspect Compose services, ports, smoke tests, and troubleshooting | this file                            |
 | Develop packages directly on the host                             | package READMEs and `.env.dev` files |
@@ -20,6 +21,7 @@ start with `DEMO.md`.
 The Compose stack runs the application services only:
 
 - web UI
+- Backoffice UI
 - app API
 - indexer API
 - processor API
@@ -45,6 +47,7 @@ Generated env files bind the local proxy to `127.0.0.1` by default:
 
 ```text
 http://127.0.0.1:3100 -> web
+http://127.0.0.1:3200 -> Backoffice
 http://127.0.0.1:4100 -> app API
 http://127.0.0.1:4101 -> indexer API
 http://127.0.0.1:4102 -> processor API
@@ -57,8 +60,9 @@ The public HTTPS profile is the only profile intended to bind `80` and `443` on
 
 | Path                            | Purpose                                                                 |
 | ------------------------------- | ----------------------------------------------------------------------- |
+| `runbooks/`                     | Ordered Kubernetes network, contract, stack, and lifecycle procedures   |
 | `compose.yml`                   | Main application stack                                                  |
-| `TESTNET.md`                    | Primary testnet operator runbook                                        |
+| `TESTNET.md`                    | Compose testnet operator runbook                                        |
 | `TESTNET_MINA_NODE.md`          | Local Mina/archive node appendix                                        |
 | `.env.testnet.example`          | Generated testnet Compose infrastructure template                       |
 | `.env.local-blockchain.example` | Generated simulator Compose infrastructure template                     |
@@ -82,13 +86,14 @@ The generator writes package-local, ignored files:
 ```text
 devops/.env.<family>
 apps/api/.env.<family>
+apps/backoffice/.env.<family>
 apps/cli/.env.<family>
 apps/web/.env.<family>
 packages/local-blockchain/.env.local-blockchain
 ```
 
-Keep Mina private keys in `apps/cli/.env.<family>`. The API, web, and devops env
-files should not contain funded Mina private keys.
+Keep Mina private keys in `apps/cli/.env.<family>`. The API, Backoffice, web,
+and DevOps environment files must not contain funded Mina private keys.
 
 For the testnet family, endpoint values are split by where they run:
 
@@ -97,6 +102,7 @@ apps/cli/.env.testnet  MINA_NODE_URL=http://127.0.0.1:3001/graphql
 apps/cli/.env.testnet  ARCHIVE_NODE_URL=http://127.0.0.1:8282
 devops/.env.testnet    MINA_NODE_PROXY_UPSTREAM=http://host.docker.internal:3001
 apps/api/.env.testnet  ARCHIVE_NODE_URL=http://host.docker.internal:8282
+apps/backoffice/.env.testnet  NEXT_PUBLIC_MINA_NODE_URL=http://127.0.0.1:3200/mina/graphql
 apps/web/.env.testnet  NEXT_PUBLIC_MINA_NODE_URL=http://127.0.0.1:3100/mina/graphql
 ```
 
@@ -105,9 +111,9 @@ The CLI uses host-facing URLs. Compose containers use
 host. The browser uses full URLs through the local Caddy web origin.
 
 The `NEXT_PUBLIC_*` values reach the browser at container start rather than
-being compiled in, so changing one no longer needs an image rebuild - restart
-the web service and the new value is served. See [PUBLISHING.md](PUBLISHING.md)
-for the full list and for building images another operator can run.
+being compiled in, so a change does not need an image rebuild. Recreate the web
+or Backoffice service to load the new value. See [PUBLISHING.md](PUBLISHING.md)
+for the full list and image instructions.
 
 `.env.compose.example` is kept for manual Compose experiments that use a single
 env file. Do not use it as the primary testnet runbook unless you intentionally
@@ -212,6 +218,7 @@ an existing lifecycle database while services are running, restart `api` and
 docker compose \
   --env-file devops/.env.testnet \
   --env-file apps/api/.env.testnet \
+  --env-file apps/backoffice/.env.testnet \
   --env-file apps/web/.env.testnet \
   -f devops/compose.yml \
   --profile proxy \

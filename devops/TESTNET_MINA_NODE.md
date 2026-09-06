@@ -2,7 +2,10 @@
 
 This guide explains how to run a local Mina node and archive node for the decentralized treasury testnet flow. It covers the Mina-side setup only: starting the node, checking health, exporting the funded whale keypair, exporting the staking ledger, and keeping Mina epoch settings aligned with treasury lifecycle settings.
 
-For the full treasury deployment and Compose flow, see `TESTNET.md`.
+For the full treasury deployment and Compose flow, see `TESTNET.md`. For a
+Kubernetes Mina daemon and Archive deployment, see
+`runbooks/1-Network/1a-Archive-Node/README.md` and
+`runbooks/1-Network/1b-Mina-Daemon/README.md`.
 
 The commands assume:
 

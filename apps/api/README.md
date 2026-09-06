@@ -13,9 +13,11 @@ It exposes three HTTP surfaces:
 Event type is treated as immutable at ingest:
 
 - event types are derived from the contract class passed to `loadApiConfig(...)`
-- indexer ingestion resolves type from archive-reported metadata or encoded event payload
-- if type cannot be resolved, ingest throws (no `unknown` fallback)
+- indexer ingestion resolves each type from the encoded o1js discriminator
+- the indexer keeps the complete archive payload, including its discriminator
+- malformed or unresolved observations go to `archive_event_rejections`
 - processor consumes only typed events (`includeUnknown=false`) and does not patch event types
+- proposal handlers validate the discriminator before they decode the contract event Struct
 
 ## Environment
 
@@ -151,13 +153,15 @@ Schema workflow:
 ### Indexer API (`start:indexer-api`)
 
 - `GET /healthz`
-- `GET /events?updatedAfter=<iso>&eventIdAfter=<id>&eventTypes=<csv>&includeUnknown=true|false&limit=<n>`
+- `GET /readyz`
+- `GET /events?changeSequenceAfter=<sequence>&eventTypes=<csv>&includeUnknown=true|false&limit=<n>`
+- `GET /events?updatedAfter=<iso>&eventIdAfter=<id>&eventTypes=<csv>&includeUnknown=true|false&limit=<n>` (transition cursor)
 - `GET /status`
 
 ### Processor API (`start:processor-api`)
 
 - `GET /healthz`
-- `GET /healthz`
+- `GET /readyz`
 - `GET /status`
 - `GET /proposals`
 - `GET /votes`
@@ -170,13 +174,30 @@ Schema workflow:
 - `GET /staking-ledger/lifecycles/:lifecycleId/witnesses/:index`
 - `GET /staking-ledger/lifecycles/:lifecycleId/accounts/:publicKey`
 - `GET /voting-ledger/lifecycles/:lifecycleId/accounts/:publicKey`
+- `GET /proposals`
+- `GET /proposals/search?q=<query>`
+- `GET /proposals/:proposalPublicKey`
+- `GET /proposals/:proposalPublicKey/votes`
+- `GET /proposals/:proposalPublicKey/executions`
 - `POST /proposals/content/verify`
 - `POST /proposals/:id/content`
 
+Active-event projection semantics:
+
+- Smart-contract methods are the business source of truth. Event payloads are observations of those methods.
+- Pending and canonical events both affect one current projection.
+- Pending data differs from canonical data only by finality and rollback eligibility.
+- Promotion from pending to canonical changes finality only. It does not apply the business effect again.
+- Orphaning removes the event effect and recomputes the projection from the remaining active events.
+- The App API and Processor API return active pending and canonical rows. They exclude orphaned rows.
+- `processor_vote_nullifiers` contains the first active vote for each proposal and voter in stable source order.
+- The App API excludes nullified votes and includes the active vote that owns each nullifier.
+
 Response shape:
 
-- `items`: event rows
-- `nextCursor`: `{ updatedAfter, eventIdAfter }` or `null`
+- `items`: event rows, including `changeSequence` and `blockEventIndex`
+- `nextCursor`: `{ changeSequenceAfter }` or `null` for the preferred cursor
+- `nextCursor`: `{ updatedAfter, eventIdAfter }` or `null` for the transition cursor
 
 Proposal content submit request:
 
@@ -221,19 +242,30 @@ Voting account response shape:
 
 Indexer status response shape:
 
-- `ok`: probe flag (currently always `true` when request succeeds)
+- `ok`: probe result
+- `ready`: readiness result
 - `archive`: `{ canonicalMaxBlockHeight, pendingMaxBlockHeight }`
 - `pendingCursor`
 - `canonicalCursor`
 - `remainingPendingBlocks`
 - `remainingCanonicalBlocks`
+- `rejections`: total and unresolved rejection counts
+- `runtime`: operation state, failures, missing operations, and stale operations
 
 Processor status response shape:
 
-- `ok`: probe flag (currently always `true` when request succeeds)
+- `ok`: processor readiness result
+- `ready`: processor readiness result
 - `processorName`
-- `offset`: `{ lastSeenUpdatedAt, lastSeenEventId, updatedAt } | null`
+- `offset`: `{ lastSeenUpdatedAt, lastSeenEventId, lastSeenChangeSequence, updatedAt } | null`
 - `remainingEvents`
+- `runtime`: lifecycle state, heartbeat, and last error details
+- `failures`: due failure count
+
+The readiness route returns `503` for an unresolved indexer rejection. It also
+returns `503` for a failed, missing, or stale indexer operation. The processor
+readiness route returns `503` for stale or inactive runtime state. It also
+returns `503` when a blocked or due retry exists.
 
 ### Staking Ledger SQLite Resolution
 
@@ -250,7 +282,7 @@ Path resolution:
 - Base directory: `SQLITE_DATA_DIRECTORY` (if set)
 - Fallback base directory: `$PWD/.data/sqlite`
 - File name pattern: `<lifecycleId>.sqlite`
-- `lifecycleId` must be an unsigned 64-bit integer string (`0` to `18446744073709551615`)
+- `lifecycleId` must be an unsigned 32-bit integer string (`0` to `4294967295`)
 
 Examples:
 
@@ -274,9 +306,9 @@ Runtime note:
   `{ "error": "data for lifecycleid is not available", "lifecycleId": "<id>" }`.
 - If a lifecycle sqlite file does not exist, voting account endpoint also returns
   `404` with `{ "error": "data for lifecycleid is not available", "lifecycleId": "<id>" }`.
-- If `lifecycleId` is not a valid unsigned 64-bit integer string, endpoint
+- If `lifecycleId` is not a valid unsigned 32-bit integer string, the endpoint
   returns `400` with
-  `{ "error": "lifecycleId must be an unsigned 64-bit integer string" }`.
+  `{ "error": "lifecycleId must be an unsigned 32-bit integer string" }`.
 
 Error strategy:
 
@@ -292,6 +324,7 @@ Use the processor API process for HTTP reads:
 
 - `GET /status` for processor lag/offset visibility
 - `GET /healthz`
+- `GET /readyz`
 - `GET /proposals`
 - `GET /proposals/:id`
 - `GET /votes`
@@ -302,9 +335,28 @@ Use the processor API process for HTTP reads:
 - `GET /vote-tallies/:id`
 - `GET /proposal-executions`
 - `GET /proposal-executions/:id`
-- `GET /proposals`
-- `GET /proposals/search`
-- `GET /proposals/:id/content`
+
+The generated processor routes are read-only. The server rejects mutating CRUD
+methods.
+
+### Failure recovery
+
+The indexer stores malformed observations in `archive_event_rejections`. Review
+the source evidence before you resolve a rejection.
+
+```bash
+pnpm backend:resolve-indexer-rejection -- <rejection-id>
+```
+
+The processor retries a failed event five times. A final failure blocks later
+events for the same processor. Fix the cause before you start a manual retry.
+
+```bash
+pnpm backend:retry-blocked-event
+```
+
+Both commands use the configured `DATABASE_URL`, `DATABASE_SCHEMA`, and
+`PROCESSOR_NAME` values.
 
 TODO:
 
@@ -315,9 +367,16 @@ TODO:
 Package-level tests:
 
 ```bash
-pnpm --dir packages/indexer run test
-pnpm --dir packages/processor run test
+pnpm test:backend
+pnpm test:backend:postgres
 ```
+
+`test:backend` runs all indexer, processor, and API unit tests with coverage.
+The coverage gate requires 80 percent lines and functions. It requires 75
+percent branches and 60 percent lines in each source file.
+
+`test:backend:postgres` needs `DATABASE_TEST_URL`. It tests fresh and upgrade
+migrations, custom schemas, sequence order, rollback, and reapply behavior.
 
 App-level tests in `apps/api` fall into two policy buckets:
 
@@ -359,5 +418,5 @@ App-level local-blockchain e2e:
 pnpm --dir apps/api run test:e2e:local-blockchain
 ```
 
-The default `apps/api` `test` script currently matches `test/**/*.test.ts`; this
-app currently keeps its primary coverage in package tests + Lightnet e2e.
+The default `apps/api` `test` script matches all `test/**/*.test.ts` files.
+The coverage script uses the non-E2E `test/*.test.ts` suite.
