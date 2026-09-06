@@ -1,0 +1,148 @@
+name: Backend
+
+on:
+  pull_request:
+    paths:
+      - "apps/api/**"
+      - "packages/indexer/**"
+      - "packages/processor/**"
+      - "packages/sdk/**"
+      - "devops/**"
+      - "package.json"
+      - "pnpm-lock.yaml"
+      - "turbo.json"
+      - ".github/workflows/backend.yml"
+  push:
+    branches: [develop]
+    paths:
+      - "apps/api/**"
+      - "packages/indexer/**"
+      - "packages/processor/**"
+      - "packages/sdk/**"
+      - "devops/**"
+      - "package.json"
+      - "pnpm-lock.yaml"
+      - "turbo.json"
+      - ".github/workflows/backend.yml"
+  schedule:
+    - cron: "23 2 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: backend-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  fast:
+    if: github.event_name != 'schedule'
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9.0.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --dir packages/indexer run check-types
+      - run: pnpm --dir packages/processor run check-types
+      - run: pnpm --dir apps/api run check-types
+      - run: pnpm test:devops:compose-config
+      - name: Indexer coverage
+        run: |
+          set -o pipefail
+          pnpm --dir packages/indexer run test:coverage 2>&1 | tee coverage-indexer.txt
+      - name: Processor coverage
+        run: |
+          set -o pipefail
+          pnpm --dir packages/processor run test:coverage 2>&1 | tee coverage-processor.txt
+      - name: API coverage
+        run: |
+          set -o pipefail
+          pnpm --dir apps/api run test:coverage 2>&1 | tee coverage-api.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: backend-coverage-reports
+          path: coverage-*.txt
+          if-no-files-found: error
+
+  postgres:
+    if: github.event_name != 'schedule'
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: treasury_api_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d treasury_api_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+    env:
+      DATABASE_TEST_URL: postgres://postgres:postgres@127.0.0.1:5432/treasury_api_test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9.0.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --dir apps/api run test:integration:postgres
+
+  local-blockchain:
+    if: github.event_name == 'pull_request' || github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9.0.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --dir apps/api run test:e2e:local-blockchain
+
+  lightnet:
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      O1JS_BACKEND: native
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9.0.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --dir apps/api run test:e2e:lightnet
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: lightnet-backend-diagnostics
+          path: |
+            apps/api/cache
+            apps/cli/cache
+          if-no-files-found: ignore
