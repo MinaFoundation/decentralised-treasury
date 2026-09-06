@@ -33,7 +33,7 @@ export const Connect = {
 export const Install = {
   args: {
     status: "disconnected",
-    isAuroInstalled: false,
+    isWalletAvailable: false,
   } satisfies WalletConnectButtonProps,
   render: (args: WalletConnectButtonProps) => <StoryFrame><WalletConnectButton {...args} /></StoryFrame>,
 };

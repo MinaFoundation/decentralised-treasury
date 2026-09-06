@@ -51,7 +51,7 @@ export const defaultTreasuryIntlMessages: Record<string, string> = {
   "ui.header.settings.trigger": "Settings",
   "ui.header.settings.title": "Dashboard settings",
   "ui.header.settings.description":
-    "Configure endpoints used by the dashboard containers in apps/web.",
+    "Configure the service endpoints used by this application.",
   "ui.header.settings.apiUrl.label": "API URL",
   "ui.header.settings.apiUrl.placeholder": "https://api.example.com",
   "ui.header.settings.indexerApiUrl.label": "Indexer API URL",

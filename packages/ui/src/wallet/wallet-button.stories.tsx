@@ -61,7 +61,7 @@ export const ConnectedAction = {
 export const InstallToContinue = {
   args: {
     status: "disconnected",
-    isAuroInstalled: false,
+    isWalletAvailable: false,
   } satisfies WalletButtonProps,
   render: (args: WalletButtonProps) => (
     <StoryFrame>

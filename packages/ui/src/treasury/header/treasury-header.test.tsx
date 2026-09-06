@@ -399,8 +399,8 @@ describe("TreasuryWalletHeader", () => {
   it("renders connect wallet button in wallet header", () => {
     render(<TreasuryWalletHeader />);
 
-    expect(screen.getByRole("button", { name: "Connect Auro" })).toBeTruthy();
-    expect(screen.queryByRole("button", { name: "Install Auro" })).toBeNull();
+    expect(screen.getByRole("button", { name: "Connect wallet" })).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Install wallet" })).toBeNull();
     expect(screen.queryByRole("status")).toBeNull();
   });
 
@@ -413,15 +413,15 @@ describe("TreasuryWalletHeader", () => {
 
   it("renders initial loading wallet state in wallet header", () => {
     render(<TreasuryWalletHeader walletLoading />);
-    const button = screen.getByRole("button", { name: "Checking Auro..." });
+    const button = screen.getByRole("button", { name: "Checking wallet..." });
     expect(button.getAttribute("aria-busy")).toBe("true");
     expect((button as HTMLButtonElement).disabled).toBe(true);
-    expect(button.getAttribute("data-auro-installed")).toBe("yes");
+    expect(button.getAttribute("data-wallet-available")).toBe("yes");
   });
 
   it("falls back to connect label for wallet error state in the header", () => {
     render(<TreasuryWalletHeader walletConnectStatus="error" />);
-    expect(screen.getByRole("button", { name: "Connect Auro" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Connect wallet" })).toBeTruthy();
   });
 
   it("renders loading wallet account details in wallet header", () => {
@@ -469,7 +469,7 @@ describe("TreasuryWalletHeader", () => {
     );
 
     expect(screen.getByRole("button", { name: "Custom wallet" })).toBeTruthy();
-    expect(screen.queryByRole("button", { name: "Connect Auro" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Connect wallet" })).toBeNull();
   });
 
   it("opens settings modal with api and mina node inputs", () => {

@@ -11,7 +11,7 @@ export interface WalletButtonRenderContext {
   address?: string | null;
   accountInfo?: WalletAccountInfo;
   accountInfoLoading?: boolean;
-  isAuroInstalled?: boolean;
+  isWalletAvailable?: boolean;
 }
 
 export interface WalletButtonProps extends WalletConnectButtonProps {
@@ -27,7 +27,7 @@ export function WalletButton({
   address,
   accountInfo,
   accountInfoLoading = false,
-  isAuroInstalled = true,
+  isWalletAvailable = true,
   ...walletButtonProps
 }: WalletButtonProps): JSX.Element {
   const renderContext: WalletButtonRenderContext = {
@@ -36,7 +36,7 @@ export function WalletButton({
     address,
     accountInfo,
     accountInfoLoading,
-    isAuroInstalled,
+    isWalletAvailable,
   };
   const connectedContent =
     typeof children === "function" ? children(renderContext) : children;
@@ -53,7 +53,7 @@ export function WalletButton({
       address={address}
       accountInfo={accountInfo}
       accountInfoLoading={accountInfoLoading}
-      isAuroInstalled={isAuroInstalled}
+      isWalletAvailable={isWalletAvailable}
       variant={variant ?? (children ? "default" : undefined)}
     />
   );

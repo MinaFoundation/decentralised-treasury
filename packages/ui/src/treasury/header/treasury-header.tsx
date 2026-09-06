@@ -29,6 +29,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "../../components/ui/pop
 import {
   resolveTreasuryHeaderMessages,
   type WalletAccountInfo,
+  type WalletDetail,
   type WalletConnectionStatus,
   type WalletConnectMessages,
   type TreasuryHeaderMessages,
@@ -482,9 +483,10 @@ export interface TreasuryWalletHeaderProps extends TreasuryHeaderProps {
   walletConnectStatus?: WalletConnectionStatus;
   walletAddress?: string | null;
   walletAccountInfo?: WalletAccountInfo;
+  walletDetails?: WalletDetail[];
   walletAccountInfoLoading?: boolean;
   walletConnectButtonClassName?: string;
-  isAuroInstalled?: boolean;
+  isWalletAvailable?: boolean;
   settingsButtonClassName?: string;
   walletContainerClassName?: string;
   hideWalletControlsOnMobile?: boolean;
@@ -521,9 +523,10 @@ export function TreasuryWalletHeader({
   walletConnectStatus = "disconnected",
   walletAddress,
   walletAccountInfo,
+  walletDetails,
   walletAccountInfoLoading = false,
   walletConnectButtonClassName,
-  isAuroInstalled = true,
+  isWalletAvailable = true,
   settingsButtonClassName,
   walletContainerClassName,
   hideWalletControlsOnMobile = false,
@@ -747,8 +750,9 @@ export function TreasuryWalletHeader({
               loading={walletLoading}
               address={walletAddress}
               accountInfo={walletAccountInfo}
+              details={walletDetails}
               accountInfoLoading={walletAccountInfoLoading}
-              isAuroInstalled={isAuroInstalled}
+              isWalletAvailable={isWalletAvailable}
               onClick={onConnectWalletClick}
               onInstallClick={onInstallWalletClick}
               onDisconnectClick={onDisconnectWalletClick}

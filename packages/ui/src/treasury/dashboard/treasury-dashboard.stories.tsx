@@ -379,7 +379,7 @@ function DashboardWithFullHeader({
   walletConnectStatus = "disconnected",
   walletAddress,
   walletAccountInfo,
-  isAuroInstalled = true,
+  isWalletAvailable = true,
   activeNavigationItemId = "dashboard",
   lifecycleInfo,
   onCreateProposalClick,
@@ -396,7 +396,7 @@ function DashboardWithFullHeader({
   walletConnectStatus?: TreasuryWalletHeaderProps["walletConnectStatus"];
   walletAddress?: string;
   walletAccountInfo?: TreasuryWalletHeaderProps["walletAccountInfo"];
-  isAuroInstalled?: boolean;
+  isWalletAvailable?: boolean;
   activeNavigationItemId?: TreasuryWalletHeaderProps["activeNavigationItemId"];
   lifecycleInfo?: TreasuryLifecyclePeriodInfoProps;
   onCreateProposalClick?: TreasuryWalletHeaderProps["onCreateProposalClick"];
@@ -465,7 +465,7 @@ function DashboardWithFullHeader({
           walletAddress={walletAddress}
           walletAccountInfo={walletAccountInfo}
           treasuryBalance="12400000"
-          isAuroInstalled={isAuroInstalled}
+          isWalletAvailable={isWalletAvailable}
           onCreateProposalClick={onCreateProposalClick}
           onConnectWalletClick={onConnectWalletClick}
           onInstallWalletClick={onInstallWalletClick}
@@ -658,7 +658,7 @@ export const InstallWalletDashboard = {
     <DashboardWithFullHeader
       {...args}
       walletConnectStatus="disconnected"
-      isAuroInstalled={false}
+      isWalletAvailable={false}
     />
   ),
 };

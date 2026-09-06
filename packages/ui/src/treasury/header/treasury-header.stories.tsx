@@ -267,7 +267,7 @@ export const InstallWalletHeader = {
   args: {
     ...defaultWalletArgs,
     walletConnectStatus: "disconnected" as const,
-    isAuroInstalled: false,
+    isWalletAvailable: false,
   } satisfies Partial<TreasuryWalletHeaderProps>,
   render: (args: TreasuryWalletHeaderProps) => (
     <HeaderFrame>

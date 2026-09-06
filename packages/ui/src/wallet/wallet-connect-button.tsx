@@ -12,6 +12,7 @@ import { useTreasuryIntl } from "../i18n";
 import {
   resolveWalletConnectMessages,
   type WalletAccountInfo,
+  type WalletDetail,
   type WalletConnectionStatus,
   type WalletConnectMessages,
 } from "./wallet-types";
@@ -23,11 +24,12 @@ export interface WalletConnectButtonProps {
   status: WalletConnectionStatus;
   address?: string | null;
   accountInfo?: WalletAccountInfo;
+  details?: WalletDetail[];
   accountInfoLoading?: boolean;
   showAccountDropdown?: boolean;
   className?: string;
   disabled?: boolean;
-  isAuroInstalled?: boolean;
+  isWalletAvailable?: boolean;
   onClick?: () => void;
   onInstallClick?: () => void;
   onDisconnectClick?: () => void;
@@ -52,7 +54,7 @@ function resolveDisplayValue(value: string | null | undefined): string {
 }
 
 function resolveButtonLabel(
-  input: Pick<WalletConnectButtonProps, "loading" | "status" | "address" | "isAuroInstalled"> & {
+  input: Pick<WalletConnectButtonProps, "loading" | "status" | "address" | "isWalletAvailable"> & {
     resolvedMessages: WalletConnectMessages;
   },
 ): string {
@@ -66,7 +68,7 @@ function resolveButtonLabel(
     return resolvedMessages.loading;
   }
 
-  if (input.isAuroInstalled === false) {
+  if (input.isWalletAvailable === false) {
     return resolvedMessages.install;
   }
 
@@ -93,11 +95,12 @@ export const WalletConnectButton = forwardRef<
     status,
     address,
     accountInfo,
+    details = [],
     accountInfoLoading = false,
     showAccountDropdown = true,
     className,
     disabled,
-    isAuroInstalled = true,
+    isWalletAvailable = true,
     onClick,
     onInstallClick,
     onDisconnectClick,
@@ -116,29 +119,30 @@ export const WalletConnectButton = forwardRef<
     loading,
     status,
     address,
-    isAuroInstalled,
+    isWalletAvailable,
     resolvedMessages,
   });
   const showDisconnectLabel =
-    !loading && status === "connected" && isHoveredOrFocused && isAuroInstalled !== false;
+    !loading && status === "connected" && isHoveredOrFocused && isWalletAvailable !== false;
   const label = showDisconnectLabel ? resolvedMessages.disconnect : baseLabel;
 
   const resolvedVariant: ButtonProps["variant"] =
     variant ??
-    (isAuroInstalled === false ? "outline" : "outline");
+    (isWalletAvailable === false ? "outline" : "outline");
   const resolvedClickHandler =
-    isAuroInstalled === false
+    isWalletAvailable === false
       ? (onInstallClick ?? onClick)
       : status === "connected"
         ? (onDisconnectClick ?? onClick)
         : onClick;
   const showWalletAccountDropdown =
     showAccountDropdown &&
-    isAuroInstalled !== false &&
+    isWalletAvailable !== false &&
     status === "connected" &&
     (accountInfoLoading ||
       Boolean(
         address ||
+          details.length > 0 ||
           accountInfo?.minaBalance ||
           accountInfo?.votingWeight ||
           accountInfo?.delegatedTo ||
@@ -165,7 +169,7 @@ export const WalletConnectButton = forwardRef<
       onClick={resolvedClickHandler}
       aria-busy={loading || status === "connecting"}
       data-wallet-status={status}
-      data-auro-installed={isAuroInstalled ? "yes" : "no"}
+      data-wallet-available={isWalletAvailable ? "yes" : "no"}
       disabled={Boolean(disabled) || loading || status === "connecting"}
       onMouseEnter={() => setIsHoveredOrFocused(true)}
       onMouseLeave={() => setIsHoveredOrFocused(false)}
@@ -297,6 +301,13 @@ export const WalletConnectButton = forwardRef<
                       })}
                       value={resolveDisplayValue(address)}
                     />
+                    {details.map((detail) => (
+                      <AddressDetailField
+                        key={detail.label}
+                        label={detail.label}
+                        value={resolveDisplayValue(detail.value)}
+                      />
+                    ))}
                   </div>
                 </WalletAccountSection>
                 <WalletAccountSection

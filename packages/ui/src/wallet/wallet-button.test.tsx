@@ -15,7 +15,7 @@ describe("WalletButton", () => {
     );
 
     expect(screen.queryByRole("button", { name: "New proposal" })).toBeNull();
-    const connectButton = screen.getByRole("button", { name: "Connect Auro" });
+    const connectButton = screen.getByRole("button", { name: "Connect wallet" });
     expect(connectButton.className.includes("bg-primary")).toBe(true);
 
     rerender(
@@ -25,7 +25,7 @@ describe("WalletButton", () => {
     );
 
     expect(screen.getByRole("button", { name: "New proposal" })).toBeTruthy();
-    expect(screen.queryByRole("button", { name: "Connect Auro" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Connect wallet" })).toBeNull();
   });
 
   it("supports a render function for connected content", () => {
@@ -45,18 +45,18 @@ describe("WalletButton", () => {
 
   it("falls back to install when the wallet is unavailable", () => {
     render(
-      <WalletButton status="disconnected" isAuroInstalled={false}>
+      <WalletButton status="disconnected" isWalletAvailable={false}>
         <button type="button">New proposal</button>
       </WalletButton>,
     );
 
-    expect(screen.getByRole("button", { name: "Install Auro" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Install wallet" })).toBeTruthy();
     expect(screen.queryByRole("button", { name: "New proposal" })).toBeNull();
   });
 
   it("renders the plain wallet button when no child action is provided", () => {
     render(<WalletButton status="disconnected" />);
 
-    expect(screen.getByRole("button", { name: "Connect Auro" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Connect wallet" })).toBeTruthy();
   });
 });

@@ -12,7 +12,7 @@ describe("WalletConnectButton", () => {
     render(<WalletConnectButton status="disconnected" />);
 
     const button = screen.getByRole("button", {
-      name: "Connect Auro",
+      name: "Connect wallet",
     });
     expect(button).toBeTruthy();
     expect(button.className.includes("bg-background/95")).toBe(true);
@@ -29,11 +29,11 @@ describe("WalletConnectButton", () => {
 
   it("renders initial loading state before provider resolution", () => {
     render(<WalletConnectButton status="disconnected" loading />);
-    const button = screen.getByRole("button", { name: "Checking Auro..." });
+    const button = screen.getByRole("button", { name: "Checking wallet..." });
 
     expect((button as HTMLButtonElement).disabled).toBe(true);
     expect(button.getAttribute("aria-busy")).toBe("true");
-    expect(button.getAttribute("data-auro-installed")).toBe("yes");
+    expect(button.getAttribute("data-wallet-available")).toBe("yes");
   });
 
   it("shows the persisted address while a reconnect is still loading", () => {
@@ -60,13 +60,13 @@ describe("WalletConnectButton", () => {
     render(
       <WalletConnectButton
         status="connected"
-        isAuroInstalled={false}
+        isWalletAvailable={false}
         address="B62qwalletconnected1234567890abcdef"
         accountInfo={{ minaBalance: "284,120 MINA" }}
       />,
     );
 
-    expect(screen.getByRole("button", { name: "Install Auro" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Install wallet" })).toBeTruthy();
     expect(
       screen.queryByRole("button", { name: "Open wallet account details" }),
     ).toBeNull();
@@ -128,6 +128,26 @@ describe("WalletConnectButton", () => {
         name: "B62qwalletconnected1234567890abcdef",
       }),
     ).toBeNull();
+  });
+
+  it("shows provider-neutral wallet details", () => {
+    render(
+      <WalletConnectButton
+        status="connected"
+        address="B62qwalletconnected1234567890abcdef"
+        details={[
+          { label: "Wallet", value: "Ledger" },
+          { label: "Account index", value: "12" },
+        ]}
+      />,
+    );
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Open wallet account details" }),
+    );
+    expect(screen.getByText("Ledger")).toBeTruthy();
+    expect(screen.getByText("Account index")).toBeTruthy();
+    expect(screen.getByText("12")).toBeTruthy();
   });
 
   it("renders a wider account dropdown and loading state for connected wallets", () => {
@@ -307,16 +327,16 @@ describe("WalletConnectButton", () => {
   });
 
   it("shows install label when Auro is missing", () => {
-    render(<WalletConnectButton status="disconnected" isAuroInstalled={false} />);
+    render(<WalletConnectButton status="disconnected" isWalletAvailable={false} />);
 
-    expect(screen.getByRole("button", { name: "Install Auro" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Install wallet" })).toBeTruthy();
   });
 
   it("falls back to connect label and uses the wallet action in error state", () => {
     const onClick = vi.fn();
     render(<WalletConnectButton status="error" onClick={onClick} />);
 
-    fireEvent.click(screen.getByRole("button", { name: "Connect Auro" }));
+    fireEvent.click(screen.getByRole("button", { name: "Connect wallet" }));
 
     expect(onClick).toHaveBeenCalledTimes(1);
   });
@@ -328,13 +348,13 @@ describe("WalletConnectButton", () => {
     render(
       <WalletConnectButton
         status="disconnected"
-        isAuroInstalled={false}
+        isWalletAvailable={false}
         onClick={onWalletClick}
         onInstallClick={onInstallClick}
       />,
     );
 
-    fireEvent.click(screen.getByRole("button", { name: "Install Auro" }));
+    fireEvent.click(screen.getByRole("button", { name: "Install wallet" }));
 
     expect(onInstallClick).toHaveBeenCalledTimes(1);
     expect(onWalletClick).not.toHaveBeenCalled();
@@ -346,12 +366,12 @@ describe("WalletConnectButton", () => {
     render(
       <WalletConnectButton
         status="disconnected"
-        isAuroInstalled={false}
+        isWalletAvailable={false}
         onClick={onWalletClick}
       />,
     );
 
-    fireEvent.click(screen.getByRole("button", { name: "Install Auro" }));
+    fireEvent.click(screen.getByRole("button", { name: "Install wallet" }));
 
     expect(onWalletClick).toHaveBeenCalledTimes(1);
   });

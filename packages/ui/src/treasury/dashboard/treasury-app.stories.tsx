@@ -677,7 +677,7 @@ export default {
     walletAccountInfoLoading: {
       control: "boolean",
     },
-    isAuroInstalled: {
+    isWalletAvailable: {
       control: "boolean",
     },
   },
@@ -837,7 +837,7 @@ export const InstallWalletApp = {
     walletConnectStatus: "disconnected",
     walletAddress: undefined,
     walletAccountInfo: undefined,
-    isAuroInstalled: false,
+    isWalletAvailable: false,
     ...defaultMockAppArgs,
   } satisfies MockTreasuryAppProps,
   render: (args: MockTreasuryAppProps): JSX.Element => (
@@ -905,7 +905,7 @@ interface MockTreasuryAppProps {
   walletAddress?: TreasuryWalletHeaderProps["walletAddress"];
   walletAccountInfo?: TreasuryWalletHeaderProps["walletAccountInfo"];
   walletAccountInfoLoading?: boolean;
-  isAuroInstalled?: boolean;
+  isWalletAvailable?: boolean;
 }
 
 const DASHBOARD_LIFECYCLE_ID_BY_PERIOD: Record<MockDashboardPeriod, number> = {
@@ -958,7 +958,7 @@ function MockTreasuryApp({
   walletAddress,
   walletAccountInfo,
   walletAccountInfoLoading = false,
-  isAuroInstalled = true,
+  isWalletAvailable = true,
 }: MockTreasuryAppProps): JSX.Element {
   const isHappyPathScenario = scenario === "happyPath";
   const transactionStepDelayMs = resolveMockTransactionStepDelayMs(scenario);
@@ -1463,7 +1463,7 @@ function MockTreasuryApp({
         walletAddress={resolvedWalletAddress}
         walletAccountInfo={resolvedWalletAccountInfo}
         walletAccountInfoLoading={walletAccountInfoLoading}
-        isAuroInstalled={isAuroInstalled}
+        isWalletAvailable={isWalletAvailable}
         onDashboardClick={() =>
           navigate({
             page: "dashboard",
@@ -1989,7 +1989,7 @@ function AppChrome({
   walletAddress = "B62qkEdNmGbUVaUnVtwMeMo9G1QBgfp9c3K7j4FbmXn21zG8ssvaPvi",
   walletAccountInfo = connectedWalletAccountInfo,
   walletAccountInfoLoading = false,
-  isAuroInstalled = true,
+  isWalletAvailable = true,
   onCreateProposalClick,
   onDashboardClick,
   onDraftProposalSelect,
@@ -2006,7 +2006,7 @@ function AppChrome({
   walletAddress?: TreasuryWalletHeaderProps["walletAddress"];
   walletAccountInfo?: TreasuryWalletHeaderProps["walletAccountInfo"];
   walletAccountInfoLoading?: boolean;
-  isAuroInstalled?: boolean;
+  isWalletAvailable?: boolean;
   onCreateProposalClick?: TreasuryWalletHeaderProps["onCreateProposalClick"];
   onDashboardClick?: () => void;
   onDraftProposalSelect?: TreasuryWalletHeaderProps["onDraftProposalSelect"];
@@ -2030,7 +2030,7 @@ function AppChrome({
         walletAddress={walletAddress}
         walletAccountInfo={walletAccountInfo}
         walletAccountInfoLoading={walletAccountInfoLoading}
-        isAuroInstalled={isAuroInstalled}
+        isWalletAvailable={isWalletAvailable}
         treasuryBalance="12400000"
         draftProposals={draftProposals}
         onCreateProposalClick={onCreateProposalClick}

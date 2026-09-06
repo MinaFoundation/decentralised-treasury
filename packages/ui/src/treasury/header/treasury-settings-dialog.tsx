@@ -197,7 +197,7 @@ export function TreasurySettingsDialog({
             {intl.formatMessage({
               id: "ui.header.settings.description",
               defaultMessage:
-                "Configure endpoints used by the dashboard containers in apps/web.",
+                "Configure the service endpoints used by this application.",
             })}
           </DialogDescription>
         </DialogHeader>

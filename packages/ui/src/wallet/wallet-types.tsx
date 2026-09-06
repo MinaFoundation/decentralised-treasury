@@ -22,14 +22,20 @@ export interface WalletAccountInfo {
   delegatedVotingWeight?: string | null;
 }
 
+export interface WalletDetail {
+  label: string;
+  value: string;
+  mono?: boolean;
+}
+
 export interface TreasuryHeaderMessages {
   title: string;
 }
 
 export const defaultWalletConnectMessages: WalletConnectMessages = {
-  loading: "Checking Auro...",
-  connect: "Connect Auro",
-  install: "Install Auro",
+  loading: "Checking wallet...",
+  connect: "Connect wallet",
+  install: "Install wallet",
   connecting: "Connecting...",
   connected: "Connected",
   disconnect: "Disconnect",
