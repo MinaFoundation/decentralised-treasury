@@ -27,6 +27,7 @@ export interface ArchiveEventData {
   type?: string | null;
   transactionInfo?: {
     hash?: string | null;
+    sequenceNumber?: number | null;
     zkappAccountUpdateIds?: number[] | null;
   } | null;
 }
@@ -34,6 +35,10 @@ export interface ArchiveEventData {
 export interface ArchiveBlockInfo {
   height: number;
   timestamp?: string | null;
+  globalSlotSinceGenesis?: number | null;
+  stateHash?: string | null;
+  parentHash?: string | null;
+  chainStatus?: string | null;
 }
 
 export interface ArchiveEventOutput {
@@ -76,7 +81,35 @@ export class ArchiveClient {
   public constructor(
     private readonly archiveNodeUrl: string,
     private readonly config: ArchiveClientConfig,
-  ) {}
+  ) {
+    let parsedUrl: URL;
+    try {
+      parsedUrl = new URL(archiveNodeUrl);
+    } catch {
+      throw new Error("archiveNodeUrl must be a valid absolute URL");
+    }
+    if (parsedUrl.protocol !== "http:" && parsedUrl.protocol !== "https:") {
+      throw new Error("archiveNodeUrl must use http or https");
+    }
+    if (
+      typeof config.treasuryOwnerContractAddress !== "string" ||
+      !config.treasuryOwnerContractAddress ||
+      config.treasuryOwnerContractAddress.trim() !==
+        config.treasuryOwnerContractAddress
+    ) {
+      throw new Error(
+        "treasuryOwnerContractAddress must be a nonempty trimmed string",
+      );
+    }
+    if (
+      !Number.isSafeInteger(config.archiveRequestTimeoutMs) ||
+      config.archiveRequestTimeoutMs <= 0
+    ) {
+      throw new Error(
+        "archiveRequestTimeoutMs must be a positive safe integer",
+      );
+    }
+  }
 
   private async post<TData>(
     query: string,
@@ -132,10 +165,12 @@ export class ArchiveClient {
     const pending = maxBlockHeight?.pendingMaxBlockHeight;
 
     if (
-      !Number.isFinite(canonical) ||
+      !Number.isSafeInteger(canonical) ||
       canonical === null ||
-      !Number.isFinite(pending) ||
-      pending === null
+      canonical < 0 ||
+      !Number.isSafeInteger(pending) ||
+      pending === null ||
+      pending < 0
     ) {
       throw new Error(
         "Archive networkState.maxBlockHeight is missing canonical/pending heights",
@@ -148,7 +183,20 @@ export class ArchiveClient {
     };
   }
 
-  public async fetchEvents(options: FetchEventsOptions): Promise<ArchiveEventOutput[]> {
+  public async fetchEvents(
+    options: FetchEventsOptions,
+  ): Promise<ArchiveEventOutput[]> {
+    if (options.status !== "PENDING" && options.status !== "CANONICAL") {
+      throw new Error("status must be PENDING or CANONICAL");
+    }
+    if (!Number.isSafeInteger(options.from) || options.from < 0) {
+      throw new Error("from must be a nonnegative safe integer");
+    }
+    if (!Number.isSafeInteger(options.to) || options.to < options.from) {
+      throw new Error(
+        "to must be a safe integer greater than or equal to from",
+      );
+    }
     const variables = {
       input: {
         address: this.config.treasuryOwnerContractAddress,
@@ -188,13 +236,19 @@ export class ArchiveClient {
           this.isMissingBlockTimestampFieldError(error)
         ) {
           this.supportsBlockTimestamp = false;
-          data = await this.post<EventsResponse>(EVENTS_QUERY_FALLBACK, variables);
+          data = await this.post<EventsResponse>(
+            EVENTS_QUERY_FALLBACK,
+            variables,
+          );
         } else {
           throw error;
         }
       }
     }
-    return data.events ?? [];
+    if (!Array.isArray(data.events)) {
+      throw new Error("Archive events response must include an events array");
+    }
+    return data.events;
   }
 
   private isMissingBlockTimestampFieldError(error: unknown): boolean {

@@ -15,12 +15,17 @@ query Events($input: EventFilterOptionsInput!) {
     blockInfo {
       height
       timestamp
+      globalSlotSinceGenesis
+      stateHash
+      parentHash
+      chainStatus
     }
     eventData {
       accountUpdateId
       data
       transactionInfo {
         hash
+        sequenceNumber
         zkappAccountUpdateIds
       }
     }
@@ -33,12 +38,17 @@ query Events($input: EventFilterOptionsInput!) {
   events(input: $input) {
     blockInfo {
       height
+      globalSlotSinceGenesis
+      stateHash
+      parentHash
+      chainStatus
     }
     eventData {
       accountUpdateId
       data
       transactionInfo {
         hash
+        sequenceNumber
         zkappAccountUpdateIds
       }
     }
