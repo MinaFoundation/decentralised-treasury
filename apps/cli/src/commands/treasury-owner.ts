@@ -8,9 +8,27 @@ import {
   VerificationKey,
 } from "o1js";
 import { logger } from "@repo/sdk/src/index.js";
-import { MULTISIG_PARTICIPANTS_COUNT } from "@repo/sdk/src/provable/contracts/treasury-pause-controller/multisig-signatures.js";
+import {
+  MULTISIG_PARTICIPANTS_COUNT,
+  MultisigSignatures,
+} from "@repo/sdk/src/provable/contracts/treasury-pause-controller/multisig-signatures.js";
+import {
+  DEFAULT_TREASURY_OWNER_WITHDRAWAL_PERMISSION,
+  TREASURY_OWNER_WITHDRAWAL_PERMISSIONS,
+  type TreasuryOwnerWithdrawalPermission,
+} from "@repo/sdk/src/provable/contracts/treasury-owner.js";
 import { parseBooleanOption, parseIntOption } from "./option-parsers.js";
-import { configureMinaNetwork } from "./mina-instance.js";
+import {
+  configureMinaNetwork,
+  minaNetworkIdOption,
+  type MinaNetworkId,
+} from "./mina-instance.js";
+import {
+  addTransactionSignerOptions,
+  createLedgerTransactionSigner,
+  resolveSigningAccount,
+  type SignerMode,
+} from "../ledger/transaction-signer.js";
 
 function parsePrivateKey(value: string): PrivateKey {
   return PrivateKey.fromBase58(value);
@@ -37,10 +55,19 @@ function parsePublicKeys(value: string): PublicKey[] {
 
 interface DeployTreasuryOwnerCommandOptions {
   minaNodeUrl: string;
-  senderPrivateKey: PrivateKey;
-  treasuryOwnerPrivateKey: PrivateKey;
-  pauseControllerPrivateKey: PrivateKey;
+  networkId: MinaNetworkId;
+  signer: SignerMode;
+  senderPrivateKey?: PrivateKey;
+  senderPublicKey?: PublicKey;
+  senderLedgerAccountIndex?: number;
+  treasuryOwnerPrivateKey?: PrivateKey;
+  treasuryOwnerPublicKey?: PublicKey;
+  treasuryOwnerLedgerAccountIndex?: number;
+  pauseControllerPrivateKey?: PrivateKey;
+  pauseControllerPublicKey?: PublicKey;
+  pauseControllerLedgerAccountIndex?: number;
   treasuryDeployedAtSlot: UInt32;
+  withdrawalPermission: TreasuryOwnerWithdrawalPermission;
   multisigParticipantsPublicKeys: PublicKey[];
   allowDeployToExistingAccount: boolean;
   fee?: UInt64;
@@ -56,8 +83,14 @@ interface CompileTreasuryOwnerCommandOptions {
 
 interface TransferToTreasuryCommandOptions {
   minaNodeUrl: string;
-  senderPrivateKey: PrivateKey;
+  networkId: MinaNetworkId;
+  signer: SignerMode;
+  senderPrivateKey?: PrivateKey;
+  senderPublicKey?: PublicKey;
+  senderLedgerAccountIndex?: number;
   fundingPrivateKey?: PrivateKey;
+  fundingPublicKey?: PublicKey;
+  fundingLedgerAccountIndex?: number;
   treasuryOwnerPublicKey: PublicKey;
   amount: UInt64;
   fee?: UInt64;
@@ -67,8 +100,27 @@ interface TransferToTreasuryCommandOptions {
   lifecyclePeriodDuration: UInt32;
 }
 
+interface EmergencyWithdrawCommandOptions {
+  minaNodeUrl: string;
+  networkId: MinaNetworkId;
+  signer: SignerMode;
+  senderPrivateKey?: PrivateKey;
+  senderPublicKey?: PublicKey;
+  senderLedgerAccountIndex?: number;
+  treasuryOwnerPrivateKey?: PrivateKey;
+  treasuryOwnerPublicKey?: PublicKey;
+  treasuryOwnerLedgerAccountIndex?: number;
+  recipientPublicKey: PublicKey;
+  amount: UInt64;
+  fee?: UInt64;
+  nonce?: number;
+  memo?: string;
+  wait: boolean;
+}
+
 interface ReadTreasuryOwnerStateCommandOptions {
   minaNodeUrl: string;
+  networkId: MinaNetworkId;
   treasuryOwnerPublicKey: PublicKey;
   lifecyclePeriodDuration: UInt32;
 }
@@ -81,9 +133,8 @@ export async function compileTreasuryOwner(
     `[treasury-owner:compile] starting (lifecyclePeriodDuration=${options.lifecyclePeriodDuration.toString()})`,
   );
 
-  const { SqliteTreasuryOwnerService } = await import(
-    "@repo/sdk/src/services/sqlite/sqlite-treasury-owner-service.js"
-  );
+  const { SqliteTreasuryOwnerService } =
+    await import("@repo/sdk/src/services/sqlite/sqlite-treasury-owner-service.js");
   const service = new SqliteTreasuryOwnerService();
 
   const compileStartedAt = Date.now();
@@ -110,16 +161,20 @@ export async function compileTreasuryOwner(
   };
 
   const browserEnv = {
-    NEXT_PUBLIC_LIFECYCLE_PERIOD_DURATION: browserCompileConfig.lifecyclePeriodDuration,
+    NEXT_PUBLIC_LIFECYCLE_PERIOD_DURATION:
+      browserCompileConfig.lifecyclePeriodDuration,
     NEXT_PUBLIC_VOTE_REDUCER_VERIFICATION_KEY_JSON: JSON.stringify(
       browserCompileConfig.voteReducerVerificationKeyJson,
     ),
     NEXT_PUBLIC_STAKING_LEDGER_TO_VOTING_LEDGER_VERIFICATION_KEY_JSON:
-      JSON.stringify(browserCompileConfig.stakingLedgerToVotingLedgerVerificationKeyJson),
+      JSON.stringify(
+        browserCompileConfig.stakingLedgerToVotingLedgerVerificationKeyJson,
+      ),
     NEXT_PUBLIC_TREASURY_PROPOSAL_VERIFICATION_KEY_JSON: JSON.stringify(
       browserCompileConfig.treasuryProposalVerificationKeyJson,
     ),
-    NEXT_PUBLIC_EMPTY_VOTING_LEDGER_ROOT: browserCompileConfig.emptyVotingLedgerRoot,
+    NEXT_PUBLIC_EMPTY_VOTING_LEDGER_ROOT:
+      browserCompileConfig.emptyVotingLedgerRoot,
     NEXT_PUBLIC_EMPTY_NULLIFIER_ROOT: browserCompileConfig.emptyNullifierRoot,
   };
 
@@ -137,7 +192,19 @@ export async function compileTreasuryOwner(
         treasuryPauseControllerVerificationKey: Boolean(
           result.treasuryPauseControllerVerificationKey,
         ),
-        treasuryOwnerVerificationKey: Boolean(result.treasuryOwnerVerificationKey),
+        treasuryOwnerVerificationKey: Boolean(
+          result.treasuryOwnerVerificationKey,
+        ),
+      },
+      verificationKeyHashes: {
+        voteReducer: result.voteReducerVerificationKey.hash.toString(),
+        stakingLedgerToVotingLedger:
+          result.stakingLedgerToVotingLedgerVerificationKey.hash.toString(),
+        treasuryProposal:
+          result.treasuryProposalVerificationKey.hash.toString(),
+        treasuryPauseController:
+          result.treasuryPauseControllerVerificationKey.hash.toString(),
+        treasuryOwner: result.treasuryOwnerVerificationKey.hash.toString(),
       },
       browserCompileConfig,
       browserEnv,
@@ -153,18 +220,41 @@ export async function deployTreasuryOwner(
   options: DeployTreasuryOwnerCommandOptions,
 ): Promise<void> {
   const startedAt = Date.now();
-  const senderPublicKey = options.senderPrivateKey.toPublicKey().toBase58();
-  const treasuryOwnerPublicKey =
-    options.treasuryOwnerPrivateKey.toPublicKey().toBase58();
-  const pauseControllerPublicKey =
-    options.pauseControllerPrivateKey.toPublicKey().toBase58();
+  const sender = resolveSigningAccount({
+    signer: options.signer,
+    label: "Sender",
+    privateKey: options.senderPrivateKey,
+    publicKey: options.senderPublicKey,
+    ledgerAccountIndex: options.senderLedgerAccountIndex,
+  });
+  const treasuryOwner = resolveSigningAccount({
+    signer: options.signer,
+    label: "Treasury owner",
+    privateKey: options.treasuryOwnerPrivateKey,
+    publicKey: options.treasuryOwnerPublicKey,
+    ledgerAccountIndex: options.treasuryOwnerLedgerAccountIndex,
+  });
+  const pauseController = resolveSigningAccount({
+    signer: options.signer,
+    label: "Pause controller",
+    privateKey: options.pauseControllerPrivateKey,
+    publicKey: options.pauseControllerPublicKey,
+    ledgerAccountIndex: options.pauseControllerLedgerAccountIndex,
+  });
+  const transactionSigner = createLedgerTransactionSigner(
+    options.signer,
+    [sender, treasuryOwner, pauseController],
+    options.networkId,
+  );
+  const senderPublicKey = sender.publicKey.toBase58();
+  const treasuryOwnerPublicKey = treasuryOwner.publicKey.toBase58();
+  const pauseControllerPublicKey = pauseController.publicKey.toBase58();
   logger.info(
-    `[treasury-owner:deploy] starting (minaNodeUrl=${options.minaNodeUrl}, sender=${senderPublicKey}, treasuryOwner=${treasuryOwnerPublicKey}, pauseController=${pauseControllerPublicKey}, treasuryDeployedAtSlot=${options.treasuryDeployedAtSlot.toString()}, multisigParticipants=${options.multisigParticipantsPublicKeys.length}, allowDeployToExistingAccount=${String(options.allowDeployToExistingAccount)}, wait=${String(options.wait)})`,
+    `[treasury-owner:deploy] starting (minaNodeUrl=${options.minaNodeUrl}, sender=${senderPublicKey}, treasuryOwner=${treasuryOwnerPublicKey}, pauseController=${pauseControllerPublicKey}, treasuryDeployedAtSlot=${options.treasuryDeployedAtSlot.toString()}, withdrawalPermission=${options.withdrawalPermission}, multisigParticipants=${options.multisigParticipantsPublicKeys.length}, allowDeployToExistingAccount=${String(options.allowDeployToExistingAccount)}, wait=${String(options.wait)})`,
   );
 
-  const { SqliteTreasuryOwnerService } = await import(
-    "@repo/sdk/src/services/sqlite/sqlite-treasury-owner-service.js"
-  );
+  const { SqliteTreasuryOwnerService } =
+    await import("@repo/sdk/src/services/sqlite/sqlite-treasury-owner-service.js");
   const service = new SqliteTreasuryOwnerService();
 
   logger.info(
@@ -179,7 +269,7 @@ export async function deployTreasuryOwner(
   );
 
   logger.info("[treasury-owner:deploy] configuring Mina network instance");
-  configureMinaNetwork(options.minaNodeUrl);
+  configureMinaNetwork(options.minaNodeUrl, options.networkId);
 
   logger.info(
     "[treasury-owner:deploy] submitting pause-controller and treasury-owner deployment transactions",
@@ -187,10 +277,15 @@ export async function deployTreasuryOwner(
   const deployStartedAt = Date.now();
   const result = await service.deploy({
     minaNodeUrl: options.minaNodeUrl,
-    senderPrivateKey: options.senderPrivateKey,
-    treasuryOwnerPrivateKey: options.treasuryOwnerPrivateKey,
-    pauseControllerPrivateKey: options.pauseControllerPrivateKey,
+    senderPrivateKey: sender.privateKey,
+    senderPublicKey: sender.publicKey,
+    treasuryOwnerPrivateKey: treasuryOwner.privateKey,
+    treasuryOwnerPublicKey: treasuryOwner.publicKey,
+    pauseControllerPrivateKey: pauseController.privateKey,
+    pauseControllerPublicKey: pauseController.publicKey,
+    transactionSigner,
     treasuryDeployedAtSlot: options.treasuryDeployedAtSlot,
+    withdrawalPermission: options.withdrawalPermission,
     multisigParticipantsPublicKeys: options.multisigParticipantsPublicKeys,
     allowDeployToExistingAccount: options.allowDeployToExistingAccount,
     fee: options.fee,
@@ -202,8 +297,14 @@ export async function deployTreasuryOwner(
   logger.info(
     `[treasury-owner:deploy] deployment completed (elapsedMs=${Date.now() - deployStartedAt}, pauseControllerTxHash=${result.pauseControllerTxHash ?? "none"}, treasuryOwnerTxHash=${result.treasuryOwnerTxHash ?? "none"})`,
   );
-  console.log(JSON.stringify(result));
-  Provable.log("treasuryOwner", result);
+  const structuredResult = {
+    ...result,
+    multisigCommitment: MultisigSignatures.createCommitment(
+      options.multisigParticipantsPublicKeys,
+    ).toString(),
+  };
+  console.log(JSON.stringify(structuredResult));
+  Provable.log("treasuryOwner", structuredResult);
   logger.info(
     `[treasury-owner:deploy] done (elapsedMs=${Date.now() - startedAt})`,
   );
@@ -212,19 +313,89 @@ export async function deployTreasuryOwner(
 export async function transferToTreasury(
   options: TransferToTreasuryCommandOptions,
 ): Promise<void> {
-  const { SqliteTreasuryOwnerService } = await import(
-    "@repo/sdk/src/services/sqlite/sqlite-treasury-owner-service.js"
+  const sender = resolveSigningAccount({
+    signer: options.signer,
+    label: "Sender",
+    privateKey: options.senderPrivateKey,
+    publicKey: options.senderPublicKey,
+    ledgerAccountIndex: options.senderLedgerAccountIndex,
+  });
+  const funding = resolveSigningAccount({
+    signer: options.signer,
+    label: "Funding account",
+    privateKey: options.fundingPrivateKey ?? sender.privateKey,
+    publicKey: options.fundingPublicKey ?? sender.publicKey,
+    ledgerAccountIndex: (options.fundingPublicKey ?? sender.publicKey)
+      .equals(sender.publicKey)
+      .toBoolean()
+      ? (options.fundingLedgerAccountIndex ?? sender.ledgerAccountIndex)
+      : options.fundingLedgerAccountIndex,
+  });
+  const transactionSigner = createLedgerTransactionSigner(
+    options.signer,
+    [sender, funding],
+    options.networkId,
   );
+  const { SqliteTreasuryOwnerService } =
+    await import("@repo/sdk/src/services/sqlite/sqlite-treasury-owner-service.js");
   const service = new SqliteTreasuryOwnerService();
   await service.compile({
     lifecyclePeriodDuration: options.lifecyclePeriodDuration,
   });
-  configureMinaNetwork(options.minaNodeUrl);
+  configureMinaNetwork(options.minaNodeUrl, options.networkId);
   const result = await service.transferToTreasury({
     minaNodeUrl: options.minaNodeUrl,
-    senderPrivateKey: options.senderPrivateKey,
-    fundingPrivateKey: options.fundingPrivateKey,
+    senderPrivateKey: sender.privateKey,
+    senderPublicKey: sender.publicKey,
+    fundingPrivateKey: funding.privateKey,
+    fundingPublicKey: funding.publicKey,
+    transactionSigner,
     treasuryOwnerPublicKey: options.treasuryOwnerPublicKey,
+    amount: options.amount,
+    fee: options.fee,
+    nonce: options.nonce,
+    memo: options.memo,
+    wait: options.wait,
+  });
+
+  console.log(JSON.stringify(result));
+}
+
+export async function emergencyWithdraw(
+  options: EmergencyWithdrawCommandOptions,
+): Promise<void> {
+  const sender = resolveSigningAccount({
+    signer: options.signer,
+    label: "Sender",
+    privateKey: options.senderPrivateKey,
+    publicKey: options.senderPublicKey,
+    ledgerAccountIndex: options.senderLedgerAccountIndex,
+  });
+  const treasuryOwner = resolveSigningAccount({
+    signer: options.signer,
+    label: "Treasury owner",
+    privateKey: options.treasuryOwnerPrivateKey,
+    publicKey: options.treasuryOwnerPublicKey,
+    ledgerAccountIndex: options.treasuryOwnerLedgerAccountIndex,
+  });
+  const transactionSigner = createLedgerTransactionSigner(
+    options.signer,
+    [sender, treasuryOwner],
+    options.networkId,
+  );
+  const { SqliteTreasuryOwnerService } =
+    await import("@repo/sdk/src/services/sqlite/sqlite-treasury-owner-service.js");
+  const service = new SqliteTreasuryOwnerService();
+
+  configureMinaNetwork(options.minaNodeUrl, options.networkId);
+  const result = await service.emergencyWithdraw({
+    minaNodeUrl: options.minaNodeUrl,
+    senderPrivateKey: sender.privateKey,
+    senderPublicKey: sender.publicKey,
+    treasuryOwnerPrivateKey: treasuryOwner.privateKey,
+    treasuryOwnerPublicKey: treasuryOwner.publicKey,
+    transactionSigner,
+    recipientPublicKey: options.recipientPublicKey,
     amount: options.amount,
     fee: options.fee,
     nonce: options.nonce,
@@ -238,11 +409,10 @@ export async function transferToTreasury(
 export async function readTreasuryOwnerState(
   options: ReadTreasuryOwnerStateCommandOptions,
 ): Promise<void> {
-  const { SqliteTreasuryOwnerService } = await import(
-    "@repo/sdk/src/services/sqlite/sqlite-treasury-owner-service.js"
-  );
+  const { SqliteTreasuryOwnerService } =
+    await import("@repo/sdk/src/services/sqlite/sqlite-treasury-owner-service.js");
   const service = new SqliteTreasuryOwnerService();
-  configureMinaNetwork(options.minaNodeUrl);
+  configureMinaNetwork(options.minaNodeUrl, options.networkId);
   const [state, currentLifecyclePeriod] = await Promise.all([
     service.getTreasuryOwnerState({
       minaNodeUrl: options.minaNodeUrl,
@@ -281,7 +451,7 @@ export default function treasuryOwnerCommandFactory(program: Command) {
     )
     .action(compileTreasuryOwner);
 
-  command
+  const deployCommand = command
     .command("deploy")
     .description("Deploy treasury owner and pause controller contracts")
     .addOption(
@@ -289,11 +459,14 @@ export default function treasuryOwnerCommandFactory(program: Command) {
         .env("MINA_NODE_URL")
         .default("http://127.0.0.1:8080/graphql"),
     )
+    .addOption(minaNetworkIdOption())
     .addOption(
-      new Option("--sender-private-key <sender-private-key>", "Sender private key")
+      new Option(
+        "--sender-private-key <sender-private-key>",
+        "Sender private key",
+      )
         .env("SENDER_PRIVATE_KEY")
-        .argParser(parsePrivateKey)
-        .makeOptionMandatory(),
+        .argParser(parsePrivateKey),
     )
     .addOption(
       new Option(
@@ -301,8 +474,7 @@ export default function treasuryOwnerCommandFactory(program: Command) {
         "Treasury owner private key",
       )
         .env("TREASURY_OWNER_PRIVATE_KEY")
-        .argParser(parsePrivateKey)
-        .makeOptionMandatory(),
+        .argParser(parsePrivateKey),
     )
     .addOption(
       new Option(
@@ -310,8 +482,7 @@ export default function treasuryOwnerCommandFactory(program: Command) {
         "Pause controller private key",
       )
         .env("PAUSE_CONTROLLER_PRIVATE_KEY")
-        .argParser(parsePrivateKey)
-        .makeOptionMandatory(),
+        .argParser(parsePrivateKey),
     )
     .addOption(
       new Option(
@@ -321,6 +492,15 @@ export default function treasuryOwnerCommandFactory(program: Command) {
         .env("TREASURY_DEPLOYED_AT_SLOT")
         .argParser((value) => UInt32.from(value))
         .default(UInt32.from(0)),
+    )
+    .addOption(
+      new Option(
+        "--withdrawal-permission <permission>",
+        "Treasury Owner access and send permission",
+      )
+        .env("TREASURY_WITHDRAWAL_PERMISSION")
+        .choices([...TREASURY_OWNER_WITHDRAWAL_PERMISSIONS])
+        .default(DEFAULT_TREASURY_OWNER_WITHDRAWAL_PERMISSION),
     )
     .addOption(
       new Option(
@@ -352,7 +532,9 @@ export default function treasuryOwnerCommandFactory(program: Command) {
         .argParser(parseIntOption),
     )
     .addOption(
-      new Option("--memo <memo>", "Memo to use for transactions").env("TX_MEMO"),
+      new Option("--memo <memo>", "Memo to use for transactions").env(
+        "TX_MEMO",
+      ),
     )
     .addOption(
       new Option("--wait <wait>", "Wait for transaction inclusion")
@@ -370,8 +552,13 @@ export default function treasuryOwnerCommandFactory(program: Command) {
         .default(UInt32.from(7140)),
     )
     .action(deployTreasuryOwner);
+  addTransactionSignerOptions(deployCommand, [
+    { role: "sender", label: "Sender" },
+    { role: "treasury-owner", label: "Treasury owner" },
+    { role: "pause-controller", label: "Pause controller" },
+  ]);
 
-  command
+  const fundCommand = command
     .command("fund-treasury")
     .description("Fund treasury owner account via proof-authorized receive")
     .addOption(
@@ -379,11 +566,14 @@ export default function treasuryOwnerCommandFactory(program: Command) {
         .env("MINA_NODE_URL")
         .default("http://127.0.0.1:8080/graphql"),
     )
+    .addOption(minaNetworkIdOption())
     .addOption(
-      new Option("--sender-private-key <sender-private-key>", "Sender private key")
+      new Option(
+        "--sender-private-key <sender-private-key>",
+        "Sender private key",
+      )
         .env("SENDER_PRIVATE_KEY")
-        .argParser(parsePrivateKey)
-        .makeOptionMandatory(),
+        .argParser(parsePrivateKey),
     )
     .addOption(
       new Option(
@@ -438,6 +628,78 @@ export default function treasuryOwnerCommandFactory(program: Command) {
         .default(UInt32.from(7140)),
     )
     .action(transferToTreasury);
+  addTransactionSignerOptions(fundCommand, [
+    { role: "sender", label: "Sender" },
+    { role: "funding", label: "Funding account" },
+  ]);
+
+  const emergencyWithdrawCommand = command
+    .command("emergency-withdraw")
+    .description(
+      "Withdraw MINA from the Treasury Owner with its emergency account signature",
+    )
+    .addOption(
+      new Option("--mina-node-url <mina-node-url>", "Mina GraphQL URL")
+        .env("MINA_NODE_URL")
+        .default("http://127.0.0.1:8080/graphql"),
+    )
+    .addOption(minaNetworkIdOption())
+    .addOption(
+      new Option(
+        "--sender-private-key <sender-private-key>",
+        "Fee-payer private key",
+      )
+        .env("SENDER_PRIVATE_KEY")
+        .argParser(parsePrivateKey),
+    )
+    .addOption(
+      new Option(
+        "--treasury-owner-private-key <treasury-owner-private-key>",
+        "Treasury Owner emergency private key",
+      )
+        .env("TREASURY_OWNER_PRIVATE_KEY")
+        .argParser(parsePrivateKey),
+    )
+    .addOption(
+      new Option(
+        "--recipient-public-key <recipient-public-key>",
+        "Emergency withdrawal recipient public key",
+      )
+        .env("RECIPIENT_PUBLIC_KEY")
+        .argParser(parsePublicKey)
+        .makeOptionMandatory(),
+    )
+    .addOption(
+      new Option("--amount <amount>", "Withdrawal amount in nanomina")
+        .env("WITHDRAWAL_AMOUNT")
+        .argParser((value) => UInt64.from(value))
+        .makeOptionMandatory(),
+    )
+    .addOption(
+      new Option("--fee <fee>", "Transaction fee in nanomina")
+        .env("TX_FEE")
+        .argParser((value) => UInt64.from(value))
+        .default(UInt64.from(1 * 10 ** 9)),
+    )
+    .addOption(
+      new Option("--nonce <nonce>", "Fee-payer nonce for the transaction")
+        .env("TX_NONCE")
+        .argParser(parseIntOption),
+    )
+    .addOption(
+      new Option("--memo <memo>", "Emergency withdrawal memo").env("TX_MEMO"),
+    )
+    .addOption(
+      new Option("--wait <wait>", "Wait for transaction inclusion")
+        .env("TX_WAIT")
+        .argParser(parseBooleanOption)
+        .default(true),
+    )
+    .action(emergencyWithdraw);
+  addTransactionSignerOptions(emergencyWithdrawCommand, [
+    { role: "sender", label: "Sender" },
+    { role: "treasury-owner", label: "Treasury owner" },
+  ]);
 
   command
     .command("read-state")
@@ -449,6 +711,7 @@ export default function treasuryOwnerCommandFactory(program: Command) {
         .env("MINA_NODE_URL")
         .default("http://127.0.0.1:8080/graphql"),
     )
+    .addOption(minaNetworkIdOption())
     .addOption(
       new Option(
         "--treasury-owner-public-key <treasury-owner-public-key>",

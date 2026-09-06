@@ -1,13 +1,14 @@
 import assert from "node:assert";
 import { after, before, describe, it } from "node:test";
 import { type ChildProcess } from "node:child_process";
-import { Mina, PrivateKey } from "o1js";
+import { fetchAccount, Mina, Permissions, PrivateKey, PublicKey } from "o1js";
 import {
   ensureLightnetReady,
   getCurrentGlobalSlot,
   LIGHTNET_ACCOUNT_MANAGER_ENDPOINT,
   logTestStep,
   MINA_NODE_URL,
+  parseTreasuryEmergencyWithdrawResult,
   parseTreasuryFundTreasuryResult,
   parseTreasuryOwnerDeployResult,
   parseTreasuryOwnerCompileResult,
@@ -19,13 +20,16 @@ import {
 let lightnetProcess: ChildProcess | undefined;
 let compileCommandCompleted = false;
 let deployedTreasuryOwnerPublicKey: string | undefined;
+let deployedTreasuryOwnerPrivateKey: string | undefined;
 
 const TREASURY_OWNER_TEST_NAME = "treasury-owner.test";
 
 function requireEnv(name: string): string {
   const value = process.env[name];
   if (!value) {
-    throw new Error(`Missing required env var ${name} for treasury-owner e2e test`);
+    throw new Error(
+      `Missing required env var ${name} for treasury-owner e2e test`,
+    );
   }
   return value;
 }
@@ -33,6 +37,26 @@ function requireEnv(name: string): string {
 const LIFECYCLE_PERIOD_DURATION = requireEnv("LIFECYCLE_PERIOD_DURATION");
 const SENDER_PRIVATE_KEY = requireEnv("SENDER_PRIVATE_KEY");
 const TRANSFER_AMOUNT = requireEnv("TRANSFER_AMOUNT");
+
+type AccountPermission = ReturnType<typeof Permissions.proof>;
+
+function assertPermissionEqual(
+  actual: AccountPermission,
+  expected: AccountPermission,
+): void {
+  assert.strictEqual(
+    actual.constant.toBoolean(),
+    expected.constant.toBoolean(),
+  );
+  assert.strictEqual(
+    actual.signatureNecessary.toBoolean(),
+    expected.signatureNecessary.toBoolean(),
+  );
+  assert.strictEqual(
+    actual.signatureSufficient.toBoolean(),
+    expected.signatureSufficient.toBoolean(),
+  );
+}
 
 before(async () => {
   logTestStep(TREASURY_OWNER_TEST_NAME, "step 0: setting up Lightnet");
@@ -148,12 +172,20 @@ describe("treasury-owner CLI", { concurrency: 1 }, () => {
       "running treasury-owner deploy CLI command",
     );
     const deployStartedAt = Date.now();
-    const output = await runCli(["treasury-owner", "deploy"], {
-      timeoutMs: 600_000,
-      streamOutput: true,
-      streamLabel: "treasury-owner deploy test",
-      envOverrides: deployEnv,
-    });
+    const output = await runCli(
+      [
+        "treasury-owner",
+        "deploy",
+        "--withdrawal-permission",
+        "proofOrSignature",
+      ],
+      {
+        timeoutMs: 600_000,
+        streamOutput: true,
+        streamLabel: "treasury-owner deploy test",
+        envOverrides: deployEnv,
+      },
+    );
     logTestStep(
       TREASURY_OWNER_TEST_NAME,
       "treasury-owner deploy CLI command completed",
@@ -172,12 +204,27 @@ describe("treasury-owner CLI", { concurrency: 1 }, () => {
       deployResult.pauseControllerAddress,
       pauseControllerPublicKey,
     );
+    assert.strictEqual(deployResult.withdrawalPermission, "proofOrSignature");
     assert(
       deployResult.pauseControllerTxHash,
       "expected pause controller tx hash",
     );
     assert(deployResult.treasuryOwnerTxHash, "expected treasury owner tx hash");
     deployedTreasuryOwnerPublicKey = deployResult.treasuryOwnerAddress;
+    deployedTreasuryOwnerPrivateKey = treasuryOwnerPrivateKey.toBase58();
+
+    const { account: treasuryOwnerAccount } = await fetchAccount({
+      publicKey: PublicKey.fromBase58(treasuryOwnerPublicKey),
+    });
+    assert(treasuryOwnerAccount, "expected deployed Treasury Owner account");
+    assertPermissionEqual(
+      treasuryOwnerAccount.permissions.access,
+      Permissions.proofOrSignature(),
+    );
+    assertPermissionEqual(
+      treasuryOwnerAccount.permissions.send,
+      Permissions.proofOrSignature(),
+    );
 
     const stateOutput = await runCli(["treasury-owner", "read-state"], {
       timeoutMs: 120_000,
@@ -189,11 +236,17 @@ describe("treasury-owner CLI", { concurrency: 1 }, () => {
     });
     const stateResult = parseTreasuryOwnerStateResult(stateOutput);
     assert(stateResult, "expected treasury-owner state JSON output");
-    assert.strictEqual(stateResult.treasuryOwnerAddress, treasuryOwnerPublicKey);
+    assert.strictEqual(
+      stateResult.treasuryOwnerAddress,
+      treasuryOwnerPublicKey,
+    );
     assert.strictEqual(
       stateResult.pauseControllerPublicKey,
       pauseControllerPublicKey,
     );
+    assert.strictEqual(stateResult.withdrawalPermission, "proofOrSignature");
+    assert.strictEqual(stateResult.accessPermission, "proofOrSignature");
+    assert.strictEqual(stateResult.sendPermission, "proofOrSignature");
     assert.strictEqual(
       stateResult.treasuryDeployedAtSlot,
       String(treasuryDeployedAtSlot),
@@ -214,7 +267,10 @@ describe("treasury-owner CLI", { concurrency: 1 }, () => {
       stateResult.currentLifecyclePeriod.lifecyclePeriodDuration,
       LIFECYCLE_PERIOD_DURATION,
     );
-    assert.strictEqual(stateResult.currentLifecyclePeriod.lifecycleStarted, true);
+    assert.strictEqual(
+      stateResult.currentLifecyclePeriod.lifecycleStarted,
+      true,
+    );
     assert(
       Number(stateResult.currentLifecyclePeriod.currentGlobalSlot) >=
         treasuryDeployedAtSlot,
@@ -292,5 +348,44 @@ describe("treasury-owner CLI", { concurrency: 1 }, () => {
     });
     await waitForGlobalSlot(currentSlot + 1, 120_000);
     logTestStep(TREASURY_OWNER_TEST_NAME, "post-fund block reached");
+  });
+
+  it("withdraws treasury funds with the Treasury Owner emergency signature", async () => {
+    assert(
+      deployedTreasuryOwnerPublicKey,
+      "expected treasury owner deploy step to run before emergency withdrawal",
+    );
+    assert(
+      deployedTreasuryOwnerPrivateKey,
+      "expected Treasury Owner private key from the deploy step",
+    );
+
+    const senderPrivateKey = PrivateKey.fromBase58(SENDER_PRIVATE_KEY);
+    const recipientPublicKey = senderPrivateKey.toPublicKey().toBase58();
+    const output = await runCli(["treasury-owner", "emergency-withdraw"], {
+      timeoutMs: 120_000,
+      streamOutput: true,
+      streamLabel: "treasury-owner emergency withdrawal test",
+      envOverrides: {
+        TREASURY_OWNER_PRIVATE_KEY: deployedTreasuryOwnerPrivateKey,
+        RECIPIENT_PUBLIC_KEY: recipientPublicKey,
+        WITHDRAWAL_AMOUNT: TRANSFER_AMOUNT,
+      },
+    });
+
+    const result = parseTreasuryEmergencyWithdrawResult(output);
+    assert(result, "expected Treasury Owner emergency withdrawal JSON output");
+    assert.strictEqual(result.authorization, "treasury-owner-signature");
+    assert.strictEqual(
+      result.sender,
+      senderPrivateKey.toPublicKey().toBase58(),
+    );
+    assert.strictEqual(result.from, deployedTreasuryOwnerPublicKey);
+    assert.strictEqual(result.to, recipientPublicKey);
+    assert.strictEqual(result.amount, TRANSFER_AMOUNT);
+    assert(
+      result.emergencyWithdrawalTxHash,
+      "expected emergency withdrawal transaction hash",
+    );
   });
 });

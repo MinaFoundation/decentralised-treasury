@@ -8,11 +8,25 @@ import {
 } from "@repo/sdk/src/provable/contracts/treasury-pause-controller/multisig-signatures.js";
 import { logger } from "@repo/sdk/src/index.js";
 import { parseBooleanOption, parseIntOption } from "./option-parsers.js";
-import { configureMinaNetwork } from "./mina-instance.js";
+import {
+  configureMinaNetwork,
+  minaNetworkIdOption,
+  type MinaNetworkId,
+} from "./mina-instance.js";
+import {
+  addTransactionSignerOptions,
+  createLedgerTransactionSigner,
+  resolveSigningAccount,
+  type SignerMode,
+} from "../ledger/transaction-signer.js";
 
 interface BasePauseControllerCommandOptions {
   minaNodeUrl: string;
-  senderPrivateKey: PrivateKey;
+  networkId: MinaNetworkId;
+  signer: SignerMode;
+  senderPrivateKey?: PrivateKey;
+  senderPublicKey?: PublicKey;
+  senderLedgerAccountIndex?: number;
   pauseControllerPublicKey: PublicKey;
   fee?: UInt64;
   nonce?: number;
@@ -26,8 +40,14 @@ interface CompilePauseControllerCommandOptions {
 
 interface DeployPauseControllerCommandOptions {
   minaNodeUrl: string;
-  senderPrivateKey: PrivateKey;
-  pauseControllerPrivateKey: PrivateKey;
+  networkId: MinaNetworkId;
+  signer: SignerMode;
+  senderPrivateKey?: PrivateKey;
+  senderPublicKey?: PublicKey;
+  senderLedgerAccountIndex?: number;
+  pauseControllerPrivateKey?: PrivateKey;
+  pauseControllerPublicKey?: PublicKey;
+  pauseControllerLedgerAccountIndex?: number;
   multisigParticipantsPublicKeys: PublicKey[];
   fee?: UInt64;
   nonce?: number;
@@ -45,8 +65,7 @@ interface UnpauseTreasuryCommandOptions extends BasePauseControllerCommandOption
   multisigSignatures: MultisigSignatures;
 }
 
-interface TogglePauseProposalCommandOptions
-  extends BasePauseControllerCommandOptions {
+interface TogglePauseProposalCommandOptions extends BasePauseControllerCommandOptions {
   treasuryOwnerPublicKey: PublicKey;
   proposalPublicKey: PublicKey;
   multisigParticipantsPublicKeys: PublicKey[];
@@ -54,8 +73,7 @@ interface TogglePauseProposalCommandOptions
   lifecyclePeriodDuration: UInt32;
 }
 
-interface RotateMultisigKeysCommandOptions
-  extends BasePauseControllerCommandOptions {
+interface RotateMultisigKeysCommandOptions extends BasePauseControllerCommandOptions {
   currentMultisigParticipantsPublicKeys: PublicKey[];
   multisigSignatures: MultisigSignatures;
   newMultisigParticipantsPublicKeys: PublicKey[];
@@ -63,6 +81,7 @@ interface RotateMultisigKeysCommandOptions
 
 interface ReadPauseControllerStateCommandOptions {
   minaNodeUrl: string;
+  networkId: MinaNetworkId;
   pauseControllerPublicKey: PublicKey;
 }
 
@@ -87,13 +106,17 @@ export function parseMultisigSignatures(value: string): MultisigSignatures {
       return MultisigSignature.empty() as unknown as MultisigSignature;
     }
     try {
-      return MultisigSignature.fromBase58(signature) as unknown as MultisigSignature;
+      return MultisigSignature.fromBase58(
+        signature,
+      ) as unknown as MultisigSignature;
     } catch {
       throw new Error(`Invalid multisig signature at slot ${index + 1}`);
     }
   });
 
-  const validSignaturesCount = signatureSlots.filter((signature) => signature.length > 0).length;
+  const validSignaturesCount = signatureSlots.filter(
+    (signature) => signature.length > 0,
+  ).length;
   if (validSignaturesCount < MIN_VALID_MULTISIG_SIGNATURES_COUNT) {
     throw new Error(
       `Expected at least ${MIN_VALID_MULTISIG_SIGNATURES_COUNT} multisig signatures, got ${validSignaturesCount}`,
@@ -124,9 +147,8 @@ function parsePublicKeys(value: string): PublicKey[] {
 export async function compilePauseController(
   options: CompilePauseControllerCommandOptions,
 ): Promise<void> {
-  const { SqlitePauseControllerService } = await import(
-    "@repo/sdk/src/services/sqlite/sqlite-pause-controller-service.js"
-  );
+  const { SqlitePauseControllerService } =
+    await import("@repo/sdk/src/services/sqlite/sqlite-pause-controller-service.js");
   const service = new SqlitePauseControllerService();
   const result = await service.compile({
     cachePath: options.cachePath,
@@ -145,19 +167,40 @@ export async function compilePauseController(
 export async function deployPauseController(
   options: DeployPauseControllerCommandOptions,
 ): Promise<void> {
-  const { SqlitePauseControllerService } = await import(
-    "@repo/sdk/src/services/sqlite/sqlite-pause-controller-service.js"
+  const sender = resolveSigningAccount({
+    signer: options.signer,
+    label: "Sender",
+    privateKey: options.senderPrivateKey,
+    publicKey: options.senderPublicKey,
+    ledgerAccountIndex: options.senderLedgerAccountIndex,
+  });
+  const pauseController = resolveSigningAccount({
+    signer: options.signer,
+    label: "Pause controller",
+    privateKey: options.pauseControllerPrivateKey,
+    publicKey: options.pauseControllerPublicKey,
+    ledgerAccountIndex: options.pauseControllerLedgerAccountIndex,
+  });
+  const transactionSigner = createLedgerTransactionSigner(
+    options.signer,
+    [sender, pauseController],
+    options.networkId,
   );
+  const { SqlitePauseControllerService } =
+    await import("@repo/sdk/src/services/sqlite/sqlite-pause-controller-service.js");
   const service = new SqlitePauseControllerService();
   logger.info(
     `[pause-controller:deploy] compiling pause controller (participants=${options.multisigParticipantsPublicKeys.length})`,
   );
   await service.compile();
-  configureMinaNetwork(options.minaNodeUrl);
+  configureMinaNetwork(options.minaNodeUrl, options.networkId);
   const result = await service.deploy({
     minaNodeUrl: options.minaNodeUrl,
-    senderPrivateKey: options.senderPrivateKey,
-    pauseControllerPrivateKey: options.pauseControllerPrivateKey,
+    senderPrivateKey: sender.privateKey,
+    senderPublicKey: sender.publicKey,
+    pauseControllerPrivateKey: pauseController.privateKey,
+    pauseControllerPublicKey: pauseController.publicKey,
+    transactionSigner,
     multisigParticipantsPublicKeys: options.multisigParticipantsPublicKeys,
     fee: options.fee,
     nonce: options.nonce,
@@ -177,11 +220,10 @@ export async function deployPauseController(
 export async function readPauseControllerState(
   options: ReadPauseControllerStateCommandOptions,
 ): Promise<void> {
-  const { SqlitePauseControllerService } = await import(
-    "@repo/sdk/src/services/sqlite/sqlite-pause-controller-service.js"
-  );
+  const { SqlitePauseControllerService } =
+    await import("@repo/sdk/src/services/sqlite/sqlite-pause-controller-service.js");
   const service = new SqlitePauseControllerService();
-  configureMinaNetwork(options.minaNodeUrl);
+  configureMinaNetwork(options.minaNodeUrl, options.networkId);
   const result = await service.getPauseControllerState({
     minaNodeUrl: options.minaNodeUrl,
     pauseControllerPublicKey: options.pauseControllerPublicKey,
@@ -192,15 +234,28 @@ export async function readPauseControllerState(
 export async function pauseTreasury(
   options: PauseTreasuryCommandOptions,
 ): Promise<void> {
-  const { SqlitePauseControllerService } = await import(
-    "@repo/sdk/src/services/sqlite/sqlite-pause-controller-service.js"
+  const sender = resolveSigningAccount({
+    signer: options.signer,
+    label: "Sender",
+    privateKey: options.senderPrivateKey,
+    publicKey: options.senderPublicKey,
+    ledgerAccountIndex: options.senderLedgerAccountIndex,
+  });
+  const transactionSigner = createLedgerTransactionSigner(
+    options.signer,
+    [sender],
+    options.networkId,
   );
+  const { SqlitePauseControllerService } =
+    await import("@repo/sdk/src/services/sqlite/sqlite-pause-controller-service.js");
   const service = new SqlitePauseControllerService();
   await service.compile();
-  configureMinaNetwork(options.minaNodeUrl);
+  configureMinaNetwork(options.minaNodeUrl, options.networkId);
   const result = await service.pauseTreasury({
     minaNodeUrl: options.minaNodeUrl,
-    senderPrivateKey: options.senderPrivateKey,
+    senderPrivateKey: sender.privateKey,
+    senderPublicKey: sender.publicKey,
+    transactionSigner,
     pauseControllerPublicKey: options.pauseControllerPublicKey,
     multisigParticipantsPublicKeys: options.multisigParticipantsPublicKeys,
     signatures: options.multisigSignatures,
@@ -215,15 +270,28 @@ export async function pauseTreasury(
 export async function unpauseTreasury(
   options: UnpauseTreasuryCommandOptions,
 ): Promise<void> {
-  const { SqlitePauseControllerService } = await import(
-    "@repo/sdk/src/services/sqlite/sqlite-pause-controller-service.js"
+  const sender = resolveSigningAccount({
+    signer: options.signer,
+    label: "Sender",
+    privateKey: options.senderPrivateKey,
+    publicKey: options.senderPublicKey,
+    ledgerAccountIndex: options.senderLedgerAccountIndex,
+  });
+  const transactionSigner = createLedgerTransactionSigner(
+    options.signer,
+    [sender],
+    options.networkId,
   );
+  const { SqlitePauseControllerService } =
+    await import("@repo/sdk/src/services/sqlite/sqlite-pause-controller-service.js");
   const service = new SqlitePauseControllerService();
   await service.compile();
-  configureMinaNetwork(options.minaNodeUrl);
+  configureMinaNetwork(options.minaNodeUrl, options.networkId);
   const result = await service.unpauseTreasury({
     minaNodeUrl: options.minaNodeUrl,
-    senderPrivateKey: options.senderPrivateKey,
+    senderPrivateKey: sender.privateKey,
+    senderPublicKey: sender.publicKey,
+    transactionSigner,
     pauseControllerPublicKey: options.pauseControllerPublicKey,
     multisigParticipantsPublicKeys: options.multisigParticipantsPublicKeys,
     signatures: options.multisigSignatures,
@@ -238,6 +306,18 @@ export async function unpauseTreasury(
 export async function togglePauseProposal(
   options: TogglePauseProposalCommandOptions,
 ): Promise<void> {
+  const sender = resolveSigningAccount({
+    signer: options.signer,
+    label: "Sender",
+    privateKey: options.senderPrivateKey,
+    publicKey: options.senderPublicKey,
+    ledgerAccountIndex: options.senderLedgerAccountIndex,
+  });
+  const transactionSigner = createLedgerTransactionSigner(
+    options.signer,
+    [sender],
+    options.networkId,
+  );
   const [{ SqlitePauseControllerService }, { SqliteTreasuryOwnerService }] =
     await Promise.all([
       import("@repo/sdk/src/services/sqlite/sqlite-pause-controller-service.js"),
@@ -248,10 +328,12 @@ export async function togglePauseProposal(
   await treasuryOwnerService.compile({
     lifecyclePeriodDuration: options.lifecyclePeriodDuration,
   });
-  configureMinaNetwork(options.minaNodeUrl);
+  configureMinaNetwork(options.minaNodeUrl, options.networkId);
   const result = await service.togglePauseProposal({
     minaNodeUrl: options.minaNodeUrl,
-    senderPrivateKey: options.senderPrivateKey,
+    senderPrivateKey: sender.privateKey,
+    senderPublicKey: sender.publicKey,
+    transactionSigner,
     treasuryOwnerPublicKey: options.treasuryOwnerPublicKey,
     pauseControllerPublicKey: options.pauseControllerPublicKey,
     proposalPublicKey: options.proposalPublicKey,
@@ -268,20 +350,34 @@ export async function togglePauseProposal(
 export async function rotateMultisigKeys(
   options: RotateMultisigKeysCommandOptions,
 ): Promise<void> {
-  const { SqlitePauseControllerService } = await import(
-    "@repo/sdk/src/services/sqlite/sqlite-pause-controller-service.js"
+  const sender = resolveSigningAccount({
+    signer: options.signer,
+    label: "Sender",
+    privateKey: options.senderPrivateKey,
+    publicKey: options.senderPublicKey,
+    ledgerAccountIndex: options.senderLedgerAccountIndex,
+  });
+  const transactionSigner = createLedgerTransactionSigner(
+    options.signer,
+    [sender],
+    options.networkId,
   );
+  const { SqlitePauseControllerService } =
+    await import("@repo/sdk/src/services/sqlite/sqlite-pause-controller-service.js");
   const service = new SqlitePauseControllerService();
   await service.compile();
-  configureMinaNetwork(options.minaNodeUrl);
+  configureMinaNetwork(options.minaNodeUrl, options.networkId);
   const result = await service.rotateMultisigKeys({
     minaNodeUrl: options.minaNodeUrl,
-    senderPrivateKey: options.senderPrivateKey,
+    senderPrivateKey: sender.privateKey,
+    senderPublicKey: sender.publicKey,
+    transactionSigner,
     pauseControllerPublicKey: options.pauseControllerPublicKey,
     currentMultisigParticipantsPublicKeys:
       options.currentMultisigParticipantsPublicKeys,
     signatures: options.multisigSignatures,
-    newMultisigParticipantsPublicKeys: options.newMultisigParticipantsPublicKeys,
+    newMultisigParticipantsPublicKeys:
+      options.newMultisigParticipantsPublicKeys,
     fee: options.fee,
     nonce: options.nonce,
     memo: options.memo,
@@ -299,13 +395,14 @@ export default function pauseControllerCommandFactory(program: Command) {
     .command("compile")
     .description("Compile pause controller contract")
     .addOption(
-      new Option("--cache-path <cache-path>", "Optional compile cache directory").env(
-        "CACHE_PATH",
-      ),
+      new Option(
+        "--cache-path <cache-path>",
+        "Optional compile cache directory",
+      ).env("CACHE_PATH"),
     )
     .action(compilePauseController);
 
-  command
+  const deployCommand = command
     .command("deploy")
     .description("Deploy pause controller contract")
     .addOption(
@@ -313,11 +410,14 @@ export default function pauseControllerCommandFactory(program: Command) {
         .env("MINA_NODE_URL")
         .default("http://127.0.0.1:8080/graphql"),
     )
+    .addOption(minaNetworkIdOption())
     .addOption(
-      new Option("--sender-private-key <sender-private-key>", "Sender private key")
+      new Option(
+        "--sender-private-key <sender-private-key>",
+        "Sender private key",
+      )
         .env("SENDER_PRIVATE_KEY")
-        .argParser(parsePrivateKey)
-        .makeOptionMandatory(),
+        .argParser(parsePrivateKey),
     )
     .addOption(
       new Option(
@@ -325,8 +425,7 @@ export default function pauseControllerCommandFactory(program: Command) {
         "Pause controller private key",
       )
         .env("PAUSE_CONTROLLER_PRIVATE_KEY")
-        .argParser(parsePrivateKey)
-        .makeOptionMandatory(),
+        .argParser(parsePrivateKey),
     )
     .addOption(
       new Option(
@@ -356,8 +455,11 @@ export default function pauseControllerCommandFactory(program: Command) {
         .env("TX_WAIT")
         .argParser(parseBooleanOption)
         .default(true),
-    )
-    .action(deployPauseController);
+    );
+  addTransactionSignerOptions(deployCommand, [
+    { role: "sender", label: "Sender" },
+    { role: "pause-controller", label: "Pause controller" },
+  ]).action(deployPauseController);
 
   command
     .command("read-state")
@@ -367,6 +469,7 @@ export default function pauseControllerCommandFactory(program: Command) {
         .env("MINA_NODE_URL")
         .default("http://127.0.0.1:8080/graphql"),
     )
+    .addOption(minaNetworkIdOption())
     .addOption(
       new Option(
         "--pause-controller-public-key <pause-controller-public-key>",
@@ -378,7 +481,7 @@ export default function pauseControllerCommandFactory(program: Command) {
     )
     .action(readPauseControllerState);
 
-  command
+  const pauseTreasuryCommand = command
     .command("pause-treasury")
     .description("Pause treasury operations via multisig")
     .addOption(
@@ -386,11 +489,14 @@ export default function pauseControllerCommandFactory(program: Command) {
         .env("MINA_NODE_URL")
         .default("http://127.0.0.1:8080/graphql"),
     )
+    .addOption(minaNetworkIdOption())
     .addOption(
-      new Option("--sender-private-key <sender-private-key>", "Sender private key")
+      new Option(
+        "--sender-private-key <sender-private-key>",
+        "Sender private key",
+      )
         .env("SENDER_PRIVATE_KEY")
-        .argParser(parsePrivateKey)
-        .makeOptionMandatory(),
+        .argParser(parsePrivateKey),
     )
     .addOption(
       new Option(
@@ -438,10 +544,12 @@ export default function pauseControllerCommandFactory(program: Command) {
         .env("TX_WAIT")
         .argParser(parseBooleanOption)
         .default(true),
-    )
-    .action(pauseTreasury);
+    );
+  addTransactionSignerOptions(pauseTreasuryCommand, [
+    { role: "sender", label: "Sender" },
+  ]).action(pauseTreasury);
 
-  command
+  const unpauseTreasuryCommand = command
     .command("unpause-treasury")
     .description("Unpause treasury operations via multisig")
     .addOption(
@@ -449,11 +557,14 @@ export default function pauseControllerCommandFactory(program: Command) {
         .env("MINA_NODE_URL")
         .default("http://127.0.0.1:8080/graphql"),
     )
+    .addOption(minaNetworkIdOption())
     .addOption(
-      new Option("--sender-private-key <sender-private-key>", "Sender private key")
+      new Option(
+        "--sender-private-key <sender-private-key>",
+        "Sender private key",
+      )
         .env("SENDER_PRIVATE_KEY")
-        .argParser(parsePrivateKey)
-        .makeOptionMandatory(),
+        .argParser(parsePrivateKey),
     )
     .addOption(
       new Option(
@@ -501,10 +612,12 @@ export default function pauseControllerCommandFactory(program: Command) {
         .env("TX_WAIT")
         .argParser(parseBooleanOption)
         .default(true),
-    )
-    .action(unpauseTreasury);
+    );
+  addTransactionSignerOptions(unpauseTreasuryCommand, [
+    { role: "sender", label: "Sender" },
+  ]).action(unpauseTreasury);
 
-  command
+  const togglePauseProposalCommand = command
     .command("toggle-pause-proposal")
     .description(
       "Toggle proposal pause via treasury-owner with multisig authorization",
@@ -514,11 +627,14 @@ export default function pauseControllerCommandFactory(program: Command) {
         .env("MINA_NODE_URL")
         .default("http://127.0.0.1:8080/graphql"),
     )
+    .addOption(minaNetworkIdOption())
     .addOption(
-      new Option("--sender-private-key <sender-private-key>", "Sender private key")
+      new Option(
+        "--sender-private-key <sender-private-key>",
+        "Sender private key",
+      )
         .env("SENDER_PRIVATE_KEY")
-        .argParser(parsePrivateKey)
-        .makeOptionMandatory(),
+        .argParser(parsePrivateKey),
     )
     .addOption(
       new Option(
@@ -539,7 +655,10 @@ export default function pauseControllerCommandFactory(program: Command) {
         .makeOptionMandatory(),
     )
     .addOption(
-      new Option("--proposal-public-key <proposal-public-key>", "Proposal public key")
+      new Option(
+        "--proposal-public-key <proposal-public-key>",
+        "Proposal public key",
+      )
         .env("PROPOSAL_PUBLIC_KEY")
         .argParser(parsePublicKey)
         .makeOptionMandatory(),
@@ -590,10 +709,12 @@ export default function pauseControllerCommandFactory(program: Command) {
         .env("LIFECYCLE_PERIOD_DURATION")
         .argParser((value) => UInt32.from(value))
         .default(UInt32.from(7140)),
-    )
-    .action(togglePauseProposal);
+    );
+  addTransactionSignerOptions(togglePauseProposalCommand, [
+    { role: "sender", label: "Sender" },
+  ]).action(togglePauseProposal);
 
-  command
+  const rotateMultisigKeysCommand = command
     .command("rotate-multisig-keys")
     .description("Rotate multisig participants commitment")
     .addOption(
@@ -601,11 +722,14 @@ export default function pauseControllerCommandFactory(program: Command) {
         .env("MINA_NODE_URL")
         .default("http://127.0.0.1:8080/graphql"),
     )
+    .addOption(minaNetworkIdOption())
     .addOption(
-      new Option("--sender-private-key <sender-private-key>", "Sender private key")
+      new Option(
+        "--sender-private-key <sender-private-key>",
+        "Sender private key",
+      )
         .env("SENDER_PRIVATE_KEY")
-        .argParser(parsePrivateKey)
-        .makeOptionMandatory(),
+        .argParser(parsePrivateKey),
     )
     .addOption(
       new Option(
@@ -662,7 +786,8 @@ export default function pauseControllerCommandFactory(program: Command) {
         .env("TX_WAIT")
         .argParser(parseBooleanOption)
         .default(true),
-    )
-    .action(rotateMultisigKeys);
+    );
+  addTransactionSignerOptions(rotateMultisigKeysCommand, [
+    { role: "sender", label: "Sender" },
+  ]).action(rotateMultisigKeys);
 }
-

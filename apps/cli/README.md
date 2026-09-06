@@ -7,11 +7,12 @@ This document focuses on practical CLI operation flows:
 - create proposals and vote
 - tally votes, and execute payout
 - operate pause-controller with external signatures
+- use the Treasury Owner signature for an enabled emergency withdrawal
 
 ## Important Warnings
 
 - **Private keys are passed in plaintext** (CLI flags / env vars). Treat this CLI as an operator/dev tool, not hardened key-management.
-- **Ledger signing is not supported yet.** It will be added in the next iteration.
+- **Every signature-producing CLI command supports Ledger signing.** Each Ledger signer role requires an explicit public key and account index.
 - Do not use production funds or production keys with the current workflow.
 
 ## Where To Run Commands
@@ -32,32 +33,101 @@ Use a Ledger account as the fee payer and funding account:
 ```bash
 SENDER_PUBLIC_KEY=<LEDGER_PUBLIC_KEY> pnpm run cli -- transfer \
   --signer=ledger \
+  --sender-ledger-account-index=<LEDGER_ACCOUNT_INDEX> \
+  --network-id=devnet \
   --recipient-public-key <RECIPIENT_PUBLIC_KEY> \
   --amount <NANOMINA>
 ```
 
+Set `--network-id=mainnet` for mainnet. The CLI does not detect the signature
+network from `--mina-node-url`. You can set `MINA_NETWORK_ID` instead of the
+option. Valid values are `mainnet`, `devnet`, and `testnet`. The default is
+`devnet`.
+
 Set `FUNDING_PUBLIC_KEY` when a different Ledger account funds the transfer.
-The CLI finds both public keys in the first 100 Mina accounts on the device.
-The CLI does not accept or show a Ledger account index.
+Also set `--funding-ledger-account-index` for that account. The CLI checks each
+index against its expected public key before signing. The CLI does not scan or
+list Ledger accounts.
+
+The same `--signer=ledger` mode is available for these transaction commands:
+
+- `treasury-owner deploy`, `treasury-owner fund-treasury`, and `treasury-owner emergency-withdraw`
+- `proposal create`, `proposal vote`, `proposal tally-votes`, and `proposal execute`
+- `pause-controller deploy`, `pause-controller pause-treasury`, `pause-controller unpause-treasury`, `pause-controller toggle-pause-proposal`, and `pause-controller rotate-multisig-keys`
+
+Supply one `--<role>-public-key` and one
+`--<role>-ledger-account-index` for each signing role shown by the command
+help. Deployment and other multi-signer commands can require more than one
+pair. The CLI rejects a missing index and rejects one index assigned to two
+different public keys.
 
 Use a Ledger account for a break-glass partial signature:
 
 ```bash
-LEDGER_SIGNER_PUBLIC_KEY=<PARTICIPANT_PUBLIC_KEY> pnpm run cli -- \
+pnpm run cli -- \
   multisig-sign pause-treasury \
   --signer=ledger \
+  --ledger-signer-public-key=<PARTICIPANT_PUBLIC_KEY> \
+  --ledger-account-index=<LEDGER_ACCOUNT_INDEX> \
   --multisig-participants-public-keys <PUB1>,<PUB2>,<PUB3>,<PUB4>,<PUB5> \
   --nonce <PAUSE_CONTROLLER_NONCE>
 ```
 
-The CLI builds, signs, verifies, and broadcasts a transaction in one command.
-The Ledger only signs. The CLI sends the signed transaction to Mina.
+This command creates and verifies one partial multisig field signature. It does
+not build or broadcast a Mina transaction. Collect the required partial
+signatures, verify the ordered participant list and nonce, and then use the
+applicable `pause-controller` command to build and submit the transaction.
+
+For transaction commands, the Ledger only signs. The CLI sends the completed
+transaction to Mina after all required transaction signatures are present.
+
+Run the fast LocalBlockchain verification pipeline from the repository root:
+
+```bash
+pnpm verify:ledger
+```
+
+Add `--device` to include the physical Ledger test. The default pipeline uses
+the software Ledger and APDU mocker. It does not require Lightnet or Docker.
+
+With a running Lightnet network, add `--lightnet` to submit and confirm a real
+payment that is signed through the software Ledger boundary:
+
+```bash
+pnpm verify:ledger -- --lightnet
+```
 
 Alias (same behavior):
 
 ```bash
 pnpm run mina-treasury -- <command> <subcommand> [options]
 ```
+
+## Emergency Treasury Withdrawal
+
+`treasury-owner emergency-withdraw` creates a signed default-token AccountUpdate for the Treasury Owner. It does not call a contract method or create a proof.
+
+The deployment must use the `proofOrSignature` withdrawal permission. The command checks the deployed `access` and `send` permissions before submission. It rejects a proof-only deployment.
+
+Use separate Ledger accounts for the fee payer and Treasury Owner when applicable:
+
+```bash
+pnpm run cli -- treasury-owner emergency-withdraw \
+  --signer=ledger \
+  --network-id=<NETWORK_ID> \
+  --sender-public-key=<FEE_PAYER_PUBLIC_KEY> \
+  --sender-ledger-account-index=<FEE_PAYER_LEDGER_INDEX> \
+  --treasury-owner-public-key=<TREASURY_OWNER_PUBLIC_KEY> \
+  --treasury-owner-ledger-account-index=<TREASURY_OWNER_LEDGER_INDEX> \
+  --recipient-public-key=<RECIPIENT_PUBLIC_KEY> \
+  --amount=<NANOMINA> \
+  --memo=<INCIDENT_OR_CHANGE_ID> \
+  --wait=true
+```
+
+This is a single Treasury Owner account signature on the MINA network. It does not use the Pause Controller 3-of-5 signatures. It bypasses Proposal status, lifecycle, recipient, execution-cap, and global-pause checks.
+
+After inclusion, reconcile the transaction, Owner balance, recipient balance, and both signing-account nonces directly on the MINA network. The operation emits no Treasury Owner event and does not update Proposal `paidOutAmount`.
 
 Or run directly from this package:
 
@@ -185,6 +255,8 @@ SENDER_PRIVATE_KEY=<funded-fee-payer-private-key>
 FUNDING_PRIVATE_KEY=<funding-account-private-key>
 TREASURY_OWNER_PRIVATE_KEY=<treasury-owner-private-key>
 TREASURY_OWNER_PUBLIC_KEY=<treasury-owner-public-key>
+# Optional. The safe default is proof.
+TREASURY_WITHDRAWAL_PERMISSION=proof
 PAUSE_CONTROLLER_PRIVATE_KEY=<pause-controller-private-key>
 MULTISIG_PARTICIPANTS_PUBLIC_KEYS=<PUB1>,<PUB2>,<PUB3>,<PUB4>,<PUB5>
 EOF
@@ -256,8 +328,21 @@ pnpm run cli -- treasury-owner compile
 ### 2) Deploy treasury-owner + pause-controller
 
 ```bash
-pnpm run cli -- treasury-owner deploy
+pnpm run cli -- treasury-owner deploy \
+  --withdrawal-permission proof
 ```
+
+`--withdrawal-permission` accepts only `proof` and `proofOrSignature`. The
+default is `proof`. You can use `TREASURY_WITHDRAWAL_PERMISSION` instead of the
+option.
+
+Use `proof` to require a contract proof for Owner withdrawals. This safe
+default preserves the original contract behavior. Use `proofOrSignature` only
+when the deployment needs emergency Owner-signature withdrawal.
+
+The selection sets the deployed Owner `access` and `send` permissions. The
+selection is permanent for that Owner address because `setPermissions` is
+impossible. Deploy a new Treasury Owner address to use a different mode.
 
 ### 3) Read deployed treasury-owner state
 
@@ -265,7 +350,10 @@ pnpm run cli -- treasury-owner deploy
 pnpm run cli -- treasury-owner read-state
 ```
 
-This output now includes `currentLifecyclePeriod` (current slot, lifecycle id, period name, and period slot range).  
+The output includes `currentLifecyclePeriod`. It also includes
+`withdrawalPermission`, `accessPermission`, and `sendPermission` from the
+fetched MINA account. The permission fields use normalized names such as
+`proof` and `proofOrSignature`. Use them to reconcile the permanent selection.
 It is computed using current chain slot and `LIFECYCLE_PERIOD_DURATION` (or `--lifecycle-period-duration`).
 
 ### 4) (Optional) Fund treasury
@@ -299,13 +387,7 @@ If `--funding-private-key` is omitted, the funding account defaults to the sende
 
 ## Flow 2: Create Proposal And Cast Vote
 
-### 1) Generate proposal keypair
-
-```bash
-pnpm run cli -- generate-keypair --json
-```
-
-### 2) Create proposal
+### 1) Create proposal
 
 `proposal create` only succeeds during the **proposal creation period** for the target lifecycle.
 
@@ -339,21 +421,26 @@ This fixed prefix prevents ambiguity and leaves room to add other content format
 
 ```bash
 pnpm run cli -- proposal create \
-  --proposal-private-key <PROPOSAL_PRIVATE_KEY> \
   --proposal-lifecycle-id 0 \
   --recipient-public-key <RECIPIENT_PUBLIC_KEY> \
   --amount 1000000000 \
   --content-file ./proposals/demo.md
 ```
 
-### 3) Read proposal state
+You can supply `--proposal-private-key` for a predetermined address. If you do
+not supply it, the CLI generates the Proposal keypair in memory and discards
+the private key after deployment. It prints a warning that explains why the
+private key cannot control the Proposal after deployment. Save
+`proposalAddress` from the output for later commands.
+
+### 2) Read proposal state
 
 ```bash
 pnpm run cli -- proposal read-state \
   --proposal-public-key <PROPOSAL_PUBLIC_KEY>
 ```
 
-### 4) Wait for voting window
+### 3) Wait for voting window
 
 Voting starts at:
 

@@ -19,7 +19,8 @@ function readNumberEnv(name: string, fallback: number): number {
   return Number.isFinite(parsed) ? parsed : fallback;
 }
 
-export const MINA_NODE_URL = process.env.MINA_NODE_URL ?? "http://127.0.0.1:8080/graphql";
+export const MINA_NODE_URL =
+  process.env.MINA_NODE_URL ?? "http://127.0.0.1:8080/graphql";
 export const ARCHIVE_NODE_URL =
   process.env.ARCHIVE_NODE_URL ?? "http://127.0.0.1:8282";
 export const LIGHTNET_ACCOUNT_MANAGER_ENDPOINT =
@@ -207,7 +208,9 @@ export async function waitForOutput(
 
     const onExit = (code: number | null) => {
       cleanup();
-      reject(new Error(`Process exited early with code ${String(code)}: ${output}`));
+      reject(
+        new Error(`Process exited early with code ${String(code)}: ${output}`),
+      );
     };
 
     const timer = setTimeout(() => {
@@ -267,15 +270,11 @@ export async function ensureLightnetReady(
     String(SLOT_TIME_MS),
   ];
 
-  const lightnetStartProcess = spawn(
-    "pnpm",
-    lightnetStartCommandArgs,
-    {
-      cwd: REPO_ROOT,
-      env: { ...process.env },
-      stdio: "pipe",
-    },
-  );
+  const lightnetStartProcess = spawn("pnpm", lightnetStartCommandArgs, {
+    cwd: REPO_ROOT,
+    env: { ...process.env },
+    stdio: "pipe",
+  });
 
   let lightnetOutput = "";
   lightnetStartProcess.stdout?.on("data", (chunk) => {
@@ -285,7 +284,10 @@ export async function ensureLightnetReady(
     lightnetOutput += chunk.toString();
   });
 
-  const status = await waitForLightnetReadyOrExit(lightnetStartProcess, timeoutMs);
+  const status = await waitForLightnetReadyOrExit(
+    lightnetStartProcess,
+    timeoutMs,
+  );
   if (status === "ready") {
     return lightnetStartProcess;
   }
@@ -422,7 +424,8 @@ export async function getCurrentGlobalSlot(): Promise<number> {
   }
 
   const slotValue =
-    payload.data?.bestChain?.[0]?.protocolState?.consensusState?.slotSinceGenesis;
+    payload.data?.bestChain?.[0]?.protocolState?.consensusState
+      ?.slotSinceGenesis;
   if (!slotValue) {
     throw new Error("Unable to read current global slot from lightnet");
   }
@@ -474,13 +477,19 @@ export function parseGeneratedKeypair(
     | undefined;
 }
 
-export function parseTreasuryProposalResult(
-  output: string,
-):
-  | { proposalAddress: string; proposalTokenId: string; proposalTxHash?: string }
+export function parseTreasuryProposalResult(output: string):
+  | {
+      proposalAddress: string;
+      proposalTokenId: string;
+      proposalTxHash?: string;
+    }
   | undefined {
   return parseMarkerJson(output, "TREASURY_PROPOSAL_JSON:") as
-    | { proposalAddress: string; proposalTokenId: string; proposalTxHash?: string }
+    | {
+        proposalAddress: string;
+        proposalTokenId: string;
+        proposalTxHash?: string;
+      }
     | undefined;
 }
 
@@ -492,9 +501,7 @@ export function parseTreasuryProposalVoteResult(
     | undefined;
 }
 
-export function parseTreasuryProposalActionsResult(
-  output: string,
-):
+export function parseTreasuryProposalActionsResult(output: string):
   | {
       count: number;
       outputPath?: string;
@@ -522,9 +529,7 @@ export function parseTreasuryProposalTallyResult(
     | undefined;
 }
 
-export function parseTreasuryProposalExecuteResult(
-  output: string,
-):
+export function parseTreasuryProposalExecuteResult(output: string):
   | {
       proposalAddress: string;
       recipientPublicKey: string;
@@ -542,9 +547,7 @@ export function parseTreasuryProposalExecuteResult(
     | undefined;
 }
 
-export function parseTreasuryProposalStateResult(
-  output: string,
-):
+export function parseTreasuryProposalStateResult(output: string):
   | {
       proposalAddress: string;
       recipientHash: string;
@@ -572,12 +575,11 @@ export function parseTreasuryProposalStateResult(
     | undefined;
 }
 
-export function parseTreasuryOwnerDeployResult(
-  output: string,
-):
+export function parseTreasuryOwnerDeployResult(output: string):
   | {
       pauseControllerAddress: string;
       treasuryOwnerAddress: string;
+      withdrawalPermission: "proof" | "proofOrSignature";
       pauseControllerTxHash?: string;
       treasuryOwnerTxHash?: string;
     }
@@ -586,15 +588,14 @@ export function parseTreasuryOwnerDeployResult(
     | {
         pauseControllerAddress: string;
         treasuryOwnerAddress: string;
+        withdrawalPermission: "proof" | "proofOrSignature";
         pauseControllerTxHash?: string;
         treasuryOwnerTxHash?: string;
       }
     | undefined;
 }
 
-export function parseTreasuryOwnerCompileResult(
-  output: string,
-):
+export function parseTreasuryOwnerCompileResult(output: string):
   | {
       lifecyclePeriodDuration: string;
       compiled: {
@@ -620,14 +621,15 @@ export function parseTreasuryOwnerCompileResult(
     | undefined;
 }
 
-export function parseTreasuryOwnerStateResult(
-  output: string,
-):
+export function parseTreasuryOwnerStateResult(output: string):
   | {
       treasuryOwnerAddress: string;
       treasuryOwnerTokenId: string;
       treasuryDeployedAtSlot: string;
       pauseControllerPublicKey: string;
+      withdrawalPermission: "proof" | "proofOrSignature" | "custom";
+      accessPermission: string;
+      sendPermission: string;
       currentLifecyclePeriod?: {
         treasuryOwnerAddress: string;
         currentGlobalSlot: string;
@@ -647,6 +649,9 @@ export function parseTreasuryOwnerStateResult(
         treasuryOwnerTokenId: string;
         treasuryDeployedAtSlot: string;
         pauseControllerPublicKey: string;
+        withdrawalPermission: "proof" | "proofOrSignature" | "custom";
+        accessPermission: string;
+        sendPermission: string;
         currentLifecyclePeriod?: {
           treasuryOwnerAddress: string;
           currentGlobalSlot: string;
@@ -662,9 +667,7 @@ export function parseTreasuryOwnerStateResult(
     | undefined;
 }
 
-export function parseTreasuryFundTreasuryResult(
-  output: string,
-):
+export function parseTreasuryFundTreasuryResult(output: string):
   | {
       sender?: string;
       fundingAccount?: string;
@@ -686,9 +689,29 @@ export function parseTreasuryFundTreasuryResult(
     | undefined;
 }
 
-export function parseTransferResult(
-  output: string,
-):
+export function parseTreasuryEmergencyWithdrawResult(output: string):
+  | {
+      authorization: "treasury-owner-signature";
+      sender: string;
+      from: string;
+      to: string;
+      amount: string;
+      emergencyWithdrawalTxHash?: string;
+    }
+  | undefined {
+  return parseMarkerJson(output, "TREASURY_OWNER_EMERGENCY_WITHDRAW_JSON:") as
+    | {
+        authorization: "treasury-owner-signature";
+        sender: string;
+        from: string;
+        to: string;
+        amount: string;
+        emergencyWithdrawalTxHash?: string;
+      }
+    | undefined;
+}
+
+export function parseTransferResult(output: string):
   | {
       sender?: string;
       fundingAccount?: string;
@@ -718,9 +741,7 @@ export function parsePauseControllerCompileResult(
     | undefined;
 }
 
-export function parsePauseControllerDeployResult(
-  output: string,
-):
+export function parsePauseControllerDeployResult(output: string):
   | {
       pauseControllerAddress: string;
       pauseControllerTxHash?: string;
@@ -736,9 +757,7 @@ export function parsePauseControllerDeployResult(
     | undefined;
 }
 
-export function parsePauseControllerStateResult(
-  output: string,
-):
+export function parsePauseControllerStateResult(output: string):
   | {
       pauseControllerAddress: string;
       multisigCommitment: string;
@@ -756,14 +775,14 @@ export function parsePauseControllerStateResult(
     | undefined;
 }
 
-export function parsePauseTreasuryResult(
-  output: string,
-): {
-  pauseControllerAddress: string;
-  paused: boolean;
-  nonce: string;
-  pauseTxHash?: string;
-} | undefined {
+export function parsePauseTreasuryResult(output: string):
+  | {
+      pauseControllerAddress: string;
+      paused: boolean;
+      nonce: string;
+      pauseTxHash?: string;
+    }
+  | undefined {
   return parseMarkerJson(output, "PAUSE_CONTROLLER_PAUSE_JSON:") as
     | {
         pauseControllerAddress: string;
@@ -774,14 +793,14 @@ export function parsePauseTreasuryResult(
     | undefined;
 }
 
-export function parseUnpauseTreasuryResult(
-  output: string,
-): {
-  pauseControllerAddress: string;
-  paused: boolean;
-  nonce: string;
-  unpauseTxHash?: string;
-} | undefined {
+export function parseUnpauseTreasuryResult(output: string):
+  | {
+      pauseControllerAddress: string;
+      paused: boolean;
+      nonce: string;
+      unpauseTxHash?: string;
+    }
+  | undefined {
   return parseMarkerJson(output, "PAUSE_CONTROLLER_UNPAUSE_JSON:") as
     | {
         pauseControllerAddress: string;
@@ -792,14 +811,14 @@ export function parseUnpauseTreasuryResult(
     | undefined;
 }
 
-export function parseTogglePauseProposalResult(
-  output: string,
-): {
-  pauseControllerAddress: string;
-  proposalPublicKey: string;
-  nonce: string;
-  togglePauseProposalTxHash?: string;
-} | undefined {
+export function parseTogglePauseProposalResult(output: string):
+  | {
+      pauseControllerAddress: string;
+      proposalPublicKey: string;
+      nonce: string;
+      togglePauseProposalTxHash?: string;
+    }
+  | undefined {
   return parseMarkerJson(output, "PAUSE_CONTROLLER_TOGGLE_PROPOSAL_JSON:") as
     | {
         pauseControllerAddress: string;
@@ -810,15 +829,15 @@ export function parseTogglePauseProposalResult(
     | undefined;
 }
 
-export function parseRotateMultisigKeysResult(
-  output: string,
-): {
-  pauseControllerAddress: string;
-  nonce: string;
-  previousMultisigCommitment: string;
-  newMultisigCommitment: string;
-  rotateMultisigKeysTxHash?: string;
-} | undefined {
+export function parseRotateMultisigKeysResult(output: string):
+  | {
+      pauseControllerAddress: string;
+      nonce: string;
+      previousMultisigCommitment: string;
+      newMultisigCommitment: string;
+      rotateMultisigKeysTxHash?: string;
+    }
+  | undefined {
   return parseMarkerJson(output, "PAUSE_CONTROLLER_ROTATE_KEYS_JSON:") as
     | {
         pauseControllerAddress: string;
@@ -830,9 +849,7 @@ export function parseRotateMultisigKeysResult(
     | undefined;
 }
 
-export function parseMultisigSignResult(
-  output: string,
-):
+export function parseMultisigSignResult(output: string):
   | {
       type: string;
       nonce: string;
@@ -869,7 +886,10 @@ export function parseMultisigSignResult(
 function parseMarkerJson(output: string, marker: string): unknown {
   const markerIndex = output.lastIndexOf(marker);
   if (markerIndex !== -1) {
-    const jsonLine = output.slice(markerIndex + marker.length).split("\n")[0]?.trim();
+    const jsonLine = output
+      .slice(markerIndex + marker.length)
+      .split("\n")[0]
+      ?.trim();
     if (!jsonLine) {
       return undefined;
     }

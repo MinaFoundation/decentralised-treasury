@@ -6,7 +6,7 @@ import type { AddressInfo } from "node:net";
 import { readFile, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { Mina, PrivateKey, Reducer, TokenId } from "o1js";
+import { Mina, PrivateKey, PublicKey, Reducer, TokenId } from "o1js";
 import { TreasuryOwnerSmartContract } from "@repo/sdk/src/provable/contracts/treasury-owner.js";
 import {
   Vote,
@@ -211,6 +211,12 @@ it("exposes proposal fetch-actions command in help", async () => {
     !proposalCreateHelp.includes("--proposal-zkapp-uri"),
     "expected proposal create help to not list --proposal-zkapp-uri option",
   );
+  assert(
+    proposalCreateHelp.includes("--proposal-private-key") &&
+      !proposalCreateHelp.includes("--proposal-public-key") &&
+      !proposalCreateHelp.includes("--proposal-ledger-account-index"),
+    "expected proposal create help to accept only an optional Proposal private key",
+  );
 });
 
 it("fetches proposal actions and persists action state target", async () => {
@@ -355,8 +361,6 @@ describe("proposal create e2e", { concurrency: 1 }, () => {
       "expected treasury owner setup to run before test",
     );
 
-    const proposalPrivateKey = PrivateKey.random();
-    const proposalPublicKey = proposalPrivateKey.toPublicKey().toBase58();
     const recipientPublicKey = PrivateKey.random().toPublicKey().toBase58();
     const proposalLifecycleId = Number.parseInt(PROPOSAL_LIFECYCLE_ID, 10);
     assert.strictEqual(
@@ -367,7 +371,6 @@ describe("proposal create e2e", { concurrency: 1 }, () => {
 
     logTestStep(PROPOSAL_TEST_NAME, "running proposal create CLI command", {
       treasuryOwnerPublicKey,
-      proposalPublicKey,
       recipientPublicKey,
       proposalLifecycleId,
       lifecyclePeriodDuration: LIFECYCLE_PERIOD_DURATION,
@@ -386,7 +389,6 @@ describe("proposal create e2e", { concurrency: 1 }, () => {
       envOverrides: {
         TREASURY_API_URL: contentApi.url,
         TREASURY_OWNER_PUBLIC_KEY: treasuryOwnerPublicKey,
-        PROPOSAL_PRIVATE_KEY: proposalPrivateKey.toBase58(),
         PROPOSAL_LIFECYCLE_ID: String(proposalLifecycleId),
         RECIPIENT_PUBLIC_KEY: recipientPublicKey,
         PROPOSAL_AMOUNT,
@@ -401,7 +403,14 @@ describe("proposal create e2e", { concurrency: 1 }, () => {
 
     const createResult = parseTreasuryProposalResult(createOutput);
     assert(createResult, "expected proposal create JSON output");
-    assert.strictEqual(createResult.proposalAddress, proposalPublicKey);
+    assert(
+      createOutput.includes(
+        "The CLI generated an in-memory keypair for deployment and will discard the private key after this command",
+      ),
+      "expected proposal create to warn about its generated deployment key",
+    );
+    const proposalPublicKey = createResult.proposalAddress;
+    PublicKey.fromBase58(proposalPublicKey);
     assert(createResult.proposalTokenId, "expected proposal token id");
     assert(createResult.proposalTxHash, "expected proposal transaction hash");
     assert.strictEqual(contentApi.requests.length, 1);
@@ -423,9 +432,8 @@ describe("proposal create e2e", { concurrency: 1 }, () => {
         PROPOSAL_PUBLIC_KEY: proposalPublicKey,
       },
     });
-    const proposalStateResult = parseTreasuryProposalStateResult(
-      proposalStateOutput,
-    );
+    const proposalStateResult =
+      parseTreasuryProposalStateResult(proposalStateOutput);
     assert(proposalStateResult, "expected proposal state JSON output");
     assert.strictEqual(proposalStateResult.proposalAddress, proposalPublicKey);
     assert.strictEqual(

@@ -10,12 +10,22 @@ import { SideLoadedStakingLedgerToVotingLedgerProof } from "@repo/sdk/src/provab
 import { TreasuryOwnerSmartContract } from "@repo/sdk/src/provable/contracts/treasury-owner.js";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname } from "node:path";
-import { configureMinaNetwork } from "./mina-instance.js";
+import {
+  configureMinaNetwork,
+  minaNetworkIdOption,
+  type MinaNetworkId,
+} from "./mina-instance.js";
 import { submitProposalContents } from "./proposal-content-api.js";
 import {
   readProposalMarkdownContent,
   resolveProposalZkappUri,
 } from "./proposal-content-hash.js";
+import {
+  addTransactionSignerOptions,
+  createLedgerTransactionSigner,
+  resolveSigningAccount,
+  type SignerMode,
+} from "../ledger/transaction-signer.js";
 
 function parsePrivateKey(value: string): PrivateKey {
   return PrivateKey.fromBase58(value);
@@ -28,9 +38,13 @@ function parsePublicKey(value: string): PublicKey {
 interface CreateProposalCommandOptions {
   apiUrl: string;
   minaNodeUrl: string;
-  senderPrivateKey: PrivateKey;
+  networkId: MinaNetworkId;
+  signer: SignerMode;
+  senderPrivateKey?: PrivateKey;
+  senderPublicKey?: PublicKey;
+  senderLedgerAccountIndex?: number;
   treasuryOwnerPublicKey: PublicKey;
-  proposalPrivateKey: PrivateKey;
+  proposalPrivateKey?: PrivateKey;
   proposalLifecycleId: UInt32;
   recipientPublicKey: PublicKey;
   amount: UInt64;
@@ -44,10 +58,16 @@ interface CreateProposalCommandOptions {
 
 interface VoteProposalCommandOptions {
   minaNodeUrl: string;
-  senderPrivateKey: PrivateKey;
+  networkId: MinaNetworkId;
+  signer: SignerMode;
+  senderPrivateKey?: PrivateKey;
+  senderPublicKey?: PublicKey;
+  senderLedgerAccountIndex?: number;
   treasuryOwnerPublicKey: PublicKey;
   proposalPublicKey: PublicKey;
-  voterPrivateKey: PrivateKey;
+  voterPrivateKey?: PrivateKey;
+  voterPublicKey?: PublicKey;
+  voterLedgerAccountIndex?: number;
   vote: ProposalVote;
   fee?: UInt64;
   nonce?: number;
@@ -65,7 +85,11 @@ interface FetchProposalActionsCommandOptions {
 
 interface TallyVotesProposalCommandOptions {
   minaNodeUrl: string;
-  senderPrivateKey: PrivateKey;
+  networkId: MinaNetworkId;
+  signer: SignerMode;
+  senderPrivateKey?: PrivateKey;
+  senderPublicKey?: PublicKey;
+  senderLedgerAccountIndex?: number;
   treasuryOwnerPublicKey: PublicKey;
   proposalPublicKey: PublicKey;
   voteReducerProofPath: string;
@@ -80,7 +104,11 @@ interface TallyVotesProposalCommandOptions {
 
 interface ExecuteProposalCommandOptions {
   minaNodeUrl: string;
-  senderPrivateKey: PrivateKey;
+  networkId: MinaNetworkId;
+  signer: SignerMode;
+  senderPrivateKey?: PrivateKey;
+  senderPublicKey?: PublicKey;
+  senderLedgerAccountIndex?: number;
   treasuryOwnerPublicKey: PublicKey;
   proposalPublicKey: PublicKey;
   recipientPublicKey: PublicKey;
@@ -94,6 +122,7 @@ interface ExecuteProposalCommandOptions {
 
 interface ReadProposalStateCommandOptions {
   minaNodeUrl: string;
+  networkId: MinaNetworkId;
   treasuryOwnerPublicKey: PublicKey;
   proposalPublicKey: PublicKey;
 }
@@ -101,6 +130,27 @@ interface ReadProposalStateCommandOptions {
 export async function createProposal(
   options: CreateProposalCommandOptions,
 ): Promise<void> {
+  const sender = resolveSigningAccount({
+    signer: options.signer,
+    label: "Sender",
+    privateKey: options.senderPrivateKey,
+    publicKey: options.senderPublicKey,
+    ledgerAccountIndex: options.senderLedgerAccountIndex,
+  });
+  const proposalPrivateKey = options.proposalPrivateKey ?? PrivateKey.random();
+  if (!options.proposalPrivateKey) {
+    console.warn(
+      "Warning: No Proposal private key was provided. The CLI generated an in-memory keypair for deployment and will discard the private key after this command. The private key cannot authorize later Proposal control: Proposal state uses proof authorization, and its custom-token account updates require Treasury Owner approval.",
+    );
+  }
+  const proposalPublicKey = proposalPrivateKey.toPublicKey();
+  const transactionSigner = createLedgerTransactionSigner(
+    options.signer,
+    [sender],
+    options.networkId,
+    undefined,
+    [proposalPrivateKey],
+  );
   const [proposalContents, proposalZkappUri] = await Promise.all([
     readProposalMarkdownContent({
       contentFile: options.contentFile,
@@ -109,21 +159,23 @@ export async function createProposal(
       contentFile: options.contentFile,
     }),
   ]);
-  const { SqliteTreasuryOwnerService } = await import(
-    "@repo/sdk/src/services/sqlite/sqlite-treasury-owner-service.js"
-  );
+  const { SqliteTreasuryOwnerService } =
+    await import("@repo/sdk/src/services/sqlite/sqlite-treasury-owner-service.js");
   const service = new SqliteTreasuryOwnerService();
 
   await service.compile({
     lifecyclePeriodDuration: options.lifecyclePeriodDuration,
   });
-  configureMinaNetwork(options.minaNodeUrl);
+  configureMinaNetwork(options.minaNodeUrl, options.networkId);
 
   const result = await service.createProposal({
     minaNodeUrl: options.minaNodeUrl,
-    senderPrivateKey: options.senderPrivateKey,
+    senderPrivateKey: sender.privateKey,
+    senderPublicKey: sender.publicKey,
     treasuryOwnerPublicKey: options.treasuryOwnerPublicKey,
-    proposalPrivateKey: options.proposalPrivateKey,
+    proposalPrivateKey,
+    proposalPublicKey,
+    transactionSigner,
     proposalLifecycleId: options.proposalLifecycleId,
     recipientPublicKey: options.recipientPublicKey,
     amount: options.amount,
@@ -148,23 +200,46 @@ export async function createProposal(
   );
 }
 
-export async function voteProposal(options: VoteProposalCommandOptions): Promise<void> {
-  const { SqliteTreasuryOwnerService } = await import(
-    "@repo/sdk/src/services/sqlite/sqlite-treasury-owner-service.js"
+export async function voteProposal(
+  options: VoteProposalCommandOptions,
+): Promise<void> {
+  const sender = resolveSigningAccount({
+    signer: options.signer,
+    label: "Sender",
+    privateKey: options.senderPrivateKey,
+    publicKey: options.senderPublicKey,
+    ledgerAccountIndex: options.senderLedgerAccountIndex,
+  });
+  const voter = resolveSigningAccount({
+    signer: options.signer,
+    label: "Voter",
+    privateKey: options.voterPrivateKey,
+    publicKey: options.voterPublicKey,
+    ledgerAccountIndex: options.voterLedgerAccountIndex,
+  });
+  const transactionSigner = createLedgerTransactionSigner(
+    options.signer,
+    [sender, voter],
+    options.networkId,
   );
+  const { SqliteTreasuryOwnerService } =
+    await import("@repo/sdk/src/services/sqlite/sqlite-treasury-owner-service.js");
   const service = new SqliteTreasuryOwnerService();
 
   await service.compile({
     lifecyclePeriodDuration: options.lifecyclePeriodDuration,
   });
-  configureMinaNetwork(options.minaNodeUrl);
+  configureMinaNetwork(options.minaNodeUrl, options.networkId);
 
   const result = await service.voteProposal({
     minaNodeUrl: options.minaNodeUrl,
-    senderPrivateKey: options.senderPrivateKey,
+    senderPrivateKey: sender.privateKey,
+    senderPublicKey: sender.publicKey,
     treasuryOwnerPublicKey: options.treasuryOwnerPublicKey,
     proposalPublicKey: options.proposalPublicKey,
-    voterPrivateKey: options.voterPrivateKey,
+    voterPrivateKey: voter.privateKey,
+    voterPublicKey: voter.publicKey,
+    transactionSigner,
     vote: options.vote,
     fee: options.fee,
     nonce: options.nonce,
@@ -178,38 +253,52 @@ export async function voteProposal(options: VoteProposalCommandOptions): Promise
 export async function tallyVotesProposal(
   options: TallyVotesProposalCommandOptions,
 ): Promise<void> {
-  const { SqliteTreasuryOwnerService } = await import(
-    "@repo/sdk/src/services/sqlite/sqlite-treasury-owner-service.js"
+  const sender = resolveSigningAccount({
+    signer: options.signer,
+    label: "Sender",
+    privateKey: options.senderPrivateKey,
+    publicKey: options.senderPublicKey,
+    ledgerAccountIndex: options.senderLedgerAccountIndex,
+  });
+  const transactionSigner = createLedgerTransactionSigner(
+    options.signer,
+    [sender],
+    options.networkId,
   );
+  const { SqliteTreasuryOwnerService } =
+    await import("@repo/sdk/src/services/sqlite/sqlite-treasury-owner-service.js");
   const service = new SqliteTreasuryOwnerService();
   await service.compile({
     lifecyclePeriodDuration: options.lifecyclePeriodDuration,
   });
-  configureMinaNetwork(options.minaNodeUrl);
+  configureMinaNetwork(options.minaNodeUrl, options.networkId);
 
-  const [voteReducerProofJson, stakingLedgerToVotingLedgerProofJson] = await Promise.all([
-    readFile(options.voteReducerProofPath, "utf8").then((value) => JSON.parse(value)),
-    readFile(options.stakingLedgerToVotingLedgerProofPath, "utf8").then((value) =>
-      JSON.parse(value),
-    ),
-  ]);
+  const [voteReducerProofJson, stakingLedgerToVotingLedgerProofJson] =
+    await Promise.all([
+      readFile(options.voteReducerProofPath, "utf8").then((value) =>
+        JSON.parse(value),
+      ),
+      readFile(options.stakingLedgerToVotingLedgerProofPath, "utf8").then(
+        (value) => JSON.parse(value),
+      ),
+    ]);
   const voteReducerProof =
     await SideLoadedVoteReducerProof.fromJSON(voteReducerProofJson);
   const stakingLedgerToVotingLedgerProof =
     await SideLoadedStakingLedgerToVotingLedgerProof.fromJSON(
       stakingLedgerToVotingLedgerProofJson,
     );
-  const {
-    treasuryOwnerAccount,
-    treasuryOwnerAccountWitness,
-  } = await service.getTreasuryOwnerProofInputsFromSqliteStakingLedger(
-    options.lifecycleId,
-    options.treasuryOwnerPublicKey,
-  );
+  const { treasuryOwnerAccount, treasuryOwnerAccountWitness } =
+    await service.getTreasuryOwnerProofInputsFromSqliteStakingLedger(
+      options.lifecycleId,
+      options.treasuryOwnerPublicKey,
+    );
 
   const result = await service.tallyVotes({
     minaNodeUrl: options.minaNodeUrl,
-    senderPrivateKey: options.senderPrivateKey,
+    senderPrivateKey: sender.privateKey,
+    senderPublicKey: sender.publicKey,
+    transactionSigner,
     treasuryOwnerPublicKey: options.treasuryOwnerPublicKey,
     proposalPublicKey: options.proposalPublicKey,
     voteReducerProof,
@@ -228,18 +317,31 @@ export async function tallyVotesProposal(
 export async function executeProposal(
   options: ExecuteProposalCommandOptions,
 ): Promise<void> {
-  const { SqliteTreasuryOwnerService } = await import(
-    "@repo/sdk/src/services/sqlite/sqlite-treasury-owner-service.js"
+  const sender = resolveSigningAccount({
+    signer: options.signer,
+    label: "Sender",
+    privateKey: options.senderPrivateKey,
+    publicKey: options.senderPublicKey,
+    ledgerAccountIndex: options.senderLedgerAccountIndex,
+  });
+  const transactionSigner = createLedgerTransactionSigner(
+    options.signer,
+    [sender],
+    options.networkId,
   );
+  const { SqliteTreasuryOwnerService } =
+    await import("@repo/sdk/src/services/sqlite/sqlite-treasury-owner-service.js");
   const service = new SqliteTreasuryOwnerService();
   await service.compile({
     lifecyclePeriodDuration: options.lifecyclePeriodDuration,
   });
-  configureMinaNetwork(options.minaNodeUrl);
+  configureMinaNetwork(options.minaNodeUrl, options.networkId);
 
   const result = await service.executeProposal({
     minaNodeUrl: options.minaNodeUrl,
-    senderPrivateKey: options.senderPrivateKey,
+    senderPrivateKey: sender.privateKey,
+    senderPublicKey: sender.publicKey,
+    transactionSigner,
     treasuryOwnerPublicKey: options.treasuryOwnerPublicKey,
     proposalPublicKey: options.proposalPublicKey,
     recipientPublicKey: options.recipientPublicKey,
@@ -256,9 +358,8 @@ export async function executeProposal(
 export async function fetchProposalActions(
   options: FetchProposalActionsCommandOptions,
 ): Promise<void> {
-  const { SqliteVoteReducerService } = await import(
-    "@repo/sdk/src/services/sqlite/sqlite-vote-reducer-service.js"
-  );
+  const { SqliteVoteReducerService } =
+    await import("@repo/sdk/src/services/sqlite/sqlite-vote-reducer-service.js");
   const treasuryOwner = new TreasuryOwnerSmartContract(
     options.treasuryOwnerPublicKey,
   );
@@ -297,11 +398,10 @@ export async function fetchProposalActions(
 export async function readProposalState(
   options: ReadProposalStateCommandOptions,
 ): Promise<void> {
-  const { SqliteTreasuryOwnerService } = await import(
-    "@repo/sdk/src/services/sqlite/sqlite-treasury-owner-service.js"
-  );
+  const { SqliteTreasuryOwnerService } =
+    await import("@repo/sdk/src/services/sqlite/sqlite-treasury-owner-service.js");
   const service = new SqliteTreasuryOwnerService();
-  configureMinaNetwork(options.minaNodeUrl);
+  configureMinaNetwork(options.minaNodeUrl, options.networkId);
   const result = await service.getProposalState({
     minaNodeUrl: options.minaNodeUrl,
     treasuryOwnerPublicKey: options.treasuryOwnerPublicKey,
@@ -319,246 +419,286 @@ export default function proposalCommandFactory(program: Command) {
       "\nTip: if you are waiting for a lifecycle period, run `treasury-owner read-state` and check `currentLifecyclePeriod`.",
     );
 
-  command
-    .command("create")
-    .description(
-      "Create a proposal (must be submitted during the proposal creation period)",
-    )
-    .addOption(
-      new Option("--api-url <api-url>", "Treasury API base URL")
-        .env("TREASURY_API_URL")
-        .default("http://127.0.0.1:4100"),
-    )
-    .addOption(
-      new Option("--mina-node-url <mina-node-url>", "Mina GraphQL URL")
-        .env("MINA_NODE_URL")
-        .default("http://127.0.0.1:8080/graphql"),
-    )
-    .addOption(
-      new Option("--sender-private-key <sender-private-key>", "Sender private key")
-        .env("SENDER_PRIVATE_KEY")
-        .argParser(parsePrivateKey)
-        .makeOptionMandatory(),
-    )
-    .addOption(
-      new Option(
-        "--treasury-owner-public-key <treasury-owner-public-key>",
-        "Treasury owner public key",
+  addTransactionSignerOptions(
+    command
+      .command("create")
+      .description(
+        "Create a proposal (must be submitted during the proposal creation period)",
       )
-        .env("TREASURY_OWNER_PUBLIC_KEY")
-        .argParser(parsePublicKey)
-        .makeOptionMandatory(),
-    )
-    .addOption(
-      new Option("--proposal-private-key <proposal-private-key>", "Proposal private key")
-        .env("PROPOSAL_PRIVATE_KEY")
-        .argParser(parsePrivateKey)
-        .makeOptionMandatory(),
-    )
-    .addOption(
-      new Option("--proposal-lifecycle-id <proposal-lifecycle-id>", "Proposal lifecycle ID")
-        .env("PROPOSAL_LIFECYCLE_ID")
-        .argParser((value) => UInt32.from(value))
-        .makeOptionMandatory(),
-    )
-    .addOption(
-      new Option("--recipient-public-key <recipient-public-key>", "Proposal recipient")
-        .env("RECIPIENT_PUBLIC_KEY")
-        .argParser(parsePublicKey)
-        .makeOptionMandatory(),
-    )
-    .addOption(
-      new Option("--amount <amount>", "Proposal transfer amount in nanomina")
-        .env("PROPOSAL_AMOUNT")
-        .argParser((value) => UInt64.from(value))
-        .makeOptionMandatory(),
-    )
-    .addOption(
-      new Option(
-        "--content-file <content-file>",
-        "Path to markdown proposal content file (hashed to derive zkappUri)",
+      .addOption(
+        new Option("--api-url <api-url>", "Treasury API base URL")
+          .env("TREASURY_API_URL")
+          .default("http://127.0.0.1:4100"),
       )
-        .env("PROPOSAL_CONTENT_FILE")
-        .makeOptionMandatory(),
-    )
-    .addOption(
-      new Option("--fee <fee>", "Transaction fee in nanomina")
-        .env("TX_FEE")
-        .argParser((value) => UInt64.from(value))
-        .default(UInt64.from(1 * 10 ** 9)),
-    )
-    .addOption(
-      new Option("--nonce <nonce>", "Nonce to use for the transaction")
-        .env("TX_NONCE")
-        .argParser(parseIntOption),
-    )
-    .addOption(
-      new Option("--memo <memo>", "Memo to use for transactions").env("TX_MEMO"),
-    )
-    .addOption(
-      new Option("--wait <wait>", "Wait for transaction inclusion")
-        .env("TX_WAIT")
-        .argParser(parseBooleanOption)
-        .default(true),
-    )
-    .addOption(
-      new Option(
-        "--lifecycle-period-duration <lifecycle-period-duration>",
-        "Duration of lifecycle period in slots",
+      .addOption(
+        new Option("--mina-node-url <mina-node-url>", "Mina GraphQL URL")
+          .env("MINA_NODE_URL")
+          .default("http://127.0.0.1:8080/graphql"),
       )
-        .env("LIFECYCLE_PERIOD_DURATION")
-        .argParser((value) => UInt32.from(value))
-        .default(UInt32.from(7140)),
-    )
-    .action(createProposal);
+      .addOption(minaNetworkIdOption())
+      .addOption(
+        new Option(
+          "--sender-private-key <sender-private-key>",
+          "Sender private key",
+        )
+          .env("SENDER_PRIVATE_KEY")
+          .argParser(parsePrivateKey),
+      )
+      .addOption(
+        new Option(
+          "--treasury-owner-public-key <treasury-owner-public-key>",
+          "Treasury owner public key",
+        )
+          .env("TREASURY_OWNER_PUBLIC_KEY")
+          .argParser(parsePublicKey)
+          .makeOptionMandatory(),
+      )
+      .addOption(
+        new Option(
+          "--proposal-private-key <proposal-private-key>",
+          "Optional deployment-only Proposal private key",
+        )
+          .env("PROPOSAL_PRIVATE_KEY")
+          .argParser(parsePrivateKey),
+      )
+      .addOption(
+        new Option(
+          "--proposal-lifecycle-id <proposal-lifecycle-id>",
+          "Proposal lifecycle ID",
+        )
+          .env("PROPOSAL_LIFECYCLE_ID")
+          .argParser((value) => UInt32.from(value))
+          .makeOptionMandatory(),
+      )
+      .addOption(
+        new Option(
+          "--recipient-public-key <recipient-public-key>",
+          "Proposal recipient",
+        )
+          .env("RECIPIENT_PUBLIC_KEY")
+          .argParser(parsePublicKey)
+          .makeOptionMandatory(),
+      )
+      .addOption(
+        new Option("--amount <amount>", "Proposal transfer amount in nanomina")
+          .env("PROPOSAL_AMOUNT")
+          .argParser((value) => UInt64.from(value))
+          .makeOptionMandatory(),
+      )
+      .addOption(
+        new Option(
+          "--content-file <content-file>",
+          "Path to markdown proposal content file (hashed to derive zkappUri)",
+        )
+          .env("PROPOSAL_CONTENT_FILE")
+          .makeOptionMandatory(),
+      )
+      .addOption(
+        new Option("--fee <fee>", "Transaction fee in nanomina")
+          .env("TX_FEE")
+          .argParser((value) => UInt64.from(value))
+          .default(UInt64.from(1 * 10 ** 9)),
+      )
+      .addOption(
+        new Option("--nonce <nonce>", "Nonce to use for the transaction")
+          .env("TX_NONCE")
+          .argParser(parseIntOption),
+      )
+      .addOption(
+        new Option("--memo <memo>", "Memo to use for transactions").env(
+          "TX_MEMO",
+        ),
+      )
+      .addOption(
+        new Option("--wait <wait>", "Wait for transaction inclusion")
+          .env("TX_WAIT")
+          .argParser(parseBooleanOption)
+          .default(true),
+      )
+      .addOption(
+        new Option(
+          "--lifecycle-period-duration <lifecycle-period-duration>",
+          "Duration of lifecycle period in slots",
+        )
+          .env("LIFECYCLE_PERIOD_DURATION")
+          .argParser((value) => UInt32.from(value))
+          .default(UInt32.from(7140)),
+      ),
+    [{ role: "sender", label: "Sender" }],
+  ).action(createProposal);
 
-  command
-    .command("vote")
-    .addOption(
-      new Option("--mina-node-url <mina-node-url>", "Mina GraphQL URL")
-        .env("MINA_NODE_URL")
-        .default("http://127.0.0.1:8080/graphql"),
-    )
-    .addOption(
-      new Option("--sender-private-key <sender-private-key>", "Sender private key")
-        .env("SENDER_PRIVATE_KEY")
-        .argParser(parsePrivateKey)
-        .makeOptionMandatory(),
-    )
-    .addOption(
-      new Option(
-        "--treasury-owner-public-key <treasury-owner-public-key>",
-        "Treasury owner public key",
+  addTransactionSignerOptions(
+    command
+      .command("vote")
+      .addOption(
+        new Option("--mina-node-url <mina-node-url>", "Mina GraphQL URL")
+          .env("MINA_NODE_URL")
+          .default("http://127.0.0.1:8080/graphql"),
       )
-        .env("TREASURY_OWNER_PUBLIC_KEY")
-        .argParser(parsePublicKey)
-        .makeOptionMandatory(),
-    )
-    .addOption(
-      new Option("--proposal-public-key <proposal-public-key>", "Proposal public key")
-        .env("PROPOSAL_PUBLIC_KEY")
-        .argParser(parsePublicKey)
-        .makeOptionMandatory(),
-    )
-    .addOption(
-      new Option("--voter-private-key <voter-private-key>", "Voter private key")
-        .env("VOTER_PRIVATE_KEY")
-        .argParser(parsePrivateKey)
-        .makeOptionMandatory(),
-    )
-    .addOption(
-      new Option("--vote <vote>", "Vote selection")
-        .choices(["yay", "nay", "abstain"])
-        .env("PROPOSAL_VOTE")
-        .makeOptionMandatory(),
-    )
-    .addOption(
-      new Option("--fee <fee>", "Transaction fee in nanomina")
-        .env("TX_FEE")
-        .argParser((value) => UInt64.from(value))
-        .default(UInt64.from(1 * 10 ** 9)),
-    )
-    .addOption(
-      new Option("--nonce <nonce>", "Nonce to use for the transaction")
-        .env("TX_NONCE")
-        .argParser(parseIntOption),
-    )
-    .addOption(
-      new Option("--memo <memo>", "Memo to use for transactions").env("TX_MEMO"),
-    )
-    .addOption(
-      new Option("--wait <wait>", "Wait for transaction inclusion")
-        .env("TX_WAIT")
-        .argParser(parseBooleanOption)
-        .default(true),
-    )
-    .addOption(
-      new Option(
-        "--lifecycle-period-duration <lifecycle-period-duration>",
-        "Duration of lifecycle period in slots",
+      .addOption(minaNetworkIdOption())
+      .addOption(
+        new Option(
+          "--sender-private-key <sender-private-key>",
+          "Sender private key",
+        )
+          .env("SENDER_PRIVATE_KEY")
+          .argParser(parsePrivateKey),
       )
-        .env("LIFECYCLE_PERIOD_DURATION")
-        .argParser((value) => UInt32.from(value))
-        .default(UInt32.from(7140)),
-    )
-    .action(voteProposal);
+      .addOption(
+        new Option(
+          "--treasury-owner-public-key <treasury-owner-public-key>",
+          "Treasury owner public key",
+        )
+          .env("TREASURY_OWNER_PUBLIC_KEY")
+          .argParser(parsePublicKey)
+          .makeOptionMandatory(),
+      )
+      .addOption(
+        new Option(
+          "--proposal-public-key <proposal-public-key>",
+          "Proposal public key",
+        )
+          .env("PROPOSAL_PUBLIC_KEY")
+          .argParser(parsePublicKey)
+          .makeOptionMandatory(),
+      )
+      .addOption(
+        new Option(
+          "--voter-private-key <voter-private-key>",
+          "Voter private key",
+        )
+          .env("VOTER_PRIVATE_KEY")
+          .argParser(parsePrivateKey),
+      )
+      .addOption(
+        new Option("--vote <vote>", "Vote selection")
+          .choices(["yay", "nay", "abstain"])
+          .env("PROPOSAL_VOTE")
+          .makeOptionMandatory(),
+      )
+      .addOption(
+        new Option("--fee <fee>", "Transaction fee in nanomina")
+          .env("TX_FEE")
+          .argParser((value) => UInt64.from(value))
+          .default(UInt64.from(1 * 10 ** 9)),
+      )
+      .addOption(
+        new Option("--nonce <nonce>", "Nonce to use for the transaction")
+          .env("TX_NONCE")
+          .argParser(parseIntOption),
+      )
+      .addOption(
+        new Option("--memo <memo>", "Memo to use for transactions").env(
+          "TX_MEMO",
+        ),
+      )
+      .addOption(
+        new Option("--wait <wait>", "Wait for transaction inclusion")
+          .env("TX_WAIT")
+          .argParser(parseBooleanOption)
+          .default(true),
+      )
+      .addOption(
+        new Option(
+          "--lifecycle-period-duration <lifecycle-period-duration>",
+          "Duration of lifecycle period in slots",
+        )
+          .env("LIFECYCLE_PERIOD_DURATION")
+          .argParser((value) => UInt32.from(value))
+          .default(UInt32.from(7140)),
+      ),
+    [
+      { role: "sender", label: "Sender" },
+      { role: "voter", label: "Voter" },
+    ],
+  ).action(voteProposal);
 
-  command
-    .command("execute")
-    .description("Execute an approved proposal payout")
-    .addOption(
-      new Option("--mina-node-url <mina-node-url>", "Mina GraphQL URL")
-        .env("MINA_NODE_URL")
-        .default("http://127.0.0.1:8080/graphql"),
-    )
-    .addOption(
-      new Option("--sender-private-key <sender-private-key>", "Sender private key")
-        .env("SENDER_PRIVATE_KEY")
-        .argParser(parsePrivateKey)
-        .makeOptionMandatory(),
-    )
-    .addOption(
-      new Option(
-        "--treasury-owner-public-key <treasury-owner-public-key>",
-        "Treasury owner public key",
+  addTransactionSignerOptions(
+    command
+      .command("execute")
+      .description("Execute an approved proposal payout")
+      .addOption(
+        new Option("--mina-node-url <mina-node-url>", "Mina GraphQL URL")
+          .env("MINA_NODE_URL")
+          .default("http://127.0.0.1:8080/graphql"),
       )
-        .env("TREASURY_OWNER_PUBLIC_KEY")
-        .argParser(parsePublicKey)
-        .makeOptionMandatory(),
-    )
-    .addOption(
-      new Option("--proposal-public-key <proposal-public-key>", "Proposal public key")
-        .env("PROPOSAL_PUBLIC_KEY")
-        .argParser(parsePublicKey)
-        .makeOptionMandatory(),
-    )
-    .addOption(
-      new Option(
-        "--recipient-public-key <recipient-public-key>",
-        "Proposal recipient public key",
+      .addOption(minaNetworkIdOption())
+      .addOption(
+        new Option(
+          "--sender-private-key <sender-private-key>",
+          "Sender private key",
+        )
+          .env("SENDER_PRIVATE_KEY")
+          .argParser(parsePrivateKey),
       )
-        .env("RECIPIENT_PUBLIC_KEY")
-        .argParser(parsePublicKey)
-        .makeOptionMandatory(),
-    )
-    .addOption(
-      new Option(
-        "--amount-to-pay-out <amount-to-pay-out>",
-        "Optional payout amount in nanomina (defaults to full remaining proposal amount with bond)",
+      .addOption(
+        new Option(
+          "--treasury-owner-public-key <treasury-owner-public-key>",
+          "Treasury owner public key",
+        )
+          .env("TREASURY_OWNER_PUBLIC_KEY")
+          .argParser(parsePublicKey)
+          .makeOptionMandatory(),
       )
-        .env("EXECUTE_PROPOSAL_AMOUNT")
-        .argParser((value) => UInt64.from(value)),
-    )
-    .addOption(
-      new Option("--fee <fee>", "Transaction fee in nanomina")
-        .env("TX_FEE")
-        .argParser((value) => UInt64.from(value))
-        .default(UInt64.from(1 * 10 ** 9)),
-    )
-    .addOption(
-      new Option("--nonce <nonce>", "Nonce to use for the transaction")
-        .env("TX_NONCE")
-        .argParser(parseIntOption),
-    )
-    .addOption(
-      new Option("--memo <memo>", "Memo to use for transaction").env("TX_MEMO"),
-    )
-    .addOption(
-      new Option("--wait <wait>", "Wait for transaction inclusion")
-        .env("TX_WAIT")
-        .argParser(parseBooleanOption)
-        .default(true),
-    )
-    .addOption(
-      new Option(
-        "--lifecycle-period-duration <lifecycle-period-duration>",
-        "Duration of lifecycle period in slots",
+      .addOption(
+        new Option(
+          "--proposal-public-key <proposal-public-key>",
+          "Proposal public key",
+        )
+          .env("PROPOSAL_PUBLIC_KEY")
+          .argParser(parsePublicKey)
+          .makeOptionMandatory(),
       )
-        .env("LIFECYCLE_PERIOD_DURATION")
-        .argParser((value) => UInt32.from(value))
-        .default(UInt32.from(7140)),
-    )
-    .action(executeProposal);
+      .addOption(
+        new Option(
+          "--recipient-public-key <recipient-public-key>",
+          "Proposal recipient public key",
+        )
+          .env("RECIPIENT_PUBLIC_KEY")
+          .argParser(parsePublicKey)
+          .makeOptionMandatory(),
+      )
+      .addOption(
+        new Option(
+          "--amount-to-pay-out <amount-to-pay-out>",
+          "Optional payout amount in nanomina (defaults to full remaining proposal amount with bond)",
+        )
+          .env("EXECUTE_PROPOSAL_AMOUNT")
+          .argParser((value) => UInt64.from(value)),
+      )
+      .addOption(
+        new Option("--fee <fee>", "Transaction fee in nanomina")
+          .env("TX_FEE")
+          .argParser((value) => UInt64.from(value))
+          .default(UInt64.from(1 * 10 ** 9)),
+      )
+      .addOption(
+        new Option("--nonce <nonce>", "Nonce to use for the transaction")
+          .env("TX_NONCE")
+          .argParser(parseIntOption),
+      )
+      .addOption(
+        new Option("--memo <memo>", "Memo to use for transaction").env(
+          "TX_MEMO",
+        ),
+      )
+      .addOption(
+        new Option("--wait <wait>", "Wait for transaction inclusion")
+          .env("TX_WAIT")
+          .argParser(parseBooleanOption)
+          .default(true),
+      )
+      .addOption(
+        new Option(
+          "--lifecycle-period-duration <lifecycle-period-duration>",
+          "Duration of lifecycle period in slots",
+        )
+          .env("LIFECYCLE_PERIOD_DURATION")
+          .argParser((value) => UInt32.from(value))
+          .default(UInt32.from(7140)),
+      ),
+    [{ role: "sender", label: "Sender" }],
+  ).action(executeProposal);
 
   command
     .command("read-state")
@@ -568,6 +708,7 @@ export default function proposalCommandFactory(program: Command) {
         .env("MINA_NODE_URL")
         .default("http://127.0.0.1:8080/graphql"),
     )
+    .addOption(minaNetworkIdOption())
     .addOption(
       new Option(
         "--treasury-owner-public-key <treasury-owner-public-key>",
@@ -578,7 +719,10 @@ export default function proposalCommandFactory(program: Command) {
         .makeOptionMandatory(),
     )
     .addOption(
-      new Option("--proposal-public-key <proposal-public-key>", "Proposal public key")
+      new Option(
+        "--proposal-public-key <proposal-public-key>",
+        "Proposal public key",
+      )
         .env("PROPOSAL_PUBLIC_KEY")
         .argParser(parsePublicKey)
         .makeOptionMandatory(),
@@ -602,7 +746,10 @@ export default function proposalCommandFactory(program: Command) {
         .makeOptionMandatory(),
     )
     .addOption(
-      new Option("--proposal-public-key <proposal-public-key>", "Proposal public key")
+      new Option(
+        "--proposal-public-key <proposal-public-key>",
+        "Proposal public key",
+      )
         .env("PROPOSAL_PUBLIC_KEY")
         .argParser(parsePublicKey)
         .makeOptionMandatory(),
@@ -615,87 +762,97 @@ export default function proposalCommandFactory(program: Command) {
     )
     .action(fetchProposalActions);
 
-  command
-    .command("tally-votes")
-    .description("Tally votes on a proposal using sideloaded proofs")
-    .addOption(
-      new Option("--mina-node-url <mina-node-url>", "Mina GraphQL URL")
-        .env("MINA_NODE_URL")
-        .default("http://127.0.0.1:8080/graphql"),
-    )
-    .addOption(
-      new Option("--sender-private-key <sender-private-key>", "Sender private key")
-        .env("SENDER_PRIVATE_KEY")
-        .argParser(parsePrivateKey)
-        .makeOptionMandatory(),
-    )
-    .addOption(
-      new Option(
-        "--treasury-owner-public-key <treasury-owner-public-key>",
-        "Treasury owner public key",
+  addTransactionSignerOptions(
+    command
+      .command("tally-votes")
+      .description("Tally votes on a proposal using sideloaded proofs")
+      .addOption(
+        new Option("--mina-node-url <mina-node-url>", "Mina GraphQL URL")
+          .env("MINA_NODE_URL")
+          .default("http://127.0.0.1:8080/graphql"),
       )
-        .env("TREASURY_OWNER_PUBLIC_KEY")
-        .argParser(parsePublicKey)
-        .makeOptionMandatory(),
-    )
-    .addOption(
-      new Option("--proposal-public-key <proposal-public-key>", "Proposal public key")
-        .env("PROPOSAL_PUBLIC_KEY")
-        .argParser(parsePublicKey)
-        .makeOptionMandatory(),
-    )
-    .addOption(
-      new Option(
-        "--vote-reducer-proof-path <vote-reducer-proof-path>",
-        "Path to merged vote-reducer proof JSON",
+      .addOption(minaNetworkIdOption())
+      .addOption(
+        new Option(
+          "--sender-private-key <sender-private-key>",
+          "Sender private key",
+        )
+          .env("SENDER_PRIVATE_KEY")
+          .argParser(parsePrivateKey),
       )
-        .env("VOTE_REDUCER_PROOF_PATH")
-        .makeOptionMandatory(),
-    )
-    .addOption(
-      new Option(
-        "--staking-ledger-to-voting-ledger-proof-path <staking-ledger-to-voting-ledger-proof-path>",
-        "Path to staking-ledger-to-voting-ledger proof JSON",
+      .addOption(
+        new Option(
+          "--treasury-owner-public-key <treasury-owner-public-key>",
+          "Treasury owner public key",
+        )
+          .env("TREASURY_OWNER_PUBLIC_KEY")
+          .argParser(parsePublicKey)
+          .makeOptionMandatory(),
       )
-        .env("STAKING_LEDGER_TO_VOTING_LEDGER_PROOF_PATH")
-        .makeOptionMandatory(),
-    )
-    .addOption(
-      new Option(
-        "--lifecycle-id <lifecycle-id>",
-        "Lifecycle ID for sqlite staking ledger witness extraction",
+      .addOption(
+        new Option(
+          "--proposal-public-key <proposal-public-key>",
+          "Proposal public key",
+        )
+          .env("PROPOSAL_PUBLIC_KEY")
+          .argParser(parsePublicKey)
+          .makeOptionMandatory(),
       )
-        .env("LIFECYCLE_ID")
-        .makeOptionMandatory(),
-    )
-    .addOption(
-      new Option("--fee <fee>", "Transaction fee in nanomina")
-        .env("TX_FEE")
-        .argParser((value) => UInt64.from(value))
-        .default(UInt64.from(1 * 10 ** 9)),
-    )
-    .addOption(
-      new Option("--nonce <nonce>", "Nonce to use for the transaction")
-        .env("TX_NONCE")
-        .argParser(parseIntOption),
-    )
-    .addOption(
-      new Option("--memo <memo>", "Memo to use for transaction").env("TX_MEMO"),
-    )
-    .addOption(
-      new Option("--wait <wait>", "Wait for transaction inclusion")
-        .env("TX_WAIT")
-        .argParser(parseBooleanOption)
-        .default(true),
-    )
-    .addOption(
-      new Option(
-        "--lifecycle-period-duration <lifecycle-period-duration>",
-        "Duration of lifecycle period in slots",
+      .addOption(
+        new Option(
+          "--vote-reducer-proof-path <vote-reducer-proof-path>",
+          "Path to merged vote-reducer proof JSON",
+        )
+          .env("VOTE_REDUCER_PROOF_PATH")
+          .makeOptionMandatory(),
       )
-        .env("LIFECYCLE_PERIOD_DURATION")
-        .argParser((value) => UInt32.from(value))
-        .default(UInt32.from(7140)),
-    )
-    .action(tallyVotesProposal);
+      .addOption(
+        new Option(
+          "--staking-ledger-to-voting-ledger-proof-path <staking-ledger-to-voting-ledger-proof-path>",
+          "Path to staking-ledger-to-voting-ledger proof JSON",
+        )
+          .env("STAKING_LEDGER_TO_VOTING_LEDGER_PROOF_PATH")
+          .makeOptionMandatory(),
+      )
+      .addOption(
+        new Option(
+          "--lifecycle-id <lifecycle-id>",
+          "Lifecycle ID for sqlite staking ledger witness extraction",
+        )
+          .env("LIFECYCLE_ID")
+          .makeOptionMandatory(),
+      )
+      .addOption(
+        new Option("--fee <fee>", "Transaction fee in nanomina")
+          .env("TX_FEE")
+          .argParser((value) => UInt64.from(value))
+          .default(UInt64.from(1 * 10 ** 9)),
+      )
+      .addOption(
+        new Option("--nonce <nonce>", "Nonce to use for the transaction")
+          .env("TX_NONCE")
+          .argParser(parseIntOption),
+      )
+      .addOption(
+        new Option("--memo <memo>", "Memo to use for transaction").env(
+          "TX_MEMO",
+        ),
+      )
+      .addOption(
+        new Option("--wait <wait>", "Wait for transaction inclusion")
+          .env("TX_WAIT")
+          .argParser(parseBooleanOption)
+          .default(true),
+      )
+      .addOption(
+        new Option(
+          "--lifecycle-period-duration <lifecycle-period-duration>",
+          "Duration of lifecycle period in slots",
+        )
+          .env("LIFECYCLE_PERIOD_DURATION")
+          .argParser((value) => UInt32.from(value))
+          .default(UInt32.from(7140)),
+      ),
+    [{ role: "sender", label: "Sender" }],
+  ).action(tallyVotesProposal);
 }

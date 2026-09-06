@@ -2,9 +2,12 @@ import { createRequire } from "node:module";
 import { MinaApp } from "@zondax/ledger-mina-js";
 import { Field, PublicKey, Transaction } from "o1js";
 import {
+  type LedgerAccountIndices,
   signFieldWithLedgerClient,
   signTransactionWithLedgerClient,
 } from "@repo/sdk/src/signing/ledger-signing.js";
+
+type LedgerNetworkId = "mainnet" | "devnet" | "testnet";
 
 async function withLedger<T>(
   operation: (ledger: MinaApp) => Promise<T>,
@@ -23,29 +26,29 @@ async function withLedger<T>(
   }
 }
 
-function configuredFieldSignerPublicKey(): PublicKey {
-  const value = process.env.LEDGER_SIGNER_PUBLIC_KEY?.trim();
-  if (!value) {
-    throw new Error(
-      "LEDGER_SIGNER_PUBLIC_KEY is required for Ledger field signing.",
-    );
-  }
-  return PublicKey.fromBase58(value);
-}
-
 /** Sign all required zkApp authorization slots with the connected Ledger. */
-export async function signTxWithLedger(transaction: {
-  toJSON(): string;
-}): Promise<ReturnType<typeof Transaction.fromJSON>> {
+export async function signTxWithLedger(
+  transaction: { toJSON(): string },
+  accountIndices: LedgerAccountIndices,
+  networkId?: LedgerNetworkId,
+): Promise<ReturnType<typeof Transaction.fromJSON>> {
   return await withLedger((ledger) =>
-    signTransactionWithLedgerClient(transaction, ledger),
+    signTransactionWithLedgerClient(
+      transaction,
+      ledger,
+      accountIndices,
+      networkId,
+    ),
   );
 }
 
 /** Sign one break-glass field with the configured Ledger public key. */
-export async function signFieldWithLedger(field: Field) {
-  const expectedPublicKey = configuredFieldSignerPublicKey();
+export async function signFieldWithLedger(
+  field: Field,
+  expectedPublicKey: PublicKey,
+  accountIndex: number,
+) {
   return await withLedger((ledger) =>
-    signFieldWithLedgerClient(field, ledger, expectedPublicKey),
+    signFieldWithLedgerClient(field, ledger, expectedPublicKey, accountIndex),
   );
 }

@@ -41,8 +41,12 @@ import { createSqliteVoteReducerProofStorage } from "@repo/sdk/src/storage/sqlit
 import { KeyvSqlite } from "@keyv/sqlite";
 
 let lightnetProcess: ChildProcess | undefined;
-const FIXTURES_DIRECTORY = fileURLToPath(new URL("./fixtures", import.meta.url));
-const SQLITE_FIXTURE_DIRECTORY = fileURLToPath(new URL("./.data/sqlite", import.meta.url));
+const FIXTURES_DIRECTORY = fileURLToPath(
+  new URL("./fixtures", import.meta.url),
+);
+const SQLITE_FIXTURE_DIRECTORY = fileURLToPath(
+  new URL("./.data/sqlite", import.meta.url),
+);
 const SQLITE_LIFECYCLE_ID = "0";
 const LIGHTNET_ONLINE_WHALE_0_PRIVATE_KEY =
   "EKFGQcsWmQR9Jj1W2XoGNQzF43T1PNqRhaQrm1vDS948GVbyemrj";
@@ -62,13 +66,18 @@ const runTreasuryCliWithSqliteFixtures = (args: string[]) =>
     timeoutMs: 600_000,
   });
 
-function parseTreasuryFundResult(output: string):
+function parseTreasuryFundResult(
+  output: string,
+):
   | { from: string; to: string; amount: string; transferTxHash?: string }
   | undefined {
   const marker = "TREASURY_FUND_TREASURY_JSON:";
   const markerIndex = output.lastIndexOf(marker);
   if (markerIndex !== -1) {
-    const jsonLine = output.slice(markerIndex + marker.length).split("\n")[0]?.trim();
+    const jsonLine = output
+      .slice(markerIndex + marker.length)
+      .split("\n")[0]
+      ?.trim();
     if (!jsonLine) return undefined;
     try {
       return JSON.parse(jsonLine) as {
@@ -130,7 +139,10 @@ function parseProofFieldAt(
 ): Field {
   assert(Array.isArray(proofArray), `expected ${label} to be an array`);
   const value = proofArray[index];
-  assert(typeof value === "string", `expected ${label}[${index}] to be a string`);
+  assert(
+    typeof value === "string",
+    `expected ${label}[${index}] to be a string`,
+  );
   return Field(value);
 }
 
@@ -145,9 +157,18 @@ function assertVoteReducerProofMatchesExpectedActionHistory(
     actionStateFive: string;
   },
 ): void {
-  assert(proofFile.publicInput, `expected ${proofLabel} to contain publicInput`);
-  assert(proofFile.publicOutput, `expected ${proofLabel} to contain publicOutput`);
-  assert(Array.isArray(proofFile.publicInput), `expected ${proofLabel}.publicInput array`);
+  assert(
+    proofFile.publicInput,
+    `expected ${proofLabel} to contain publicInput`,
+  );
+  assert(
+    proofFile.publicOutput,
+    `expected ${proofLabel} to contain publicOutput`,
+  );
+  assert(
+    Array.isArray(proofFile.publicInput),
+    `expected ${proofLabel}.publicInput array`,
+  );
   assert(
     Array.isArray(proofFile.publicOutput),
     `expected ${proofLabel}.publicOutput array`,
@@ -203,7 +224,10 @@ async function fetchCurrentStakingEpochLedgerHash(): Promise<Field> {
       `,
     }),
   });
-  assert(response.ok, `failed to query staking epoch hash: HTTP ${response.status}`);
+  assert(
+    response.ok,
+    `failed to query staking epoch hash: HTTP ${response.status}`,
+  );
   const payload = (await response.json()) as {
     data?: {
       bestChain?: Array<{
@@ -220,10 +244,13 @@ async function fetchCurrentStakingEpochLedgerHash(): Promise<Field> {
     };
     errors?: { message: string }[];
   };
-  assert(!payload.errors?.length, payload.errors?.map((error) => error.message).join("; "));
+  assert(
+    !payload.errors?.length,
+    payload.errors?.map((error) => error.message).join("; "),
+  );
   const hash =
-    payload.data?.bestChain?.[0]?.protocolState?.consensusState?.stakingEpochData
-      ?.ledger?.hash;
+    payload.data?.bestChain?.[0]?.protocolState?.consensusState
+      ?.stakingEpochData?.ledger?.hash;
   assert(hash, "missing stakingEpochData.ledger.hash in GraphQL response");
   return LedgerHashBase58.fromBase58(hash);
 }
@@ -245,7 +272,10 @@ async function loadLedgerVotingPower(): Promise<{
   delegateVotingPower: Map<string, bigint>;
   totalVotingPower: bigint;
 }> {
-  const ledgerPath = join(FIXTURES_DIRECTORY, "staking-epoch-ledger-lightnet.json");
+  const ledgerPath = join(
+    FIXTURES_DIRECTORY,
+    "staking-epoch-ledger-lightnet.json",
+  );
   const ledger = JSON.parse(await readFile(ledgerPath, "utf8")) as Array<{
     pk: string;
     balance: string;
@@ -306,7 +336,9 @@ async function waitForSlotWithProgress(
     }
     await sleep(500);
   }
-  throw new Error(`Timed out waiting for ${phaseLabel} at global slot ${targetSlot}`);
+  throw new Error(
+    `Timed out waiting for ${phaseLabel} at global slot ${targetSlot}`,
+  );
 }
 
 async function fetchProposalActionsWithRetry(options: {
@@ -315,7 +347,9 @@ async function fetchProposalActionsWithRetry(options: {
   outputPath: string;
   minCount?: number;
   timeoutMs?: number;
-}): Promise<NonNullable<ReturnType<typeof parseTreasuryProposalActionsResult>>> {
+}): Promise<
+  NonNullable<ReturnType<typeof parseTreasuryProposalActionsResult>>
+> {
   const minCount = options.minCount ?? 1;
   const timeoutMs = options.timeoutMs ?? 120_000;
   const startedAt = Date.now();
@@ -333,7 +367,8 @@ async function fetchProposalActionsWithRetry(options: {
       "--output-path",
       options.outputPath,
     ]);
-    const actionsResult = parseTreasuryProposalActionsResult(fetchActionsOutput);
+    const actionsResult =
+      parseTreasuryProposalActionsResult(fetchActionsOutput);
     assert(actionsResult, "expected proposal fetch-actions JSON marker output");
 
     if (actionsResult.count >= minCount) {
@@ -435,9 +470,9 @@ async function runTreasuryOwnerFlow(): Promise<void> {
     LIGHTNET_ONLINE_WHALE_1_PRIVATE_KEY,
   );
   const pauseControllerPrivateKey = PrivateKey.random();
-  const proposalPrivateKey = PrivateKey.random();
   const recipientPublicKey = PrivateKey.random().toPublicKey();
-  const { delegateVotingPower, totalVotingPower } = await loadLedgerVotingPower();
+  const { delegateVotingPower, totalVotingPower } =
+    await loadLedgerVotingPower();
   const voterPrivateKeys = [
     senderPrivateKey,
     PrivateKey.fromBase58(LIGHTNET_VOTER_0_PRIVATE_KEY),
@@ -457,10 +492,14 @@ async function runTreasuryOwnerFlow(): Promise<void> {
 
   const selectedVotingPower = voterPrivateKeys.reduce((accumulator, key) => {
     return (
-      accumulator + (delegateVotingPower.get(key.toPublicKey().toBase58()) ?? 0n)
+      accumulator +
+      (delegateVotingPower.get(key.toPublicKey().toBase58()) ?? 0n)
     );
   }, 0n);
-  assert(selectedVotingPower > 0n, "expected selected voters to have non-zero voting power");
+  assert(
+    selectedVotingPower > 0n,
+    "expected selected voters to have non-zero voting power",
+  );
 
   const selectedParticipationBp =
     totalVotingPower > 0n
@@ -486,13 +525,11 @@ async function runTreasuryOwnerFlow(): Promise<void> {
   const senderPublicKey = senderPrivateKey.toPublicKey();
   const treasuryOwnerPublicKey = treasuryOwnerPrivateKey.toPublicKey();
   const pauseControllerPublicKey = pauseControllerPrivateKey.toPublicKey();
-  const proposalPublicKey = proposalPrivateKey.toPublicKey();
 
   Provable.log("treasury owner e2e keys", {
     senderPublicKey: senderPublicKey.toBase58(),
     treasuryOwnerPublicKey: treasuryOwnerPublicKey.toBase58(),
     pauseControllerPublicKey: pauseControllerPublicKey.toBase58(),
-    proposalPublicKey: proposalPublicKey.toBase58(),
     recipientPublicKey: recipientPublicKey.toBase58(),
     multisigParticipantsPublicKeys: multisigParticipantsPublicKeys.map((key) =>
       key.toBase58(),
@@ -528,7 +565,11 @@ async function runTreasuryOwnerFlow(): Promise<void> {
   console.timeEnd("treasury-owner.e2e.lightnet.deploy");
   assert(deployOutput.length > 0, "expected treasury-owner deploy CLI output");
   const slotAfterDeploy = await getCurrentGlobalSlot();
-  await waitForSlotWithProgress(slotAfterDeploy + 1, "post-deploy block", 120_000);
+  await waitForSlotWithProgress(
+    slotAfterDeploy + 1,
+    "post-deploy block",
+    120_000,
+  );
 
   const treasuryFundingAmount = UInt64.from(10 * 10 ** 9);
   const fundOutput = await runTreasuryCliWithSqliteFixtures([
@@ -545,11 +586,16 @@ async function runTreasuryOwnerFlow(): Promise<void> {
   ]);
   const transferResult = parseTreasuryFundResult(fundOutput);
   assert(transferResult, "expected treasury funding JSON marker output");
-  assert(transferResult.transferTxHash, "expected treasury funding transaction hash");
+  assert(
+    transferResult.transferTxHash,
+    "expected treasury funding transaction hash",
+  );
   const slotAfterFund = await getCurrentGlobalSlot();
   await waitForSlotWithProgress(slotAfterFund + 1, "post-fund block", 120_000);
 
-  const treasuryOwnerContract = new TreasuryOwnerSmartContract(treasuryOwnerPublicKey);
+  const treasuryOwnerContract = new TreasuryOwnerSmartContract(
+    treasuryOwnerPublicKey,
+  );
   const deployedAtSlot = treasuryDeployedAtSlot;
   const cycleLength = lifecyclePeriodDuration * 4;
   const currentLifecycleSlot = await getCurrentGlobalSlot();
@@ -557,7 +603,8 @@ async function runTreasuryOwnerFlow(): Promise<void> {
     0,
     Math.floor((currentLifecycleSlot - deployedAtSlot) / cycleLength),
   );
-  let proposalPhaseStartSlot = deployedAtSlot + proposalLifecycleId * cycleLength;
+  let proposalPhaseStartSlot =
+    deployedAtSlot + proposalLifecycleId * cycleLength;
   let proposalPhaseEndSlot = proposalPhaseStartSlot + lifecyclePeriodDuration;
   if (currentLifecycleSlot > proposalPhaseEndSlot) {
     proposalLifecycleId += 1;
@@ -569,7 +616,8 @@ async function runTreasuryOwnerFlow(): Promise<void> {
     await waitForSlotWithProgress(
       proposalPhaseStartSlot,
       "proposal phase",
-      Math.max(1, proposalPhaseStartSlot - currentLifecycleSlot) * SLOT_TIME_MS +
+      Math.max(1, proposalPhaseStartSlot - currentLifecycleSlot) *
+        SLOT_TIME_MS +
         120_000,
     );
   }
@@ -582,8 +630,6 @@ async function runTreasuryOwnerFlow(): Promise<void> {
     senderPrivateKey.toBase58(),
     "--treasury-owner-public-key",
     treasuryOwnerPublicKey.toBase58(),
-    "--proposal-private-key",
-    proposalPrivateKey.toBase58(),
     "--proposal-lifecycle-id",
     String(proposalLifecycleId),
     "--recipient-public-key",
@@ -598,6 +644,9 @@ async function runTreasuryOwnerFlow(): Promise<void> {
   const proposalResult = parseTreasuryProposalResult(createProposalOutput);
   console.timeEnd("treasury-owner.e2e.lightnet.createProposal");
   assert(proposalResult, "expected proposal create JSON marker output");
+  const proposalPublicKey = PublicKey.fromBase58(
+    proposalResult.proposalAddress,
+  );
   const slotAfterCreateProposal = await getCurrentGlobalSlot();
   await waitForSlotWithProgress(
     slotAfterCreateProposal + 1,
@@ -714,7 +763,10 @@ async function runTreasuryOwnerFlow(): Promise<void> {
       actionStateFive?: string;
     };
   };
-  assert(Array.isArray(actionsFile.voteActions), "expected voteActions in output file");
+  assert(
+    Array.isArray(actionsFile.voteActions),
+    "expected voteActions in output file",
+  );
   assert(
     actionsFile.actionStateHistoryTarget?.actionStateOne &&
       actionsFile.actionStateHistoryTarget.actionStateTwo &&
@@ -796,7 +848,10 @@ async function runTreasuryOwnerFlow(): Promise<void> {
       const baseProofCount = await proofStorage.count();
       const mergeProofCount = await proofStorage.mergeCount();
       const baseProof = await proofStorage.getProof("0");
-      assert(baseProof, "expected vote-reducer base proof with id 0 after prove-run-batch");
+      assert(
+        baseProof,
+        "expected vote-reducer base proof with id 0 after prove-run-batch",
+      );
       const baseProofFile = baseProof.toJSON() as {
         publicInput?: unknown;
         publicOutput?: unknown;

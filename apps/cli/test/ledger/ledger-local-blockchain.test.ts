@@ -24,10 +24,27 @@ import { MultisigSignature } from "@repo/sdk/src/provable/contracts/treasury-pau
 import { DummyLedgerContract } from "./dummy-ledger-contract.js";
 
 type TestMode = "software" | "mocker" | "device";
+
+function accountIndexFromEnv(name: string, fallback: number): number {
+  const value = process.env[name];
+  if (value === undefined) return fallback;
+  if (value.trim() === "") throw new Error(`${name} must not be blank`);
+  const accountIndex = Number(value);
+  if (!Number.isSafeInteger(accountIndex) || accountIndex < 0) {
+    throw new Error(`${name} must be a non-negative integer`);
+  }
+  return accountIndex;
+}
+
 const LEDGER_ACCOUNTS = {
-  feePayer: 0,
-  contract: 1,
+  feePayer: accountIndexFromEnv("LEDGER_FEE_PAYER_ACCOUNT_INDEX", 0),
+  contract: accountIndexFromEnv("LEDGER_CONTRACT_ACCOUNT_INDEX", 1),
 } as const;
+if (LEDGER_ACCOUNTS.feePayer === LEDGER_ACCOUNTS.contract) {
+  throw new Error(
+    "The fee-payer and contract Ledger indices must be different",
+  );
+}
 
 interface LedgerAccount {
   accountIndex: number;
@@ -247,7 +264,7 @@ async function openLedgerSession(): Promise<LedgerSession> {
 
 test(
   `Ledger signs an o1js dummy-contract transaction on LocalBlockchain (${mode})`,
-  { timeout: mode === "device" ? 2_400_000 : 30_000 },
+  mode === "device" ? {} : { timeout: 30_000 },
   async () => {
     const ledgerSession = await openLedgerSession();
     try {
@@ -273,6 +290,16 @@ test(
       const signedDeployTransaction = await signTransactionWithLedgerClient(
         deployTransaction,
         ledgerSession.ledger,
+        new Map([
+          [
+            ledgerSession.feePayer.publicKey.toBase58(),
+            ledgerSession.feePayer.accountIndex,
+          ],
+          [
+            ledgerSession.contract.publicKey.toBase58(),
+            ledgerSession.contract.accountIndex,
+          ],
+        ]),
       );
       await (await signedDeployTransaction.send()).wait();
 
@@ -291,6 +318,12 @@ test(
       const signedTransaction = await signTransactionWithLedgerClient(
         transaction,
         ledgerSession.ledger,
+        new Map([
+          [
+            ledgerSession.feePayer.publicKey.toBase58(),
+            ledgerSession.feePayer.accountIndex,
+          ],
+        ]),
       );
       const pendingTransaction = await signedTransaction.send();
       await pendingTransaction.wait();
@@ -305,6 +338,7 @@ test(
         breakGlassField,
         ledgerSession.ledger,
         ledgerSession.feePayer.publicKey,
+        ledgerSession.feePayer.accountIndex,
       );
       assert.equal(
         breakGlassSignature

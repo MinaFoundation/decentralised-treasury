@@ -22,6 +22,7 @@ export async function acquireLightnetAccount({
   Mina.setActiveInstance(
     Mina.Network({
       mina: minaNodeUrl,
+      networkId: "devnet",
       lightnetAccountManager: lightnetAccountManagerEndpoint,
     }),
   );

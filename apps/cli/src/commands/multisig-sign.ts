@@ -14,6 +14,8 @@ interface BaseSignOptions {
   multisigParticipantsPublicKeys: PublicKey[];
   multisigSignerPrivateKey?: PrivateKey;
   signer: SignerMode;
+  ledgerSignerPublicKey?: PublicKey;
+  ledgerAccountIndex?: number;
   nonce: number;
 }
 
@@ -59,6 +61,11 @@ function parsePublicKeys(value: string): PublicKey[] {
       `Expected ${MULTISIG_PARTICIPANTS_COUNT} multisig public keys, got ${keys.length}`,
     );
   }
+  if (new Set(keys.map((key) => key.toBase58())).size !== keys.length) {
+    throw new InvalidArgumentError(
+      "Multisig participant public keys must be unique.",
+    );
+  }
   return keys;
 }
 
@@ -66,7 +73,8 @@ function parseSignerPrivateKey(value: string): PrivateKey {
   return PrivateKey.fromBase58(value);
 }
 
-function ledgerSignerPublicKey(): PublicKey {
+function ledgerSignerPublicKey(explicitPublicKey?: PublicKey): PublicKey {
+  if (explicitPublicKey) return explicitPublicKey;
   const value = process.env.LEDGER_SIGNER_PUBLIC_KEY?.trim();
   if (!value) {
     throw new Error(
@@ -87,12 +95,15 @@ async function buildSignaturesResult(
 
   const signerPublicKey =
     options.signer === "ledger"
-      ? ledgerSignerPublicKey()
+      ? ledgerSignerPublicKey(options.ledgerSignerPublicKey)
       : options.multisigSignerPrivateKey?.toPublicKey();
   if (!signerPublicKey) {
     throw new Error(
       "--multisig-signer-private-key is required when --signer=in-memory.",
     );
+  }
+  if (options.signer === "ledger" && options.ledgerAccountIndex === undefined) {
+    throw new Error("--ledger-account-index is required when --signer=ledger.");
   }
   const signerPublicKeyBase58 = signerPublicKey.toBase58();
   const signerParticipantIndex = participantPublicKeyStrings.indexOf(
@@ -106,7 +117,11 @@ async function buildSignaturesResult(
 
   const signature =
     options.signer === "ledger"
-      ? await signFieldWithLedger(dataHash)
+      ? await signFieldWithLedger(
+          dataHash,
+          signerPublicKey,
+          options.ledgerAccountIndex!,
+        )
       : MultisigSignature.create(options.multisigSignerPrivateKey!, [dataHash]);
 
   const multisigCommitment = MultisigSignatures.createCommitment(
@@ -205,6 +220,22 @@ export default function multisigSignCommandFactory(program: Command) {
           .choices(["in-memory", "ledger"])
           .default("in-memory")
           .env("SIGNER"),
+      )
+      .addOption(
+        new Option(
+          "--ledger-signer-public-key <ledger-signer-public-key>",
+          "Expected Ledger public key for this participant",
+        )
+          .env("LEDGER_SIGNER_PUBLIC_KEY")
+          .argParser(parsePublicKey),
+      )
+      .addOption(
+        new Option(
+          "--ledger-account-index <ledger-account-index>",
+          "Ledger account index for this participant",
+        )
+          .env("LEDGER_ACCOUNT_INDEX")
+          .argParser(parseIntOption),
       )
       .addOption(
         new Option(

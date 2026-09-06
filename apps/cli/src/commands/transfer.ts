@@ -8,7 +8,11 @@ import {
   UInt64,
 } from "o1js";
 import { parseBooleanOption, parseIntOption } from "./option-parsers.js";
-import { configureMinaNetwork } from "./mina-instance.js";
+import {
+  configureMinaNetwork,
+  minaNetworkIdOption,
+  type MinaNetworkId,
+} from "./mina-instance.js";
 import { signTxWithLedger } from "../ledger/ledger-signing.js";
 
 type SignerMode = "in-memory" | "ledger";
@@ -23,11 +27,14 @@ function parsePublicKey(value: string): PublicKey {
 
 interface TransferCommandOptions {
   minaNodeUrl: string;
+  networkId: MinaNetworkId;
   signer: SignerMode;
   senderPrivateKey?: PrivateKey;
   senderPublicKey?: PublicKey;
+  senderLedgerAccountIndex?: number;
   fundingPrivateKey?: PrivateKey;
   fundingPublicKey?: PublicKey;
+  fundingLedgerAccountIndex?: number;
   recipientPublicKey: PublicKey;
   amount: UInt64;
   fee?: UInt64;
@@ -58,7 +65,7 @@ async function readAccountSnapshot(
 }
 
 export async function transfer(options: TransferCommandOptions): Promise<void> {
-  configureMinaNetwork(options.minaNodeUrl);
+  configureMinaNetwork(options.minaNodeUrl, options.networkId);
 
   const senderPublicKey =
     options.signer === "ledger"
@@ -71,6 +78,14 @@ export async function transfer(options: TransferCommandOptions): Promise<void> {
         : "--sender-private-key is required when --signer=in-memory.",
     );
   }
+  if (
+    options.signer === "ledger" &&
+    options.senderLedgerAccountIndex === undefined
+  ) {
+    throw new Error(
+      "--sender-ledger-account-index is required when --signer=ledger.",
+    );
+  }
   const fundingPrivateKey =
     options.fundingPrivateKey ?? options.senderPrivateKey;
   const fundingPublicKey =
@@ -80,6 +95,16 @@ export async function transfer(options: TransferCommandOptions): Promise<void> {
   if (!fundingPublicKey) {
     throw new Error(
       "--funding-private-key is invalid without an in-memory sender private key.",
+    );
+  }
+  const fundingLedgerAccountIndex = senderPublicKey
+    .equals(fundingPublicKey)
+    .toBoolean()
+    ? options.senderLedgerAccountIndex
+    : options.fundingLedgerAccountIndex;
+  if (options.signer === "ledger" && fundingLedgerAccountIndex === undefined) {
+    throw new Error(
+      "--funding-ledger-account-index is required for a different Ledger funding account.",
     );
   }
   const [senderSnapshot, fundingSnapshot, recipientSnapshot] =
@@ -123,7 +148,14 @@ export async function transfer(options: TransferCommandOptions): Promise<void> {
 
   const signedTransaction =
     options.signer === "ledger"
-      ? await signTxWithLedger(transaction)
+      ? await signTxWithLedger(
+          transaction,
+          new Map([
+            [senderPublicKey.toBase58(), options.senderLedgerAccountIndex!],
+            [fundingPublicKey.toBase58(), fundingLedgerAccountIndex!],
+          ]),
+          options.networkId,
+        )
       : transaction.sign(
           senderPublicKey.equals(fundingPublicKey).toBoolean()
             ? [options.senderPrivateKey!]
@@ -184,6 +216,7 @@ export default function transferCommandFactory(program: Command) {
         .env("MINA_NODE_URL")
         .default("http://127.0.0.1:8080/graphql"),
     )
+    .addOption(minaNetworkIdOption())
     .addOption(
       new Option(
         "--sender-private-key <sender-private-key>",
@@ -202,6 +235,14 @@ export default function transferCommandFactory(program: Command) {
     )
     .addOption(
       new Option(
+        "--sender-ledger-account-index <sender-ledger-account-index>",
+        "Ledger account index for the fee payer",
+      )
+        .env("SENDER_LEDGER_ACCOUNT_INDEX")
+        .argParser(parseIntOption),
+    )
+    .addOption(
+      new Option(
         "--funding-private-key <funding-private-key>",
         "Funding account private key (defaults to sender private key)",
       )
@@ -215,6 +256,14 @@ export default function transferCommandFactory(program: Command) {
       )
         .env("FUNDING_PUBLIC_KEY")
         .argParser(parsePublicKey),
+    )
+    .addOption(
+      new Option(
+        "--funding-ledger-account-index <funding-ledger-account-index>",
+        "Ledger account index for a different funding account",
+      )
+        .env("FUNDING_LEDGER_ACCOUNT_INDEX")
+        .argParser(parseIntOption),
     )
     .addOption(
       new Option(
