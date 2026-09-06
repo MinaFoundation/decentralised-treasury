@@ -1,29 +1,22 @@
 import type { ArchiveEventEntity } from "@repo/indexer";
 import type { EventProcessorHandler } from "@repo/processor";
+import { PROPOSAL_PAUSE_TOGGLED_EVENT_NAME } from "@repo/sdk/src/provable/events/treasury-proposal-events.js";
 import type { EntityManager } from "typeorm";
-import { ProposalEntity } from "./proposal-entity.js";
-
-const PROPOSAL_PAUSE_TOGGLED_EVENT_NAME = "proposalPauseToggled";
+import {
+  defaultProposalProjectionReconciler,
+  ProposalProjectionReconciler,
+} from "./proposal-projection-reconciler.js";
+import {
+  parseContractBool,
+  parseContractFieldArray,
+  parseContractPublicKey,
+} from "./proposal-contract-domain.js";
+import { getRawProposalEventFields } from "./proposal-event-decoding.js";
 
 interface DecodedProposalPauseToggledPayload {
   proposalPublicKey: string;
   paused: boolean;
   senderPublicKey: string | null;
-}
-
-function asBoolean(value: unknown): boolean | null {
-  if (typeof value === "boolean") {
-    return value;
-  }
-  if (typeof value === "string") {
-    if (value === "true") {
-      return true;
-    }
-    if (value === "false") {
-      return false;
-    }
-  }
-  return null;
 }
 
 function decodeArchiveProvidedPayload(
@@ -34,34 +27,42 @@ function decodeArchiveProvidedPayload(
     paused?: unknown;
     senderPublicKey?: unknown;
   };
-  const paused = asBoolean(candidate.paused);
-  if (typeof candidate.proposalPublicKey !== "string" || paused === null) {
+  const proposalPublicKey = parseContractPublicKey(candidate.proposalPublicKey);
+  const paused = parseContractBool(candidate.paused);
+  const senderPublicKey =
+    candidate.senderPublicKey === null ||
+    candidate.senderPublicKey === undefined
+      ? null
+      : parseContractPublicKey(candidate.senderPublicKey);
+  if (
+    proposalPublicKey === null ||
+    paused === null ||
+    (candidate.senderPublicKey != null && senderPublicKey === null)
+  ) {
     return null;
   }
   return {
-    proposalPublicKey: candidate.proposalPublicKey,
+    proposalPublicKey,
     paused,
-    senderPublicKey: typeof candidate.senderPublicKey === "string" ? candidate.senderPublicKey : null,
+    senderPublicKey,
   };
 }
 
 async function decodeProposalPauseToggledPayload(
   event: ArchiveEventEntity,
 ): Promise<DecodedProposalPauseToggledPayload | null> {
-  const archiveProvidedPayload = decodeArchiveProvidedPayload(event);
-  if (archiveProvidedPayload) {
-    return archiveProvidedPayload;
+  const rawFields = getRawProposalEventFields(
+    event,
+    PROPOSAL_PAUSE_TOGGLED_EVENT_NAME,
+  );
+  if (rawFields.kind === "absent") {
+    return decodeArchiveProvidedPayload(event);
   }
-
-  const data = event.rawEventData.data;
-  if (!Array.isArray(data)) {
+  if (rawFields.kind === "invalid") {
     return null;
   }
-  if (
-    event.eventType &&
-    event.eventType !== "unknown" &&
-    event.eventType !== PROPOSAL_PAUSE_TOGGLED_EVENT_NAME
-  ) {
+  const data = parseContractFieldArray(rawFields.fields);
+  if (!data) {
     return null;
   }
 
@@ -73,13 +74,19 @@ async function decodeProposalPauseToggledPayload(
       import(o1jsModuleName),
       import(proposalEventsModuleName),
     ]);
-    const Field = (o1jsModule as { Field: (value: string) => unknown }).Field;
+    const { Field, PublicKey } = o1jsModule as {
+      Field: (value: string) => unknown;
+      PublicKey: { check(value: unknown): void };
+    };
     const ProposalPauseToggledEvent = (
       proposalEventsModule as {
         ProposalPauseToggledEvent: {
           fromFields(values: unknown[]): {
             proposalPublicKey: { toBase58(): string };
-            paused: { toBoolean(): boolean };
+            paused: {
+              toBoolean(): boolean;
+              toField(): { toString(): string };
+            };
             senderPublicKey: { toBase58(): string };
           };
         };
@@ -88,6 +95,13 @@ async function decodeProposalPauseToggledPayload(
     const decoded = ProposalPauseToggledEvent.fromFields(
       data.map((value) => Field(value)),
     );
+    PublicKey.check(decoded.proposalPublicKey);
+    PublicKey.check(decoded.senderPublicKey);
+    // Bool.fromFields() accepts a non-Boolean Field off-circuit. Reject it.
+    const pausedField = decoded.paused.toField().toString();
+    if (pausedField !== "0" && pausedField !== "1") {
+      return null;
+    }
 
     return {
       proposalPublicKey: decoded.proposalPublicKey.toBase58(),
@@ -106,6 +120,10 @@ async function decodeProposalPauseToggledPayload(
 export class ProposalPauseToggledEventHandler implements EventProcessorHandler {
   public readonly eventType = PROPOSAL_PAUSE_TOGGLED_EVENT_NAME;
 
+  public constructor(
+    private readonly reconciler: ProposalProjectionReconciler = defaultProposalProjectionReconciler,
+  ) {}
+
   public async tryHandle(
     event: ArchiveEventEntity,
     manager: EntityManager,
@@ -115,12 +133,11 @@ export class ProposalPauseToggledEventHandler implements EventProcessorHandler {
       return false;
     }
 
-    const proposalRepository = manager.getRepository(ProposalEntity);
-    await proposalRepository.update(
-      { proposalPublicKey: payload.proposalPublicKey },
-      {
-        isPaused: event.status === "orphaned" ? !payload.paused : payload.paused,
-      },
+    await this.reconciler.recordAndReconcile(
+      event,
+      PROPOSAL_PAUSE_TOGGLED_EVENT_NAME,
+      { ...payload },
+      manager,
     );
     return true;
   }

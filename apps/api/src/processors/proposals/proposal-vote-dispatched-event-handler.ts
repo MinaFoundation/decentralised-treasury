@@ -1,20 +1,26 @@
 import type { ArchiveEventEntity } from "@repo/indexer";
 import type { EventProcessorHandler } from "@repo/processor";
+import { PROPOSAL_VOTE_DISPATCHED_EVENT_NAME } from "@repo/sdk/src/provable/events/treasury-proposal-events.js";
 import type { EntityManager } from "typeorm";
 import type { StakingLedgerServiceLookup } from "../../staking-ledger/lifecycle-staking-ledger-service-registry.js";
 import { ProposalEntity } from "./proposal-entity.js";
 import {
-  type VotingLedgerServiceLookup,
-} from "./lifecycle-voting-ledger-service-registry.js";
-import { VoteEntity, type VoteLabel } from "./vote-entity.js";
-import { VoteNullifierEntity } from "./vote-nullifier-entity.js";
+  defaultProposalProjectionReconciler,
+  ProposalProjectionReconciler,
+} from "./proposal-projection-reconciler.js";
 import {
-  VoteTallyEntity,
-  type VoteTallyVoteResult,
-} from "./vote-tally-entity.js";
-
-const PROPOSAL_VOTE_DISPATCHED_EVENT_NAME = "proposalVoteDispatched";
-const PROPOSAL_VOTES_TALLIED_EVENT_NAME = "proposalVotesTallied";
+  parseContractFieldArray,
+  parseContractPublicKey,
+  parseContractUInt128,
+  parseContractUInt64,
+  requireContractUInt64,
+} from "./proposal-contract-domain.js";
+import { getRawProposalEventFields } from "./proposal-event-decoding.js";
+import { type VotingLedgerServiceLookup } from "./lifecycle-voting-ledger-service-registry.js";
+import type { VoteLabel } from "./vote-entity.js";
+import type { VoteTallyVoteResult } from "./vote-tally-entity.js";
+import { getDefaultTokenTreasuryAccount } from "./default-token-treasury-account.js";
+import { StakingLedgerVoteWeightResolver } from "./staking-ledger-vote-weight.js";
 
 interface DecodedProposalVotePayload {
   proposalPublicKey: string;
@@ -72,20 +78,18 @@ function toVoteLabel(value: bigint): VoteLabel | null {
 async function decodeProposalVoteDispatchedPayload(
   event: ArchiveEventEntity,
 ): Promise<DecodedProposalVotePayload | null> {
-  const archiveProvidedPayload = decodeArchiveProvidedVotePayload(event);
-  if (archiveProvidedPayload) {
-    return archiveProvidedPayload;
+  const rawFields = getRawProposalEventFields(
+    event,
+    PROPOSAL_VOTE_DISPATCHED_EVENT_NAME,
+  );
+  if (rawFields.kind === "absent") {
+    return decodeArchiveProvidedVotePayload(event);
   }
-
-  const data = event.rawEventData.data;
-  if (!Array.isArray(data)) {
+  if (rawFields.kind === "invalid") {
     return null;
   }
-  if (
-    event.eventType &&
-    event.eventType !== "unknown" &&
-    event.eventType !== PROPOSAL_VOTE_DISPATCHED_EVENT_NAME
-  ) {
+  const data = parseContractFieldArray(rawFields.fields);
+  if (!data) {
     return null;
   }
 
@@ -97,7 +101,10 @@ async function decodeProposalVoteDispatchedPayload(
       import(o1jsModuleName),
       import(proposalEventsModuleName),
     ]);
-    const Field = (o1jsModule as { Field: (value: string) => unknown }).Field;
+    const { Field, PublicKey } = o1jsModule as {
+      Field: (value: string) => unknown;
+      PublicKey: { check(value: unknown): void };
+    };
     const ProposalVoteDispatchedEvent = (
       proposalEventsModule as {
         ProposalVoteDispatchedEvent: {
@@ -113,6 +120,9 @@ async function decodeProposalVoteDispatchedPayload(
     const decoded = ProposalVoteDispatchedEvent.fromFields(
       data.map((value) => Field(value)),
     );
+    PublicKey.check(decoded.proposalPublicKey);
+    PublicKey.check(decoded.voterPublicKey);
+    PublicKey.check(decoded.senderPublicKey);
     const vote = toVoteLabel(decoded.vote.toBigInt());
     if (!vote) {
       return null;
@@ -142,22 +152,35 @@ function decodeArchiveProvidedVotePayload(
     vote?: unknown;
     senderPublicKey?: unknown;
   };
+  const proposalPublicKey = parseContractPublicKey(candidate.proposalPublicKey);
+  const voterPublicKey = parseContractPublicKey(candidate.voterPublicKey);
+  const senderPublicKey =
+    candidate.senderPublicKey === null ||
+    candidate.senderPublicKey === undefined
+      ? null
+      : parseContractPublicKey(candidate.senderPublicKey);
   if (
-    typeof candidate.proposalPublicKey !== "string" ||
-    typeof candidate.voterPublicKey !== "string" ||
-    typeof candidate.vote !== "string"
+    proposalPublicKey === null ||
+    voterPublicKey === null ||
+    typeof candidate.vote !== "string" ||
+    (candidate.senderPublicKey != null && senderPublicKey === null)
   ) {
     return null;
   }
   const vote = candidate.vote.trim().toLowerCase();
-  if (vote !== "dummy" && vote !== "yay" && vote !== "nay" && vote !== "abstain") {
+  if (
+    vote !== "dummy" &&
+    vote !== "yay" &&
+    vote !== "nay" &&
+    vote !== "abstain"
+  ) {
     return null;
   }
   return {
-    proposalPublicKey: candidate.proposalPublicKey,
-    voterPublicKey: candidate.voterPublicKey,
+    proposalPublicKey,
+    voterPublicKey,
     vote,
-    senderPublicKey: typeof candidate.senderPublicKey === "string" ? candidate.senderPublicKey : null,
+    senderPublicKey,
   };
 }
 
@@ -165,7 +188,9 @@ function createContractProposalApprovalMath(): ProposalApprovalMath {
   const loadApprovalMathDeps = async (): Promise<{
     UInt64: { from(value: bigint): unknown };
     UInt128: { from(value: bigint): unknown };
-    ProposalStatus: { APPROVED: { equals(value: unknown): { toBoolean(): boolean } } };
+    ProposalStatus: {
+      APPROVED: { equals(value: unknown): { toBoolean(): boolean } };
+    };
     TreasuryProposalSmartContract: {
       calculateAcceptanceCriteria(
         proposalAmount: unknown,
@@ -195,7 +220,8 @@ function createContractProposalApprovalMath(): ProposalApprovalMath {
       UInt64: o1jsAny.UInt64,
       UInt128: o1jsAny.UInt128,
       ProposalStatus: treasuryProposalAny.ProposalStatus,
-      TreasuryProposalSmartContract: treasuryProposalAny.TreasuryProposalSmartContract,
+      TreasuryProposalSmartContract:
+        treasuryProposalAny.TreasuryProposalSmartContract,
     };
   };
 
@@ -203,11 +229,12 @@ function createContractProposalApprovalMath(): ProposalApprovalMath {
     async calculateAcceptanceCriteria(input) {
       const { UInt64, UInt128, TreasuryProposalSmartContract } =
         await loadApprovalMathDeps();
-      const criteria = TreasuryProposalSmartContract.calculateAcceptanceCriteria(
-        UInt128.from(input.proposalAmount),
-        UInt128.from(input.treasuryBalance),
-        UInt64.from(input.stakingEpochDataLedgerTotalCurrency),
-      );
+      const criteria =
+        TreasuryProposalSmartContract.calculateAcceptanceCriteria(
+          UInt128.from(input.proposalAmount),
+          UInt128.from(input.treasuryBalance),
+          UInt64.from(input.stakingEpochDataLedgerTotalCurrency),
+        );
       return {
         requiredParticipation: criteria.requiredParticipation.toBigInt(),
         requiredApprovalBp: criteria.requiredApprovalBp.toBigInt(),
@@ -234,149 +261,91 @@ function createContractProposalApprovalMath(): ProposalApprovalMath {
 
 export class ProposalVoteDispatchedEventHandler implements EventProcessorHandler {
   public readonly eventType = PROPOSAL_VOTE_DISPATCHED_EVENT_NAME;
+  private readonly stakingVoteWeightResolver: StakingLedgerVoteWeightResolver | null;
 
   public constructor(
-    private readonly votingLedgerServices: VotingLedgerServiceLookup,
+    private readonly votingLedgerServices:
+      | VotingLedgerServiceLookup
+      | undefined,
     private readonly approvalMath: ProposalApprovalMath = createContractProposalApprovalMath(),
     private readonly options: ProposalVoteDispatchedEventHandlerOptions = {},
-  ) {}
+    private readonly reconciler: ProposalProjectionReconciler = defaultProposalProjectionReconciler,
+  ) {
+    this.stakingVoteWeightResolver = options.stakingLedgerServices
+      ? new StakingLedgerVoteWeightResolver(options.stakingLedgerServices)
+      : null;
+    this.reconciler.configureVoteProjection({
+      getVoteWeight: async (proposal, voterPublicKey) => {
+        if (this.stakingVoteWeightResolver) {
+          const expectedRoot = proposal.stakingEpochDataLedgerHash;
+          if (!expectedRoot) {
+            throw new Error(
+              `[proposal-processor] proposal is missing staking ledger root for proposalPublicKey=${proposal.proposalPublicKey}`,
+            );
+          }
+          return await this.stakingVoteWeightResolver.getVoteWeight(
+            String(proposal.lifecycleId),
+            expectedRoot,
+            voterPublicKey,
+          );
+        }
+
+        // Compatibility seam for tests that inject a voting-ledger lookup.
+        // Production supplies stakingLedgerServices and does not use this path.
+        return await this.getVoteWeightFromLedger(
+          String(proposal.lifecycleId),
+          voterPublicKey,
+        );
+      },
+      calculateVoteResult: async (
+        proposal,
+        yayWeight,
+        nayWeight,
+        abstainWeight,
+      ) =>
+        await this.calculateVoteTallyResult(
+          proposal,
+          yayWeight,
+          nayWeight,
+          abstainWeight,
+        ),
+    });
+  }
 
   public async tryHandle(
     event: ArchiveEventEntity,
     manager: EntityManager,
   ): Promise<boolean> {
-    const voteRepository = manager.getRepository(VoteEntity);
-    const proposalRepository = manager.getRepository(ProposalEntity);
-    const voteNullifierRepository = manager.getRepository(VoteNullifierEntity);
     const payload = await decodeProposalVoteDispatchedPayload(event);
     if (!payload) {
       return false;
     }
 
-    const existingVote = await voteRepository.findOneBy({
-      archiveEventId: event.id,
-    });
-    const existingNullifier = await voteNullifierRepository.findOneBy({
-      proposalPublicKey: payload.proposalPublicKey,
-      voterPublicKey: payload.voterPublicKey,
-    });
-    const proposal = await proposalRepository.findOneBy({
-      proposalPublicKey: payload.proposalPublicKey,
-    });
-
-    if (event.status === "orphaned") {
-      await voteRepository.upsert(
-        {
-          archiveEventId: event.id,
-          proposalPublicKey: payload.proposalPublicKey,
-          voterPublicKey: payload.voterPublicKey,
-          vote: payload.vote,
-          voteWeight: existingVote?.voteWeight ?? "0",
-          blockHeight: event.blockHeight ?? existingVote?.blockHeight ?? null,
-          isNullified:
-            existingNullifier !== null &&
-            existingNullifier.sourceEventId !== event.id,
-          status: event.status,
-        },
-        ["archiveEventId"],
-      );
-
-      if (
-        existingNullifier &&
-        existingNullifier.sourceEventId === event.id
-      ) {
-        await this.applyVoteWeightDelta(manager, {
-          proposal,
-          proposalPublicKey: existingNullifier.proposalPublicKey,
-          blockHeight: existingNullifier.blockHeight,
-          vote: existingNullifier.vote,
-          deltaWeight: -BigInt(existingNullifier.voteWeight),
-        });
-        await voteNullifierRepository.delete({
-          id: existingNullifier.id,
-        });
-      }
-
-      return true;
-    }
-
-    const blockHeight = this.resolveEventBlockHeight(event);
-    if (!proposal) {
-      // The proposalCreated event for this vote was never indexed, so there is
-      // no row to project onto and never will be. Skip the event rather than
-      // throwing: handler dispatch shares a transaction with the offset upsert,
-      // so throwing rolls the whole batch back and the processor re-fetches the
-      // same page forever, blocking every later event behind it.
-      console.warn(
-        `[proposal-processor] proposal row missing for proposalPublicKey=${payload.proposalPublicKey}; skipping vote event id=${event.id}`,
-      );
-      return true;
-    }
-
-    const voteWeight = await this.getVoteWeightFromLedger(
-      String(proposal.lifecycleId),
-      payload.voterPublicKey,
-    );
-
-    const isDuplicateVote =
-      existingNullifier !== null &&
-      existingNullifier.sourceEventId !== event.id;
-
-    // Always run this, even for a duplicate/replayed vote (deltaWeight 0):
-    // a processor_votes row is about to be written at `blockHeight` below,
-    // and its FK requires a processor_vote_tallies row to already exist at
-    // that (proposalPublicKey, blockHeight) pair.
-    await this.applyVoteWeightDelta(manager, {
-      proposal,
-      proposalPublicKey: payload.proposalPublicKey,
-      blockHeight,
-      vote: payload.vote,
-      deltaWeight: existingNullifier === null ? voteWeight : 0n,
-    });
-
-    if (!existingNullifier) {
-      await voteNullifierRepository.insert({
-        sourceEventId: event.id,
-        proposalPublicKey: payload.proposalPublicKey,
-        voterPublicKey: payload.voterPublicKey,
-        vote: payload.vote,
-        voteWeight: voteWeight.toString(),
-        blockHeight,
-      });
-    }
-
-    await voteRepository.upsert(
-      {
-        archiveEventId: event.id,
-        proposalPublicKey: payload.proposalPublicKey,
-        voterPublicKey: payload.voterPublicKey,
-        vote: payload.vote,
-        voteWeight: voteWeight.toString(),
-        blockHeight,
-        isNullified: isDuplicateVote,
-        status: event.status,
-      },
-      ["archiveEventId"],
+    await this.reconciler.recordAndReconcile(
+      event,
+      PROPOSAL_VOTE_DISPATCHED_EVENT_NAME,
+      { ...payload },
+      manager,
     );
     return true;
-  }
-
-  private resolveEventBlockHeight(event: ArchiveEventEntity): number {
-    if (typeof event.blockHeight === "number") {
-      return event.blockHeight;
-    }
-    throw new Error(
-      `[proposal-processor] vote event id=${event.id} is missing blockHeight`,
-    );
   }
 
   private async getVoteWeightFromLedger(
     lifecycleId: string,
     voterPublicKey: string,
   ): Promise<bigint> {
+    if (!this.votingLedgerServices) {
+      throw new Error(
+        `[proposal-processor] test voting-ledger lookup is not configured for lifecycleId=${lifecycleId}`,
+      );
+    }
     try {
-      const votingLedger = await this.votingLedgerServices.getService(lifecycleId);
-      return await votingLedger.getVoteWeight(voterPublicKey);
+      const votingLedger =
+        await this.votingLedgerServices.getService(lifecycleId);
+      return requireContractUInt64(
+        await votingLedger.getVoteWeight(voterPublicKey),
+        `vote weight for voterPublicKey=${voterPublicKey}`,
+      );
     } catch (error) {
       if (
         error instanceof Error &&
@@ -390,144 +359,6 @@ export class ProposalVoteDispatchedEventHandler implements EventProcessorHandler
     }
   }
 
-  private async applyVoteWeightDelta(
-    manager: EntityManager,
-    input: {
-      proposal: ProposalEntity | null;
-      proposalPublicKey: string;
-      blockHeight: number;
-      vote: VoteLabel;
-      deltaWeight: bigint;
-    },
-  ): Promise<void> {
-    if (input.vote === "dummy") {
-      return;
-    }
-
-    const tallyRepository = manager.getRepository(VoteTallyEntity);
-    const existingTallies = await tallyRepository.find({
-      where: {
-        proposalPublicKey: input.proposalPublicKey,
-      },
-      order: {
-        blockHeight: "ASC",
-        createdAt: "ASC",
-        id: "ASC",
-      },
-    });
-
-    const rowAtBlock = existingTallies.find(
-      (row) => row.blockHeight === input.blockHeight,
-    );
-    if (input.deltaWeight === 0n && rowAtBlock) {
-      // A tally row already exists at this height (from an earlier vote or
-      // a votesTallied snapshot): the FK a vote insert needs is already
-      // satisfiable and there's no weight change to apply.
-      return;
-    }
-    if (rowAtBlock?.createdByEventType === PROPOSAL_VOTES_TALLIED_EVENT_NAME) {
-      throw new Error(
-        `[proposal-processor] cannot apply dispatched vote delta on tallied block for proposalPublicKey=${input.proposalPublicKey} blockHeight=${input.blockHeight}`,
-      );
-    }
-
-    const dispatchTallies = existingTallies.filter(
-      (row) =>
-        row.createdByEventType === null ||
-        row.createdByEventType === PROPOSAL_VOTE_DISPATCHED_EVENT_NAME,
-    );
-    const previousDispatchTally = dispatchTallies
-      .filter((row) => row.blockHeight < input.blockHeight)
-      .at(-1);
-    const existingDispatchTally = dispatchTallies.find(
-      (row) => row.blockHeight === input.blockHeight,
-    );
-
-    const baseTally =
-      existingDispatchTally ??
-      tallyRepository.create({
-        proposalPublicKey: input.proposalPublicKey,
-        blockHeight: input.blockHeight,
-        yayWeight: previousDispatchTally?.yayWeight ?? "0",
-        nayWeight: previousDispatchTally?.nayWeight ?? "0",
-        abstainWeight: previousDispatchTally?.abstainWeight ?? "0",
-        requiredParticipationBp:
-          previousDispatchTally?.requiredParticipationBp ??
-          input.proposal?.requiredParticipationBp ??
-          null,
-        requiredApprovalBp:
-          previousDispatchTally?.requiredApprovalBp ??
-          input.proposal?.requiredApprovalBp ??
-          null,
-        requiredParticipation:
-          previousDispatchTally?.requiredParticipation ??
-          input.proposal?.requiredParticipation ??
-          null,
-        totalParticipatingVotes: previousDispatchTally?.totalParticipatingVotes ?? null,
-        approvalBp: previousDispatchTally?.approvalBp ?? null,
-        voteResult: previousDispatchTally?.voteResult ?? null,
-        createdByEventType: PROPOSAL_VOTE_DISPATCHED_EVENT_NAME,
-      });
-
-    const talliesToUpdate = [
-      baseTally,
-      ...dispatchTallies.filter((row) => row.blockHeight > input.blockHeight),
-    ];
-
-    for (const tally of talliesToUpdate) {
-      const delta = input.deltaWeight;
-      let updatedYay = BigInt(tally.yayWeight);
-      let updatedNay = BigInt(tally.nayWeight);
-      let updatedAbstain = BigInt(tally.abstainWeight);
-      if (input.vote === "yay") {
-        updatedYay += delta;
-      } else if (input.vote === "nay") {
-        updatedNay += delta;
-      } else if (input.vote === "abstain") {
-        updatedAbstain += delta;
-      }
-
-      if (updatedYay < 0n || updatedNay < 0n || updatedAbstain < 0n) {
-        throw new Error(
-          `[proposal-processor] vote tally underflow for proposalPublicKey=${input.proposalPublicKey} blockHeight=${tally.blockHeight}`,
-        );
-      }
-
-      const voteResult = await this.calculateVoteTallyResult(
-        input.proposal,
-        updatedYay,
-        updatedNay,
-        updatedAbstain,
-      );
-      const totalParticipatingVotes = (updatedYay + updatedNay + updatedAbstain).toString();
-      const approvalBp =
-        updatedYay + updatedNay > 0n
-          ? ((updatedYay * 10_000n) / (updatedYay + updatedNay)).toString()
-          : "0";
-
-      await tallyRepository.upsert(
-        {
-          proposalPublicKey: input.proposalPublicKey,
-          blockHeight: tally.blockHeight,
-          yayWeight: updatedYay.toString(),
-          nayWeight: updatedNay.toString(),
-          abstainWeight: updatedAbstain.toString(),
-          requiredParticipationBp:
-            tally.requiredParticipationBp ?? input.proposal?.requiredParticipationBp ?? null,
-          requiredApprovalBp:
-            tally.requiredApprovalBp ?? input.proposal?.requiredApprovalBp ?? null,
-          requiredParticipation:
-            tally.requiredParticipation ?? input.proposal?.requiredParticipation ?? null,
-          totalParticipatingVotes,
-          approvalBp,
-          voteResult,
-          createdByEventType: PROPOSAL_VOTE_DISPATCHED_EVENT_NAME,
-        },
-        ["proposalPublicKey", "blockHeight"],
-      );
-    }
-  }
-
   private async calculateVoteTallyResult(
     proposal: ProposalEntity | null,
     yayWeight: bigint,
@@ -538,29 +369,49 @@ export class ProposalVoteDispatchedEventHandler implements EventProcessorHandler
       return "rejected";
     }
 
-    const proposalAmount = BigInt(proposal.amount);
-    const stakingEpochDataLedgerTotalCurrency = BigInt(
+    const proposalAmountValue = parseContractUInt64(proposal.amount);
+    const stakingTotalValue = parseContractUInt64(
       proposal.stakingEpochDataLedgerTotalCurrency,
     );
-    if (proposalAmount <= 0n || stakingEpochDataLedgerTotalCurrency <= 0n) {
-      return "rejected";
+    if (proposalAmountValue === null || stakingTotalValue === null) {
+      throw new Error(
+        `[proposal-processor] proposal ${proposal.proposalPublicKey} has values outside the contract UInt64 domain`,
+      );
     }
+    const proposalAmount = BigInt(proposalAmountValue);
+    const stakingEpochDataLedgerTotalCurrency = BigInt(stakingTotalValue);
 
-    const criteria =
+    let criteria: {
+      requiredParticipation: bigint;
+      requiredApprovalBp: bigint;
+    };
+    if (
       proposal.requiredParticipation !== null &&
       proposal.requiredApprovalBp !== null
-        ? {
-            requiredParticipation: BigInt(proposal.requiredParticipation),
-            requiredApprovalBp: BigInt(proposal.requiredApprovalBp),
-          }
-        : await this.approvalMath.calculateAcceptanceCriteria({
-            // Legacy rows do not have persisted criteria yet.
-            proposalAmount,
-            treasuryBalance: await this.getTreasuryBalanceForLifecycle(
-              proposal.lifecycleId,
-            ),
-            stakingEpochDataLedgerTotalCurrency,
-          });
+    ) {
+      const requiredParticipation = parseContractUInt128(
+        proposal.requiredParticipation,
+      );
+      const requiredApprovalBp = parseContractUInt128(
+        proposal.requiredApprovalBp,
+      );
+      if (requiredParticipation === null || requiredApprovalBp === null) {
+        throw new Error(
+          `[proposal-processor] proposal ${proposal.proposalPublicKey} has acceptance criteria outside the contract UInt128 domain`,
+        );
+      }
+      criteria = {
+        requiredParticipation: BigInt(requiredParticipation),
+        requiredApprovalBp: BigInt(requiredApprovalBp),
+      };
+    } else {
+      criteria = await this.approvalMath.calculateAcceptanceCriteria({
+        // Legacy rows do not have persisted criteria yet.
+        proposalAmount,
+        treasuryBalance: await this.getTreasuryBalanceForLifecycle(proposal),
+        stakingEpochDataLedgerTotalCurrency,
+      });
+    }
 
     return await this.approvalMath.calculateVoteResult({
       yay: yayWeight,
@@ -571,7 +422,10 @@ export class ProposalVoteDispatchedEventHandler implements EventProcessorHandler
     });
   }
 
-  private async getTreasuryBalanceForLifecycle(lifecycleId: number): Promise<bigint> {
+  private async getTreasuryBalanceForLifecycle(
+    proposal: ProposalEntity,
+  ): Promise<bigint> {
+    const lifecycleId = proposal.lifecycleId;
     const customResolver = this.options.resolveTreasuryBalanceForLifecycle;
     if (customResolver) {
       const resolved = await customResolver(lifecycleId);
@@ -580,7 +434,13 @@ export class ProposalVoteDispatchedEventHandler implements EventProcessorHandler
           `[proposal-processor] treasury balance resolver returned empty value for lifecycleId=${lifecycleId}`,
         );
       }
-      return BigInt(resolved);
+      const value = parseContractUInt64(resolved);
+      if (value === null) {
+        throw new Error(
+          `[proposal-processor] treasury balance resolver returned a value outside the UInt64 domain for lifecycleId=${lifecycleId}`,
+        );
+      }
+      return BigInt(value);
     }
 
     const stakingLedgerServices = this.options.stakingLedgerServices;
@@ -591,20 +451,54 @@ export class ProposalVoteDispatchedEventHandler implements EventProcessorHandler
       );
     }
 
-    const stakingLedger = await stakingLedgerServices.getService(String(lifecycleId));
-    const treasuryAccount = await stakingLedger.getAccountByPublicKey(
-      treasuryOwnerPublicKey,
+    await this.assertLocalStakingLedgerRoot(proposal);
+    const stakingLedger = await stakingLedgerServices.getService(
+      String(lifecycleId),
     );
-    if (!treasuryAccount) {
+    const treasuryAccount = await getDefaultTokenTreasuryAccount(
+      stakingLedger,
+      treasuryOwnerPublicKey,
+      lifecycleId,
+      proposal.stakingEpochDataLedgerHash!,
+    );
+    const balance = treasuryAccount.balance;
+    const balanceValue = parseContractUInt64(balance.toString());
+    if (balanceValue === null) {
       throw new Error(
-        `[proposal-processor] treasury account missing in staking ledger for lifecycleId=${lifecycleId} publicKey=${treasuryOwnerPublicKey}`,
+        `[proposal-processor] treasury balance is outside the UInt64 domain for lifecycleId=${lifecycleId}`,
       );
     }
-    const balance = (
-      treasuryAccount.account as unknown as {
-        balance: { toString(): string };
+    return BigInt(balanceValue);
+  }
+
+  private async assertLocalStakingLedgerRoot(
+    proposal: ProposalEntity,
+  ): Promise<void> {
+    const stakingLedgerServices = this.options.stakingLedgerServices;
+    if (!stakingLedgerServices) {
+      if (this.options.resolveTreasuryBalanceForLifecycle) {
+        // Dependency-injected tests can supply an already verified ledger view.
+        return;
       }
-    ).balance;
-    return BigInt(balance.toString());
+      throw new Error(
+        `[proposal-processor] staking-ledger root verification is not configured for lifecycleId=${proposal.lifecycleId}`,
+      );
+    }
+
+    const expectedRoot = proposal.stakingEpochDataLedgerHash;
+    if (!expectedRoot) {
+      throw new Error(
+        `[proposal-processor] proposal is missing staking ledger root for proposalPublicKey=${proposal.proposalPublicKey}`,
+      );
+    }
+    const stakingLedger = await stakingLedgerServices.getService(
+      String(proposal.lifecycleId),
+    );
+    const actualRoot = (await stakingLedger.getRootHash()).toString();
+    if (actualRoot !== expectedRoot) {
+      throw new Error(
+        `[proposal-processor] staking ledger root mismatch for lifecycleId=${proposal.lifecycleId}: expected=${expectedRoot} actual=${actualRoot}`,
+      );
+    }
   }
 }

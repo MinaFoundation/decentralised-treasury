@@ -1,33 +1,23 @@
 import type { ArchiveEventEntity } from "@repo/indexer";
 import type { EventProcessorHandler } from "@repo/processor";
-import { BOND_AMOUNT_DIVISOR } from "@repo/sdk/src/provable/contracts/treasury-constants.js";
+import { PROPOSAL_EXECUTED_EVENT_NAME } from "@repo/sdk/src/provable/events/treasury-proposal-events.js";
 import type { EntityManager } from "typeorm";
-import { ProposalExecutionEntity } from "./proposal-execution-entity.js";
-import { ProposalEntity } from "./proposal-entity.js";
-
-const PROPOSAL_EXECUTED_EVENT_NAME = "proposalExecuted";
+import {
+  defaultProposalProjectionReconciler,
+  ProposalProjectionReconciler,
+} from "./proposal-projection-reconciler.js";
+import {
+  parseContractFieldArray,
+  parseContractPublicKey,
+  parseContractUInt64,
+} from "./proposal-contract-domain.js";
+import { getRawProposalEventFields } from "./proposal-event-decoding.js";
 
 interface DecodedProposalExecutedPayload {
   proposalPublicKey: string;
+  recipient?: string;
   amountToPayOut: string;
   senderPublicKey: string;
-}
-
-function parseLifecycleId(value: unknown): number | null {
-  if (typeof value === "number") {
-    if (!Number.isInteger(value) || value < 0) {
-      return null;
-    }
-    return value;
-  }
-  if (typeof value === "string" && /^\d+$/.test(value)) {
-    const parsed = Number(value);
-    if (!Number.isInteger(parsed) || parsed < 0) {
-      return null;
-    }
-    return parsed;
-  }
-  return null;
 }
 
 function decodeArchiveProvidedPayload(
@@ -35,41 +25,49 @@ function decodeArchiveProvidedPayload(
 ): DecodedProposalExecutedPayload | null {
   const candidate = event.rawEventData as {
     proposalPublicKey?: unknown;
+    recipient?: unknown;
     amountToPayOut?: unknown;
     senderPublicKey?: unknown;
   };
+  const proposalPublicKey = parseContractPublicKey(candidate.proposalPublicKey);
+  const recipient =
+    candidate.recipient === undefined
+      ? undefined
+      : parseContractPublicKey(candidate.recipient);
+  const amountToPayOut = parseContractUInt64(candidate.amountToPayOut);
+  const senderPublicKey = parseContractPublicKey(candidate.senderPublicKey);
   if (
-    typeof candidate.proposalPublicKey !== "string" ||
-    typeof candidate.amountToPayOut !== "string" ||
-    typeof candidate.senderPublicKey !== "string"
+    proposalPublicKey === null ||
+    recipient === null ||
+    amountToPayOut === null ||
+    senderPublicKey === null
   ) {
     return null;
   }
 
   return {
-    proposalPublicKey: candidate.proposalPublicKey,
-    amountToPayOut: candidate.amountToPayOut,
-    senderPublicKey: candidate.senderPublicKey,
+    proposalPublicKey,
+    ...(recipient === undefined ? {} : { recipient }),
+    amountToPayOut,
+    senderPublicKey,
   };
 }
 
 async function decodeProposalExecutedPayload(
   event: ArchiveEventEntity,
 ): Promise<DecodedProposalExecutedPayload | null> {
-  const archiveProvidedPayload = decodeArchiveProvidedPayload(event);
-  if (archiveProvidedPayload) {
-    return archiveProvidedPayload;
+  const rawFields = getRawProposalEventFields(
+    event,
+    PROPOSAL_EXECUTED_EVENT_NAME,
+  );
+  if (rawFields.kind === "absent") {
+    return decodeArchiveProvidedPayload(event);
   }
-
-  const data = event.rawEventData.data;
-  if (!Array.isArray(data)) {
+  if (rawFields.kind === "invalid") {
     return null;
   }
-  if (
-    event.eventType &&
-    event.eventType !== "unknown" &&
-    event.eventType !== PROPOSAL_EXECUTED_EVENT_NAME
-  ) {
+  const data = parseContractFieldArray(rawFields.fields);
+  if (!data) {
     return null;
   }
 
@@ -85,18 +83,36 @@ async function decodeProposalExecutedPayload(
       Field: (value: string) => unknown;
       PublicKey: {
         fromFields(values: unknown[]): { toBase58(): string };
+        check(value: unknown): void;
       };
       UInt64: {
         fromFields(values: unknown[]): { toString(): string };
       };
     };
     if (data.length === 7) {
+      const proposalPublicKey = PublicKey.fromFields(
+        data.slice(0, 2).map((value) => Field(value)),
+      );
+      const recipient = PublicKey.fromFields(
+        data.slice(2, 4).map((value) => Field(value)),
+      );
+      const senderPublicKey = PublicKey.fromFields(
+        data.slice(5, 7).map((value) => Field(value)),
+      );
+      PublicKey.check(proposalPublicKey);
+      PublicKey.check(recipient);
+      PublicKey.check(senderPublicKey);
+      const amountToPayOut = parseContractUInt64(
+        UInt64.fromFields([Field(data[4])]).toString(),
+      );
+      if (amountToPayOut === null) {
+        return null;
+      }
       return {
-        proposalPublicKey: PublicKey.fromFields(
-          data.slice(0, 2).map((value) => Field(value)),
-        ).toBase58(),
-        amountToPayOut: UInt64.fromFields([Field(data[4])]).toString(),
-        senderPublicKey: PublicKey.fromFields(data.slice(5, 7).map((value) => Field(value))).toBase58(),
+        proposalPublicKey: proposalPublicKey.toBase58(),
+        recipient: recipient.toBase58(),
+        amountToPayOut,
+        senderPublicKey: senderPublicKey.toBase58(),
       };
     }
     const ProposalExecutedEvent = (
@@ -113,9 +129,18 @@ async function decodeProposalExecutedPayload(
     const decoded = ProposalExecutedEvent.fromFields(
       data.map((value) => Field(value)),
     );
+    PublicKey.check(decoded.proposalPublicKey);
+    PublicKey.check(decoded.senderPublicKey);
+    // o1js `fromFields()` does not apply UInt range checks off-circuit.
+    const amountToPayOut = parseContractUInt64(
+      decoded.amountToPayOut.toString(),
+    );
+    if (amountToPayOut === null) {
+      return null;
+    }
     return {
       proposalPublicKey: decoded.proposalPublicKey.toBase58(),
-      amountToPayOut: decoded.amountToPayOut.toString(),
+      amountToPayOut,
       senderPublicKey: decoded.senderPublicKey.toBase58(),
     };
   } catch (error) {
@@ -130,6 +155,10 @@ async function decodeProposalExecutedPayload(
 export class ProposalExecutedEventHandler implements EventProcessorHandler {
   public readonly eventType = PROPOSAL_EXECUTED_EVENT_NAME;
 
+  public constructor(
+    private readonly reconciler: ProposalProjectionReconciler = defaultProposalProjectionReconciler,
+  ) {}
+
   public async tryHandle(
     event: ArchiveEventEntity,
     manager: EntityManager,
@@ -139,84 +168,12 @@ export class ProposalExecutedEventHandler implements EventProcessorHandler {
       return false;
     }
 
-    const proposalRepository = manager.getRepository(ProposalEntity);
-    const proposal = await proposalRepository.findOneBy({
-      proposalPublicKey: payload.proposalPublicKey,
-    });
-    if (!proposal) {
-      // Same reasoning as the vote handler: the proposalCreated event was never
-      // indexed, so this execution cannot be projected. Returning false would
-      // send the event round every other handler and then leave it unhandled,
-      // which the processor turns into a throw and a full batch rollback.
-      console.warn(
-        `[proposal-processor] proposal row missing for proposalPublicKey=${payload.proposalPublicKey}; skipping execution event id=${event.id}`,
-      );
-      return true;
-    }
-    const proposalAmount = BigInt(proposal.amount);
-    const bondAmount = proposalAmount / BigInt(BOND_AMOUNT_DIVISOR);
-    const totalPayoutAmount = proposalAmount + bondAmount;
-
-    const executionRepository = manager.getRepository(ProposalExecutionEntity);
-    await executionRepository.upsert(
-      {
-        archiveEventId: event.id,
-        proposalPublicKey: payload.proposalPublicKey,
-        lifecycleId: proposal.lifecycleId,
-        recipient: proposal.recipient,
-        amountToPayOut: payload.amountToPayOut,
-        proposalAmount: proposal.amount,
-        bondAmount: bondAmount.toString(),
-        senderPublicKey: payload.senderPublicKey,
-        paidOutAmount: "0",
-        remainingAmount: totalPayoutAmount.toString(),
-        blockHeight: event.blockHeight ?? null,
-        status: event.status,
-      },
-      ["archiveEventId"],
+    await this.reconciler.recordAndReconcile(
+      event,
+      PROPOSAL_EXECUTED_EVENT_NAME,
+      { ...payload },
+      manager,
     );
-
-    const executionRows = await executionRepository.find({
-      where: {
-        proposalPublicKey: payload.proposalPublicKey,
-      },
-      order: {
-        blockHeight: "ASC",
-        id: "ASC",
-      },
-    });
-
-    let recalculatedPaidOutAmount = 0n;
-    for (const execution of executionRows) {
-      if (execution.status === "orphaned") {
-        continue;
-      }
-      recalculatedPaidOutAmount += BigInt(execution.amountToPayOut);
-      const remainingAmount = totalPayoutAmount - recalculatedPaidOutAmount;
-      const nextPaidOutAmount = recalculatedPaidOutAmount.toString();
-      const nextRemainingAmount = remainingAmount.toString();
-      if (
-        execution.paidOutAmount !== nextPaidOutAmount ||
-        execution.remainingAmount !== nextRemainingAmount
-      ) {
-        await executionRepository.update(
-          {
-            id: execution.id,
-          },
-          {
-            paidOutAmount: nextPaidOutAmount,
-            remainingAmount: nextRemainingAmount,
-          },
-        );
-      }
-    }
-
-    if (proposal.paidOutAmount !== recalculatedPaidOutAmount.toString()) {
-      await proposalRepository.update(
-        { proposalPublicKey: payload.proposalPublicKey },
-        { paidOutAmount: recalculatedPaidOutAmount.toString() },
-      );
-    }
     return true;
   }
 }
