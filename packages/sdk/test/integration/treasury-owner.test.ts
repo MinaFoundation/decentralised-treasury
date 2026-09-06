@@ -535,6 +535,26 @@ it("should vote on a proposal from a new account", async () => {
   await pendingTx.wait();
 });
 
+it("should dispatch duplicate votes without adding duplicate weight", async () => {
+  const duplicateVotes: [PrivateKey, PublicKey, Vote][] = [
+    [voterPrivateKey1, voterPublicKey1, Vote.YAY],
+    [voterPrivateKey2, voterPublicKey2, Vote.NAY],
+    [voterPrivateKey1, voterPublicKey1, Vote.ABSTRAIN],
+  ];
+
+  for (const [voterPrivateKey, voterPublicKey, vote] of duplicateVotes) {
+    Local.incrementGlobalSlot(1);
+    const tx = await Mina.transaction(testAccount, async () => {
+      await treasuryOwner.vote(treasuryProposalPublicKey, voterPublicKey, vote);
+    });
+
+    tx.sign([testAccount.key, voterPrivateKey]);
+    await tx.prove();
+    const pendingTx = await tx.send();
+    await pendingTx.wait();
+  }
+});
+
 it("should fail while attempting to vote on the proposal contract directly", async () => {
   let error: Error;
   try {
@@ -658,6 +678,28 @@ it("should commit action state", async () => {
   voteReducerProof = proof;
   console.timeEnd("reduce batch");
 
+  assert.equal(
+    voteReducerProof.publicOutput.yay.toBigInt(),
+    300n,
+    "Duplicate votes changed the YAY weight",
+  );
+  assert.equal(
+    voteReducerProof.publicOutput.nay.toBigInt(),
+    100n,
+    "Duplicate votes changed the NAY weight",
+  );
+  assert.equal(
+    voteReducerProof.publicOutput.abstain.toBigInt(),
+    0n,
+    "Duplicate votes changed the ABSTAIN weight",
+  );
+  assert(
+    !voteReducerProof.publicOutput.toNullifierRoot
+      .equals(voteReducerProof.publicInput.fromNullifierRoot)
+      .toBoolean(),
+    "Expected the nullifier root to advance",
+  );
+
   Provable.log("vote proof", voteReducerProof.publicOutput);
 
   Provable.log("preverify proofs", {
@@ -709,7 +751,10 @@ it("should execute a proposal", async () => {
     treasuryOwnerPublicKey,
   ).balance;
   const testAccountBalancePreExecution = Local.getAccount(testAccount).balance;
-  Provable.log("testAccountBalancePreExecution", testAccountBalancePreExecution);
+  Provable.log(
+    "testAccountBalancePreExecution",
+    testAccountBalancePreExecution,
+  );
   Provable.log(
     "treasuryOwnerBalancePreExecution",
     treasuryOwnerBalancePreExecution,
