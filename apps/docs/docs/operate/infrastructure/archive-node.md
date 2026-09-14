@@ -254,7 +254,7 @@ environments:
 releases:
 - name: archive
   namespace: devnet
-  chart: git::https://github.com/MinaFoundation/helm-charts.git@mina-archive?ref=mina-archive-4.0.0
+  chart: git::https://github.com/MinaFoundation/helm-charts.git@mina-archive?ref=mina-archive-4.1.0
   values:
     - fullnameOverride: archive
       network: devnet
@@ -315,4 +315,4 @@ releases:
 ## Sources
 
 - `devops/runbooks/1-Network/1a-Archive-Node/README.md` (SHA-256: `f9f04573dd2edea450e5920c16a5219858bb7236c809f769b093cfbc99f5634e`)
-- `devops/runbooks/1-Network/1a-Archive-Node/helmfile.yaml` (SHA-256: `b7b9adb2cb51dabbdf023eec7c9212adb43249c2d981a198a03c05216d8021e8`)
+- `devops/runbooks/1-Network/1a-Archive-Node/helmfile.yaml` (SHA-256: `4565d8bbb80fc424d55c648d111fb733cfe9c8d56695a575e0e544ecf1e732db`)

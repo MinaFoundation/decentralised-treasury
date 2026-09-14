@@ -13,7 +13,7 @@ environments:
 releases:
 - name: archive
   namespace: devnet
-  chart: git::https://github.com/MinaFoundation/helm-charts.git@mina-archive?ref=mina-archive-4.0.0
+  chart: git::https://github.com/MinaFoundation/helm-charts.git@mina-archive?ref=mina-archive-4.1.0
   values:
     - fullnameOverride: archive
       network: devnet

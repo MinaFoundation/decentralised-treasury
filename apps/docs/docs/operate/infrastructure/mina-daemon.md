@@ -58,7 +58,7 @@ from peers. It does not resume the previous sync. Include the resync time in the
 restart plan.
 
 - Charts: [https://github.com/MinaFoundation/helm-charts.git](https://github.com/MinaFoundation/helm-charts.git). Use
-  `mina-daemon`, pinned to `mina-daemon-2.1.1`, and `raw` for the proxy objects.
+  `mina-daemon`, pinned to `mina-daemon-2.2.0`, and `raw` for the proxy objects.
 - Image tag: Use the network release announcement in
   [https://github.com/MinaProtocol/mina/discussions](https://github.com/MinaProtocol/mina/discussions). See step 1.
 - Values: Use `helmfile.yaml` in this directory.
@@ -264,7 +264,7 @@ This is the complete `devops/runbooks/1-Network/1b-Mina-Daemon/helmfile.yaml` fi
 ---
 releases:
 - name: node-0
-  chart: git::https://github.com/MinaFoundation/helm-charts.git@mina-daemon?ref=mina-daemon-2.1.1
+  chart: git::https://github.com/MinaFoundation/helm-charts.git@mina-daemon?ref=mina-daemon-2.2.0
   values:
     - deployment:
         testnet: devnet
@@ -364,5 +364,5 @@ releases:
 
 ## Sources
 
-- `devops/runbooks/1-Network/1b-Mina-Daemon/README.md` (SHA-256: `3edaaa2f9ce9e8226e6cce2deecf2ea6d862df60502ae48df2e55ad89f26f9b9`)
-- `devops/runbooks/1-Network/1b-Mina-Daemon/helmfile.yaml` (SHA-256: `a7fbce2f151f2eff1e49397dbfd981ca70831b7834a20b8f792607fb98fb7401`)
+- `devops/runbooks/1-Network/1b-Mina-Daemon/README.md` (SHA-256: `87339803b182ff053ead5876ba14a7fb50d7ec933908a5c2da29e84a6c07a2bc`)
+- `devops/runbooks/1-Network/1b-Mina-Daemon/helmfile.yaml` (SHA-256: `999dd56dab81b11ba56399067d10328c6ed699c444b44820ce9bd1c2097c675d`)
