@@ -259,6 +259,14 @@ describe("processor CRUD routes on main API", () => {
       error: "Not found",
     });
 
+    const publicKeyAsCrudIdResponse = await fetch(
+      `http://127.0.0.1:${port}/proposals/B62qproposal-1`,
+    );
+    assert.equal(publicKeyAsCrudIdResponse.status, 400);
+    assert.deepEqual(await publicKeyAsCrudIdResponse.json(), {
+      error: "id must be a positive integer",
+    });
+
     for (const query of ["limit=10items", "offset=1.5", "limit=1&limit=2"]) {
       const invalidResponse = await fetch(
         `http://127.0.0.1:${port}/votes?${query}`,

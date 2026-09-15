@@ -226,6 +226,12 @@ function createWhereByPrimaryColumn(
   if (!primaryColumn) {
     throw new Error(`Entity ${metadata.name} does not expose a primary column`);
   }
+  if (
+    primaryColumn.type === "bigint" &&
+    (!/^\d+$/.test(id) || BigInt(id) <= 0n)
+  ) {
+    throw new RequestValidationError("id must be a positive integer");
+  }
   return {
     [primaryColumn.propertyName]: id,
   };
