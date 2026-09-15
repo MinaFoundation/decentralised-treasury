@@ -15,7 +15,7 @@ import {
 } from "./mina-instance.js";
 import {
   addTransactionSignerOptions,
-  createLedgerTransactionSigner,
+  createTransactionSigner,
   resolveSigningAccount,
   type SignerMode,
 } from "../ledger/transaction-signer.js";
@@ -30,6 +30,7 @@ interface BasePauseControllerCommandOptions {
   pauseControllerPublicKey: PublicKey;
   fee?: UInt64;
   nonce?: number;
+  controllerNonce?: number;
   memo?: string;
   wait: boolean;
 }
@@ -181,8 +182,7 @@ export async function deployPauseController(
     publicKey: options.pauseControllerPublicKey,
     ledgerAccountIndex: options.pauseControllerLedgerAccountIndex,
   });
-  const transactionSigner = createLedgerTransactionSigner(
-    options.signer,
+  const transactionSigner = createTransactionSigner(
     [sender, pauseController],
     options.networkId,
   );
@@ -196,9 +196,7 @@ export async function deployPauseController(
   configureMinaNetwork(options.minaNodeUrl, options.networkId);
   const result = await service.deploy({
     minaNodeUrl: options.minaNodeUrl,
-    senderPrivateKey: sender.privateKey,
     senderPublicKey: sender.publicKey,
-    pauseControllerPrivateKey: pauseController.privateKey,
     pauseControllerPublicKey: pauseController.publicKey,
     transactionSigner,
     multisigParticipantsPublicKeys: options.multisigParticipantsPublicKeys,
@@ -241,8 +239,7 @@ export async function pauseTreasury(
     publicKey: options.senderPublicKey,
     ledgerAccountIndex: options.senderLedgerAccountIndex,
   });
-  const transactionSigner = createLedgerTransactionSigner(
-    options.signer,
+  const transactionSigner = createTransactionSigner(
     [sender],
     options.networkId,
   );
@@ -253,7 +250,6 @@ export async function pauseTreasury(
   configureMinaNetwork(options.minaNodeUrl, options.networkId);
   const result = await service.pauseTreasury({
     minaNodeUrl: options.minaNodeUrl,
-    senderPrivateKey: sender.privateKey,
     senderPublicKey: sender.publicKey,
     transactionSigner,
     pauseControllerPublicKey: options.pauseControllerPublicKey,
@@ -261,6 +257,7 @@ export async function pauseTreasury(
     signatures: options.multisigSignatures,
     fee: options.fee,
     nonce: options.nonce,
+    controllerNonce: options.controllerNonce,
     memo: options.memo,
     wait: options.wait,
   });
@@ -277,8 +274,7 @@ export async function unpauseTreasury(
     publicKey: options.senderPublicKey,
     ledgerAccountIndex: options.senderLedgerAccountIndex,
   });
-  const transactionSigner = createLedgerTransactionSigner(
-    options.signer,
+  const transactionSigner = createTransactionSigner(
     [sender],
     options.networkId,
   );
@@ -289,7 +285,6 @@ export async function unpauseTreasury(
   configureMinaNetwork(options.minaNodeUrl, options.networkId);
   const result = await service.unpauseTreasury({
     minaNodeUrl: options.minaNodeUrl,
-    senderPrivateKey: sender.privateKey,
     senderPublicKey: sender.publicKey,
     transactionSigner,
     pauseControllerPublicKey: options.pauseControllerPublicKey,
@@ -297,6 +292,7 @@ export async function unpauseTreasury(
     signatures: options.multisigSignatures,
     fee: options.fee,
     nonce: options.nonce,
+    controllerNonce: options.controllerNonce,
     memo: options.memo,
     wait: options.wait,
   });
@@ -313,8 +309,7 @@ export async function togglePauseProposal(
     publicKey: options.senderPublicKey,
     ledgerAccountIndex: options.senderLedgerAccountIndex,
   });
-  const transactionSigner = createLedgerTransactionSigner(
-    options.signer,
+  const transactionSigner = createTransactionSigner(
     [sender],
     options.networkId,
   );
@@ -331,7 +326,6 @@ export async function togglePauseProposal(
   configureMinaNetwork(options.minaNodeUrl, options.networkId);
   const result = await service.togglePauseProposal({
     minaNodeUrl: options.minaNodeUrl,
-    senderPrivateKey: sender.privateKey,
     senderPublicKey: sender.publicKey,
     transactionSigner,
     treasuryOwnerPublicKey: options.treasuryOwnerPublicKey,
@@ -341,6 +335,7 @@ export async function togglePauseProposal(
     signatures: options.multisigSignatures,
     fee: options.fee,
     nonce: options.nonce,
+    controllerNonce: options.controllerNonce,
     memo: options.memo,
     wait: options.wait,
   });
@@ -357,8 +352,7 @@ export async function rotateMultisigKeys(
     publicKey: options.senderPublicKey,
     ledgerAccountIndex: options.senderLedgerAccountIndex,
   });
-  const transactionSigner = createLedgerTransactionSigner(
-    options.signer,
+  const transactionSigner = createTransactionSigner(
     [sender],
     options.networkId,
   );
@@ -369,7 +363,6 @@ export async function rotateMultisigKeys(
   configureMinaNetwork(options.minaNodeUrl, options.networkId);
   const result = await service.rotateMultisigKeys({
     minaNodeUrl: options.minaNodeUrl,
-    senderPrivateKey: sender.privateKey,
     senderPublicKey: sender.publicKey,
     transactionSigner,
     pauseControllerPublicKey: options.pauseControllerPublicKey,
@@ -380,6 +373,7 @@ export async function rotateMultisigKeys(
       options.newMultisigParticipantsPublicKeys,
     fee: options.fee,
     nonce: options.nonce,
+    controllerNonce: options.controllerNonce,
     memo: options.memo,
     wait: options.wait,
   });
@@ -443,7 +437,10 @@ export default function pauseControllerCommandFactory(program: Command) {
         .default(UInt64.from(1 * 10 ** 9)),
     )
     .addOption(
-      new Option("--nonce <nonce>", "Nonce to use for the transaction")
+      new Option(
+        "--nonce <nonce>",
+        "Fee-payer account nonce (defaults to the current account nonce)",
+      )
         .env("TX_NONCE")
         .argParser(parseIntOption),
     )
@@ -532,9 +529,20 @@ export default function pauseControllerCommandFactory(program: Command) {
         .default(UInt64.from(1 * 10 ** 9)),
     )
     .addOption(
-      new Option("--nonce <nonce>", "Nonce to use for the transaction")
+      new Option(
+        "--nonce <nonce>",
+        "Fee-payer account nonce (defaults to the current account nonce)",
+      )
         .env("TX_NONCE")
         .argParser(parseIntOption),
+    )
+    .addOption(
+      new Option(
+        "--controller-nonce <nonce>",
+        "Controller nonce signed by the multisig (defaults to the current controller nonce)",
+      )
+        .env("PAUSE_CONTROLLER_NONCE")
+        .argParser((value) => Number(UInt32.from(value).toBigint())),
     )
     .addOption(
       new Option("--memo <memo>", "Memo to use for transaction").env("TX_MEMO"),
@@ -600,9 +608,20 @@ export default function pauseControllerCommandFactory(program: Command) {
         .default(UInt64.from(1 * 10 ** 9)),
     )
     .addOption(
-      new Option("--nonce <nonce>", "Nonce to use for the transaction")
+      new Option(
+        "--nonce <nonce>",
+        "Fee-payer account nonce (defaults to the current account nonce)",
+      )
         .env("TX_NONCE")
         .argParser(parseIntOption),
+    )
+    .addOption(
+      new Option(
+        "--controller-nonce <nonce>",
+        "Controller nonce signed by the multisig (defaults to the current controller nonce)",
+      )
+        .env("PAUSE_CONTROLLER_NONCE")
+        .argParser((value) => Number(UInt32.from(value).toBigint())),
     )
     .addOption(
       new Option("--memo <memo>", "Memo to use for transaction").env("TX_MEMO"),
@@ -688,9 +707,20 @@ export default function pauseControllerCommandFactory(program: Command) {
         .default(UInt64.from(1 * 10 ** 9)),
     )
     .addOption(
-      new Option("--nonce <nonce>", "Nonce to use for the transaction")
+      new Option(
+        "--nonce <nonce>",
+        "Fee-payer account nonce (defaults to the current account nonce)",
+      )
         .env("TX_NONCE")
         .argParser(parseIntOption),
+    )
+    .addOption(
+      new Option(
+        "--controller-nonce <nonce>",
+        "Controller nonce signed by the multisig (defaults to the current controller nonce)",
+      )
+        .env("PAUSE_CONTROLLER_NONCE")
+        .argParser((value) => Number(UInt32.from(value).toBigint())),
     )
     .addOption(
       new Option("--memo <memo>", "Memo to use for transaction").env("TX_MEMO"),
@@ -774,9 +804,20 @@ export default function pauseControllerCommandFactory(program: Command) {
         .default(UInt64.from(1 * 10 ** 9)),
     )
     .addOption(
-      new Option("--nonce <nonce>", "Nonce to use for the transaction")
+      new Option(
+        "--nonce <nonce>",
+        "Fee-payer account nonce (defaults to the current account nonce)",
+      )
         .env("TX_NONCE")
         .argParser(parseIntOption),
+    )
+    .addOption(
+      new Option(
+        "--controller-nonce <nonce>",
+        "Controller nonce signed by the multisig (defaults to the current controller nonce)",
+      )
+        .env("PAUSE_CONTROLLER_NONCE")
+        .argParser((value) => Number(UInt32.from(value).toBigint())),
     )
     .addOption(
       new Option("--memo <memo>", "Memo to use for transaction").env("TX_MEMO"),

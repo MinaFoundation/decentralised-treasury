@@ -70,6 +70,7 @@ interface LedgerRoles {
   voter: LedgerRole;
   treasuryOwner: LedgerRole;
   pauseController: LedgerRole;
+  proposal: LedgerRole;
 }
 
 type LedgerRoleName = keyof LedgerRoles;
@@ -121,6 +122,7 @@ const LEDGER_INDICES = {
   voter: accountIndex("LEDGER_VOTER_ACCOUNT_INDEX", 1),
   treasuryOwner: accountIndex("LEDGER_TREASURY_OWNER_ACCOUNT_INDEX", 2),
   pauseController: accountIndex("LEDGER_PAUSE_CONTROLLER_ACCOUNT_INDEX", 3),
+  proposal: accountIndex("LEDGER_PROPOSAL_ACCOUNT_INDEX", 4),
 } as const;
 
 const LEDGER_ROLE_LABELS: Record<LedgerRoleName, string> = {
@@ -128,6 +130,7 @@ const LEDGER_ROLE_LABELS: Record<LedgerRoleName, string> = {
   voter: "voter",
   treasuryOwner: "Treasury Owner",
   pauseController: "Treasury Owner Pause Controller",
+  proposal: "Proposal",
 };
 
 const EXCLUDED_DEVICE_SIGNING_COMMANDS = new Set(["pause-controller deploy"]);
@@ -213,7 +216,7 @@ async function readLedgerRoles(): Promise<LedgerRoles> {
   console.log(
     "Connect and unlock the Ledger, open Mina app 1.6.7 or newer, and enable blind signing.",
   );
-  console.log("Confirm the four address requests on the Ledger device.");
+  console.log("Confirm the five address requests on the Ledger device.");
   const require = createRequire(import.meta.url);
   const TransportNodeHid = (
     require("@ledgerhq/hw-transport-node-hid") as {
@@ -796,6 +799,10 @@ test("selected signature-producing CLI commands work with a physical Ledger on t
       contentApi.url,
       "--treasury-owner-public-key",
       roles.treasuryOwner.publicKey,
+      "--proposal-public-key",
+      roles.proposal.publicKey,
+      "--proposal-ledger-account-index",
+      String(roles.proposal.accountIndex),
       "--proposal-lifecycle-id",
       LIFECYCLE_ID,
       "--recipient-public-key",

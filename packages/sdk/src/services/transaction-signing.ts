@@ -1,7 +1,8 @@
-import type { PrivateKey, PublicKey } from "o1js";
+import type { PrivateKey } from "o1js";
 
 export interface UnsignedMinaTransaction {
   toJSON(): string;
+  sign(privateKeys: PrivateKey[]): SendableMinaTransaction;
 }
 
 export interface SendableMinaTransaction {
@@ -12,39 +13,41 @@ export type TransactionSigner = (
   transaction: UnsignedMinaTransaction,
 ) => Promise<SendableMinaTransaction>;
 
-export function resolveSigningPublicKey(options: {
-  label: string;
-  privateKey?: PrivateKey;
-  publicKey?: PublicKey;
-}): PublicKey {
-  const publicKey = options.publicKey ?? options.privateKey?.toPublicKey();
-  if (!publicKey) {
-    throw new Error(
-      `${options.label} public key or private key is required for transaction signing.`,
-    );
-  }
-  if (
-    options.privateKey &&
-    !options.privateKey.toPublicKey().equals(publicKey).toBoolean()
-  ) {
-    throw new Error(
-      `${options.label} public key does not match its private key.`,
-    );
-  }
-  return publicKey;
+export function transactionSigningPublicKeys(
+  transaction: Pick<UnsignedMinaTransaction, "toJSON">,
+): Set<string> {
+  const command = JSON.parse(transaction.toJSON()) as {
+    feePayer: { body: { publicKey: string } };
+    accountUpdates: Array<{
+      body: { publicKey: string; authorizationKind: { isSigned: boolean } };
+    }>;
+  };
+  return new Set([
+    command.feePayer.body.publicKey,
+    ...command.accountUpdates
+      .filter((update) => update.body.authorizationKind.isSigned)
+      .map((update) => update.body.publicKey),
+  ]);
 }
 
-export function requireInMemoryPrivateKeys(options: {
-  transactionSigner?: TransactionSigner;
-  keys: Array<{ label: string; privateKey?: PrivateKey }>;
-}): PrivateKey[] {
-  if (options.transactionSigner) return [];
-  return options.keys.map(({ label, privateKey }) => {
-    if (!privateKey) {
-      throw new Error(
-        `${label} private key is required without an external transaction signer.`,
-      );
-    }
-    return privateKey;
-  });
+export function createInMemoryTransactionSigner(
+  privateKeys: PrivateKey[],
+): TransactionSigner {
+  const keys = new Map(
+    privateKeys.map((key) => [key.toPublicKey().toBase58(), key]),
+  );
+  return async (transaction) => {
+    const requiredKeys = [...transactionSigningPublicKeys(transaction)].map(
+      (publicKey) => {
+        const key = keys.get(publicKey);
+        if (!key) {
+          throw new Error(
+            `Private key is required for transaction signer ${publicKey}.`,
+          );
+        }
+        return key;
+      },
+    );
+    return transaction.sign(requiredKeys);
+  };
 }

@@ -1,19 +1,33 @@
-import { Command, Option } from "commander";
+import { Command, InvalidArgumentError, Option } from "commander";
 import { PrivateKey, PublicKey } from "o1js";
-import type { TransactionSigner } from "@repo/sdk/src/services/transaction-signing.js";
-import { parseIntOption } from "../commands/option-parsers.js";
+import {
+  createInMemoryTransactionSigner,
+  transactionSigningPublicKeys,
+  type TransactionSigner,
+} from "@repo/sdk/src/services/transaction-signing.js";
 import { signTxWithLedger } from "./ledger-signing.js";
+import { logTransactionForSigning } from "./signing-progress.js";
 
 type LedgerNetworkId = "mainnet" | "devnet" | "testnet";
 
 export type SignerMode = "in-memory" | "ledger";
 
-export interface ResolvedSigningAccount {
+export function logWaitingForSignatures(signer: SignerMode): void {
+  // Keep progress messages separate from command results on stdout.
+  console.error(
+    signer === "ledger"
+      ? "[signing] Waiting for signatures from Ledger. Review and approve each signature request on your Ledger device."
+      : "[signing] Waiting for signatures from in-memory keys.",
+  );
+}
+
+export type ResolvedSigningAccount = {
   label: string;
   publicKey: PublicKey;
-  privateKey?: PrivateKey;
-  ledgerAccountIndex?: number;
-}
+} & (
+  | { signer: "in-memory"; privateKey: PrivateKey; ledgerAccountIndex?: never }
+  | { signer: "ledger"; ledgerAccountIndex: number; privateKey?: never }
+);
 
 function parsePublicKey(value: string): PublicKey {
   return PublicKey.fromBase58(value);
@@ -27,9 +41,79 @@ function environmentName(role: string, suffix: string): string {
   return `${role}-${suffix}`.replaceAll("-", "_").toUpperCase();
 }
 
+interface SigningRoleOptions {
+  privateKey: string;
+  publicKey: string;
+  ledgerAccountIndex: string;
+  optionalInMemory?: boolean;
+  optionalLedger?: boolean;
+}
+
+export function configureSigningOptions(
+  command: Command,
+  roles: SigningRoleOptions[],
+): void {
+  const option = (name: string) =>
+    command.options.find((candidate) => candidate.attributeName() === name)!;
+  for (const role of roles) {
+    option(role.privateKey).conflicts([
+      role.publicKey,
+      role.ledgerAccountIndex,
+    ]);
+    option(role.ledgerAccountIndex).argParser((value) => {
+      const index = Number(value);
+      if (
+        value.trim() === "" ||
+        !Number.isSafeInteger(index) ||
+        index < 0 ||
+        index > 0xffff_ffff
+      ) {
+        throw new InvalidArgumentError(
+          "Ledger account index must be an integer from 0 through 4294967295.",
+        );
+      }
+      return index;
+    });
+  }
+  command.hook("preAction", () => {
+    const options = command.opts();
+    for (const role of roles) {
+      const ledger = options.signer === "ledger";
+      const required = ledger
+        ? [role.publicKey, role.ledgerAccountIndex]
+        : [role.privateKey];
+      const forbidden = ledger
+        ? [role.privateKey]
+        : [role.publicKey, role.ledgerAccountIndex];
+      for (const name of forbidden) {
+        if (options[name] !== undefined) {
+          command.error(
+            `${option(name).long} cannot be used when --signer=${options.signer}.`,
+          );
+        }
+      }
+      const optional = ledger ? role.optionalLedger : role.optionalInMemory;
+      if (optional && required.every((name) => options[name] === undefined))
+        continue;
+      for (const name of required) {
+        if (options[name] === undefined) {
+          command.error(
+            `${option(name).long} is required when --signer=${options.signer}.`,
+          );
+        }
+      }
+    }
+  });
+}
+
 export function addTransactionSignerOptions(
   command: Command,
-  roles: Array<{ role: string; label: string }>,
+  roles: Array<{
+    role: string;
+    label: string;
+    optionalInMemory?: boolean;
+    optionalLedger?: boolean;
+  }>,
 ): Command {
   command.addOption(
     new Option("--signer <signer>", "Signing implementation")
@@ -37,29 +121,37 @@ export function addTransactionSignerOptions(
       .default("in-memory")
       .env("SIGNER"),
   );
-  for (const { role, label } of roles) {
-    command
-      .addOption(
-        new Option(
-          optionName(role, "public-key") + ` <${role}-public-key>`,
-          `${label} public key for Ledger signing`,
-        )
-          .env(environmentName(role, "public-key"))
-          .argParser(parsePublicKey),
+  const signingRoles = roles.map(
+    ({ role, label, optionalInMemory, optionalLedger }) => {
+      const publicKey = new Option(
+        optionName(role, "public-key") + ` <${role}-public-key>`,
+        `${label} public key for Ledger signing`,
       )
-      .addOption(
-        new Option(
-          optionName(role, "ledger-account-index") +
-            ` <${role}-ledger-account-index>`,
-          `Ledger account index for ${label.toLowerCase()}`,
-        )
-          .env(environmentName(role, "ledger-account-index"))
-          .argParser(parseIntOption),
-      );
-  }
+        .env(environmentName(role, "public-key"))
+        .argParser(parsePublicKey);
+      const ledgerAccountIndex = new Option(
+        optionName(role, "ledger-account-index") +
+          ` <${role}-ledger-account-index>`,
+        `Ledger account index for ${label.toLowerCase()}`,
+      ).env(environmentName(role, "ledger-account-index"));
+      command.addOption(publicKey).addOption(ledgerAccountIndex);
+      const privateKey = command.options.find(
+        (option) => option.long === optionName(role, "private-key"),
+      )!;
+      return {
+        privateKey: privateKey.attributeName(),
+        publicKey: publicKey.attributeName(),
+        ledgerAccountIndex: ledgerAccountIndex.attributeName(),
+        optionalInMemory,
+        optionalLedger,
+      };
+    },
+  );
+  configureSigningOptions(command, signingRoles);
   return command;
 }
 
+// Commander validates these options before the command action runs.
 export function resolveSigningAccount(options: {
   signer: SignerMode;
   label: string;
@@ -67,59 +159,42 @@ export function resolveSigningAccount(options: {
   publicKey?: PublicKey;
   ledgerAccountIndex?: number;
 }): ResolvedSigningAccount {
-  if (options.signer === "ledger") {
-    if (!options.publicKey) {
-      throw new Error(
-        `${options.label} public key is required when --signer=ledger.`,
-      );
-    }
-    if (options.ledgerAccountIndex === undefined) {
-      throw new Error(
-        `${options.label} Ledger account index is required when --signer=ledger.`,
-      );
-    }
-    if (
-      !Number.isSafeInteger(options.ledgerAccountIndex) ||
-      options.ledgerAccountIndex < 0 ||
-      options.ledgerAccountIndex > 0xffff_ffff
-    ) {
-      throw new Error(
-        `${options.label} Ledger account index must be an integer from 0 through 4294967295.`,
-      );
-    }
-    return {
-      label: options.label,
-      publicKey: options.publicKey,
-      ledgerAccountIndex: options.ledgerAccountIndex,
-    };
-  }
-  if (!options.privateKey) {
-    throw new Error(
-      `${options.label} private key is required when --signer=in-memory.`,
-    );
-  }
-  return {
-    label: options.label,
-    publicKey: options.privateKey.toPublicKey(),
-    privateKey: options.privateKey,
-  };
+  return options.signer === "ledger"
+    ? {
+        signer: "ledger",
+        label: options.label,
+        publicKey: options.publicKey!,
+        ledgerAccountIndex: options.ledgerAccountIndex!,
+      }
+    : {
+        signer: "in-memory",
+        label: options.label,
+        publicKey: options.privateKey!.toPublicKey(),
+        privateKey: options.privateKey!,
+      };
 }
 
-export function createLedgerTransactionSigner(
-  signer: SignerMode,
+export function createTransactionSigner(
   accounts: ResolvedSigningAccount[],
   networkId?: LedgerNetworkId,
   ledgerSignTransaction: typeof signTxWithLedger = signTxWithLedger,
-  additionalPrivateKeys: PrivateKey[] = [],
-): TransactionSigner | undefined {
-  if (signer !== "ledger") return undefined;
+): TransactionSigner {
+  const signer = accounts[0]?.signer;
+  if (!signer || accounts.some((account) => account.signer !== signer)) {
+    throw new Error("All signing accounts must use the same signer.");
+  }
+  if (accounts.every((account) => account.signer === "in-memory")) {
+    const signTransaction = createInMemoryTransactionSigner(
+      accounts.map((account) => account.privateKey),
+    );
+    return async (transaction) => {
+      await logTransactionForSigning(transaction);
+      logWaitingForSignatures("in-memory");
+      return signTransaction(transaction);
+    };
+  }
   const indices = new Map<string, number>();
   const publicKeyByIndex = new Map<number, string>();
-  const inMemoryPublicKeys = new Set(
-    additionalPrivateKeys.map((privateKey) =>
-      privateKey.toPublicKey().toBase58(),
-    ),
-  );
   for (const account of accounts) {
     const publicKey = account.publicKey.toBase58();
     const accountIndex = account.ledgerAccountIndex;
@@ -147,42 +222,20 @@ export function createLedgerTransactionSigner(
     const transactionIndices = selectTransactionLedgerAccountIndices(
       transaction,
       indices,
-      inMemoryPublicKeys,
     );
-    const signedTransaction = await ledgerSignTransaction(
-      transaction,
-      transactionIndices,
-      networkId,
-    );
-    return additionalPrivateKeys.length > 0
-      ? signedTransaction.sign(additionalPrivateKeys)
-      : signedTransaction;
+    await logTransactionForSigning(transaction);
+    logWaitingForSignatures("ledger");
+    return ledgerSignTransaction(transaction, transactionIndices, networkId);
   };
 }
 
 export function selectTransactionLedgerAccountIndices(
   transaction: { toJSON(): string },
   configuredIndices: ReadonlyMap<string, number>,
-  inMemoryPublicKeys: ReadonlySet<string> = new Set(),
 ): Map<string, number> {
-  const command = JSON.parse(transaction.toJSON()) as {
-    feePayer: { body: { publicKey: string } };
-    accountUpdates: Array<{
-      body: {
-        publicKey: string;
-        authorizationKind: { isSigned: boolean };
-      };
-    }>;
-  };
-  const requiredPublicKeys = new Set<string>([
-    command.feePayer.body.publicKey,
-    ...command.accountUpdates
-      .filter((update) => update.body.authorizationKind.isSigned)
-      .map((update) => update.body.publicKey),
-  ]);
+  const requiredPublicKeys = transactionSigningPublicKeys(transaction);
   const transactionIndices = new Map<string, number>();
   for (const publicKey of requiredPublicKeys) {
-    if (inMemoryPublicKeys.has(publicKey)) continue;
     const accountIndex = configuredIndices.get(publicKey);
     if (accountIndex === undefined) {
       throw new Error(

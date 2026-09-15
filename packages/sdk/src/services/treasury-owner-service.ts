@@ -1,7 +1,6 @@
 import {
   type Field,
   type VerificationKey,
-  type PrivateKey,
   type PublicKey,
   type UInt32,
   type UInt64,
@@ -31,13 +30,10 @@ export interface CompileTreasuryOwnerResult {
 
 export interface DeployTreasuryOwnerOptions {
   minaNodeUrl: string;
-  senderPrivateKey?: PrivateKey;
-  senderPublicKey?: PublicKey;
-  treasuryOwnerPrivateKey?: PrivateKey;
-  treasuryOwnerPublicKey?: PublicKey;
-  pauseControllerPrivateKey?: PrivateKey;
-  pauseControllerPublicKey?: PublicKey;
-  transactionSigner?: TransactionSigner;
+  senderPublicKey: PublicKey;
+  treasuryOwnerPublicKey: PublicKey;
+  pauseControllerPublicKey: PublicKey;
+  transactionSigner: TransactionSigner;
   treasuryDeployedAtSlot: UInt32;
   withdrawalPermission?: TreasuryOwnerWithdrawalPermission;
   multisigParticipantsPublicKeys: PublicKey[];
@@ -59,12 +55,10 @@ export interface DeployTreasuryOwnerResult {
 
 export interface CreateTreasuryProposalOptions {
   minaNodeUrl: string;
-  senderPrivateKey?: PrivateKey;
-  senderPublicKey?: PublicKey;
+  senderPublicKey: PublicKey;
   treasuryOwnerPublicKey: PublicKey;
-  proposalPrivateKey?: PrivateKey;
-  proposalPublicKey?: PublicKey;
-  transactionSigner?: TransactionSigner;
+  proposalPublicKey: PublicKey;
+  transactionSigner: TransactionSigner;
   proposalLifecycleId: UInt32;
   recipientPublicKey: PublicKey;
   amount: UInt64;
@@ -85,13 +79,11 @@ export type ProposalVote = "yay" | "nay" | "abstain";
 
 export interface VoteTreasuryProposalOptions {
   minaNodeUrl: string;
-  senderPrivateKey?: PrivateKey;
-  senderPublicKey?: PublicKey;
+  senderPublicKey: PublicKey;
   treasuryOwnerPublicKey: PublicKey;
   proposalPublicKey: PublicKey;
-  voterPrivateKey?: PrivateKey;
-  voterPublicKey?: PublicKey;
-  transactionSigner?: TransactionSigner;
+  voterPublicKey: PublicKey;
+  transactionSigner: TransactionSigner;
   vote: ProposalVote;
   fee?: UInt64;
   nonce?: number;
@@ -106,9 +98,8 @@ export interface VoteTreasuryProposalResult {
 
 export interface TallyVotesTreasuryProposalOptions {
   minaNodeUrl: string;
-  senderPrivateKey?: PrivateKey;
-  senderPublicKey?: PublicKey;
-  transactionSigner?: TransactionSigner;
+  senderPublicKey: PublicKey;
+  transactionSigner: TransactionSigner;
   treasuryOwnerPublicKey: PublicKey;
   proposalPublicKey: PublicKey;
   voteReducerProof: SideLoadedVoteReducerProof;
@@ -128,9 +119,8 @@ export interface TallyVotesTreasuryProposalResult {
 
 export interface ExecuteTreasuryProposalOptions {
   minaNodeUrl: string;
-  senderPrivateKey?: PrivateKey;
-  senderPublicKey?: PublicKey;
-  transactionSigner?: TransactionSigner;
+  senderPublicKey: PublicKey;
+  transactionSigner: TransactionSigner;
   treasuryOwnerPublicKey: PublicKey;
   proposalPublicKey: PublicKey;
   recipientPublicKey: PublicKey;
@@ -150,11 +140,9 @@ export interface ExecuteTreasuryProposalResult {
 
 export interface TransferToTreasuryOptions {
   minaNodeUrl: string;
-  senderPrivateKey?: PrivateKey;
-  senderPublicKey?: PublicKey;
-  fundingPrivateKey?: PrivateKey;
-  fundingPublicKey?: PublicKey;
-  transactionSigner?: TransactionSigner;
+  senderPublicKey: PublicKey;
+  fundingPublicKey: PublicKey;
+  transactionSigner: TransactionSigner;
   treasuryOwnerPublicKey: PublicKey;
   amount: UInt64;
   fee?: UInt64;
@@ -174,11 +162,9 @@ export interface TransferToTreasuryResult {
 
 export interface EmergencyWithdrawOptions {
   minaNodeUrl: string;
-  senderPrivateKey?: PrivateKey;
-  senderPublicKey?: PublicKey;
-  treasuryOwnerPrivateKey?: PrivateKey;
-  treasuryOwnerPublicKey?: PublicKey;
-  transactionSigner?: TransactionSigner;
+  senderPublicKey: PublicKey;
+  treasuryOwnerPublicKey: PublicKey;
+  transactionSigner: TransactionSigner;
   recipientPublicKey: PublicKey;
   amount: UInt64;
   fee?: UInt64;

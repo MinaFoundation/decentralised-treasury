@@ -1,3 +1,4 @@
+import { createInMemoryTransactionSigner } from "../../src/services/transaction-signing.js";
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
@@ -77,10 +78,14 @@ test("a default Treasury Owner requires proof authorization for withdrawals", as
   await assert.rejects(
     service.emergencyWithdraw({
       minaNodeUrl: "http://127.0.0.1:8080/graphql",
-      senderPrivateKey: feePayer.key,
-      treasuryOwnerPrivateKey,
+      senderPublicKey: feePayer.key.toPublicKey(),
+      treasuryOwnerPublicKey: treasuryOwnerPrivateKey.toPublicKey(),
       recipientPublicKey: recipient,
       amount: UInt64.from(1_000_000_000),
+      transactionSigner: createInMemoryTransactionSigner([
+        feePayer.key,
+        treasuryOwnerPrivateKey,
+      ]),
     }),
     /does not permit an emergency signature withdrawal/iu,
   );
@@ -147,10 +152,14 @@ test("an opted-in Treasury Owner supports a signature-authorized emergency withd
   const service = new SqliteTreasuryOwnerService();
   const result = await service.emergencyWithdraw({
     minaNodeUrl: "http://127.0.0.1:8080/graphql",
-    senderPrivateKey: feePayer.key,
-    treasuryOwnerPrivateKey,
+    senderPublicKey: feePayer.key.toPublicKey(),
+    treasuryOwnerPublicKey: treasuryOwnerPrivateKey.toPublicKey(),
     recipientPublicKey: recipient,
     amount: withdrawalAmount,
+    transactionSigner: createInMemoryTransactionSigner([
+      feePayer.key,
+      treasuryOwnerPrivateKey,
+    ]),
   });
 
   assert.equal(result.authorization, "treasury-owner-signature");
@@ -232,7 +241,7 @@ test("an external signer authorizes an opted-in emergency withdrawal without a p
         false,
       );
 
-      return (transaction as LocalTransaction).sign([
+      return transaction.sign([
         feePayer.key,
         treasuryOwnerPrivateKey,
       ]);

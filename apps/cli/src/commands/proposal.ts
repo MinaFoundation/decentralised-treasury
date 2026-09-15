@@ -22,7 +22,7 @@ import {
 } from "./proposal-content-hash.js";
 import {
   addTransactionSignerOptions,
-  createLedgerTransactionSigner,
+  createTransactionSigner,
   resolveSigningAccount,
   type SignerMode,
 } from "../ledger/transaction-signer.js";
@@ -45,6 +45,8 @@ interface CreateProposalCommandOptions {
   senderLedgerAccountIndex?: number;
   treasuryOwnerPublicKey: PublicKey;
   proposalPrivateKey?: PrivateKey;
+  proposalPublicKey?: PublicKey;
+  proposalLedgerAccountIndex?: number;
   proposalLifecycleId: UInt32;
   recipientPublicKey: PublicKey;
   amount: UInt64;
@@ -137,19 +139,24 @@ export async function createProposal(
     publicKey: options.senderPublicKey,
     ledgerAccountIndex: options.senderLedgerAccountIndex,
   });
-  const proposalPrivateKey = options.proposalPrivateKey ?? PrivateKey.random();
-  if (!options.proposalPrivateKey) {
+  if (options.signer === "in-memory" && !options.proposalPrivateKey) {
     console.warn(
-      "Warning: No Proposal private key was provided. The CLI generated an in-memory keypair for deployment and will discard the private key after this command. The private key cannot authorize later Proposal control: Proposal state uses proof authorization, and its custom-token account updates require Treasury Owner approval.",
+      "The CLI generated an in-memory keypair for deployment and will discard the private key after this command.",
     );
   }
-  const proposalPublicKey = proposalPrivateKey.toPublicKey();
-  const transactionSigner = createLedgerTransactionSigner(
-    options.signer,
-    [sender],
+  const proposal = resolveSigningAccount({
+    signer: options.signer,
+    label: "Proposal",
+    privateKey:
+      options.proposalPrivateKey ??
+      (options.signer === "in-memory" ? PrivateKey.random() : undefined),
+    publicKey: options.proposalPublicKey,
+    ledgerAccountIndex: options.proposalLedgerAccountIndex,
+  });
+  const proposalPublicKey = proposal.publicKey;
+  const transactionSigner = createTransactionSigner(
+    [sender, proposal],
     options.networkId,
-    undefined,
-    [proposalPrivateKey],
   );
   const [proposalContents, proposalZkappUri] = await Promise.all([
     readProposalMarkdownContent({
@@ -170,10 +177,8 @@ export async function createProposal(
 
   const result = await service.createProposal({
     minaNodeUrl: options.minaNodeUrl,
-    senderPrivateKey: sender.privateKey,
     senderPublicKey: sender.publicKey,
     treasuryOwnerPublicKey: options.treasuryOwnerPublicKey,
-    proposalPrivateKey,
     proposalPublicKey,
     transactionSigner,
     proposalLifecycleId: options.proposalLifecycleId,
@@ -217,8 +222,7 @@ export async function voteProposal(
     publicKey: options.voterPublicKey,
     ledgerAccountIndex: options.voterLedgerAccountIndex,
   });
-  const transactionSigner = createLedgerTransactionSigner(
-    options.signer,
+  const transactionSigner = createTransactionSigner(
     [sender, voter],
     options.networkId,
   );
@@ -233,11 +237,9 @@ export async function voteProposal(
 
   const result = await service.voteProposal({
     minaNodeUrl: options.minaNodeUrl,
-    senderPrivateKey: sender.privateKey,
     senderPublicKey: sender.publicKey,
     treasuryOwnerPublicKey: options.treasuryOwnerPublicKey,
     proposalPublicKey: options.proposalPublicKey,
-    voterPrivateKey: voter.privateKey,
     voterPublicKey: voter.publicKey,
     transactionSigner,
     vote: options.vote,
@@ -260,8 +262,7 @@ export async function tallyVotesProposal(
     publicKey: options.senderPublicKey,
     ledgerAccountIndex: options.senderLedgerAccountIndex,
   });
-  const transactionSigner = createLedgerTransactionSigner(
-    options.signer,
+  const transactionSigner = createTransactionSigner(
     [sender],
     options.networkId,
   );
@@ -296,7 +297,6 @@ export async function tallyVotesProposal(
 
   const result = await service.tallyVotes({
     minaNodeUrl: options.minaNodeUrl,
-    senderPrivateKey: sender.privateKey,
     senderPublicKey: sender.publicKey,
     transactionSigner,
     treasuryOwnerPublicKey: options.treasuryOwnerPublicKey,
@@ -324,8 +324,7 @@ export async function executeProposal(
     publicKey: options.senderPublicKey,
     ledgerAccountIndex: options.senderLedgerAccountIndex,
   });
-  const transactionSigner = createLedgerTransactionSigner(
-    options.signer,
+  const transactionSigner = createTransactionSigner(
     [sender],
     options.networkId,
   );
@@ -339,7 +338,6 @@ export async function executeProposal(
 
   const result = await service.executeProposal({
     minaNodeUrl: options.minaNodeUrl,
-    senderPrivateKey: sender.privateKey,
     senderPublicKey: sender.publicKey,
     transactionSigner,
     treasuryOwnerPublicKey: options.treasuryOwnerPublicKey,
@@ -524,7 +522,10 @@ export default function proposalCommandFactory(program: Command) {
           .argParser((value) => UInt32.from(value))
           .default(UInt32.from(7140)),
       ),
-    [{ role: "sender", label: "Sender" }],
+    [
+      { role: "sender", label: "Sender" },
+      { role: "proposal", label: "Proposal", optionalInMemory: true },
+    ],
   ).action(createProposal);
 
   addTransactionSignerOptions(

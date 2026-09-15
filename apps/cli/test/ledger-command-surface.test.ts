@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import type { Command } from "commander";
+import { PrivateKey } from "o1js";
 import { createProgram } from "../src/cli.js";
 
 interface SigningCommandExpectation {
@@ -57,7 +58,10 @@ const signingCommands: SigningCommandExpectation[] = [
   },
   {
     path: "proposal create",
-    ledgerIndexOptions: ["senderLedgerAccountIndex"],
+    ledgerIndexOptions: [
+      "senderLedgerAccountIndex",
+      "proposalLedgerAccountIndex",
+    ],
   },
   {
     path: "proposal vote",
@@ -155,7 +159,7 @@ test("every private-key signing leaf is present in the signing matrix", () => {
   }
 });
 
-test("proposal create exposes only the sender as an external signing role", () => {
+test("proposal create exposes sender and proposal signing roles", () => {
   const command = commandAt(createProgram(), "proposal create");
   const optionNames = new Set(
     command.options.map((option) => option.attributeName()),
@@ -165,8 +169,8 @@ test("proposal create exposes only the sender as an external signing role", () =
   assert.ok(optionNames.has("senderPublicKey"));
   assert.ok(optionNames.has("senderLedgerAccountIndex"));
   assert.ok(optionNames.has("proposalPrivateKey"));
-  assert.ok(!optionNames.has("proposalPublicKey"));
-  assert.ok(!optionNames.has("proposalLedgerAccountIndex"));
+  assert.ok(optionNames.has("proposalPublicKey"));
+  assert.ok(optionNames.has("proposalLedgerAccountIndex"));
 });
 
 test("treasury-owner deploy exposes the withdrawal permission policy", () => {
@@ -180,4 +184,36 @@ test("treasury-owner deploy exposes the withdrawal permission policy", () => {
   assert.deepEqual(option.argChoices, ["proof", "proofOrSignature"]);
   assert.equal(option.defaultValue, "proof");
   assert.equal(option.envVar, "TREASURY_WITHDRAWAL_PERMISSION");
+});
+
+test("all signing commands reject mixed options before their action runs", async () => {
+  const privateKey = PrivateKey.random();
+  for (const { path } of signingCommands) {
+    const program = createProgram()
+      .exitOverride()
+      .configureOutput({ writeErr: () => {} });
+    const command = commandAt(program, path)
+      .exitOverride()
+      .configureOutput({ writeErr: () => {} });
+    const privateKeyOption = command.options.find((option) =>
+      /PrivateKey$/u.test(option.attributeName()),
+    )!;
+    // Business inputs are irrelevant here: a rejected layout must not reach the action.
+    for (const option of command.options.filter((option) => option.mandatory)) {
+      command.setOptionValue(option.attributeName(), "unused");
+    }
+    let called = false;
+    command.action(() => {
+      called = true;
+    });
+    await assert.rejects(
+      command.parseAsync(
+        ["--signer", "ledger", privateKeyOption.long!, privateKey.toBase58()],
+        { from: "user" },
+      ),
+      /cannot be used/,
+      path,
+    );
+    assert.equal(called, false, path);
+  }
 });

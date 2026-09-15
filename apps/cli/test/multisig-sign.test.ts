@@ -1,8 +1,11 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { Command } from "commander";
 import { PrivateKey, Signature, UInt32 } from "o1js";
 import { MultisigSignature } from "@repo/sdk/src/provable/contracts/treasury-pause-controller/multisig-signatures.js";
-import { signPauseTreasury } from "../src/commands/multisig-sign.js";
+import multisigSignCommandFactory, {
+  signPauseTreasury,
+} from "../src/commands/multisig-sign.js";
 
 test("keeps in-memory break-glass signing as the default-compatible path", async () => {
   const privateKeys = Array.from({ length: 5 }, () => PrivateKey.random());
@@ -36,40 +39,45 @@ test("keeps in-memory break-glass signing as the default-compatible path", async
   );
 });
 
-test("requires a private key for in-memory break-glass signing", async () => {
+function parseMultisigOptions(args: string[]) {
+  const program = new Command()
+    .exitOverride()
+    .configureOutput({ writeErr: () => {} });
+  multisigSignCommandFactory(program);
+  const command = program.commands[0].commands[0];
+  command.action(() => {});
   const publicKeys = Array.from({ length: 5 }, () =>
-    PrivateKey.random().toPublicKey(),
+    PrivateKey.random().toPublicKey().toBase58(),
   );
+  return program.parseAsync(
+    [
+      "multisig-sign",
+      "pause-treasury",
+      "--multisig-participants-public-keys",
+      publicKeys.join(","),
+      "--nonce",
+      "4",
+      ...args,
+    ],
+    { from: "user" },
+  );
+}
+
+test("requires a private key for in-memory break-glass signing", async () => {
   await assert.rejects(
-    signPauseTreasury({
-      signer: "in-memory",
-      multisigParticipantsPublicKeys: publicKeys,
-      nonce: 4,
-    }),
-    /multisig-signer-private-key/,
+    parseMultisigOptions([]),
+    /--multisig-signer-private-key is required/,
   );
 });
 
 test("requires an explicit Ledger account index", async () => {
-  const publicKeys = Array.from({ length: 5 }, () =>
-    PrivateKey.random().toPublicKey(),
+  await assert.rejects(
+    parseMultisigOptions([
+      "--signer",
+      "ledger",
+      "--ledger-signer-public-key",
+      PrivateKey.random().toPublicKey().toBase58(),
+    ]),
+    /--ledger-account-index is required/,
   );
-  const previousPublicKey = process.env.LEDGER_SIGNER_PUBLIC_KEY;
-  process.env.LEDGER_SIGNER_PUBLIC_KEY = publicKeys[0].toBase58();
-  try {
-    await assert.rejects(
-      signPauseTreasury({
-        signer: "ledger",
-        multisigParticipantsPublicKeys: publicKeys,
-        nonce: 4,
-      }),
-      /ledger-account-index/,
-    );
-  } finally {
-    if (previousPublicKey === undefined) {
-      delete process.env.LEDGER_SIGNER_PUBLIC_KEY;
-    } else {
-      process.env.LEDGER_SIGNER_PUBLIC_KEY = previousPublicKey;
-    }
-  }
 });

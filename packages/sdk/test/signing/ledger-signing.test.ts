@@ -12,6 +12,7 @@ import {
 } from "o1js";
 import {
   type LedgerSigningClient,
+  type LedgerSigningProgress,
   signTransactionWithLedgerClient,
 } from "../../src/signing/ledger-signing.js";
 
@@ -49,6 +50,7 @@ async function createSignedMainnetTransaction(privateKey: PrivateKey) {
 }
 
 test("accepts valid mainnet Ledger field signatures", async () => {
+  const progress: LedgerSigningProgress[] = [];
   const privateKey = PrivateKey.random();
   const publicKey = privateKey.toPublicKey();
   const transaction = await createSignedMainnetTransaction(privateKey);
@@ -85,11 +87,18 @@ test("accepts valid mainnet Ledger field signatures", async () => {
   const ledger: LedgerSigningClient = {
     async getAddress(accountIndex) {
       assert.equal(accountIndex, 7);
+      assert.equal(progress.at(-1)?.type, "account-verification-started");
       return { returnCode: "9000", publicKey: publicKey.toBase58() };
     },
     async signFieldElement(accountIndex, networkId, bytes) {
       assert.equal(accountIndex, 7);
       assert.equal(networkId, 1);
+      assert.deepEqual(progress.at(-1), {
+        type: "signature-requested",
+        accountIndex: 7,
+        publicKey: publicKey.toBase58(),
+        hash: fieldFromBytes(bytes).toString(),
+      });
       const signature = signatures.get(fieldFromBytes(bytes).toString());
       assert(signature, "expected a prepared mainnet signature");
       const json = signature.toJSON();
@@ -101,6 +110,30 @@ test("accepts valid mainnet Ledger field signatures", async () => {
     transaction,
     ledger,
     new Map([[publicKey.toBase58(), 7]]),
+    undefined,
+    (event) => progress.push(event),
+  );
+  assert.deepEqual(progress.slice(0, 3), [
+    {
+      type: "transaction-commitments",
+      networkId: "mainnet",
+      commitment: commitments.commitment.toString(),
+      fullCommitment: commitments.fullCommitment.toString(),
+    },
+    {
+      type: "account-verification-started",
+      accountIndex: 7,
+      publicKey: publicKey.toBase58(),
+    },
+    {
+      type: "account-verified",
+      accountIndex: 7,
+      publicKey: publicKey.toBase58(),
+    },
+  ]);
+  assert.deepEqual(
+    progress.slice(3).map((event) => event.type),
+    [...signatures].flatMap(() => ["signature-requested", "signature-verified"]),
   );
   assert.equal(
     JSON.parse(result.toJSON()).feePayer.authorization,
@@ -109,6 +142,7 @@ test("accepts valid mainnet Ledger field signatures", async () => {
 });
 
 test("rejects a testnet-domain signature for a mainnet transaction", async () => {
+  const progress: LedgerSigningProgress[] = [];
   const privateKey = PrivateKey.random();
   const publicKey: PublicKey = privateKey.toPublicKey();
   const transaction = await createSignedMainnetTransaction(privateKey);
@@ -131,12 +165,17 @@ test("rejects a testnet-domain signature for a mainnet transaction", async () =>
       transaction,
       ledger,
       new Map([[publicKey.toBase58(), 9]]),
+      undefined,
+      (event) => progress.push(event),
     ),
     /invalid signature/,
   );
+  assert.equal(progress.at(-1)?.type, "signature-requested");
+  assert.ok(!progress.some((event) => event.type === "signature-verified"));
 });
 
 test("rejects a Ledger index that returns another public key", async () => {
+  const progress: LedgerSigningProgress[] = [];
   const privateKey = PrivateKey.random();
   const publicKey = privateKey.toPublicKey();
   const transaction = await createSignedMainnetTransaction(privateKey);
@@ -158,9 +197,13 @@ test("rejects a Ledger index that returns another public key", async () => {
       transaction,
       ledger,
       new Map([[publicKey.toBase58(), 4]]),
+      undefined,
+      (event) => progress.push(event),
     ),
     /returned .* expected/,
   );
+  assert.equal(progress.at(-1)?.type, "account-verification-started");
+  assert.ok(!progress.some((event) => event.type === "account-verified"));
 });
 
 test("preserves signatures owned by another signing provider", async () => {

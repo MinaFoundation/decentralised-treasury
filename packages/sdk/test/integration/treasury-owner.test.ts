@@ -1,3 +1,5 @@
+import { createInMemoryTransactionSigner } from "../../src/services/transaction-signing.js";
+import { signTransactionWithLedgerClient } from "../../src/signing/ledger-signing.js";
 import { it, after } from "node:test";
 import assert from "node:assert";
 import {
@@ -23,6 +25,7 @@ import {
   Reducer,
   SmartContract,
   State,
+  Signature,
   state,
   Transaction,
   UInt32,
@@ -72,6 +75,43 @@ import { getSqliteDbPath } from "../../src/storage/sqlite/sqlite-db-path.js";
 import { SqliteTreasuryOwnerService } from "../../src/services/sqlite/sqlite-treasury-owner-service.js";
 
 const proofsEnabled = process.env.PROOFS_ENABLED === "true";
+
+// Use the same service scenarios to verify Ledger authorization insertion.
+function createServiceSigner(keys: PrivateKey[]) {
+  if (process.env.LEDGER_TEST_MODE !== "software") {
+    return createInMemoryTransactionSigner(keys);
+  }
+  return async (transaction: { toJSON(): string }) =>
+    signTransactionWithLedgerClient(
+      transaction,
+      {
+        async getAddress(index: number) {
+          return {
+            returnCode: "9000",
+            publicKey: keys[index]!.toPublicKey().toBase58(),
+          };
+        },
+        async signFieldElement(
+          index: number,
+          network: number,
+          bytes: Uint8Array,
+        ) {
+          assert.equal(network, 0);
+          const field = Field(
+            bytes.reduceRight((n, b) => (n << 8n) + BigInt(b), 0n),
+          );
+          const signature = Signature.create(keys[index]!, [field]).toJSON();
+          return {
+            returnCode: "9000",
+            field: signature.r,
+            scalar: signature.s,
+          };
+        },
+      },
+      new Map(keys.map((key, index) => [key.toPublicKey().toBase58(), index])),
+      "devnet",
+    );
+}
 
 const Local = await Mina.LocalBlockchain({
   proofsEnabled,
@@ -718,7 +758,7 @@ it("should tally votes", async () => {
   Provable.log("vote reducer proof tally", voteReducerProof.publicOutput);
   const result = await service.tallyVotes({
     minaNodeUrl: "http://127.0.0.1:8080/graphql",
-    senderPrivateKey: testAccount.key,
+    senderPublicKey: testAccount.key.toPublicKey(),
     treasuryOwnerPublicKey,
     proposalPublicKey: treasuryProposalPublicKey,
     voteReducerProof: SideLoadedVoteReducerProof.fromProof(voteReducerProof),
@@ -730,6 +770,7 @@ it("should tally votes", async () => {
     treasuryOwnerAccountWitness,
     fee: UInt64.from(1 * 10 ** 9),
     nonce: Number(Local.getAccount(testAccount).nonce.toBigint()),
+    transactionSigner: createServiceSigner([testAccount.key]),
   });
   assert(result.tallyTxHash, "expected tally transaction hash");
 
@@ -768,13 +809,14 @@ it("should execute a proposal", async () => {
   const service = new SqliteTreasuryOwnerService();
   const result = await service.executeProposal({
     minaNodeUrl: "http://127.0.0.1:8080/graphql",
-    senderPrivateKey: testAccount.key,
+    senderPublicKey: testAccount.key.toPublicKey(),
     treasuryOwnerPublicKey,
     proposalPublicKey: treasuryProposalPublicKey,
     recipientPublicKey: treasuryProposalRecipientPublicKey,
     amountToPayOut: amountWithBond,
     fee: UInt64.from(1 * 10 ** 9),
     nonce: Number(Local.getAccount(testAccount).nonce.toBigint()),
+    transactionSigner: createServiceSigner([testAccount.key]),
   });
   assert(result.executeTxHash, "expected execute transaction hash");
 

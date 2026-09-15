@@ -19,7 +19,7 @@ import {
 } from "@repo/sdk/src/signing/ledger-signing.js";
 import { MultisigSignature } from "@repo/sdk/src/provable/contracts/treasury-pause-controller/multisig-signatures.js";
 import {
-  createLedgerTransactionSigner,
+  createTransactionSigner,
   resolveSigningAccount,
 } from "../../src/ledger/transaction-signer.js";
 
@@ -109,8 +109,7 @@ test(
         publicKey: sender,
         ledgerAccountIndex: ACCOUNT_INDEX,
       });
-      const transactionSigner = createLedgerTransactionSigner(
-        "ledger",
+      const transactionSigner = createTransactionSigner(
         [signingAccount],
         "devnet",
         async (unsignedTransaction, accountIndices, networkId) =>

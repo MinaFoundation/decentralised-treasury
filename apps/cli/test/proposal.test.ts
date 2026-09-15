@@ -214,9 +214,9 @@ it("exposes proposal fetch-actions command in help", async () => {
   );
   assert(
     proposalCreateHelp.includes("--proposal-private-key") &&
-      !proposalCreateHelp.includes("--proposal-public-key") &&
-      !proposalCreateHelp.includes("--proposal-ledger-account-index"),
-    "expected proposal create help to accept only an optional Proposal private key",
+      proposalCreateHelp.includes("--proposal-public-key") &&
+      proposalCreateHelp.includes("--proposal-ledger-account-index"),
+    "expected proposal create help to support both signing modes",
   );
 });
 

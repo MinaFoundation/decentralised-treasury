@@ -59,6 +59,7 @@ interface LedgerSession {
 }
 
 const mode = (process.env.LEDGER_TEST_MODE ?? "software") as TestMode;
+const proofsEnabled = process.env.PROOFS_ENABLED === "true";
 if (!(["software", "mocker", "device"] as const).includes(mode)) {
   throw new Error(`Unknown LEDGER_TEST_MODE: ${mode}`);
 }
@@ -264,12 +265,13 @@ async function openLedgerSession(): Promise<LedgerSession> {
 
 test(
   `Ledger signs an o1js dummy-contract transaction on LocalBlockchain (${mode})`,
-  mode === "device" ? {} : { timeout: 30_000 },
+  mode === "device" ? {} : { timeout: proofsEnabled ? 180_000 : 30_000 },
   async () => {
     const ledgerSession = await openLedgerSession();
     try {
-      const local = await Mina.LocalBlockchain({ proofsEnabled: false });
+      const local = await Mina.LocalBlockchain({ proofsEnabled });
       Mina.setActiveInstance(local);
+      if (proofsEnabled) await DummyLedgerContract.compile();
       local.addAccount(ledgerSession.feePayer.publicKey, "100000000000");
 
       const contract = new DummyLedgerContract(
@@ -327,6 +329,28 @@ test(
       );
       const pendingTransaction = await signedTransaction.send();
       await pendingTransaction.wait();
+
+      const originalUpdates = JSON.parse(transaction.toJSON()).accountUpdates;
+      const signedUpdates = JSON.parse(
+        signedTransaction.toJSON(),
+      ).accountUpdates;
+      assert.ok(
+        originalUpdates.some(
+          (update: { body: { authorizationKind: { isProved: boolean } } }) =>
+            update.body.authorizationKind.isProved,
+        ),
+      );
+      assert.deepEqual(
+        signedUpdates.map(
+          (update: { authorization: { proof: unknown } }) =>
+            update.authorization.proof,
+        ),
+        originalUpdates.map(
+          (update: { authorization: { proof: unknown } }) =>
+            update.authorization.proof,
+        ),
+        "Ledger signing must preserve proof authorizations",
+      );
 
       const counter = await contract.counter.fetch();
       assert.equal(counter?.toBigInt(), 1n);

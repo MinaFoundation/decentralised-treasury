@@ -5,7 +5,6 @@ import {
   fetchLastBlock,
   Mina,
   Permissions,
-  type PrivateKey,
   PublicKey,
   UInt32,
   UInt64,
@@ -38,10 +37,6 @@ import {
   type VoteTreasuryProposalOptions,
   type VoteTreasuryProposalResult,
 } from "../treasury-owner-service.js";
-import {
-  requireInMemoryPrivateKeys,
-  resolveSigningPublicKey,
-} from "../transaction-signing.js";
 import {
   VoteReducer,
   voteReducerContext,
@@ -255,12 +250,9 @@ export class SqliteTreasuryOwnerService implements TreasuryOwnerService {
     options: DeployTreasuryOwnerOptions,
   ): Promise<DeployTreasuryOwnerResult> {
     const {
-      senderPrivateKey,
-      senderPublicKey: suppliedSenderPublicKey,
-      treasuryOwnerPrivateKey,
-      treasuryOwnerPublicKey: suppliedTreasuryOwnerPublicKey,
-      pauseControllerPrivateKey,
-      pauseControllerPublicKey: suppliedPauseControllerPublicKey,
+      senderPublicKey,
+      treasuryOwnerPublicKey,
+      pauseControllerPublicKey,
       transactionSigner,
       treasuryDeployedAtSlot,
       withdrawalPermission = DEFAULT_TREASURY_OWNER_WITHDRAWAL_PERMISSION,
@@ -271,36 +263,6 @@ export class SqliteTreasuryOwnerService implements TreasuryOwnerService {
       memo,
       wait = true,
     } = options;
-
-    const senderPublicKey = resolveSigningPublicKey({
-      label: "Sender",
-      privateKey: senderPrivateKey,
-      publicKey: suppliedSenderPublicKey,
-    });
-    const treasuryOwnerPublicKey = resolveSigningPublicKey({
-      label: "Treasury owner",
-      privateKey: treasuryOwnerPrivateKey,
-      publicKey: suppliedTreasuryOwnerPublicKey,
-    });
-    const pauseControllerPublicKey = resolveSigningPublicKey({
-      label: "Pause controller",
-      privateKey: pauseControllerPrivateKey,
-      publicKey: suppliedPauseControllerPublicKey,
-    });
-    const pauseControllerKeys = requireInMemoryPrivateKeys({
-      transactionSigner,
-      keys: [
-        { label: "Sender", privateKey: senderPrivateKey },
-        { label: "Pause controller", privateKey: pauseControllerPrivateKey },
-      ],
-    });
-    const treasuryOwnerKeys = requireInMemoryPrivateKeys({
-      transactionSigner,
-      keys: [
-        { label: "Sender", privateKey: senderPrivateKey },
-        { label: "Treasury owner", privateKey: treasuryOwnerPrivateKey },
-      ],
-    });
 
     TreasuryPauseControllerSmartContract.multisigParticipants =
       multisigParticipantsPublicKeys;
@@ -328,9 +290,9 @@ export class SqliteTreasuryOwnerService implements TreasuryOwnerService {
       },
     );
     const provedPauseControllerTx = await pauseControllerTx.prove();
-    const signedPauseControllerTx = transactionSigner
-      ? await transactionSigner(provedPauseControllerTx)
-      : provedPauseControllerTx.sign(pauseControllerKeys);
+    const signedPauseControllerTx = await transactionSigner(
+      provedPauseControllerTx,
+    );
     const pauseControllerPendingTx = await this.sendTransaction(
       signedPauseControllerTx,
       {
@@ -358,9 +320,9 @@ export class SqliteTreasuryOwnerService implements TreasuryOwnerService {
       },
     );
     const provedTreasuryOwnerTx = await treasuryOwnerTx.prove();
-    const signedTreasuryOwnerTx = transactionSigner
-      ? await transactionSigner(provedTreasuryOwnerTx)
-      : provedTreasuryOwnerTx.sign(treasuryOwnerKeys);
+    const signedTreasuryOwnerTx = await transactionSigner(
+      provedTreasuryOwnerTx,
+    );
     const treasuryOwnerPendingTx = await this.sendTransaction(
       signedTreasuryOwnerTx,
       { wait },
@@ -379,11 +341,9 @@ export class SqliteTreasuryOwnerService implements TreasuryOwnerService {
     options: CreateTreasuryProposalOptions,
   ): Promise<CreateTreasuryProposalResult> {
     const {
-      senderPrivateKey,
-      senderPublicKey: suppliedSenderPublicKey,
+      senderPublicKey,
       treasuryOwnerPublicKey,
-      proposalPrivateKey,
-      proposalPublicKey: suppliedProposalPublicKey,
+      proposalPublicKey,
       transactionSigner,
       proposalLifecycleId,
       recipientPublicKey,
@@ -394,24 +354,6 @@ export class SqliteTreasuryOwnerService implements TreasuryOwnerService {
       memo,
       wait = true,
     } = options;
-
-    const senderPublicKey = resolveSigningPublicKey({
-      label: "Sender",
-      privateKey: senderPrivateKey,
-      publicKey: suppliedSenderPublicKey,
-    });
-    const proposalPublicKey = resolveSigningPublicKey({
-      label: "Proposal",
-      privateKey: proposalPrivateKey,
-      publicKey: suppliedProposalPublicKey,
-    });
-    const signingKeys = requireInMemoryPrivateKeys({
-      transactionSigner,
-      keys: [
-        { label: "Sender", privateKey: senderPrivateKey },
-        { label: "Proposal", privateKey: proposalPrivateKey },
-      ],
-    });
 
     const treasuryOwner = new TreasuryOwnerSmartContract(
       treasuryOwnerPublicKey,
@@ -448,9 +390,7 @@ export class SqliteTreasuryOwnerService implements TreasuryOwnerService {
       },
     );
     const provedProposalTx = await proposalTx.prove();
-    const signedProposalTx = transactionSigner
-      ? await transactionSigner(provedProposalTx)
-      : provedProposalTx.sign(signingKeys);
+    const signedProposalTx = await transactionSigner(provedProposalTx);
     const proposalPendingTx = await this.sendTransaction(signedProposalTx, {
       wait,
     });
@@ -466,12 +406,10 @@ export class SqliteTreasuryOwnerService implements TreasuryOwnerService {
     options: VoteTreasuryProposalOptions,
   ): Promise<VoteTreasuryProposalResult> {
     const {
-      senderPrivateKey,
-      senderPublicKey: suppliedSenderPublicKey,
+      senderPublicKey,
       treasuryOwnerPublicKey,
       proposalPublicKey,
-      voterPrivateKey,
-      voterPublicKey: suppliedVoterPublicKey,
+      voterPublicKey,
       transactionSigner,
       vote,
       fee,
@@ -479,24 +417,6 @@ export class SqliteTreasuryOwnerService implements TreasuryOwnerService {
       memo,
       wait = true,
     } = options;
-
-    const senderPublicKey = resolveSigningPublicKey({
-      label: "Sender",
-      privateKey: senderPrivateKey,
-      publicKey: suppliedSenderPublicKey,
-    });
-    const voterPublicKey = resolveSigningPublicKey({
-      label: "Voter",
-      privateKey: voterPrivateKey,
-      publicKey: suppliedVoterPublicKey,
-    });
-    const signingKeys = requireInMemoryPrivateKeys({
-      transactionSigner,
-      keys: [
-        { label: "Sender", privateKey: senderPrivateKey },
-        { label: "Voter", privateKey: voterPrivateKey },
-      ],
-    });
 
     const treasuryOwner = new TreasuryOwnerSmartContract(
       treasuryOwnerPublicKey,
@@ -523,9 +443,7 @@ export class SqliteTreasuryOwnerService implements TreasuryOwnerService {
       },
     );
     const provedVoteTx = await voteTx.prove();
-    const signedVoteTx = transactionSigner
-      ? await transactionSigner(provedVoteTx)
-      : provedVoteTx.sign(signingKeys);
+    const signedVoteTx = await transactionSigner(provedVoteTx);
     const votePendingTx = await this.sendTransaction(signedVoteTx, {
       wait,
     });
@@ -540,8 +458,7 @@ export class SqliteTreasuryOwnerService implements TreasuryOwnerService {
     options: TallyVotesTreasuryProposalOptions,
   ): Promise<TallyVotesTreasuryProposalResult> {
     const {
-      senderPrivateKey,
-      senderPublicKey: suppliedSenderPublicKey,
+      senderPublicKey,
       transactionSigner,
       treasuryOwnerPublicKey,
       proposalPublicKey,
@@ -555,15 +472,6 @@ export class SqliteTreasuryOwnerService implements TreasuryOwnerService {
       wait = true,
     } = options;
 
-    const senderPublicKey = resolveSigningPublicKey({
-      label: "Sender",
-      privateKey: senderPrivateKey,
-      publicKey: suppliedSenderPublicKey,
-    });
-    const signingKeys = requireInMemoryPrivateKeys({
-      transactionSigner,
-      keys: [{ label: "Sender", privateKey: senderPrivateKey }],
-    });
     const treasuryOwner = new TreasuryOwnerSmartContract(
       treasuryOwnerPublicKey,
     );
@@ -596,9 +504,7 @@ export class SqliteTreasuryOwnerService implements TreasuryOwnerService {
       },
     );
     const provedTallyTx = await tallyTx.prove();
-    const signedTallyTx = transactionSigner
-      ? await transactionSigner(provedTallyTx)
-      : provedTallyTx.sign(signingKeys);
+    const signedTallyTx = await transactionSigner(provedTallyTx);
     const tallyPendingTx = await this.sendTransaction(signedTallyTx, {
       wait,
     });
@@ -613,10 +519,8 @@ export class SqliteTreasuryOwnerService implements TreasuryOwnerService {
     options: TransferToTreasuryOptions,
   ): Promise<TransferToTreasuryResult> {
     const {
-      senderPrivateKey,
-      senderPublicKey: suppliedSenderPublicKey,
-      fundingPrivateKey: maybeFundingPrivateKey,
-      fundingPublicKey: suppliedFundingPublicKey,
+      senderPublicKey,
+      fundingPublicKey,
       transactionSigner,
       treasuryOwnerPublicKey,
       amount,
@@ -625,17 +529,6 @@ export class SqliteTreasuryOwnerService implements TreasuryOwnerService {
       memo,
       wait = true,
     } = options;
-    const fundingPrivateKey = maybeFundingPrivateKey ?? senderPrivateKey;
-    const senderPublicKey = resolveSigningPublicKey({
-      label: "Sender",
-      privateKey: senderPrivateKey,
-      publicKey: suppliedSenderPublicKey,
-    });
-    const fundingPublicKey = resolveSigningPublicKey({
-      label: "Funding account",
-      privateKey: fundingPrivateKey,
-      publicKey: suppliedFundingPublicKey ?? suppliedSenderPublicKey,
-    });
 
     const treasuryOwner = new TreasuryOwnerSmartContract(
       treasuryOwnerPublicKey,
@@ -654,22 +547,8 @@ export class SqliteTreasuryOwnerService implements TreasuryOwnerService {
         await treasuryOwner.receive(amount);
       },
     );
-    const signers: PrivateKey[] = requireInMemoryPrivateKeys({
-      transactionSigner,
-      keys: [{ label: "Sender", privateKey: senderPrivateKey }],
-    });
-    if (!senderPublicKey.equals(fundingPublicKey).toBoolean()) {
-      signers.push(
-        ...requireInMemoryPrivateKeys({
-          transactionSigner,
-          keys: [{ label: "Funding account", privateKey: fundingPrivateKey }],
-        }),
-      );
-    }
     const provedTransferTx = await transferTx.prove();
-    const signedTransferTx = transactionSigner
-      ? await transactionSigner(provedTransferTx)
-      : provedTransferTx.sign(signers);
+    const signedTransferTx = await transactionSigner(provedTransferTx);
     const transferPendingTx = await this.sendTransaction(signedTransferTx, {
       wait,
     });
@@ -688,10 +567,8 @@ export class SqliteTreasuryOwnerService implements TreasuryOwnerService {
     options: EmergencyWithdrawOptions,
   ): Promise<EmergencyWithdrawResult> {
     const {
-      senderPrivateKey,
-      senderPublicKey: suppliedSenderPublicKey,
-      treasuryOwnerPrivateKey,
-      treasuryOwnerPublicKey: suppliedTreasuryOwnerPublicKey,
+      senderPublicKey,
+      treasuryOwnerPublicKey,
       transactionSigner,
       recipientPublicKey,
       amount,
@@ -700,16 +577,6 @@ export class SqliteTreasuryOwnerService implements TreasuryOwnerService {
       memo,
       wait = true,
     } = options;
-    const senderPublicKey = resolveSigningPublicKey({
-      label: "Sender",
-      privateKey: senderPrivateKey,
-      publicKey: suppliedSenderPublicKey,
-    });
-    const treasuryOwnerPublicKey = resolveSigningPublicKey({
-      label: "Treasury owner",
-      privateKey: treasuryOwnerPrivateKey,
-      publicKey: suppliedTreasuryOwnerPublicKey,
-    });
 
     if (amount.equals(UInt64.from(0)).toBoolean()) {
       throw new Error("Emergency withdrawal amount must be greater than zero.");
@@ -773,27 +640,7 @@ export class SqliteTreasuryOwnerService implements TreasuryOwnerService {
       },
     );
 
-    const signers = requireInMemoryPrivateKeys({
-      transactionSigner,
-      keys: [{ label: "Sender", privateKey: senderPrivateKey }],
-    });
-    if (!senderPublicKey.equals(treasuryOwnerPublicKey).toBoolean()) {
-      signers.push(
-        ...requireInMemoryPrivateKeys({
-          transactionSigner,
-          keys: [
-            {
-              label: "Treasury owner",
-              privateKey: treasuryOwnerPrivateKey,
-            },
-          ],
-        }),
-      );
-    }
-
-    const signedWithdrawalTx = transactionSigner
-      ? await transactionSigner(withdrawalTx)
-      : withdrawalTx.sign(signers);
+    const signedWithdrawalTx = await transactionSigner(withdrawalTx);
     const withdrawalPendingTx = await this.sendTransaction(signedWithdrawalTx, {
       wait,
     });
@@ -812,8 +659,7 @@ export class SqliteTreasuryOwnerService implements TreasuryOwnerService {
     options: ExecuteTreasuryProposalOptions,
   ): Promise<ExecuteTreasuryProposalResult> {
     const {
-      senderPrivateKey,
-      senderPublicKey: suppliedSenderPublicKey,
+      senderPublicKey,
       transactionSigner,
       treasuryOwnerPublicKey,
       proposalPublicKey,
@@ -824,15 +670,6 @@ export class SqliteTreasuryOwnerService implements TreasuryOwnerService {
       memo,
       wait = true,
     } = options;
-    const senderPublicKey = resolveSigningPublicKey({
-      label: "Sender",
-      privateKey: senderPrivateKey,
-      publicKey: suppliedSenderPublicKey,
-    });
-    const signingKeys = requireInMemoryPrivateKeys({
-      transactionSigner,
-      keys: [{ label: "Sender", privateKey: senderPrivateKey }],
-    });
     const treasuryOwner = new TreasuryOwnerSmartContract(
       treasuryOwnerPublicKey,
     );
@@ -893,9 +730,7 @@ export class SqliteTreasuryOwnerService implements TreasuryOwnerService {
       },
     );
     const provedExecuteTx = await executeTx.prove();
-    const signedExecuteTx = transactionSigner
-      ? await transactionSigner(provedExecuteTx)
-      : provedExecuteTx.sign(signingKeys);
+    const signedExecuteTx = await transactionSigner(provedExecuteTx);
     const executePendingTx = await this.sendTransaction(signedExecuteTx, {
       wait,
     });

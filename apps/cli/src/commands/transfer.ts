@@ -13,9 +13,12 @@ import {
   minaNetworkIdOption,
   type MinaNetworkId,
 } from "./mina-instance.js";
-import { signTxWithLedger } from "../ledger/ledger-signing.js";
-
-type SignerMode = "in-memory" | "ledger";
+import {
+  configureSigningOptions,
+  createTransactionSigner,
+  resolveSigningAccount,
+  type SignerMode,
+} from "../ledger/transaction-signer.js";
 
 function parsePrivateKey(value: string): PrivateKey {
   return PrivateKey.fromBase58(value);
@@ -65,48 +68,33 @@ async function readAccountSnapshot(
 }
 
 export async function transfer(options: TransferCommandOptions): Promise<void> {
+  const sender = resolveSigningAccount({
+    signer: options.signer,
+    label: "Sender",
+    privateKey: options.senderPrivateKey,
+    publicKey: options.senderPublicKey,
+    ledgerAccountIndex: options.senderLedgerAccountIndex,
+  });
+  const funding = resolveSigningAccount({
+    signer: options.signer,
+    label: "Funding account",
+    privateKey: options.fundingPrivateKey ?? sender.privateKey,
+    publicKey:
+      options.fundingPublicKey ??
+      (options.fundingPrivateKey ? undefined : sender.publicKey),
+    ledgerAccountIndex: (options.fundingPublicKey ?? sender.publicKey)
+      .equals(sender.publicKey)
+      .toBoolean()
+      ? (options.fundingLedgerAccountIndex ?? sender.ledgerAccountIndex)
+      : options.fundingLedgerAccountIndex,
+  });
+  const transactionSigner = createTransactionSigner(
+    [sender, funding],
+    options.networkId,
+  );
+  const senderPublicKey = sender.publicKey;
+  const fundingPublicKey = funding.publicKey;
   configureMinaNetwork(options.minaNodeUrl, options.networkId);
-
-  const senderPublicKey =
-    options.signer === "ledger"
-      ? options.senderPublicKey
-      : options.senderPrivateKey?.toPublicKey();
-  if (!senderPublicKey) {
-    throw new Error(
-      options.signer === "ledger"
-        ? "--sender-public-key is required when --signer=ledger."
-        : "--sender-private-key is required when --signer=in-memory.",
-    );
-  }
-  if (
-    options.signer === "ledger" &&
-    options.senderLedgerAccountIndex === undefined
-  ) {
-    throw new Error(
-      "--sender-ledger-account-index is required when --signer=ledger.",
-    );
-  }
-  const fundingPrivateKey =
-    options.fundingPrivateKey ?? options.senderPrivateKey;
-  const fundingPublicKey =
-    options.signer === "ledger"
-      ? (options.fundingPublicKey ?? senderPublicKey)
-      : fundingPrivateKey?.toPublicKey();
-  if (!fundingPublicKey) {
-    throw new Error(
-      "--funding-private-key is invalid without an in-memory sender private key.",
-    );
-  }
-  const fundingLedgerAccountIndex = senderPublicKey
-    .equals(fundingPublicKey)
-    .toBoolean()
-    ? options.senderLedgerAccountIndex
-    : options.fundingLedgerAccountIndex;
-  if (options.signer === "ledger" && fundingLedgerAccountIndex === undefined) {
-    throw new Error(
-      "--funding-ledger-account-index is required for a different Ledger funding account.",
-    );
-  }
   const [senderSnapshot, fundingSnapshot, recipientSnapshot] =
     await Promise.all([
       readAccountSnapshot(senderPublicKey),
@@ -146,21 +134,7 @@ export async function transfer(options: TransferCommandOptions): Promise<void> {
     },
   );
 
-  const signedTransaction =
-    options.signer === "ledger"
-      ? await signTxWithLedger(
-          transaction,
-          new Map([
-            [senderPublicKey.toBase58(), options.senderLedgerAccountIndex!],
-            [fundingPublicKey.toBase58(), fundingLedgerAccountIndex!],
-          ]),
-          options.networkId,
-        )
-      : transaction.sign(
-          senderPublicKey.equals(fundingPublicKey).toBoolean()
-            ? [options.senderPrivateKey!]
-            : [options.senderPrivateKey!, fundingPrivateKey!],
-        );
+  const signedTransaction = await transactionSigner(transaction);
 
   let pendingTransaction;
   try {
@@ -202,7 +176,7 @@ export async function transfer(options: TransferCommandOptions): Promise<void> {
 }
 
 export default function transferCommandFactory(program: Command) {
-  program
+  const command = program
     .command("transfer")
     .description("Transfer MINA from a funding account to a recipient")
     .addOption(
@@ -301,4 +275,18 @@ export default function transferCommandFactory(program: Command) {
         .default(true),
     )
     .action(transfer);
+  configureSigningOptions(command, [
+    {
+      privateKey: "senderPrivateKey",
+      publicKey: "senderPublicKey",
+      ledgerAccountIndex: "senderLedgerAccountIndex",
+    },
+    {
+      privateKey: "fundingPrivateKey",
+      publicKey: "fundingPublicKey",
+      ledgerAccountIndex: "fundingLedgerAccountIndex",
+      optionalInMemory: true,
+      optionalLedger: true,
+    },
+  ]);
 }

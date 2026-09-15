@@ -1,4 +1,4 @@
-import type { PrivateKey, PublicKey, UInt64, VerificationKey } from "o1js";
+import type { PublicKey, UInt64, VerificationKey } from "o1js";
 import type { MultisigSignatures } from "../provable/contracts/treasury-pause-controller/multisig-signatures.js";
 import type { TransactionSigner } from "./transaction-signing.js";
 
@@ -13,11 +13,9 @@ export interface CompilePauseControllerResult {
 
 export interface DeployPauseControllerOptions {
   minaNodeUrl: string;
-  senderPrivateKey?: PrivateKey;
-  senderPublicKey?: PublicKey;
-  pauseControllerPrivateKey?: PrivateKey;
-  pauseControllerPublicKey?: PublicKey;
-  transactionSigner?: TransactionSigner;
+  senderPublicKey: PublicKey;
+  pauseControllerPublicKey: PublicKey;
+  transactionSigner: TransactionSigner;
   multisigParticipantsPublicKeys: PublicKey[];
   fee?: UInt64;
   nonce?: number;
@@ -32,13 +30,15 @@ export interface DeployPauseControllerResult {
 
 export interface PauseTreasuryOptions {
   minaNodeUrl: string;
-  senderPrivateKey?: PrivateKey;
-  senderPublicKey?: PublicKey;
-  transactionSigner?: TransactionSigner;
+  senderPublicKey: PublicKey;
+  transactionSigner: TransactionSigner;
   pauseControllerPublicKey: PublicKey;
   multisigParticipantsPublicKeys: PublicKey[];
   signatures: MultisigSignatures;
+  /** Fee-payer account nonce. Defaults to the current account nonce. */
   nonce?: number;
+  /** Controller nonce signed by the multisig. Defaults to the current controller nonce. */
+  controllerNonce?: number;
   fee?: UInt64;
   memo?: string;
   wait?: boolean;
@@ -53,13 +53,15 @@ export interface PauseTreasuryResult {
 
 export interface UnpauseTreasuryOptions {
   minaNodeUrl: string;
-  senderPrivateKey?: PrivateKey;
-  senderPublicKey?: PublicKey;
-  transactionSigner?: TransactionSigner;
+  senderPublicKey: PublicKey;
+  transactionSigner: TransactionSigner;
   pauseControllerPublicKey: PublicKey;
   multisigParticipantsPublicKeys: PublicKey[];
   signatures: MultisigSignatures;
+  /** Fee-payer account nonce. Defaults to the current account nonce. */
   nonce?: number;
+  /** Controller nonce signed by the multisig. Defaults to the current controller nonce. */
+  controllerNonce?: number;
   fee?: UInt64;
   memo?: string;
   wait?: boolean;
@@ -74,15 +76,17 @@ export interface UnpauseTreasuryResult {
 
 export interface TogglePauseProposalOptions {
   minaNodeUrl: string;
-  senderPrivateKey?: PrivateKey;
-  senderPublicKey?: PublicKey;
-  transactionSigner?: TransactionSigner;
+  senderPublicKey: PublicKey;
+  transactionSigner: TransactionSigner;
   treasuryOwnerPublicKey: PublicKey;
   pauseControllerPublicKey: PublicKey;
   proposalPublicKey: PublicKey;
   multisigParticipantsPublicKeys: PublicKey[];
   signatures: MultisigSignatures;
+  /** Fee-payer account nonce. Defaults to the current account nonce. */
   nonce?: number;
+  /** Controller nonce signed by the multisig. Defaults to the current controller nonce. */
+  controllerNonce?: number;
   fee?: UInt64;
   memo?: string;
   wait?: boolean;
@@ -98,14 +102,16 @@ export interface TogglePauseProposalResult {
 
 export interface RotateMultisigKeysOptions {
   minaNodeUrl: string;
-  senderPrivateKey?: PrivateKey;
-  senderPublicKey?: PublicKey;
-  transactionSigner?: TransactionSigner;
+  senderPublicKey: PublicKey;
+  transactionSigner: TransactionSigner;
   pauseControllerPublicKey: PublicKey;
   currentMultisigParticipantsPublicKeys: PublicKey[];
   signatures: MultisigSignatures;
   newMultisigParticipantsPublicKeys: PublicKey[];
+  /** Fee-payer account nonce. Defaults to the current account nonce. */
   nonce?: number;
+  /** Controller nonce signed by the multisig. Defaults to the current controller nonce. */
+  controllerNonce?: number;
   fee?: UInt64;
   memo?: string;
   wait?: boolean;

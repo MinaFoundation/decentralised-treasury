@@ -7,8 +7,12 @@ import {
 } from "@repo/sdk/src/provable/contracts/treasury-pause-controller/multisig-signatures.js";
 import { signFieldWithLedger } from "../ledger/ledger-signing.js";
 import { parseIntOption } from "./option-parsers.js";
-
-type SignerMode = "in-memory" | "ledger";
+import {
+  configureSigningOptions,
+  logWaitingForSignatures,
+  resolveSigningAccount,
+  type SignerMode,
+} from "../ledger/transaction-signer.js";
 
 interface BaseSignOptions {
   multisigParticipantsPublicKeys: PublicKey[];
@@ -73,17 +77,6 @@ function parseSignerPrivateKey(value: string): PrivateKey {
   return PrivateKey.fromBase58(value);
 }
 
-function ledgerSignerPublicKey(explicitPublicKey?: PublicKey): PublicKey {
-  if (explicitPublicKey) return explicitPublicKey;
-  const value = process.env.LEDGER_SIGNER_PUBLIC_KEY?.trim();
-  if (!value) {
-    throw new Error(
-      "LEDGER_SIGNER_PUBLIC_KEY is required when --signer=ledger.",
-    );
-  }
-  return PublicKey.fromBase58(value);
-}
-
 async function buildSignaturesResult(
   type: string,
   options: BaseSignOptions,
@@ -93,18 +86,14 @@ async function buildSignaturesResult(
   const participantPublicKeyStrings =
     options.multisigParticipantsPublicKeys.map((pk) => pk.toBase58());
 
-  const signerPublicKey =
-    options.signer === "ledger"
-      ? ledgerSignerPublicKey(options.ledgerSignerPublicKey)
-      : options.multisigSignerPrivateKey?.toPublicKey();
-  if (!signerPublicKey) {
-    throw new Error(
-      "--multisig-signer-private-key is required when --signer=in-memory.",
-    );
-  }
-  if (options.signer === "ledger" && options.ledgerAccountIndex === undefined) {
-    throw new Error("--ledger-account-index is required when --signer=ledger.");
-  }
+  const account = resolveSigningAccount({
+    signer: options.signer,
+    label: "Multisig signer",
+    privateKey: options.multisigSignerPrivateKey,
+    publicKey: options.ledgerSignerPublicKey,
+    ledgerAccountIndex: options.ledgerAccountIndex,
+  });
+  const signerPublicKey = account.publicKey;
   const signerPublicKeyBase58 = signerPublicKey.toBase58();
   const signerParticipantIndex = participantPublicKeyStrings.indexOf(
     signerPublicKeyBase58,
@@ -115,14 +104,18 @@ async function buildSignaturesResult(
     );
   }
 
+  console.error(
+    `[multisig-sign:${type}] Signing hash: ${dataHash.toString()} (publicKey=${signerPublicKeyBase58}).`,
+  );
+  logWaitingForSignatures(account.signer);
   const signature =
-    options.signer === "ledger"
+    account.signer === "ledger"
       ? await signFieldWithLedger(
           dataHash,
           signerPublicKey,
-          options.ledgerAccountIndex!,
+          account.ledgerAccountIndex,
         )
-      : MultisigSignature.create(options.multisigSignerPrivateKey!, [dataHash]);
+      : MultisigSignature.create(account.privateKey, [dataHash]);
 
   const multisigCommitment = MultisigSignatures.createCommitment(
     options.multisigParticipantsPublicKeys,
@@ -213,7 +206,7 @@ export default function multisigSignCommandFactory(program: Command) {
     .command("multisig-sign")
     .description("Sign pause-controller multisig messages");
 
-  const baseOptions = (subcommand: Command) =>
+  const baseOptions = (subcommand: Command) => {
     subcommand
       .addOption(
         new Option("--signer <signer>", "Signing implementation")
@@ -260,6 +253,15 @@ export default function multisigSignCommandFactory(program: Command) {
           .argParser(parseIntOption)
           .makeOptionMandatory(),
       );
+    configureSigningOptions(subcommand, [
+      {
+        privateKey: "multisigSignerPrivateKey",
+        publicKey: "ledgerSignerPublicKey",
+        ledgerAccountIndex: "ledgerAccountIndex",
+      },
+    ]);
+    return subcommand;
+  };
 
   baseOptions(
     command

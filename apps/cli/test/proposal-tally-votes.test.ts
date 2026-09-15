@@ -1,3 +1,4 @@
+import { createInMemoryTransactionSigner } from "@repo/sdk/src/services/transaction-signing.js";
 import assert from "node:assert";
 import { before, describe, it } from "node:test";
 import { type ChildProcess } from "node:child_process";
@@ -325,14 +326,19 @@ describe("proposal tally votes prep", { concurrency: 1 }, () => {
     });
     const deployResult = await service.deploy({
       minaNodeUrl: MINA_NODE_URL,
-      senderPrivateKey,
-      treasuryOwnerPrivateKey,
-      pauseControllerPrivateKey,
+      senderPublicKey: senderPrivateKey.toPublicKey(),
+      treasuryOwnerPublicKey: treasuryOwnerPrivateKey.toPublicKey(),
+      pauseControllerPublicKey: pauseControllerPrivateKey.toPublicKey(),
       treasuryDeployedAtSlot: UInt32.from(treasuryDeployedAtSlot),
       multisigParticipantsPublicKeys,
       allowDeployToExistingAccount: true,
       fee: TX_FEE,
       wait: true,
+      transactionSigner: createInMemoryTransactionSigner([
+        senderPrivateKey,
+        treasuryOwnerPrivateKey,
+        pauseControllerPrivateKey,
+      ]),
     });
     const treasuryOwnerPublicKey = PublicKey.fromBase58(
       deployResult.treasuryOwnerAddress,
@@ -350,15 +356,19 @@ describe("proposal tally votes prep", { concurrency: 1 }, () => {
     });
     const createResult = await service.createProposal({
       minaNodeUrl: MINA_NODE_URL,
-      senderPrivateKey,
+      senderPublicKey: senderPrivateKey.toPublicKey(),
       treasuryOwnerPublicKey,
-      proposalPrivateKey,
+      proposalPublicKey: proposalPrivateKey.toPublicKey(),
       proposalLifecycleId: PROPOSAL_LIFECYCLE_ID,
       recipientPublicKey,
       amount: PROPOSAL_AMOUNT,
       proposalZkappUri: PROPOSAL_ZKAPP_URI,
       fee: TX_FEE,
       wait: true,
+      transactionSigner: createInMemoryTransactionSigner([
+        senderPrivateKey,
+        proposalPrivateKey,
+      ]),
     });
     assert.strictEqual(createResult.proposalAddress, proposalPublicKey.toBase58());
 
@@ -395,13 +405,14 @@ describe("proposal tally votes prep", { concurrency: 1 }, () => {
 
       const voteResult = await service.voteProposal({
         minaNodeUrl: MINA_NODE_URL,
-        senderPrivateKey: voterPrivateKey,
+        senderPublicKey: voterPrivateKey.toPublicKey(),
         treasuryOwnerPublicKey,
         proposalPublicKey,
-        voterPrivateKey,
+        voterPublicKey: voterPrivateKey.toPublicKey(),
         vote,
         fee: TX_FEE,
         wait: true,
+        transactionSigner: createInMemoryTransactionSigner([voterPrivateKey]),
       });
       assert.strictEqual(voteResult.proposalAddress, proposalPublicKey.toBase58());
       assert(voteResult.voteTxHash, "expected vote transaction hash");

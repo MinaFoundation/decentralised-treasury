@@ -47,6 +47,29 @@ interface LedgerAccount {
 
 export type LedgerAccountIndices = ReadonlyMap<string, number>;
 
+export type LedgerSigningProgress =
+  | {
+      type: "transaction-commitments";
+      networkId: NetworkId;
+      commitment: string;
+      fullCommitment: string;
+    }
+  | {
+      type: "account-verification-started" | "account-verified";
+      accountIndex: number;
+      publicKey: string;
+    }
+  | {
+      type: "signature-requested" | "signature-verified";
+      accountIndex: number;
+      publicKey: string;
+      hash: string;
+    };
+
+export type LedgerSigningProgressHandler = (
+  progress: LedgerSigningProgress,
+) => void;
+
 function responseError(
   operation: string,
   response: { returnCode: string; message?: string; statusText?: string },
@@ -115,6 +138,7 @@ async function resolveLedgerAccounts(
   ledger: LedgerSigningClient,
   expectedPublicKeys: ReadonlySet<string>,
   accountIndices: LedgerAccountIndices,
+  onProgress?: LedgerSigningProgressHandler,
 ): Promise<Map<string, LedgerAccount>> {
   const found = new Map<string, LedgerAccount>();
 
@@ -126,6 +150,11 @@ async function resolveLedgerAccounts(
       );
     }
     validateAccountIndex(accountIndex);
+    onProgress?.({
+      type: "account-verification-started",
+      accountIndex,
+      publicKey: expectedPublicKey,
+    });
     const response = await ledger.getAddress(accountIndex, true);
     if (response.returnCode !== "9000" || !response.publicKey) {
       throw responseError("address request", response);
@@ -139,6 +168,11 @@ async function resolveLedgerAccounts(
       accountIndex,
       publicKey: PublicKey.fromBase58(expectedPublicKey),
     });
+    onProgress?.({
+      type: "account-verified",
+      accountIndex,
+      publicKey: expectedPublicKey,
+    });
   }
 
   return found;
@@ -149,7 +183,14 @@ async function signFieldAtAccount(
   account: LedgerAccount,
   field: Field,
   networkId: number,
+  onProgress?: LedgerSigningProgressHandler,
 ): Promise<Signature> {
+  onProgress?.({
+    type: "signature-requested",
+    accountIndex: account.accountIndex,
+    publicKey: account.publicKey.toBase58(),
+    hash: field.toString(),
+  });
   const response = await ledger.signFieldElement(
     account.accountIndex,
     networkId,
@@ -190,6 +231,7 @@ export async function signTransactionWithLedgerClient(
   ledger: LedgerSigningClient,
   accountIndices: LedgerAccountIndices,
   requestedNetworkId?: NetworkId,
+  onProgress?: LedgerSigningProgressHandler,
 ): Promise<ReturnType<typeof Transaction.fromJSON>> {
   const command = JSON.parse(transaction.toJSON()) as ZkappCommandJson;
   const networkId = requestedNetworkId ?? activeNetworkId();
@@ -210,10 +252,17 @@ export async function signTransactionWithLedgerClient(
       );
     }
   }
+  onProgress?.({
+    type: "transaction-commitments",
+    networkId,
+    commitment: commitments.commitment.toString(),
+    fullCommitment: commitments.fullCommitment.toString(),
+  });
   const accounts = await resolveLedgerAccounts(
     ledger,
     ledgerPublicKeys,
     accountIndices,
+    onProgress,
   );
   const signatureCache = new Map<string, string>();
 
@@ -235,10 +284,17 @@ export async function signTransactionWithLedgerClient(
       account,
       field,
       ledgerNetworkId(networkId),
+      onProgress,
     );
     if (!verifyFieldSignature(signature, account.publicKey, field, networkId)) {
       throw new Error(`Ledger returned an invalid signature for ${publicKey}`);
     }
+    onProgress?.({
+      type: "signature-verified",
+      accountIndex: account.accountIndex,
+      publicKey,
+      hash: field.toString(),
+    });
     const encoded = signature.toBase58();
     signatureCache.set(cacheKey, encoded);
     return encoded;
@@ -279,23 +335,37 @@ export async function signFieldWithLedgerClient(
   ledger: LedgerSigningClient,
   expectedPublicKey: PublicKey,
   accountIndex: number,
+  onProgress?: LedgerSigningProgressHandler,
 ): Promise<Signature> {
   const publicKey = expectedPublicKey.toBase58();
   const accounts = await resolveLedgerAccounts(
     ledger,
     new Set([publicKey]),
     new Map([[publicKey, accountIndex]]),
+    onProgress,
   );
   const account = accounts.get(publicKey);
   if (!account) {
     throw new Error(`Ledger account index resolution failed for ${publicKey}`);
   }
 
-  const signature = await signFieldAtAccount(ledger, account, field, 0);
+  const signature = await signFieldAtAccount(
+    ledger,
+    account,
+    field,
+    0,
+    onProgress,
+  );
   if (!signature.verify(expectedPublicKey, [field]).toBoolean()) {
     throw new Error(
       `Ledger returned an invalid field signature for ${publicKey}`,
     );
   }
+  onProgress?.({
+    type: "signature-verified",
+    accountIndex,
+    publicKey,
+    hash: field.toString(),
+  });
   return signature;
 }

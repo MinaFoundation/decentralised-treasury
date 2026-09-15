@@ -25,7 +25,7 @@ import {
 } from "./mina-instance.js";
 import {
   addTransactionSignerOptions,
-  createLedgerTransactionSigner,
+  createTransactionSigner,
   resolveSigningAccount,
   type SignerMode,
 } from "../ledger/transaction-signer.js";
@@ -241,8 +241,7 @@ export async function deployTreasuryOwner(
     publicKey: options.pauseControllerPublicKey,
     ledgerAccountIndex: options.pauseControllerLedgerAccountIndex,
   });
-  const transactionSigner = createLedgerTransactionSigner(
-    options.signer,
+  const transactionSigner = createTransactionSigner(
     [sender, treasuryOwner, pauseController],
     options.networkId,
   );
@@ -272,16 +271,13 @@ export async function deployTreasuryOwner(
   configureMinaNetwork(options.minaNodeUrl, options.networkId);
 
   logger.info(
-    "[treasury-owner:deploy] submitting pause-controller and treasury-owner deployment transactions",
+    "[treasury-owner:deploy] preparing pause-controller and treasury-owner deployment transactions",
   );
   const deployStartedAt = Date.now();
   const result = await service.deploy({
     minaNodeUrl: options.minaNodeUrl,
-    senderPrivateKey: sender.privateKey,
     senderPublicKey: sender.publicKey,
-    treasuryOwnerPrivateKey: treasuryOwner.privateKey,
     treasuryOwnerPublicKey: treasuryOwner.publicKey,
-    pauseControllerPrivateKey: pauseController.privateKey,
     pauseControllerPublicKey: pauseController.publicKey,
     transactionSigner,
     treasuryDeployedAtSlot: options.treasuryDeployedAtSlot,
@@ -324,15 +320,16 @@ export async function transferToTreasury(
     signer: options.signer,
     label: "Funding account",
     privateKey: options.fundingPrivateKey ?? sender.privateKey,
-    publicKey: options.fundingPublicKey ?? sender.publicKey,
+    publicKey:
+      options.fundingPublicKey ??
+      (options.fundingPrivateKey ? undefined : sender.publicKey),
     ledgerAccountIndex: (options.fundingPublicKey ?? sender.publicKey)
       .equals(sender.publicKey)
       .toBoolean()
       ? (options.fundingLedgerAccountIndex ?? sender.ledgerAccountIndex)
       : options.fundingLedgerAccountIndex,
   });
-  const transactionSigner = createLedgerTransactionSigner(
-    options.signer,
+  const transactionSigner = createTransactionSigner(
     [sender, funding],
     options.networkId,
   );
@@ -345,9 +342,7 @@ export async function transferToTreasury(
   configureMinaNetwork(options.minaNodeUrl, options.networkId);
   const result = await service.transferToTreasury({
     minaNodeUrl: options.minaNodeUrl,
-    senderPrivateKey: sender.privateKey,
     senderPublicKey: sender.publicKey,
-    fundingPrivateKey: funding.privateKey,
     fundingPublicKey: funding.publicKey,
     transactionSigner,
     treasuryOwnerPublicKey: options.treasuryOwnerPublicKey,
@@ -378,8 +373,7 @@ export async function emergencyWithdraw(
     publicKey: options.treasuryOwnerPublicKey,
     ledgerAccountIndex: options.treasuryOwnerLedgerAccountIndex,
   });
-  const transactionSigner = createLedgerTransactionSigner(
-    options.signer,
+  const transactionSigner = createTransactionSigner(
     [sender, treasuryOwner],
     options.networkId,
   );
@@ -390,9 +384,7 @@ export async function emergencyWithdraw(
   configureMinaNetwork(options.minaNodeUrl, options.networkId);
   const result = await service.emergencyWithdraw({
     minaNodeUrl: options.minaNodeUrl,
-    senderPrivateKey: sender.privateKey,
     senderPublicKey: sender.publicKey,
-    treasuryOwnerPrivateKey: treasuryOwner.privateKey,
     treasuryOwnerPublicKey: treasuryOwner.publicKey,
     transactionSigner,
     recipientPublicKey: options.recipientPublicKey,
@@ -630,7 +622,12 @@ export default function treasuryOwnerCommandFactory(program: Command) {
     .action(transferToTreasury);
   addTransactionSignerOptions(fundCommand, [
     { role: "sender", label: "Sender" },
-    { role: "funding", label: "Funding account" },
+    {
+      role: "funding",
+      label: "Funding account",
+      optionalInMemory: true,
+      optionalLedger: true,
+    },
   ]);
 
   const emergencyWithdrawCommand = command

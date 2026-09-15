@@ -6,6 +6,7 @@ import {
   signFieldWithLedgerClient,
   signTransactionWithLedgerClient,
 } from "@repo/sdk/src/signing/ledger-signing.js";
+import { logLedgerSigningProgress } from "./signing-progress.js";
 
 type LedgerNetworkId = "mainnet" | "devnet" | "testnet";
 
@@ -18,11 +19,14 @@ async function withLedger<T>(
       default: typeof import("@ledgerhq/hw-transport-node-hid").default;
     }
   ).default;
+  console.error("[ledger] Connecting to the Ledger device.");
   const transport = await TransportNodeHid.open(null);
   try {
+    console.error("[ledger] Connected to the Ledger device.");
     return await operation(new MinaApp(transport));
   } finally {
     await transport.close();
+    console.error("[ledger] Connection closed.");
   }
 }
 
@@ -38,6 +42,7 @@ export async function signTxWithLedger(
       ledger,
       accountIndices,
       networkId,
+      logLedgerSigningProgress,
     ),
   );
 }
@@ -49,6 +54,12 @@ export async function signFieldWithLedger(
   accountIndex: number,
 ) {
   return await withLedger((ledger) =>
-    signFieldWithLedgerClient(field, ledger, expectedPublicKey, accountIndex),
+    signFieldWithLedgerClient(
+      field,
+      ledger,
+      expectedPublicKey,
+      accountIndex,
+      logLedgerSigningProgress,
+    ),
   );
 }
