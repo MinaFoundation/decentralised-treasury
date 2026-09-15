@@ -32,6 +32,7 @@ RUN mkdir -p /pnpm && chown -R node:node /app /pnpm
 USER node
 
 COPY --chown=node:node package.json pnpm-lock.yaml pnpm-workspace.yaml turbo.json ./
+COPY --chown=node:node patches/ patches/
 COPY --chown=node:node apps/api/package.json apps/api/package.json
 COPY --chown=node:node apps/backoffice/package.json apps/backoffice/package.json
 COPY --chown=node:node apps/cli/package.json apps/cli/package.json

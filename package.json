@@ -71,6 +71,11 @@
     "typescript": "5.9.2"
   },
   "packageManager": "pnpm@9.0.0",
+  "pnpm": {
+    "patchedDependencies": {
+      "@ledgerhq/hw-transport-webhid@6.36.0": "patches/@ledgerhq__hw-transport-webhid@6.36.0.patch"
+    }
+  },
   "redisMemoryServer": {
     "disablePostinstall": "1"
   },
