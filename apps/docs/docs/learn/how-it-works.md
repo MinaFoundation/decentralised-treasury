@@ -6,8 +6,13 @@ audience: user
 page_kind: concept
 ---
 
-The treasury uses Mina account state for decisions and fund movements.
-It uses off-chain services to prepare proofs and present data.
+A Treasury decision crosses two parts of the system. Mina account state controls
+the decision and the movement of funds. Off-chain services prepare proofs and
+make the same activity easier to read.
+
+If terms such as zkApp, staking snapshot, or content commitment are new to
+you, read [Mina basics](foundations/mina-basics.md) and
+[The Treasury model](foundations/treasury-model.md) first.
 
 ```mermaid
 flowchart LR

@@ -7,9 +7,10 @@ page_kind: navigation
 
 # Infrastructure Runbooks
 
-Use this library to deploy the Mina network services and the treasury stack to
-Kubernetes. Complete the procedures in the listed order. Each procedure
-contains its prerequisites, configuration, commands, checks, and remedies.
+These runbooks take you from an empty Kubernetes environment to an operational
+Mina network and Treasury stack. Follow them in order because each procedure
+produces inputs that the next procedure needs. Every page includes its
+prerequisites, commands, checks, and remedies.
 
 These pages do not replace the files in `devops/runbooks`. Those files are the
 source procedures. The documentation generator copies each complete README and
@@ -23,9 +24,9 @@ Use the procedures with the repository and chart revisions that they name. Do
 not use an older CLI build for a command that a procedure introduces.
 
 Use [Configure the Treasury](../lifecycle/configure-the-treasury.md) to select
-policy values and contract configuration. Use
-[Service Procedures](../services/service-operations.md) for Docker Compose.
-Use this runbook library for Kubernetes execution.
+policy values and contract configuration. Use the
+[Compose live-testnet procedure](../deployment/compose-testnet.md) for Docker
+Compose. Use this runbook library for Kubernetes execution.
 
 :::warning Use the source update process
 

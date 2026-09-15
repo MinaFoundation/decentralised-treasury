@@ -1,20 +1,23 @@
 # DevOps Reference
 
-This directory contains two deployment paths and their operator support files.
-Use `devops/runbooks/README.md` for the Kubernetes infrastructure path. Use
-`devops/TESTNET.md` for the Compose testnet path. For the fastest local
-simulator walkthrough, use `DEMO.md`.
+This directory contains two operator deployment paths. Use
+`devops/TESTNET.md` for a long-running Compose host connected to a live Mina
+testnet. Use `devops/runbooks/README.md` for Kubernetes infrastructure.
+
+The o1js simulator, Mina-repository single node, and Docker Lightnet are
+development networks. Their procedures are in
+`apps/docs/docs/developer/local-development/`.
 
 ## Which Document To Use
 
-| Goal                                                              | Start here                           |
-| ----------------------------------------------------------------- | ------------------------------------ |
-| Provision the complete Kubernetes infrastructure                  | `devops/runbooks/README.md`          |
-| Run the local simulator demo                                      | `DEMO.md`                            |
-| Run the Compose stack against a Mina testnet node                 | `devops/TESTNET.md`                  |
-| Start a local Mina daemon and archive node                        | `devops/TESTNET_MINA_NODE.md`        |
-| Inspect Compose services, ports, smoke tests, and troubleshooting | this file                            |
-| Develop packages directly on the host                             | package READMEs and `.env.dev` files |
+| Goal                                                              | Start here                    |
+| ----------------------------------------------------------------- | ----------------------------- |
+| Provision the complete Kubernetes infrastructure                  | `devops/runbooks/README.md`   |
+| Run the local simulator demo                                      | `DEMO.md`                     |
+| Operate Compose on a long-running live-testnet host               | `devops/TESTNET.md`           |
+| Start a local Mina single-node development network                | `devops/TESTNET_MINA_NODE.md` |
+| Inspect Compose services, ports, smoke tests, and troubleshooting | this file                     |
+| Develop packages directly on the host                             | Developer documentation       |
 
 ## What Compose Runs
 
@@ -54,7 +57,11 @@ http://127.0.0.1:4102 -> processor API
 ```
 
 The public HTTPS profile is the only profile intended to bind `80` and `443` on
-`0.0.0.0`.
+`0.0.0.0`. It publishes the user web application and APIs. It does not publish
+Backoffice.
+
+Keep Backoffice on loopback. Use an authenticated SSH tunnel when an operator
+needs browser access from another machine.
 
 ## Files In This Directory
 
@@ -132,6 +139,7 @@ pnpm testnet:down
 pnpm testnet:reset
 pnpm testnet:logs
 pnpm testnet:config
+pnpm testnet:status
 ```
 
 Add the opt-in `proving` profile (Redis + proving-worker cluster +
@@ -187,6 +195,10 @@ Then run:
 pnpm testnet:up:public
 ```
 
+This command selects the public and loopback proxy profiles. Only the user
+application and API routes are public. Backoffice remains on the loopback
+proxy for SSH-tunnel access.
+
 Use the staging CA first if you need a certificate dry run:
 
 ```env
@@ -206,8 +218,8 @@ The host path comes from `SQLITE_DATA_HOST_PATH` in `devops/.env.<family>`.
 The generated defaults are:
 
 ```text
-../.data/testnet-sqlite
-../.data/local-blockchain-sqlite
+testnet:           /opt/mina/.treasury-sqlite
+local blockchain: ../.data/local-blockchain-sqlite
 ```
 
 For each lifecycle, the file name must be `<lifecycleId>.sqlite`. If you replace
@@ -225,9 +237,29 @@ docker compose \
   restart api processor
 ```
 
-The detailed ledger export, tracing, proof, and handoff sequence belongs in the
-operator flow that needs it. Keep the first stack startup path separate from
-proof-worker setup.
+The voting-ledger scheduler reads a second persistent host directory from
+`STAKING_LEDGERS_HOST_PATH`. An external snapshot producer must write this
+content-addressed input:
+
+```text
+<STAKING_LEDGERS_HOST_PATH>/<ledgerHash>.json
+<STAKING_LEDGERS_HOST_PATH>/lifecycle-<id>.hash
+```
+
+The generated testnet default is
+`/opt/mina/.treasury-staking-ledgers`. Keep this path outside the repository
+checkout and Mina's resettable `.mina-network` directory.
+
+Write the JSON payload first. Verify that its root is `<ledgerHash>`. Publish
+the lifecycle pointer last. The scheduler mounts this directory read-only and
+does not export ledgers from Mina.
+
+After `<lifecycleId>.sqlite.done` exists, the pointer is immutable during
+normal polling. The scheduler reports a changed pointer and skips it. Use the
+stopped rebuild in the operator proving guide for an approved correction.
+
+Use `devops/TESTNET.md` for ledger staging, tracing, proving, and handoff. Keep
+the first stack startup path separate from proof-worker setup.
 
 ## Local Validation
 

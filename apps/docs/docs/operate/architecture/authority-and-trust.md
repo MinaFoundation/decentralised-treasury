@@ -97,10 +97,11 @@ Repair the data path, and then reprocess the canonical history.
 
 ### Lifecycle SQLite and staking files
 
-The staking-ledger archive supplies lifecycle input files.
-The scheduler checks the computed root against the hash in the file name.
+The snapshot source supplies one exact lifecycle payload. The normalized
+input has a hash-named JSON file and a `lifecycle-<id>.hash` pointer.
+The scheduler checks the computed root against the hash in that pointer.
 
-The operator must still bind the file to the correct lifecycle and network.
+The operator must still bind the pointer to the correct lifecycle and network.
 Lifecycle SQLite is an input to proofs and API lookups.
 
 The Kubernetes provider names an archive with both its epoch and ledger hash.

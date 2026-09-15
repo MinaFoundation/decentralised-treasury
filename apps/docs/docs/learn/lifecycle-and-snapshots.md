@@ -6,8 +6,12 @@ audience: user
 page_kind: concept
 ---
 
-Treasury activity follows a lifecycle with four equal periods.
-Mina global slots determine the current period.
+The Treasury follows a fixed schedule with four equal periods. Mina global
+slots determine what you can do now and when the next action becomes available.
+
+Read [Mina basics](foundations/mina-basics.md) if global slots or account state
+are new terms. Read [Voting and proofs](foundations/voting-and-proofs.md) for
+the reason that the Treasury records a staking snapshot.
 
 ## The Four Periods
 
@@ -50,8 +54,9 @@ possible.
 
 ## Mina Epoch Alignment
 
-The supported scheduler configuration aligns one period with one Mina epoch.
-The operator sets `D` to one Mina epoch and sets `S` to an epoch start.
+The supported live-network operating convention aligns one period with one
+Mina epoch. The operator sets `D` to one Mina epoch and sets `S` to an epoch
+start.
 
 This alignment is an operator rule.
 The Treasury Owner contract does not check epoch alignment.
@@ -70,6 +75,31 @@ Later stake or delegation changes do not change that recorded snapshot.
 The contract does not check snapshot viability during creation.
 Before creation, verify that the exact ledger data is available.
 The ledger must contain the default-token Treasury Owner account with a nonzero balance.
+
+## The First Usable Snapshot After Deployment
+
+A newly funded Owner can have a positive current balance and still be absent from the active staking ledger.
+Its funding transaction does not rewrite a historical snapshot.
+The first usable Proposal needs a recorded ledger containing that Owner with a positive default-token balance.
+
+The startup sequence has these boundaries:
+
+| Stage                  | What must be established                                                                                                    |
+| ---------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| Schedule selection     | Before deployment, select an epoch-aligned start slot with enough time for funding and snapshot availability.               |
+| Deployment and funding | Mina includes the transactions and the current Owner balance is positive. This alone does not establish snapshot readiness. |
+| Snapshot availability  | An exported ledger matches the observed staking root and contains the positive Owner entry.                                 |
+| Proposal period        | The configured schedule is in a Proposal period, and the ledger used by creation is still verified and available.           |
+| Creation check         | The included Proposal records the same root. A changed root requires its own matching ledger check.                         |
+
+For an existing schedule, calculate each Proposal start as `S + 4 × D × L`.
+If the first eligible snapshot appears outside a Proposal period, use a later scheduled Proposal period.
+Verify that period's active snapshot again. Do not assume that a previously eligible file is still the recorded ledger.
+If the Owner entry is absent or zero, postpone creation and check a later authoritative snapshot.
+
+The start slot remains the deployed value. Funding cannot move an existing schedule.
+No fixed waiting time follows from the Treasury contracts; readiness depends on the target network's observed staking ledger.
+Ask the operator to confirm readiness before you commit a bond for a new deployment.
 
 ## Why the Snapshot Matters
 

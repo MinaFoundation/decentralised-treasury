@@ -1,0 +1,8 @@
+{
+  "label": "Local development",
+  "position": 1,
+  "link": {
+    "type": "doc",
+    "id": "developer/local-development/quickstart"
+  }
+}

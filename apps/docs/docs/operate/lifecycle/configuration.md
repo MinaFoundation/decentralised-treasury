@@ -7,8 +7,9 @@ page_kind: concept
 
 # Lifecycle Configuration
 
-Use [Configure the Treasury](configure-the-treasury.md) to select the lifecycle
-values. This page defines timing, epoch alignment, and snapshot selection.
+Lifecycle timing connects user actions, Mina epochs, snapshots, and proof
+work. This page explains that connection. Select the actual values in
+[Configure the Treasury](configure-the-treasury.md).
 
 The treasury uses four equal periods in each lifecycle. The default period
 duration is `7140` Mina slots. Under Mesa, one slot is `90` seconds. The
@@ -57,10 +58,10 @@ from the boundary when possible.
 
 ## Mina Epoch Alignment
 
-Epoch alignment is an Operator configuration requirement. The contract does
-not check it.
+Epoch alignment is the supported live-network operating convention. The
+contract does not check it.
 
-The supported scheduler configuration has these rules:
+The convention has these rules:
 
 - `D` equals one Mina epoch in slots.
 - `S` is the first slot of a Mina epoch.
@@ -69,7 +70,8 @@ Do not set `D=14280` only to preserve the former two-week wall-clock period.
 Under Mesa, that value spans two Mina epochs and does not fit the supported
 snapshot mapping.
 
-The scheduler calculates the required snapshot epoch as follows:
+The operator or external snapshot producer can plan the expected snapshot
+epoch as follows:
 
 ```text
 deployedEpoch = floor(S / D)
@@ -86,8 +88,12 @@ Proposal creation records two values from the transaction network state:
 - the `stakingEpochData` ledger hash;
 - the `stakingEpochData` total currency.
 
-The contract does not derive a snapshot epoch from `lifecycleId`. Correct epoch
-alignment lets the scheduler select the same staking ledger later.
+The contract does not derive a snapshot epoch from `lifecycleId`. The external
+snapshot producer must select the exact ledger that the Proposal records. It
+must publish that ledger before it publishes the lifecycle pointer.
+
+Epoch alignment makes the expected epoch predictable. The Proposal root and
+the verified payload remain authoritative.
 
 ## Start Slot Effects
 

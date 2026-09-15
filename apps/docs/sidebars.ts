@@ -3,9 +3,23 @@ import type { SidebarsConfig } from "@docusaurus/plugin-content-docs";
 const sidebars: SidebarsConfig = {
   userSidebar: [
     "learn/index",
+    "learn/overview",
+    "learn/quickstart",
+    "learn/check-your-deployment",
     {
       type: "category",
-      label: "Understand the Treasury",
+      label: "Start With The Foundations",
+      collapsed: false,
+      items: [
+        "learn/foundations/mina-basics",
+        "learn/foundations/treasury-model",
+        "learn/foundations/voting-and-proofs",
+        "learn/foundations/on-chain-and-off-chain",
+      ],
+    },
+    {
+      type: "category",
+      label: "Follow The Complete Flow",
       collapsed: false,
       items: [
         "learn/how-it-works",
@@ -16,7 +30,12 @@ const sidebars: SidebarsConfig = {
     {
       type: "category",
       label: "Choose an Interface",
-      items: ["learn/web-app", "learn/cli", "learn/web-app-screenshots"],
+      items: [
+        "learn/web-app",
+        "learn/signing-with-ledger-and-auro",
+        "learn/cli",
+        "learn/web-app-screenshots",
+      ],
     },
     {
       type: "category",
@@ -33,20 +52,37 @@ const sidebars: SidebarsConfig = {
       type: "category",
       label: "Verify and Respond",
       collapsed: false,
-      items: ["learn/verifiability-and-trust", "learn/pause-behavior"],
+      items: [
+        "learn/verifiability-and-trust",
+        "learn/verify-a-proposal",
+        "learn/pause-behavior",
+      ],
     },
     "learn/faq",
     "learn/glossary",
   ],
   operatorSidebar: [
     "operate/index",
+    "operate/overview",
+    "operate/quickstart",
     {
       type: "category",
-      label: "Operator Flow",
+      label: "Start With The Foundations",
+      collapsed: false,
+      items: [
+        "operate/foundations/what-you-operate",
+        "operate/foundations/lifecycle-and-proof-work",
+        "operate/foundations/state-and-reconciliation",
+      ],
+    },
+    {
+      type: "category",
+      label: "Run The Operator Flow",
       collapsed: false,
       items: [
         "operate/cli/prerequisites",
         "operate/operator-checklist",
+        "operate/deployment/compose-testnet",
         "operate/lifecycle/configure-the-treasury",
         "operate/deployment/deploy-the-treasury",
         "operate/lifecycle/ideal-lifecycle",
@@ -142,7 +178,95 @@ const sidebars: SidebarsConfig = {
         "operate/reference/events",
         "operate/reference/authorization-matrix",
         "operate/reference/environment-fields",
-        "operate/reference/developer-reference",
+      ],
+    },
+  ],
+  developerSidebar: [
+    "developer/index",
+    "developer/overview",
+    "developer/local-development/quickstart",
+    "developer/local-development/tools",
+    {
+      type: "category",
+      label: "Start With The Foundations",
+      collapsed: false,
+      items: [
+        "developer/foundations/repository-tour",
+        "developer/foundations/mina-o1js-and-proofs",
+        "developer/foundations/trace-a-treasury-change",
+      ],
+    },
+    {
+      type: "category",
+      label: "Local Development",
+      collapsed: false,
+      items: [
+        "developer/local-development/network-modes",
+        "developer/local-development/full-local-demo",
+        "developer/local-development/environment",
+        "developer/local-development/native-stack",
+        "developer/local-development/local-blockchain",
+        "developer/local-development/mina-single-node",
+        "developer/local-development/lightnet",
+      ],
+    },
+    {
+      type: "category",
+      label: "Architecture",
+      collapsed: false,
+      items: ["developer/architecture/system-overview"],
+    },
+    {
+      type: "category",
+      label: "Applications and Services",
+      collapsed: false,
+      items: [
+        "developer/apps/api-runtime",
+        "developer/apps/indexer-and-processor",
+        "developer/apps/web-app",
+        "developer/apps/backoffice",
+      ],
+    },
+    {
+      type: "category",
+      label: "Provable Layer",
+      collapsed: false,
+      items: [
+        "developer/provable/provable-overview",
+        "developer/provable/provable-architecture",
+        "developer/provable/provable-workflows",
+      ],
+    },
+    {
+      type: "category",
+      label: "Developer Operations",
+      items: [
+        "developer/operations/cli",
+        "developer/operations/proving-and-workers",
+        "developer/operations/deployments",
+        "developer/operations/container-images",
+      ],
+    },
+    {
+      type: "category",
+      label: "Quality and Maintenance",
+      collapsed: false,
+      items: [
+        "developer/testing",
+        "developer/troubleshooting",
+        "developer/security",
+        "developer/contributing",
+        "developer/documentation",
+      ],
+    },
+    {
+      type: "category",
+      label: "Developer Reference",
+      items: [
+        "developer/reference/packages",
+        "developer/reference/env-and-commands",
+        "developer/reference/api-routes",
+        "developer/reference/source-documents",
       ],
     },
   ],

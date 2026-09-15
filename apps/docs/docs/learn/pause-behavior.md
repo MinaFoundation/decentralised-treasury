@@ -6,8 +6,9 @@ audience: user
 page_kind: concept
 ---
 
-Pause controls let break-glass signers stop treasury activity during an emergency.
-They do not replace normal proposal voting.
+Pause controls give break-glass signers a way to stop normal Treasury activity
+during an emergency. They are separate from proposal voting and have important
+limits that every participant should understand.
 
 ## Global Treasury Pause
 

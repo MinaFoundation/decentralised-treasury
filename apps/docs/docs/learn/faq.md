@@ -11,6 +11,12 @@ page_kind: reference
 The system transforms a recorded Mina staking ledger into voting accounts keyed by delegate.
 This process gives each delegate key the aggregated default-token stake delegated to it.
 
+## Why Does My Funded Wallet Have No Voting Weight?
+
+The snapshot groups stake by delegate key. A funded account can delegate its weight to another key.
+A missing voting ledger can also prevent the application from showing weight.
+Use [Diagnose missing voting weight](vote.md#diagnose-missing-voting-weight) to distinguish these cases.
+
 ## Can I Vote More Than Once?
 
 The transaction can dispatch more than one action from the same voter key.
@@ -66,9 +72,8 @@ The total cap is `requestedAmount + floor(requestedAmount / 10)`.
 ## Who Can Submit Execution?
 
 The smart contract accepts any valid signed sender with the required inputs.
-The current web application enables execution only for the recorded proposal creator.
-
-Use the [CLI](./cli) when another sender must submit the transaction.
+The web application and CLI also accept any funded sender. The sender does not
+have to be the recorded Proposal creator.
 
 ## What Happens When Content Upload Fails?
 

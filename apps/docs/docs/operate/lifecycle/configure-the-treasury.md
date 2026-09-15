@@ -7,8 +7,9 @@ page_kind: procedure
 
 # Configure the Treasury
 
-Use this procedure before deployment. It selects the business rules and
-technical inputs. It also generates the environment files for one release.
+Before you deploy anything, bring the business rules and technical inputs into
+one consistent release configuration. This procedure guides that selection and
+generates the matching environment files.
 
 The result is one configuration baseline:
 

@@ -6,8 +6,10 @@ audience: user
 page_kind: concept
 ---
 
-The treasury combines on-chain rules, proofs, events, and application projections.
-Each part answers a different question.
+The Treasury shows the same activity through account state, proofs, events,
+and application pages. These views are related, but each one answers a
+different question. For an important decision, check the source that controls
+the fact you need.
 
 ## Mina Account State
 
@@ -59,6 +61,11 @@ The App API calculates the same hash before it stores the Markdown.
 
 This check detects content that does not match the commitment.
 It does not make the application database permanent public storage.
+
+## Complete The Direct Check
+
+Use [Verify a proposal](verify-a-proposal.md) for the complete content and state procedure.
+Confirm the [deployment identity](check-your-deployment.md) before selecting its endpoints.
 
 ## A Practical Check
 

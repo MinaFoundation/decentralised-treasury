@@ -23,6 +23,16 @@ From repo root (recommended):
 pnpm run cli -- <command> <subcommand> [options]
 ```
 
+## Prover Backend
+
+The CLI uses the native o1js prover backend by default, including CLI workers.
+It sets this default before o1js loads. An explicit `O1JS_BACKEND` value takes
+precedence. Set `O1JS_BACKEND=wasm` to use WebAssembly:
+
+```bash
+O1JS_BACKEND=wasm pnpm run cli -- treasury-owner compile
+```
+
 ## Ledger Signing
 
 Connect and unlock the Ledger device. Open the Mina app and enable blind
@@ -80,6 +90,19 @@ applicable `pause-controller` command to build and submit the transaction.
 
 For transaction commands, the Ledger only signs. The CLI sends the completed
 transaction to Mina after all required transaction signatures are present.
+
+The CLI prints the transaction ID before signing. This ID is separate from
+the signing commitment shown on Ledger. For each signature request, compare
+the CLI `Device hash` with the device's `hash` value before approval.
+Both values use 64 lowercase hexadecimal characters, including leading zeros.
+For example, the decimal field `12345` appears as
+`0000000000000000000000000000000000000000000000000000000000003039`.
+Different signature requests can use different commitments within one transaction.
+The CLI also prints each verified public key and Ledger account index.
+Verification messages appear only after the address or signature passes its check.
+Multisig commands first print their signing field in decimal. Ledger requests
+also show that field as a hexadecimal `Device hash` for comparison.
+These progress messages use stderr. Command results use stdout.
 
 Run the fast LocalBlockchain verification pipeline from the repository root:
 

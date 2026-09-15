@@ -1,9 +1,13 @@
-# Testnet Mina Node Runbook
+# Local Mina Single-Node Development Runbook
 
-This guide explains how to run a local Mina node and archive node for the decentralized treasury testnet flow. It covers the Mina-side setup only: starting the node, checking health, exporting the funded whale keypair, exporting the staking ledger, and keeping Mina epoch settings aligned with treasury lifecycle settings.
+This guide explains how to run a local Mina node and Archive process from a
+separate Mina repository checkout. It covers startup, health checks, funded
+account extraction, staking-ledger export, and lifecycle timing.
 
-For the full treasury deployment and Compose flow, see `TESTNET.md`. For a
-Kubernetes Mina daemon and Archive deployment, see
+This is a development network. It is not the long-running cloud Compose path in
+`TESTNET.md`. Use `apps/docs/docs/developer/local-development/mina-single-node.md`
+for the published Treasury procedure. For a Kubernetes Mina daemon and Archive
+deployment, see
 `runbooks/1-Network/1a-Archive-Node/README.md` and
 `runbooks/1-Network/1b-Mina-Daemon/README.md`.
 
@@ -89,7 +93,7 @@ The wrapper is needed because the local script requires an OpenSSL that can gene
 The `--archive-graphql-port 8282` flag makes the archive GraphQL endpoint match
 the treasury `ARCHIVE_NODE_URL` defaults in this repo.
 
-## Export Treasury Endpoint Inputs
+## Export Treasury Host Endpoint Inputs
 
 After the Mina daemon and archive node are running, export the endpoint values
 that the treasury env bootstrap reads:
@@ -97,18 +101,11 @@ that the treasury env bootstrap reads:
 ```bash
 export MINA_NODE_URL=http://127.0.0.1:3001/graphql
 export ARCHIVE_NODE_URL=http://127.0.0.1:8282
-export MINA_NODE_PROXY_UPSTREAM=http://host.docker.internal:3001
-export COMPOSE_ARCHIVE_NODE_URL=http://host.docker.internal:8282
-export NEXT_PUBLIC_TREASURY_API_URL=http://127.0.0.1:3100/api
-export NEXT_PUBLIC_INDEXER_API_URL=http://127.0.0.1:3100/indexer
-export NEXT_PUBLIC_PROCESSOR_API_URL=http://127.0.0.1:3100/processor
-export NEXT_PUBLIC_MINA_NODE_URL=http://127.0.0.1:3100/mina/graphql
 ```
 
-`MINA_NODE_URL` and `ARCHIVE_NODE_URL` are for CLI/operator commands on the
-host. `MINA_NODE_PROXY_UPSTREAM` and `COMPOSE_ARCHIVE_NODE_URL` are for Compose
-containers, which reach the Mina node and archive node through
-`host.docker.internal`.
+`MINA_NODE_URL` and `ARCHIVE_NODE_URL` are for development commands on the
+host. Configure native application URLs separately when you run those
+applications.
 
 ## Treasury Lifecycle Alignment
 
@@ -130,7 +127,7 @@ TREASURY_DEPLOYED_AT_SLOT + (LIFECYCLE_PERIOD_DURATION * 4 * N)
 
 and ends after one `LIFECYCLE_PERIOD_DURATION`.
 
-For this local Mina testnet, use:
+For this local Mina development network, use:
 
 ```text
 LIFECYCLE_PERIOD_DURATION=48
@@ -149,7 +146,9 @@ Use `lifecycleId=0` for the first lifecycle after deployment. Use `lifecycleId=1
 
 ## Treasury Env Values For This Node
 
-Before bootstrapping or updating treasury env files, extract the funded online whale key from the running Mina node. This key pays fees for CLI deployment and operator transactions.
+Before you update the Treasury environment, extract the funded online whale
+key from the running Mina node. This key pays fees for development CLI
+transactions.
 
 Dump the keypair:
 
@@ -174,10 +173,11 @@ Set the private key in your shell for the env bootstrap step:
 export ONLINE_WHALE_PRIVATE_KEY="<Private key from dump-keypair>"
 ```
 
-Use this value only as `SENDER_PRIVATE_KEY` in the CLI/operator env. Do not put it in `apps/api/.env.testnet`, `apps/web/.env.testnet`, or `devops/.env.testnet`.
+Use this value only as `SENDER_PRIVATE_KEY` in the CLI development environment.
+Do not put it in an API, web, Backoffice, or DevOps environment.
 
-Now return to `TESTNET.md` and bootstrap the treasury testnet env files from the
-decentralized treasury repo. The command reads the endpoint exports above:
+Generate the existing Treasury `testnet` environment family. The command reads
+the host endpoint exports above:
 
 ```bash
 cd "$TREASURY_REPO"
@@ -185,27 +185,19 @@ cd "$TREASURY_REPO"
 pnpm env:bootstrap testnet -- --sender-private-key "$ONLINE_WHALE_PRIVATE_KEY"
 ```
 
-For this local Mina node, the generated env review in `TESTNET.md` should use
-these Mina-side values:
+For this local Mina node, review these generated Mina-side values:
 
 ```text
 MINA_NODE_URL=http://127.0.0.1:3001/graphql
 ARCHIVE_NODE_URL=http://127.0.0.1:8282
-NEXT_PUBLIC_TREASURY_API_URL=http://127.0.0.1:3100/api
-NEXT_PUBLIC_INDEXER_API_URL=http://127.0.0.1:3100/indexer
-NEXT_PUBLIC_PROCESSOR_API_URL=http://127.0.0.1:3100/processor
-NEXT_PUBLIC_MINA_NODE_URL=http://127.0.0.1:3100/mina/graphql
-MINA_NODE_PROXY_UPSTREAM=http://host.docker.internal:3001
-Compose ARCHIVE_NODE_URL=http://host.docker.internal:8282
 LIFECYCLE_PERIOD_DURATION=48
 SQLITE_DATA_DIRECTORY=./.data/testnet-sqlite
 NEXT_PUBLIC_LIFECYCLE_PERIOD_DURATION=48
 NEXT_PUBLIC_SLOT_DURATION_MS=37500
 ```
 
-The browser uses full URLs through the local Caddy web origin. Compose
-containers use `host.docker.internal` to reach the archive and Mina node running
-on the Docker host.
+Set the native browser and service endpoints for the processes that you start.
+Do not use the live-testnet Compose operator procedure for this local network.
 
 ## Set The Treasury Deployment Slot
 
@@ -398,17 +390,9 @@ This writes:
 .data/testnet-sqlite/0.sqlite
 ```
 
-If the API stack runs in Docker Compose, make sure `devops/.env.testnet` mounts the same host directory:
-
-```text
-SQLITE_DATA_HOST_PATH=./.data/testnet-sqlite
-```
-
-Inside the API container, the same file is visible as:
-
-```text
-/data/sqlite/0.sqlite
-```
+When you run the API natively, set its `SQLITE_DATA_DIRECTORY` to this same
+absolute development directory. This setting lets the CLI and API read the
+same lifecycle file.
 
 You can verify that the CLI can read the lifecycle staking ledger:
 

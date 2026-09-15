@@ -75,8 +75,10 @@ function normalizeNewlines(value) {
 }
 
 function displayTransform(value) {
-  return normalizeNewlines(value)
-    .replace(/<(https?:\/\/[^>\s]+)>/g, "[$1]($1)");
+  return normalizeNewlines(value).replace(
+    /<(https?:\/\/[^>\s]+)>/g,
+    "[$1]($1)",
+  );
 }
 
 async function companionYamlFiles(directory) {
@@ -141,7 +143,7 @@ async function renderRunbook(record) {
     "",
     ":::info Source-controlled procedure",
     "",
-    `This page contains the complete \`${relativeToRepository(readmeFile)}\` procedure and each YAML file in the same directory. Change the source files. Then run \`pnpm --dir apps/docs run generate:runbooks\`.`,
+    `The full \`${relativeToRepository(readmeFile)}\` procedure is published here with each YAML file that it needs. To update this page, change the source files and run \`pnpm --dir apps/docs run generate:runbooks\`.`,
     "",
     ":::",
     "",
@@ -153,7 +155,7 @@ async function renderRunbook(record) {
       "",
       `## Configuration File: \`${path.basename(source.file)}\``,
       "",
-      `This is the complete \`${relativeToRepository(source.file)}\` file.`,
+      `The complete \`${relativeToRepository(source.file)}\` file follows.`,
       "",
       `[Download \`${path.basename(source.file)}\`](pathname://${source.downloadPath})`,
       "",

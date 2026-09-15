@@ -6,8 +6,12 @@ audience: user
 page_kind: concept
 ---
 
-The treasury separates normal participation, operation, and emergency authorization.
-One person can hold more than one transaction role.
+Several roles keep the Treasury running, but they do not all have the same
+authority. A person can hold more than one transaction role, so always check
+which key and authorization a specific action needs.
+
+Read [The Treasury model](foundations/treasury-model.md) first if the Treasury
+Owner, Proposal account, or Pause Controller is unfamiliar.
 
 ## User
 

@@ -7,8 +7,9 @@ page_kind: concept
 
 # Voting Capacity and Period Sizing
 
-Use this page to select a lifecycle period and to check whether a voting
-period can include the expected vote transactions.
+A lifecycle can use the correct slot equations and still have too little time
+for the expected votes and proof work. This page helps you select a period and
+check its practical capacity before deployment.
 
 For Kubernetes proof-worker sizing and the current measured devnet example,
 use [2d. Lifecycle Pipeline](../infrastructure/lifecycle-pipeline.md). Treat the
@@ -25,8 +26,7 @@ The current Treasury default fits the Mesa time model:
 The `7140`-slot default was approximately two weeks with a `180`-second
 Berkeley slot. It is approximately one week with a `90`-second Mesa slot. Do
 not change the period to `14280` only to keep the old wall-clock duration. The
-supported scheduler model requires one Treasury period to equal one Mina
-epoch.
+supported operating convention uses one Treasury period for one Mina epoch.
 
 This result gives a technical reason for `7140`: it keeps period and snapshot
 selection aligned with the Mesa epoch. It does not approve a business policy

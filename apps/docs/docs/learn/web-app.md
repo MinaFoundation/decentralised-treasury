@@ -6,8 +6,9 @@ audience: user
 page_kind: procedure
 ---
 
-The web application is the main user interface.
-It shows the treasury, lifecycles, proposals, votes, results, and execution history.
+The web application brings the full user journey into one place. You can
+review the Treasury, follow the current lifecycle, create or inspect proposals,
+vote, and check results and payments.
 
 ## Open the Application
 
@@ -24,13 +25,33 @@ The application refreshes data when it detects new Mina blocks.
 3. Complete the wallet-specific steps.
 
 For Auro, the application uses the account that is selected in Auro.
+Before each transaction, select the funded account and Mina network that match
+the application. The application checks the selected Auro account. It does not
+check the selected Auro network.
 Approve each transaction in the Auro extension.
 
 For Ledger, enter the Mina account index.
 Open the Mina app and confirm the derived address on the device.
 
-Ledger needs WebHID in a secure Chromium browser context.
+Ledger needs WebHID in a secure Chromium browser context. Use Mina app version
+`1.6.7` or newer, and enable blind signing before you connect.
 The application remembers the Ledger address and account index for later sessions.
+
+Use [Signing with Ledger and
+Auro](/learn/signing-with-ledger-and-auro) for the complete wallet setup and
+approval checks.
+
+## Sign and Submit Transactions
+
+The application performs these stages after you start a transaction:
+
+1. It compiles the required contracts.
+2. It builds and proves the transaction.
+3. It asks the connected wallet for the required signatures.
+4. It submits the signed transaction to the configured Mina node.
+5. It waits for transaction inclusion.
+
+The transaction summary does not show all zkApp account updates.
 
 ## Browse and Search
 
@@ -80,8 +101,8 @@ lifecycle must also be later than the Proposal lifecycle.
 Follow [Execute an Approved Proposal](execute-a-proposal.md) for the complete
 procedure.
 
-The current web application requires the connected wallet to match the proposal creator.
-The smart contract does not impose this sender restriction.
+The connected wallet must have enough MINA for the transaction costs.
+It does not have to be the proposal creator.
 
 The [planned screenshot workflow](web-app-screenshots.md) lists the images that
 will be added to this guide.

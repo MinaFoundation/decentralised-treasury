@@ -33,6 +33,7 @@ const lifecycle = [
 export default function Home(): JSX.Element {
   const { siteConfig } = useDocusaurusContext();
   const treasuryAppUrl = String(siteConfig.customFields?.treasuryAppUrl);
+  const treasuryAppLabel = String(siteConfig.customFields?.treasuryAppLabel);
 
   return (
     <Layout
@@ -62,7 +63,7 @@ export default function Home(): JSX.Element {
                 className={`${buttonVariants({ size: "lg" })} ${styles.primaryAction}`}
                 href={treasuryAppUrl}
               >
-                Open Treasury <span aria-hidden="true">↗</span>
+                {treasuryAppLabel} <span aria-hidden="true">↗</span>
               </a>
               <Link
                 className={`${buttonVariants({ variant: "outline", size: "lg" })} ${styles.secondaryAction}`}
@@ -122,10 +123,10 @@ export default function Home(): JSX.Element {
         >
           <div className={styles.pathIntro}>
             <p className={styles.kicker}>Choose your path</p>
-            <h2 id="choose-path-title">Take part or run the system.</h2>
+            <h2 id="choose-path-title">Take part, run, or build the system.</h2>
             <p>
-              Start with the guide that matches your role. Each guide links to
-              detailed procedures and technical reference material.
+              Select your role, then choose a short overview, a quickstart, or a
+              complete learning path from basic terms.
             </p>
           </div>
 
@@ -133,7 +134,10 @@ export default function Home(): JSX.Element {
             <Card className={`${styles.pathCard} ${styles.learnCard}`}>
               <span className={styles.pathTag}>For community members</span>
               <h3>Learn</h3>
-              <p>Create proposals, review requests, vote, and check results.</p>
+              <p>
+                Learn Mina and Treasury concepts, then create, vote, or check a
+                result.
+              </p>
               <Link to="/learn/">
                 Start learning <span aria-hidden="true">→</span>
               </Link>
@@ -141,9 +145,23 @@ export default function Home(): JSX.Element {
             <Card className={`${styles.pathCard} ${styles.operateCard}`}>
               <span className={styles.pathTag}>For treasury operators</span>
               <h3>Operate</h3>
-              <p>Configure lifecycles, deploy services, and prepare proofs.</p>
+              <p>
+                Learn the operating model, then configure, deploy, and prepare
+                proofs.
+              </p>
               <Link to="/operate/">
                 Open operator docs <span aria-hidden="true">→</span>
+              </Link>
+            </Card>
+            <Card className={`${styles.pathCard} ${styles.developCard}`}>
+              <span className={styles.pathTag}>For software developers</span>
+              <h3>Develop</h3>
+              <p>
+                Tour the codebase, run the local flow, and trace a complete
+                change.
+              </p>
+              <Link to="/developer/">
+                Open developer docs <span aria-hidden="true">→</span>
               </Link>
             </Card>
           </div>
@@ -158,7 +176,7 @@ export default function Home(): JSX.Element {
             className={`${buttonVariants({ size: "lg" })} ${styles.darkAction}`}
             href={treasuryAppUrl}
           >
-            Open Treasury <span aria-hidden="true">↗</span>
+            {treasuryAppLabel} <span aria-hidden="true">↗</span>
           </a>
         </section>
       </main>

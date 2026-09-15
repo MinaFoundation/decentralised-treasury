@@ -90,8 +90,9 @@ The default Ledger roles use these account indices:
 - `1`: voter
 - `2`: Treasury Owner deployment, emergency authorization, and multisig participant
 - `3`: Treasury Owner's Pause Controller deployment and multisig participant
+- `4`: Proposal deployment
 
-The four indices must be different. Install Mina app `1.6.7` or newer, enable
+The five indices must be different. Install Mina app `1.6.7` or newer, enable
 blind signing, close Ledger Live, connect and unlock the device, and open the
 Mina app. Then run from the repository root:
 
@@ -99,16 +100,15 @@ Mina app. Then run from the repository root:
 pnpm --dir apps/cli test:ledger:cli-device
 ```
 
-Confirm four initial address requests. Then confirm each transaction and field
+Confirm five initial address requests. Then confirm each transaction and field
 signature request. The test starts its own local blockchain and archive server.
 It uses no devnet, mainnet, or real funds.
 
 The `proposal vote` command uses account `0` as the transaction sender and
 account `1` as the voter. This verifies the separate Ledger account options.
 
-The test does not supply `--proposal-private-key`. The CLI generates the
-Proposal keypair in memory during `proposal create` and discards it after
-deployment. The Ledger signs only the sender authorization for this command.
+The test supplies the Proposal public key and Ledger account index.
+The Ledger signs both the sender and Proposal authorizations.
 
 The sender, Treasury Owner, and Pause Controller form the multisig threshold.
 Thus, all three threshold signatures also come from the physical Ledger.
@@ -120,6 +120,7 @@ LEDGER_SENDER_ACCOUNT_INDEX=10 \
 LEDGER_VOTER_ACCOUNT_INDEX=11 \
 LEDGER_TREASURY_OWNER_ACCOUNT_INDEX=12 \
 LEDGER_PAUSE_CONTROLLER_ACCOUNT_INDEX=13 \
+LEDGER_PROPOSAL_ACCOUNT_INDEX=14 \
 pnpm --dir apps/cli test:ledger:cli-device
 ```
 

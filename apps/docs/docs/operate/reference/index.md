@@ -8,7 +8,9 @@ page_kind: navigation
 
 # Technical reference
 
-Use this section to check protocol rules, component interfaces, authorization, commands, and environment fields.
+Come here when you need an exact rule, interface, command, or environment
+field. The reference pages describe what the current implementation accepts;
+the task procedures explain when to use it.
 
 ## Protocol and topology
 
@@ -25,11 +27,12 @@ Use this section to check protocol rules, component interfaces, authorization, c
 - [Staking Ledger to Voting Ledger](./staking-ledger-to-voting-ledger.md)
 - [Vote Reducer](./vote-reducer.md)
 
-Each component has one canonical page. Other pages give system context and link to these pages.
+Each component has one canonical page. Other pages give system context and
+link to these pages.
 
 ## Interfaces
 
 - [Events](./events.md)
 - [CLI command index](./cli-commands.md)
 - [Environment field index](./environment-fields.md)
-- [Developer reference](./developer-reference.md)
+- [Developer documentation](../../developer/index.md)

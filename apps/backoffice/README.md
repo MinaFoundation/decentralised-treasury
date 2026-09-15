@@ -94,6 +94,41 @@ pnpm --dir packages/ui run storybook
 
 The default URL is `http://127.0.0.1:3200`.
 
+## Live local-blockchain test
+
+Run the same browser scenario in this order:
+
+```bash
+PROOFS_ENABLED=false pnpm --dir apps/backoffice run test:e2e:local-blockchain
+PROOFS_ENABLED=true pnpm --dir apps/backoffice run test:e2e:local-blockchain
+```
+
+Each run creates a fresh local chain, treasury, and participant keys. The test
+checks the node and browser proof modes. Invalid mode values stop the run.
+The default application mode requires proofs. Set `PROOFS_ENABLED` or
+`NEXT_PUBLIC_PROOFS_ENABLED` explicitly for a local run without proofs.
+
+The browser builds and exports an unsigned pause bundle. Three separate CLI
+calls produce participant signatures. The browser imports each contribution,
+proves the transaction, requests the wallet signature, and submits the command.
+The test repeats these steps to unpause the treasury. It checks receipts,
+controller nonces, on-chain pause state, and displayed state.
+
+The test also checks these failure cases:
+
+- Two signatures do not expose the submit action.
+- A contribution with different operation data fails to merge.
+- An old bundle fails after the controller nonce changes.
+
+The automated wallet adapter implements the Auro extension boundary. It signs
+with a funded local key. The application sends the signed command to the node.
+The adapter does not replace the proof worker or submit transactions.
+
+Playwright stores downloads, receipts, state evidence, and failures under
+`test-results/local-blockchain/proofs-false` or `proofs-true`. The stack uses a
+separate temporary directory for each run. These tests do not cover physical
+Ledger approval. Keep the Ledger release check below as a separate manual test.
+
 Storybook contains the back office under `Back office/Complete workflow`.
 The stories use fixed preview data. They do not connect to a Mina node, a
 wallet, a Ledger device, or the proof worker.

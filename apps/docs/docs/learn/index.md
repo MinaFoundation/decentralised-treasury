@@ -1,68 +1,43 @@
 ---
 title: Learn About the Treasury
-sidebar_label: Treasury Introduction
+sidebar_label: Start here
 sidebar_position: 1
 audience: user
 page_kind: navigation
 slug: /learn/
 ---
 
-The Mina Decentralized Treasury coordinates funding decisions on the Mina network.
-It combines funding proposals, stake-weighted voting, proofs, and on-chain execution.
+# Learn About The Treasury
 
-The [original RFC](https://forums.minaprotocol.com/t/rfc-mina-decentralized-treasury-decentralized-on-chain-community-treasury/6924) describes a community-controlled treasury.
-It proposes public proposal handling, historical staking-ledger snapshots, proposer bonds, and emergency pause controls.
+Choose the path that matches what you need now. You can get the short version,
+try the user flow, or learn the system from basic blockchain terms.
 
-This guide describes the current implementation.
-It does not describe every future feature in the RFC.
+## Choose A Path
 
-## Why the Treasury Exists
+| If you want to...                         | Start here                                                                           |
+| ----------------------------------------- | ------------------------------------------------------------------------------------ |
+| Understand the Treasury in a few minutes  | [Treasury overview](overview.md)                                                     |
+| See the application before you study it   | [User quickstart](quickstart.md)                                                     |
+| Learn without prior blockchain knowledge  | [Mina basics](foundations/mina-basics.md)                                            |
+| Follow one decision from request to funds | [How the Treasury works](how-it-works.md)                                            |
+| Complete a specific action                | [Create](create-a-proposal.md), [vote](vote.md), or [execute](execute-a-proposal.md) |
+| Prepare Ledger or Auro                    | [Signing with Ledger and Auro](signing-with-ledger-and-auro.md)                      |
+| Check a term                              | [Glossary](glossary.md)                                                              |
 
-The treasury gives the community a structured process for shared funds.
-Users can inspect a request, vote, verify the result, and execute an approved proposal.
+## Full Learning Path
 
-The process separates a funding decision from the movement of funds.
-This separation gives users time to review each request and its result.
+If this topic is new to you, use this order:
 
-## What Is Available Now
+1. Learn the basic ideas in [Mina basics](foundations/mina-basics.md).
+2. Build a picture of the [Treasury model](foundations/treasury-model.md).
+3. Learn how [voting and proofs](foundations/voting-and-proofs.md) work.
+4. Learn the difference between
+   [on-chain and off-chain data](foundations/on-chain-and-off-chain.md).
+5. Follow the [complete Treasury flow](how-it-works.md).
+6. Learn the [lifecycle](lifecycle-and-snapshots.md) and [roles](roles.md).
+7. Learn how [Ledger and Auro signing](signing-with-ledger-and-auro.md) works.
+8. Select the [web application](web-app.md) or [CLI](cli.md).
+9. Use the action guides when the applicable period starts.
 
-The current implementation provides these functions:
-
-- a four-period proposal lifecycle;
-- voting weight from a recorded Mina staking ledger;
-- `yay`, `nay`, and `abstain` votes;
-- proof-based vote reduction and tally;
-- partial execution of an approved proposal;
-- global and proposal-specific pause controls;
-- a web application and a CLI;
-- indexed events and public service projections.
-
-:::caution Current scope limits
-
-The current implementation does not provide treasury upgrades, multiple voting delegations, or milestone-based execution.
-
-Proposal content is stored in an application database after creation.
-The Mina account stores a commitment to that content, not the Markdown text.
-
-:::
-
-## Start Here
-
-1. Read [How the Treasury Works](how-it-works.md).
-2. Learn the [Lifecycle and Staking Snapshots](lifecycle-and-snapshots.md).
-3. Review the [Roles](roles.md).
-4. Choose the [Web Application](web-app.md) or the [CLI](cli.md).
-5. [Create a Proposal](create-a-proposal.md) during the Proposal period.
-6. Review the exact content and [Vote](vote.md) during the Voting period.
-7. Wait for tally, then check [Results and Acceptance](results-and-acceptance.md).
-8. [Execute an Approved Proposal](execute-a-proposal.md) in the next lifecycle.
-9. Use [Verifiability and Trust](verifiability-and-trust.md) to reconcile
-   important results.
-10. Understand [Pause Behavior](pause-behavior.md) for an emergency state.
-
-## Sources
-
-- `README.md`
-- `packages/sdk/src/provable/contracts/treasury-owner.ts` — `TreasuryOwnerSmartContract`, `LifecyclePeriod`
-- `packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts` — `TreasuryProposalSmartContract`
-- `packages/sdk/src/provable/contracts/treasury-pause-controller/treasury-pause-controller.ts` — `TreasuryPauseControllerSmartContract`
+Operators can continue to [Operate the Treasury](../operate/index.md).
+Software developers can continue to [Develop the Treasury](../developer/index.md).

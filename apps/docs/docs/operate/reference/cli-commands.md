@@ -92,7 +92,7 @@ The transaction commands use these common options:
 | Option              | Environment | Required | Default                        | Rule                                                                |
 | ------------------- | ----------- | -------- | ------------------------------ | ------------------------------------------------------------------- |
 | `--fee <nanomina>`  | `TX_FEE`    | No       | `1000000000`                   | Fee paid by the sender. The parser uses `UInt64`.                   |
-| `--nonce <integer>` | `TX_NONCE`  | No       | Current sender nonce from Mina | Explicit fee-payer nonce. See the Pause Controller exception below. |
+| `--nonce <integer>` | `TX_NONCE`  | No       | Current sender nonce from Mina | Explicit fee-payer nonce. |
 | `--memo <text>`     | `TX_MEMO`   | No       | None                           | Mina transaction memo.                                              |
 | `--wait <boolean>`  | `TX_WAIT`   | No       | `true`                         | Allowed values are exactly `true` and `false`.                      |
 | `--signer <mode>`   | `SIGNER`    | No       | `in-memory`                    | Allowed values are `in-memory` and `ledger`.                        |
@@ -107,15 +107,16 @@ The common transaction options apply to:
 
 ### Nonce rules
 
-For most transaction commands, `--nonce` is only the fee-payer nonce.
+For transaction commands, `--nonce` (`TX_NONCE`) is only the fee-payer nonce.
 
 For `pause-controller pause-treasury`, `unpause-treasury`,
-`toggle-pause-proposal`, and `rotate-multisig-keys`, the current implementation
-also uses a supplied `--nonce` as the Pause Controller action nonce. Omit the
-option unless the fee-payer nonce and Pause Controller nonce are equal. When it
-is omitted, the command reads the action nonce from Mina and lets the
-transaction builder select the fee-payer nonce. `pause-controller deploy` uses
-the option only as the fee-payer nonce.
+`toggle-pause-proposal`, and `rotate-multisig-keys`, use the separate optional
+`--controller-nonce <nonce>` (`PAUSE_CONTROLLER_NONCE`) for the controller nonce
+signed by the multisig. If omitted, the service reads the controller nonce
+from Mina. If `--nonce` is omitted, the transaction builder selects the
+fee-payer nonce independently. For example, `--nonce 12 --controller-nonce 3`
+uses wallet nonce `12` and controller nonce `3`. A stale controller nonce is
+rejected by the contract.
 
 For a `multisig-sign` command, `--nonce` is required and means only the Pause
 Controller state nonce. That command creates one partial signature. It does
@@ -123,9 +124,16 @@ not create a Mina transaction.
 
 ## Signing options
 
+Use [Signing with Ledger and
+Auro](/learn/signing-with-ledger-and-auro#set-up-ledger-for-the-cli) for wallet
+setup and approval checks. The CLI supports Ledger and `in-memory` signing. It
+does not support Auro.
+
 `--signer=in-memory` requires the private key for each signing role.
 `--signer=ledger` requires the expected public key and Ledger account index for
-each signing role.
+each signing role. Do not supply private keys in Ledger mode.
+Do not supply Ledger public-key or account-index options in `in-memory` mode.
+These checks also apply to environment variables.
 
 | Role                | Private-key option and environment                               | Ledger public-key option and environment                       | Ledger index option and environment                                                |
 | ------------------- | ---------------------------------------------------------------- | -------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
@@ -134,31 +142,41 @@ each signing role.
 | Treasury Owner      | `--treasury-owner-private-key`, `TREASURY_OWNER_PRIVATE_KEY`     | `--treasury-owner-public-key`, `TREASURY_OWNER_PUBLIC_KEY`     | `--treasury-owner-ledger-account-index`, `TREASURY_OWNER_LEDGER_ACCOUNT_INDEX`     |
 | Pause Controller    | `--pause-controller-private-key`, `PAUSE_CONTROLLER_PRIVATE_KEY` | `--pause-controller-public-key`, `PAUSE_CONTROLLER_PUBLIC_KEY` | `--pause-controller-ledger-account-index`, `PAUSE_CONTROLLER_LEDGER_ACCOUNT_INDEX` |
 | Voter               | `--voter-private-key`, `VOTER_PRIVATE_KEY`                       | `--voter-public-key`, `VOTER_PUBLIC_KEY`                       | `--voter-ledger-account-index`, `VOTER_LEDGER_ACCOUNT_INDEX`                       |
+| Proposal | `--proposal-private-key`, `PROPOSAL_PRIVATE_KEY` | `--proposal-public-key`, `PROPOSAL_PUBLIC_KEY` | `--proposal-ledger-account-index`, `PROPOSAL_LEDGER_ACCOUNT_INDEX` |
 
 The CLI checks Ledger role options at runtime. The index must be an integer
 from `0` through `4294967295`. The public key returned by the device must match
 the configured public key.
 
+A transaction with multiple signing accounts can require multiple Ledger
+indices. Supply one public key and index for each role. The CLI signs and
+submits the transaction to the Mina node. It does not export a signed
+transaction for offline submission.
+
 The funding account defaults to the sender for `treasury-owner fund-treasury`
 and `transfer`. Supply funding options only when another account supplies the
 funds.
 
-Proposal creation is different. It accepts the optional local
-`--proposal-private-key` or `PROPOSAL_PRIVATE_KEY` input. If this input is
-absent, the CLI generates a Proposal keypair in memory. The CLI does not expose
-a Proposal Ledger public-key or account-index option.
+In `in-memory` mode, Proposal creation accepts `--proposal-private-key` or
+`PROPOSAL_PRIVATE_KEY`. If absent, the CLI generates a Proposal keypair.
+In Ledger mode, supply `--proposal-public-key` and
+`--proposal-ledger-account-index`. Both signing roles use Ledger.
 
-| Transaction command                              | Signing roles                                                                                                                                                                |
-| ------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `treasury-owner deploy`                          | Sender, Treasury Owner account, and Pause Controller account.                                                                                                                |
-| `treasury-owner fund-treasury`                   | Sender and, only when different, funding account.                                                                                                                            |
-| `treasury-owner emergency-withdraw`              | Sender and Treasury Owner account.                                                                                                                                           |
-| `pause-controller deploy`                        | Sender and Pause Controller account.                                                                                                                                         |
-| Other state-changing `pause-controller` commands | Sender, plus the supplied break-glass signatures.                                                                                                                            |
-| `proposal create`                                | The Sender signs through the selected signer mode. The new Proposal account signs with the supplied or generated local Proposal private key. The Sender also funds the bond. |
-| `proposal vote`                                  | Sender and voter. They can be the same account.                                                                                                                              |
-| `proposal tally-votes` and `proposal execute`    | Sender.                                                                                                                                                                      |
-| `transfer`                                       | Sender and, only when different, funding account.                                                                                                                            |
+| Transaction command                      | Signing roles                                                                                                                                                                |
+| ---------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `treasury-owner deploy`                  | Sender, Treasury Owner account, and Pause Controller account.                                                                                                                |
+| `treasury-owner fund-treasury`           | Sender and, only when different, funding account.                                                                                                                            |
+| `treasury-owner emergency-withdraw`      | Sender and Treasury Owner account.                                                                                                                                           |
+| `proposal create`                        | Sender and Proposal account use the selected signer mode. The Sender also funds the bond. |
+| `proposal vote`                          | Sender and voter. They can be the same account.                                                                                                                              |
+| `proposal tally-votes`                   | Sender.                                                                                                                                                                      |
+| `proposal execute`                       | Sender.                                                                                                                                                                      |
+| `pause-controller deploy`                | Sender and Pause Controller account.                                                                                                                                         |
+| `pause-controller pause-treasury`        | Sender, plus the supplied break-glass signatures.                                                                                                                            |
+| `pause-controller unpause-treasury`      | Sender, plus the supplied break-glass signatures.                                                                                                                            |
+| `pause-controller toggle-pause-proposal` | Sender, plus the supplied break-glass signatures.                                                                                                                            |
+| `pause-controller rotate-multisig-keys`  | Sender, plus the supplied break-glass signatures.                                                                                                                            |
+| `transfer`                               | Sender and, only when different, funding account.                                                                                                                            |
 
 ## `treasury-owner`
 
@@ -186,6 +204,10 @@ Pause Controller signing options.
 
 The signing table above lists the conditional private-key, public-key, and
 Ledger-index inputs for the three deployment roles.
+
+The command checks that the participant list contains five keys. It does not
+enforce unique keys. Confirm that all five participant keys are unique before
+deployment.
 
 ### `treasury-owner fund-treasury`
 
@@ -237,6 +259,8 @@ Proposal deployment key is always local to the CLI.
 | `--api-url <url>`                     | `TREASURY_API_URL`          | No       | `http://127.0.0.1:4100` | App API base URL for Markdown submission.                                                              |
 | `--treasury-owner-public-key <key>`   | `TREASURY_OWNER_PUBLIC_KEY` | Yes      | None                    | Treasury Owner that creates the child Proposal.                                                        |
 | `--proposal-private-key <key>`        | `PROPOSAL_PRIVATE_KEY`      | No       | Generated in memory     | Optional deployment-only Proposal key. The CLI discards a generated private key when the command ends. |
+| `--proposal-public-key <key>` | `PROPOSAL_PUBLIC_KEY` | Ledger mode | None | Proposal account on the Ledger. |
+| `--proposal-ledger-account-index <index>` | `PROPOSAL_LEDGER_ACCOUNT_INDEX` | Ledger mode | None | Ledger index for the Proposal account. |
 | `--proposal-lifecycle-id <id>`        | `PROPOSAL_LIFECYCLE_ID`     | Yes      | None                    | Lifecycle in which the Proposal is created. The parser uses `UInt32`.                                  |
 | `--recipient-public-key <key>`        | `RECIPIENT_PUBLIC_KEY`      | Yes      | None                    | Proposal recipient.                                                                                    |
 | `--amount <nanomina>`                 | `PROPOSAL_AMOUNT`           | Yes      | None                    | Requested amount. The parser uses `UInt64`.                                                            |
@@ -308,7 +332,7 @@ Uses the Mina connection, common transaction, and Sender signing options.
 | --------------------- | ------------ | -------- | ------- | --------------------------------- |
 | `--cache-path <path>` | `CACHE_PATH` | No       | None    | Optional compile cache directory. |
 
-### `pause-controller deploy`
+### `pause-controller deploy` {#pause-controller-deploy}
 
 Uses the Mina connection, common transaction, and Sender and Pause Controller
 signing options.
@@ -316,6 +340,14 @@ signing options.
 | Option                                       | Environment                         | Required | Default | Meaning                                            |
 | -------------------------------------------- | ----------------------------------- | -------- | ------- | -------------------------------------------------- |
 | `--multisig-participants-public-keys <keys>` | `MULTISIG_PARTICIPANTS_PUBLIC_KEYS` | Yes      | None    | Exactly five comma-separated, ordered public keys. |
+
+The command checks that the list contains five keys. It does not enforce
+unique keys. Confirm that all five participant keys are unique before
+deployment.
+
+Use the [standalone Pause Controller deployment
+procedure](../cli/prerequisites.md#deploy-only-a-pause-controller-with-ledger)
+for the complete Ledger command and reconciliation steps.
 
 ### `pause-controller read-state`
 
@@ -364,7 +396,11 @@ Uses the Mina connection, common transaction, and Sender signing options.
 | `--multisig-signatures <signatures>`                 | `MULTISIG_SIGNATURES`                       | Yes      | None    | Signatures from the current signer set.                       |
 | `--new-multisig-participants-public-keys <keys>`     | `NEW_MULTISIG_PARTICIPANTS_PUBLIC_KEYS`     | Yes      | None    | New ordered five-key list. The CLI calculates its commitment. |
 
-## `multisig-sign`
+The Pause Controller submission commands check list lengths. They do not
+enforce unique current or replacement keys. Before submission, confirm that
+each ordered list contains five unique keys.
+
+## multisig-sign
 
 All four commands create one partial break-glass signature. They do not submit
 a Mina transaction.
@@ -387,9 +423,10 @@ Command-specific inputs:
 | `multisig-sign toggle-pause-proposal` | `--proposal-public-key <key>`                    | `PROPOSAL_PUBLIC_KEY`                   | Yes      | Adds the Proposal key to the signed payload.   |
 | `multisig-sign rotate-multisig-keys`  | `--new-multisig-participants-public-keys <keys>` | `NEW_MULTISIG_PARTICIPANTS_PUBLIC_KEYS` | Yes      | Adds the new commitment to the signed payload. |
 
-Each current or replacement participant list must contain exactly five unique
-public keys. The selected software or Ledger signer must be in the current
-participant list.
+For these four `multisig-sign` commands, the parser requires exactly five
+unique keys in each current or replacement list. The selected software or
+Ledger signer must be in the current participant list. This parser check does
+not replace the operator check for deploy and submission commands.
 
 ## `staking-ledger`
 
@@ -397,52 +434,72 @@ participant list.
 storage and the staking Merkle tree. The two `hydrate-*` commands let the
 operator repeat one stage or select a range.
 
-| Command                                  | Option                         | Environment           | Required | Default                  | Meaning                                     |
-| ---------------------------------------- | ------------------------------ | --------------------- | -------- | ------------------------ | ------------------------------------------- |
-| `staking-ledger from-file`               | `--lifecycle-id <id>`          | `LIFECYCLE_ID`        | Yes      | None                     | Lifecycle data namespace.                   |
-| `staking-ledger from-file`               | `--staking-ledger-path <path>` | `STAKING_LEDGER_PATH` | Yes      | None                     | Mina staking ledger JSON.                   |
-| `staking-ledger from-file`               | `--start-index <integer>`      | `START_INDEX`         | No       | Start of ledger          | Optional first index.                       |
-| `staking-ledger from-file`               | `--end-index <integer>`        | `END_INDEX`           | No       | End of ledger            | Optional last range boundary.               |
-| `staking-ledger hydrate-account-storage` | `--lifecycle-id <id>`          | `LIFECYCLE_ID`        | Yes      | None                     | Lifecycle data namespace.                   |
-| `staking-ledger hydrate-account-storage` | `--staking-ledger-path <path>` | `STAKING_LEDGER_PATH` | Yes      | None                     | Mina staking ledger JSON.                   |
-| `staking-ledger hydrate-account-storage` | `--start-index <integer>`      | `START_INDEX`         | No       | Start of ledger          | Optional first index.                       |
-| `staking-ledger hydrate-account-storage` | `--end-index <integer>`        | `END_INDEX`           | No       | End of ledger            | Optional last range boundary.               |
-| `staking-ledger hydrate-merkle-tree`     | `--lifecycle-id <id>`          | `LIFECYCLE_ID`        | Yes      | None                     | Lifecycle data namespace.                   |
-| `staking-ledger hydrate-merkle-tree`     | `--start-index <integer>`      | `START_INDEX`         | No       | Start of stored accounts | Optional first index.                       |
-| `staking-ledger hydrate-merkle-tree`     | `--end-index <integer>`        | `END_INDEX`           | No       | End of stored accounts   | Optional last range boundary.               |
-| `staking-ledger get-root-hash`           | `--lifecycle-id <id>`          | `LIFECYCLE_ID`        | Yes      | None                     | Lifecycle whose calculated root is printed. |
-| `staking-ledger get-root-hash`           | `--expected-root-hash <hash>`  | `EXPECTED_ROOT_HASH`  | No       | None                     | Fails when the calculated root differs.     |
+`staking-ledger create-development-snapshot` creates simulator data for one
+Treasury Owner and five unique voter keys. It is not a live-network export. It
+prints the Base58 hash, decimal field value, and total currency in nanomina.
+
+The Owner and voter balances use decimal MINA syntax. Each balance must be
+greater than zero and can have at most nine fractional digits. Each converted
+balance must fit a `UInt64` nanomina value. The total for all six accounts must
+also fit a `UInt64` nanomina value.
+
+The five voter options are `--voter-1-public-key`, `--voter-2-public-key`,
+`--voter-3-public-key`, `--voter-4-public-key`, and `--voter-5-public-key`.
+Their environment aliases are `VOTER1_PUBLIC_KEY`, `VOTER2_PUBLIC_KEY`,
+`VOTER3_PUBLIC_KEY`, `VOTER4_PUBLIC_KEY`, and `VOTER5_PUBLIC_KEY`.
+
+| Command                                      | Option                                                            | Environment                                     | Required | Default                  | Meaning                                        |
+| -------------------------------------------- | ----------------------------------------------------------------- | ----------------------------------------------- | -------- | ------------------------ | ---------------------------------------------- |
+| `staking-ledger create-development-snapshot` | `--output-path <path>`                                            | `STAKING_LEDGER_PATH`                           | Yes      | None                     | Simulator snapshot JSON output.                |
+| `staking-ledger create-development-snapshot` | `--treasury-owner-public-key <key>`                               | `TREASURY_OWNER_PUBLIC_KEY`                     | Yes      | None                     | Treasury Owner snapshot account.               |
+| `staking-ledger create-development-snapshot` | `--voter-1-public-key <key>` through `--voter-5-public-key <key>` | `VOTER1_PUBLIC_KEY` through `VOTER5_PUBLIC_KEY` | Yes      | None                     | Five unique self-delegated voters.             |
+| `staking-ledger create-development-snapshot` | `--treasury-owner-balance <mina>`                                 | `DEVELOPMENT_TREASURY_OWNER_BALANCE`            | No       | `1000`                   | Historical Owner balance in MINA; minimum `100`. |
+| `staking-ledger create-development-snapshot` | `--voter-balance <mina>`                                          | `DEVELOPMENT_VOTER_BALANCE`                     | No       | `100`                    | Balance for each voter in MINA; minimum `100`. |
+| `staking-ledger from-file`                   | `--lifecycle-id <id>`                                             | `LIFECYCLE_ID`                                  | Yes      | None                     | Lifecycle data namespace.                      |
+| `staking-ledger from-file`                   | `--staking-ledger-path <path>`                                    | `STAKING_LEDGER_PATH`                           | Yes      | None                     | Mina staking ledger JSON.                      |
+| `staking-ledger from-file`                   | `--start-index <integer>`                                         | `START_INDEX`                                   | No       | Start of ledger          | Optional first index.                          |
+| `staking-ledger from-file`                   | `--end-index <integer>`                                           | `END_INDEX`                                     | No       | End of ledger            | Optional last range boundary.                  |
+| `staking-ledger hydrate-account-storage`     | `--lifecycle-id <id>`                                             | `LIFECYCLE_ID`                                  | Yes      | None                     | Lifecycle data namespace.                      |
+| `staking-ledger hydrate-account-storage`     | `--staking-ledger-path <path>`                                    | `STAKING_LEDGER_PATH`                           | Yes      | None                     | Mina staking ledger JSON.                      |
+| `staking-ledger hydrate-account-storage`     | `--start-index <integer>`                                         | `START_INDEX`                                   | No       | Start of ledger          | Optional first index.                          |
+| `staking-ledger hydrate-account-storage`     | `--end-index <integer>`                                           | `END_INDEX`                                     | No       | End of ledger            | Optional last range boundary.                  |
+| `staking-ledger hydrate-merkle-tree`         | `--lifecycle-id <id>`                                             | `LIFECYCLE_ID`                                  | Yes      | None                     | Lifecycle data namespace.                      |
+| `staking-ledger hydrate-merkle-tree`         | `--start-index <integer>`                                         | `START_INDEX`                                   | No       | Start of stored accounts | Optional first index.                          |
+| `staking-ledger hydrate-merkle-tree`         | `--end-index <integer>`                                           | `END_INDEX`                                     | No       | End of stored accounts   | Optional last range boundary.                  |
+| `staking-ledger get-root-hash`               | `--lifecycle-id <id>`                                             | `LIFECYCLE_ID`                                  | Yes      | None                     | Lifecycle whose calculated root is printed.    |
+| `staking-ledger get-root-hash`               | `--expected-root-hash <hash>`                                     | `EXPECTED_ROOT_HASH`                            | No       | None                     | Fails when the calculated root differs.        |
+| `staking-ledger get-root-hash`               | `--output-format <format>`                                        | `ROOT_HASH_OUTPUT_FORMAT`                       | No       | `base58`                 | Use `json` to include the decimal field value. |
 
 ## `staking-ledger-to-voting-ledger`
 
 `staking-ledger-to-voting-ledger compile` has no command options.
 
-| Command                                         | Option                       | Environment         | Required | Default                                          | Meaning                                                     |
-| ----------------------------------------------- | ---------------------------- | ------------------- | -------- | ------------------------------------------------ | ----------------------------------------------------------- |
-| `staking-ledger-to-voting-ledger trace-digest`  | `--lifecycle-id <id>`        | `LIFECYCLE_ID`      | Yes      | None                                             | Lifecycle data namespace.                                   |
-| `staking-ledger-to-voting-ledger trace-digest`  | `--start-index <integer>`    | `START_INDEX`       | No       | `0` at runtime                                   | First batch index.                                          |
-| `staking-ledger-to-voting-ledger trace-digest`  | `--end-index <integer>`      | `END_INDEX`         | No       | All remaining batches                            | Last range boundary.                                        |
-| `staking-ledger-to-voting-ledger trace-digest`  | `--checkpoint-interval <integer>` | `CHECKPOINT_INTERVAL` | No    | None                                             | Indices between S3 checkpoints. Requires the S3 URI.        |
-| `staking-ledger-to-voting-ledger trace-digest`  | `--checkpoint-s3-uri <uri>`  | `CHECKPOINT_S3_URI` | No       | None                                             | S3 prefix for trace checkpoints.                            |
-| `staking-ledger-to-voting-ledger trace-digest`  | `--ledger-hash <hash>`       | `LEDGER_HASH`       | No       | None                                             | Ledger hash recorded in each checkpoint.                    |
-| `staking-ledger-to-voting-ledger checkpoint-restore` | `--lifecycle-id <id>`   | `LIFECYCLE_ID`      | Yes      | None                                             | Lifecycle data namespace.                                   |
-| `staking-ledger-to-voting-ledger checkpoint-restore` | `--expected-ledger-hash <hash>` | `EXPECTED_LEDGER_HASH` | Yes | None                                          | Required ledger hash for a restored checkpoint.             |
-| `staking-ledger-to-voting-ledger checkpoint-restore` | `--s3-uri <uri>`        | `CHECKPOINT_S3_URI` | Yes      | None                                             | S3 prefix that contains the checkpoint.                     |
-| `staking-ledger-to-voting-ledger checkpoint-clean` | `--lifecycle-id <id>`     | `LIFECYCLE_ID`      | Yes      | None                                             | Lifecycle data namespace.                                   |
-| `staking-ledger-to-voting-ledger checkpoint-clean` | `--s3-uri <uri>`          | `CHECKPOINT_S3_URI` | Yes      | None                                             | S3 prefix whose lifecycle checkpoint is removed.            |
-| `staking-ledger-to-voting-ledger prove-digest`  | `--lifecycle-id <id>`        | `LIFECYCLE_ID`      | Yes      | None                                             | Lifecycle data namespace.                                   |
-| `staking-ledger-to-voting-ledger prove-digest`  | `--redis-host <host>`        | `REDIS_HOST`        | Runtime  | None                                             | Redis host. The command fails when it is absent.            |
-| `staking-ledger-to-voting-ledger prove-digest`  | `--redis-port <integer>`     | `REDIS_PORT`        | Runtime  | None                                             | Redis port. The command fails when it is absent or invalid. |
-| `staking-ledger-to-voting-ledger prove-digest`  | `--queue-name <name>`        | `QUEUE_NAME`        | No       | `staking-ledger-to-voting-ledger-<lifecycle-id>` | Proof queue.                                                |
-| `staking-ledger-to-voting-ledger prove-digest`  | `--start-index <integer>`    | `START_INDEX`       | No       | `0` at runtime                                   | First proof-task index.                                     |
-| `staking-ledger-to-voting-ledger prove-digest`  | `--end-index <integer>`      | `END_INDEX`         | No       | All remaining tasks                              | Last range boundary.                                        |
-| `staking-ledger-to-voting-ledger prove-merge`   | `--lifecycle-id <id>`        | `LIFECYCLE_ID`      | Yes      | None                                             | Lifecycle data namespace.                                   |
-| `staking-ledger-to-voting-ledger prove-merge`   | `--redis-host <host>`        | `REDIS_HOST`        | Runtime  | None                                             | Redis host.                                                 |
-| `staking-ledger-to-voting-ledger prove-merge`   | `--redis-port <integer>`     | `REDIS_PORT`        | Runtime  | None                                             | Redis port.                                                 |
-| `staking-ledger-to-voting-ledger prove-merge`   | `--queue-name <name>`        | `QUEUE_NAME`        | No       | `staking-ledger-to-voting-ledger-<lifecycle-id>` | Proof queue.                                                |
-| `staking-ledger-to-voting-ledger prove-merge`   | `--proof-output-path <path>` | `PROOF_OUTPUT_PATH` | No       | None                                             | Optional merged-proof JSON file.                            |
-| `staking-ledger-to-voting-ledger prove-exhaust` | `--lifecycle-id <id>`        | `LIFECYCLE_ID`      | Yes      | None                                             | Lifecycle data namespace.                                   |
-| `staking-ledger-to-voting-ledger prove-exhaust` | `--proof-output-path <path>` | `PROOF_OUTPUT_PATH` | No       | None                                             | Optional exhausted-proof JSON file.                         |
+| Command                                              | Option                            | Environment            | Required | Default                                          | Meaning                                                     |
+| ---------------------------------------------------- | --------------------------------- | ---------------------- | -------- | ------------------------------------------------ | ----------------------------------------------------------- |
+| `staking-ledger-to-voting-ledger trace-digest`       | `--lifecycle-id <id>`             | `LIFECYCLE_ID`         | Yes      | None                                             | Lifecycle data namespace.                                   |
+| `staking-ledger-to-voting-ledger trace-digest`       | `--start-index <integer>`         | `START_INDEX`          | No       | `0` at runtime                                   | First batch index.                                          |
+| `staking-ledger-to-voting-ledger trace-digest`       | `--end-index <integer>`           | `END_INDEX`            | No       | All remaining batches                            | Last range boundary.                                        |
+| `staking-ledger-to-voting-ledger trace-digest`       | `--checkpoint-interval <integer>` | `CHECKPOINT_INTERVAL`  | No       | None                                             | Indices between S3 checkpoints. Requires the S3 URI.        |
+| `staking-ledger-to-voting-ledger trace-digest`       | `--checkpoint-s3-uri <uri>`       | `CHECKPOINT_S3_URI`    | No       | None                                             | S3 prefix for trace checkpoints.                            |
+| `staking-ledger-to-voting-ledger trace-digest`       | `--ledger-hash <hash>`            | `LEDGER_HASH`          | No       | None                                             | Ledger hash recorded in each checkpoint.                    |
+| `staking-ledger-to-voting-ledger checkpoint-restore` | `--lifecycle-id <id>`             | `LIFECYCLE_ID`         | Yes      | None                                             | Lifecycle data namespace.                                   |
+| `staking-ledger-to-voting-ledger checkpoint-restore` | `--expected-ledger-hash <hash>`   | `EXPECTED_LEDGER_HASH` | Yes      | None                                             | Required ledger hash for a restored checkpoint.             |
+| `staking-ledger-to-voting-ledger checkpoint-restore` | `--s3-uri <uri>`                  | `CHECKPOINT_S3_URI`    | Yes      | None                                             | S3 prefix that contains the checkpoint.                     |
+| `staking-ledger-to-voting-ledger checkpoint-clean`   | `--lifecycle-id <id>`             | `LIFECYCLE_ID`         | Yes      | None                                             | Lifecycle data namespace.                                   |
+| `staking-ledger-to-voting-ledger checkpoint-clean`   | `--s3-uri <uri>`                  | `CHECKPOINT_S3_URI`    | Yes      | None                                             | S3 prefix whose lifecycle checkpoint is removed.            |
+| `staking-ledger-to-voting-ledger prove-digest`       | `--lifecycle-id <id>`             | `LIFECYCLE_ID`         | Yes      | None                                             | Lifecycle data namespace.                                   |
+| `staking-ledger-to-voting-ledger prove-digest`       | `--redis-host <host>`             | `REDIS_HOST`           | Runtime  | None                                             | Redis host. The command fails when it is absent.            |
+| `staking-ledger-to-voting-ledger prove-digest`       | `--redis-port <integer>`          | `REDIS_PORT`           | Runtime  | None                                             | Redis port. The command fails when it is absent or invalid. |
+| `staking-ledger-to-voting-ledger prove-digest`       | `--queue-name <name>`             | `QUEUE_NAME`           | No       | `staking-ledger-to-voting-ledger-<lifecycle-id>` | Proof queue.                                                |
+| `staking-ledger-to-voting-ledger prove-digest`       | `--start-index <integer>`         | `START_INDEX`          | No       | `0` at runtime                                   | First proof-task index.                                     |
+| `staking-ledger-to-voting-ledger prove-digest`       | `--end-index <integer>`           | `END_INDEX`            | No       | All remaining tasks                              | Last range boundary.                                        |
+| `staking-ledger-to-voting-ledger prove-merge`        | `--lifecycle-id <id>`             | `LIFECYCLE_ID`         | Yes      | None                                             | Lifecycle data namespace.                                   |
+| `staking-ledger-to-voting-ledger prove-merge`        | `--redis-host <host>`             | `REDIS_HOST`           | Runtime  | None                                             | Redis host.                                                 |
+| `staking-ledger-to-voting-ledger prove-merge`        | `--redis-port <integer>`          | `REDIS_PORT`           | Runtime  | None                                             | Redis port.                                                 |
+| `staking-ledger-to-voting-ledger prove-merge`        | `--queue-name <name>`             | `QUEUE_NAME`           | No       | `staking-ledger-to-voting-ledger-<lifecycle-id>` | Proof queue.                                                |
+| `staking-ledger-to-voting-ledger prove-merge`        | `--proof-output-path <path>`      | `PROOF_OUTPUT_PATH`    | No       | None                                             | Optional merged-proof JSON file.                            |
+| `staking-ledger-to-voting-ledger prove-exhaust`      | `--lifecycle-id <id>`             | `LIFECYCLE_ID`         | Yes      | None                                             | Lifecycle data namespace.                                   |
+| `staking-ledger-to-voting-ledger prove-exhaust`      | `--proof-output-path <path>`      | `PROOF_OUTPUT_PATH`    | No       | None                                             | Optional exhausted-proof JSON file.                         |
 
 ## `vote-reducer`
 
@@ -511,7 +568,7 @@ is parsed as an integer.
 
 This command prints private keys. Use it only for development.
 
-### `transfer`
+### `transfer` {#transfer}
 
 Uses the Mina connection, common transaction, and Sender and Funding signing
 options.
@@ -523,6 +580,10 @@ options.
 
 The funding account defaults to the sender. A different funding account needs
 its matching private key or Ledger public key and index.
+
+Use the [Ledger transfer
+procedure](../cli/prerequisites.md#transfer-mina-with-ledger) for the complete
+command and reconciliation steps.
 
 ### `mina-ledger-parity`
 

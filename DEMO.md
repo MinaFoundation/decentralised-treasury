@@ -1,7 +1,9 @@
 # Mina Decentralized Treasury Demo
 
-This is the guided local demo path. It uses the in-repo local blockchain
-simulator plus the same package-local env layout as the real Mina testnet flow.
+Run this demo when you want to follow one proposal through the full Treasury
+lifecycle on your machine. The in-repo blockchain simulator replaces the Mina
+daemon, while the package-local environment layout stays close to the real
+Mina testnet flow.
 For the system concepts, see the
 [User documentation](apps/docs/docs/learn/index.md). For the controlled
 lifecycle, see the [Operator documentation](apps/docs/docs/operate/index.md).
@@ -41,17 +43,33 @@ Open `http://127.0.0.1:8080/admin`. The local blockchain exposes funded test
 accounts there. Copy one funded private key into `SENDER_PRIVATE_KEY` in
 `apps/cli/.env.local-blockchain` before deploying or funding contracts.
 
-Select one local staking ledger for lifecycle `0`. It must contain these
-default-token accounts:
+Create a development staking snapshot from the generated Treasury Owner and
+five voter public keys:
 
-- the configured Treasury Owner public key with a nonzero historical balance;
-- each delegate public key that will submit a weighted vote.
+```zsh
+dotenvx run -f apps/cli/.env.local-blockchain -- \
+  pnpm --dir apps/cli run dev staking-ledger create-development-snapshot \
+  --output-path "$PWD/.data/local-blockchain-ledgers/lifecycle-0.json"
+```
+
+This command creates six default-token accounts. The Treasury Owner has a
+nonzero historical balance. Each voter has a nonzero self-delegated balance.
+The command prints these values:
+
+- `ledgerHashBase58`;
+- `stakingEpochDataLedgerHash`;
+- `stakingEpochDataLedgerTotalCurrency` in nanomina.
+
+The default Owner balance is `1000` MINA. Each voter has `100` MINA. The
+default total is `1500000000000` nanomina.
+Both balance options require at least `100` MINA (`100000000000` nanomina).
+Snapshot JSON balances use MINA, so a JSON balance of `"100"` means `100` MINA.
 
 Set the matching snapshot values in the admin page:
 
 ```text
-stakingEpochDataLedgerTotalCurrency=<TOTAL_CURRENCY_NANOMINA>
-stakingEpochDataLedgerHash=<STAKING_LEDGER_ROOT_FIELD>
+stakingEpochDataLedgerTotalCurrency=<stakingEpochDataLedgerTotalCurrency>
+stakingEpochDataLedgerHash=<stakingEpochDataLedgerHash>
 ```
 
 The values, the JSON file, the generated identities, and the later proof must
@@ -75,8 +93,16 @@ Populate the lifecycle staking ledger SQLite from the selected JSON:
 dotenvx run -f apps/cli/.env.local-blockchain -- \
   pnpm --dir apps/cli run dev staking-ledger from-file \
   --lifecycle-id 0 \
-  --staking-ledger-path <LOCAL_STAKING_LEDGER_JSON_PATH>
+  --staking-ledger-path "$PWD/.data/local-blockchain-ledgers/lifecycle-0.json"
+
+dotenvx run -f apps/cli/.env.local-blockchain -- \
+  pnpm --dir apps/cli run dev staking-ledger get-root-hash \
+  --lifecycle-id 0 \
+  --expected-root-hash <ledgerHashBase58> \
+  --output-format json
 ```
+
+Confirm that the second command prints the same Base58 and decimal hash values.
 
 Compile and trace the staking-ledger-to-voting-ledger circuit:
 
@@ -192,8 +218,11 @@ Set the required slot in `http://127.0.0.1:8080/admin`. Run
 
 Use the web application to create a proposal during the Proposal period. The
 wallet must control a funded local account. The generated CLI private keys are
-not imported into Auro or Ledger automatically. Keep the proposal-creator
-wallet connected for later web execution.
+not imported into Auro or Ledger automatically.
+
+Use [Signing with Ledger and
+Auro](apps/docs/docs/learn/signing-with-ledger-and-auro.md) to prepare the
+selected wallet and review the supported operations.
 
 You can instead create the proposal with the CLI:
 
@@ -221,9 +250,10 @@ dotenvx run -f apps/cli/.env.local-blockchain -- \
 ```
 
 Set the simulator to the Voting start slot. Confirm `period=voting` with
-`treasury-owner read-state`. Use the web application or the CLI to submit votes
-from at least five eligible voter keys. Five non-initial action-state values
-are required by the tally flow. A CLI vote has this form:
+`treasury-owner read-state`. Use the web application or the CLI to submit at
+least five included vote actions. Five distinct non-initial action-state values
+are required by the tally flow. This demo uses five eligible voter keys so each
+first action can add voting weight. A CLI vote has this form:
 
 ```zsh
 dotenvx run -f apps/cli/.env.local-blockchain -- \
@@ -286,8 +316,9 @@ Read Proposal state. Continue only when its status is `APPROVED`. Set the
 simulator to the first slot of lifecycle `1`. Confirm `lifecycleId=1` and
 `period=proposal`.
 
-For web execution, reconnect the wallet that created the proposal. The CLI can
-use any valid signed sender. Execute with the same recipient public key:
+For web execution, connect any funded wallet. It does not have to be the
+proposal creator. The CLI can also use any valid signed sender. Execute with
+the same recipient public key:
 
 ```zsh
 dotenvx run -f apps/cli/.env.local-blockchain -- \
@@ -300,16 +331,11 @@ dotenvx run -f apps/cli/.env.local-blockchain -- \
 Read Proposal state again. Confirm that `paidOutAmount` and the Mina balances
 changed by the executed amount.
 
-## Real Mina Testnet Path
+## Continue With Another Setup
 
-For the same treasury flow against a real Mina node on GraphQL `3001` and
-archive `8282`, use:
+Do not convert this simulator setup by changing only its environment file.
+Each network path has different endpoints, accounts, timing, and ledger input.
 
-```zsh
-pnpm env:bootstrap testnet -- --sender-private-key <FUNDED_TESTNET_PRIVATE_KEY>
-pnpm testnet:up:build
-```
-
-The detailed real-node setup, staking-ledger export, Archive requirements, and
-operator checks are in the [testnet runbook](devops/TESTNET.md) and the
-[Mina node runbook](devops/TESTNET_MINA_NODE.md).
+Use the [Mina node runbook](devops/TESTNET_MINA_NODE.md) for a local Mina
+single-node development network. Use the [testnet runbook](devops/TESTNET.md)
+for a long-running Compose host connected to a live testnet.

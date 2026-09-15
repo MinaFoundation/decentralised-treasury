@@ -9,7 +9,7 @@ page_kind: procedure
 
 :::info Source-controlled procedure
 
-This page contains the complete `devops/runbooks/1-Network/1a-Archive-Node/README.md` procedure and each YAML file in the same directory. Change the source files. Then run `pnpm --dir apps/docs run generate:runbooks`.
+The full `devops/runbooks/1-Network/1a-Archive-Node/README.md` procedure is published here with each YAML file that it needs. To update this page, change the source files and run `pnpm --dir apps/docs run generate:runbooks`.
 
 :::
 
@@ -229,12 +229,12 @@ requires a rebuild, but it does not cause loss of source data.
 
 - Chart: [https://github.com/MinaFoundation/helm-charts/tree/main/mina-archive](https://github.com/MinaFoundation/helm-charts/tree/main/mina-archive).
 - Consumer: `packages/indexer/src/archive/client.ts`, `queries.ts`.
-- Local equivalent: `devops/TESTNET_MINA_NODE.md`.
+- Local development alternative: [Mina single-node network](/developer/local-development/mina-single-node).
 - Next: `1b-Mina-Daemon`.
 
 ## Configuration File: `helmfile.yaml`
 
-This is the complete `devops/runbooks/1-Network/1a-Archive-Node/helmfile.yaml` file.
+The complete `devops/runbooks/1-Network/1a-Archive-Node/helmfile.yaml` file follows.
 
 [Download `helmfile.yaml`](pathname:///runbook-files/1-Network/1a-Archive-Node/helmfile.yaml)
 
@@ -314,5 +314,5 @@ releases:
 
 ## Sources
 
-- `devops/runbooks/1-Network/1a-Archive-Node/README.md` (SHA-256: `f9f04573dd2edea450e5920c16a5219858bb7236c809f769b093cfbc99f5634e`)
+- `devops/runbooks/1-Network/1a-Archive-Node/README.md` (SHA-256: `3ac812dda8b1d20647ba7bd449a6d814bd328891efcea8c4d097f400e260f1fe`)
 - `devops/runbooks/1-Network/1a-Archive-Node/helmfile.yaml` (SHA-256: `b7b9adb2cb51dabbdf023eec7c9212adb43249c2d981a198a03c05216d8021e8`)

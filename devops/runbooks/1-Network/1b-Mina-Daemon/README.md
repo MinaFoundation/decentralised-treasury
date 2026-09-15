@@ -236,5 +236,5 @@ NEXT_PUBLIC_MINA_NODE_URL=https://devnet.minaprotocol.network/graphql
 ## References
 
 - Charts: <https://github.com/MinaFoundation/helm-charts/tree/main/mina-daemon>, <https://github.com/MinaFoundation/helm-charts/tree/main/raw>.
-- Local equivalent: `devops/TESTNET_MINA_NODE.md`.
+- Local development alternative: [Mina single-node network](/developer/local-development/mina-single-node).
 - Previous: `1a-Archive-Node`. Next: `1c-Staking-Ledger-Provider`.

@@ -94,16 +94,22 @@ the backend services already use, so a single variable can configure both.
 | `NEXT_PUBLIC_INDEXER_API_URL`                                                    | `http://127.0.0.1:3100/indexer`      | indexer API                                                          |
 | `NEXT_PUBLIC_PROCESSOR_API_URL`                                                  | `http://127.0.0.1:3100/processor`    | processor API                                                        |
 | `NEXT_PUBLIC_MINA_NODE_URL`                                                      | `http://127.0.0.1:3100/mina/graphql` | Mina GraphQL endpoint                                                |
-| `NEXT_PUBLIC_NETWORK_ID`                                                         | `MAINNET`                            | network label shown in the UI                                        |
+| `NEXT_PUBLIC_NETWORK_ID`                                                         | `MAINNET`                            | transaction and Ledger signing domain; also shown in the UI          |
 | `NEXT_PUBLIC_TREASURY_OWNER_CONTRACT_ADDRESS`, `TREASURY_OWNER_CONTRACT_ADDRESS` | _(none)_                             | treasury owner contract; balance and actions are disabled without it |
 | `NEXT_PUBLIC_LIFECYCLE_PERIOD_DURATION`, `LIFECYCLE_PERIOD_DURATION`             | _(none)_                             | slots per lifecycle period                                           |
 | `NEXT_PUBLIC_SLOT_DURATION_MS`                                                   | _(none)_                             | slot duration, for countdowns                                        |
-| `NEXT_PUBLIC_PROOFS_ENABLED`                                                     | _(none)_                             | `false` disables browser proving; any other value enables it         |
+| `NEXT_PUBLIC_PROOFS_ENABLED`                                                     | _(none)_                             | browser proof-mode input; see the main web limitation below          |
 | `NEXT_PUBLIC_BUILD_SHA`, `BUILD_SHA`                                             | `unknown`                            | revision shown in the footer; baked into the image at build time     |
 
-Browser proving additionally needs the artifacts emitted by the treasury-owner
-CLI `compile` command. Proving fails with an explicit "Missing required browser
-prover config" error naming the first one missing:
+Keep `NEXT_PUBLIC_MINA_NODE_URL` and `NEXT_PUBLIC_NETWORK_ID` paired for one
+Mina network. The application does not derive the signing domain from the URL.
+
+The current main web create, vote, and execute flows always compile and prove.
+`NEXT_PUBLIC_PROOFS_ENABLED=false` does not disable these flows. They still need
+the artifacts emitted by the treasury-owner CLI `compile` command.
+
+Proving fails with an explicit "Missing required browser prover config" error
+that names the first missing value:
 
 - `NEXT_PUBLIC_VOTE_REDUCER_VERIFICATION_KEY_JSON`
 - `NEXT_PUBLIC_STAKING_LEDGER_TO_VOTING_LEDGER_VERIFICATION_KEY_JSON`
@@ -122,6 +128,9 @@ The in-app settings dialog stores endpoint overrides in `localStorage` under
 environment for that browser, so a returning user keeps their old endpoints
 after the deployment is reconfigured. Clearing that key restores the
 container's values.
+
+The saved settings also retain `NEXT_PUBLIC_NETWORK_ID`. Clear the saved
+settings when a deployment moves to a different Mina network.
 
 ## Running the whole stack from published images
 

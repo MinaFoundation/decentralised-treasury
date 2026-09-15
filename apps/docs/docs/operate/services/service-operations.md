@@ -8,7 +8,13 @@ page_kind: procedure
 
 # Service Procedures
 
-Use these procedures for the testnet Compose stack.
+Use these procedures for the long-running Compose application stack on a live
+Mina testnet. First complete [Run Compose on a Live
+Testnet](../deployment/compose-testnet.md).
+
+This stack does not start Mina, Archive, or a staking-ledger exporter. Do not
+use this page for the three local Developer network modes.
+
 Run each command from the repository root.
 Replace each environment-file placeholder with the generated file defined in
 [Generate an Environment Family](../lifecycle/configure-the-treasury.md#generate-an-environment-family).
@@ -27,6 +33,10 @@ Confirm these conditions:
 - `TREASURY_OWNER_CONTRACT_ADDRESS` identifies the intended treasury;
 - Postgres and lifecycle bind-mount paths have sufficient space;
 - the staking-ledger source is available when the scheduler must run.
+
+The source is an external snapshot producer. It must publish the exact
+`<ledgerHash>.json` payload before it publishes the matching
+`lifecycle-<id>.hash` pointer.
 
 Render the resolved Compose configuration:
 
@@ -102,24 +112,18 @@ pnpm testnet:up:public:build
 ```
 
 The public profile requires `LETSENCRYPT_EMAIL` and `PUBLIC_WEB_DOMAIN`.
-Do not publish the Backoffice application through this profile.
+The command also starts the loopback proxy. The public proxy does not publish
+Backoffice. Use the loopback listener through an authenticated SSH tunnel.
 
 ## Inspect service state
 
-List the local-profile containers:
+List all configured profile containers:
 
 ```bash
-docker compose \
-  --env-file <DEVOPS_ENV_FILE> \
-  --env-file <API_ENV_FILE> \
-  --env-file <BACKOFFICE_ENV_FILE> \
-  --env-file <WEB_ENV_FILE> \
-  -f devops/compose.yml \
-  --profile proxy \
-  ps
+pnpm testnet:status
 ```
 
-Follow all local-profile logs:
+Follow logs for all configured profiles:
 
 ```bash
 pnpm testnet:logs
@@ -220,23 +224,10 @@ the applicable scheduler and restart it after verification.
 
 ## Stop the full stack
 
-Stop the normal local stack and preserve named volumes:
+Stop every testnet profile and preserve named volumes:
 
 ```bash
 pnpm testnet:down
-```
-
-Stop a public-profile stack and preserve named volumes:
-
-```bash
-docker compose \
-  --env-file <DEVOPS_ENV_FILE> \
-  --env-file <API_ENV_FILE> \
-  --env-file <BACKOFFICE_ENV_FILE> \
-  --env-file <WEB_ENV_FILE> \
-  -f devops/compose.yml \
-  --profile public-proxy \
-  down
 ```
 
 Do not use `pnpm testnet:reset` as a restart command.
@@ -316,16 +307,16 @@ After the service returns, complete these checks:
 
 ## Signal guide
 
-| Component                | Primary signal                                 | Interpretation                                              |
-| ------------------------ | ---------------------------------------------- | ----------------------------------------------------------- |
-| App API                  | `/healthz` and a task-specific route.          | The process responds, and the selected read succeeds.       |
-| Indexer                  | Indexer `/status` and `indexer` logs.          | Archive heads and cursors show ingestion progress.          |
-| Processor                | Processor `/status` and `processor` logs.      | The offset moves and `remainingEvents` returns toward zero. |
-| Voting scheduler         | Logs and `.sqlite.done`.                       | The lifecycle trace step finished.                          |
-| Proving scheduler        | Logs, proof JSON, and `.sqlite.proven`.        | The configured staking-ledger proof steps finished.         |
-| Proving workers          | Worker logs and Redis activity.                | Workers receive and complete queue tasks.                   |
-| Web or Backoffice        | Root response and task-specific browser check. | The HTTP process and selected client path work.             |
-| Mina or Archive service  | Service status and direct endpoint query.      | The service answers for the intended network.               |
+| Component               | Primary signal                                 | Interpretation                                              |
+| ----------------------- | ---------------------------------------------- | ----------------------------------------------------------- |
+| App API                 | `/healthz` and a task-specific route.          | The process responds, and the selected read succeeds.       |
+| Indexer                 | Indexer `/status` and `indexer` logs.          | Archive heads and cursors show ingestion progress.          |
+| Processor               | Processor `/status` and `processor` logs.      | The offset moves and `remainingEvents` returns toward zero. |
+| Voting scheduler        | Logs and `.sqlite.done`.                       | The lifecycle trace step finished.                          |
+| Proving scheduler       | Logs, proof JSON, and `.sqlite.proven`.        | The configured staking-ledger proof steps finished.         |
+| Proving workers         | Worker logs and Redis activity.                | Workers receive and complete queue tasks.                   |
+| Web or Backoffice       | Root response and task-specific browser check. | The HTTP process and selected client path work.             |
+| Mina or Archive service | Service status and direct endpoint query.      | The service answers for the intended network.               |
 
 ## External alert integration
 

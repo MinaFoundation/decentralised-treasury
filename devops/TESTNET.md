@@ -1,10 +1,11 @@
-# Testnet Operator Runbook
+# Compose Live-Testnet Operator Runbook
 
-Use this guide to run the treasury Compose stack against a Mina testnet node and
-archive node. It is the Compose operator path. For a local simulator demo, use
-`DEMO.md`. For a local Mina daemon and archive node, use
-`devops/TESTNET_MINA_NODE.md`. For the Kubernetes infrastructure path, use
-`devops/runbooks/README.md`.
+Use this guide for a long-running cloud host connected to a live Mina testnet
+and matching Archive service. This is the Compose operator path.
+
+The o1js simulator, Mina-repository single-node network, and Docker Lightnet
+are development paths. Use `apps/docs/docs/developer/local-development/` for
+those procedures. Use `devops/runbooks/README.md` for Kubernetes infrastructure.
 
 ## What This Runbook Starts
 
@@ -21,18 +22,29 @@ The Compose stack starts the treasury app services only:
 - Postgres
 - Caddy reverse proxy
 
-It does not start a Mina node, archive node, Redis, proof workers, or SDK
-tracing machines. Those are external inputs.
+It does not start a Mina node, Archive node, or staking-ledger exporter. The
+optional `proving` profile adds Redis, proof workers, and the proving scheduler.
 
 ## Happy Path
 
-This is the shortest path to a running local operator stack:
+This is the shortest path to a running live-testnet application stack:
 
 ```bash
 node --version # Must be 22.19.5 or later.
 pnpm --version # Must be 9.0.0.
 CI=true pnpm install --frozen-lockfile
-pnpm env:bootstrap testnet -- --sender-private-key <FUNDED_TESTNET_PRIVATE_KEY>
+pnpm env:bootstrap testnet -- \
+  --network-id <mainnet|devnet|testnet> \
+  --proofs-enabled true \
+  --sender-private-key <FUNDED_TESTNET_PRIVATE_KEY> \
+  --mina-node-url <HOST_MINA_GRAPHQL_URL> \
+  --archive-node-url <HOST_ARCHIVE_GRAPHQL_URL> \
+  --compose-mina-node-upstream <CONTAINER_MINA_UPSTREAM> \
+  --compose-archive-node-url <CONTAINER_ARCHIVE_GRAPHQL_URL> \
+  --next-public-treasury-api-url <PUBLIC_WEB_ORIGIN>/api \
+  --next-public-indexer-api-url <PUBLIC_WEB_ORIGIN>/indexer \
+  --next-public-processor-api-url <PUBLIC_WEB_ORIGIN>/processor \
+  --next-public-mina-node-url <PUBLIC_WEB_ORIGIN>/mina/graphql
 # Review apps/api/.env.testnet, apps/backoffice/.env.testnet, apps/cli/.env.testnet, and apps/web/.env.testnet.
 dotenvx run -f apps/cli/.env.testnet -- pnpm run cli -- treasury-owner compile
 # Copy emitted browserEnv values into apps/web/.env.testnet and apps/backoffice/.env.testnet.
@@ -40,7 +52,7 @@ dotenvx run -f apps/cli/.env.testnet -- pnpm run cli -- treasury-owner deploy
 dotenvx run -f apps/cli/.env.testnet -- pnpm run cli -- treasury-owner fund-treasury --amount 1000000000000
 pnpm testnet:up:build
 curl http://127.0.0.1:4100/healthz
-# Visit http://127.0.0.1:3100 and http://127.0.0.1:3200 in your browser.
+# Visit the configured user web origin. Keep Backoffice on loopback.
 ```
 
 If the funded sender key is already present in `apps/cli/.env.testnet`, rerun
@@ -48,8 +60,9 @@ If the funded sender key is already present in `apps/cli/.env.testnet`, rerun
 
 ## 1. Prepare External Testnet Services
 
-The Compose stack consumes Mina and Archive endpoints. You can use an external
-provider, the local node procedure, or the Kubernetes procedures:
+The Compose stack consumes live Mina and Archive endpoints. Use an approved
+managed provider or self-operated live-testnet services. The Kubernetes
+network procedures are:
 
 - `devops/runbooks/1-Network/1a-Archive-Node/README.md`
 - `devops/runbooks/1-Network/1b-Mina-Daemon/README.md`
@@ -63,40 +76,22 @@ Before bootstrapping, make sure you have:
 - a host-reachable archive GraphQL endpoint for CLI/operator commands
 - a funded sender private key for testnet fees
 
-For a local Mina node using the companion runbook, the defaults are:
-
-```text
-MINA_NODE_URL=http://127.0.0.1:3001/graphql
-ARCHIVE_NODE_URL=http://127.0.0.1:8282
-NEXT_PUBLIC_TREASURY_API_URL=http://127.0.0.1:3100/api
-NEXT_PUBLIC_INDEXER_API_URL=http://127.0.0.1:3100/indexer
-NEXT_PUBLIC_PROCESSOR_API_URL=http://127.0.0.1:3100/processor
-NEXT_PUBLIC_MINA_NODE_URL=http://127.0.0.1:3100/mina/graphql
-MINA_NODE_PROXY_UPSTREAM=http://host.docker.internal:3001
-Compose ARCHIVE_NODE_URL=http://host.docker.internal:8282
-```
-
-Start that local Mina node with the archive GraphQL port pinned to `8282`:
-
-```bash
-nix-shell -p openssl git python3 --run \
-  './scripts/mina-local-network/single-node-load.sh --no-proofs --epoch-min 30 --indefinite --archive --archive-graphql-port 8282'
-```
-
-For hosted infrastructure or non-default local ports, pass the endpoints to
-bootstrap instead of editing generated files by hand:
+Do not rely on the bootstrap localhost defaults for a cloud deployment. Pass
+the live endpoints to bootstrap instead of editing generated files by hand:
 
 ```bash
 pnpm env:bootstrap testnet -- \
+  --network-id <mainnet|devnet|testnet> \
+  --proofs-enabled true \
   --sender-private-key <FUNDED_TESTNET_PRIVATE_KEY> \
-  --mina-node-url http://127.0.0.1:3001/graphql \
-  --archive-node-url http://127.0.0.1:8282 \
-  --compose-mina-node-upstream http://host.docker.internal:3001 \
-  --compose-archive-node-url http://host.docker.internal:8282 \
-  --next-public-treasury-api-url http://127.0.0.1:3100/api \
-  --next-public-indexer-api-url http://127.0.0.1:3100/indexer \
-  --next-public-processor-api-url http://127.0.0.1:3100/processor \
-  --next-public-mina-node-url http://127.0.0.1:3100/mina/graphql
+  --mina-node-url <HOST_MINA_GRAPHQL_URL> \
+  --archive-node-url <HOST_ARCHIVE_GRAPHQL_URL> \
+  --compose-mina-node-upstream <CONTAINER_MINA_UPSTREAM> \
+  --compose-archive-node-url <CONTAINER_ARCHIVE_GRAPHQL_URL> \
+  --next-public-treasury-api-url <PUBLIC_WEB_ORIGIN>/api \
+  --next-public-indexer-api-url <PUBLIC_WEB_ORIGIN>/indexer \
+  --next-public-processor-api-url <PUBLIC_WEB_ORIGIN>/processor \
+  --next-public-mina-node-url <PUBLIC_WEB_ORIGIN>/mina/graphql
 ```
 
 `--mina-node-url` and `--archive-node-url` are the host-facing URLs written to
@@ -107,14 +102,14 @@ API, indexer, and processor containers.
 The bootstrap command also reads existing shell values when flags are omitted:
 
 ```bash
-export MINA_NODE_URL=http://127.0.0.1:3001/graphql
-export ARCHIVE_NODE_URL=http://127.0.0.1:8282
-export MINA_NODE_PROXY_UPSTREAM=http://host.docker.internal:3001
-export COMPOSE_ARCHIVE_NODE_URL=http://host.docker.internal:8282
-export NEXT_PUBLIC_TREASURY_API_URL=http://127.0.0.1:3100/api
-export NEXT_PUBLIC_INDEXER_API_URL=http://127.0.0.1:3100/indexer
-export NEXT_PUBLIC_PROCESSOR_API_URL=http://127.0.0.1:3100/processor
-export NEXT_PUBLIC_MINA_NODE_URL=http://127.0.0.1:3100/mina/graphql
+export MINA_NODE_URL=<HOST_MINA_GRAPHQL_URL>
+export ARCHIVE_NODE_URL=<HOST_ARCHIVE_GRAPHQL_URL>
+export MINA_NODE_PROXY_UPSTREAM=<CONTAINER_MINA_UPSTREAM>
+export COMPOSE_ARCHIVE_NODE_URL=<CONTAINER_ARCHIVE_GRAPHQL_URL>
+export NEXT_PUBLIC_TREASURY_API_URL=<PUBLIC_WEB_ORIGIN>/api
+export NEXT_PUBLIC_INDEXER_API_URL=<PUBLIC_WEB_ORIGIN>/indexer
+export NEXT_PUBLIC_PROCESSOR_API_URL=<PUBLIC_WEB_ORIGIN>/processor
+export NEXT_PUBLIC_MINA_NODE_URL=<PUBLIC_WEB_ORIGIN>/mina/graphql
 ```
 
 ## 2. Bootstrap Env Files
@@ -149,22 +144,27 @@ Use `--fresh-keys` only when you want new treasury owner, pause controller,
 multisig, sender, and voter identities. Use `--overwrite-secrets` only when you
 want new infrastructure secrets such as `POSTGRES_PASSWORD`.
 
+The testnet templates use `devnet` signatures and enable proofs by default.
+Use `--network-id` and `--proofs-enabled` when the target requires other
+values. The generator applies each override to all generated consumers.
+
 ## 3. Review Env Values
 
 Check `apps/cli/.env.testnet`:
 
 ```text
-MINA_NODE_URL=http://127.0.0.1:3001/graphql
-ARCHIVE_NODE_URL=http://127.0.0.1:8282
+MINA_NODE_URL=<HOST_MINA_GRAPHQL_URL>
+ARCHIVE_NODE_URL=<HOST_ARCHIVE_GRAPHQL_URL>
+MINA_NETWORK_ID=<SIGNATURE_NETWORK_ID>
 SENDER_PRIVATE_KEY=<funded sender>
-LIFECYCLE_PERIOD_DURATION=48
+LIFECYCLE_PERIOD_DURATION=7140
 SQLITE_DATA_DIRECTORY=./.data/testnet-sqlite
 ```
 
 Check `apps/api/.env.testnet`:
 
 ```text
-ARCHIVE_NODE_URL=http://host.docker.internal:8282
+ARCHIVE_NODE_URL=<CONTAINER_ARCHIVE_GRAPHQL_URL>
 DATABASE_URL=postgres://...
 TREASURY_OWNER_CONTRACT_ADDRESS=<generated treasury owner public key>
 SQLITE_DATA_DIRECTORY=/data/sqlite
@@ -173,10 +173,10 @@ SQLITE_DATA_DIRECTORY=/data/sqlite
 Check `apps/web/.env.testnet`:
 
 ```text
-NEXT_PUBLIC_TREASURY_API_URL=http://127.0.0.1:3100/api
-NEXT_PUBLIC_INDEXER_API_URL=http://127.0.0.1:3100/indexer
-NEXT_PUBLIC_PROCESSOR_API_URL=http://127.0.0.1:3100/processor
-NEXT_PUBLIC_MINA_NODE_URL=http://127.0.0.1:3100/mina/graphql
+NEXT_PUBLIC_TREASURY_API_URL=<PUBLIC_WEB_ORIGIN>/api
+NEXT_PUBLIC_INDEXER_API_URL=<PUBLIC_WEB_ORIGIN>/indexer
+NEXT_PUBLIC_PROCESSOR_API_URL=<PUBLIC_WEB_ORIGIN>/processor
+NEXT_PUBLIC_MINA_NODE_URL=<PUBLIC_WEB_ORIGIN>/mina/graphql
 NEXT_PUBLIC_NETWORK_ID=DEVNET
 ```
 
@@ -197,9 +197,13 @@ PROXY_WEB_PORT=3100
 PROXY_API_PORT=4100
 PROXY_INDEXER_PORT=4101
 PROXY_PROCESSOR_PORT=4102
-MINA_NODE_PROXY_UPSTREAM=http://host.docker.internal:3001
-SQLITE_DATA_HOST_PATH=../.data/testnet-sqlite
+MINA_NODE_PROXY_UPSTREAM=<CONTAINER_MINA_UPSTREAM>
+SQLITE_DATA_HOST_PATH=/opt/mina/.treasury-sqlite
+STAKING_LEDGERS_HOST_PATH=/opt/mina/.treasury-staking-ledgers
 ```
+
+Keep `NEXT_PUBLIC_NETWORK_ID` paired with the Mina endpoint. It selects the
+transaction and Ledger signing domain. It is not only a display label.
 
 Do not commit these files or paste them into logs, screenshots, docs, or chat.
 
@@ -215,7 +219,7 @@ funded on the same network as `MINA_NODE_URL`.
 ## 5. Compile Browser Prover Config
 
 The web app needs browser-safe verification keys and empty-tree roots before it
-can create, vote, tally, or execute proposals in the UI.
+can create, vote, or execute proposals in the UI. Tally is a CLI operation.
 
 Run:
 
@@ -282,7 +286,7 @@ deployed address into all four files before you start Compose.
 
 ## 7. Start And Verify Compose
 
-Start the local operator stack:
+Start the long-running application stack:
 
 ```bash
 pnpm testnet:up
@@ -307,7 +311,7 @@ curl http://127.0.0.1:4102/healthz
 curl http://127.0.0.1:4102/status
 ```
 
-Open the UI:
+Open the loopback UIs on the operator host:
 
 ```text
 http://127.0.0.1:3100
@@ -366,6 +370,17 @@ Start the public proxy profile:
 ```bash
 pnpm testnet:up:public
 ```
+
+This command also selects the local proxy profile. The public HTTPS proxy does
+not expose Backoffice. The local proxy keeps Backoffice on the host loopback
+address. From an operator workstation, create an SSH tunnel:
+
+```bash
+ssh -N -L 3200:127.0.0.1:3200 <OPERATOR_HOST>
+```
+
+Open `http://127.0.0.1:3200` on that workstation. This secure loopback context
+supports Ledger WebHID in a compatible Chromium browser.
 
 Remove the staging CA value before a real deployment so Caddy requests
 production Let's Encrypt certificates.
@@ -454,6 +469,11 @@ dotenvx run -f apps/cli/.env.testnet -- \
 
 Repeat with `yay`, `nay`, or `abstain` for each voter you want in the test.
 
+Submit at least five included vote actions during the Voting period. Tally
+needs five distinct non-initial action-state targets. Use five eligible voter
+keys in an acceptance run so each first vote can add weight. Later actions from
+one voter do not add more weight.
+
 ### Pause Or Unpause A Proposal
 
 Generate multisig signatures for at least three multisig participants:
@@ -512,31 +532,90 @@ root.
 
 ### Build Staking-Ledger-To-Voting-Ledger Data
 
-The Compose stack runs a `voting-ledger-scheduler` service that automates this.
-It's a plain bash poll loop (`devops/docker/voting-ledger-scheduler-entrypoint.sh`)
-around the CLI — there is no long-lived Node process. Every
-`VOTING_LEDGER_SCHEDULER_POLL_INTERVAL_SECONDS` (default 30s) it runs the same
-`staking-ledger` / `staking-ledger-to-voting-ledger` commands shown below
-directly (config comes from the container's environment, not
-`apps/cli/.env.testnet` — it doesn't need the private keys that file also
-holds), watching `STAKING_LEDGERS_HOST_PATH` (default `/opt/mina/.mina-network/staking_ledgers`,
-populated on the host by the Mina daemon or `monitor-staking-ledger.sh` as
-`<epoch>-<hash>.tar.gz` files) and, if the newest epoch that starts a new
-treasury lifecycle (`epoch == deployedEpoch + 4 * lifecycleId`, given
-`TREASURY_DEPLOYED_AT_SLOT` and `LIFECYCLE_PERIOD_DURATION`) isn't done yet:
+The Compose stack runs `voting-ledger-scheduler`. It is a shell poll loop around
+the repository CLI. It does not export a ledger or calculate a Mina epoch.
 
-1. hydrates that lifecycle's staking-ledger SQLite (`staking-ledger from-file`),
-2. verifies the resulting root hash against the hash embedded in the archive's
-   filename (the same `mina ledger hash` value the chain would serve over
-   GraphQL as `stakingEpochData.ledger.hash`),
-3. runs `staking-ledger-to-voting-ledger trace-digest`,
-4. and writes `<lifecycleId>.sqlite.done` as a completion marker.
+An external snapshot producer must populate `STAKING_LEDGERS_HOST_PATH` with
+this exact content-addressed input:
 
-Each poll selects the newest unprocessed lifecycle. A failed lifecycle remains
-selectable, but newer unfinished snapshots have priority. Use a stopped
-one-shot process when an earlier lifecycle must run first.
+```text
+<ledgerHash>.json
+lifecycle-<lifecycleId>.hash
+```
 
-Stop the scheduler, API, and processor before the one-shot process:
+The pointer file contains one Base58 ledger hash. Publish the verified JSON
+payload before the pointer. Use an atomic final move for both files.
+
+After the scheduler writes `<lifecycleId>.sqlite.done`, treat that lifecycle
+pointer as immutable. A changed pointer is reported and skipped. Use the
+stopped one-shot rebuild below for an approved correction.
+
+For a self-operated Mina node, export the current staking epoch ledger on the
+node:
+
+```bash
+mina ledger export staking-epoch-ledger \
+  --daemon-port <MINA_CLIENT_PORT> > <STAGING_LEDGER_JSON>
+```
+
+For a managed node, obtain the same Mina-format JSON from the approved snapshot
+provider. Query `stakingEpochData.ledger.hash` from Mina and verify the file:
+
+```bash
+mkdir -p <LEDGER_VALIDATION_DIRECTORY>
+
+dotenvx run -f apps/cli/.env.testnet -- \
+  env SQLITE_DATA_DIRECTORY=<LEDGER_VALIDATION_DIRECTORY> \
+  pnpm run cli -- staking-ledger from-file \
+  --lifecycle-id <VALIDATION_ID> \
+  --staking-ledger-path <STAGING_LEDGER_JSON>
+
+dotenvx run -f apps/cli/.env.testnet -- \
+  env SQLITE_DATA_DIRECTORY=<LEDGER_VALIDATION_DIRECTORY> \
+  pnpm run cli -- staking-ledger get-root-hash \
+  --lifecycle-id <VALIDATION_ID> \
+  --expected-root-hash <LEDGER_HASH> \
+  --output-format json
+```
+
+Publish the validated input:
+
+```bash
+cp <STAGING_LEDGER_JSON> \
+  <STAKING_LEDGERS_HOST_PATH>/<LEDGER_HASH>.json.tmp
+mv <STAKING_LEDGERS_HOST_PATH>/<LEDGER_HASH>.json.tmp \
+  <STAKING_LEDGERS_HOST_PATH>/<LEDGER_HASH>.json
+
+printf '%s\n' '<LEDGER_HASH>' \
+  > <STAKING_LEDGERS_HOST_PATH>/lifecycle-<L>.hash.tmp
+mv <STAKING_LEDGERS_HOST_PATH>/lifecycle-<L>.hash.tmp \
+  <STAKING_LEDGERS_HOST_PATH>/lifecycle-<L>.hash
+```
+
+Do not change a published pointer while its lifecycle is processing. The
+scheduler fails the current run if it detects a change before completion.
+
+Every `VOTING_LEDGER_SCHEDULER_POLL_INTERVAL_SECONDS`, the scheduler processes
+all eligible lifecycle pointers from newest to oldest. For each lifecycle, it:
+
+1. validates the lifecycle ID and pointer hash;
+2. requires the matching `<ledgerHash>.json` payload;
+3. restores a matching checkpoint, or clears partial lifecycle SQLite state;
+4. imports the JSON when it did not restore a checkpoint;
+5. verifies the calculated root against the pointer hash;
+6. runs `staking-ledger-to-voting-ledger trace-digest`;
+7. writes `<lifecycleId>.sqlite.done`.
+
+A failed lifecycle gets exponential retry backoff. Other eligible lifecycles
+can still run in the same poll. The scheduler mounts snapshot input read-only.
+Replace an invalid host payload before retrying.
+
+Use a stopped one-shot process when one lifecycle must run by itself. Use this
+short procedure only before that lifecycle has proof files or a `.sqlite.proven`
+marker. Use the complete [Rebuild One Lifecycle](../apps/docs/docs/operate/proving/ledgers-and-proving.md#rebuild-one-lifecycle)
+procedure for a completed or proved lifecycle.
+
+Stop both schedulers, the API, and the processor before the one-shot process:
 
 ```bash
 docker compose \
@@ -546,7 +625,8 @@ docker compose \
   --env-file apps/web/.env.testnet \
   -f devops/compose.yml \
   --profile proxy \
-  stop voting-ledger-scheduler api processor
+  --profile proving \
+  stop voting-ledger-scheduler proving-scheduler api processor
 
 docker compose \
   --env-file devops/.env.testnet \
@@ -555,17 +635,21 @@ docker compose \
   --env-file apps/web/.env.testnet \
   -f devops/compose.yml \
   --profile proxy \
-  run --rm --no-deps voting-ledger-scheduler \
+  --profile proving \
+  run --rm --no-deps \
+  -e CHECKPOINT_S3_URI= \
+  -e CHECKPOINT_INTERVAL= \
+  voting-ledger-scheduler \
   /bin/sh \
   devops/docker/voting-ledger-scheduler-entrypoint.sh \
   process-lifecycle 17
 ```
 
-`process-lifecycle` always wipes that lifecycle's SQLite state first, so a
-retry after a crash or hash mismatch starts clean rather than replaying
-already-committed batches against advanced state.
+The blank checkpoint values force this one-shot command to rebuild from the
+verified payload. Without these overrides, a matching checkpoint can resume
+the trace instead.
 
-Check `<SQLITE_DATA_HOST_PATH>/17.sqlite.done`. Keep the three services stopped
+Check `<SQLITE_DATA_HOST_PATH>/17.sqlite.done`. Keep the four services stopped
 when the one-shot process fails. After successful verification, start them:
 
 ```bash
@@ -579,12 +663,15 @@ docker compose \
   start api processor voting-ledger-scheduler
 ```
 
+Leave `proving-scheduler` stopped. Start the proving profile through the
+Automated Proving procedure after the trace is valid.
+
 Check `docker compose ... logs -f voting-ledger-scheduler` to follow progress,
 and `<SQLITE_DATA_HOST_PATH>/<lifecycleId>.sqlite.done` to confirm a given
 lifecycle is ready. A hash mismatch or crash is logged with its exit status
 (the poll loop captures the CLI subprocess's real exit code, including
-128+signal for a signal kill). The lifecycle remains selectable during a later
-poll.
+128+signal for a signal kill). The lifecycle remains selectable after its retry
+backoff.
 
 The container runs as the non-root `node` user (uid 1000) for hardening. If
 `SQLITE_DATA_HOST_PATH` doesn't exist yet, Docker creates it as `root` on first
@@ -602,9 +689,10 @@ chown -R 1000:1000 "$SQLITE_DATA_HOST_PATH"
 Tracing alone is not sufficient to tally votes. Each lifecycle also needs an
 _exhausted_ proof, which means running the actual SNARK circuit
 (`prove-digest` → `prove-merge` → `prove-exhaust`) against Redis and one or
-more BullMQ workers. This is opt-in, since it starts Redis and adds real
-compute cost. Set `PROOFS_ENABLED=true` in `devops/.env.testnet` and
-`apps/api/.env.testnet`. Then bring the stack up with
+more BullMQ workers. The profile is opt-in because it starts Redis and adds
+real compute cost. The generated testnet family sets `PROOFS_ENABLED=true` by
+default. Confirm this value in `apps/api/.env.testnet`. The later env file wins
+when the same field occurs in more than one file. Then bring the stack up with
 `pnpm testnet:up:proving` (or add
 `--profile proving` to `docker compose ... up` yourself) instead of the plain
 `pnpm testnet:up`.
@@ -629,9 +717,9 @@ With the profile enabled, Compose additionally runs:
   `<lifecycleId>.sqlite.proven` marker, and runs `prove-digest`, `prove-merge`,
   and `prove-exhaust` for it, writing the merged and exhausted proof JSON to
   `PROVING_OUTPUT_DIRECTORY` (default `<SQLITE_DATA_DIRECTORY>/proofs`).
-  Unlike `voting-ledger-scheduler`, this **does** work the full backlog
-  oldest-first rather than only the newest lifecycle — skipping an older,
-  not-yet-proven lifecycle would leave its votes permanently untallyable.
+  The voting-ledger scheduler works its full pending backlog newest-first.
+  The proving scheduler works its full proof backlog oldest-first. It cannot
+  skip an older lifecycle because that lifecycle would remain untallyable.
 
 Check `docker compose ... logs -f proving-scheduler` to follow progress, and
 `<SQLITE_DATA_HOST_PATH>/proofs/<lifecycleId>-exhausted.json` /
@@ -679,16 +767,15 @@ docker compose \
   start proving-scheduler
 ```
 
-The proving scheduler and workers default to `PROOFS_ENABLED=false`. The
-scheduler exits before proving or marker creation unless this value is exactly
-`true`.
+The Compose fallback is `PROOFS_ENABLED=false`, but the generated testnet
+family selects `true`. The scheduler exits before proving or marker creation
+unless the resolved value is exactly `true`. Generate the family with
+`--proofs-enabled false` when you want a proof-disabled deployment.
 
-The steps below remain useful for one-off runs, debugging a specific lifecycle,
-or networks where nothing populates `STAKING_LEDGERS_HOST_PATH` automatically
-(for example `local-blockchain`), or where the `proving` profile isn't
-enabled. Use a staking ledger JSON for the target lifecycle and network. For a
-local Mina node, `devops/TESTNET_MINA_NODE.md` is the source of truth for
-ledger export.
+The steps below remain useful for one-off runs, debugging a lifecycle, or a
+deployment without an external snapshot producer. They also apply when the
+`proving` profile is not enabled. Use a staking ledger JSON for the exact
+target lifecycle and network.
 
 Populate lifecycle SQLite:
 

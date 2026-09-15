@@ -7,23 +7,30 @@ page_kind: procedure
 
 # Break-Glass Operation
 
-One operator coordinates a break-glass transaction. Five ordered signers remain
-separate from the operator. At least three signers must authorize each action.
+One operator coordinates a break-glass transaction. Operators must configure
+five unique participant public keys in their exact order. At least three
+participant positions must authorize each Pause Controller action.
 
 Read the [CLI prerequisites](../cli/prerequisites.md) before signing. Use the
 [CLI command index](../reference/cli-commands.md) to check command options.
+Read [Signing with Ledger and Auro](/learn/signing-with-ledger-and-auro) for
+wallet support, setup, and approval checks.
 
-Supported actions are:
+Backoffice supports exactly four state-changing operations:
 
 - pause all guarded treasury operations;
 - unpause all guarded treasury operations;
 - toggle one proposal pause state;
-- rotate the five ordered signer keys;
-- withdraw MINA from an enabled Treasury Owner with its account signature.
+- rotate the five ordered participant keys.
+
+Emergency withdrawal is a separate CLI operation. Backoffice does not expose
+it.
 
 ## Two Emergency Authorization Layers
 
-The Pause Controller uses three valid signatures from five ordered break-glass keys. These signatures authorize pause, unpause, proposal toggle, and key rotation methods.
+The Pause Controller uses three valid signatures from five ordered participant
+positions. Operators must use five unique keys. These signatures authorize
+pause, unpause, Proposal toggle, and key rotation methods.
 
 Emergency fund withdrawal is available only when the Owner deployment uses
 `proofOrSignature`. It uses one MINA signature from the Treasury Owner account.
@@ -109,9 +116,10 @@ exact slot. Empty comma entries keep an unused slot:
 The CLI pads unspecified trailing slots. It accepts three through five valid
 signatures.
 
-The submit command reads the action nonce from Mina. Omit `--nonce` from submit
-commands. The current CLI applies this option to the action nonce and fee-payer
-nonce. Use it only when both values are equal.
+The submit command reads the controller nonce from Mina by default. Use
+`--controller-nonce <PAUSE_CONTROLLER_NONCE>` to select the nonce signed by the
+multisig explicitly. Use `--nonce <FEE_PAYER_NONCE>` separately for the fee
+payer. The two values do not need to be equal.
 
 ## Sign with a Ledger
 
@@ -299,6 +307,13 @@ ordered list only after this Mina state check.
 The backoffice is a client-only web application. It operates existing
 contracts and does not run normal governance actions.
 
+`Signer` and `Submitter` are workflow modes. They are not authenticated roles
+or access controls.
+
+Backoffice creates participant field signatures with Ledger only. Collect at
+least three valid signatures from the five unique ordered participant keys.
+The final transaction fee payer can use Auro or Ledger.
+
 Configure these required values:
 
 ```text
@@ -311,8 +326,19 @@ NEXT_PUBLIC_MULTISIG_PARTICIPANTS_PUBLIC_KEYS
 Proposal toggling also needs the duration, three verification keys, and two
 empty roots from `treasury-owner compile`.
 
-Bootstrap writes these values to `<BACKOFFICE_ENV_FILE>`. Confirm the
-ordered participant list and copy the six compile values into this file.
+Bootstrap writes these values to `<BACKOFFICE_ENV_FILE>`. Confirm all five
+participant keys are unique and in their exact order. Copy the six compile
+values into this file.
+
+The public HTTPS Compose profile does not expose Backoffice. For a long-running
+Compose deployment, create an SSH tunnel from the operator workstation:
+
+```bash
+ssh -N -L 3200:127.0.0.1:3200 <OPERATOR_HOST>
+```
+
+Open `http://127.0.0.1:3200` on the operator workstation. The loopback origin
+is a secure browser context for WebHID.
 
 Start the local application:
 
@@ -339,7 +365,8 @@ Each signer performs these steps on an individual machine:
 5. Sign and export the signed copy.
 6. Return the signed copy to the submitter.
 
-Ledger indices stay on signer machines. They are not part of exported files.
+Each participant uses Ledger for the field signature. Ledger indices stay on
+signer machines. They are not part of exported files.
 
 The submitter then performs these steps:
 
@@ -365,6 +392,8 @@ keep the receipt with the new ordered public-key list.
 - `apps/backoffice/README.md`
 - `apps/backoffice/features/operations.ts`
 - `apps/backoffice/features/backoffice-app.tsx`
+- `devops/compose.yml`
+- `devops/proxy/Caddyfile`
 - `packages/sdk/src/provable/contracts/treasury-pause-controller/treasury-pause-controller.ts`
 - `packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts`
 - `packages/sdk/src/provable/contracts/treasury-owner.ts`

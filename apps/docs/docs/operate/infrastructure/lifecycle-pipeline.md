@@ -9,7 +9,7 @@ page_kind: procedure
 
 :::info Source-controlled procedure
 
-This page contains the complete `devops/runbooks/2-Treasury/2d-Lifecycle-Pipeline/README.md` procedure and each YAML file in the same directory. Change the source files. Then run `pnpm --dir apps/docs run generate:runbooks`.
+The full `devops/runbooks/2-Treasury/2d-Lifecycle-Pipeline/README.md` procedure is published here with each YAML file that it needs. To update this page, change the source files and run `pnpm --dir apps/docs run generate:runbooks`.
 
 :::
 
@@ -28,7 +28,7 @@ then creates one proof set. The system traces and proves one lifecycle at a
 time.
 
 ```text
-  1c provider              voting-ledger-scheduler            proving-scheduler + workers
+  1c provider + input sync voting-ledger-scheduler            proving-scheduler + workers
   ───────────              ───────────────────────            ───────────────────────────
   staking-<epoch>          from-file  ->  trace-digest        prove-digest -> prove-merge
     -<hash>.tar.gz    ─────────────────────────────────────>    -> prove-exhaust
@@ -37,6 +37,11 @@ time.
          v                          v                                    v
    /staking-ledgers/           /sqlite/                             /proofs/
 ```
+
+The diagram compresses one normalization stage. The input sync extracts the
+provider archive. It writes `<ledgerHash>.json` before it writes
+`lifecycle-<id>.hash`. The scheduler consumes this normalized pair. It does not
+parse the provider archive name or calculate an epoch.
 
 | Stage                         | Runs in                                       | Parallel                 | Produces                                                |
 | ----------------------------- | --------------------------------------------- | ------------------------ | ------------------------------------------------------- |
@@ -269,4 +274,4 @@ Use these names when you examine events.
 
 ## Sources
 
-- `devops/runbooks/2-Treasury/2d-Lifecycle-Pipeline/README.md` (SHA-256: `1cb7986590f973b4db786b048057c52c983bacb901cae8e5c914099842affccc`)
+- `devops/runbooks/2-Treasury/2d-Lifecycle-Pipeline/README.md` (SHA-256: `557032a59179ff4c3ff34d8a47a51cd6ef0ee81f40b44401e2177e800d77429a`)

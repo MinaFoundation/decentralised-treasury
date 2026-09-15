@@ -15,7 +15,7 @@ The app renders the shared treasury UI from `@repo/ui` and wires it to:
 - No server actions or server-side treasury orchestration
 - Header, wallet, search, treasury balance, and lifecycle status are fetched in the browser
 - Data refresh is driven by Mina block polling every 10 seconds
-- Tests are currently Vitest-based unit and hook/container tests
+- Tests include Vitest checks and a Playwright local-blockchain lane.
 
 ## Scripts
 
@@ -31,6 +31,28 @@ pnpm --dir apps/web run test
 ```
 
 Default local URL: `http://127.0.0.1:3100`
+
+## Local browser tests
+
+The browser lane needs Docker and the Playwright Chromium browser. It creates a
+fresh local chain, PostgreSQL container, keys, and service processes for each run.
+It deploys and funds the treasury through the CLI. The wallet adapter signs the
+exact command from the page. The page submits that command to the local node.
+
+Set the proof mode explicitly. Run the same scenarios with proofs disabled first.
+Then run them with proofs enabled:
+
+```bash
+PROOFS_ENABLED=false pnpm --dir apps/web run test:e2e:local-blockchain
+PROOFS_ENABLED=true pnpm --dir apps/web run test:e2e:local-blockchain
+```
+
+`E2E_ARTIFACT_DIRECTORY` sets an absolute output directory. Each mode needs a
+separate directory. The suite saves test results, JUnit, failure traces, console
+messages, and raw Chromium V8 coverage. Raw browser coverage is not source-mapped
+LCOV. It does not include Web Worker coverage. The fixture keeps process logs
+and public deployment data in its own run directory. Local test keys stay out
+of saved logs.
 
 ## Environment
 

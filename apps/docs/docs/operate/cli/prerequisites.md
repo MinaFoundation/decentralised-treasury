@@ -7,8 +7,9 @@ page_kind: procedure
 
 # CLI Prerequisites
 
-Complete these prerequisites before the command steps in
-[Deploy the Treasury](../deployment/deploy-the-treasury.md).
+Before a CLI command can safely sign or submit a transaction, the toolchain,
+network, environment, and signer must agree. Complete these checks before the
+command steps in [Deploy the Treasury](../deployment/deploy-the-treasury.md).
 
 ## Install the Toolchain
 
@@ -88,6 +89,11 @@ key in a shared environment file. Prefer Ledger signing for
 
 ## Ledger Signing
 
+Use [Signing with Ledger and
+Auro](/learn/signing-with-ledger-and-auro#set-up-ledger-for-the-cli) for the
+complete wallet setup and approval checks. The CLI supports Ledger and
+`in-memory` signing. It does not support Auro.
+
 Connect and unlock the Ledger. Open the Mina app. Enable blind signing. Close
 Ledger Live before the command starts.
 
@@ -119,25 +125,49 @@ The CLI rejects these configurations:
 - one index assigned to two public keys;
 - an index outside `0` through `4294967295`.
 
-Use distinct role options for multi-account transactions. Deployment can need
-the fee payer, Treasury Owner, and Pause Controller Ledger accounts.
+Use distinct role options for multi-account transactions. Each account can
+require a different Ledger index. Deployment can require the fee payer,
+Treasury Owner, and Pause Controller Ledger accounts.
 
 ## Ledger Commands
 
 Ledger transaction signing is available for:
 
-- `treasury-owner deploy`, `treasury-owner fund-treasury`, and `treasury-owner emergency-withdraw`;
-- `proposal create`, `proposal vote`, `proposal tally-votes`, and `proposal execute`;
-- all state-changing `pause-controller` commands;
+- `treasury-owner deploy`;
+- `treasury-owner fund-treasury`;
+- `treasury-owner emergency-withdraw`;
+- `proposal create`;
+- `proposal vote`;
+- `proposal tally-votes`;
+- `proposal execute`;
+- `pause-controller deploy`;
+- `pause-controller pause-treasury`;
+- `pause-controller unpause-treasury`;
+- `pause-controller toggle-pause-proposal`;
+- `pause-controller rotate-multisig-keys`;
 - `transfer`.
 
 For `proposal create`, the Ledger signs the Sender only. The CLI uses the
 optional Proposal private key in memory or generates one for deployment.
 
-Ledger partial signing is also available for all `multisig-sign` commands. A
-partial signature does not create or submit a Mina transaction.
+Ledger partial signing is also available for these field-signature commands:
 
-The Ledger signs the complete transaction after proof generation when a proof is required. Emergency withdrawal has no proof step. The CLI then submits the signed transaction to the Mina node.
+- `multisig-sign pause-treasury`;
+- `multisig-sign unpause-treasury`;
+- `multisig-sign toggle-pause-proposal`;
+- `multisig-sign rotate-multisig-keys`.
+
+A partial signature does not create or submit a Mina transaction.
+
+The Ledger signs the complete transaction after proof generation when a proof
+is required. Emergency withdrawal has no proof step. The CLI then submits the
+signed transaction to the Mina node. It does not export a signed transaction
+for offline submission.
+
+For each deploy or Pause Controller submission, confirm that the ordered list
+contains five unique participant keys. The deploy and submission commands
+check the list length. They do not enforce unique keys. The `multisig-sign`
+commands enforce uniqueness when they parse current and replacement lists.
 
 ## Verify a Ledger Before Use
 
@@ -163,6 +193,94 @@ On the target network, confirm these items on the device:
 3. The fee, nonce, memo, and account updates are expected.
 4. The device approves the intended transaction only.
 
+## Deploy Only a Pause Controller With Ledger
+
+Use this procedure only when you must deploy a Pause Controller without a
+Treasury Owner deployment. The normal Treasury deployment creates both
+contracts in one ordered procedure.
+
+Before you start, confirm these items:
+
+1. The Sender has enough MINA for the fee and the new account.
+2. The Pause Controller public key identifies an unused account.
+3. The two Ledger account indices return the expected public keys.
+4. The participant list contains five unique keys in the approved order.
+5. `MINA_NODE_URL` and `<NETWORK_ID>` identify the same target network.
+
+Run the deployment from the repository root:
+
+```bash
+dotenvx run -f <CLI_ENV_FILE> -- \
+  pnpm run cli -- pause-controller deploy \
+  --signer ledger \
+  --network-id <NETWORK_ID> \
+  --sender-public-key <SENDER_PUBLIC_KEY> \
+  --sender-ledger-account-index <SENDER_LEDGER_ACCOUNT_INDEX> \
+  --pause-controller-public-key <PAUSE_CONTROLLER_PUBLIC_KEY> \
+  --pause-controller-ledger-account-index <PAUSE_CONTROLLER_LEDGER_ACCOUNT_INDEX> \
+  --multisig-participants-public-keys <KEY_1>,<KEY_2>,<KEY_3>,<KEY_4>,<KEY_5> \
+  --wait true
+```
+
+Review the target network and deployment account before each Ledger approval.
+Stop if the device returns a different public key. Keep the returned
+`pauseControllerTxHash` and `multisigCommitment`.
+
+Read the included state:
+
+```bash
+dotenvx run -f <CLI_ENV_FILE> -- \
+  pnpm run cli -- pause-controller read-state \
+  --network-id <NETWORK_ID> \
+  --pause-controller-public-key <PAUSE_CONTROLLER_PUBLIC_KEY>
+```
+
+Confirm the Pause Controller address. Confirm that the on-chain
+`multisigCommitment` equals the deployment result. Confirm that `paused` is
+`false`. Do not connect a Treasury Owner to this controller until all values
+match the approved configuration.
+
+Use the [`pause-controller deploy` option
+reference](../reference/cli-commands.md#pause-controller-deploy) for optional
+fee, nonce, memo, and wait inputs.
+
+## Transfer MINA With Ledger
+
+Confirm the Sender, recipient, amount, fee, target network, and Ledger account
+index. The Sender is the funding account unless you supply a different funding
+account. The Sender also pays the new-account fee when the recipient does not
+exist.
+
+Run a transfer that uses the Sender as the funding account:
+
+```bash
+dotenvx run -f <CLI_ENV_FILE> -- \
+  pnpm run cli -- transfer \
+  --signer ledger \
+  --network-id <NETWORK_ID> \
+  --sender-public-key <SENDER_PUBLIC_KEY> \
+  --sender-ledger-account-index <SENDER_LEDGER_ACCOUNT_INDEX> \
+  --recipient-public-key <RECIPIENT_PUBLIC_KEY> \
+  --amount <NANOMINA> \
+  --wait true
+```
+
+If another Ledger account supplies the transferred MINA, add both of these
+options:
+
+```text
+--funding-public-key <FUNDING_PUBLIC_KEY>
+--funding-ledger-account-index <FUNDING_LEDGER_ACCOUNT_INDEX>
+```
+
+Review each account and the transfer before each Ledger approval. Keep the
+returned `transferTxHash`. Confirm inclusion and the recipient balance on the
+target Mina node. If the result is uncertain, query Mina before you retry.
+
+Use the [`transfer` option
+reference](../reference/cli-commands.md#transfer) for optional fee, nonce, memo,
+and wait inputs.
+
 ## Transaction Options
 
 State-changing commands normally support these options:
@@ -182,15 +300,14 @@ For each option, the CLI uses this precedence:
 2. The matching environment field.
 3. The built-in default, when the option has a default.
 
-On most transaction commands, `--nonce` or `TX_NONCE` is the fee-payer account
+On transaction commands, `--nonce` or `TX_NONCE` is the fee-payer account
 nonce. If you omit it, the transaction builder gets the nonce from Mina.
 
 For `pause-controller pause-treasury`, `unpause-treasury`,
-`toggle-pause-proposal`, and `rotate-multisig-keys`, a supplied value is also
-used as the Pause Controller action nonce. Omit the value unless the fee-payer
-nonce and the Pause Controller nonce are equal. When you omit it, the command
-reads the action nonce from Mina and lets the transaction builder select the
-fee-payer nonce. `pause-controller deploy` uses it only as the fee-payer nonce.
+`toggle-pause-proposal`, and `rotate-multisig-keys`, use `--controller-nonce` or
+`PAUSE_CONTROLLER_NONCE` to set the separate controller nonce signed by the
+multisig. If omitted, the service reads the controller nonce from Mina.
+The fee-payer nonce is selected independently.
 
 On a `multisig-sign` command, `--nonce` or `TX_NONCE` is the Pause Controller
 state nonce. The command puts this nonce in the partial-signature payload.

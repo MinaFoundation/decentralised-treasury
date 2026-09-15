@@ -7,49 +7,48 @@ page_kind: procedure
 
 # Ledgers and Proving
 
-Proposal tally needs two proofs:
+A proposal cannot move from votes to a result until the tally has two matching
+proofs:
 
 - an exhausted Staking Ledger to Voting Ledger proof;
 - a merged Vote Reducer proof.
 
-Use the same lifecycle ID and SQLite file for both proof flows.
+Both proof flows must use the same lifecycle ID and SQLite file.
 
 Read the [CLI prerequisites](../cli/prerequisites.md) before signing a tally.
 Use the [CLI command index](../reference/cli-commands.md) to check options.
 Use [Voting Capacity and Period Sizing](../lifecycle/voting-capacity-and-period-sizing.md)
 to calculate staking and vote proof counts before operation.
 
-This page owns manual and Compose proof procedures. For Kubernetes, use
+The manual and Compose proof procedures are below. For Kubernetes, follow
 [1c. Staking Ledger Provider](../infrastructure/staking-ledger-provider.md) and
 [2d. Lifecycle Pipeline](../infrastructure/lifecycle-pipeline.md).
 
 ## Select the Staking Snapshot
 
-The supported scheduler configuration has one Mina epoch in each treasury
-period. The treasury start slot must be an epoch start.
+A Proposal records the current Mina staking-ledger root and total currency at
+creation. Every later proof for that Proposal must use the exact ledger behind
+that root.
 
-For lifecycle `L`, the scheduler selects:
+The two deployment paths receive snapshots differently:
 
-```text
-deployedEpoch = floor(TREASURY_DEPLOYED_AT_SLOT / LIFECYCLE_PERIOD_DURATION)
-snapshotEpoch = deployedEpoch + 4 * L
-```
+| Mode       | Snapshot input                                                               |
+| ---------- | ---------------------------------------------------------------------------- |
+| Compose    | `<ledgerHash>.json` payload and `lifecycle-<id>.hash` pointer.               |
+| Kubernetes | `staking-<epoch>-<ledgerHash>.json.tar.gz` from the staking-ledger provider. |
 
-The snapshot archive name depends on the deployment mode:
+The Compose scheduler parses no epoch numbers. An external snapshot producer
+must decide which Mina ledger belongs to each Treasury lifecycle. It must
+publish the verified JSON payload before it publishes the lifecycle pointer.
 
-| Mode | File name |
-| --- | --- |
-| Manual or Compose | `<epoch>-<ledger-hash>.tar.gz` |
-| Kubernetes staking-ledger provider | `staking-<epoch>-<ledger-hash>.json.tar.gz` |
+The Kubernetes provider retains epoch-named archives, but the ledger hash is
+still the snapshot identity. Do not identify a ledger by epoch alone because
+epoch numbers can repeat after a hard fork.
 
-Do not combine the two file-name formats. In both modes, use the ledger hash to
-identify the snapshot.
-
-The hash in the file name must equal the Mina staking ledger hash. The
-scheduler calculates the imported root and compares both values.
-
-Later, compare this root with the proposal
-`stakingEpochDataLedgerHash` value.
+The hash-named payload must root to the Base58 `<ledgerHash>`. The scheduler
+uses `staking-ledger get-root-hash --expected-root-hash` to enforce this check.
+Use `--output-format json` when you also need the decimal field encoding stored
+on Proposal accounts.
 
 Count both values for the exact snapshot:
 
@@ -59,7 +58,8 @@ Count both values for the exact snapshot:
 
 The base digest proof count is `ceil(N / 5)`. It does not use `D`.
 
-Before proposal creation, preserve this exact ledger. Confirm that it contains the default-token Treasury Owner account with a nonzero balance.
+Before proposal creation, preserve this exact ledger. Confirm that it contains
+the default-token Treasury Owner account with a nonzero balance.
 
 Creation does not check this viability. Tally later needs the account witness and divides by its historical balance.
 
@@ -88,35 +88,63 @@ The flush is not one atomic database transaction. A crash can leave partial trac
 
 After an interrupted flush, stop other writers. Remove and rebuild the affected lifecycle state before proving.
 
+## Prepare Compose Snapshot Input
+
+The Compose repository has no Mina exporter or snapshot synchronization
+service. Prepare the input outside Compose. Use the complete
+[Compose live-testnet procedure](../deployment/compose-testnet.md#4-prepare-every-staking-snapshot).
+
+The input directory must contain both files:
+
+```text
+<STAKING_LEDGERS_HOST_PATH>/<LEDGER_HASH>.json
+<STAKING_LEDGERS_HOST_PATH>/lifecycle-<L>.hash
+```
+
+The pointer contains one Base58 ledger hash and a final newline. Publish the
+payload first. Publish the pointer last with an atomic move.
+
+Do not change the pointer while the scheduler processes its lifecycle. The
+scheduler fails the current run when it detects this change.
+
+The pointer is immutable after the scheduler writes `<L>.sqlite.done`. Normal
+polling reports and skips a pointer that changes after completion. Use
+[Rebuild One Lifecycle](#rebuild-one-lifecycle) for an approved correction.
+
 ## Run the Voting-Ledger Scheduler
 
 The normal stack starts `voting-ledger-scheduler`. It polls every
 `VOTING_LEDGER_SCHEDULER_POLL_INTERVAL_SECONDS`. The default is 30 seconds.
 
-For the newest eligible snapshot, it performs these steps:
+For each pending pointer, it performs these steps:
 
-1. Remove prior SQLite state for that lifecycle.
-2. Extract the snapshot archive.
-3. Run `staking-ledger from-file`.
-4. Compare the calculated root with the file-name hash.
-5. Run `staking-ledger-to-voting-ledger trace-digest`.
-6. Write `<L>.sqlite.done`.
+1. Validate the numeric lifecycle ID and Base58 ledger hash.
+2. Require the matching `<ledgerHash>.json` payload.
+3. Restore a matching checkpoint, or remove prior lifecycle SQLite state.
+4. Run `staking-ledger from-file` when no checkpoint was restored.
+5. Compare the calculated root with the pointer hash.
+6. Run `staking-ledger-to-voting-ledger trace-digest`.
+7. Write `<L>.sqlite.done`.
 
-Each poll selects one newest unprocessed lifecycle. After that lifecycle
-succeeds, the next poll can select the next older lifecycle. The automatic
-backlog order is newest to oldest.
+Each poll processes the pending backlog from newest lifecycle to oldest. A
+failed lifecycle gets an exponential retry backoff. Other eligible lifecycles
+can still run during the same poll.
+
+A missing payload remains pending. A root mismatch creates a failure marker.
+The scheduler cannot replace the invalid payload because the input mount is
+read-only. Replace it on the host before the next retry.
 
 The Kubernetes scheduler has separate marker, S3, and checkpoint behavior.
 Use the [Lifecycle Pipeline](../infrastructure/lifecycle-pipeline.md) procedure
 for that deployment mode.
 
-A failed lifecycle remains selectable. A newer snapshot takes priority until
-it succeeds. Use the explicit command when an older lifecycle must run first.
+Use the explicit one-shot command when one lifecycle must run by itself.
 
 ## Rebuild One Lifecycle
 
-Use this procedure when the trace or proof state for lifecycle `<L>` is not
-valid. Stop all processes that can read, write, or prove that lifecycle:
+Follow this recovery procedure when the trace or proof state for lifecycle
+`<L>` is not valid. Stop all processes that can read, write, or prove that
+lifecycle:
 
 ```bash
 docker compose \
@@ -143,8 +171,9 @@ file below out of the live data directories. Do not put these files back:
 <SQLITE_DATA_HOST_PATH>/proofs/<L>-exhausted.json
 ```
 
-The one-shot voting-ledger scheduler removes the lifecycle SQLite database and
-its journal files. It then imports the snapshot and rebuilds the trace:
+Disable checkpoint restore for a complete rebuild. The one-shot scheduler then
+removes the lifecycle SQLite database and journal files. It imports the
+snapshot and rebuilds the trace:
 
 ```bash
 docker compose \
@@ -155,7 +184,10 @@ docker compose \
   -f devops/compose.yml \
   --profile proxy \
   --profile proving \
-  run --rm --no-deps voting-ledger-scheduler \
+  run --rm --no-deps \
+  -e CHECKPOINT_S3_URI= \
+  -e CHECKPOINT_INTERVAL= \
+  voting-ledger-scheduler \
   /bin/sh \
   devops/docker/voting-ledger-scheduler-entrypoint.sh \
   process-lifecycle <L>
@@ -170,7 +202,7 @@ Check the new trace marker:
 jq . <SQLITE_DATA_HOST_PATH>/<L>.sqlite.done
 ```
 
-The marker contains the lifecycle ID, epoch, ledger hash, and processing time.
+The marker contains the lifecycle ID, ledger hash, and processing time.
 Keep the services stopped. Set `PROOFS_ENABLED=true` in `<DEVOPS_ENV_FILE>`
 and `<API_ENV_FILE>`. Render the proving profile:
 
@@ -209,10 +241,10 @@ the proof command again.
 
 Reconcile the rebuilt roots before restart:
 
-1. Run `staking-ledger get-root-hash` for lifecycle `<L>`.
-2. Confirm that this root equals the ledger hash in the snapshot file name.
+1. Run `staking-ledger get-root-hash --output-format json` for lifecycle `<L>`.
+2. Confirm that `ledgerHashBase58` equals the payload name and pointer value.
 3. Run `proposal read-state` for each affected proposal. Confirm that its
-   `stakingEpochDataLedgerHash` equals the same staking ledger root.
+   `stakingEpochDataLedgerHash` equals the JSON decimal field value.
 4. Confirm that the exhausted proof uses this staking ledger root and has
    `exhausted = true`.
 5. Record the exhausted proof output `votingLedgerRoot`. The Vote Reducer proof

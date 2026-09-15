@@ -8,7 +8,9 @@ page_kind: navigation
 
 # API Reference
 
-The application has three HTTP surfaces.
+The application exposes three HTTP APIs. Each one answers a different part of
+the operational picture, so first select the surface that owns the data you
+need.
 
 - [App API](./app-api.md) publishes proposal aggregates, content routes, and lifecycle ledger routes.
 - [Indexer API](./indexer-api.md) publishes indexed events and indexer progress.
@@ -16,11 +18,11 @@ The application has three HTTP surfaces.
 
 ## Base URLs
 
-| Surface | Container URL | Local direct URL | Web same-origin prefix |
-| --- | --- | --- | --- |
-| App API | `http://api:4000` | `http://127.0.0.1:4100` | `/api` |
-| Indexer API | `http://indexer-api:4001` | `http://127.0.0.1:4101` | `/indexer` |
-| Processor API | `http://processor-api:4002` | `http://127.0.0.1:4102` | `/processor` |
+| Surface       | Container URL               | Local direct URL        | Web same-origin prefix |
+| ------------- | --------------------------- | ----------------------- | ---------------------- |
+| App API       | `http://api:4000`           | `http://127.0.0.1:4100` | `/api`                 |
+| Indexer API   | `http://indexer-api:4001`   | `http://127.0.0.1:4101` | `/indexer`             |
+| Processor API | `http://processor-api:4002` | `http://127.0.0.1:4102` | `/processor`           |
 
 Caddy removes the same-origin prefix before it sends the request upstream.
 For example, `/api/proposals` becomes `/proposals` on the App API.

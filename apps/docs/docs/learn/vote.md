@@ -6,8 +6,9 @@ audience: user
 page_kind: procedure
 ---
 
-Users can vote `yay`, `nay`, or `abstain` during the Voting period.
-Each vote requires the voter signature.
+Voting is simple to submit, but its weight comes from the staking snapshot that
+the proposal recorded earlier. During the Voting period, you can vote `yay`,
+`nay`, or `abstain`. Each choice requires the voter signature.
 
 ## Voting Weight
 
@@ -19,6 +20,41 @@ The web application shows the connected wallet's available voting weight.
 
 Later staking or delegation changes do not change this recorded snapshot.
 They can affect a later lifecycle that records a different snapshot.
+
+## Diagnose Missing Voting Weight
+
+First confirm the [deployment](check-your-deployment.md), Proposal lifecycle, and connected public key.
+Open the following App API paths in a browser. Prefix each path with the App API base URL from the deployment record.
+Replace `<L>` with the Proposal lifecycle and `<KEY>` with your wallet public key.
+
+```text
+/staking-ledger/lifecycles/<L>/accounts/<KEY>
+/voting-ledger/lifecycles/<L>/accounts/<KEY>
+```
+
+The staking response contains `delegatePublicKey` and the historical account `balance`.
+The voting response contains `voteWeight`, in nanomina.
+These API responses describe local ledger data. Ask the operator to confirm that its root matches the Proposal snapshot.
+
+| Result                                        | Meaning and next action                                                                                             |
+| --------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| Positive `voteWeight`                         | This key has weight in the available ledger. Check timing and pause state if voting remains unavailable.            |
+| `voteWeight` is `"0"`                         | This key has no counted stake in that ledger. Inspect the historical delegate and confirm the connected key.        |
+| Staking account is absent                     | The key is absent from that staking snapshot. Check its voting entry separately; another holder can delegate to it. |
+| HTTP `404` says lifecycle data is unavailable | This is missing service data, not proof of zero weight. Ask the operator to prepare the matching ledger.            |
+| HTTP `400`, `500`, or a connection failure    | Correct the key or lifecycle input, or report the service error. Do not infer voting eligibility.                   |
+
+For example, Alice delegates `100` MINA to Bob. Bob also has `40` MINA delegated to his own key.
+If these are the only eligible balances in the example, Bob has `140` MINA of voting weight.
+Alice's key has zero voting weight. Connecting Alice's funded wallet does not let her cast Bob's weighted vote.
+
+A current delegation change does not alter an existing Proposal snapshot.
+To prepare for a future Proposal, select the intended delegation in your wallet and verify it in the later recorded staking ledger.
+Wait for the matching voting ledger before expecting the application to show that weight.
+The docs do not promise a fixed activation date for a delegation change.
+
+Send the operator the Proposal address, lifecycle, wallet public key, endpoint, and error when data is unavailable.
+Use the support contact obtained with the deployment record. Never send a private key.
 
 ## Vote Choices
 
@@ -48,46 +84,16 @@ The App API hashes submitted Markdown and compares it with the processor project
 The web application marks available stored content as verified by this projection check.
 It does not query the Proposal account for an independent content check.
 
-Use the raw `contents` value or the original Markdown file.
-Do not hash rendered HTML or text copied from the rendered page.
-
-Use this workflow before a material vote:
-
-1. Save the exact Markdown bytes to a local file.
-2. Calculate the SHA-256 digest of that file.
-3. Add the prefix `urn:proposal-content:markdown:sha256:` to the digest.
-4. Read the Treasury Owner token ID with `treasury-owner read-state`.
-5. Query the Proposal token account `zkappUri` from Mina GraphQL.
-6. Compare the two complete `zkappUri` strings.
-
-The following commands show the comparison:
-
-```bash
-CONTENT_DIGEST=$(openssl dgst -sha256 -r "$PROPOSAL_MARKDOWN_PATH" | awk '{print $1}')
-EXPECTED_ZKAPP_URI="urn:proposal-content:markdown:sha256:${CONTENT_DIGEST}"
-
-OWNER_STATE=$(pnpm run cli -- treasury-owner read-state \
-  --mina-node-url "$MINA_NODE_URL" \
-  --network-id "$MINA_NETWORK_ID" \
-  --treasury-owner-public-key "$TREASURY_OWNER_PUBLIC_KEY")
-PROPOSAL_TOKEN_ID=$(printf '%s' "$OWNER_STATE" | jq -r '.treasuryOwnerTokenId')
-
-CHAIN_ZKAPP_URI=$(jq -n \
-  --arg publicKey "$PROPOSAL_PUBLIC_KEY" \
-  --arg token "$PROPOSAL_TOKEN_ID" \
-  '{query:"query ProposalContent($publicKey: String!, $token: String!) { account(publicKey: $publicKey, token: $token) { zkappUri } }", variables:{publicKey:$publicKey, token:$token}}' \
-  | curl -fsS -X POST "$MINA_NODE_URL" \
-      -H 'content-type: application/json' \
-      --data-binary @- \
-  | jq -r '.data.account.zkappUri')
-
-test "$EXPECTED_ZKAPP_URI" = "$CHAIN_ZKAPP_URI"
-```
-
-The final command must exit successfully.
-Do not vote when the values differ or the Mina account query fails.
+Complete [Verify a proposal](verify-a-proposal.md) before a material vote.
+It supplies tool setup, exact Markdown download, Base58 token derivation,
+direct Mina queries, expected output, and failure handling.
+Do not vote when the content differs or the Mina query fails.
 
 ## Vote in the Web Application
+
+Use [Signing with Ledger and
+Auro](/learn/signing-with-ledger-and-auro) to prepare the wallet and check each
+approval.
 
 1. Connect the voter wallet.
 2. Open the proposal.
@@ -95,10 +101,14 @@ Do not vote when the values differ or the Mina account query fails.
 4. Find the **Voting** section.
 5. Select **Yay**, **Nay**, or **Abstain**.
 6. Review the vote and fee.
-7. Compile and prove the transaction.
-8. Approve the wallet signature.
-9. Wait for transaction inclusion.
-10. Save the transaction hash.
+7. Select **Cast vote transaction**.
+8. The application compiles and proves the transaction automatically.
+9. Approve the wallet signature.
+10. The application submits the signed transaction.
+11. Wait for transaction inclusion.
+12. Save the transaction hash.
+
+The transaction summary does not show all zkApp account updates.
 
 The web application blocks its vote buttons when the connected wallet has zero displayed weight.
 The contract can still receive a signed action from a zero-weight key.

@@ -8,7 +8,8 @@ page_kind: reference
 
 # Constants and acceptance math
 
-This page gives the exact source constants and integer calculations.
+When you need to reproduce a lifecycle boundary, bond, or acceptance result,
+start with the exact source constants and integer calculations on this page.
 
 ## Protocol structure constants
 

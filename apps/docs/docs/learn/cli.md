@@ -6,8 +6,9 @@ audience: user
 page_kind: procedure
 ---
 
-Use the CLI when the web application does not support your required sender or workflow.
-The CLI can create, vote, read state, and execute.
+The CLI gives you more control over the sender, signing method, and transaction
+inputs than the web application. You can use it to create a proposal, vote,
+read state, and execute an approved proposal.
 
 Operator commands also prepare ledgers, proofs, tallies, and pause actions.
 Those commands are outside this user workflow.
@@ -38,6 +39,15 @@ The network ID applies to all signed Mina transactions.
 This rule applies to `in-memory` and `ledger` signing.
 Set `--network-id` or `MINA_NETWORK_ID` explicitly.
 
+The CLI supports Ledger and `in-memory` signing. It does not support Auro.
+Use [Signing with Ledger and Auro](/learn/signing-with-ledger-and-auro) to
+select a supported signing surface.
+
+A CLI transaction command signs and submits the transaction to the Mina node.
+It does not export a signed transaction for offline submission. A transaction
+with multiple signing roles can require a different Ledger account index for
+each role.
+
 Use `MINA_NODE_URL` for the commands on this page.
 Only `proposal create` also uses `TREASURY_API_URL` for Proposal content.
 Only `proposal fetch-actions` uses `ARCHIVE_NODE_URL`.
@@ -45,6 +55,11 @@ Only `proposal fetch-actions` uses `ARCHIVE_NODE_URL`.
 The CLI gives a command option precedence over its matching environment field.
 It uses the built-in default only when neither value exists.
 The built-in network ID is `devnet`.
+
+## Install The Tools
+
+Complete [Required command tools](../developer/local-development/tools.md).
+Use the repository root for each command on this page.
 
 ## Get Command Help
 
@@ -73,6 +88,10 @@ pnpm run cli -- proposal read-state \
 Check `status`, `paidOutAmount`, the recipient hash, amount, lifecycle ID, and snapshot fields.
 
 ## Create with Ledger
+
+Read the [CLI Ledger setup
+steps](/learn/signing-with-ledger-and-auro#set-up-ledger-for-the-cli) before
+this operation.
 
 You can supply `--proposal-private-key` for a predetermined Proposal address.
 Otherwise, the CLI generates the Proposal keypair in memory, adds the new
@@ -105,6 +124,10 @@ It then retries the content upload for up to 60 seconds.
 Save the returned proposal address, transaction hash, and content result.
 
 ## Vote with Ledger
+
+Read the [CLI Ledger setup
+steps](/learn/signing-with-ledger-and-auro#set-up-ledger-for-the-cli) before
+this operation.
 
 The sender and voter can be the same Ledger account.
 Both roles must identify their public key and account index.
@@ -146,6 +169,10 @@ confirm that the current lifecycle is later than the Proposal lifecycle.
 See [Results and Acceptance](results-and-acceptance.md) for the result states.
 
 ## Execute with Ledger
+
+Read the [CLI Ledger setup
+steps](/learn/signing-with-ledger-and-auro#set-up-ledger-for-the-cli) before
+this operation.
 
 Any signed sender can submit a valid execution transaction.
 Use an explicit amount when the shared treasury balance might be low.

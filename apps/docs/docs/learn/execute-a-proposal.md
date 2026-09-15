@@ -6,8 +6,9 @@ audience: user
 page_kind: procedure
 ---
 
-Execution moves shared treasury funds to the proposal recipient.
-An approval does not move funds automatically.
+Approval gives the proposal permission to execute later; it does not make a
+payment. A separate execution transaction moves shared Treasury funds to the
+fixed recipient.
 
 ## When Execution Can Start
 
@@ -63,23 +64,29 @@ Specify a smaller amount when the treasury cannot cover that default.
 
 ## Execute in the Web Application
 
-The current web application enables execution only for the recorded proposal creator.
-The smart contract itself accepts any valid signed sender.
+The web application accepts any funded connected wallet as the sender.
+The sender does not have to be the proposal creator.
+
+Use [Signing with Ledger and
+Auro](/learn/signing-with-ledger-and-auro) to prepare the wallet and check each
+approval.
 
 1. Wait until the proposal is in a later lifecycle.
 2. Open the approved proposal.
-3. Connect the recorded proposal creator wallet.
+3. Connect a funded wallet.
 4. Find the execution section.
 5. Check the bond, `paidOutAmount`, and remaining amount.
 6. Enter an amount that is greater than zero.
 7. Select the available execution action.
 8. Review the recipient, amount, and transaction fee.
-9. Compile and prove the transaction.
-10. Approve the wallet signature.
-11. Wait for transaction inclusion.
-12. Save the transaction hash.
+9. Select **Execute payout transaction**.
+10. The application compiles and proves the transaction automatically.
+11. Approve the wallet signature.
+12. The application submits the signed transaction.
+13. Wait for transaction inclusion.
+14. Save the transaction hash.
 
-Use the CLI when another account must submit a valid execution transaction.
+The transaction summary does not show all zkApp account updates.
 
 ## Reconcile the Execution
 

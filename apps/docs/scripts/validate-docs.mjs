@@ -287,8 +287,19 @@ function validateMainProse(errors, source, body) {
   }
 }
 
-function validatePublishedContent(errors, source, body) {
+function validatePublishedContent(
+  errors,
+  source,
+  body,
+  { allowConcreteEnvironmentFiles = false } = {},
+) {
   for (const [description, pattern] of FORBIDDEN_PUBLISHED_CONTENT) {
+    if (
+      allowConcreteEnvironmentFiles &&
+      description === "a concrete environment-family runtime filename"
+    ) {
+      continue;
+    }
     const match = body.match(pattern);
     if (match) {
       addError(
@@ -439,7 +450,8 @@ export async function loadAndValidateDocs() {
     const normalizedPath = relativeToDocs(page);
     const isMain =
       normalizedPath.startsWith("learn/") ||
-      normalizedPath.startsWith("operate/");
+      normalizedPath.startsWith("operate/") ||
+      normalizedPath.startsWith("developer/");
     const isPublishedMain = normalizedPath === "index.md" || isMain;
     const isReview = normalizedPath.startsWith("review/");
 
@@ -476,7 +488,9 @@ export async function loadAndValidateDocs() {
     }
 
     if (isPublishedMain) {
-      validatePublishedContent(errors, source, text);
+      validatePublishedContent(errors, source, text, {
+        allowConcreteEnvironmentFiles: normalizedPath.startsWith("developer/"),
+      });
       validateMainProse(errors, source, text);
       await validateSources(
         errors,

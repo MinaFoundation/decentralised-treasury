@@ -214,5 +214,5 @@ requires a rebuild, but it does not cause loss of source data.
 
 - Chart: <https://github.com/MinaFoundation/helm-charts/tree/main/mina-archive>.
 - Consumer: `packages/indexer/src/archive/client.ts`, `queries.ts`.
-- Local equivalent: `devops/TESTNET_MINA_NODE.md`.
+- Local development alternative: [Mina single-node network](/developer/local-development/mina-single-node).
 - Next: `1b-Mina-Daemon`.

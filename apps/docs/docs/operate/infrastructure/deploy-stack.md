@@ -9,7 +9,7 @@ page_kind: procedure
 
 :::info Source-controlled procedure
 
-This page contains the complete `devops/runbooks/2-Treasury/2c-Deploy-Stack/README.md` procedure and each YAML file in the same directory. Change the source files. Then run `pnpm --dir apps/docs run generate:runbooks`.
+The full `devops/runbooks/2-Treasury/2c-Deploy-Stack/README.md` procedure is published here with each YAML file that it needs. To update this page, change the source files and run `pnpm --dir apps/docs run generate:runbooks`.
 
 :::
 
@@ -277,7 +277,7 @@ verification keys. The keys can be absent or compiled with a different
 
 ## Configuration File: `helmfile.yaml`
 
-This is the complete `devops/runbooks/2-Treasury/2c-Deploy-Stack/helmfile.yaml` file.
+The complete `devops/runbooks/2-Treasury/2c-Deploy-Stack/helmfile.yaml` file follows.
 
 [Download `helmfile.yaml`](pathname:///runbook-files/2-Treasury/2c-Deploy-Stack/helmfile.yaml)
 
@@ -576,7 +576,7 @@ releases:
 
 ## Configuration File: `verification-keys.yaml`
 
-This is the complete `devops/runbooks/2-Treasury/2c-Deploy-Stack/verification-keys.yaml` file.
+The complete `devops/runbooks/2-Treasury/2c-Deploy-Stack/verification-keys.yaml` file follows.
 
 [Download `verification-keys.yaml`](pathname:///runbook-files/2-Treasury/2c-Deploy-Stack/verification-keys.yaml)
 

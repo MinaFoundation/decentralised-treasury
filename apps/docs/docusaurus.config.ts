@@ -1,13 +1,22 @@
 import type { Config } from "@docusaurus/types";
 import type { Options, ThemeConfig } from "@docusaurus/preset-classic";
 
+const treasuryAppUrl = process.env.TREASURY_APP_URL ?? "http://127.0.0.1:3100";
+const treasuryAppIsLocal = ["localhost", "127.0.0.1", "[::1]"].includes(
+  new URL(treasuryAppUrl).hostname,
+);
+const treasuryAppLabel = treasuryAppIsLocal
+  ? "Open local demo"
+  : "Open Treasury";
+
 const config: Config = {
   title: "Mina Decentralized Treasury",
-  tagline: "User and operator documentation",
+  tagline: "User, operator, and developer documentation",
   url: process.env.DOCS_URL ?? "https://minafoundation.github.io",
   baseUrl: process.env.DOCS_BASE_URL ?? "/decentralised-treasury/",
   customFields: {
-    treasuryAppUrl: process.env.TREASURY_APP_URL ?? "http://127.0.0.1:3100",
+    treasuryAppUrl,
+    treasuryAppLabel,
   },
   organizationName: "MinaFoundation",
   projectName: "decentralised-treasury",
@@ -94,22 +103,17 @@ const config: Config = {
           },
           {
             to: "/operate/architecture/",
-            from: ["/system", "/developer/architecture/system-overview"],
+            from: ["/system"],
           },
           {
             to: "/operate/lifecycle/configure-the-treasury",
-            from: [
-              "/environment-creation",
-              "/developer/local-development/environment",
-              "/developer/local-development/quickstart",
-            ],
+            from: ["/environment-creation"],
           },
           {
             to: "/operate/deployment/deploy-the-treasury",
             from: [
               "/runbooks/deployment-upgrade-capacity",
               "/runbooks/backup-and-restore",
-              "/developer/operations/deployments",
               "/operate/deployment/environment-and-deployment",
             ],
           },
@@ -126,16 +130,8 @@ const config: Config = {
             from: ["/golden-path/signing-and-ledger"],
           },
           {
-            to: "/operate/reference/cli-commands",
-            from: ["/developer/operations/cli"],
-          },
-          {
             to: "/operate/proving/ledgers-and-proving",
-            from: [
-              "/runbooks/proof-operations",
-              "/developer/operations/proving-and-workers",
-              "/developer/provable/provable-workflows",
-            ],
+            from: ["/runbooks/proof-operations"],
           },
           {
             to: "/operate/break-glass/",
@@ -146,29 +142,19 @@ const config: Config = {
           },
           {
             to: "/operate/failures/",
-            from: [
-              "/failures",
-              "/developer/security",
-              "/developer/troubleshooting",
-            ],
+            from: ["/failures"],
           },
           {
             to: "/operate/services/",
-            from: [
-              "/runbooks/service-operations",
-              "/developer/apps/indexer-and-processor",
-            ],
-          },
-          {
-            to: "/operate/api/",
-            from: [
-              "/developer/apps/api-runtime",
-              "/developer/reference/api-routes",
-            ],
+            from: ["/runbooks/service-operations"],
           },
           {
             to: "/operate/reference/",
             from: ["/contracts", "/specs"],
+          },
+          {
+            to: "/developer/reference/packages",
+            from: ["/operate/reference/developer-reference"],
           },
           {
             to: "/operate/reference/protocol-behavior",
@@ -213,21 +199,6 @@ const config: Config = {
           {
             to: "/operate/reference/constants-and-acceptance",
             from: ["/specs/provable/provable-primitives"],
-          },
-          {
-            to: "/operate/reference/developer-reference",
-            from: [
-              "/developer",
-              "/developer/contributing",
-              "/developer/testing",
-              "/developer/apps/backoffice",
-              "/developer/apps/web-app",
-              "/developer/local-development/local-blockchain",
-              "/developer/provable/provable-architecture",
-              "/developer/provable/provable-overview",
-              "/developer/reference/env-and-commands",
-              "/developer/reference/packages",
-            ],
           },
           {
             to: "/operate/architecture/authority-and-trust",
@@ -297,8 +268,14 @@ const config: Config = {
           position: "left",
         },
         {
-          href: process.env.TREASURY_APP_URL ?? "http://127.0.0.1:3100",
-          label: "Open Treasury",
+          type: "docSidebar",
+          sidebarId: "developerSidebar",
+          label: "Develop",
+          position: "left",
+        },
+        {
+          href: treasuryAppUrl,
+          label: treasuryAppLabel,
           position: "right",
           className: "navbar__treasury-app-link",
         },
@@ -315,15 +292,18 @@ const config: Config = {
         {
           title: "Learn",
           items: [
-            { label: "Treasury introduction", to: "/learn/" },
+            { label: "Choose a learning path", to: "/learn/" },
+            { label: "Treasury overview", to: "/learn/overview" },
+            { label: "User quickstart", to: "/learn/quickstart" },
             { label: "How it works", to: "/learn/how-it-works" },
-            { label: "Lifecycle", to: "/learn/lifecycle-and-snapshots" },
           ],
         },
         {
           title: "Operate",
           items: [
-            { label: "Operator overview", to: "/operate/" },
+            { label: "Choose an operator path", to: "/operate/" },
+            { label: "Operator overview", to: "/operate/overview" },
+            { label: "Operator quickstart", to: "/operate/quickstart" },
             {
               label: "Configure the Treasury",
               to: "/operate/lifecycle/configure-the-treasury",
@@ -342,6 +322,21 @@ const config: Config = {
             },
             { label: "Failures and remedies", to: "/operate/failures/" },
             { label: "Technical reference", to: "/operate/reference/" },
+          ],
+        },
+        {
+          title: "Develop",
+          items: [
+            { label: "Choose a developer path", to: "/developer/" },
+            { label: "Developer overview", to: "/developer/overview" },
+            {
+              label: "Local development quickstart",
+              to: "/developer/local-development/quickstart",
+            },
+            {
+              label: "Full local blockchain demo",
+              to: "/developer/local-development/full-local-demo",
+            },
           ],
         },
       ],

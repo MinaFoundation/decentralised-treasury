@@ -45,7 +45,7 @@ environment and full Helm configuration.
 | Withdrawal permission     | `TREASURY_WITHDRAWAL_PERMISSION`, Owner deployment command, and public configuration record                                                                 |
 | Lifecycle period duration | `LIFECYCLE_PERIOD_DURATION`, `NEXT_PUBLIC_LIFECYCLE_PERIOD_DURATION`, Owner compile input, deployment command, CLI transaction builders, scheduler, and web |
 | Lifecycle start slot      | `TREASURY_DEPLOYED_AT_SLOT`, Owner deployment state, voting-ledger scheduler, and the public configuration record                                           |
-| Transaction network       | `MINA_NETWORK_ID` and `NEXT_PUBLIC_NETWORK_ID`                                                                                                              |
+| Transaction network       | `MINA_NETWORK_ID` with `MINA_NODE_URL`; `NEXT_PUBLIC_NETWORK_ID` with each browser Mina URL                                                                 |
 | Vote Reducer key          | `NEXT_PUBLIC_VOTE_REDUCER_VERIFICATION_KEY_JSON` in web and backoffice                                                                                      |
 | Staking proof key         | `NEXT_PUBLIC_STAKING_LEDGER_TO_VOTING_LEDGER_VERIFICATION_KEY_JSON` in web and backoffice                                                                   |
 | Proposal key              | `NEXT_PUBLIC_TREASURY_PROPOSAL_VERIFICATION_KEY_JSON` in web and backoffice                                                                                 |
@@ -89,21 +89,21 @@ Do not give a browser a container-only hostname. Do not give a container a host 
 
 ## CLI transaction and signing fields
 
-| Field                              | CLI default or omitted behavior   | Purpose                                                                                   |
-| ---------------------------------- | --------------------------------- | ----------------------------------------------------------------------------------------- |
-| `MINA_NODE_URL`                    | `http://127.0.0.1:8080/graphql`   | Mina GraphQL endpoint for on-chain reads and Mina transactions.                           |
-| `ARCHIVE_NODE_URL`                 | None                              | Required Archive GraphQL endpoint for `proposal fetch-actions` only.                      |
-| `TREASURY_API_URL`                 | `http://127.0.0.1:4100`           | App API base URL for `proposal create` content submission only.                           |
-| `MINA_NETWORK_ID`                  | `devnet`                          | Network ID for every signed Mina transaction.                                             |
-| `SIGNER`                           | `in-memory`                       | `in-memory` or `ledger`.                                                                  |
-| `TX_FEE`                           | `1000000000` nanomina             | Fee in nanomina.                                                                          |
-| `TX_NONCE`                         | Current fee-payer nonce from Mina | Fee-payer nonce. Four Pause Controller submit commands also use it as their action nonce. |
-| `TX_MEMO`                          | None                              | Optional memo.                                                                            |
-| `TX_WAIT`                          | `true`                            | Wait for transaction inclusion.                                                           |
-| `ALLOW_DEPLOY_TO_EXISTING_ACCOUNT` | `false`                           | Disables the new-account deployment precondition when true.                               |
-| `LIFECYCLE_PERIOD_DURATION`        | `7140` slots                      | Contract compile period duration.                                                         |
-| `TREASURY_DEPLOYED_AT_SLOT`        | `0`                               | Owner lifecycle start slot.                                                               |
-| `TREASURY_WITHDRAWAL_PERMISSION`   | `proof`                           | Owner withdrawal mode: `proof` or `proofOrSignature`.                                     |
+| Field                              | CLI default or omitted behavior   | Purpose                                                              |
+| ---------------------------------- | --------------------------------- | -------------------------------------------------------------------- |
+| `MINA_NODE_URL`                    | `http://127.0.0.1:8080/graphql`   | Mina GraphQL endpoint for on-chain reads and Mina transactions.      |
+| `ARCHIVE_NODE_URL`                 | None                              | Required Archive GraphQL endpoint for `proposal fetch-actions` only. |
+| `TREASURY_API_URL`                 | `http://127.0.0.1:4100`           | App API base URL for `proposal create` content submission only.      |
+| `MINA_NETWORK_ID`                  | `devnet`                          | Network ID for every signed Mina transaction.                        |
+| `SIGNER`                           | `in-memory`                       | `in-memory` or `ledger`.                                             |
+| `TX_FEE`                           | `1000000000` nanomina             | Fee in nanomina.                                                     |
+| `TX_NONCE`                         | Current fee-payer nonce from Mina | Fee-payer nonce for transaction commands.                            |
+| `TX_MEMO`                          | None                              | Optional memo.                                                       |
+| `TX_WAIT`                          | `true`                            | Wait for transaction inclusion.                                      |
+| `ALLOW_DEPLOY_TO_EXISTING_ACCOUNT` | `false`                           | Disables the new-account deployment precondition when true.          |
+| `LIFECYCLE_PERIOD_DURATION`        | `7140` slots                      | Contract compile period duration.                                    |
+| `TREASURY_DEPLOYED_AT_SLOT`        | `0`                               | Owner lifecycle start slot.                                          |
+| `TREASURY_WITHDRAWAL_PERMISSION`   | `proof`                           | Owner withdrawal mode: `proof` or `proofOrSignature`.                |
 
 The CLI does not derive `MINA_NETWORK_ID` from `MINA_NODE_URL`.
 The network ID applies to `in-memory` and `ledger` transactions.
@@ -112,10 +112,10 @@ For each option, the CLI uses the command option before its environment field.
 If neither value exists, the CLI uses the built-in default when one exists.
 
 For `pause-controller pause-treasury`, `unpause-treasury`,
-`toggle-pause-proposal`, and `rotate-multisig-keys`, a supplied `TX_NONCE` is
-both the fee-payer nonce and the Pause Controller action nonce. Omit it unless
-the two current nonces are equal. `pause-controller deploy` uses `TX_NONCE`
-only as the fee-payer nonce. See [Nonce rules](./cli-commands.md#nonce-rules).
+`toggle-pause-proposal`, and `rotate-multisig-keys`, `TX_NONCE` sets only the
+fee-payer nonce. The optional `PAUSE_CONTROLLER_NONCE` sets the separate
+controller nonce signed by the multisig. If omitted, each nonce defaults to
+its account's current nonce.
 
 Transaction commands use these exact signing fields:
 
@@ -126,14 +126,15 @@ Transaction commands use these exact signing fields:
 | Treasury Owner   | `TREASURY_OWNER_PRIVATE_KEY`   | `TREASURY_OWNER_PUBLIC_KEY`   | `TREASURY_OWNER_LEDGER_ACCOUNT_INDEX`   |
 | Pause Controller | `PAUSE_CONTROLLER_PRIVATE_KEY` | `PAUSE_CONTROLLER_PUBLIC_KEY` | `PAUSE_CONTROLLER_LEDGER_ACCOUNT_INDEX` |
 | Voter            | `VOTER_PRIVATE_KEY`            | `VOTER_PUBLIC_KEY`            | `VOTER_LEDGER_ACCOUNT_INDEX`            |
+| Proposal         | `PROPOSAL_PRIVATE_KEY`         | `PROPOSAL_PUBLIC_KEY`         | `PROPOSAL_LEDGER_ACCOUNT_INDEX`         |
 
-Each command exposes only the fields for its signing roles. Proposal creation
-accepts optional `PROPOSAL_PRIVATE_KEY`. If it is absent, the CLI generates a
-keypair in memory and discards the private key after deployment. The CLI does
-not expose a Proposal Ledger public-key or account-index field. The private key
-cannot authorize later Proposal control. Proposal state uses proof
-authorization, and its custom-token account updates require Treasury Owner
-approval.
+Each command exposes only the fields for its signing roles. In-memory Proposal
+creation accepts optional `PROPOSAL_PRIVATE_KEY`. If absent, the CLI generates
+a keypair and discards the private key after deployment. Ledger mode requires
+`PROPOSAL_PUBLIC_KEY` and `PROPOSAL_LEDGER_ACCOUNT_INDEX`. Both roles use Ledger.
+The Proposal private key cannot authorize later Proposal control. Proposal state
+uses proof authorization, and its custom-token account updates require Treasury
+Owner approval.
 
 The `multisig-sign` commands use different Ledger field names.
 Use `LEDGER_SIGNER_PUBLIC_KEY` and `LEDGER_ACCOUNT_INDEX` for these commands.
@@ -207,6 +208,7 @@ Keep private values out of browser and API environments.
 | Field                                        | Purpose                                                     |
 | -------------------------------------------- | ----------------------------------------------------------- |
 | `PROOFS_ENABLED`                             | Enables proof generation in supported SDK and worker flows. |
+| `O1JS_BACKEND`                               | Selects the o1js backend. The CLI defaults to `native`.       |
 | `SQLITE_DATA_DIRECTORY`                      | Lifecycle-specific SQLite data root.                        |
 | `SQLITE_DATA_HOST_PATH`                      | Host path mounted at `SQLITE_DATA_DIRECTORY`.               |
 | `LIFECYCLE_ID`                               | Local ledger, trace, or proof namespace.                    |
@@ -219,6 +221,9 @@ Keep private values out of browser and API environments.
 | `LEDGER_HASH`                                | Ledger hash stored with a trace checkpoint.                 |
 | `EXPECTED_LEDGER_HASH`                       | Required hash for checkpoint restoration.                   |
 | `EXPECTED_ROOT_HASH`                         | Optional expected root for `staking-ledger get-root-hash`.  |
+| `ROOT_HASH_OUTPUT_FORMAT`                    | Root output format: `base58` or `json`.                     |
+| `DEVELOPMENT_TREASURY_OWNER_BALANCE`         | Simulator snapshot Owner balance in MINA.                   |
+| `DEVELOPMENT_VOTER_BALANCE`                  | Simulator snapshot balance for each voter in MINA.          |
 | `VOTE_ACTIONS_PATH`                          | Vote action JSON input.                                     |
 | `VOTE_REDUCER_PROOF_PATH`                    | Final Vote Reducer proof JSON.                              |
 | `STAKING_LEDGER_TO_VOTING_LEDGER_PROOF_PATH` | Final staking proof JSON.                                   |
@@ -229,21 +234,21 @@ Keep private values out of browser and API environments.
 
 ## Queue and scheduler fields
 
-| Field                                           | Purpose                                  |
-| ----------------------------------------------- | ---------------------------------------- |
-| `REDIS_HOST` and `REDIS_PORT`                   | BullMQ connection.                       |
-| `QUEUE_NAME`                                    | CLI worker or proof task queue.          |
-| `PROVING_QUEUE_NAME`                            | Compose proving queue name.              |
-| `PROVING_WORKER_REPLICAS`                       | Compose proving worker count.            |
-| `TASK_ATTEMPTS`                                 | Queue retry count.                       |
-| `TASK_BACKOFF_MS`                               | Queue retry backoff.                     |
+| Field                                           | Purpose                                       |
+| ----------------------------------------------- | --------------------------------------------- |
+| `REDIS_HOST` and `REDIS_PORT`                   | BullMQ connection.                            |
+| `QUEUE_NAME`                                    | CLI worker or proof task queue.               |
+| `PROVING_QUEUE_NAME`                            | Compose proving queue name.                   |
+| `PROVING_WORKER_REPLICAS`                       | Compose proving worker count.                 |
+| `TASK_ATTEMPTS`                                 | Queue retry count.                            |
+| `TASK_BACKOFF_MS`                               | Queue retry backoff.                          |
 | `TASK_KEEP_COMPLETED`                           | Completed jobs kept in Redis. Default: `100`. |
 | `TASK_KEEP_FAILED`                              | Failed jobs kept in Redis. Default: `200`.    |
-| `MAX_TASK_DURATION_MS`                          | Worker task timeout.                     |
-| `VOTING_LEDGER_SCHEDULER_POLL_INTERVAL_MS`      | Node scheduler poll interval.            |
-| `VOTING_LEDGER_SCHEDULER_POLL_INTERVAL_SECONDS` | Compose scheduler poll interval.         |
-| `PROVING_SCHEDULER_POLL_INTERVAL_SECONDS`       | Compose proving scheduler poll interval. |
-| `PROVING_OUTPUT_DIRECTORY`                      | Final proof output directory.            |
+| `MAX_TASK_DURATION_MS`                          | Worker task timeout.                          |
+| `VOTING_LEDGER_SCHEDULER_POLL_INTERVAL_MS`      | Node scheduler poll interval.                 |
+| `VOTING_LEDGER_SCHEDULER_POLL_INTERVAL_SECONDS` | Compose scheduler poll interval.              |
+| `PROVING_SCHEDULER_POLL_INTERVAL_SECONDS`       | Compose proving scheduler poll interval.      |
+| `PROVING_OUTPUT_DIRECTORY`                      | Final proof output directory.                 |
 
 ## API, Indexer, and Processor fields
 
@@ -279,46 +284,71 @@ Keep private values out of browser and API environments.
 
 ## Web and backoffice fields
 
-| Field                                                               | Purpose                            |
-| ------------------------------------------------------------------- | ---------------------------------- |
-| `NEXT_PUBLIC_BUILD_SHA`                                             | Displayed build identity.          |
-| `NEXT_PUBLIC_NETWORK_ID`                                            | Browser signing network.           |
-| `NEXT_PUBLIC_TREASURY_API_URL`                                      | App API URL.                       |
-| `NEXT_PUBLIC_API_URL`                                               | App API fallback alias.            |
-| `NEXT_PUBLIC_INDEXER_API_URL`                                       | Indexer API URL.                   |
-| `NEXT_PUBLIC_PROCESSOR_API_URL`                                     | Processor API URL.                 |
-| `NEXT_PUBLIC_MINA_NODE_URL`                                         | Browser Mina GraphQL URL.          |
-| `NEXT_PUBLIC_BACKOFFICE_MINA_NODE_URL`                              | Backoffice Mina GraphQL URL.       |
-| `NEXT_PUBLIC_TREASURY_OWNER_CONTRACT_ADDRESS`                       | Browser Owner address.             |
-| `NEXT_PUBLIC_MULTISIG_PARTICIPANTS_PUBLIC_KEYS`                     | Backoffice ordered signer keys.    |
-| `NEXT_PUBLIC_LEDGER_SIGNER_PUBLIC_KEY`                              | Browser Ledger signer public key.  |
-| `NEXT_PUBLIC_LEDGER_SIGNER_ACCOUNT_INDEX`                           | Browser Ledger account index.      |
-| `NEXT_PUBLIC_LIFECYCLE_PERIOD_DURATION`                             | Browser contract compile duration. |
-| `NEXT_PUBLIC_SLOT_DURATION_MS`                                      | Browser time estimate per slot.    |
-| `NEXT_PUBLIC_PROOFS_ENABLED`                                        | Browser prover mode.               |
-| `NEXT_PUBLIC_VOTE_REDUCER_VERIFICATION_KEY_JSON`                    | Vote proof verification key.       |
-| `NEXT_PUBLIC_STAKING_LEDGER_TO_VOTING_LEDGER_VERIFICATION_KEY_JSON` | Staking proof verification key.    |
-| `NEXT_PUBLIC_TREASURY_PROPOSAL_VERIFICATION_KEY_JSON`               | Proposal verification key.         |
-| `NEXT_PUBLIC_EMPTY_VOTING_LEDGER_ROOT`                              | Required empty voting root.        |
-| `NEXT_PUBLIC_EMPTY_NULLIFIER_ROOT`                                  | Required empty nullifier root.     |
+| Field                                                               | Purpose                                    |
+| ------------------------------------------------------------------- | ------------------------------------------ |
+| `NEXT_PUBLIC_BUILD_SHA`                                             | Displayed build identity.                  |
+| `NEXT_PUBLIC_NETWORK_ID`                                            | Transaction and Ledger signing domain.     |
+| `NEXT_PUBLIC_TREASURY_API_URL`                                      | App API URL.                               |
+| `NEXT_PUBLIC_API_URL`                                               | App API fallback alias.                    |
+| `NEXT_PUBLIC_INDEXER_API_URL`                                       | Indexer API URL.                           |
+| `NEXT_PUBLIC_PROCESSOR_API_URL`                                     | Processor API URL.                         |
+| `NEXT_PUBLIC_MINA_NODE_URL`                                         | Browser Mina GraphQL URL.                  |
+| `NEXT_PUBLIC_BACKOFFICE_MINA_NODE_URL`                              | Compose input for the Backoffice Mina URL. |
+| `NEXT_PUBLIC_TREASURY_OWNER_CONTRACT_ADDRESS`                       | Browser Owner address.                     |
+| `NEXT_PUBLIC_MULTISIG_PARTICIPANTS_PUBLIC_KEYS`                     | Backoffice ordered signer keys.            |
+| `NEXT_PUBLIC_LEDGER_SIGNER_PUBLIC_KEY`                              | Browser Ledger signer public key.          |
+| `NEXT_PUBLIC_LEDGER_SIGNER_ACCOUNT_INDEX`                           | Browser Ledger account index.              |
+| `NEXT_PUBLIC_LIFECYCLE_PERIOD_DURATION`                             | Browser contract compile duration.         |
+| `NEXT_PUBLIC_SLOT_DURATION_MS`                                      | Browser time estimate per slot.            |
+| `NEXT_PUBLIC_PROOFS_ENABLED`                                        | Browser proof-mode input.                  |
+| `NEXT_PUBLIC_VOTE_REDUCER_VERIFICATION_KEY_JSON`                    | Vote proof verification key.               |
+| `NEXT_PUBLIC_STAKING_LEDGER_TO_VOTING_LEDGER_VERIFICATION_KEY_JSON` | Staking proof verification key.            |
+| `NEXT_PUBLIC_TREASURY_PROPOSAL_VERIFICATION_KEY_JSON`               | Proposal verification key.                 |
+| `NEXT_PUBLIC_EMPTY_VOTING_LEDGER_ROOT`                              | Required empty voting root.                |
+| `NEXT_PUBLIC_EMPTY_NULLIFIER_ROOT`                                  | Required empty nullifier root.             |
 
-Set `NEXT_PUBLIC_SLOT_DURATION_MS=90000` for a Mesa network. Some local and
-bootstrap defaults still use the Berkeley value `180000`. This field changes
-only the browser time estimate. It does not change Mina consensus or the
-compiled Treasury lifecycle duration.
+Set `NEXT_PUBLIC_SLOT_DURATION_MS=90000` for a live Mesa network. Local
+development networks can use another slot duration. Use the value in the
+selected network procedure. This field changes only the browser time estimate.
+It does not change Mina consensus or the compiled Treasury lifecycle duration.
+
+Keep each browser Mina URL paired with `NEXT_PUBLIC_NETWORK_ID`. The browser
+does not derive the signing domain from a Mina URL.
+
+The main web application maps `MAINNET` to the mainnet signing domain. It maps
+all other `NEXT_PUBLIC_NETWORK_ID` values to the devnet signing domain.
+
+In Compose, `NEXT_PUBLIC_BACKOFFICE_MINA_NODE_URL` is an input variable.
+Compose passes its value to Backoffice as `NEXT_PUBLIC_MINA_NODE_URL`. For a
+direct Backoffice process, set `NEXT_PUBLIC_MINA_NODE_URL`.
+
+The current main web create, vote, and execute flows always compile and prove.
+`NEXT_PUBLIC_PROOFS_ENABLED=false` does not disable proving for these flows.
+They still need all browser prover verification keys and empty-root values.
 
 See [Voting Capacity and Period Sizing](../lifecycle/voting-capacity-and-period-sizing.md)
 for the Mesa epoch calculation.
 
-## Local blockchain fields
+## In-repo simulator fields
 
-| Field                               | Purpose                                        |
-| ----------------------------------- | ---------------------------------------------- |
-| `MINA_NODE_HOST`                    | Local service bind host.                       |
-| `MINA_NODE_PORT`                    | Local Mina GraphQL port.                       |
-| `MINA_ARCHIVE_PORT`                 | Local Archive GraphQL port.                    |
-| `LIGHTNET_ACCOUNT_MANAGER_ENDPOINT` | Lightnet account manager endpoint.             |
-| `MINA_BINARY`                       | Mina binary used by local development scripts. |
+These fields configure `packages/local-blockchain`. This simulator does not
+implement full Lightnet or Mina daemon compatibility.
+
+| Field               | Purpose                         |
+| ------------------- | ------------------------------- |
+| `MINA_NODE_HOST`    | Simulator service bind host.    |
+| `MINA_NODE_PORT`    | Simulator Mina GraphQL port.    |
+| `MINA_ARCHIVE_PORT` | Simulator Archive GraphQL port. |
+| `PROOFS_ENABLED`    | Simulator proof mode.           |
+
+## Lightnet and Mina CLI fields
+
+These fields do not configure the in-repo simulator.
+
+| Field                               | Purpose                                             |
+| ----------------------------------- | --------------------------------------------------- |
+| `LIGHTNET_ACCOUNT_MANAGER_ENDPOINT` | Lightnet account manager endpoint for CLI commands. |
+| `MINA_BINARY`                       | Mina binary for the CLI Mina-ledger parity command. |
 
 ## Compose deployment fields
 
@@ -406,6 +436,13 @@ For a custom root domain, use `/`.
 
 `NODE_ENV` selects the standard development or production build mode. It does
 not set an origin or connect the two web surfaces.
+
+## Development And Test Reference
+
+`BACKOFFICE_BUILD_DIR`, `E2E_BROWSER_COVERAGE`, and
+`BROWSER_COVERAGE_DEPENDENCIES` are development and test fields.
+See [Development and test fields](../../developer/reference/env-and-commands.md#development-and-test-fields)
+for their defaults and consumers. They do not configure Treasury authorization.
 
 ## Sources
 

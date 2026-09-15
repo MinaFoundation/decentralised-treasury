@@ -7,14 +7,18 @@ page_kind: procedure
 
 # Ideal Lifecycle Operation
 
-This procedure runs one complete lifecycle on a real Mina testnet. It keeps
-all state reconciliation in the procedure.
+Follow this procedure to take one proposal through a complete lifecycle on a
+real Mina testnet. Each stage includes its state checks, so you can confirm the
+result before the next stage starts.
 
-Use `devops/TESTNET.md` as the primary command source. Use `DEMO.md` only for
-the simulator and web application flow.
+Use `devops/TESTNET.md` as the primary command source. Use the
+[full local blockchain demo](../../developer/local-development/full-local-demo.md)
+only for the simulator and web application flow.
 
 Read the [CLI prerequisites](../cli/prerequisites.md) before signing. Use the
 [CLI command index](../reference/cli-commands.md) to check command options.
+Use the [signing support matrix](/learn/signing-with-ledger-and-auro#check-operation-and-wallet-support)
+to select Ledger or private-key signing for each CLI operation.
 Use [Failures and Remedies](../failures/index.md) when a reconciliation step
 does not pass.
 
@@ -93,18 +97,19 @@ Complete the runtime data checks and the First Operational Check in the
 Read [Ledgers and Proving](../proving/ledgers-and-proving.md) for the complete
 snapshot selection, import, proof, and recovery procedures.
 
-The snapshot file name depends on the deployment mode:
+The snapshot input depends on the deployment mode:
 
-| Mode | File name |
-| --- | --- |
-| Manual or Compose | `<epoch>-<ledger-hash>.tar.gz` |
-| Kubernetes staking-ledger provider | `staking-<epoch>-<ledger-hash>.json.tar.gz` |
+| Mode       | Input                                                         |
+| ---------- | ------------------------------------------------------------- |
+| Compose    | `<ledgerHash>.json` and `lifecycle-<L>.hash`.                 |
+| Kubernetes | `staking-<epoch>-<ledgerHash>.json.tar.gz` from the provider. |
 
 For Kubernetes snapshot capture and HTTP publication, use
 [1c. Staking Ledger Provider](../infrastructure/staking-ledger-provider.md).
 
-The voting-ledger scheduler selects the lifecycle start epoch. It imports the
-ledger, checks its root, runs `trace-digest`, and writes:
+For Compose, an external producer selects the ledger and publishes both input
+files. The scheduler parses no epoch numbers. It follows the lifecycle pointer,
+imports the ledger, checks its root, runs `trace-digest`, and writes:
 
 ```text
 <SQLITE_DATA_HOST_PATH>/<L>.sqlite.done
@@ -130,8 +135,9 @@ docker compose \
   logs -f voting-ledger-scheduler proving-scheduler proving-worker
 ```
 
-Confirm the `.done` marker ledger hash. Later, compare it with the proposal
-snapshot hash.
+Confirm the `.done` marker Base58 ledger hash. Later, use
+`staking-ledger get-root-hash --output-format json` to compare its decimal field
+encoding with the Proposal snapshot value.
 
 ## 4. Create a Proposal and Reconcile
 
@@ -196,8 +202,9 @@ Confirm the following values:
 - `paidOutAmount=0`;
 - snapshot ledger hash and total currency.
 
-Compare the snapshot ledger hash with the `.done` marker. Confirm that the API
-shows the exact Markdown after the processor projects the proposal.
+Compare the snapshot decimal field value with the verified ledger output. Then
+compare its Base58 value with the `.done` marker. Confirm that the API shows the
+exact Markdown after the processor projects the proposal.
 
 Proposal creation transfers `floor(requestedAmount / 10)` to the shared
 Treasury Owner balance. Confirm that balance change on the MINA network.
@@ -230,7 +237,13 @@ dotenvx run -f <CLI_ENV_FILE> -- \
   --wait true
 ```
 
-Use `yay`, `nay`, or `abstain`. Repeat the command for each voter.
+Use `yay`, `nay`, or `abstain`. Submit at least five included vote actions
+during the Voting period. Tally needs five distinct non-initial action-state
+targets.
+
+For a reliable acceptance run, use five eligible voter keys. Only the first
+action from each voter can add voting weight. Later actions from the same voter
+can create action states but do not add weight.
 
 Keep each included transaction hash. Confirm that the Archive endpoint returns
 the proposal actions. Confirm that the vote projection contains each expected

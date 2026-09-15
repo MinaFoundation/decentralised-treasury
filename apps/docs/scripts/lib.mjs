@@ -9,8 +9,15 @@ export const docsAppRoot = path.resolve(SCRIPT_DIR, "..");
 export const repositoryRoot = path.resolve(docsAppRoot, "..", "..");
 export const docsRoot = path.join(docsAppRoot, "docs");
 
-export const MAIN_AUDIENCES = ["user", "operator"];
-export const PAGE_KINDS = ["navigation", "concept", "procedure", "reference"];
+export const MAIN_AUDIENCES = ["user", "operator", "developer"];
+export const PAGE_KINDS = [
+  "navigation",
+  "overview",
+  "quickstart",
+  "concept",
+  "procedure",
+  "reference",
+];
 
 let yamlModule;
 

@@ -13,7 +13,7 @@ then creates one proof set. The system traces and proves one lifecycle at a
 time.
 
 ```text
-  1c provider              voting-ledger-scheduler            proving-scheduler + workers
+  1c provider + input sync voting-ledger-scheduler            proving-scheduler + workers
   ───────────              ───────────────────────            ───────────────────────────
   staking-<epoch>          from-file  ->  trace-digest        prove-digest -> prove-merge
     -<hash>.tar.gz    ─────────────────────────────────────>    -> prove-exhaust
@@ -22,6 +22,11 @@ time.
          v                          v                                    v
    /staking-ledgers/           /sqlite/                             /proofs/
 ```
+
+The diagram compresses one normalization stage. The input sync extracts the
+provider archive. It writes `<ledgerHash>.json` before it writes
+`lifecycle-<id>.hash`. The scheduler consumes this normalized pair. It does not
+parse the provider archive name or calculate an epoch.
 
 | Stage                         | Runs in                                       | Parallel                 | Produces                                                |
 | ----------------------------- | --------------------------------------------- | ------------------------ | ------------------------------------------------------- |

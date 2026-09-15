@@ -7,13 +7,14 @@ page_kind: procedure
 
 # Deploy the Treasury
 
-Use this procedure after
-[Configure the Treasury](../lifecycle/configure-the-treasury.md). Configuration
-selects the values. This procedure applies them to one release.
+This is where the selected configuration becomes a deployed Treasury. Start
+only after you complete
+[Configure the Treasury](../lifecycle/configure-the-treasury.md), then apply
+that exact set of values to one release.
 
-This procedure owns compilation, deployment, direct Mina checks, and the
-public deployment record. It does not select Treasury policy or generate the
-initial environment family.
+The steps below cover compilation, deployment, direct Mina checks, and the
+public deployment record. Treasury policy selection and initial environment
+generation stay in the configuration procedure.
 
 Read the [CLI prerequisites](../cli/prerequisites.md) before signing. Use the
 [CLI command index](../reference/cli-commands.md) to check command options.

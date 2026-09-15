@@ -7,13 +7,15 @@ page_kind: procedure
 
 # Failures and Remedies
 
-Stop the dependent operation when Mina state or proof input is uncertain. Keep
-the original logs, files, transaction hashes, and direct state queries.
+When Mina state or a proof input is uncertain, stop the operation that depends
+on it. Keep the original logs, files, transaction hashes, and direct state
+queries. They will help you find the first stage that failed without changing
+more state.
 
 Read the [CLI prerequisites](../cli/prerequisites.md) before signing. Use the
 [CLI command index](../reference/cli-commands.md) to check command options.
 
-Use this recovery order:
+Work through recovery in this order:
 
 1. Stop the affected writer or submitter.
 2. Query the applicable Mina account state.
@@ -24,29 +26,29 @@ Use this recovery order:
 
 ## Kubernetes Repair Procedures
 
-Use this page to identify the failed stage. Use the related infrastructure
+Find the failed stage in the table, then open the related infrastructure
 runbook for cluster commands and component-specific checks.
 
-| Failed stage | Cluster procedure |
-| --- | --- |
-| Archive bootstrap, storage, gaps, or GraphQL | [1a. Archive Node troubleshooting](../infrastructure/archive-node.md#troubleshooting) |
-| Mina sync, peers, chain ID, public GraphQL, or Archive feed | [1b. Mina Daemon troubleshooting](../infrastructure/mina-daemon.md#troubleshooting) |
-| Staking-ledger export, verification, retention, or HTTP service | [1c. Staking Ledger Provider troubleshooting](../infrastructure/staking-ledger-provider.md#troubleshooting) |
-| Application deployment, scheduling, ingress, or service health | [2c. Deploy Stack troubleshooting](../infrastructure/deploy-stack.md#troubleshooting) |
-| Lifecycle markers, checkpoints, queue, autoscaling, or proof artifacts | [2d. Lifecycle Pipeline troubleshooting](../infrastructure/lifecycle-pipeline.md#troubleshooting) |
+| Failed stage                                                           | Cluster procedure                                                                                           |
+| ---------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| Archive bootstrap, storage, gaps, or GraphQL                           | [1a. Archive Node troubleshooting](../infrastructure/archive-node.md#troubleshooting)                       |
+| Mina sync, peers, chain ID, public GraphQL, or Archive feed            | [1b. Mina Daemon troubleshooting](../infrastructure/mina-daemon.md#troubleshooting)                         |
+| Staking-ledger export, verification, retention, or HTTP service        | [1c. Staking Ledger Provider troubleshooting](../infrastructure/staking-ledger-provider.md#troubleshooting) |
+| Application deployment, scheduling, ingress, or service health         | [2c. Deploy Stack troubleshooting](../infrastructure/deploy-stack.md#troubleshooting)                       |
+| Lifecycle markers, checkpoints, queue, autoscaling, or proof artifacts | [2d. Lifecycle Pipeline troubleshooting](../infrastructure/lifecycle-pipeline.md#troubleshooting)           |
 
 After a repair, return to the applicable reconciliation step on this page.
 
 ## Lifecycle or Snapshot Mismatch
 
-**Signal:** The staking root differs from the snapshot file name or Proposal
-state.
+**Signal:** The imported staking root differs from the Proposal root or the
+lifecycle pointer.
 
 **Likely cause:** The start slot, period duration, lifecycle ID, network, or
 snapshot file is wrong.
 
-**Safe check:** Read Treasury Owner and Proposal state. Calculate the expected
-snapshot epoch. Compare the Proposal hash, file-name hash, and imported root.
+**Safe check:** Read Treasury Owner and Proposal state. Compare the Proposal
+hash, `lifecycle-<L>.hash` value, and imported root.
 
 ```bash
 dotenvx run -f <CLI_ENV_FILE> -- \
@@ -271,19 +273,21 @@ confirm the expected status route or marker advances.
 
 **Signal:** A staking snapshot exists, but `<L>.sqlite.done` does not exist.
 
-**Likely cause:** Root validation or tracing failed. Newer unfinished work can
-also delay an older lifecycle because each poll selects the newest candidate.
+**Likely cause:** The pointer or payload is absent, root validation failed, or
+tracing failed. A failed lifecycle enters retry backoff. The scheduler still
+checks the other eligible pointers during that poll.
 
-**Safe check:** Inspect the scheduler log. Calculate the expected epoch and
-check the exact snapshot file.
+**Safe check:** Inspect the scheduler log. Check the exact
+`lifecycle-<L>.hash` pointer, its `<ledgerHash>.json` payload, and the retry
+message for this lifecycle.
 
 **Remedy:** Use the stopped one-shot procedure in
 [Ledgers and proving](../proving/ledgers-and-proving.md#run-the-voting-ledger-scheduler).
 This action removes prior SQLite state for lifecycle `<L>`. Keep the scheduler
 and cached SQLite readers stopped until you verify the marker.
 
-**Reconciliation:** Read the marker. Confirm its lifecycle, epoch, and ledger
-hash against Proposal state.
+**Reconciliation:** Read the marker. Confirm its `lifecycleId`, `ledgerHash`,
+and `processedAt` values. Compare the ledger hash with Proposal state.
 
 ## Redis or Worker Failure
 
@@ -355,6 +359,41 @@ blind signing. Correct the explicit public key and index pair.
 
 **Reconciliation:** Review the network, fee payer, nonce, and signed account
 updates on the device. Query Mina state after submission.
+
+Read [Signing with Ledger and Auro](/learn/signing-with-ledger-and-auro) for
+the complete wallet checks.
+
+## Backoffice Access or Signing Failure
+
+**Signal:** The operator cannot reach Backoffice, WebHID is unavailable, or a
+participant contribution fails validation.
+
+**Likely cause:** The public HTTPS Compose profile does not expose Backoffice.
+Other causes include an absent SSH tunnel, an unsupported browser, an insecure
+origin, a wrong key order, or fewer than three valid signatures.
+
+`Signer` and `Submitter` are workflow modes. They are not authenticated roles
+or access controls.
+
+**Safe check:** Confirm that the Backoffice proxy listens on
+`127.0.0.1:3200` on the operator host. Confirm five unique participant keys in
+their exact order.
+
+Backoffice supports pause, unpause, one Proposal pause toggle, and participant
+rotation. It creates participant field signatures with Ledger only. The final
+transaction fee payer can use Auro or Ledger.
+
+**Remedy:** Create this tunnel from the operator workstation:
+
+```bash
+ssh -N -L 3200:127.0.0.1:3200 <OPERATOR_HOST>
+```
+
+Open `http://127.0.0.1:3200` in a supported Chromium browser. Collect at least
+three valid signatures from the five ordered participant positions.
+
+**Reconciliation:** Confirm the loopback page loads and WebHID is available.
+Then confirm the imported bundle, participant commitment, and Mina state agree.
 
 ## Transaction Submission Is Uncertain
 
@@ -431,12 +470,16 @@ changes after each partial execution.
 
 - `devops/TESTNET.md`
 - `devops/compose.yml`
+- `devops/proxy/Caddyfile`
 - `devops/docker/voting-ledger-scheduler-entrypoint.sh`
 - `devops/docker/proving-scheduler-entrypoint.sh`
 - `apps/cli/src/commands/proposal-content-api.ts`
 - `apps/cli/src/ledger/transaction-signer.ts`
 - `apps/cli/src/commands/pause-controller.ts`
 - `apps/cli/src/commands/treasury-owner.ts`
+- `apps/backoffice/features/backoffice-app.tsx`
+- `apps/backoffice/features/operations.ts`
+- `apps/backoffice/features/wallets.ts`
 - `packages/sdk/src/services/sqlite/sqlite-treasury-owner-service.ts`
 - `packages/indexer/src/events-indexer.ts`
 - `packages/indexer/src/events-repository.ts`

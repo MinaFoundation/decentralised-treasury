@@ -6,8 +6,8 @@ audience: user
 page_kind: concept
 ---
 
-The tally applies a participation requirement and an approval requirement.
-Both requirements change with the proposal size.
+A visible majority is not enough by itself. The tally checks both participation
+and approval, and a larger request must meet stronger requirements.
 
 ## Inputs
 

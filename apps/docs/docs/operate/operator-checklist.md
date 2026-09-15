@@ -7,9 +7,13 @@ page_kind: procedure
 
 # Operator Checklist
 
-Use this checklist through preparation, deployment, and the first service
-check. Complete each section when its required system state exists. Repeat the
-applicable checks after an environment change.
+Keep this checklist open from preparation through the first service check. It
+connects the longer procedures and helps you confirm that each required state
+exists before you continue. Repeat the applicable checks after an environment
+change.
+
+For a short map of the complete setup path, start with the
+[operator quickstart](quickstart.md).
 
 Use this checklist across two procedures:
 
@@ -46,6 +50,16 @@ This checklist does not replace either procedure.
 Compose does not start or restart Mina or Archive. Use the provider procedure
 or [the Kubernetes Network runbooks](infrastructure/index.md#1-network).
 
+The public HTTPS Compose profile does not expose Backoffice. For a long-running
+Compose deployment, create this tunnel from the operator workstation:
+
+```bash
+ssh -N -L 3200:127.0.0.1:3200 <OPERATOR_HOST>
+```
+
+Open `http://127.0.0.1:3200`. This loopback origin supplies a secure browser
+context for WebHID.
+
 ## Lifecycle Configuration
 
 - [ ] Confirm the Mina node reports the intended protocol era.
@@ -77,14 +91,22 @@ for the demand and capacity checks.
 - [ ] For `proofOrSignature`, keep the Owner key as an offline emergency asset.
 - [ ] For `proofOrSignature`, keep Owner key custody separate from routine infrastructure access.
 - [ ] Record the authorized custodians and key recovery procedure without recording a private key or recovery phrase.
-- [ ] Keep the five break-glass public keys in their exact order.
+- [ ] Confirm five unique break-glass public keys in their exact order.
 - [ ] Confirm that each break-glass signer controls the applicable signing account.
 - [ ] Keep break-glass signers separate from the infrastructure operator.
+- [ ] Confirm that Backoffice exposes pause, unpause, Proposal toggle, and participant rotation only.
+- [ ] Treat `Signer` and `Submitter` as workflow modes, not authenticated roles.
+- [ ] Use Ledger only for each Backoffice participant field signature.
+- [ ] Collect valid signatures from at least three of the five participant positions.
+- [ ] Use Auro or Ledger for the final Backoffice transaction fee payer.
 - [ ] Confirm each Ledger account index returns the expected public key.
 - [ ] Open the Mina app and enable blind signing before a Ledger transaction.
 - [ ] Require `physical-ledger` status `PASS` from the physical verification.
 
 Do not put private keys in browser, API, or Compose environment files.
+
+Read [Signing with Ledger and Auro](/learn/signing-with-ledger-and-auro) before
+a browser or CLI signing operation.
 
 ## Compile and Browser Configuration
 
@@ -172,6 +194,8 @@ address. A successful `/healthz` response only confirms the HTTP process.
 - `package.json`
 - `devops/TESTNET.md`
 - `devops/TESTNET_MINA_NODE.md`
+- `devops/compose.yml`
+- `devops/proxy/Caddyfile`
 - `devops/runbooks/1-Network/1a-Archive-Node/README.md`
 - `devops/runbooks/1-Network/1b-Mina-Daemon/README.md`
 - `devops/runbooks/1-Network/1c-Staking-Ledger-Provider/README.md`

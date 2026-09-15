@@ -7,7 +7,9 @@
     "build": "docusaurus build",
     "start": "docusaurus serve --port 3300",
     "clear": "docusaurus clear",
+    "generate:developer-guides": "node scripts/generate-developer-guides.mjs",
     "generate:runbooks": "node scripts/generate-infrastructure-runbooks.mjs",
+    "validate:developer-guides": "node scripts/generate-developer-guides.mjs --check",
     "validate:runbooks": "node scripts/generate-infrastructure-runbooks.mjs --check",
     "validate:docs": "node scripts/validate-docs.mjs",
     "validate:coverage": "node scripts/validate-coverage.mjs",
@@ -15,7 +17,7 @@
     "check:content": "node scripts/check.mjs",
     "check-types": "tsc --noEmit",
     "lint": "pnpm run validate:docs",
-    "check": "pnpm run check:content && pnpm run validate:cli-reference && pnpm run check-types && pnpm run build"
+    "check": "pnpm run validate:developer-guides && pnpm run check:content && pnpm run validate:cli-reference && pnpm run check-types && pnpm run build"
   },
   "dependencies": {
     "@docusaurus/core": "3.10.2",

@@ -20,35 +20,40 @@ Let:
 
 The contract calculates these slots:
 
-~~~text
+```text
 proposal start    = S + 4 × D × L
 exploration start = proposal start + D
 voting start      = proposal start + 2 × D
 cooldown start    = proposal start + 3 × D
 next lifecycle    = proposal start + 4 × D
-~~~
+```
 
 The default `LIFECYCLE_PERIOD_DURATION` is `7140` slots. One lifecycle has four equal periods.
 
-| Operation | Earliest period | Upper time limit in this protocol |
-| --- | --- | --- |
-| `createProposal` | Proposal period | Exploration start slot, inclusive |
-| `vote` | Voting period | Cooldown start slot, inclusive |
-| `tallyVotes` | Cooldown period | No lifecycle upper bound |
-| `executeProposal` | Proposal period of lifecycle `L + 1` | No lifecycle upper bound |
+| Operation         | Earliest period                      | Upper time limit in this protocol |
+| ----------------- | ------------------------------------ | --------------------------------- |
+| `createProposal`  | Proposal period                      | Exploration start slot, inclusive |
+| `vote`            | Voting period                        | Cooldown start slot, inclusive    |
+| `tallyVotes`      | Cooldown period                      | No lifecycle upper bound          |
+| `executeProposal` | Proposal period of lifecycle `L + 1` | No lifecycle upper bound          |
 
 The pinned o1js `requireBetween` precondition includes both range limits. The contract sets each bounded upper limit to `period start + D`. Proposal and Exploration therefore share one boundary slot. Voting and Cooldown also share one boundary slot. Submit bounded operations before a shared boundary slot when possible.
 
-Epoch alignment is an Operator configuration invariant. The contract does not check it.
+Epoch alignment is the supported live-network operating convention. The
+contract does not check it.
 
-The supported scheduler configuration uses these rules:
+The convention uses these rules:
 
-~~~text
+```text
 D = one Mina epoch
 S = the first slot of a Mina epoch
 deployedEpoch = floor(S / D)
 snapshotEpoch = deployedEpoch + 4 × L
-~~~
+```
+
+This formula helps the operator or external snapshot producer plan the
+expected epoch. It does not select or authenticate a staking-ledger payload.
+The Proposal root remains authoritative.
 
 A future `S` delays all lifecycle operations. A past `S` selects a later period and can require historical snapshot data.
 
@@ -71,10 +76,10 @@ Creation does not check these conditions. A missing ledger, missing account, wro
 
 The bond is:
 
-~~~text
+```text
 bond = floor(requestedAmount / BOND_AMOUNT_DIVISOR)
 BOND_AMOUNT_DIVISOR = 10
-~~~
+```
 
 Current [CLI](./cli-commands) and web builders use the sender as bond payer. A manual transaction can use another signed bond payer.
 
@@ -118,12 +123,12 @@ This condition can block tally when only one high-weight voter submitted an acti
 
 Tally has three distinct outcomes:
 
-| Conditions | Transaction result | Proposal status |
-| --- | --- | --- |
-| Participation is sufficient, `yay + nay > 0`, and approval passes | Success | `APPROVED` |
-| Participation is sufficient, `yay + nay > 0`, and approval fails | Success | `REJECTED` |
-| Participation is insufficient | Failure | `UNKNOWN` |
-| Votes are abstain-only | Failure | `UNKNOWN` |
+| Conditions                                                        | Transaction result | Proposal status |
+| ----------------------------------------------------------------- | ------------------ | --------------- |
+| Participation is sufficient, `yay + nay > 0`, and approval passes | Success            | `APPROVED`      |
+| Participation is sufficient, `yay + nay > 0`, and approval fails  | Success            | `REJECTED`      |
+| Participation is insufficient                                     | Failure            | `UNKNOWN`       |
+| Votes are abstain-only                                            | Failure            | `UNKNOWN`       |
 
 An Operator can skip proof generation when no useful transition can succeed. The Proposal then stays `UNKNOWN`.
 
@@ -135,9 +140,9 @@ The same account can pay the fee. A different fee payer does not replace the Own
 
 The committed recipient can receive this total:
 
-~~~text
+```text
 requestedAmount + bond - paidOutAmount
-~~~
+```
 
 Execution can be partial and repeated. The CLI defaults to the complete remaining amount, including the bond.
 
@@ -159,10 +164,10 @@ The global pause blocks creation, voting, tally, and execution. It does not bloc
 
 Proposal pause is encoded in `ProposalStatus`. It is not a separate Boolean field.
 
-~~~text
+```text
 any non-PAUSED status -> PAUSED
 PAUSED status         -> UNKNOWN
-~~~
+```
 
 :::danger Final result can be erased
 

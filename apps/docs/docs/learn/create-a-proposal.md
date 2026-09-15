@@ -6,12 +6,13 @@ audience: user
 page_kind: procedure
 ---
 
-A proposal requests a fixed amount for one recipient.
-Create it only during the Proposal period for its lifecycle.
+A proposal tells the community what you want to fund, how much it needs, and
+which account will receive the funds. You can submit it only during the
+Proposal period for its lifecycle.
 
 ## Before You Start
 
-Prepare these items:
+Before you open the form, prepare these items:
 
 - a short title;
 - Markdown content that explains the request;
@@ -80,6 +81,10 @@ The web application saves a local retry record and can retry from the proposal p
 
 ## Create in the Web Application
 
+Use [Signing with Ledger and
+Auro](/learn/signing-with-ledger-and-auro) to prepare the wallet and check each
+approval.
+
 1. Open **Proposals**.
 2. Select **Create proposal**.
 3. Connect the proposer wallet.
@@ -87,10 +92,14 @@ The web application saves a local retry record and can retry from the proposal p
 5. Review the derived bond and voting requirement estimate.
 6. Select **Create proposal**.
 7. Review the transaction summary.
-8. Compile and prove the transaction.
-9. Approve the wallet signature.
-10. Wait for inclusion and content upload.
-11. Save the proposal address and transaction hash.
+8. Select **Create proposal transaction**.
+9. The application compiles and proves the transaction automatically.
+10. Approve the wallet signature.
+11. The application submits the signed transaction.
+12. Wait for inclusion and content upload.
+13. Save the proposal address and transaction hash.
+
+The transaction summary does not show all zkApp account updates.
 
 Outside the Proposal period, the web application saves the proposal as a draft.
 It does not submit a creation transaction.
