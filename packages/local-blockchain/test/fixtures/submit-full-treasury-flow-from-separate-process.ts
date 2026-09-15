@@ -1,9 +1,12 @@
 import assert from "node:assert/strict";
+import {
+  assertServerProofMode,
+  proofCache,
+  proofsEnabled,
+} from "../proof-mode.js";
 import { KeyvSqlite } from "../../../sdk/node_modules/@keyv/sqlite/dist/index.js";
 import {
   AccountUpdate,
-  Bool,
-  Cache,
   Field,
   Mina,
   PrivateKey,
@@ -19,8 +22,9 @@ import { Account } from "../../../sdk/src/provable/account.js";
 import {
   ACCOUNT_BATCH_SIZE,
   SideLoadedStakingLedgerToVotingLedgerProof,
+  StakingLedgerToVotingLedger,
+  stakingLedgerToVotingLedgerContext,
   StakingLedgerToVotingLedgerProgramInput,
-  StakingLedgerToVotingLedgerProgramOutput,
 } from "../../../sdk/src/provable/staking-ledger-to-voting-ledger.js";
 import { BOND_AMOUNT_DIVISOR } from "../../../sdk/src/provable/contracts/treasury-constants.js";
 import { TreasuryOwnerSmartContract } from "../../../sdk/src/provable/contracts/treasury-owner.js";
@@ -35,14 +39,47 @@ import {
   VOTE_ACTION_BATCH_SIZE,
 } from "../../../sdk/src/provable/contracts/treasury-proposal/vote-reducer.js";
 import { TreasuryProposalSmartContract } from "../../../sdk/src/provable/contracts/treasury-proposal/treasury-proposal.js";
-import { PersistentNullifierLedger } from "../../../sdk/src/ledgers/nullifier-ledger/persistent-nullifier-ledger.js";
+import { InMemoryNullifierLedger } from "../../../sdk/src/ledgers/nullifier-ledger/in-memory-nullifier-ledger.js";
 import { PersistentStakingLedger } from "../../../sdk/src/ledgers/staking-ledger/persistent-staking-ledger.js";
-import { PersistentVotingLedger } from "../../../sdk/src/ledgers/voting-ledger/persistent-voting-ledger.js";
-import { VotingAccount } from "../../../sdk/src/provable/voting-account.js";
+import { InMemoryVotingLedger } from "../../../sdk/src/ledgers/voting-ledger/in-memory-voting-ledger.js";
+import { RecordingStakingLedger } from "../../../sdk/src/ledgers/staking-ledger/recording-staking-ledger.js";
+import { ReplayableStakingLedger } from "../../../sdk/src/ledgers/staking-ledger/replayable-staking-ledger.js";
+import { RecordingVotingLedger } from "../../../sdk/src/ledgers/voting-ledger/recording-voting-ledger.js";
+import { ReplayableVotingLedger } from "../../../sdk/src/ledgers/voting-ledger/replayable-voting-ledger.js";
+import { RecordingNullifierLedger } from "../../../sdk/src/ledgers/nullifier-ledger/recording-nullifier-ledger.js";
 import { SqliteVoteReducerService } from "../../../sdk/src/services/sqlite/sqlite-vote-reducer-service.js";
 import { createSqliteNullifierLedgerStorage } from "../../../sdk/src/storage/sqlite/factory/sqlite-nullifier-ledger-storage.js";
 import { createSqliteStakingLedgerStorage } from "../../../sdk/src/storage/sqlite/factory/sqlite-staking-ledger-storage.js";
 import { createSqliteVotingLedgerStorage } from "../../../sdk/src/storage/sqlite/factory/sqlite-voting-ledger-storage.js";
+import { createInMemoryVotingLedgerStorage } from "../../../sdk/src/storage/in-memory/factory/in-memory-voting-ledger-storage.js";
+import { createInMemoryNullifierLedgerStorage } from "../../../sdk/src/storage/in-memory/factory/in-memory-nullifier-ledger-storage.js";
+import { VoteReducerRunBatchTrace } from "../../../sdk/src/proving/tracing/vote-reducer-tracer.js";
+import { proveVoteReducerInWorker } from "./vote-reducer-worker.js";
+
+async function runPhase<T>(
+  name: string,
+  operation: () => Promise<T>,
+  timeoutMs: number,
+): Promise<T> {
+  console.log(`[e2e-phase] start ${name}`);
+  let timeout: ReturnType<typeof setTimeout> | undefined;
+  try {
+    const result = await Promise.race([
+      operation(),
+      new Promise<never>((_, reject) => {
+        timeout = setTimeout(
+          () =>
+            reject(new Error(`Fixture phase ${name} exceeded ${timeoutMs} ms`)),
+          timeoutMs,
+        );
+      }),
+    ]);
+    console.log(`[e2e-phase] complete ${name}`);
+    return result;
+  } finally {
+    if (timeout) clearTimeout(timeout);
+  }
+}
 
 interface AdminStateResponse {
   ok: boolean;
@@ -78,10 +115,11 @@ function createInMemorySqliteStore(): KeyvSqlite {
 function buildSendZkappMutation(transactionJson: string): string {
   return `mutation {
   sendZkapp(input: {
-    zkappCommand: ${JSON.stringify(JSON.parse(transactionJson), null, 2).replace(
-      /\"(\S+)\"\s*:/gm,
-      "$1:",
-    )}
+    zkappCommand: ${JSON.stringify(
+      JSON.parse(transactionJson),
+      null,
+      2,
+    ).replace(/\"(\S+)\"\s*:/gm, "$1:")}
   }) {
     zkapp {
       hash
@@ -103,7 +141,9 @@ async function main() {
   }
 
   async function readAdminState(): Promise<AdminStateResponse> {
-    const response = await fetch(`${minaBaseUrl}/admin/state`);
+    const response = await fetch(`${minaBaseUrl}/admin/state`, {
+      headers: { connection: "close" },
+    });
     assert.equal(response.status, 200);
     return (await response.json()) as AdminStateResponse;
   }
@@ -111,7 +151,10 @@ async function main() {
   async function incrementServerSlot(by: number): Promise<void> {
     const response = await fetch(`${minaBaseUrl}/admin/slot/increment`, {
       method: "POST",
-      headers: { "content-type": "application/json" },
+      headers: {
+        connection: "close",
+        "content-type": "application/json",
+      },
       body: JSON.stringify({ by }),
     });
     assert.equal(response.status, 200);
@@ -123,7 +166,10 @@ async function main() {
   }): Promise<void> {
     const response = await fetch(`${minaBaseUrl}/admin/network-state`, {
       method: "POST",
-      headers: { "content-type": "application/json" },
+      headers: {
+        connection: "close",
+        "content-type": "application/json",
+      },
       body: JSON.stringify(payload),
     });
     assert.equal(response.status, 200);
@@ -133,6 +179,7 @@ async function main() {
     const response = await fetch(`${minaBaseUrl}/graphql`, {
       method: "POST",
       headers: {
+        connection: "close",
         "content-type": "application/json",
       },
       body: JSON.stringify({
@@ -175,13 +222,18 @@ async function main() {
   const sender = stakingSnapshotAccounts[1];
   const voter1 = stakingSnapshotAccounts[2];
   const voter2 = stakingSnapshotAccounts[3];
-  assert.equal(stakingSnapshotAccounts.length, 4, "expected at least four test accounts");
+  assert.equal(
+    stakingSnapshotAccounts.length,
+    4,
+    "expected at least four test accounts",
+  );
   assert(bondPayer, "missing bond payer account");
   assert(sender, "missing sender account");
   assert(voter1, "missing voter1 account");
   assert(voter2, "missing voter2 account");
 
-  const local = await Mina.LocalBlockchain({ proofsEnabled: false });
+  await assertServerProofMode(minaBaseUrl);
+  const local = await Mina.LocalBlockchain({ proofsEnabled });
   Mina.setActiveInstance(local);
   for (const account of [bondPayer, sender, voter1, voter2]) {
     local.addAccount(PublicKey.fromBase58(account.publicKey), account.balance);
@@ -189,14 +241,21 @@ async function main() {
 
   const sqlite = createInMemorySqliteStore();
   const lifecycleId = `local-blockchain-full-flow-${Date.now()}`;
-  const votingLedgerStorage = createSqliteVotingLedgerStorage(lifecycleId, sqlite);
-  const nullifierLedgerStorage = createSqliteNullifierLedgerStorage(lifecycleId, sqlite);
-  const stakingLedgerStorage = createSqliteStakingLedgerStorage(lifecycleId, sqlite);
-  const votingLedger = new PersistentVotingLedger(
+  const votingLedgerStorage = createInMemoryVotingLedgerStorage(
+    createSqliteVotingLedgerStorage(lifecycleId, sqlite),
+  );
+  const nullifierLedgerStorage = createInMemoryNullifierLedgerStorage(
+    createSqliteNullifierLedgerStorage(lifecycleId, sqlite),
+  );
+  const stakingLedgerStorage = createSqliteStakingLedgerStorage(
+    lifecycleId,
+    sqlite,
+  );
+  const votingLedger = new InMemoryVotingLedger(
     votingLedgerStorage.votingAccountStorage,
     votingLedgerStorage.merkleTreeStorage,
   );
-  const nullifierLedger = new PersistentNullifierLedger(
+  const nullifierLedger = new InMemoryNullifierLedger(
     nullifierLedgerStorage.nullifierStorage,
     nullifierLedgerStorage.merkleTreeStorage,
   );
@@ -206,6 +265,7 @@ async function main() {
   );
 
   voteReducerContext.set({ votingLedger, nullifierLedger });
+  stakingLedgerToVotingLedgerContext.set({ stakingLedger, votingLedger });
 
   const bondPayerPrivateKey = PrivateKey.fromBase58(bondPayer.privateKey);
   const bondPayerPublicKey = bondPayerPrivateKey.toPublicKey();
@@ -219,20 +279,41 @@ async function main() {
     PrivateKey.random().toPublicKey(),
   );
 
-  TreasuryPauseControllerSmartContract.multisigParticipants = multisigParticipants;
-  TreasuryProposalSmartContract.voteReducerVerificationKey = VerificationKey.dummySync();
+  TreasuryPauseControllerSmartContract.multisigParticipants =
+    multisigParticipants;
+  TreasuryProposalSmartContract.voteReducerVerificationKey =
+    VerificationKey.dummySync();
   TreasuryProposalSmartContract.stakingLedgerToVotingLedgerVerificationKey =
     VerificationKey.dummySync();
-  TreasuryProposalSmartContract.emptyNullifierRoot = await nullifierLedger.getRoot();
-  TreasuryProposalSmartContract.emptyVotingLedgerRoot = await votingLedger.getRoot();
+  const emptyNullifierRoot = await nullifierLedger.getRoot();
+  TreasuryProposalSmartContract.emptyNullifierRoot = emptyNullifierRoot;
+  TreasuryProposalSmartContract.emptyVotingLedgerRoot =
+    await votingLedger.getRoot();
 
-  const cache = Cache.FileSystem(`${process.cwd()}/cache`);
-  await VoteReducer.compile({ proofsEnabled: false, cache });
+  const cache = proofCache;
+  console.log("[e2e-phase] compile vote reducer");
+  const reducerCompilation = await VoteReducer.compile({
+    proofsEnabled,
+    cache,
+  });
+  console.log("[e2e-phase] compile staking conversion");
+  const stakingCompilation = await StakingLedgerToVotingLedger.compile({
+    proofsEnabled,
+    cache,
+  });
+  if (proofsEnabled) {
+    TreasuryProposalSmartContract.voteReducerVerificationKey =
+      reducerCompilation.verificationKey;
+    TreasuryProposalSmartContract.stakingLedgerToVotingLedgerVerificationKey =
+      stakingCompilation.verificationKey;
+  }
+  console.log("[e2e-phase] compile treasury contracts");
   await TreasuryProposalSmartContract.compile({ cache });
   TreasuryOwnerSmartContract.proposalContractVerificationKey =
     TreasuryProposalSmartContract._verificationKey;
   await TreasuryPauseControllerSmartContract.compile({ cache });
   await TreasuryOwnerSmartContract.compile({ cache });
+  console.log("[e2e-phase] deploy and fund treasury");
 
   const pauseControllerPrivateKey = PrivateKey.random();
   const pauseControllerPublicKey = pauseControllerPrivateKey.toPublicKey();
@@ -248,10 +329,13 @@ async function main() {
   const proposalTokenIdBase58 = TokenId.toBase58(treasuryOwner.deriveTokenId());
   const proposalAmount = UInt64.from(100_000_000_000);
   const treasuryFundingAmount = UInt64.from(200_000_000_000);
-  const amountWithBond = proposalAmount.add(proposalAmount.div(BOND_AMOUNT_DIVISOR));
+  const amountWithBond = proposalAmount.add(
+    proposalAmount.div(BOND_AMOUNT_DIVISOR),
+  );
 
   TreasuryOwnerSmartContract.treasuryDeployedAtSlot = UInt32.from(0);
-  TreasuryOwnerSmartContract.pauseControllerPublicKey = pauseControllerPublicKey;
+  TreasuryOwnerSmartContract.pauseControllerPublicKey =
+    pauseControllerPublicKey;
 
   const deployPauseControllerTx = await Mina.transaction(
     { sender: senderPublicKey },
@@ -262,7 +346,10 @@ async function main() {
   );
   deployPauseControllerTx.sign([senderPrivateKey, pauseControllerPrivateKey]);
   await deployPauseControllerTx.prove();
-  const pauseControllerResult = await submitAndMirror(local, deployPauseControllerTx);
+  const pauseControllerResult = await submitAndMirror(
+    local,
+    deployPauseControllerTx,
+  );
 
   const deployTreasuryOwnerTx = await Mina.transaction(
     { sender: senderPublicKey },
@@ -273,7 +360,10 @@ async function main() {
   );
   deployTreasuryOwnerTx.sign([senderPrivateKey, treasuryOwnerPrivateKey]);
   await deployTreasuryOwnerTx.prove();
-  const treasuryOwnerDeployResult = await submitAndMirror(local, deployTreasuryOwnerTx);
+  const treasuryOwnerDeployResult = await submitAndMirror(
+    local,
+    deployTreasuryOwnerTx,
+  );
 
   const fundTreasuryTx = await Mina.transaction(
     { sender: senderPublicKey },
@@ -287,7 +377,7 @@ async function main() {
   await fundTreasuryTx.prove();
   const fundTreasuryResult = await submitAndMirror(local, fundTreasuryTx);
 
-  for (let index = 0; index < ACCOUNT_BATCH_SIZE; index += 1) {
+  for (let index = 0; index <= ACCOUNT_BATCH_SIZE; index += 1) {
     const emptyAccount = Account.empty();
     await stakingLedger.setAccount(BigInt(index), emptyAccount);
     await stakingLedger.setLeaf(BigInt(index), emptyAccount);
@@ -340,34 +430,70 @@ async function main() {
     stakingLedgerAccount3.balance,
     stakingLedgerAccount4.balance,
   ].reduce((sum, balance) => sum.add(balance), UInt64.from(0));
-  const seededVotingAccounts = [
-    {
-      publicKey: treasuryOwnerPublicKey.toBase58(),
-      balance: treasuryOwnerLedgerAccount.balance,
-    },
-    {
-      publicKey: voterPublicKey1.toBase58(),
-      balance: stakingLedgerAccount1.balance,
-    },
-    {
-      publicKey: voterPublicKey2.toBase58(),
-      balance: stakingLedgerAccount2.balance,
-    },
-    {
-      publicKey: senderPublicKey.toBase58(),
-      balance: stakingLedgerAccount3.balance,
-    },
-    {
-      publicKey: bondPayerPublicKey.toBase58(),
-      balance: stakingLedgerAccount4.balance,
-    },
+  const stakingInput = new StakingLedgerToVotingLedgerProgramInput({
+    index: UInt64.from(0),
+    stakingLedgerRoot,
+    votingLedgerRoot: await votingLedger.getRoot(),
+  });
+  console.log("[e2e-phase] digest staking ledger");
+  const stakingAccounts = [
+    treasuryOwnerLedgerAccount,
+    stakingLedgerAccount1,
+    stakingLedgerAccount2,
+    stakingLedgerAccount3,
+    stakingLedgerAccount4,
   ];
-  for (const account of seededVotingAccounts) {
-    const votingAccount = new VotingAccount({ balance: account.balance });
-    await votingLedger.setVotingAccount(account.publicKey, votingAccount);
-    await votingLedger.setLeaf(account.publicKey, votingAccount);
-  }
+  // Use the production in-memory ledger overlay for tracing, then replay its witnesses.
+  const stakingRecording = new RecordingStakingLedger(stakingLedger);
+  const votingRecording = new RecordingVotingLedger(votingLedger);
+  stakingLedgerToVotingLedgerContext.set({
+    stakingLedger: stakingRecording,
+    votingLedger: votingRecording,
+  });
+  await StakingLedgerToVotingLedger.rawMethods.digest(
+    stakingInput,
+    stakingAccounts,
+  );
+  stakingLedgerToVotingLedgerContext.set({
+    stakingLedger: new ReplayableStakingLedger(
+      stakingRecording.recorder.recordings.witnesses,
+    ),
+    votingLedger: new ReplayableVotingLedger(
+      votingRecording.recorder.recordings.witnesses,
+      votingRecording.recorder.recordings.votingAccounts,
+    ),
+  });
+  const { proof: digestProof } = await StakingLedgerToVotingLedger.digest(
+    stakingInput,
+    stakingAccounts,
+  );
+  console.log("[e2e-phase] exhaust staking ledger");
+  stakingLedgerToVotingLedgerContext.set({
+    stakingLedger: new ReplayableStakingLedger({
+      [ACCOUNT_BATCH_SIZE]: [
+        await stakingLedger.getWitness(BigInt(ACCOUNT_BATCH_SIZE)),
+      ],
+    }),
+    votingLedger: new ReplayableVotingLedger({}, {}),
+  });
+  const { proof: exhaustedProof } = await StakingLedgerToVotingLedger.exhaust(
+    stakingInput,
+    digestProof,
+  );
+  const stakingLedgerProof =
+    SideLoadedStakingLedgerToVotingLedgerProof.fromProof(exhaustedProof);
   const votingLedgerRoot = await votingLedger.getRoot();
+  assert.equal(
+    stakingLedgerProof.publicOutput.votingLedgerRoot.toString(),
+    votingLedgerRoot.toString(),
+  );
+  assert.equal(stakingLedgerProof.publicOutput.exhausted.toBoolean(), true);
+  if (proofsEnabled) {
+    assert.equal(
+      await StakingLedgerToVotingLedger.verify(exhaustedProof),
+      true,
+    );
+  }
   local.setNetworkState({
     ...local.getNetworkState(),
     stakingEpochData: {
@@ -384,11 +510,13 @@ async function main() {
     stakingEpochDataLedgerTotalCurrency: stakingLedgerTotalCurrency.toString(),
   });
 
+  console.log("[e2e-phase] create proposal and submit votes");
   const createProposalTx = await Mina.transaction(
     { sender: senderPublicKey },
     async () => {
       AccountUpdate.fundNewAccount(senderPublicKey, 1);
-      const bondPayerAccountUpdate = AccountUpdate.createSigned(bondPayerPublicKey);
+      const bondPayerAccountUpdate =
+        AccountUpdate.createSigned(bondPayerPublicKey);
       bondPayerAccountUpdate.balance.subInPlace(
         proposalAmount.div(BOND_AMOUNT_DIVISOR),
       );
@@ -413,30 +541,67 @@ async function main() {
 
   await mirrorManualSlotAdvance(local, lifecyclePeriodDuration.mul(2));
 
-  const voteTx1 = await Mina.transaction({ sender: senderPublicKey }, async () => {
-    await treasuryOwner.vote(proposalPublicKey, voterPublicKey1, Vote.YAY);
-  });
+  const voteTx1 = await Mina.transaction(
+    { sender: senderPublicKey },
+    async () => {
+      await treasuryOwner.vote(proposalPublicKey, voterPublicKey1, Vote.YAY);
+    },
+  );
   voteTx1.sign([senderPrivateKey, voterPrivateKey1]);
   await voteTx1.prove();
   const voteResult1 = await submitAndMirror(local, voteTx1);
 
   await mirrorManualSlotAdvance(local, UInt32.from(1));
 
-  const voteTx2 = await Mina.transaction({ sender: senderPublicKey }, async () => {
-    await treasuryOwner.vote(proposalPublicKey, voterPublicKey2, Vote.ABSTRAIN);
-  });
+  const voteTx2 = await Mina.transaction(
+    { sender: senderPublicKey },
+    async () => {
+      await treasuryOwner.vote(
+        proposalPublicKey,
+        voterPublicKey2,
+        Vote.ABSTRAIN,
+      );
+    },
+  );
   voteTx2.sign([senderPrivateKey, voterPrivateKey2]);
   await voteTx2.prove();
   const voteResult2 = await submitAndMirror(local, voteTx2);
 
   await mirrorManualSlotAdvance(local, UInt32.from(1));
 
-  const voteTx3 = await Mina.transaction({ sender: senderPublicKey }, async () => {
-    await treasuryOwner.vote(proposalPublicKey, senderPublicKey, Vote.YAY);
-  });
+  const voteTx3 = await Mina.transaction(
+    { sender: senderPublicKey },
+    async () => {
+      await treasuryOwner.vote(proposalPublicKey, senderPublicKey, Vote.YAY);
+    },
+  );
   voteTx3.sign([senderPrivateKey]);
   await voteTx3.prove();
   const voteResult3 = await submitAndMirror(local, voteTx3);
+
+  await mirrorManualSlotAdvance(local, UInt32.from(1));
+
+  const voteTx4 = await Mina.transaction(
+    { sender: senderPublicKey },
+    async () => {
+      await treasuryOwner.vote(proposalPublicKey, bondPayerPublicKey, Vote.YAY);
+    },
+  );
+  voteTx4.sign([senderPrivateKey, bondPayerPrivateKey]);
+  await voteTx4.prove();
+  const voteResult4 = await submitAndMirror(local, voteTx4);
+
+  await mirrorManualSlotAdvance(local, UInt32.from(1));
+
+  const voteTx5 = await Mina.transaction(
+    { sender: senderPublicKey },
+    async () => {
+      await treasuryOwner.vote(proposalPublicKey, voterPublicKey1, Vote.NAY);
+    },
+  );
+  voteTx5.sign([senderPrivateKey, voterPrivateKey1]);
+  await voteTx5.prove();
+  const voteResult5 = await submitAndMirror(local, voteTx5);
 
   await mirrorManualSlotAdvance(local, lifecyclePeriodDuration);
 
@@ -448,70 +613,118 @@ async function main() {
   });
   const fetchedActions = await voteReducerService.fetchProposalActions();
   const actionStateHistoryTarget = new ActionStateHistoryTarget({
-    actionStateOne: Field(fetchedActions.actionStateHistoryTarget.actionStateOne),
-    actionStateTwo: Field(fetchedActions.actionStateHistoryTarget.actionStateTwo),
-    actionStateThree: Field(fetchedActions.actionStateHistoryTarget.actionStateThree),
-    actionStateFour: Field(fetchedActions.actionStateHistoryTarget.actionStateFour),
-    actionStateFive: Field(fetchedActions.actionStateHistoryTarget.actionStateFive),
+    actionStateOne: Field(
+      fetchedActions.actionStateHistoryTarget.actionStateOne,
+    ),
+    actionStateTwo: Field(
+      fetchedActions.actionStateHistoryTarget.actionStateTwo,
+    ),
+    actionStateThree: Field(
+      fetchedActions.actionStateHistoryTarget.actionStateThree,
+    ),
+    actionStateFour: Field(
+      fetchedActions.actionStateHistoryTarget.actionStateFour,
+    ),
+    actionStateFive: Field(
+      fetchedActions.actionStateHistoryTarget.actionStateFive,
+    ),
   });
   const paddedVoteActions = [
     ...Array.from(
-      { length: Math.max(0, VOTE_ACTION_BATCH_SIZE - fetchedActions.voteActions.length) },
+      {
+        length: Math.max(
+          0,
+          VOTE_ACTION_BATCH_SIZE - fetchedActions.voteActions.length,
+        ),
+      },
       () => VoteAction.dummy(),
     ),
     ...fetchedActions.voteActions,
   ].slice(0, VOTE_ACTION_BATCH_SIZE);
-  const stakingLedgerProof = await SideLoadedStakingLedgerToVotingLedgerProof.dummy(
-    new StakingLedgerToVotingLedgerProgramInput({
-      index: UInt64.from(0),
-      stakingLedgerRoot,
-      votingLedgerRoot: TreasuryProposalSmartContract.emptyVotingLedgerRoot,
-    }),
-    new StakingLedgerToVotingLedgerProgramOutput({
-      index: UInt64.from(ACCOUNT_BATCH_SIZE - 1),
-      votingLedgerRoot,
-      exhausted: Bool(true),
-    }),
-    0,
+  console.log("[e2e-phase] reduce vote actions");
+  const reducerInput = {
+    fromActionsHash: Reducer.initialActionState,
+    votingLedgerRoot,
+    // No nullifier has changed before the first reducer batch.
+    fromNullifierRoot: emptyNullifierRoot,
+    actionStateHistoryTarget,
+  };
+  const reducerVotingRecording = new RecordingVotingLedger(votingLedger);
+  const nullifierRecording = new RecordingNullifierLedger(nullifierLedger);
+  voteReducerContext.set({
+    votingLedger: reducerVotingRecording,
+    nullifierLedger: nullifierRecording,
+  });
+  await runPhase(
+    "trace vote reducer",
+    () => VoteReducer.rawMethods.reduceBatch(reducerInput, paddedVoteActions),
+    120_000,
   );
-  const { proof: voteReducerProof } = await VoteReducer.reduceBatch(
-    {
-      fromActionsHash: Reducer.initialActionState,
-      votingLedgerRoot,
-      fromNullifierRoot: await nullifierLedger.getRoot(),
-      actionStateHistoryTarget,
-    },
-    paddedVoteActions,
+  const reducerTrace = new VoteReducerRunBatchTrace({
+    publicInput: reducerInput,
+    privateInput: { voteActions: paddedVoteActions },
+    votingLedgerWitnesses: reducerVotingRecording.recorder.recordings.witnesses,
+    votingAccounts: reducerVotingRecording.recorder.recordings.votingAccounts,
+    nullifierLedgerWitnesses: nullifierRecording.recorder.recordings.witnesses,
+    nullifiers: nullifierRecording.recorder.recordings.nullifiers,
+  });
+  const voteReducerProof = await runPhase(
+    "prove vote reducer",
+    () => proveVoteReducerInWorker(reducerTrace),
+    1_800_000,
   );
+  const expectedYay = stakingLedgerAccount1.balance
+    .add(stakingLedgerAccount3.balance)
+    .add(stakingLedgerAccount4.balance);
+  assert.equal(
+    voteReducerProof.publicOutput.yay.toString(),
+    expectedYay.toString(),
+  );
+  assert.equal(voteReducerProof.publicOutput.nay.toString(), "0");
+  assert.equal(
+    voteReducerProof.publicOutput.abstain.toString(),
+    stakingLedgerAccount2.balance.toString(),
+  );
+  // The isolated worker verifies the real proof before returning it. The
+  // subsequent tally transaction verifies it again with the deployed key.
   const treasuryOwnerAccount = await stakingLedger.getAccount(0n);
   const treasuryOwnerAccountWitness = await stakingLedger.getWitness(0n);
-  const tallyTx = await Mina.transaction({ sender: senderPublicKey }, async () => {
-    await treasuryOwner.tallyVotes(
-      proposalPublicKey,
-      SideLoadedVoteReducerProof.fromProof(voteReducerProof),
-      stakingLedgerProof,
-      treasuryOwnerAccount,
-      treasuryOwnerAccountWitness,
-    );
-  });
+  console.log("[e2e-phase] tally proposal");
+  const tallyTx = await Mina.transaction(
+    { sender: senderPublicKey },
+    async () => {
+      await treasuryOwner.tallyVotes(
+        proposalPublicKey,
+        SideLoadedVoteReducerProof.fromProof(voteReducerProof),
+        stakingLedgerProof,
+        treasuryOwnerAccount,
+        treasuryOwnerAccountWitness,
+      );
+    },
+  );
   tallyTx.sign([senderPrivateKey]);
   await tallyTx.prove();
   const tallyResult = await submitAndMirror(local, tallyTx);
 
   await mirrorManualSlotAdvance(local, lifecyclePeriodDuration.mul(2));
 
-  const executeTx = await Mina.transaction({ sender: senderPublicKey }, async () => {
-    AccountUpdate.fundNewAccount(senderPublicKey, 1);
-    await treasuryOwner.executeProposal(
-      proposalPublicKey,
-      recipientPublicKey,
-      amountWithBond,
-    );
-  });
+  console.log("[e2e-phase] execute proposal");
+  const executeTx = await Mina.transaction(
+    { sender: senderPublicKey },
+    async () => {
+      AccountUpdate.fundNewAccount(senderPublicKey, 1);
+      await treasuryOwner.executeProposal(
+        proposalPublicKey,
+        recipientPublicKey,
+        amountWithBond,
+      );
+    },
+  );
   executeTx.sign([senderPrivateKey]);
   await executeTx.prove();
   const executeResult = await submitAndMirror(local, executeTx);
 
+  console.log("[e2e-phase] close fixture stores");
   await votingLedger.close();
   await nullifierLedger.close();
   await stakingLedger.close();
@@ -527,17 +740,27 @@ async function main() {
       treasuryOwnerDeployTxHash: treasuryOwnerDeployResult.hash,
       fundTreasuryTxHash: fundTreasuryResult.hash,
       proposalTxHash: createProposalResult.hash,
-      voteTxHashes: [voteResult1.hash, voteResult2.hash, voteResult3.hash],
+      voteTxHashes: [
+        voteResult1.hash,
+        voteResult2.hash,
+        voteResult3.hash,
+        voteResult4.hash,
+        voteResult5.hash,
+      ],
       tallyTxHash: tallyResult.hash,
       executeTxHash: executeResult.hash,
-      finalSlot: Number(local.getNetworkState().globalSlotSinceGenesis.toString()),
+      finalSlot: Number(
+        local.getNetworkState().globalSlotSinceGenesis.toString(),
+      ),
     })}`,
   );
 }
 
 await main().catch((error) => {
   console.error(
-    error instanceof Error ? error.stack ?? error.message : JSON.stringify(error),
+    error instanceof Error
+      ? (error.stack ?? error.message)
+      : JSON.stringify(error),
   );
   process.exit(1);
 });

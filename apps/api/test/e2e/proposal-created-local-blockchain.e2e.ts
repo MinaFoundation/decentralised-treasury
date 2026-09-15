@@ -63,11 +63,16 @@ const LOCAL_BLOCKCHAIN_SERVER_ENTRY_POINT = fileURLToPath(
   ),
 );
 const LOCAL_BLOCKCHAIN_PROOF_ENV = {
-  PROOFS_ENABLED: "false",
+  PROOFS_ENABLED: process.env.PROOFS_ENABLED ?? "false",
 } as const;
+assert(
+  ["false", "true"].includes(LOCAL_BLOCKCHAIN_PROOF_ENV.PROOFS_ENABLED),
+  "PROOFS_ENABLED must be exactly false or true",
+);
 
 interface AdminStateResponse {
   ok: boolean;
+  proofsEnabled: boolean;
   currentSlot: number;
   blockchainLength: number;
   totalCurrency: string;
@@ -163,7 +168,9 @@ async function waitForHealth(
 }
 
 async function readJson<T>(url: string): Promise<T> {
-  const response = await fetch(url);
+  const response = await fetch(url, {
+    headers: { connection: "close" },
+  });
   assert.equal(response.status, 200);
   return (await response.json()) as T;
 }
@@ -258,12 +265,18 @@ describe(
       adminState = await readJson<AdminStateResponse>(
         `${localBlockchainBaseUrl}/admin/state`,
       );
-      Mina.setActiveInstance(
-        Mina.Network({
-          mina: `${localBlockchainBaseUrl}/graphql`,
-          archive: localArchiveBaseUrl,
-        }),
+      assert.equal(
+        adminState.proofsEnabled,
+        LOCAL_BLOCKCHAIN_PROOF_ENV.PROOFS_ENABLED === "true",
       );
+      const network = Mina.Network({
+        mina: `${localBlockchainBaseUrl}/graphql`,
+        archive: localArchiveBaseUrl,
+      });
+      network.proofsEnabled =
+        LOCAL_BLOCKCHAIN_PROOF_ENV.PROOFS_ENABLED === "true";
+      Mina.setActiveInstance(network);
+      assert.equal(Mina.getProofsEnabled(), adminState.proofsEnabled);
     });
 
     after(() => {

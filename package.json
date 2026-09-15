@@ -25,6 +25,7 @@
     "test:backend": "pnpm --dir packages/indexer run test:coverage && pnpm --dir packages/processor run test:coverage && pnpm --dir apps/api run test:coverage",
     "test:backend:postgres": "pnpm --dir apps/api run test:integration:postgres",
     "test:backend:e2e:local-blockchain": "pnpm --dir apps/api run test:e2e:local-blockchain",
+    "test:e2e:local:two-pass": "node devops/test/run-local-e2e.mjs",
     "test:backend:e2e:lightnet": "pnpm --dir apps/api run test:e2e:lightnet",
     "backend:retry-blocked-event": "pnpm --dir apps/api run processor:retry-blocked",
     "backend:resolve-indexer-rejection": "pnpm --dir apps/api run indexer:resolve-rejection --",
@@ -43,6 +44,7 @@
     "testnet:reset": "docker compose --env-file devops/.env.testnet --env-file apps/api/.env.testnet --env-file apps/backoffice/.env.testnet --env-file apps/web/.env.testnet -f devops/compose.yml --profile proxy --profile public-proxy --profile proving down -v",
     "testnet:logs": "docker compose --env-file devops/.env.testnet --env-file apps/api/.env.testnet --env-file apps/backoffice/.env.testnet --env-file apps/web/.env.testnet -f devops/compose.yml --profile proxy --profile public-proxy --profile proving logs -f",
     "testnet:config": "docker compose --env-file devops/.env.testnet --env-file apps/api/.env.testnet --env-file apps/backoffice/.env.testnet --env-file apps/web/.env.testnet -f devops/compose.yml --profile proxy --profile public-proxy --profile proving config",
+    "testnet:status": "docker compose --env-file devops/.env.testnet --env-file apps/api/.env.testnet --env-file apps/backoffice/.env.testnet --env-file apps/web/.env.testnet -f devops/compose.yml --profile proxy --profile public-proxy --profile proving ps --all",
     "local-blockchain:env": "pnpm env:bootstrap local-blockchain",
     "local-blockchain:start": "dotenvx run -f packages/local-blockchain/.env.local-blockchain -- pnpm --dir packages/local-blockchain run dev",
     "local-blockchain:build": "docker compose --env-file devops/.env.local-blockchain --env-file apps/api/.env.local-blockchain --env-file apps/backoffice/.env.local-blockchain --env-file apps/web/.env.local-blockchain -f devops/compose.yml build",
@@ -54,22 +56,24 @@
     "local-blockchain:config": "docker compose --env-file devops/.env.local-blockchain --env-file apps/api/.env.local-blockchain --env-file apps/backoffice/.env.local-blockchain --env-file apps/web/.env.local-blockchain -f devops/compose.yml --profile proxy config",
     "compose:test": "node devops/test/compose-smoke.mjs",
     "compose:e2e": "node devops/test/compose-e2e.mjs",
-    "test:devops:compose-config": "node --test devops/test/bootstrap-env.test.mjs devops/test/compose-native-backend.test.mjs devops/test/voting-ledger-scheduler.test.mjs",
-    "testnet:status": "docker compose --env-file devops/.env.testnet --env-file apps/api/.env.testnet --env-file apps/backoffice/.env.testnet --env-file apps/web/.env.testnet -f devops/compose.yml --profile proxy --profile public-proxy --profile proving ps --all"
+    "test:devops:compose-config": "node --test devops/test/bootstrap-env.test.mjs devops/test/compose-native-backend.test.mjs devops/test/voting-ledger-scheduler.test.mjs"
   },
   "devDependencies": {
     "@changesets/changelog-github": "^0.5.1",
     "@changesets/cli": "^2.29.6",
     "@commitlint/cli": "^19.8.1",
     "@commitlint/config-conventional": "^19.8.1",
+    "@jridgewell/trace-mapping": "0.3.31",
     "commander": "^14.0.0",
     "commitizen": "^4.3.1",
     "cz-git": "^1.12.0",
     "husky": "^9.1.7",
+    "istanbul-lib-coverage": "3.2.2",
     "o1js": "github:maht0rz/o1js#87bc121acad6ba4d81df499e49ff44800c130ded",
     "prettier": "^3.6.2",
     "turbo": "^2.5.6",
-    "typescript": "5.9.2"
+    "typescript": "5.9.2",
+    "v8-to-istanbul": "9.3.0"
   },
   "packageManager": "pnpm@9.0.0",
   "pnpm": {

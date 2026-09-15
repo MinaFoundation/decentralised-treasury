@@ -1,6 +1,16 @@
 import assert from "node:assert/strict";
+import {
+  assertServerProofMode,
+  proofCache,
+  proofMode,
+  proofTimeoutMs,
+  proveNetworkTransaction,
+  proofsEnabled,
+} from "./proof-mode.js";
+import { compileRecursiveVerificationKeys } from "./fixtures/compile-recursive-verification-keys.js";
 import { spawn, type ChildProcess } from "node:child_process";
 import { createServer } from "node:net";
+import { createInterface } from "node:readline";
 import { afterEach, describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
 import { ArchiveClient } from "../../indexer/src/archive/client.js";
@@ -83,12 +93,15 @@ async function waitForHealth(
 ): Promise<void> {
   const startedAt = Date.now();
   while (Date.now() - startedAt < timeoutMs) {
+    let ready = false;
     try {
       const response = await fetch(`${baseUrl}/healthz`);
-      if (response.ok) {
-        return;
-      }
+      ready = response.ok;
     } catch {}
+    if (ready) {
+      await assertServerProofMode(baseUrl);
+      return;
+    }
     await new Promise((resolve) => setTimeout(resolve, 250));
   }
   throw new Error(`Timed out waiting for ${baseUrl}/healthz`);
@@ -112,7 +125,7 @@ function spawnNodeProcess(
   env: NodeJS.ProcessEnv,
   workingDirectory: string,
 ): ChildProcess {
-  return spawn(
+  const child = spawn(
     process.execPath,
     ["--loader", loaderPath, entryPoint, ...args],
     {
@@ -125,6 +138,12 @@ function spawnNodeProcess(
       stdio: ["ignore", "pipe", "pipe"],
     },
   );
+  if (child.stdout) {
+    createInterface({ input: child.stdout }).on("line", (line) => {
+      if (line.startsWith("[e2e-phase]")) console.log(line);
+    });
+  }
+  return child;
 }
 
 async function readJson<T>(url: string): Promise<T> {
@@ -161,7 +180,9 @@ async function postGraphql<T>(
   return (await response.json()) as T;
 }
 
-describe("local blockchain server", () => {
+const suiteName = `local blockchain server (PROOFS_ENABLED=${proofMode})`;
+const suiteOptions = { timeout: proofTimeoutMs };
+describe(suiteName, suiteOptions, () => {
   const PAYMENT_AMOUNT = 1_000_000_000n;
   const PAYMENT_FEE = 1_000_000_000n;
   let serverProcess: ChildProcess | null = null;
@@ -412,7 +433,10 @@ describe("local blockchain server", () => {
       loaderPath,
       serverEntryPoint,
       [],
-      { MINA_NODE_PORT: String(port), MINA_ARCHIVE_PORT: String(archivePort) },
+      {
+        MINA_NODE_PORT: String(port),
+        MINA_ARCHIVE_PORT: String(archivePort),
+      },
       packageDirectory,
     );
 
@@ -550,7 +574,10 @@ describe("local blockchain server", () => {
       loaderPath,
       serverEntryPoint,
       [],
-      { MINA_NODE_PORT: String(port), MINA_ARCHIVE_PORT: String(archivePort) },
+      {
+        MINA_NODE_PORT: String(port),
+        MINA_ARCHIVE_PORT: String(archivePort),
+      },
       packageDirectory,
     );
 
@@ -648,7 +675,10 @@ describe("local blockchain server", () => {
           }
         }
       }`,
-      { publicKey: payload.recipientPublicKey, token: payload.proposalTokenId },
+      {
+        publicKey: payload.recipientPublicKey,
+        token: payload.proposalTokenId,
+      },
     );
     const resolvedRecipientAccount =
       recipientAccountResponse.data?.account ??
@@ -726,7 +756,7 @@ describe("local blockchain server", () => {
     assert.equal(archiveActionsResponse.data?.actions?.length, 1);
     assert.equal(
       archiveActionsResponse.data?.actions?.[0]?.actionData?.length,
-      3,
+      5,
     );
     assert.ok(
       (
@@ -756,9 +786,10 @@ describe("local blockchain server", () => {
         .map((eventData) => eventData.transactionInfo.hash),
     );
     assert.equal(canonicalHashes.has(payload.proposalTxHash), true);
-    assert.equal(canonicalHashes.has(payload.voteTxHashes[0] ?? ""), true);
-    assert.equal(canonicalHashes.has(payload.voteTxHashes[1] ?? ""), true);
-    assert.equal(canonicalHashes.has(payload.voteTxHashes[2] ?? ""), true);
+    assert.equal(payload.voteTxHashes.length, 5);
+    for (const voteTxHash of payload.voteTxHashes) {
+      assert.equal(canonicalHashes.has(voteTxHash), true);
+    }
     assert.equal(canonicalHashes.has(payload.tallyTxHash), true);
     assert.equal(canonicalHashes.has(payload.executeTxHash), true);
   });
@@ -856,7 +887,7 @@ describe("local blockchain server", () => {
 
   it(
     "supports UI contract reads and transaction preparation through Mina.Network",
-    { timeout: 180_000 },
+    { timeout: proofTimeoutMs },
     async () => {
       const packageDirectory = fileURLToPath(new URL("..", import.meta.url));
       const loaderPath = fileURLToPath(
@@ -879,7 +910,7 @@ describe("local blockchain server", () => {
         loaderPath,
         serverEntryPoint,
         [],
-        { MINA_NODE_PORT: String(port), PROOFS_ENABLED: "false" },
+        { MINA_NODE_PORT: String(port), PROOFS_ENABLED: proofMode },
         packageDirectory,
       );
 
@@ -900,7 +931,7 @@ describe("local blockchain server", () => {
         loaderPath,
         submitterEntryPoint,
         [baseUrl],
-        { PROOFS_ENABLED: "false" },
+        { PROOFS_ENABLED: proofMode },
         packageDirectory,
       );
 
@@ -928,6 +959,7 @@ describe("local blockchain server", () => {
         "PROPOSAL_CREATED_RESULT:",
       ) as {
         treasuryOwnerPublicKey: string;
+        multisigParticipants: string[];
       };
 
       Mina.setActiveInstance(Mina.Network(graphqlUrl));
@@ -947,21 +979,27 @@ describe("local blockchain server", () => {
         "expected pause controller public key on chain",
       );
 
-      TreasuryPauseControllerSmartContract.multisigParticipants = Array.from(
-        { length: 5 },
-        () => PrivateKey.random().toPublicKey(),
-      );
+      TreasuryPauseControllerSmartContract.multisigParticipants =
+        payload.multisigParticipants.map((key) => PublicKey.fromBase58(key));
       TreasuryProposalSmartContract.voteReducerVerificationKey =
         VerificationKey.dummySync();
       TreasuryProposalSmartContract.stakingLedgerToVotingLedgerVerificationKey =
         VerificationKey.dummySync();
+      if (proofsEnabled) {
+        const keys = await compileRecursiveVerificationKeys();
+        TreasuryProposalSmartContract.voteReducerVerificationKey = keys.reducer;
+        TreasuryProposalSmartContract.stakingLedgerToVotingLedgerVerificationKey =
+          keys.staking;
+      }
       TreasuryProposalSmartContract.emptyNullifierRoot = Field(0);
       TreasuryProposalSmartContract.emptyVotingLedgerRoot = Field(0);
-      await TreasuryProposalSmartContract.compile();
+      await TreasuryProposalSmartContract.compile({ cache: proofCache });
       TreasuryOwnerSmartContract.proposalContractVerificationKey =
         TreasuryProposalSmartContract._verificationKey;
-      await TreasuryPauseControllerSmartContract.compile();
-      await TreasuryOwnerSmartContract.compile();
+      await TreasuryPauseControllerSmartContract.compile({
+        cache: proofCache,
+      });
+      await TreasuryOwnerSmartContract.compile({ cache: proofCache });
 
       const senderPublicKey = PublicKey.fromBase58(
         adminState.testAccounts[1]!.publicKey,
@@ -997,7 +1035,7 @@ describe("local blockchain server", () => {
         },
       );
       transaction.sign([proposalPrivateKey]);
-      await transaction.prove();
+      await proveNetworkTransaction(transaction);
 
       assert.ok(transaction.toJSON().length > 0);
       assert.ok(proposalPublicKey.toBase58().length > 0);

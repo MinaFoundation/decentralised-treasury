@@ -12,10 +12,12 @@ import {
   spawnCliWorker,
 } from "./utils/cli-test-utils.js";
 
-const runSdkCli = (args: string[]) => runCli(args);
-
 const FIXTURES_DIRECTORY = fileURLToPath(new URL("./fixtures", import.meta.url));
 const SQLITE_FIXTURE_DIRECTORY = join(FIXTURES_DIRECTORY, ".data", "sqlite");
+const runSdkCli = (args: string[]) =>
+  runCli(args, {
+    envOverrides: { SQLITE_DATA_DIRECTORY: SQLITE_FIXTURE_DIRECTORY },
+  });
 const MINI_LEDGER_PATH = fileURLToPath(
   new URL("../../../packages/sdk/test/test-ledger-mini.json", import.meta.url),
 );
@@ -57,6 +59,7 @@ it("runs staking-ledger-to-voting-ledger cli flow end-to-end", { concurrency: fa
     redisHost,
     redisPort,
     stdio: "inherit",
+    envOverrides: { SQLITE_DATA_DIRECTORY: SQLITE_FIXTURE_DIRECTORY },
   });
   await sleep(400);
 

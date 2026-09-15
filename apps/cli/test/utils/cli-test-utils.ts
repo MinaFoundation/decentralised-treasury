@@ -30,6 +30,7 @@ export const SLOT_TIME_MS = readNumberEnv("SLOT_TIME_MS", 3000);
 interface RunCliOptions {
   cwd?: string;
   envOverrides?: Record<string, string>;
+  nodeLoaderPath?: string;
   timeoutMs?: number;
   streamOutput?: boolean;
   streamLabel?: string;
@@ -39,6 +40,7 @@ interface SpawnCliWorkerOptions {
   cwd?: string;
   redisHost: string;
   redisPort: number;
+  nodeLoaderPath?: string;
   stdio?: "pipe" | "inherit";
   envOverrides?: Record<string, string>;
 }
@@ -87,13 +89,14 @@ export async function runCli(
   const cwd = options.cwd ?? CLI_PACKAGE_DIRECTORY;
   const envOverrides = options.envOverrides ?? {};
   const timeoutMs = options.timeoutMs ?? 180_000;
+  const nodeLoaderPath = options.nodeLoaderPath ?? "ts-node/esm";
   const streamOutput = options.streamOutput ?? false;
   const streamLabel = options.streamLabel;
 
   return await new Promise<string>((resolve, reject) => {
     const child = spawn(
       "node",
-      ["--loader", "ts-node/esm", CLI_ENTRY_PATH, ...args],
+      ["--loader", nodeLoaderPath, CLI_ENTRY_PATH, ...args],
       {
         cwd,
         env: {
@@ -128,7 +131,7 @@ export async function runCli(
       child.kill("SIGTERM");
       reject(
         new Error(
-          `CLI timed out after ${timeoutMs}ms: node --loader ts-node/esm ${CLI_ENTRY_PATH} ${args.join(
+          `CLI timed out after ${timeoutMs}ms: node --loader ${nodeLoaderPath} ${CLI_ENTRY_PATH} ${args.join(
             " ",
           )}\n${stdout}\n${stderr}`,
         ),
@@ -162,12 +165,13 @@ export function spawnCliWorker(
   const { redisHost, redisPort } = options;
   const stdio = options.stdio ?? "pipe";
   const envOverrides = options.envOverrides ?? {};
+  const nodeLoaderPath = options.nodeLoaderPath ?? "ts-node/esm";
 
   return spawn(
     "node",
     [
       "--loader",
-      "ts-node/esm",
+      nodeLoaderPath,
       CLI_ENTRY_PATH,
       "worker",
       "start",

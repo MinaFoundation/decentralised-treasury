@@ -10,7 +10,8 @@
     "lint": "next lint --max-warnings 0",
     "check-types": "tsc --noEmit",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "test:e2e:local-blockchain": "playwright test --config playwright.local-blockchain.config.ts"
   },
   "dependencies": {
     "@ledgerhq/hw-transport-webhid": "6.36.0",

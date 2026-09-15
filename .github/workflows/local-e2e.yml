@@ -1,0 +1,90 @@
+name: Local E2E two-pass
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - "packages/local-blockchain/**"
+      - "apps/cli/**"
+      - "apps/api/**"
+      - "apps/web/**"
+      - "apps/backoffice/**"
+      - "packages/sdk/**"
+      - "packages/ui/**"
+      - "packages/indexer/**"
+      - "packages/processor/**"
+      - "packages/typescript-config/**"
+      - "devops/test/run-local-e2e.mjs"
+      - "devops/test/local-e2e-*"
+      - "devops/test/compose-e2e*"
+      - "devops/compose.yml"
+      - "devops/docker/**"
+      - "devops/proxy/**"
+      - ".dockerignore"
+      - ".npmrc"
+      - "devops/scripts/convert-browser-coverage*"
+      - "package.json"
+      - "pnpm-lock.yaml"
+      - "patches/**"
+      - ".github/workflows/local-e2e.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: local-e2e-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  service-cli-and-browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    env:
+      E2E_RUN_ID: ci-${{ github.run_id }}-${{ github.run_attempt }}
+      E2E_SUITE_TIMEOUT_MS: "7200000"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9.0.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --dir apps/web exec playwright install --with-deps chromium
+      - run: pnpm --dir apps/backoffice exec playwright install --with-deps chromium
+      - run: node --test devops/test/local-e2e-*.test.mjs devops/test/compose-e2e-runner.test.mjs devops/scripts/convert-browser-coverage.test.mjs
+      - run: pnpm --dir packages/local-blockchain run check-types
+      - run: pnpm --dir apps/api run check-types
+      - run: pnpm --dir apps/cli run check-types
+      - run: pnpm --dir apps/web run check-types
+      - run: pnpm --dir apps/backoffice run check-types
+      # The runner gates the entire second pass on success of the first pass.
+      - run: pnpm test:e2e:local:two-pass service api api-recovery api-payout-recovery cli cli-ledger cli-negative web backoffice compose
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: local-e2e-${{ env.E2E_RUN_ID }}
+          path: |
+            coverage/local-e2e/${{ env.E2E_RUN_ID }}/
+            !coverage/local-e2e/${{ env.E2E_RUN_ID }}/**/cache/**
+            !coverage/local-e2e/${{ env.E2E_RUN_ID }}/**/cli-workdir/**
+            !coverage/local-e2e/${{ env.E2E_RUN_ID }}/**/sqlite/**
+          if-no-files-found: error
+      - name: Upload proof-disabled coverage
+        if: ${{ !cancelled() && hashFiles('coverage/local-e2e/**/proofs-false/**/lcov.info') != '' }}
+        uses: codecov/codecov-action@v5
+        with:
+          directory: coverage/local-e2e/${{ env.E2E_RUN_ID }}/proofs-false
+          flags: local_e2e_proofs_false
+          fail_ci_if_error: true
+          token: ${{ secrets.CODECOV_TOKEN }}
+      - name: Upload proof-enabled coverage
+        if: ${{ !cancelled() && hashFiles('coverage/local-e2e/**/proofs-true/**/lcov.info') != '' }}
+        uses: codecov/codecov-action@v5
+        with:
+          directory: coverage/local-e2e/${{ env.E2E_RUN_ID }}/proofs-true
+          flags: local_e2e_proofs_true
+          fail_ci_if_error: true
+          token: ${{ secrets.CODECOV_TOKEN }}

@@ -1,5 +1,11 @@
 import assert from "node:assert/strict";
 import {
+  assertServerProofMode,
+  proofCache,
+  proofsEnabled,
+} from "../proof-mode.js";
+import { compileRecursiveVerificationKeys } from "./compile-recursive-verification-keys.js";
+import {
   AccountUpdate,
   Field,
   Mina,
@@ -29,10 +35,11 @@ interface AdminStateResponse {
 function buildSendZkappMutation(transactionJson: string): string {
   return `mutation {
   sendZkapp(input: {
-    zkappCommand: ${JSON.stringify(JSON.parse(transactionJson), null, 2).replace(
-      /\"(\S+)\"\s*:/gm,
-      "$1:",
-    )}
+    zkappCommand: ${JSON.stringify(
+      JSON.parse(transactionJson),
+      null,
+      2,
+    ).replace(/\"(\S+)\"\s*:/gm, "$1:")}
   }) {
     zkapp {
       hash
@@ -49,11 +56,15 @@ function buildSendZkappMutation(transactionJson: string): string {
 async function main() {
   const minaBaseUrl = process.argv[2];
   if (!minaBaseUrl) {
-    throw new Error("Expected the local blockchain base URL as the first argument");
+    throw new Error(
+      "Expected the local blockchain base URL as the first argument",
+    );
   }
 
   async function readAdminState(): Promise<AdminStateResponse> {
-    const response = await fetch(`${minaBaseUrl}/admin/state`);
+    const response = await fetch(`${minaBaseUrl}/admin/state`, {
+      headers: { connection: "close" },
+    });
     assert.equal(response.status, 200);
     return (await response.json()) as AdminStateResponse;
   }
@@ -61,7 +72,10 @@ async function main() {
   async function incrementServerSlot(by: number): Promise<void> {
     const response = await fetch(`${minaBaseUrl}/admin/slot/increment`, {
       method: "POST",
-      headers: { "content-type": "application/json" },
+      headers: {
+        connection: "close",
+        "content-type": "application/json",
+      },
       body: JSON.stringify({ by }),
     });
     assert.equal(response.status, 200);
@@ -71,6 +85,7 @@ async function main() {
     const response = await fetch(`${minaBaseUrl}/graphql`, {
       method: "POST",
       headers: {
+        connection: "close",
         "content-type": "application/json",
       },
       body: JSON.stringify({
@@ -93,10 +108,14 @@ async function main() {
   assert(payer, "missing payer account");
   assert(bondPayer, "missing bond payer account");
 
-  const local = await Mina.LocalBlockchain({ proofsEnabled: false });
+  await assertServerProofMode(minaBaseUrl);
+  const local = await Mina.LocalBlockchain({ proofsEnabled });
   Mina.setActiveInstance(local);
   local.addAccount(PublicKey.fromBase58(payer.publicKey), payer.balance);
-  local.addAccount(PublicKey.fromBase58(bondPayer.publicKey), bondPayer.balance);
+  local.addAccount(
+    PublicKey.fromBase58(bondPayer.publicKey),
+    bondPayer.balance,
+  );
 
   const payerPrivateKey = PrivateKey.fromBase58(payer.privateKey);
   const payerPublicKey = payerPrivateKey.toPublicKey();
@@ -108,17 +127,24 @@ async function main() {
     () => PrivateKey.random().toPublicKey(),
   );
 
-  TreasuryProposalSmartContract.voteReducerVerificationKey = VerificationKey.dummySync();
+  TreasuryProposalSmartContract.voteReducerVerificationKey =
+    VerificationKey.dummySync();
   TreasuryProposalSmartContract.stakingLedgerToVotingLedgerVerificationKey =
     VerificationKey.dummySync();
+  if (proofsEnabled) {
+    const keys = await compileRecursiveVerificationKeys();
+    TreasuryProposalSmartContract.voteReducerVerificationKey = keys.reducer;
+    TreasuryProposalSmartContract.stakingLedgerToVotingLedgerVerificationKey =
+      keys.staking;
+  }
   TreasuryProposalSmartContract.emptyNullifierRoot = Field(0);
   TreasuryProposalSmartContract.emptyVotingLedgerRoot = Field(0);
-  await TreasuryProposalSmartContract.compile();
+  await TreasuryProposalSmartContract.compile({ cache: proofCache });
 
   TreasuryOwnerSmartContract.proposalContractVerificationKey =
     TreasuryProposalSmartContract._verificationKey;
-  await TreasuryPauseControllerSmartContract.compile();
-  await TreasuryOwnerSmartContract.compile();
+  await TreasuryPauseControllerSmartContract.compile({ cache: proofCache });
+  await TreasuryOwnerSmartContract.compile({ cache: proofCache });
 
   const pauseControllerPrivateKey = PrivateKey.random();
   const pauseControllerPublicKey = pauseControllerPrivateKey.toPublicKey();
@@ -135,7 +161,8 @@ async function main() {
   const proposalAmount = UInt64.from(100_000_000_000);
 
   TreasuryOwnerSmartContract.treasuryDeployedAtSlot = UInt32.from(0);
-  TreasuryOwnerSmartContract.pauseControllerPublicKey = pauseControllerPublicKey;
+  TreasuryOwnerSmartContract.pauseControllerPublicKey =
+    pauseControllerPublicKey;
 
   const deployPauseControllerTx = await Mina.transaction(
     { sender: payerPublicKey },
@@ -171,7 +198,8 @@ async function main() {
     { sender: payerPublicKey },
     async () => {
       AccountUpdate.fundNewAccount(payerPublicKey, 1);
-      const bondPayerAccountUpdate = AccountUpdate.createSigned(bondPayerPublicKey);
+      const bondPayerAccountUpdate =
+        AccountUpdate.createSigned(bondPayerPublicKey);
       bondPayerAccountUpdate.balance.subInPlace(
         proposalAmount.div(BOND_AMOUNT_DIVISOR),
       );
@@ -186,7 +214,11 @@ async function main() {
       );
     },
   );
-  createProposalTx.sign([payerPrivateKey, proposalPrivateKey, bondPayerPrivateKey]);
+  createProposalTx.sign([
+    payerPrivateKey,
+    proposalPrivateKey,
+    bondPayerPrivateKey,
+  ]);
   await createProposalTx.prove();
   await createProposalTx.send().then((pendingTx) => pendingTx.wait?.());
   const createProposalResult = await submitToServer(createProposalTx.toJSON());
@@ -195,6 +227,10 @@ async function main() {
   console.log(
     `PROPOSAL_CREATED_RESULT:${JSON.stringify({
       treasuryOwnerPublicKey: treasuryOwnerPublicKey.toBase58(),
+      multisigParticipants:
+        TreasuryPauseControllerSmartContract.multisigParticipants.map((key) =>
+          key.toBase58(),
+        ),
       treasuryOwnerTokenId: TokenId.toBase58(treasuryOwner.deriveTokenId()),
       proposalPublicKey: proposalPublicKey.toBase58(),
       proposalTokenId: TokenId.toBase58(treasuryOwner.deriveTokenId()),
@@ -206,7 +242,9 @@ async function main() {
 
 await main().catch((error) => {
   console.error(
-    error instanceof Error ? error.stack ?? error.message : JSON.stringify(error),
+    error instanceof Error
+      ? (error.stack ?? error.message)
+      : JSON.stringify(error),
   );
   process.exit(1);
 });

@@ -1,5 +1,12 @@
 import assert from "node:assert/strict";
-import { AccountUpdate, Mina, PrivateKey, PublicKey, UInt64 } from "../../src/o1js.js";
+import { assertServerProofMode, proofsEnabled } from "../proof-mode.js";
+import {
+  AccountUpdate,
+  Mina,
+  PrivateKey,
+  PublicKey,
+  UInt64,
+} from "../../src/o1js.js";
 
 interface AdminStateResponse {
   ok: boolean;
@@ -13,7 +20,9 @@ interface AdminStateResponse {
 
 const baseUrl = process.argv[2];
 if (!baseUrl) {
-  throw new Error("Expected the local blockchain base URL as the first argument");
+  throw new Error(
+    "Expected the local blockchain base URL as the first argument",
+  );
 }
 
 const stateResponse = await fetch(`${baseUrl}/admin/state`);
@@ -25,7 +34,8 @@ const recipient = state.testAccounts[1];
 assert(sender, "missing sender test account");
 assert(recipient, "missing recipient test account");
 
-const local = await Mina.LocalBlockchain({ proofsEnabled: false });
+await assertServerProofMode(baseUrl);
+const local = await Mina.LocalBlockchain({ proofsEnabled });
 Mina.setActiveInstance(local);
 
 const senderPublicKey = PublicKey.fromBase58(sender.publicKey);
@@ -35,19 +45,23 @@ local.addAccount(senderPublicKey, sender.balance);
 const fee = UInt64.from(1_000_000_000);
 const amount = UInt64.from(1_000_000_000);
 
-const transaction = await Mina.transaction({ sender: senderPublicKey, fee }, async () => {
-  const senderUpdate = AccountUpdate.createSigned(senderPublicKey);
-  senderUpdate.send({ to: recipientPublicKey, amount });
-});
+const transaction = await Mina.transaction(
+  { sender: senderPublicKey, fee },
+  async () => {
+    const senderUpdate = AccountUpdate.createSigned(senderPublicKey);
+    senderUpdate.send({ to: recipientPublicKey, amount });
+  },
+);
 
 transaction.sign([senderPrivateKey]);
 
 const graphqlMutation = `mutation {
   sendZkapp(input: {
-    zkappCommand: ${JSON.stringify(JSON.parse(transaction.toJSON()), null, 2).replace(
-      /\"(\S+)\"\s*:/gm,
-      "$1:",
-    )}
+    zkappCommand: ${JSON.stringify(
+      JSON.parse(transaction.toJSON()),
+      null,
+      2,
+    ).replace(/\"(\S+)\"\s*:/gm, "$1:")}
   }) {
     zkapp {
       hash

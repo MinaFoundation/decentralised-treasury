@@ -56,6 +56,7 @@ const nextConfig = {
                   experimentalDecorators: true,
                   emitDecoratorMetadata: true,
                   useDefineForClassFields: false,
+                  sourceMap: process.env.E2E_BROWSER_COVERAGE === "true",
                 },
               },
             },
