@@ -1,12 +1,11 @@
 #!/usr/bin/env node
 //
 // Ensures the SQLITE_DATA_HOST_PATH directory referenced by a Compose env
-// file exists and is writable by the "docker" group. Compose containers in
-// this stack run as the image's built-in non-root "node" user (uid/gid 1000
-// from the node:*-bookworm-slim base image), which happens to match this
-// host's "docker" group gid — so group-writable + setgid lets both the
-// container and any host operator in the "docker" group (e.g. mina) write
-// here, without needing to chown to a specific uid or run anything as root.
+// file exists. On the Linux deployment host, the "docker" group gid matches
+// the container's "node" user gid (1000). Group write access and setgid let
+// containers and host operators share the directory.
+// On macOS, Docker shares host files through its Linux VM. Keep the host
+// directory's group because macOS does not require a "docker" group.
 //
 // Run this before "docker compose ... up" whenever SQLITE_DATA_HOST_PATH
 // might not exist yet: Docker auto-creates missing bind-mount sources as
@@ -41,6 +40,11 @@ const targetPath = isAbsolute(rawPath) ? rawPath : resolve(DEVOPS_DIR, rawPath);
 
 mkdirSync(targetPath, { recursive: true });
 chmodSync(targetPath, DIR_MODE);
+
+if (process.platform === "darwin") {
+  console.log(`Ensured ${targetPath} exists for Docker file sharing on macOS.`);
+  process.exit(0);
+}
 
 try {
   execFileSync("chgrp", [DOCKER_GROUP, targetPath]);

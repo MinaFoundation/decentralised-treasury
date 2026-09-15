@@ -17,8 +17,8 @@
 # snapshot. Hydrate from the wrong ledger and every proposal in the lifecycle
 # is unprovable.
 #
-# So the sync sidecar - not this script - decides which ledger a lifecycle
-# needs, and leaves a content-addressed store behind:
+# So an external snapshot producer - not this script - decides which ledger a
+# lifecycle needs, and leaves a content-addressed store behind:
 #
 #   <STAKING_LEDGERS_DIRECTORY>/<ledgerHash>.json    payload, named by its root
 #   <STAKING_LEDGERS_DIRECTORY>/lifecycle-<id>.hash  pointer, one hash per line
@@ -79,6 +79,10 @@ done_marker_path() {
   echo "$(db_path "$1").done"
 }
 
+proven_marker_path() {
+  echo "$(db_path "$1").proven"
+}
+
 failed_marker_path() {
   echo "$(db_path "$1").failed"
 }
@@ -103,8 +107,15 @@ read_pointer() {
     return 1
   fi
 
-  hash=$(head -n1 "$path" | tr -d ' \t\r\n')
-  if ! echo "$hash" | grep -q "$LEDGER_HASH_PATTERN"; then
+  line_count=$(wc -l < "$path" | tr -d ' \t\r\n')
+  hash=$(sed -n '1p' "$path")
+  byte_count=$(wc -c < "$path" | tr -d ' \t\r\n')
+  expected_byte_count=$(( ${#hash} + 1 ))
+  if [ "$line_count" -ne 1 ] || [ "$byte_count" -ne "$expected_byte_count" ]; then
+    log_error "pointer for lifecycleId=${lifecycle_id} must contain exactly one ledger hash followed by one newline: ${path}"
+    return 1
+  fi
+  if ! printf '%s\n' "$hash" | grep -q "$LEDGER_HASH_PATTERN"; then
     log_error "pointer for lifecycleId=${lifecycle_id} is not a valid ledger hash: '${hash}' (from ${path})"
     return 1
   fi
@@ -183,12 +194,21 @@ find_unprocessed_lifecycles() {
         ;;
     esac
 
-    [ -e "$(done_marker_path "$lifecycle_id")" ] && continue
-
     hash=$(read_pointer "$lifecycle_id") || continue
 
+    done_marker=$(done_marker_path "$lifecycle_id")
+    if [ -e "$done_marker" ]; then
+      completed_hash=$(sed -n 's/.*"ledgerHash": *"\([^"]*\)".*/\1/p' "$done_marker" | head -n1)
+      if [ -z "$completed_hash" ]; then
+        log_error "completed lifecycleId=${lifecycle_id} has an unreadable ledger hash in ${done_marker}"
+      elif [ "$completed_hash" != "$hash" ]; then
+        log_error "completed lifecycleId=${lifecycle_id} was re-pointed from ${completed_hash} to ${hash}; stop dependent services and run the controlled process-lifecycle rebuild"
+      fi
+      continue
+    fi
+
     if [ ! -f "$(ledger_payload_path "$hash")" ]; then
-      log_warn "lifecycleId=${lifecycle_id} points at ${hash} but ${hash}.json is not present yet - waiting for the staking-ledgers sync"
+      log_warn "lifecycleId=${lifecycle_id} points at ${hash} but ${hash}.json is not present yet - waiting for the external snapshot producer"
       payloads_missing=$(( payloads_missing + 1 ))
       continue
     fi
@@ -207,7 +227,7 @@ find_unprocessed_lifecycles() {
   done
 
   if [ "$pointers_seen" -eq 0 ]; then
-    log_warn "no lifecycle pointers found in ${STAKING_LEDGERS_DIRECTORY} - if the staking-ledgers sync is running, this means it has not resolved any lifecycle yet"
+    log_warn "no lifecycle pointers found in ${STAKING_LEDGERS_DIRECTORY} - the external snapshot producer has not resolved a lifecycle yet"
   elif [ "$payloads_missing" -gt 0 ]; then
     log_warn "${payloads_missing} of ${pointers_seen} lifecycle pointers have no payload on disk yet"
   fi
@@ -240,6 +260,11 @@ process_candidate() {
 
   db_path=$(db_path "$lifecycle_id")
 
+  # A direct process-lifecycle call is the controlled rebuild path. Retire the
+  # old readiness and proof markers before any state changes. A failed rebuild
+  # must not leave the previous lifecycle result marked as usable.
+  rm -f "$(done_marker_path "$lifecycle_id")" "$(proven_marker_path "$lifecycle_id")"
+
   resume_index=""
   if checkpointing_enabled; then
     if restore_output=$(run_cli staking-ledger-to-voting-ledger checkpoint-restore \
@@ -269,13 +294,13 @@ process_candidate() {
     # The CLI does the base58 comparison itself and exits non-zero on mismatch,
     # so there is no stdout scraping here. A mismatch now means the payload is
     # wrong or corrupt - the expected value came from the chain, not from a
-    # filename - so the payload is dropped and the sidecar re-fetches it.
+    # filename. The payload mount is read-only, so the external producer must
+    # replace an invalid payload before the next retry.
     step_started_at=$(now_epoch_seconds)
     if ! run_cli staking-ledger get-root-hash \
       --lifecycle-id "$lifecycle_id" \
       --expected-root-hash "$ledger_hash"; then
-      log_error "root hash mismatch for lifecycleId=${lifecycle_id}: hydrated ledger does not root to ${ledger_hash} - discarding the payload so it is re-fetched"
-      rm -f "$staking_ledger_path"
+      log_error "root hash mismatch for lifecycleId=${lifecycle_id}: hydrated ledger does not root to ${ledger_hash} - replace the invalid read-only payload before retrying"
       record_failure "$lifecycle_id" "root hash mismatch against ${ledger_hash}"
       return 1
     fi
@@ -305,6 +330,15 @@ process_candidate() {
       --lifecycle-id "$lifecycle_id" \
       --s3-uri "$CHECKPOINT_S3_URI" \
       || log_warn "failed to remove the checkpoint for lifecycleId=${lifecycle_id} - it will sit in S3 until overwritten by a future run"
+  fi
+
+  current_ledger_hash=$(read_pointer "$lifecycle_id") || {
+    record_failure "$lifecycle_id" "lifecycle pointer became unreadable during processing"
+    return 1
+  }
+  if [ "$current_ledger_hash" != "$ledger_hash" ]; then
+    record_failure "$lifecycle_id" "lifecycle pointer changed during processing from ${ledger_hash} to ${current_ledger_hash}"
+    return 1
   fi
 
   rm -f "$(failed_marker_path "$lifecycle_id")"
@@ -349,7 +383,14 @@ process_pending() {
 }
 
 process_lifecycle() {
-  process_candidate "$1"
+  lifecycle_id=$1
+  case "$lifecycle_id" in
+    ''|*[!0-9]*)
+      log_error "lifecycle id must be a non-negative integer: ${lifecycle_id}"
+      return 64
+      ;;
+  esac
+  process_candidate "$lifecycle_id"
 }
 
 startup_banner() {

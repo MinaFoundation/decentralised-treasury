@@ -71,6 +71,8 @@ function parseArgs(argv) {
     nextPublicIndexerApiUrl: undefined,
     nextPublicProcessorApiUrl: undefined,
     nextPublicMinaNodeUrl: undefined,
+    proofsEnabled: undefined,
+    networkId: undefined,
     freshKeys: false,
     overwriteSecrets: false,
   };
@@ -121,6 +123,22 @@ function parseArgs(argv) {
       options.nextPublicMinaNodeUrl = readValue();
       continue;
     }
+    if (arg === "--proofs-enabled") {
+      const value = readValue().toLowerCase();
+      if (value !== "true" && value !== "false") {
+        throw new Error("--proofs-enabled must be true or false");
+      }
+      options.proofsEnabled = value;
+      continue;
+    }
+    if (arg === "--network-id") {
+      const value = readValue().toLowerCase();
+      if (!new Set(["mainnet", "devnet", "testnet"]).has(value)) {
+        throw new Error("--network-id must be mainnet, devnet, or testnet");
+      }
+      options.networkId = value;
+      continue;
+    }
     if (arg === "--fresh-keys") {
       options.freshKeys = true;
       continue;
@@ -135,7 +153,7 @@ function parseArgs(argv) {
   if (!options.family || !FAMILY_CONFIG[options.family]) {
     const families = Object.keys(FAMILY_CONFIG).join(" | ");
     throw new Error(
-      `Usage: pnpm env:bootstrap <${families}> [-- --sender-private-key <key>] [--mina-node-url <url>] [--archive-node-url <url>] [--compose-mina-node-upstream <url>] [--compose-archive-node-url <url>] [--next-public-treasury-api-url <url>] [--next-public-indexer-api-url <url>] [--next-public-processor-api-url <url>] [--next-public-mina-node-url <url>] [--fresh-keys] [--overwrite-secrets]`,
+      `Usage: pnpm env:bootstrap <${families}> [-- --sender-private-key <key>] [--mina-node-url <url>] [--archive-node-url <url>] [--compose-mina-node-upstream <url>] [--compose-archive-node-url <url>] [--next-public-treasury-api-url <url>] [--next-public-indexer-api-url <url>] [--next-public-processor-api-url <url>] [--next-public-mina-node-url <url>] [--proofs-enabled <true|false>] [--network-id <mainnet|devnet|testnet>] [--fresh-keys] [--overwrite-secrets]`,
     );
   }
 
@@ -359,6 +377,23 @@ function replacePlaceholders(template, values) {
   });
 }
 
+function applyRuntimeOverrides(content, options) {
+  let result = content;
+  if (options.proofsEnabled !== undefined) {
+    result = result.replace(
+      /^(PROOFS_ENABLED|NEXT_PUBLIC_PROOFS_ENABLED)=.*$/gm,
+      `$1=${options.proofsEnabled}`,
+    );
+  }
+  if (options.networkId !== undefined) {
+    result = result.replace(
+      /^(MINA_NETWORK_ID|NEXT_PUBLIC_NETWORK_ID)=.*$/gm,
+      `$1=${options.networkId}`,
+    );
+  }
+  return result;
+}
+
 async function main() {
   const options = parseArgs(process.argv.slice(2));
   const config = FAMILY_CONFIG[options.family];
@@ -384,7 +419,10 @@ async function main() {
 
   for (const [name, pathInfo] of Object.entries(paths)) {
     const template = await readText(pathInfo.example);
-    const content = replacePlaceholders(template, values);
+    const content = applyRuntimeOverrides(
+      replacePlaceholders(template, values),
+      options,
+    );
     await mkdir(dirname(pathInfo.output), { recursive: true });
     await writeFile(pathInfo.output, content, { mode: 0o600 });
     console.log(`Wrote ${relative(REPO_ROOT, pathInfo.output)}`);
@@ -398,7 +436,14 @@ async function main() {
   );
 }
 
-main().catch((error) => {
-  console.error(error instanceof Error ? error.message : String(error));
-  process.exit(1);
-});
+if (
+  process.argv[1] &&
+  resolve(process.argv[1]) === fileURLToPath(import.meta.url)
+) {
+  main().catch((error) => {
+    console.error(error instanceof Error ? error.message : String(error));
+    process.exit(1);
+  });
+}
+
+export { applyRuntimeOverrides, parseArgs };

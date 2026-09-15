@@ -7,8 +7,8 @@
 # apps/cli/.env.testnet, since it doesn't need the private keys that file
 # also holds).
 #
-# Unlike voting-ledger-scheduler (which only ever chases the newest arrived
-# lifecycle), this scheduler works the full backlog oldest-first: every
+# The voting-ledger scheduler works its full pending backlog newest-first.
+# This scheduler works its full proof backlog oldest-first: every
 # lifecycle whose staking-ledger digest trace is done
 # (<lifecycleId>.sqlite.done, written by voting-ledger-scheduler) needs its
 # own exhausted proof before its votes can be tallied, so none can be

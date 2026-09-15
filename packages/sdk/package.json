@@ -6,7 +6,7 @@
     "./utils/proposal-content-hash": "./src/utils/proposal-content-hash.ts"
   },
   "scripts": {
-    "lightnet:start": "zkapp-cli lightnet start --mina-branch mesa",
+    "lightnet:start": "zkapp-cli lightnet start --mode single-node --type fast --proof-level none --mina-branch mesa --archive --sync --pull --mina-log-level Trace --slot-time 20000",
     "lightnet:explorer": "zkapp-cli lightnet explorer",
     "run": "tsx",
     "chart:thresholds": "NODE_NO_WARNINGS=1 node --loader ts-node/esm scripts/generate-threshold-chart.ts",

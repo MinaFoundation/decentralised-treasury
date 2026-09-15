@@ -148,7 +148,7 @@ function createProgram() {
     .addOption(
       new Option("--slot-duration-ms <n>", "Browser slot duration")
         .argParser((value) => parseIntegerString(value, "slot-duration-ms"))
-        .default("180000"),
+        .default("90000"),
     )
     .option(
       "--postgres-password <value>",
@@ -248,7 +248,12 @@ function buildDevopsEnvFile(options, serviceSecrets) {
     "# For public HTTPS, set LETSENCRYPT_EMAIL and PUBLIC_*_DOMAIN values before running pnpm testnet:up:public.",
     "# Optional staging CA: LETSENCRYPT_ACME_CA=https://acme-staging-v02.api.letsencrypt.org/directory",
     ...section("Mounted SQLite data"),
-    formatEnvLine("SQLITE_DATA_HOST_PATH", "./.data/testnet-sqlite"),
+    formatEnvLine("SQLITE_DATA_HOST_PATH", "/opt/mina/.treasury-sqlite"),
+    ...section("Staking-ledger snapshot input"),
+    formatEnvLine(
+      "STAKING_LEDGERS_HOST_PATH",
+      "/opt/mina/.treasury-staking-ledgers",
+    ),
   ];
 
   return `${lines.join("\n")}\n`;
