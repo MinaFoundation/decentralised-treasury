@@ -563,6 +563,102 @@ describe("proposal vote processor", () => {
     assert.equal(replayedVote?.isNullified, false);
   });
 
+  for (const vote of [Vote.YAY, Vote.NAY, Vote.ABSTRAIN, Vote.DUMMY]) {
+    it(`processes vote value ${vote.toString()} with zero weight and continues after a duplicate`, async () => {
+      const proposalPublicKey = PrivateKey.random().toPublicKey().toBase58();
+      const zeroWeightVoter = PrivateKey.random().toPublicKey().toBase58();
+      const weightedVoter = PrivateKey.random().toPublicKey().toBase58();
+      await dataSource.getRepository(ProposalEntity).insert({
+        proposalPublicKey,
+        lifecycleId: 2,
+        amount: "1",
+        recipient: ARCHIVE_RECIPIENT_PUBLIC_KEY,
+        zkAppUriHash: "12345",
+        stakingEpochDataLedgerHash: "999",
+        stakingEpochDataLedgerTotalCurrency: "20",
+        requiredParticipationBp: "2000",
+        requiredApprovalBp: "5100",
+        requiredParticipation: "4",
+        status: "pending",
+        isPaused: false,
+        createdAtBlockHeight: 100,
+        createdAtBlockTimestamp: new Date(Date.UTC(2026, 0, 1)),
+      });
+      processorWeights.set("2", new Map([[weightedVoter, 7n]]));
+
+      await repository.insertRawEvents(
+        [
+          buildFieldEncodedVoteEventOutput({
+            proposalPublicKey,
+            voterPublicKey: zeroWeightVoter,
+            vote,
+            txHash: "tx-zero-weight",
+            accountUpdateId: "31",
+            blockHeight: 101,
+          }),
+          buildVoteEventOutput({
+            proposalPublicKey,
+            voterPublicKey: zeroWeightVoter,
+            vote: "yay",
+            txHash: "tx-zero-weight-duplicate",
+            accountUpdateId: "32",
+            blockHeight: 102,
+          }),
+          buildVoteEventOutput({
+            proposalPublicKey,
+            voterPublicKey: weightedVoter,
+            vote: "yay",
+            txHash: "tx-after-zero-weight",
+            accountUpdateId: "33",
+            blockHeight: 103,
+          }),
+        ],
+        "canonical",
+      );
+
+      assert.equal(await processor.processOnce(), 3);
+      assert.equal(await processor.processOnce(), 0);
+      const votes = await dataSource.getRepository(VoteEntity).find({
+        where: { proposalPublicKey },
+        order: { blockHeight: "ASC" },
+      });
+      assert.deepEqual(
+        votes.map(({ voteWeight, isNullified }) => ({
+          voteWeight,
+          isNullified,
+        })),
+        [
+          { voteWeight: "0", isNullified: false },
+          { voteWeight: "0", isNullified: true },
+          { voteWeight: "7", isNullified: false },
+        ],
+      );
+      const nullifier = await dataSource
+        .getRepository(VoteNullifierEntity)
+        .findOneByOrFail({
+          proposalPublicKey,
+          voterPublicKey: zeroWeightVoter,
+        });
+      assert.equal(nullifier.sourceEventId, votes[0]!.archiveEventId);
+      assert.equal(nullifier.voteWeight, "0");
+      const tallies = await dataSource.getRepository(VoteTallyEntity).find({
+        where: { proposalPublicKey },
+        order: { blockHeight: "ASC" },
+      });
+      assert.deepEqual(
+        tallies.map(({ totalParticipatingVotes, voteResult }) => ({
+          totalParticipatingVotes,
+          voteResult,
+        })),
+        [
+          { totalParticipatingVotes: "0", voteResult: "rejected" },
+          { totalParticipatingVotes: "0", voteResult: "rejected" },
+          { totalParticipatingVotes: "7", voteResult: "approved" },
+        ],
+      );
+    });
+  }
+
   it("applies the contract vote rules when proposal and staking amounts are zero", async () => {
     const proposalPublicKey = PrivateKey.random().toPublicKey().toBase58();
     const voterPublicKey = PrivateKey.random().toPublicKey().toBase58();
