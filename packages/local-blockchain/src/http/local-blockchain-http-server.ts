@@ -216,21 +216,30 @@ async function handleGraphqlRequest(
   }
 
   if (query.includes("sendZkapp(")) {
-    const transactionJson =
-      extractZkappCommandJsonFromVariables(query, body.variables) ??
-      extractZkappCommandJson(query);
-    const result = await runtime.submitTransaction({
-      transactionJson,
-      waitForInclusion: true,
-      label: "graphql-sendZkapp",
-    });
-    writeJson(response, 200, {
-      data: {
-        sendZkapp: {
-          zkapp: result.sendZkapp,
+    try {
+      const transactionJson =
+        extractZkappCommandJsonFromVariables(query, body.variables) ??
+        extractZkappCommandJson(query);
+      const result = await runtime.submitTransaction({
+        transactionJson,
+        waitForInclusion: true,
+        label: "graphql-sendZkapp",
+      });
+      writeJson(response, 200, {
+        data: {
+          sendZkapp: {
+            zkapp: result.sendZkapp,
+          },
         },
-      },
-    });
+      });
+    } catch (error) {
+      // o1js reads GraphQL errors only from successful HTTP responses.
+      // Keep transaction rejection details available to CLI and wallet clients.
+      writeJson(response, 200, {
+        data: { sendZkapp: null },
+        errors: [{ message: error instanceof Error ? error.message : "Transaction submission failed" }],
+      });
+    }
     return;
   }
 

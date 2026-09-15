@@ -216,9 +216,8 @@ export class ArchiveClient {
         //
         // The pendingOverlapBlocks rescan hid this, because the block stopped
         // being last on a later pass - but only after a delay, and not at all
-        // with an overlap of 0. Requesting one past our bound is also correct if
-        // the archive is ever inclusive: the extra block is simply upserted, and
-        // the cursor is still set from our own `to`.
+        // with an overlap of 0. The endpoint must preserve this exclusive bound:
+        // repository ingestion rejects observations outside our complete range.
         to: options.to + 1,
       },
     };

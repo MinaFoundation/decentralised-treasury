@@ -301,7 +301,9 @@ export class LocalBlockchainRuntime {
       if (event.status !== options.status) {
         return false;
       }
-      if (event.blockInfo.height < options.from || event.blockInfo.height > options.to) {
+      // Archive wire ranges include `from` and exclude `to`. ArchiveClient
+      // already adds one when converting its inclusive internal batch bound.
+      if (event.blockInfo.height < options.from || event.blockInfo.height >= options.to) {
         return false;
       }
       if (options.address && event.address !== options.address) {
