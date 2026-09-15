@@ -80,3 +80,16 @@ devops/.data/
 .data/local-blockchain-*
 apps/docs/.docusaurus/
 apps/docs/build/
+
+# AI analysis and review support files are local-only.
+/.audit-spec/
+/.codebase-analysis/
+/.ledger-review/
+/*_REVIEW.md
+/*_REPORT.md
+/*_PLAN.md
+/SECURITY_AUDIT_HANDOFF.md
+/apps/docs/evidence/
+/apps/docs/docs/review/
+/apps/docs/scripts/generate-working-assumptions.mjs
+/apps/docs/scripts/validate-claims.mjs
