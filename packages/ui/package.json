@@ -3,6 +3,7 @@
   "version": "0.0.0",
   "private": true,
   "exports": {
+    "./styles/treasury-theme.css": "./src/styles/treasury-theme.css",
     "./*": "./src/*.tsx"
   },
   "scripts": {
