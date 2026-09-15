@@ -1,7 +1,7 @@
 ---
 releases:
 - name: node-0
-  chart: git::https://github.com/MinaFoundation/helm-charts.git@mina-daemon?ref=mina-daemon-2.1.1
+  chart: git::https://github.com/MinaFoundation/helm-charts.git@mina-daemon?ref=mina-daemon-2.2.0
   values:
     - deployment:
         testnet: devnet

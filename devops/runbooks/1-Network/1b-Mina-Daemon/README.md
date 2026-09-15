@@ -43,7 +43,7 @@ from peers. It does not resume the previous sync. Include the resync time in the
 restart plan.
 
 - Charts: <https://github.com/MinaFoundation/helm-charts.git>. Use
-  `mina-daemon`, pinned to `mina-daemon-2.1.1`, and `raw` for the proxy objects.
+  `mina-daemon`, pinned to `mina-daemon-2.2.0`, and `raw` for the proxy objects.
 - Image tag: Use the network release announcement in
   <https://github.com/MinaProtocol/mina/discussions>. See step 1.
 - Values: Use `helmfile.yaml` in this directory.
