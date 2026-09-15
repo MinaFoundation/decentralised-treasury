@@ -26,12 +26,12 @@ supported wallet and prepare it before your first transaction.
 ## Confirm The Deployment
 
 Follow [Check your Treasury deployment](check-your-deployment.md) before connecting a wallet.
-The default **Open local demo** link needs a Treasury running on your own machine.
+The **Open Treasury** link opens the configured application. Its default address needs a Treasury running on your own machine.
 For a shared deployment, obtain the application URL, public configuration record, and support contact from its operator.
 
 ## Take A Read-Only Tour
 
-1. Select **Open Treasury**, or **Open local demo** after starting the local application.
+1. Select **Open Treasury**. Start the local application first if the link uses a local address.
 2. Check the network and the current lifecycle period.
 3. Open one proposal.
 4. Find its requested amount, recipient, lifecycle, and status.

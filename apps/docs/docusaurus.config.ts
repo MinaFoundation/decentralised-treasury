@@ -2,12 +2,7 @@ import type { Config } from "@docusaurus/types";
 import type { Options, ThemeConfig } from "@docusaurus/preset-classic";
 
 const treasuryAppUrl = process.env.TREASURY_APP_URL ?? "http://127.0.0.1:3100";
-const treasuryAppIsLocal = ["localhost", "127.0.0.1", "[::1]"].includes(
-  new URL(treasuryAppUrl).hostname,
-);
-const treasuryAppLabel = treasuryAppIsLocal
-  ? "Open local demo"
-  : "Open Treasury";
+const treasuryAppLabel = "Open Treasury";
 
 const config: Config = {
   title: "Mina Decentralized Treasury",
@@ -28,6 +23,29 @@ const config: Config = {
   },
   themes: ["@docusaurus/theme-mermaid"],
   plugins: [
+    function treasuryTypography() {
+      return {
+        name: "treasury-typography",
+        configurePostCss(options) {
+          // Keep the shared app font stack intact instead of adding fallbacks.
+          for (const plugin of options.plugins) {
+            if (
+              Array.isArray(plugin) &&
+              String(plugin[0]).includes("postcss-preset-env")
+            ) {
+              plugin[1] = {
+                ...plugin[1],
+                features: {
+                  ...plugin[1]?.features,
+                  "system-ui-font-family": false,
+                },
+              };
+            }
+          }
+          return options;
+        },
+      };
+    },
     [
       "@docusaurus/plugin-client-redirects",
       {
@@ -245,7 +263,7 @@ const config: Config = {
       { name: "twitter:card", content: "summary_large_image" },
       {
         name: "theme-color",
-        content: "#ff5738",
+        content: "#ff613d",
       },
     ],
     colorMode: {
@@ -287,7 +305,7 @@ const config: Config = {
       ],
     },
     footer: {
-      style: "dark",
+      style: "light",
       links: [
         {
           title: "Learn",

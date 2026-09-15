@@ -14,7 +14,7 @@ Confirm these values before you connect a wallet.
 
 The default documentation build links to `http://127.0.0.1:3100`.
 A loopback address opens a service on your own machine. It does not open a shared Treasury.
-The navigation labels this target **Open local demo**.
+The navigation labels this target **Open Treasury**.
 
 If you have not started the demo, follow the [local development quickstart](../developer/local-development/quickstart.md).
 If you expected a shared deployment, obtain its application URL from the person or organization that supplied the documentation.

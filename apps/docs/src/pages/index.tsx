@@ -2,31 +2,63 @@ import type { JSX } from "react";
 import Layout from "@theme/Layout";
 import Link from "@docusaurus/Link";
 import useDocusaurusContext from "@docusaurus/useDocusaurusContext";
-import { buttonVariants } from "@repo/ui/components/ui/button";
-import { Card } from "@repo/ui/components/ui/card";
 import { TreasuryLogoIcon } from "@repo/ui/treasury-logo-icon";
 import styles from "./index.module.css";
 
 const lifecycle = [
   {
     number: "01",
-    title: "Propose",
-    text: "Publish a funding request and record its content commitment on Mina.",
+    title: "Proposal",
+    text: "Publish a funding request and commit its content to Mina.",
+    detail: "Submit a request",
   },
   {
     number: "02",
-    title: "Explore",
-    text: "Review the request and verify its exact content before voting starts.",
+    title: "Exploration",
+    text: "Review the request and verify its content before voting starts.",
+    detail: "Review and discuss",
   },
   {
     number: "03",
-    title: "Vote",
-    text: "Submit a yay, nay, or abstain vote with snapshot-based voting weight.",
+    title: "Voting",
+    text: "Vote yay, nay, or abstain with weight from the lifecycle snapshot.",
+    detail: "Submit your vote",
   },
   {
     number: "04",
-    title: "Tally",
-    text: "Prove the result during cooldown. Execute an approved request later.",
+    title: "Cooldown",
+    text: "Prove the vote result. Execute an approved request after cooldown.",
+    detail: "Verify the result",
+  },
+];
+
+const paths = [
+  {
+    number: "01",
+    title: "Learn",
+    audience: "Community members",
+    text: "Understand the Treasury, create a proposal, and take part in a vote.",
+    href: "/learn/",
+    quickstart: "/learn/quickstart",
+    topics: "Proposals · Voting · Results",
+  },
+  {
+    number: "02",
+    title: "Operate",
+    audience: "Treasury operators",
+    text: "Configure a deployment, prepare lifecycle data, and run the services.",
+    href: "/operate/",
+    quickstart: "/operate/quickstart",
+    topics: "Deployment · Ledgers · Proofs",
+  },
+  {
+    number: "03",
+    title: "Develop",
+    audience: "Software developers",
+    text: "Explore the codebase, run the local demo, and build on the Treasury.",
+    href: "/developer/",
+    quickstart: "/developer/local-development/quickstart",
+    topics: "Architecture · SDK · Local development",
   },
 ];
 
@@ -41,53 +73,101 @@ export default function Home(): JSX.Element {
       description="Learn how the Mina Decentralized Treasury turns public proposals into verifiable funding decisions."
     >
       <main className={styles.page}>
-        <section className={styles.hero}>
-          <div className={styles.heroGlow} aria-hidden="true" />
+        <section className={styles.hero} aria-labelledby="home-title">
           <div className={styles.heroCopy}>
             <div className={styles.eyebrow}>
-              <TreasuryLogoIcon className={styles.logo} />
-              <span>Mina Decentralized Treasury</span>
+              <span className={styles.marker} aria-hidden="true" />
+              Treasury documentation
             </div>
-            <h1>
-              Community funding,
+            <h1 id="home-title">
+              Community funding.
               <br />
-              verified on Mina.
+              Verified on Mina.
             </h1>
-            <p>
-              Propose, review, vote, and fund public work through a transparent
-              process. Smart contracts and zero-knowledge proofs apply the
-              rules.
+            <p className={styles.heroDescription}>
+              A public process for proposals, community votes, and funding.
+              Learn how it works, operate a Treasury, or build with the code.
             </p>
             <div className={styles.actions}>
-              <a
-                className={`${buttonVariants({ size: "lg" })} ${styles.primaryAction}`}
-                href={treasuryAppUrl}
-              >
+              <Link className={styles.primaryAction} to="/learn/quickstart">
+                Get started <span aria-hidden="true">→</span>
+              </Link>
+              <a className={styles.secondaryAction} href={treasuryAppUrl}>
                 {treasuryAppLabel} <span aria-hidden="true">↗</span>
               </a>
-              <Link
-                className={`${buttonVariants({ variant: "outline", size: "lg" })} ${styles.secondaryAction}`}
-                to="/learn/"
-              >
-                Read the docs <span aria-hidden="true">→</span>
-              </Link>
             </div>
+            <p className={styles.heroNote}>
+              On-chain rules. Public proposals. Verifiable results.
+            </p>
           </div>
 
-          <Card className={styles.heroCard}>
-            <p className={styles.cardLabel}>One public process</p>
-            <div className={styles.heroCardStatement}>
-              <span>Ideas</span>
-              <span aria-hidden="true">→</span>
-              <span>Decisions</span>
-              <span aria-hidden="true">→</span>
-              <span>Funding</span>
+          <aside className={styles.overview} aria-label="Treasury overview">
+            <div className={styles.overviewHeader}>
+              <TreasuryLogoIcon className={styles.logo} />
+              <div>
+                <span className={styles.overviewTitle}>
+                  The Treasury lifecycle
+                </span>
+                <span className={styles.overviewSubtitle}>
+                  From a funding request to a verified decision
+                </span>
+              </div>
             </div>
-            <div className={styles.trustLine}>
-              <span className={styles.trustDot} aria-hidden="true" />
-              <span>On-chain rules. Verifiable results.</span>
+            <ol className={styles.overviewSteps}>
+              {lifecycle.map((period) => (
+                <li key={period.number}>
+                  <span className={styles.overviewNumber}>{period.number}</span>
+                  <span className={styles.overviewStepTitle}>
+                    {period.title}
+                  </span>
+                  <span className={styles.overviewStepDetail}>
+                    {period.detail}
+                  </span>
+                </li>
+              ))}
+            </ol>
+            <Link
+              className={styles.overviewLink}
+              to="/learn/lifecycle-and-snapshots"
+            >
+              Understand the lifecycle <span aria-hidden="true">→</span>
+            </Link>
+          </aside>
+        </section>
+
+        <section
+          className={styles.pathSection}
+          aria-labelledby="choose-path-title"
+        >
+          <div className={styles.sectionHeading}>
+            <div>
+              <p className={styles.kicker}>Choose a guide</p>
+              <h2 id="choose-path-title">Learn, operate, or develop.</h2>
             </div>
-          </Card>
+            <p>Guides for every part of the process.</p>
+          </div>
+          <div className={styles.pathCards}>
+            {paths.map((path) => (
+              <article className={styles.pathCard} key={path.title}>
+                <div className={styles.pathHeader}>
+                  <span className={styles.pathNumber}>{path.number}</span>
+                  <span className={styles.pathTag}>{path.audience}</span>
+                </div>
+                <h3>
+                  <Link to={path.href}>
+                    {path.title} <span aria-hidden="true">↗</span>
+                  </Link>
+                </h3>
+                <p>{path.text}</p>
+                <div className={styles.pathFooter}>
+                  <span className={styles.pathTopics}>{path.topics}</span>
+                  <Link to={path.quickstart}>
+                    {path.title} quickstart <span aria-hidden="true">→</span>
+                  </Link>
+                </div>
+              </article>
+            ))}
+          </div>
         </section>
 
         <section
@@ -96,86 +176,37 @@ export default function Home(): JSX.Element {
         >
           <div className={styles.sectionHeading}>
             <div>
-              <p className={styles.kicker}>The lifecycle</p>
+              <p className={styles.kicker}>How it works</p>
               <h2 id="lifecycle-title">
-                A clear path from proposal to payout.
+                A clear process, from proposal to payout.
               </h2>
             </div>
-            <Link to="/learn/lifecycle-and-snapshots">
-              Explore the full lifecycle <span aria-hidden="true">→</span>
+            <Link className={styles.textLink} to="/learn/how-it-works">
+              Explore the process <span aria-hidden="true">→</span>
             </Link>
           </div>
-
-          <div className={styles.lifecycleGrid}>
+          <ol className={styles.lifecycleGrid}>
             {lifecycle.map((period) => (
-              <article className={styles.lifecycleStep} key={period.number}>
+              <li className={styles.lifecycleStep} key={period.number}>
                 <span className={styles.stepNumber}>{period.number}</span>
                 <h3>{period.title}</h3>
                 <p>{period.text}</p>
-              </article>
+              </li>
             ))}
-          </div>
+          </ol>
         </section>
 
-        <section
-          className={styles.pathSection}
-          aria-labelledby="choose-path-title"
-        >
-          <div className={styles.pathIntro}>
-            <p className={styles.kicker}>Choose your path</p>
-            <h2 id="choose-path-title">Take part, run, or build the system.</h2>
-            <p>
-              Select your role, then choose a short overview, a quickstart, or a
-              complete learning path from basic terms.
-            </p>
+        <section className={styles.finalCta} aria-labelledby="demo-title">
+          <div className={styles.ctaCopy}>
+            <span className={styles.ctaIcon} aria-hidden="true">
+              ↗
+            </span>
+            <div>
+              <h2 id="demo-title">Explore the Treasury app.</h2>
+              <p>Open the app and explore the Treasury.</p>
+            </div>
           </div>
-
-          <div className={styles.pathCards}>
-            <Card className={`${styles.pathCard} ${styles.learnCard}`}>
-              <span className={styles.pathTag}>For community members</span>
-              <h3>Learn</h3>
-              <p>
-                Learn Mina and Treasury concepts, then create, vote, or check a
-                result.
-              </p>
-              <Link to="/learn/">
-                Start learning <span aria-hidden="true">→</span>
-              </Link>
-            </Card>
-            <Card className={`${styles.pathCard} ${styles.operateCard}`}>
-              <span className={styles.pathTag}>For treasury operators</span>
-              <h3>Operate</h3>
-              <p>
-                Learn the operating model, then configure, deploy, and prepare
-                proofs.
-              </p>
-              <Link to="/operate/">
-                Open operator docs <span aria-hidden="true">→</span>
-              </Link>
-            </Card>
-            <Card className={`${styles.pathCard} ${styles.developCard}`}>
-              <span className={styles.pathTag}>For software developers</span>
-              <h3>Develop</h3>
-              <p>
-                Tour the codebase, run the local flow, and trace a complete
-                change.
-              </p>
-              <Link to="/developer/">
-                Open developer docs <span aria-hidden="true">→</span>
-              </Link>
-            </Card>
-          </div>
-        </section>
-
-        <section className={styles.finalCta}>
-          <div>
-            <p className={styles.kicker}>Ready to participate?</p>
-            <h2>See the treasury in action.</h2>
-          </div>
-          <a
-            className={`${buttonVariants({ size: "lg" })} ${styles.darkAction}`}
-            href={treasuryAppUrl}
-          >
+          <a className={styles.secondaryAction} href={treasuryAppUrl}>
             {treasuryAppLabel} <span aria-hidden="true">↗</span>
           </a>
         </section>

@@ -1,279 +1,274 @@
 .page {
-  overflow: hidden;
+  --home-text: var(--ifm-font-color-base);
+  --home-muted: var(--ifm-color-emphasis-700);
+  --home-border: var(--ifm-color-emphasis-200);
+  --home-surface: var(--ifm-background-surface-color);
+  --home-accent: var(--ifm-color-primary);
+  --home-mono: var(--ifm-font-family-monospace);
+  width: min(1280px, calc(100% - 3rem));
+  margin-inline: auto;
+  color: var(--home-text);
+  font-family: var(--ifm-font-family-base);
 }
 
-.hero,
-.lifecycleSection,
-.pathSection,
-.finalCta {
-  width: min(1180px, calc(100% - 2rem));
-  margin-inline: auto;
+.page h1,
+.page h2,
+.page h3 {
+  color: var(--home-text);
+}
+
+.page a {
+  text-decoration: none;
+}
+
+.page a:focus-visible {
+  outline: 2px solid var(--home-accent);
+  outline-offset: 5px;
+  border-radius: 4px;
 }
 
 .hero {
-  position: relative;
   display: grid;
-  grid-template-columns: minmax(0, 1.35fr) minmax(280px, 0.65fr);
-  gap: clamp(2rem, 6vw, 5rem);
-  align-items: end;
-  min-height: 590px;
-  padding: clamp(4rem, 9vw, 8rem) clamp(1.5rem, 5vw, 4.5rem);
-  margin-top: 1.5rem;
-  color: hsl(var(--brand-dark));
-  background: hsl(var(--brand-orange));
-  border-radius: 1.5rem;
-  isolation: isolate;
+  grid-template-columns: minmax(0, 1.3fr) minmax(0, 0.9fr);
+  align-items: center;
+  gap: clamp(2rem, 6vw, 6rem);
+  padding-block: clamp(3.5rem, 7vw, 6.5rem);
+  border-bottom: 1px solid var(--home-border);
 }
 
-.heroGlow {
-  position: absolute;
-  z-index: -1;
-  top: -10rem;
-  right: -8rem;
-  width: 34rem;
-  aspect-ratio: 1;
-  border: 7rem solid rgb(255 255 255 / 12%);
-  border-radius: 50%;
-}
-
-.heroCopy {
-  max-width: 720px;
+.eyebrow,
+.kicker,
+.pathTag {
+  font-size: 0.67rem;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  line-height: 1.6;
+  text-transform: uppercase;
 }
 
 .eyebrow {
   display: flex;
-  gap: 0.7rem;
   align-items: center;
-  margin-bottom: 2rem;
-  font-size: 0.82rem;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+  gap: 0.6rem;
+  margin-bottom: 1.5rem;
 }
 
-.logo {
-  width: 2rem;
-  height: 2rem;
-  color: hsl(var(--brand-dark));
+.marker {
+  width: 7px;
+  height: 7px;
+  border-radius: 2px;
+  background: hsl(var(--brand-orange));
 }
 
 .hero h1 {
-  max-width: 780px;
   margin: 0;
-  color: inherit;
-  font-size: clamp(3.4rem, 7.8vw, 7rem);
+  font-size: clamp(2.5rem, 4.4vw, 4rem);
   font-weight: 600;
-  letter-spacing: -0.065em;
-  line-height: 0.92;
+  letter-spacing: -0.055em;
+  line-height: 1.08;
 }
 
-.heroCopy > p {
-  max-width: 620px;
-  margin: 2rem 0 0;
-  font-size: clamp(1.08rem, 1.8vw, 1.3rem);
-  line-height: 1.55;
+.heroDescription {
+  max-width: 490px;
+  margin: 1.4rem 0 0;
+  color: var(--home-muted);
+  font-size: 1rem;
+  line-height: 1.8;
 }
 
 .actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.75rem;
-  margin-top: 2rem;
+  gap: 0.65rem;
+  margin-top: 1.8rem;
 }
 
 .primaryAction,
-.secondaryAction,
-.darkAction {
+.secondaryAction {
   display: inline-flex;
-  min-height: 46px;
-  padding: 0.75rem 1.15rem;
-  gap: 0.65rem;
+  height: 2.5rem;
   align-items: center;
   justify-content: center;
+  gap: 1.25rem;
+  padding: 0.5rem 1rem;
+  border: 0 solid transparent;
   border-radius: calc(var(--radius) - 2px);
-  font-size: 0.95rem;
-  font-weight: 650;
-  line-height: 1;
-  text-decoration: none;
+  font-size: 0.875rem;
+  font-weight: 500;
+  line-height: 1.25rem;
+  white-space: nowrap;
   transition:
-    transform 160ms ease,
-    background-color 160ms ease;
+    background-color 150ms cubic-bezier(0.4, 0, 0.2, 1),
+    border-color 150ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.primaryAction,
-.darkAction {
-  color: white;
-  background: hsl(var(--brand-dark));
+.primaryAction {
+  color: hsl(var(--primary-foreground));
+  background: hsl(var(--primary));
+}
+
+.primaryAction:hover {
+  color: hsl(var(--primary-foreground));
+  background: hsl(var(--primary) / 90%);
+}
+
+.page .primaryAction:focus-visible,
+.page .secondaryAction:focus-visible {
+  outline: 2px solid transparent;
+  outline-offset: 2px;
+  box-shadow:
+    0 0 0 2px var(--home-surface),
+    0 0 0 4px hsl(var(--ring));
 }
 
 .secondaryAction {
-  color: hsl(var(--brand-dark));
-  border: 1px solid rgb(35 46 53 / 24%);
-  background: rgb(255 255 255 / 35%);
-}
-
-.primaryAction:hover,
-.darkAction:hover,
-.secondaryAction:hover {
-  color: inherit;
-  text-decoration: none;
-  transform: translateY(-2px);
-}
-
-.primaryAction:hover,
-.darkAction:hover {
-  color: white;
-  background: #172127;
+  color: var(--home-text);
+  background: var(--home-surface);
+  border-color: var(--home-border);
+  border-width: 1px;
 }
 
 .secondaryAction:hover {
-  color: hsl(var(--brand-dark));
-  background: rgb(255 255 255 / 60%);
+  background: hsl(var(--accent));
+  color: hsl(var(--accent-foreground));
 }
 
-.heroCard {
-  position: relative;
-  padding: 1.5rem;
-  color: hsl(var(--brand-dark));
-  border: 1px solid rgb(35 46 53 / 16%);
-  border-radius: 1rem;
-  background: rgb(255 255 255 / 82%);
-  box-shadow: 0 22px 60px rgb(35 46 53 / 14%);
-  backdrop-filter: blur(14px);
+.heroNote {
+  margin: 1.2rem 0 0;
+  color: var(--home-muted);
+  font-size: 0.7rem;
+  line-height: 1.7;
 }
 
-.cardLabel,
-.kicker {
-  margin: 0;
-  font-size: 0.78rem;
-  font-weight: 700;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
+.overview {
+  min-width: 0;
+  border: 1px solid var(--home-border);
+  border-radius: 12px;
+  background: var(--home-surface);
+  overflow: hidden;
 }
 
-.heroCardStatement {
-  display: grid;
-  gap: 0.65rem;
-  margin: 2.5rem 0;
-  font-size: clamp(1.5rem, 3vw, 2.2rem);
-  font-weight: 650;
-  letter-spacing: -0.035em;
-}
-
-.heroCardStatement span:nth-child(even) {
-  color: hsl(var(--brand-orange));
-}
-
-.trustLine {
+.overviewHeader {
   display: flex;
-  gap: 0.65rem;
   align-items: center;
-  padding-top: 1rem;
-  border-top: 1px solid rgb(35 46 53 / 14%);
-  color: #536067;
-  font-size: 0.86rem;
+  gap: 0.85rem;
+  padding: 1.35rem;
+  border-bottom: 1px solid var(--home-border);
 }
 
-.trustDot {
-  width: 0.6rem;
-  height: 0.6rem;
-  border-radius: 50%;
-  background: #24a46d;
-  box-shadow: 0 0 0 4px rgb(36 164 109 / 13%);
+.logo {
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
 }
 
-.lifecycleSection,
-.pathSection {
-  padding-block: clamp(5rem, 10vw, 8rem);
+.overviewTitle,
+.overviewSubtitle {
+  display: block;
+}
+
+.overviewTitle {
+  font-size: 0.9rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+.overviewSubtitle {
+  margin-top: 0.25rem;
+  color: var(--home-muted);
+  font-size: 0.7rem;
+  line-height: 1.6;
+}
+
+.overviewSteps,
+.lifecycleGrid {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.overviewSteps {
+  padding: 0.4rem 1.35rem;
+}
+
+.overviewSteps li {
+  display: grid;
+  grid-template-columns: 1.8rem 1fr auto;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 1rem 0;
+}
+
+.overviewSteps li + li {
+  border-top: 1px solid var(--home-border);
+}
+
+.overviewNumber,
+.pathNumber,
+.stepNumber {
+  color: var(--home-muted);
+  font-family: var(--home-mono);
+  font-size: 0.7rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.overviewStepTitle {
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+
+.overviewStepDetail {
+  color: var(--home-muted);
+  font-size: 0.65rem;
+}
+
+.overviewLink {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.35rem;
+  border-top: 1px solid var(--home-border);
+  color: var(--home-accent);
+  background: color-mix(in srgb, var(--home-accent) 4%, var(--home-surface));
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.overviewLink:hover {
+  color: var(--home-accent);
+  background: color-mix(in srgb, var(--home-accent) 8%, var(--home-surface));
+}
+
+.pathSection,
+.lifecycleSection {
+  padding-top: 3.5rem;
 }
 
 .sectionHeading {
   display: flex;
-  gap: 2rem;
   align-items: end;
   justify-content: space-between;
-  margin-bottom: 3rem;
+  gap: 1.5rem;
+  margin-bottom: 1.5rem;
 }
 
-.sectionHeading h2,
-.pathIntro h2,
-.finalCta h2 {
-  margin: 0.45rem 0 0;
-  color: hsl(var(--brand-dark));
-  font-size: clamp(2.1rem, 4vw, 3.6rem);
-  font-weight: 600;
-  letter-spacing: -0.045em;
-  line-height: 1.05;
+.kicker {
+  margin: 0 0 0.65rem;
+  color: var(--home-muted);
 }
 
-.sectionHeading > a,
-.pathCard a {
-  font-weight: 650;
-  white-space: nowrap;
-}
-
-.lifecycleGrid {
-  position: relative;
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 1px;
-  overflow: hidden;
-  border: 1px solid var(--ifm-color-emphasis-200);
-  border-radius: 1rem;
-  background: var(--ifm-color-emphasis-200);
-}
-
-.lifecycleStep {
-  min-height: 250px;
-  padding: 1.6rem;
-  background: var(--ifm-background-surface-color);
-}
-
-.lifecycleStep:nth-child(1) {
-  border-top: 4px solid hsl(var(--brand-orange));
-}
-.lifecycleStep:nth-child(2) {
-  border-top: 4px solid hsl(var(--brand-sky));
-}
-.lifecycleStep:nth-child(3) {
-  border-top: 4px solid hsl(var(--brand-pink));
-}
-.lifecycleStep:nth-child(4) {
-  border-top: 4px solid hsl(var(--brand-mint));
-}
-
-.stepNumber {
-  color: var(--ifm-color-emphasis-500);
-  font-size: 0.78rem;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-}
-
-.lifecycleStep h3 {
-  margin: 3rem 0 0.75rem;
-  font-size: 1.4rem;
-}
-
-.lifecycleStep p {
+.sectionHeading h2 {
   margin: 0;
-  color: var(--ifm-color-emphasis-700);
-  font-size: 0.95rem;
-  line-height: 1.6;
+  font-size: clamp(1.4rem, 2.2vw, 1.85rem);
+  font-weight: 600;
+  letter-spacing: -0.035em;
+  line-height: 1.25;
 }
 
-.pathSection {
-  display: grid;
-  grid-template-columns: minmax(250px, 0.72fr) minmax(0, 1.28fr);
-  gap: clamp(2rem, 7vw, 6rem);
-  align-items: start;
-  border-top: 1px solid var(--ifm-color-emphasis-200);
-}
-
-.pathIntro > p:last-child {
-  max-width: 460px;
-  margin-top: 1.5rem;
-  color: var(--ifm-color-emphasis-700);
-  line-height: 1.7;
+.sectionHeading > p {
+  margin: 0 0 0.15rem;
+  color: var(--home-muted);
+  font-size: 0.8rem;
 }
 
 .pathCards {
@@ -284,136 +279,300 @@
 
 .pathCard {
   display: flex;
-  min-height: 330px;
-  padding: 1.5rem;
   flex-direction: column;
-  border: 0;
-  border-radius: 1rem;
-  box-shadow: none;
+  min-width: 0;
+  padding: 1.4rem;
+  border: 1px solid var(--home-border);
+  border-radius: 12px;
+  background: var(--home-surface);
+  transition: border-color 160ms ease;
 }
 
-.learnCard {
-  color: hsl(var(--brand-dark));
-  background: hsl(var(--brand-mint));
+.pathCard:hover,
+.pathCard:focus-within {
+  border-color: color-mix(in srgb, var(--home-accent) 50%, var(--home-border));
 }
 
-.operateCard {
-  color: hsl(var(--brand-dark));
-  background: hsl(var(--brand-sky));
-}
-
-.developCard {
-  color: hsl(var(--brand-dark));
-  background: hsl(var(--brand-orange));
+.pathHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
 }
 
 .pathTag {
-  font-size: 0.78rem;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
+  color: var(--home-muted);
+  font-size: 0.6rem;
+  letter-spacing: 0.09em;
 }
 
 .pathCard h3 {
-  margin: auto 0 0.75rem;
-  color: inherit;
-  font-size: 2.1rem;
+  margin: 1.5rem 0 0.7rem;
+  font-size: 1.5rem;
+  font-weight: 600;
   letter-spacing: -0.035em;
 }
 
-.pathCard p {
-  margin: 0 0 1.5rem;
-  line-height: 1.55;
+.pathCard h3 a {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: inherit;
 }
 
-.pathCard a {
-  color: inherit;
+.pathCard h3 span {
+  color: var(--home-muted);
+  font-size: 1rem;
+  font-weight: 400;
+}
+
+.pathCard > p {
+  margin: 0 0 1.4rem;
+  color: var(--home-muted);
+  font-size: 0.85rem;
+  line-height: 1.75;
+}
+
+.pathFooter {
+  display: flex;
+  flex-direction: column;
+  align-items: start;
+  gap: 0.85rem;
+  margin-top: auto;
+  padding-top: 1rem;
+  border-top: 1px solid var(--home-border);
+}
+
+.pathTopics {
+  color: var(--home-muted);
+  font-size: 0.67rem;
+  line-height: 1.6;
+}
+
+.pathFooter a,
+.textLink {
+  color: var(--home-accent);
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.pathFooter a span,
+.textLink span {
+  margin-left: 0.5rem;
+}
+
+.pathFooter a:hover,
+.textLink:hover {
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
+.lifecycleGrid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  border: 1px solid var(--home-border);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.lifecycleStep {
+  padding: 1.5rem;
+  background: var(--home-surface);
+}
+
+.lifecycleStep + .lifecycleStep {
+  border-left: 1px solid var(--home-border);
+}
+
+.stepNumber {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  width: 1.65rem;
+  height: 1.65rem;
+  border: 1px solid var(--home-border);
+  border-radius: 5px;
+  font-size: 0.65rem;
+}
+
+.lifecycleStep h3 {
+  margin: 1rem 0 0.6rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.lifecycleStep p {
+  margin: 0;
+  color: var(--home-muted);
+  font-size: 0.8rem;
+  line-height: 1.75;
 }
 
 .finalCta {
   display: flex;
-  gap: 2rem;
   align-items: center;
   justify-content: space-between;
-  padding: clamp(2rem, 5vw, 4rem);
-  margin-bottom: 2rem;
-  color: hsl(var(--brand-dark));
-  background: hsl(var(--brand-lavender));
-  border-radius: 1.5rem;
+  gap: 1.5rem;
+  margin-block: 3.5rem;
+  padding: 1.5rem;
+  border: 1px solid var(--home-border);
+  border-radius: 12px;
+  background: var(--ifm-color-emphasis-100);
 }
 
-@media (max-width: 900px) {
+.ctaCopy {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.ctaIcon {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  border: 1px solid var(--home-border);
+  border-radius: 8px;
+  color: var(--home-accent);
+  background: var(--home-surface);
+}
+
+.finalCta h2 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+.finalCta p {
+  margin: 0.35rem 0 0;
+  color: var(--home-muted);
+  font-size: 0.8rem;
+}
+
+@media (max-width: 996px) {
   .hero {
     grid-template-columns: 1fr;
-    min-height: auto;
+    gap: 2.5rem;
   }
 
-  .heroCard {
-    max-width: 440px;
+  .heroCopy {
+    max-width: 640px;
+  }
+
+  .hero h1 {
+    font-size: clamp(2.5rem, 6vw, 3.75rem);
+  }
+
+  .overview {
+    max-width: 640px;
+  }
+
+  .sectionHeading {
+    align-items: start;
+    flex-direction: column;
+    gap: 0.65rem;
+  }
+
+  .pathCards {
+    gap: 0.75rem;
+  }
+
+  .pathCard {
+    padding: 1.15rem;
+  }
+
+  .pathTag {
+    max-width: 110px;
+    text-align: right;
   }
 
   .lifecycleGrid {
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .pathSection {
-    grid-template-columns: 1fr;
+  .lifecycleStep:nth-child(3) {
+    border-left: 0;
+  }
+
+  .lifecycleStep:nth-child(n + 3) {
+    border-top: 1px solid var(--home-border);
   }
 }
 
 @media (max-width: 600px) {
-  .hero,
-  .lifecycleSection,
-  .pathSection,
-  .finalCta {
-    width: min(100% - 1rem, 1180px);
+  .page {
+    width: calc(100% - 2rem);
   }
 
   .hero {
-    padding: 3.25rem 1.25rem 1.25rem;
-    margin-top: 0.5rem;
-    border-radius: 1rem;
+    padding-block: 2.75rem;
   }
 
   .hero h1 {
-    font-size: clamp(2.75rem, 14vw, 4.2rem);
+    font-size: clamp(2rem, 7.8vw, 2.85rem);
   }
 
-  .actions,
-  .primaryAction,
-  .secondaryAction,
-  .darkAction {
-    width: 100%;
+  .heroDescription {
+    font-size: 0.9rem;
   }
 
-  .sectionHeading,
-  .finalCta {
-    align-items: flex-start;
-    flex-direction: column;
+  .overviewSteps li {
+    grid-template-columns: 1.5rem 1fr;
+    padding-block: 0.8rem;
+    gap: 0.25rem 0.5rem;
   }
 
-  .sectionHeading > a {
-    white-space: normal;
+  .overviewNumber {
+    grid-row: span 2;
   }
 
-  .lifecycleGrid,
-  .pathCards {
+  .overviewStepDetail {
+    grid-column: 2;
+  }
+
+  .pathCards,
+  .lifecycleGrid {
     grid-template-columns: 1fr;
   }
 
-  .lifecycleStep {
-    min-height: 210px;
+  .pathCard {
+    padding: 1.4rem;
   }
 
-  .pathCard {
-    min-height: 280px;
+  .pathTag {
+    max-width: none;
+  }
+
+  .lifecycleStep + .lifecycleStep {
+    border-left: 0;
+    border-top: 1px solid var(--home-border);
+  }
+
+  .lifecycleStep {
+    padding: 1.25rem;
+  }
+
+  .pathSection,
+  .lifecycleSection {
+    padding-top: 2.5rem;
+  }
+
+  .finalCta {
+    align-items: stretch;
+    flex-direction: column;
+    margin-block: 2.5rem;
+    padding: 1.25rem;
+  }
+
+  .actions > a {
+    flex-grow: 1;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .primaryAction,
-  .secondaryAction,
-  .darkAction {
+  .page * {
     transition: none;
   }
 }
