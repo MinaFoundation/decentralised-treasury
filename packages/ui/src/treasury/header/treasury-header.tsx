@@ -164,10 +164,14 @@ export function TreasuryHeader({
   const [isStickyCardActive, setIsStickyCardActive] = useState(false);
   const [proposalSearchOpen, setProposalSearchOpen] = useState(false);
   const [isCompactMenuOpen, setIsCompactMenuOpen] = useState(false);
+  const [defaultSearchShortcutLabel, setDefaultSearchShortcutLabel] = useState("Ctrl+K");
+  useEffect(() => {
+    setDefaultSearchShortcutLabel(getDefaultProposalSearchShortcutLabel());
+  }, []);
   const intl = useTreasuryIntl();
   const resolvedProposalSearch = proposalSearch ?? defaultProposalSearchConfig;
   const proposalSearchShortcutLabel =
-    resolvedProposalSearch.shortcutLabel ?? getDefaultProposalSearchShortcutLabel();
+    resolvedProposalSearch.shortcutLabel ?? defaultSearchShortcutLabel;
   const resolvedMessages: TreasuryHeaderMessages =
     resolveTreasuryHeaderMessages(intl, messages);
   const resolvedPausedBannerLabel =

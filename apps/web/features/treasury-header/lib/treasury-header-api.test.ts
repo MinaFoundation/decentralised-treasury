@@ -151,6 +151,94 @@ describe("fetchWalletLifecycleAccountInfo", () => {
     vi.restoreAllMocks();
   });
 
+  it.each([
+    { name: "zero weight", voteWeight: "0", expected: "0 MINA" },
+    {
+      name: "delegated weight",
+      voteWeight: "100000000000",
+      expected: "100 MINA",
+    },
+  ])(
+    "retains $name when only the staking account is absent",
+    async ({ voteWeight, expected }) => {
+      vi.spyOn(globalThis, "fetch")
+        .mockResolvedValueOnce(
+          new Response(
+            JSON.stringify({
+              error: "staking account for publicKey is not available",
+              lifecycleId: "12",
+              publicKey: "B62qwallet",
+            }),
+            { status: 404 },
+          ),
+        )
+        .mockResolvedValueOnce(new Response(JSON.stringify({ voteWeight })));
+
+      await expect(
+        fetchWalletLifecycleAccountInfo(
+          "http://127.0.0.1:4000",
+          12,
+          "B62qwallet",
+        ),
+      ).resolves.toEqual({ delegatedTo: undefined, votingWeight: expected });
+    },
+  );
+
+  it.each([
+    {
+      name: "missing lifecycle",
+      status: 404,
+      body: {
+        error: "data for lifecycleid is not available",
+        lifecycleId: "12",
+      },
+    },
+    {
+      name: "unrelated not-found error",
+      status: 404,
+      body: { error: "not found" },
+    },
+    {
+      name: "server failure",
+      status: 500,
+      body: { error: "Internal server error" },
+    },
+    {
+      name: "wrong account identity",
+      status: 404,
+      body: {
+        error: "staking account for publicKey is not available",
+        lifecycleId: "12",
+        publicKey: "B62qother",
+      },
+    },
+    {
+      name: "wrong lifecycle identity",
+      status: 404,
+      body: {
+        error: "staking account for publicKey is not available",
+        lifecycleId: "13",
+        publicKey: "B62qwallet",
+      },
+    },
+  ])(
+    "does not treat $name as an absent staking account",
+    async ({ status, body }) => {
+      vi.spyOn(globalThis, "fetch")
+        .mockResolvedValueOnce(new Response(JSON.stringify(body), { status }))
+        .mockResolvedValueOnce(
+          new Response(JSON.stringify({ voteWeight: "0" })),
+        );
+      await expect(
+        fetchWalletLifecycleAccountInfo(
+          "http://127.0.0.1:4000",
+          12,
+          "B62qwallet",
+        ),
+      ).rejects.toThrow(`Failed to fetch staking account: ${status}`);
+    },
+  );
+
   it("returns zero voting weight when lifecycle account payloads are null", async () => {
     const fetchMock = vi
       .spyOn(globalThis, "fetch")

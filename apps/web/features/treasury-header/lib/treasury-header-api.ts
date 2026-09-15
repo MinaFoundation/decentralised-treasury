@@ -564,17 +564,31 @@ export async function fetchWalletLifecycleAccountInfo(
   ]);
 
   if (!stakingResponse.ok) {
-    throw new Error(
-      `Failed to fetch staking account: ${stakingResponse.status}`,
-    );
+    const missingAccount =
+      stakingResponse.status === 404
+        ? await stakingResponse.json().catch(() => null)
+        : null;
+    // A delegate can have voting weight without its own staking account.
+    // Do not confuse an absent account with missing lifecycle data or a failure.
+    if (
+      missingAccount?.error !==
+        "staking account for publicKey is not available" ||
+      missingAccount?.lifecycleId !== String(lifecycleId) ||
+      missingAccount?.publicKey !== publicKey
+    ) {
+      throw new Error(
+        `Failed to fetch staking account: ${stakingResponse.status}`,
+      );
+    }
   }
 
   if (!votingResponse.ok) {
     throw new Error(`Failed to fetch voting account: ${votingResponse.status}`);
   }
 
-  const stakingAccount =
-    await parseOptionalJson<StakingLedgerAccountResponse>(stakingResponse);
+  const stakingAccount = stakingResponse.ok
+    ? await parseOptionalJson<StakingLedgerAccountResponse>(stakingResponse)
+    : null;
   const votingAccount =
     await parseOptionalJson<VotingLedgerAccountResponse>(votingResponse);
 
