@@ -37,6 +37,8 @@ export function useProverWorker({
 
     const pendingRequests = pending.current;
     const worker = new Worker(
+      // Match the worker policy path in next.config.js.
+      /* webpackEntryOptions: { filename: "static/chunks/proof-worker/[contenthash].js" } */
       new URL("./workers/break-glass.worker.ts", import.meta.url),
       { type: "module" },
     );

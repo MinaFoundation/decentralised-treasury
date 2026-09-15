@@ -1,3 +1,4 @@
+import "./lib/prover-backend.js";
 import { Command } from "commander";
 import { fileURLToPath } from "node:url";
 import stakingLedgerCommandFactory from "./commands/staking-ledger.js";

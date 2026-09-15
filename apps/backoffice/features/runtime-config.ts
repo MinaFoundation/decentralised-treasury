@@ -1,6 +1,7 @@
 import { createElement } from "react";
 
 export interface BackofficeRuntimeConfig {
+  proofsEnabled?: boolean;
   buildSha: string;
   networkId: string;
   apiUrl: string;
@@ -83,13 +84,22 @@ function readConfig(env: RuntimeEnv): BackofficeRuntimeConfig {
     const value = definition.names
       .map((name) => env[name])
       .find((candidate) => candidate?.trim());
-    result[key] = value ?? ("fallback" in definition ? definition.fallback : undefined);
+    result[key] =
+      value ?? ("fallback" in definition ? definition.fallback : undefined);
   }
-  return result as unknown as BackofficeRuntimeConfig;
+  const mode = env.NEXT_PUBLIC_PROOFS_ENABLED ?? env.PROOFS_ENABLED ?? "true";
+  if (mode !== "true" && mode !== "false") {
+    throw new Error("PROOFS_ENABLED must be exactly true or false.");
+  }
+  return {
+    ...result,
+    proofsEnabled: mode === "true",
+  } as unknown as BackofficeRuntimeConfig;
 }
 
 function readBuildTimeEnv(): RuntimeEnv {
   return {
+    NEXT_PUBLIC_PROOFS_ENABLED: process.env.NEXT_PUBLIC_PROOFS_ENABLED,
     NEXT_PUBLIC_BUILD_SHA: process.env.NEXT_PUBLIC_BUILD_SHA,
     NEXT_PUBLIC_NETWORK_ID: process.env.NEXT_PUBLIC_NETWORK_ID,
     NEXT_PUBLIC_TREASURY_API_URL: process.env.NEXT_PUBLIC_TREASURY_API_URL,

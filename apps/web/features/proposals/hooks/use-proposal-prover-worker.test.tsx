@@ -29,6 +29,38 @@ describe("useProposalProverWorker", () => {
     vi.unstubAllGlobals();
   });
 
+  it.each([false, true])(
+    "passes proof mode %s to every transaction request",
+    async (mode) => {
+      const { result } = renderHook(() => useProposalProverWorker(mode));
+      const requests = [
+        (signal: AbortSignal) =>
+          result.current.proveTransactionJson("{}", signal),
+        (signal: AbortSignal) =>
+          result.current.buildAndProveCreateProposal({} as never, signal),
+        (signal: AbortSignal) =>
+          result.current.buildAndProveVoteProposal({} as never, signal),
+        (signal: AbortSignal) =>
+          result.current.buildAndProveExecuteProposal({} as never, signal),
+      ];
+      for (const request of requests) {
+        const controller = new AbortController();
+        let promise!: Promise<unknown>;
+        act(() => {
+          promise = request(controller.signal);
+        });
+        const worker = MockWorker.instances.at(-1)!;
+        expect(worker.postMessage).toHaveBeenLastCalledWith(
+          expect.objectContaining({ proofsEnabled: mode }),
+        );
+        await act(async () => {
+          controller.abort();
+          await expect(promise).rejects.toMatchObject({ name: "AbortError" });
+        });
+      }
+    },
+  );
+
   it("terminates and recreates the worker when a request is aborted", async () => {
     const { result } = renderHook(() => useProposalProverWorker(true));
     const controller = new AbortController();

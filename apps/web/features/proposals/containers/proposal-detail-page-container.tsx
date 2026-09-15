@@ -11,6 +11,7 @@ import { useAppShellStore } from "../../app-shell/store/app-shell-store";
 import { useEndpointSettingsState } from "../../endpoint-settings/store/endpoint-settings-store.selectors";
 import { useMinaBlockStore } from "../../mina-blocks/store/mina-block-store";
 import { getRuntimeConfig } from "../../runtime-config/lib/get-runtime-config";
+import { resolveProofsEnabled as parseProofsEnabled } from "../../runtime-config/lib/resolve-proofs-enabled";
 import { useTreasuryState } from "../../treasury/store/treasury-store.selectors";
 import { useWalletSession } from "../../treasury-header/hooks/use-wallet-session";
 import {
@@ -273,7 +274,7 @@ function logWalletSubmissionTransaction(
 
 function resolveProofsEnabled(): boolean {
   const rawValue = getRuntimeConfig().proofsEnabled;
-  const resolved = rawValue !== "false";
+  const resolved = parseProofsEnabled(rawValue);
   console.info("[proposal-prover][config] proposal detail proofs flag", {
     rawValue,
     resolved,

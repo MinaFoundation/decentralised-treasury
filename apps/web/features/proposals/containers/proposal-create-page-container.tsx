@@ -16,6 +16,7 @@ import { Skeleton } from "@repo/ui/components/ui/skeleton";
 import { useAppShellStore } from "../../app-shell/store/app-shell-store";
 import { useEndpointSettingsState } from "../../endpoint-settings/store/endpoint-settings-store.selectors";
 import { getRuntimeConfig } from "../../runtime-config/lib/get-runtime-config";
+import { resolveProofsEnabled as parseProofsEnabled } from "../../runtime-config/lib/resolve-proofs-enabled";
 import { useProposalDrafts } from "../hooks/use-proposal-drafts";
 import { useProposalProverWorker } from "../hooks/use-proposal-prover-worker";
 import { submitProposalContents } from "../lib/proposal-content-submission";
@@ -94,7 +95,7 @@ function logWalletSubmissionTransaction(
 
 function resolveProofsEnabled(): boolean {
   const rawValue = getRuntimeConfig().proofsEnabled;
-  const resolved = rawValue !== "false";
+  const resolved = parseProofsEnabled(rawValue);
   console.info("[proposal-prover][config] create proposal proofs flag", {
     rawValue,
     resolved,

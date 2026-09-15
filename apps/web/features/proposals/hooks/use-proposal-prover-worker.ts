@@ -263,7 +263,7 @@ export function useProposalProverWorker(proofsEnabled: boolean) {
         {
           type: "proveTransactionJson",
           transactionJson,
-          proofsEnabled: true,
+          proofsEnabled,
         },
         signal,
       );
@@ -277,7 +277,7 @@ export function useProposalProverWorker(proofsEnabled: boolean) {
       }
       return response.transactionJson;
     },
-    [sendRequest],
+    [proofsEnabled, sendRequest],
   );
 
   const buildAndProveCreateProposal = useCallback(
@@ -292,7 +292,7 @@ export function useProposalProverWorker(proofsEnabled: boolean) {
         {
           type: "buildAndProveCreateProposal",
           input,
-          proofsEnabled: true,
+          proofsEnabled,
         },
         signal,
       );
@@ -313,7 +313,7 @@ export function useProposalProverWorker(proofsEnabled: boolean) {
         provedTransactionJson: response.transactionJson,
       };
     },
-    [sendRequest],
+    [proofsEnabled, sendRequest],
   );
 
   const buildAndProveVoteProposal = useCallback(
@@ -328,7 +328,7 @@ export function useProposalProverWorker(proofsEnabled: boolean) {
         {
           type: "buildAndProveVoteProposal",
           input,
-          proofsEnabled: true,
+          proofsEnabled,
         },
         signal,
       );
@@ -349,7 +349,7 @@ export function useProposalProverWorker(proofsEnabled: boolean) {
         provedTransactionJson: response.transactionJson,
       };
     },
-    [sendRequest],
+    [proofsEnabled, sendRequest],
   );
 
   const buildAndProveExecuteProposal = useCallback(
@@ -364,7 +364,7 @@ export function useProposalProverWorker(proofsEnabled: boolean) {
         {
           type: "buildAndProveExecuteProposal",
           input,
-          proofsEnabled: true,
+          proofsEnabled,
         },
         signal,
       );
@@ -385,7 +385,7 @@ export function useProposalProverWorker(proofsEnabled: boolean) {
         provedTransactionJson: response.transactionJson,
       };
     },
-    [sendRequest],
+    [proofsEnabled, sendRequest],
   );
 
   return {

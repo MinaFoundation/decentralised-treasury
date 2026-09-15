@@ -3,6 +3,7 @@ import {
   hashMarkdownContentToZkappUri,
 } from "@repo/sdk/src/utils/proposal-content-hash.js";
 import { getRuntimeConfig } from "../../runtime-config/lib/get-runtime-config";
+import { resolveProofsEnabled } from "../../runtime-config/lib/resolve-proofs-enabled";
 import { resolveMinaNetworkId } from "../../endpoint-settings/lib/mina-network-id";
 
 const MINA_DECIMALS = 1_000_000_000n;
@@ -550,6 +551,10 @@ export async function buildAndProveCreateProposalTransactionInCurrentThread(
   console.info("[proposal-prover][create] prove begin", {
     proposalPublicKey: constructed.preparedTransaction.proposalPublicKey,
   });
+  constructed.transaction = await applyTransactionProofMode(
+    constructed.transaction,
+    options,
+  );
   await constructed.transaction.prove();
   const provedAt = Date.now();
   console.info("[proposal-prover][create] prove complete", {
@@ -799,6 +804,10 @@ export async function buildAndProveVoteProposalTransactionInCurrentThread(
     input,
     options,
   );
+  constructed.transaction = await applyTransactionProofMode(
+    constructed.transaction,
+    options,
+  );
   await constructed.transaction.prove();
   const provedUnsignedTransactionJson = normalizeSerializedTransactionJson(
     constructed.transaction.toJSON(),
@@ -950,6 +959,10 @@ export async function buildAndProveExecuteProposalTransactionInCurrentThread(
     input,
     options,
   );
+  constructed.transaction = await applyTransactionProofMode(
+    constructed.transaction,
+    options,
+  );
   await constructed.transaction.prove();
   const provedUnsignedTransactionJson = normalizeSerializedTransactionJson(
     constructed.transaction.toJSON(),
@@ -1083,12 +1096,38 @@ async function constructExecuteProposalTransactionInCurrentThread(
   };
 }
 
+async function applyTransactionProofMode(
+  original: any,
+  options?: ProposalProverOptions,
+): Promise<any> {
+  const proofsEnabled =
+    options?.proofsEnabled ??
+    resolveProofsEnabled(getRuntimeConfig().proofsEnabled);
+  const { o1js } = await getProposalModules();
+  o1js.Mina.activeInstance.proofsEnabled = proofsEnabled;
+  console.info("[proposal-prover][runtime] effective transaction proof mode", {
+    proofsEnabled,
+  });
+  if (proofsEnabled) return original;
+  // Mina.Network captures true during construction. fromJSON reads the active
+  // flag. Keep the original lazy authorizations to produce local dummy proofs.
+  const transaction = o1js.Mina.Transaction.fromJSON(original.toJSON());
+  transaction.transaction.feePayer.lazyAuthorization =
+    original.transaction.feePayer.lazyAuthorization;
+  original.transaction.accountUpdates.forEach((update: any, index: number) => {
+    transaction.transaction.accountUpdates[index].lazyAuthorization =
+      update.lazyAuthorization;
+  });
+  return transaction;
+}
+
 export async function proveTransactionJsonInCurrentThread(
   transactionJson: string,
   options?: ProposalProverOptions,
 ): Promise<string> {
-  void options;
-  const proofsEnabled = true;
+  const proofsEnabled =
+    options?.proofsEnabled ??
+    resolveProofsEnabled(getRuntimeConfig().proofsEnabled);
   console.info("[proposal-prover][config] runtime prove proofs flag", {
     rawValue: getRuntimeConfig().proofsEnabled,
     resolved: proofsEnabled,
@@ -1096,6 +1135,7 @@ export async function proveTransactionJsonInCurrentThread(
   await compileProposalContractsInCurrentThread({ proofsEnabled });
   try {
     const { o1js } = await getProposalModules();
+    o1js.Mina.activeInstance.proofsEnabled = proofsEnabled;
     const transaction = await o1js.Mina.Transaction.fromJSON(transactionJson);
     logTransactionAuthorizationSummary("before prove", transactionJson);
     await transaction.prove();

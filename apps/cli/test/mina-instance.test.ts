@@ -8,6 +8,21 @@ import {
 import { createProgram } from "../src/cli.js";
 
 describe("Mina CLI network configuration", () => {
+  it("disables transaction proofs only for explicit PROOFS_ENABLED=false", () => {
+    const original = process.env.PROOFS_ENABLED;
+    try {
+      for (const value of [undefined, "true", "false", "FALSE", ""] as const) {
+        if (value === undefined) delete process.env.PROOFS_ENABLED;
+        else process.env.PROOFS_ENABLED = value;
+        configureMinaNetwork("http://127.0.0.1:8080/graphql", "testnet");
+        assert.equal(Mina.getProofsEnabled(), value !== "false");
+      }
+    } finally {
+      if (original === undefined) delete process.env.PROOFS_ENABLED;
+      else process.env.PROOFS_ENABLED = original;
+    }
+  });
+
   it("sets the explicit o1js signature network", () => {
     configureMinaNetwork("http://127.0.0.1:8080/graphql", "mainnet");
     assert.equal(Mina.getNetworkId(), "mainnet");

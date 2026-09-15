@@ -12,14 +12,19 @@ function readPort(value: string | undefined, fallback: number): number {
 
 const port = readPort(process.env.MINA_NODE_PORT, 8180);
 const host = process.env.MINA_NODE_HOST ?? "127.0.0.1";
-const proofsEnabled = process.env.PROOFS_ENABLED === "true";
+const proofMode = process.env.PROOFS_ENABLED ?? "false";
+if (proofMode !== "false" && proofMode !== "true") {
+  throw new Error("PROOFS_ENABLED must be exactly false or true");
+}
+const proofsEnabled = proofMode === "true";
 const archivePortRaw = process.env.MINA_ARCHIVE_PORT;
 const baseUrl = `http://${host}:${port}`;
 const archivePort =
   archivePortRaw && Number.isFinite(Number.parseInt(archivePortRaw, 10))
     ? Number.parseInt(archivePortRaw, 10)
     : null;
-const archiveBaseUrl = archivePort === null ? null : `http://${host}:${archivePort}`;
+const archiveBaseUrl =
+  archivePort === null ? null : `http://${host}:${archivePort}`;
 
 const server = await createLocalBlockchainHttpServer({
   host,
@@ -47,7 +52,9 @@ console.log(`[local-blockchain] admin state: ${baseUrl}/admin/state`);
 console.log(`[local-blockchain] health: ${baseUrl}/healthz`);
 if (archiveBaseUrl) {
   console.log(`[local-blockchain] archive url: ${archiveBaseUrl}`);
-  console.log(`[local-blockchain] archive graphql url: ${archiveBaseUrl}/graphql`);
+  console.log(
+    `[local-blockchain] archive graphql url: ${archiveBaseUrl}/graphql`,
+  );
 }
 console.log(`[local-blockchain] proofs enabled: ${String(proofsEnabled)}`);
 console.log(`[local-blockchain] network id: ${server.runtime.getNetworkId()}`);

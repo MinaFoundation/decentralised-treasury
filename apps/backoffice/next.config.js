@@ -7,8 +7,11 @@ const uiSourceDir = path.resolve(appDir, "../../packages/ui/src");
 const sdkSourceDir = path.resolve(appDir, "../../packages/sdk/src");
 const developmentScriptSource =
   process.env.NODE_ENV === "development" ? " 'unsafe-eval'" : "";
+const contentSecurityPolicy = (scriptSource) =>
+  `default-src 'self'; connect-src 'self' http: https:; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'${scriptSource}; style-src 'self' 'unsafe-inline'; img-src 'self' data:; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; frame-ancestors 'none'`;
 
 const nextConfig = {
+  distDir: process.env.BACKOFFICE_BUILD_DIR ?? ".next",
   output: "standalone",
   outputFileTracingRoot: path.resolve(appDir, "../.."),
   async headers() {
@@ -20,8 +23,19 @@ const nextConfig = {
           { key: "Cross-Origin-Embedder-Policy", value: "require-corp" },
           {
             key: "Content-Security-Policy",
-            value:
-              `default-src 'self'; connect-src 'self' http: https:; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'${developmentScriptSource}; style-src 'self' 'unsafe-inline'; img-src 'self' data:; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; frame-ancestors 'none'`,
+            value: contentSecurityPolicy(developmentScriptSource),
+          },
+        ],
+      },
+      {
+        // o1js loads its JavaScript bindings with new Function(). The worker
+        // response sets its policy, including for its nested blob workers.
+        // Keep this exception separate from the page policy.
+        source: "/_next/static/chunks/proof-worker/:path*",
+        headers: [
+          {
+            key: "Content-Security-Policy",
+            value: contentSecurityPolicy(" 'unsafe-eval'"),
           },
         ],
       },
@@ -50,6 +64,7 @@ const nextConfig = {
                   experimentalDecorators: true,
                   emitDecoratorMetadata: true,
                   useDefineForClassFields: false,
+                  sourceMap: process.env.E2E_BROWSER_COVERAGE === "true",
                 },
               },
             },
