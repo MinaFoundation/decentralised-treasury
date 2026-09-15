@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import {
+  act,
   cleanup,
   fireEvent,
   render,
@@ -307,6 +308,239 @@ describe("TreasuryTransactionFlowDialog", () => {
     });
     expect(await screen.findByRole("button", { name: "Done" })).toBeTruthy();
   });
+
+  it.each([
+    { failures: 1, rerender: false },
+    { failures: 2, rerender: true },
+  ])(
+    "retries only content after $failures upload failures (rerender=$rerender)",
+    async ({ failures, rerender }) => {
+      const result = { hash: "5JuIncludedOnce", blockHeight: 42 };
+      const onCompile = vi.fn().mockResolvedValue(undefined);
+      const onProve = vi.fn().mockResolvedValue(undefined);
+      const onSignAndSend = vi.fn().mockResolvedValue({ hash: result.hash });
+      const onWaitForInclusion = vi.fn().mockResolvedValue(result);
+      const onPostInclusion = vi.fn();
+      for (let attempt = 0; attempt < failures; attempt += 1) {
+        onPostInclusion.mockRejectedValueOnce(
+          new Error("Content upload unavailable."),
+        );
+      }
+      onPostInclusion.mockResolvedValue(undefined);
+      const updatedOnPostInclusion = vi.fn().mockResolvedValue(undefined);
+      const onComplete = vi.fn();
+      const props = {
+        open: true,
+        onOpenChange: () => {},
+        kind: "createProposal" as const,
+        senderAddress: "B62qOriginalSender",
+        defaultFee: "0.2",
+        defaultNonce: "12",
+        defaultMemo: "original draft",
+        onCompile,
+        onProve,
+        onSignAndSend,
+        onWaitForInclusion,
+        onPostInclusion,
+        onComplete,
+      };
+      const view = render(<TreasuryTransactionFlowDialog {...props} />);
+
+      fireEvent.click(screen.getByRole("button", { name: /sign and send/i }));
+      for (let attempt = 0; attempt < failures; attempt += 1) {
+        await screen.findByRole("button", { name: "Try again" });
+        expect(onComplete).not.toHaveBeenCalled();
+        if (rerender) {
+          view.rerender(
+            <TreasuryTransactionFlowDialog
+              {...props}
+              senderAddress="B62qChangedSender"
+              onPostInclusion={updatedOnPostInclusion}
+            />,
+          );
+        }
+        fireEvent.click(screen.getByRole("button", { name: "Try again" }));
+        await waitFor(() =>
+          expect(onPostInclusion).toHaveBeenCalledTimes(attempt + 2),
+        );
+      }
+
+      await waitFor(() =>
+        expect(onComplete).toHaveBeenCalledExactlyOnceWith(result),
+      );
+      expect(onCompile).toHaveBeenCalledTimes(1);
+      expect(onProve).toHaveBeenCalledTimes(1);
+      expect(onSignAndSend).toHaveBeenCalledTimes(1);
+      expect(onWaitForInclusion).toHaveBeenCalledTimes(1);
+      expect(updatedOnPostInclusion).not.toHaveBeenCalled();
+      for (const [context] of onPostInclusion.mock.calls) {
+        expect(context).toMatchObject({
+          ...result,
+          senderAddress: props.senderAddress,
+          fee: "0.2",
+          nonce: 12,
+          memo: "original draft",
+        });
+      }
+    },
+  );
+
+  it.each([
+    ["onCompile", "Compilation failed"],
+    ["onProve", "Proof generation failed"],
+    ["onSignAndSend", "Sign & send failed"],
+    ["onWaitForInclusion", "Inclusion check failed"],
+    ["onPostInclusion", "Content posting failed"],
+  ] as const)(
+    "labels a fast %s failure without running later stages",
+    async (stage, title) => {
+      const callbacks = {
+        onCompile: vi.fn().mockResolvedValue(undefined),
+        onProve: vi.fn().mockResolvedValue(undefined),
+        onSignAndSend: vi.fn().mockResolvedValue({ hash: "5JuIncludedOnce" }),
+        onWaitForInclusion: vi
+          .fn()
+          .mockResolvedValue({ hash: "5JuIncludedOnce", blockHeight: 42 }),
+        onPostInclusion: vi.fn().mockResolvedValue(undefined),
+      };
+      callbacks[stage].mockRejectedValueOnce(new Error("Immediate failure."));
+      const onComplete = vi.fn();
+      render(
+        <TreasuryTransactionFlowDialog
+          open
+          onOpenChange={() => {}}
+          kind="createProposal"
+          senderAddress="B62qOriginalSender"
+          {...callbacks}
+          onComplete={onComplete}
+        />,
+      );
+
+      fireEvent.click(screen.getByRole("button", { name: /sign and send/i }));
+      expect(await screen.findByText(title)).toBeTruthy();
+      const failedIndex = Object.keys(callbacks).indexOf(stage);
+      Object.values(callbacks).forEach((callback, index) => {
+        expect(callback).toHaveBeenCalledTimes(index <= failedIndex ? 1 : 0);
+      });
+      expect(onComplete).not.toHaveBeenCalled();
+    },
+  );
+
+  it.each(["Close button", "controlled close"])(
+    "clears content retry before a new proposal after %s",
+    async (closeMethod) => {
+      const onCompile = vi.fn().mockResolvedValue(undefined);
+      const onProve = vi.fn().mockResolvedValue(undefined);
+      const onSignAndSend = vi
+        .fn()
+        .mockResolvedValueOnce({ hash: "5JuOldProposal" })
+        .mockResolvedValue({ hash: "5JuNewProposal" });
+      const onWaitForInclusion = vi.fn(async ({ hash }: { hash?: string }) => ({
+        hash,
+        blockHeight: 42,
+      }));
+      const oldPostContent = vi
+        .fn()
+        .mockRejectedValue(new Error("Old upload failed."));
+      const newPostContent = vi.fn().mockResolvedValue(undefined);
+      const onComplete = vi.fn();
+      const props = {
+        open: true,
+        onOpenChange: () => {},
+        kind: "createProposal" as const,
+        senderAddress: "B62qOldSender",
+        onCompile,
+        onProve,
+        onSignAndSend,
+        onWaitForInclusion,
+        onPostInclusion: oldPostContent,
+        onComplete,
+      };
+      const view = render(<TreasuryTransactionFlowDialog {...props} />);
+      fireEvent.click(screen.getByRole("button", { name: /sign and send/i }));
+      await screen.findByRole("button", { name: "Try again" });
+      if (closeMethod === "Close button") {
+        fireEvent.click(screen.getByRole("button", { name: "Close" }));
+      }
+      view.rerender(<TreasuryTransactionFlowDialog {...props} open={false} />);
+      view.rerender(
+        <TreasuryTransactionFlowDialog
+          {...props}
+          senderAddress="B62qNewSender"
+          onPostInclusion={newPostContent}
+        />,
+      );
+      fireEvent.click(screen.getByRole("button", { name: /sign and send/i }));
+
+      await waitFor(() =>
+        expect(onComplete).toHaveBeenCalledExactlyOnceWith({
+          hash: "5JuNewProposal",
+          blockHeight: 42,
+        }),
+      );
+      expect(onCompile).toHaveBeenCalledTimes(2);
+      expect(onProve).toHaveBeenCalledTimes(2);
+      expect(onSignAndSend).toHaveBeenCalledTimes(2);
+      expect(onWaitForInclusion).toHaveBeenCalledTimes(2);
+      expect(oldPostContent).toHaveBeenCalledTimes(1);
+      expect(newPostContent).toHaveBeenCalledExactlyOnceWith(
+        expect.objectContaining({
+          hash: "5JuNewProposal",
+          senderAddress: "B62qNewSender",
+        }),
+      );
+    },
+  );
+
+  it.each(["initial submission", "content retry"])(
+    "ignores same-tick repeat clicks during %s",
+    async (phase) => {
+      let release!: () => void;
+      const held = new Promise<void>((resolve) => {
+        release = resolve;
+      });
+      const onCompile = vi.fn(() =>
+        phase === "initial submission" ? held : Promise.resolve(),
+      );
+      const onSignAndSend = vi
+        .fn()
+        .mockResolvedValue({ hash: "5JuIncludedOnce" });
+      const onPostInclusion = vi.fn().mockResolvedValue(undefined);
+      if (phase === "content retry") {
+        onPostInclusion
+          .mockRejectedValueOnce(new Error("Upload failed."))
+          .mockImplementation(() => held);
+      }
+      const onComplete = vi.fn();
+      render(
+        <TreasuryTransactionFlowDialog
+          open
+          onOpenChange={() => {}}
+          kind="createProposal"
+          senderAddress="B62qSender"
+          onCompile={onCompile}
+          onSignAndSend={onSignAndSend}
+          onPostInclusion={onPostInclusion}
+          onComplete={onComplete}
+        />,
+      );
+      let button = screen.getByRole("button", { name: /sign and send/i });
+      if (phase === "content retry") {
+        fireEvent.click(button);
+        button = await screen.findByRole("button", { name: "Try again" });
+      }
+      await act(async () => {
+        button.click();
+        button.click();
+      });
+      expect(onCompile).toHaveBeenCalledTimes(1);
+      if (phase === "content retry")
+        expect(onPostInclusion).toHaveBeenCalledTimes(2);
+      release();
+      await waitFor(() => expect(onComplete).toHaveBeenCalledTimes(1));
+      expect(onSignAndSend).toHaveBeenCalledTimes(1);
+    },
+  );
 
   it("auto closes after completion when configured", async () => {
     const onOpenChange = vi.fn();

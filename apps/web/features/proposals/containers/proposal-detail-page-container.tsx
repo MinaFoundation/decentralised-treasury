@@ -1038,6 +1038,7 @@ export function ProposalDetailPageContainer({
               activePreparedVote.provedTransactionJson,
             );
             const hash = await signAndSubmitZkapp({
+              onSigningReview: context.onSigningReview,
               minaNodeUrl: voteSession.minaNodeUrl,
               networkId: settings.value.networkId ?? "DEVNET",
               transactionJson: activePreparedVote.provedTransactionJson,
@@ -1159,6 +1160,7 @@ export function ProposalDetailPageContainer({
               activePreparedExecution.provedTransactionJson,
             );
             const hash = await signAndSubmitZkapp({
+              onSigningReview: context.onSigningReview,
               minaNodeUrl: executeSession.minaNodeUrl,
               networkId: settings.value.networkId ?? "DEVNET",
               transactionJson: activePreparedExecution.provedTransactionJson,

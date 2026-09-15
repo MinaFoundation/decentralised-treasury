@@ -129,12 +129,21 @@ describe("backoffice action button loading states", () => {
           workflowRole: "signer",
           busy: "Waiting for Ledger participant 1",
           pendingAction: "sign",
+          signingReview: {
+            wallet: "ledger",
+            hash: "0".repeat(62) + "14",
+            publicKey: participants[0]!,
+            accountIndex: 3,
+          },
         },
       },
       ledgerSession,
     );
 
     expectLoadingButton("Waiting for Ledger participant 1");
+    expect(screen.getByLabelText("Ledger signing hash").textContent).toBe(
+      "0".repeat(62) + "14",
+    );
   });
 
   it("shows each submission stage on the submit button", () => {
@@ -156,6 +165,106 @@ describe("backoffice action button loading states", () => {
     );
 
     expectLoadingButton("Building proof");
+    expect(screen.queryByLabelText("Ledger signing hash")).toBeNull();
+  });
+});
+
+describe("completed key rotation", () => {
+  afterEach(cleanup);
+
+  it("keeps receipt downloads after commitment mismatch and does not permit old-key authorization", () => {
+    const rotatedOperation: OperationPackage = {
+      ...operation,
+      kind: "rotateMultisig",
+      nextParticipants: ["new-1", "new-2", "new-3", "new-4", "new-5"],
+      nextMultisigCommitment: "30",
+    };
+    renderPreview(
+      {
+        status: {
+          ...status,
+          participantCommitmentMatches: false,
+          onChainCommitment: "30",
+          controllerNonce: "3",
+        },
+        loading: false,
+        activeOperation: "rotateMultisig",
+        dialog: {
+          receipt: {
+            schemaVersion: 1,
+            operation: rotatedOperation,
+            feePayer: "payer",
+            transactionHash: "included-rotation",
+            includedAtBlock: 101,
+            completedAt: "2026-09-14T00:00:00.000Z",
+          },
+        },
+      },
+      auroSession,
+    );
+
+    expect(
+      screen.getByText("Participant commitment mismatch", { exact: true }),
+    ).toBeVisible();
+    expect(
+      screen.getByText("Transaction included", { exact: true }),
+    ).toBeVisible();
+    expect(
+      screen.getByRole("button", { name: "Download receipt" }),
+    ).toBeEnabled();
+    expect(
+      screen.getByRole("button", { name: "Download new key set" }),
+    ).toBeEnabled();
+    for (const name of [
+      "Pause treasury",
+      "Toggle proposal pause",
+      "Rotate multisig keys",
+    ])
+      expect(screen.getByRole("tab", { name })).toBeDisabled();
+    expect(
+      screen.queryByRole("button", { name: "Prove and submit" }),
+    ).toBeNull();
+    expect(
+      screen.queryByRole("button", { name: "Sign with Ledger" }),
+    ).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "Start new bundle" }));
+    expect(
+      screen.queryByRole("button", { name: "Build signing bundle" }),
+    ).toBeNull();
+    expect(
+      screen.queryByRole("button", { name: "Prove and submit" }),
+    ).toBeNull();
+    expect(
+      screen.getByText("Participant commitment mismatch", { exact: true }),
+    ).toBeVisible();
+  });
+
+  it("does not expose an unfinished rotation when configured participants mismatch", () => {
+    renderPreview(
+      {
+        status: { ...status, participantCommitmentMatches: false },
+        loading: false,
+        activeOperation: "rotateMultisig",
+        dialog: {
+          operation: {
+            ...operation,
+            kind: "rotateMultisig",
+            signatures: ["one", "two", "three", null, null],
+          },
+          validSignatures: [true, true, true, false, false],
+        },
+      },
+      auroSession,
+    );
+    expect(
+      screen.getByText("Participant commitment mismatch", { exact: true }),
+    ).toBeVisible();
+    expect(
+      screen.queryByRole("button", { name: "Prove and submit" }),
+    ).toBeNull();
+    expect(
+      screen.queryByRole("button", { name: "Download new key set" }),
+    ).toBeNull();
   });
 });
 

@@ -598,6 +598,19 @@ export async function verifyOperationPackage(
       "The signing bundle is stale or belongs to another deployment.",
     );
   }
+  await assertOperationMessageHash(operation);
+}
+
+/** Verify that the signed field matches the operation shown to the signer. */
+export async function assertOperationMessageHash(
+  operation: OperationPackage,
+): Promise<void> {
+  if (
+    (await calculateCommitment(operation.participants)) !==
+    operation.multisigCommitment
+  ) {
+    throw new Error("The participant commitment is invalid.");
+  }
   const [o1js, multisigModule] = await Promise.all([
     import("o1js"),
     import("@repo/sdk/src/provable/contracts/treasury-pause-controller/multisig-signatures.js"),

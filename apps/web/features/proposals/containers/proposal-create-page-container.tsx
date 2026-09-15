@@ -299,9 +299,15 @@ export function ProposalCreatePageContainer({
     setDialogOpen(true);
   };
 
-  if (!settings.hydrated) {
+  // The dialog captures its callbacks before compilation. Do not let it start
+  // with an unresolved lifecycle, even if the first snapshot arrives later.
+  const waitingForLifecycle = hasRequiredConfig && resolvedLifecycleId == null;
+  if (!settings.hydrated || waitingForLifecycle) {
     return (
-      <section className="space-y-4">
+      <section className="space-y-4" aria-busy="true">
+        {waitingForLifecycle ? (
+          <p role="status">Loading treasury lifecycle...</p>
+        ) : null}
         <Skeleton className="h-8 w-48" />
         <Skeleton className="h-[48rem] w-full" />
       </section>
@@ -414,6 +420,7 @@ export function ProposalCreatePageContainer({
               preparedFlowRef.current.provedTransactionJson,
             );
             const hash = await signAndSubmitZkapp({
+              onSigningReview: context.onSigningReview,
               minaNodeUrl: settings.value.minaNodeUrl,
               networkId: settings.value.networkId ?? "DEVNET",
               transactionJson: preparedFlowRef.current.provedTransactionJson,

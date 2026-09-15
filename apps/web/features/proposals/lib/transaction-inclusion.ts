@@ -34,6 +34,10 @@ const BEST_CHAIN_ZKAPP_HASHES_QUERY = `
       transactions {
         zkappCommands {
           hash
+          failureReason {
+            index
+            failures
+          }
         }
       }
     }
@@ -44,7 +48,10 @@ interface BestChainZkappHashesResponse {
   data?: {
     bestChain?: Array<{
       transactions?: {
-        zkappCommands?: Array<{ hash?: string | null } | null> | null;
+        zkappCommands?: Array<{
+          hash?: string | null;
+          failureReason?: Array<{ index?: number; failures?: string[] }> | null;
+        } | null> | null;
       } | null;
     } | null> | null;
   };
@@ -103,13 +110,23 @@ async function isZkappTransactionIncluded(
     );
   }
 
-  return Boolean(
-    payload.data?.bestChain?.some((block) =>
-      block?.transactions?.zkappCommands?.some(
-        (command) => command?.hash === transactionHash,
-      ),
-    ),
-  );
+  for (const block of payload.data?.bestChain ?? []) {
+    const command = block?.transactions?.zkappCommands?.find(
+      (candidate) => candidate?.hash === transactionHash,
+    );
+    if (!command) continue;
+    if (command.failureReason?.length) {
+      const failures = command.failureReason
+        .map(
+          (reason) =>
+            `${reason.index ?? "?"}: ${(reason.failures ?? []).join(", ")}`,
+        )
+        .join("; ");
+      throw new Error(`Transaction failed on chain: ${failures}`);
+    }
+    return true;
+  }
+  return false;
 }
 
 export async function waitForTransactionInclusion(

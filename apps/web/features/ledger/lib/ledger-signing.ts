@@ -5,6 +5,7 @@ import { Field, PublicKey, Transaction, type NetworkId } from "o1js";
 import {
   signFieldWithLedgerClient,
   signTransactionWithLedgerClient,
+  type LedgerSigningProgressHandler,
 } from "@repo/sdk/src/signing/ledger-signing.js";
 
 type BrowserLedgerTransport = ConstructorParameters<
@@ -62,12 +63,12 @@ export function isLedgerBrowserSupported(): boolean {
   if (typeof window === "undefined" || !window.isSecureContext) {
     return false;
   }
-  return Boolean(
-    (navigator as Navigator & { hid?: unknown }).hid,
-  );
+  return Boolean((navigator as Navigator & { hid?: unknown }).hid);
 }
 
-export async function connectLedgerAccount(accountIndex: number): Promise<string> {
+export async function connectLedgerAccount(
+  accountIndex: number,
+): Promise<string> {
   validateLedgerAccountIndex(accountIndex);
   if (!isLedgerBrowserSupported()) {
     throw new Error(
@@ -88,9 +89,15 @@ export async function connectLedgerAccount(accountIndex: number): Promise<string
 }
 
 /** Sign the authorization slots owned by the selected Ledger account. */
-export async function signTxWithLedger(transaction: {
-  toJSON(): string;
-}, address: string, accountIndex: number, networkId: NetworkId): Promise<ReturnType<typeof Transaction.fromJSON>> {
+export async function signTxWithLedger(
+  transaction: {
+    toJSON(): string;
+  },
+  address: string,
+  accountIndex: number,
+  networkId: NetworkId,
+  onProgress?: LedgerSigningProgressHandler,
+): Promise<ReturnType<typeof Transaction.fromJSON>> {
   validateLedgerAccountIndex(accountIndex);
   const normalizedAddress = PublicKey.fromBase58(address).toBase58();
   return await withLedger((ledger) =>
@@ -99,6 +106,7 @@ export async function signTxWithLedger(transaction: {
       ledger,
       new Map([[normalizedAddress, accountIndex]]),
       networkId,
+      onProgress,
     ),
   );
 }

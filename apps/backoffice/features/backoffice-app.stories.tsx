@@ -389,6 +389,12 @@ export const SignerWaitingForLedger = story({
     workflowRole: "signer",
     busy: "Waiting for Ledger participant 2",
     pendingAction: "sign",
+    signingReview: {
+      wallet: "ledger",
+      hash: BigInt(pauseOperation.messageHash).toString(16).padStart(64, "0"),
+      publicKey: pauseOperation.participants[1]!,
+      accountIndex: 7,
+    },
   },
 });
 

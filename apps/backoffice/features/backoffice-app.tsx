@@ -33,6 +33,8 @@ import {
   CardTitle,
 } from "@repo/ui/components/ui/card";
 import { Input } from "@repo/ui/components/ui/input";
+import { WalletSigningReviewCard } from "@repo/ui/wallet-signing-review";
+import type { WalletSigningReview } from "@repo/ui/wallet-provider";
 import { Tabs, TabsList, TabsTrigger } from "@repo/ui/components/ui/tabs";
 import {
   useWalletSession,
@@ -40,6 +42,7 @@ import {
 } from "@repo/ui/wallet-session-provider";
 import {
   assertOperationPackage,
+  assertOperationMessageHash,
   assertPureSigningOperation,
   createSigningOperation,
   createOperationPackage,
@@ -93,6 +96,7 @@ export interface OperationDialogPreviewState {
   memo?: string;
   busy?: string | null;
   pendingAction?: PendingAction | null;
+  signingReview?: WalletSigningReview | null;
   error?: string | null;
   receipt?: Receipt | null;
   proverError?: string | null;
@@ -493,6 +497,8 @@ function OperationWorkspace({
   onReset,
   onRefresh,
   onWorkflowActiveChange,
+  onCompleted,
+  completedReceipt,
   config,
   currentParticipants,
   preview,
@@ -501,6 +507,8 @@ function OperationWorkspace({
   onReset: () => void;
   onRefresh: () => Promise<TreasuryStatus>;
   onWorkflowActiveChange: (active: boolean) => void;
+  onCompleted: (receipt: Receipt) => void;
+  completedReceipt?: Receipt | null;
   config: BackofficeRuntimeConfig;
   currentParticipants: string[];
   preview?: OperationDialogPreviewState;
@@ -511,12 +519,13 @@ function OperationWorkspace({
     preview?.workflowRole ?? "submitter",
   );
   const { status: proverStatus, send } = useProverWorker({
-    disabled: Boolean(preview) || workflowRole === "signer",
+    disabled: Boolean(preview || completedReceipt) || workflowRole === "signer",
     config,
   });
-  const [operation, setOperation] = useState<OperationPackage | null>(
+  const [pendingOperation, setOperation] = useState<OperationPackage | null>(
     preview?.operation ?? null,
   );
+  const operation = completedReceipt?.operation ?? pendingOperation;
   const [proposalAddress, setProposalAddress] = useState(
     preview?.proposalAddress ?? "",
   );
@@ -535,13 +544,24 @@ function OperationWorkspace({
   const [fee, setFee] = useState(preview?.fee ?? "0.1");
   const [memo, setMemo] = useState(preview?.memo ?? "");
   const [busy, setBusy] = useState<string | null>(preview?.busy ?? null);
+  const [signingReview, setSigningReview] =
+    useState<WalletSigningReview | null>(null);
+  const signingReviewRunRef = useRef(0);
+  useEffect(() => {
+    setSigningReview(null);
+    return () => {
+      signingReviewRunRef.current += 1;
+    };
+  }, [session, kind]);
   const [pendingAction, setPendingAction] = useState<PendingAction | null>(
     preview?.pendingAction ?? null,
   );
   const [error, setError] = useState<string | null>(preview?.error ?? null);
-  const [receipt, setReceipt] = useState<Receipt | null>(
+  const [localReceipt, setReceipt] = useState<Receipt | null>(
     preview?.receipt ?? null,
   );
+  const receipt = completedReceipt ?? localReceipt;
+  const visibleSigningReview = preview ? preview.signingReview : signingReview;
 
   useEffect(() => {
     setOperation(preview?.operation ?? null);
@@ -554,10 +574,7 @@ function OperationWorkspace({
     );
     setWorkflowRole(preview?.workflowRole ?? "submitter");
     setFee(preview?.fee ?? "0.1");
-    setMemo(
-      preview?.memo ??
-        (kind ? `Treasury back office: ${actionLabels[kind]}` : ""),
-    );
+    setMemo(preview?.memo ?? (kind ? `Treasury: ${actionLabels[kind]}` : ""));
     setBusy(preview?.busy ?? null);
     setPendingAction(preview?.pendingAction ?? null);
     setError(preview?.error ?? null);
@@ -662,6 +679,8 @@ function OperationWorkspace({
     const ledgerAccountIndex = getSessionLedgerAccountIndex(session);
     if (signerParticipantIndex < 0 || ledgerAccountIndex === null) return;
     setPendingAction("sign");
+    const signingRunId = ++signingReviewRunRef.current;
+    setSigningReview(null);
     setBusy(`Waiting for Ledger participant ${signerParticipantIndex + 1}`);
     setError(null);
     try {
@@ -669,6 +688,10 @@ function OperationWorkspace({
         operation,
         signerParticipantIndex,
         ledgerAccountIndex,
+        (review) => {
+          if (signingReviewRunRef.current === signingRunId)
+            setSigningReview(review);
+        },
       );
       const signatures = Array.from(
         { length: operation.participants.length },
@@ -682,6 +705,7 @@ function OperationWorkspace({
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : String(cause));
     } finally {
+      if (signingReviewRunRef.current === signingRunId) setSigningReview(null);
       setBusy(null);
       setPendingAction(null);
     }
@@ -704,6 +728,7 @@ function OperationWorkspace({
       }
       if (workflowRole === "signer") {
         const pureOperation = assertPureSigningOperation(imported);
+        await assertOperationMessageHash(pureOperation);
         setOperation(pureOperation);
         setProposalAddress(pureOperation.proposalAddress ?? "");
         setNextParticipants(
@@ -743,6 +768,8 @@ function OperationWorkspace({
     if (!operation || !session) return;
     if (preview) return;
     setPendingAction("submit");
+    const signingRunId = ++signingReviewRunRef.current;
+    setSigningReview(null);
     setBusy("Checking signing bundle");
     setError(null);
     try {
@@ -765,6 +792,10 @@ function OperationWorkspace({
       }
       setBusy(`Waiting for ${session.displayName}`);
       const command = await signZkapp({
+        onSigningReview: (review) => {
+          if (signingReviewRunRef.current === signingRunId)
+            setSigningReview(review);
+        },
         transactionJson: response.transactionJson,
         expectedSenderAddress: session.address,
         minaNodeUrl: config.minaNodeUrl,
@@ -773,6 +804,7 @@ function OperationWorkspace({
         memo,
       });
       setBusy("Submitting transaction");
+      setSigningReview(null);
       const transactionHash = await submitSignedCommand(
         config.minaNodeUrl,
         command,
@@ -782,18 +814,25 @@ function OperationWorkspace({
         config.minaNodeUrl,
         transactionHash,
       );
-      await onRefresh();
-      setReceipt({
+      const completed: Receipt = {
         schemaVersion: 1,
         operation,
         feePayer: session.address,
         transactionHash,
         includedAtBlock,
         completedAt: new Date().toISOString(),
-      });
+      };
+      if (operation.kind === "rotateMultisig") {
+        // A refresh can unmount the old-key workspace. Keep the confirmed receipt in the parent first.
+        onCompleted(completed);
+        setReceipt(completed);
+      }
+      await onRefresh();
+      if (operation.kind !== "rotateMultisig") setReceipt(completed);
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : String(cause));
     } finally {
+      if (signingReviewRunRef.current === signingRunId) setSigningReview(null);
       setBusy(null);
       setPendingAction(null);
     }
@@ -1076,7 +1115,7 @@ function OperationWorkspace({
               value={operation.controllerNonce}
             />
             <StatusRow
-              label="Message hash"
+              label="Message hash (decimal)"
               value={operation.messageHash}
               mono
             />
@@ -1311,6 +1350,10 @@ function OperationWorkspace({
             </div>
           ) : null}
 
+          {session?.providerId === "ledger" && visibleSigningReview ? (
+            <WalletSigningReviewCard review={visibleSigningReview} />
+          ) : null}
+
           {workflowRole === "submitter" &&
           validCount < REQUIRED_SIGNATURE_COUNT ? (
             <div className="text-right text-xs text-muted-foreground">
@@ -1372,6 +1415,12 @@ export function BackofficeApp({
     preview?.activeOperation ?? null,
   );
   const [workflowKey, setWorkflowKey] = useState(0);
+  const [completedRotationReceipt, setCompletedRotationReceipt] =
+    useState<Receipt | null>(
+      preview?.dialog?.receipt?.operation.kind === "rotateMultisig"
+        ? preview.dialog.receipt
+        : null,
+    );
   const [workflowActive, setWorkflowActive] = useState(
     Boolean(preview?.dialog?.operation || preview?.dialog?.receipt),
   );
@@ -1517,11 +1566,12 @@ export function BackofficeApp({
         <div className="h-1 bg-primary" />
         <CardContent className="space-y-6 p-5 sm:p-6">
           {status ? (
-            status.participantCommitmentMatches ? (
+            status.participantCommitmentMatches || completedRotationReceipt ? (
               <OperationWorkspace
                 key={`${selectedOperation}-${workflowKey}`}
                 kind={selectedOperation}
                 onReset={() => {
+                  setCompletedRotationReceipt(null);
                   setWorkflowActive(false);
                   setWorkflowKey((current) => current + 1);
                   setActiveOperation(
@@ -1530,6 +1580,11 @@ export function BackofficeApp({
                 }}
                 onRefresh={refresh}
                 onWorkflowActiveChange={setWorkflowActive}
+                onCompleted={(receipt) => {
+                  if (receipt.operation.kind === "rotateMultisig")
+                    setCompletedRotationReceipt(receipt);
+                }}
+                completedReceipt={completedRotationReceipt}
                 config={config}
                 currentParticipants={status.participants}
                 preview={preview?.dialog}

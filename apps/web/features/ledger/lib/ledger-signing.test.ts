@@ -71,10 +71,11 @@ describe("browser Ledger adapter", () => {
   it("passes only the connected account to transaction signing", async () => {
     const transaction = { toJSON: () => "{}" };
     const signed = { toJSON: () => "signed" };
+    const onProgress = vi.fn();
     mocks.signTransaction.mockResolvedValue(signed);
 
     await expect(
-      signTxWithLedger(transaction, "B62ledger", 7, "devnet"),
+      signTxWithLedger(transaction, "B62ledger", 7, "devnet", onProgress),
     ).resolves.toBe(signed);
 
     expect(mocks.signTransaction).toHaveBeenCalledWith(
@@ -82,6 +83,7 @@ describe("browser Ledger adapter", () => {
       expect.anything(),
       new Map([["B62ledger", 7]]),
       "devnet",
+      onProgress,
     );
     expect(mocks.close).toHaveBeenCalledOnce();
   });

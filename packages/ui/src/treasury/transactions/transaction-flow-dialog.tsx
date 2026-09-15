@@ -28,6 +28,11 @@ import {
   DialogTitle,
 } from "../../components/ui/dialog";
 import { Input } from "../../components/ui/input";
+import { WalletSigningReviewCard } from "../../wallet-signing-review";
+import type {
+  WalletSigningReview,
+  WalletSigningReviewHandler,
+} from "../../wallet/wallet-provider";
 
 type StepStatus = "idle" | "running" | "completed" | "error";
 
@@ -54,6 +59,7 @@ export interface TreasuryTransactionFlowContext {
   nonce?: number;
   memo: string;
   signal: AbortSignal;
+  onSigningReview?: WalletSigningReviewHandler;
 }
 
 export interface TreasuryTransactionSendResult {
@@ -159,10 +165,14 @@ export function TreasuryTransactionFlowDialog({
   const showPostContentStep = typeof onPostInclusion === "function";
   const runIdRef = useRef(0);
   const abortControllerRef = useRef<AbortController | null>(null);
-  const activeStepRef = useRef<TreasuryTransactionFlowStepId | null>(null);
-  const signAndSendPhaseRef = useRef<
-    "compiling" | "proving" | "awaitingSignature" | null
-  >(null);
+  const pendingContentRef = useRef<{
+    context: TreasuryTransactionFlowContext &
+      TreasuryTransactionCompletionResult;
+    result: TreasuryTransactionCompletionResult;
+    postContent: NonNullable<
+      TreasuryTransactionFlowDialogProps["onPostInclusion"]
+    >;
+  } | null>(null);
   const [fee, setFee] = useState(defaultFee);
   const [nonce, setNonce] = useState(defaultNonce);
   const [memo, setMemo] = useState(defaultMemo);
@@ -184,6 +194,8 @@ export function TreasuryTransactionFlowDialog({
     | null
   >(null);
   const [transactionHash, setTransactionHash] = useState<string | null>(null);
+  const [signingReview, setSigningReview] =
+    useState<WalletSigningReview | null>(null);
   const [completion, setCompletion] =
     useState<TreasuryTransactionCompletionResult | null>(null);
   const [notificationDismissed, setNotificationDismissed] = useState(false);
@@ -334,14 +346,6 @@ export function TreasuryTransactionFlowDialog({
     [transactionDetailsCode],
   );
 
-  useEffect(() => {
-    activeStepRef.current = activeStep;
-  }, [activeStep]);
-
-  useEffect(() => {
-    signAndSendPhaseRef.current = signAndSendPhase;
-  }, [signAndSendPhase]);
-
   const emitDeferredCompletionIfNeeded = useCallback((): void => {
     if (!shouldAutoCloseAfterCompletion) {
       return;
@@ -358,6 +362,14 @@ export function TreasuryTransactionFlowDialog({
   }, [shouldAutoCloseAfterCompletion]);
 
   const cancelActiveRun = useCallback((): void => {
+    setSigningReview(null);
+    if (pendingContentRef.current) {
+      pendingContentRef.current = null;
+      setStepStatuses(createInitialStepStatuses());
+      setErrorMessage(null);
+      setFailedStage(null);
+      setTransactionHash(null);
+    }
     const controller = abortControllerRef.current;
     if (!controller) {
       return;
@@ -365,8 +377,6 @@ export function TreasuryTransactionFlowDialog({
     abortControllerRef.current = null;
     controller.abort();
     runIdRef.current += 1;
-    activeStepRef.current = null;
-    signAndSendPhaseRef.current = null;
     setActiveStep(null);
     setSignAndSendPhase(null);
     setStepStatuses(createInitialStepStatuses());
@@ -438,26 +448,27 @@ export function TreasuryTransactionFlowDialog({
     autoCloseRemainingSeconds !== null;
 
   const handleStart = async (): Promise<void> => {
-    if (!canStart || !hasSenderAddress) {
+    if (abortControllerRef.current || !canStart || !hasSenderAddress) {
       return;
     }
 
-    abortControllerRef.current?.abort();
     const abortController = new AbortController();
     abortControllerRef.current = abortController;
     const currentRunId = runIdRef.current + 1;
     runIdRef.current = currentRunId;
+    const pendingContent = pendingContentRef.current;
     setStepStatuses({
       review: "completed",
-      signAndSend: "idle",
-      waitForInclusion: "idle",
+      signAndSend: pendingContent ? "completed" : "idle",
+      waitForInclusion: pendingContent ? "completed" : "idle",
       postContent: "idle",
     });
     setActiveStep(null);
     setSignAndSendPhase(null);
     setErrorMessage(null);
     setFailedStage(null);
-    setTransactionHash(null);
+    if (!pendingContent) setTransactionHash(null);
+    setSigningReview(null);
     setCompletion(null);
     setNotificationDismissed(false);
     setAutoCloseRemainingSeconds(null);
@@ -465,72 +476,112 @@ export function TreasuryTransactionFlowDialog({
     completionRef.current = null;
     completionCallbackInvokedRef.current = false;
 
-    const context: TreasuryTransactionFlowContext = {
-      kind,
-      senderAddress: normalizedSenderAddress,
-      fee: fee.trim(),
-      nonce: parsedNonce ?? undefined,
-      memo: memo.trim(),
-      signal: abortController.signal,
-    };
+    const context: TreasuryTransactionFlowContext = pendingContent
+      ? {
+          ...pendingContent.context,
+          signal: abortController.signal,
+        }
+      : {
+          kind,
+          senderAddress: normalizedSenderAddress,
+          fee: fee.trim(),
+          nonce: parsedNonce ?? undefined,
+          memo: memo.trim(),
+          signal: abortController.signal,
+        };
 
     let signAndSendResult: TreasuryTransactionSendResult = {};
+    let completionResult: TreasuryTransactionCompletionResult =
+      pendingContent?.result ?? {};
+    let failedStageId: NonNullable<typeof failedStage> = "compiling";
 
     try {
-      await runStep({
-        currentRunId,
-        stepId: "signAndSend",
-        setActiveStep,
-        setStepStatuses,
-        onStep: async () => {
-          setSignAndSendPhase("compiling");
-          await onCompile?.(context);
-          if (runIdRef.current !== currentRunId) {
-            return;
-          }
-          setSignAndSendPhase("proving");
-          await onProve?.(context);
-          if (runIdRef.current !== currentRunId) {
-            return;
-          }
-          setSignAndSendPhase("awaitingSignature");
-          signAndSendResult = (await onSignAndSend?.(context)) ?? {};
-          if (signAndSendResult.hash) {
-            setTransactionHash(signAndSendResult.hash);
-          }
-        },
-        runIdRef,
-      });
+      if (!pendingContent) {
+        await runStep({
+          currentRunId,
+          stepId: "signAndSend",
+          setActiveStep,
+          setStepStatuses,
+          onStep: async () => {
+            setSignAndSendPhase("compiling");
+            await onCompile?.(context);
+            if (runIdRef.current !== currentRunId) {
+              return;
+            }
+            setSignAndSendPhase("proving");
+            failedStageId = "proving";
+            await onProve?.(context);
+            if (runIdRef.current !== currentRunId) {
+              return;
+            }
+            setSignAndSendPhase("awaitingSignature");
+            failedStageId = "awaitingSignature";
+            try {
+              signAndSendResult =
+                (await onSignAndSend?.({
+                  ...context,
+                  onSigningReview: (review) => {
+                    if (
+                      runIdRef.current === currentRunId &&
+                      !abortController.signal.aborted
+                    ) {
+                      setSigningReview(review);
+                    }
+                  },
+                })) ?? {};
+            } finally {
+              if (runIdRef.current === currentRunId) setSigningReview(null);
+            }
+            if (runIdRef.current !== currentRunId) return;
+            if (signAndSendResult.hash) {
+              setTransactionHash(signAndSendResult.hash);
+            }
+          },
+          runIdRef,
+        });
 
-      let completionResult: TreasuryTransactionCompletionResult =
-        signAndSendResult;
-      await runStep({
-        currentRunId,
-        stepId: "waitForInclusion",
-        setActiveStep,
-        setStepStatuses,
-        onStep: async () => {
-          completionResult =
-            (await onWaitForInclusion?.({
-              ...context,
-              ...signAndSendResult,
-            })) ?? signAndSendResult;
-        },
-        runIdRef,
-      });
+        completionResult = signAndSendResult;
+        await runStep({
+          currentRunId,
+          stepId: "waitForInclusion",
+          setActiveStep,
+          setStepStatuses,
+          onStep: async () => {
+            failedStageId = "awaitingInclusion";
+            completionResult =
+              (await onWaitForInclusion?.({
+                ...context,
+                ...signAndSendResult,
+              })) ?? signAndSendResult;
+          },
+          runIdRef,
+        });
+      }
 
-      if (onPostInclusion) {
+      if (runIdRef.current !== currentRunId) return;
+
+      const postContent = pendingContent?.postContent ?? onPostInclusion;
+      if (postContent) {
+        // Keep the included transaction and its original content callback.
+        // A content retry must not submit another transaction or use a changed draft.
+        const contentContext = {
+          ...context,
+          ...signAndSendResult,
+          ...completionResult,
+        };
+        pendingContentRef.current = {
+          context: contentContext,
+          result: completionResult,
+          postContent,
+        };
         await runStep({
           currentRunId,
           stepId: "postContent",
           setActiveStep,
           setStepStatuses,
           onStep: async () => {
-            await onPostInclusion({
-              ...context,
-              ...signAndSendResult,
-              ...completionResult,
-            });
+            failedStageId = "postingContent";
+            await postContent(contentContext);
           },
           runIdRef,
         });
@@ -540,6 +591,7 @@ export function TreasuryTransactionFlowDialog({
         return;
       }
 
+      pendingContentRef.current = null;
       setActiveStep(null);
       setSignAndSendPhase(null);
       setCompletion(completionResult);
@@ -565,26 +617,10 @@ export function TreasuryTransactionFlowDialog({
       }
 
       const resolvedError = normalizeError(error);
-      // The active step decides where the failure happened; the sign-and-send
-      // phase only refines *that* step into compiling/proving/awaitingSignature.
-      //
-      // Consulting the phase first was wrong: it is never cleared once the send
-      // succeeds, so it stayed at "awaitingSignature" for the rest of the run and
-      // shadowed the real step. A proposal whose content attachment failed was
-      // reported as "Sign & send failed" for a transaction that had already been
-      // included - inviting the user to retry and create a second proposal, and
-      // pay a second bond.
-      const failedStageId =
-        activeStepRef.current === "waitForInclusion"
-          ? "awaitingInclusion"
-          : activeStepRef.current === "postContent"
-            ? "postingContent"
-            : (signAndSendPhaseRef.current ?? null);
+      // Track the awaited operation directly; React effects can lag fast failures.
       console.error("[transaction-flow] step failed", {
         kind,
         failedStageId,
-        activeStep: activeStepRef.current,
-        signAndSendPhase: signAndSendPhaseRef.current,
         error: resolvedError,
       });
       setActiveStep(null);
@@ -793,6 +829,7 @@ export function TreasuryTransactionFlowDialog({
                     preventCloseWhileRunning={preventCloseWhileRunning}
                     completion={completion}
                     transactionHash={transactionHash}
+                    signingReview={signingReview}
                     errorMessage={errorMessage}
                     failedStage={failedStage}
                   />
@@ -977,6 +1014,7 @@ function TransactionFlowCenteredProgress({
   preventCloseWhileRunning,
   completion,
   transactionHash,
+  signingReview,
   errorMessage,
   failedStage,
 }: {
@@ -988,6 +1026,7 @@ function TransactionFlowCenteredProgress({
   preventCloseWhileRunning: boolean;
   completion: TreasuryTransactionCompletionResult | null;
   transactionHash: string | null;
+  signingReview: WalletSigningReview | null;
   errorMessage: string | null;
   failedStage:
     | "compiling"
@@ -1295,6 +1334,9 @@ function TransactionFlowCenteredProgress({
                               "The transaction was included successfully.",
                           })}
         </p>
+        {signAndSendPhase === "awaitingSignature" && signingReview ? (
+          <WalletSigningReviewCard review={signingReview} />
+        ) : null}
         {isWaitingForInclusion ? (
           <p className="max-w-lg text-sm leading-6 text-muted-foreground">
             {preventCloseWhileRunning

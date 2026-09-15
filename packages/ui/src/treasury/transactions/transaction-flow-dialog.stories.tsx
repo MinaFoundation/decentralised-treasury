@@ -185,6 +185,19 @@ export const SignAndSendFailed = {
   ),
 };
 
+export const AwaitingLedgerSignature = {
+  render: (): JSX.Element => (
+    <StoryFrame>
+      <TransactionFlowStateStory
+        title="Awaiting Ledger Signature"
+        state="awaitingLedgerSignature"
+        kind="vote"
+        submitLabel="Cast vote transaction"
+      />
+    </StoryFrame>
+  ),
+};
+
 export const WaitingForInclusion = {
   render: (): JSX.Element => (
     <StoryFrame>
@@ -311,7 +324,11 @@ function TransactionFlowStory({
           return {
             hash,
             blockHeight:
-              kind === "createProposal" ? 452041 : kind === "vote" ? 452042 : 452043,
+              kind === "createProposal"
+                ? 452041
+                : kind === "vote"
+                  ? 452042
+                  : 452043,
           };
         }}
         onPostInclusion={
@@ -333,6 +350,7 @@ type StoryState =
   | "proving"
   | "proveError"
   | "awaitingSignature"
+  | "awaitingLedgerSignature"
   | "signAndSendError"
   | "waitForInclusion"
   | "postContent"
@@ -445,12 +463,21 @@ function TransactionFlowStateStory({
           }
           await delay(20);
         }}
-        onSignAndSend={async () => {
+        onSignAndSend={async (context) => {
           if (state === "error" || state === "signAndSendError") {
             await delay(20);
             throw new Error("Auro rejected the transaction request.");
           }
           if (state === "awaitingSignature") {
+            await stalledStepPromiseRef.current;
+          }
+          if (state === "awaitingLedgerSignature") {
+            context.onSigningReview?.({
+              wallet: "ledger",
+              hash: "0000000000000000000000000000000000000000000000000000000000003039",
+              accountIndex: 7,
+              publicKey: context.senderAddress,
+            });
             await stalledStepPromiseRef.current;
           }
           await delay(20);
@@ -465,7 +492,12 @@ function TransactionFlowStateStory({
           await delay(20);
           return {
             hash,
-            blockHeight: kind === "createProposal" ? 452041 : kind === "vote" ? 452042 : 452043,
+            blockHeight:
+              kind === "createProposal"
+                ? 452041
+                : kind === "vote"
+                  ? 452042
+                  : 452043,
           };
         }}
         onPostInclusion={
@@ -487,7 +519,9 @@ function TransactionFlowStateStory({
   );
 }
 
-function getDefaultSummaryItems(kind: TreasuryTransactionFlowKind): TreasuryTransactionSummaryItem[] {
+function getDefaultSummaryItems(
+  kind: TreasuryTransactionFlowKind,
+): TreasuryTransactionSummaryItem[] {
   if (kind === "createProposal") {
     return [
       { label: "Lifecycle", value: "Lifecycle 12" },

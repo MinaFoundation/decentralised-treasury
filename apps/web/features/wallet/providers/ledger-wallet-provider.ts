@@ -1,5 +1,6 @@
 "use client";
 
+import { ledgerSigningReviewHandler } from "@repo/ui/wallet-signing-review";
 import { resolveMinaNetworkId } from "../../endpoint-settings/lib/mina-network-id";
 import {
   connectLedgerAccount,
@@ -78,6 +79,7 @@ export const ledgerWalletProvider: WalletSigningProvider = {
       session.address,
       readLedgerData(session).accountIndex,
       networkId,
+      ledgerSigningReviewHandler(request.onSigningReview),
     );
     return JSON.parse(signed.toJSON());
   },

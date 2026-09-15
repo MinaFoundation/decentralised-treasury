@@ -1,12 +1,17 @@
 "use client";
 
 import { Buffer } from "buffer";
+import { ledgerSigningReviewHandler } from "@repo/ui/wallet-signing-review";
 import type {
   ProviderSession,
   WalletSigningProvider,
   ZkappSigningRequest,
+  WalletSigningReviewHandler,
 } from "@repo/ui/wallet-provider";
-import type { OperationPackage } from "./operations";
+import {
+  assertOperationMessageHash,
+  type OperationPackage,
+} from "./operations";
 
 interface AuroResult {
   hash?: string;
@@ -108,11 +113,14 @@ export async function signOperationWithLedger(
   operation: OperationPackage,
   participantIndex: number,
   ledgerAccountIndex: number,
+  onSigningReview?: WalletSigningReviewHandler,
 ): Promise<string> {
-  const [{ Field, PublicKey }, { signFieldWithLedgerClient }] = await Promise.all([
-    import("o1js"),
-    import("@repo/sdk/src/signing/ledger-signing.js"),
-  ]);
+  await assertOperationMessageHash(operation);
+  const [{ Field, PublicKey }, { signFieldWithLedgerClient }] =
+    await Promise.all([
+      import("o1js"),
+      import("@repo/sdk/src/signing/ledger-signing.js"),
+    ]);
   const expectedPublicKey = PublicKey.fromBase58(
     operation.participants[participantIndex]!,
   );
@@ -122,6 +130,7 @@ export async function signOperationWithLedger(
       ledger,
       expectedPublicKey,
       ledgerAccountIndex,
+      ledgerSigningReviewHandler(onSigningReview),
     ),
   );
   return signature.toBase58();
@@ -139,8 +148,10 @@ export function isAuroInstalled(): boolean {
 }
 
 function extractSignedCommand(signedData: AuroResult["signedData"]): unknown {
-  if (!signedData) throw new Error("Auro did not return signed transaction data.");
-  const parsed = typeof signedData === "string" ? JSON.parse(signedData) : signedData;
+  if (!signedData)
+    throw new Error("Auro did not return signed transaction data.");
+  const parsed =
+    typeof signedData === "string" ? JSON.parse(signedData) : signedData;
   if (parsed && typeof parsed === "object" && "zkappCommand" in parsed) {
     return parsed.zkappCommand;
   }
@@ -154,12 +165,17 @@ export async function signWithAuro(
   memo: string,
 ): Promise<unknown> {
   const provider = window.mina;
-  if (!provider?.requestAccounts || (!provider.sendTransaction && !provider.request)) {
+  if (
+    !provider?.requestAccounts ||
+    (!provider.sendTransaction && !provider.request)
+  ) {
     throw new Error("Auro is not installed or does not support zkApp signing.");
   }
   const selected = (await provider.requestAccounts())[0];
   if (selected !== senderAddress) {
-    throw new Error(`Auro is using ${selected ?? "no account"}, not ${senderAddress}.`);
+    throw new Error(
+      `Auro is using ${selected ?? "no account"}, not ${senderAddress}.`,
+    );
   }
   const parsed = JSON.parse(transactionJson) as {
     feePayer?: { body?: { publicKey?: string } };
@@ -174,9 +190,15 @@ export async function signWithAuro(
   };
   const result = provider.sendTransaction
     ? await provider.sendTransaction(args)
-    : await provider.request!({ method: "mina_sendTransaction", params: [args] });
+    : await provider.request!({
+        method: "mina_sendTransaction",
+        params: [args],
+      });
   if (result.code && result.code !== 0) {
-    throw new Error(result.message || `Auro rejected the transaction with code ${result.code}.`);
+    throw new Error(
+      result.message ||
+        `Auro rejected the transaction with code ${result.code}.`,
+    );
   }
   return extractSignedCommand(result.signedData);
 }
@@ -185,11 +207,13 @@ export async function signTransactionWithLedger(
   transactionJson: string,
   accountIndices: ReadonlyMap<string, number>,
   networkId: string,
+  onSigningReview?: WalletSigningReviewHandler,
 ): Promise<unknown> {
-  const [{ Transaction }, { signTransactionWithLedgerClient }] = await Promise.all([
-    import("o1js"),
-    import("@repo/sdk/src/signing/ledger-signing.js"),
-  ]);
+  const [{ Transaction }, { signTransactionWithLedgerClient }] =
+    await Promise.all([
+      import("o1js"),
+      import("@repo/sdk/src/signing/ledger-signing.js"),
+    ]);
   const transaction = Transaction.fromJSON(JSON.parse(transactionJson));
   const normalizedNetworkId = networkId.toLowerCase();
   if (
@@ -205,6 +229,7 @@ export async function signTransactionWithLedger(
       ledger,
       accountIndices,
       normalizedNetworkId,
+      ledgerSigningReviewHandler(onSigningReview),
     ),
   );
   return JSON.parse(signed.toJSON());
@@ -237,9 +262,8 @@ function createLedgerSession(
 }
 
 function readLedgerSessionIndex(session: ProviderSession): number {
-  const accountIndex = (
-    session.data as { accountIndex?: unknown } | undefined
-  )?.accountIndex;
+  const accountIndex = (session.data as { accountIndex?: unknown } | undefined)
+    ?.accountIndex;
   if (typeof accountIndex !== "number") {
     throw new Error("The Ledger account index is missing.");
   }
@@ -314,6 +338,7 @@ const ledgerWalletProvider: WalletSigningProvider = {
       request.transactionJson,
       new Map([[session.address, readLedgerSessionIndex(session)]]),
       request.networkId,
+      request.onSigningReview,
     );
   },
   async disconnect() {},
@@ -348,13 +373,22 @@ export async function submitSignedCommand(
   const payload = (await response.json()) as {
     data?: { sendZkapp?: { zkapp?: { hash?: string } } };
     errors?: Array<{ message?: string }>;
+    error?: string;
   };
-  const error = payload.errors?.map((item) => item.message).filter(Boolean).join("; ");
+  const error = payload.errors
+    ?.map((item) => item.message)
+    .filter(Boolean)
+    .join("; ");
   if (!response.ok || error) {
-    throw new Error(error || `The Mina node rejected the transaction (${response.status}).`);
+    throw new Error(
+      error ||
+        payload.error ||
+        `The Mina node rejected the transaction (${response.status}).`,
+    );
   }
   const hash = payload.data?.sendZkapp?.zkapp?.hash;
-  if (!hash) throw new Error("The Mina node did not return a transaction hash.");
+  if (!hash)
+    throw new Error("The Mina node did not return a transaction hash.");
   return hash;
 }
 
@@ -370,14 +404,22 @@ export async function waitForInclusion(
       headers: { "content-type": "application/json" },
       body: JSON.stringify({
         query:
-          "query BackofficeInclusion { bestChain(maxLength: 20) { protocolState { consensusState { blockHeight } } transactions { zkappCommands { hash } } } }",
+          "query BackofficeInclusion { bestChain(maxLength: 20) { protocolState { consensusState { blockHeight } } transactions { zkappCommands { hash failureReason { index failures } } } } }",
       }),
     });
     const payload = (await response.json()) as {
       data?: {
         bestChain?: Array<{
           protocolState?: { consensusState?: { blockHeight?: string } };
-          transactions?: { zkappCommands?: Array<{ hash?: string }> };
+          transactions?: {
+            zkappCommands?: Array<{
+              hash?: string;
+              failureReason?: Array<{
+                index?: number;
+                failures?: string[];
+              }> | null;
+            }>;
+          };
         }>;
       };
     };
@@ -387,6 +429,17 @@ export async function waitForInclusion(
       ),
     );
     if (block) {
+      const command = block.transactions?.zkappCommands?.find(
+        (candidate) => candidate.hash === transactionHash,
+      );
+      if (command?.failureReason?.length) {
+        const failures = command.failureReason
+          .flatMap((reason) => reason.failures ?? [])
+          .join("; ");
+        throw new Error(
+          `The included transaction failed: ${failures || "The Mina node reported a failure."}`,
+        );
+      }
       const height = Number(block.protocolState?.consensusState?.blockHeight);
       return Number.isFinite(height) ? height : undefined;
     }

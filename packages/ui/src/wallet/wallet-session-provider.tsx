@@ -73,9 +73,8 @@ const WalletSessionContext = createContext<WalletSessionContextValue | null>(
 );
 
 function getLedgerAccountIndex(session: ProviderSession): number {
-  const accountIndex = (
-    session.data as { accountIndex?: unknown } | undefined
-  )?.accountIndex;
+  const accountIndex = (session.data as { accountIndex?: unknown } | undefined)
+    ?.accountIndex;
   if (
     typeof accountIndex !== "number" ||
     !Number.isSafeInteger(accountIndex) ||
@@ -87,7 +86,9 @@ function getLedgerAccountIndex(session: ProviderSession): number {
   return accountIndex;
 }
 
-function readPersistedSession(storageKey: string): PersistedWalletSession | null {
+function readPersistedSession(
+  storageKey: string,
+): PersistedWalletSession | null {
   if (typeof window === "undefined") return null;
   const rawValue = window.localStorage.getItem(storageKey);
   if (!rawValue) return null;
@@ -155,13 +156,16 @@ export function WalletSessionProvider({
     [providers],
   );
   const activeSessionRef = useRef<ProviderSession | null>(null);
+  const sessionRevisionRef = useRef(0);
+  const signingReviewClearers = useRef(new Set<() => void>());
   const [session, setSession] = useState<ProviderSession | null>(null);
-  const [wallet, setWallet] =
-    useState<WalletSessionState>(initialWalletState);
+  const [wallet, setWallet] = useState<WalletSessionState>(initialWalletState);
   const [dialogOpen, setDialogOpen] = useState(false);
 
   const applySession = useCallback(
     (nextSession: ProviderSession, save = true) => {
+      sessionRevisionRef.current += 1;
+      signingReviewClearers.current.forEach((clear) => clear());
       activeSessionRef.current = nextSession;
       setSession(nextSession);
       if (persistSession && save) {
@@ -179,6 +183,8 @@ export function WalletSessionProvider({
   );
 
   const clearSession = useCallback(() => {
+    sessionRevisionRef.current += 1;
+    signingReviewClearers.current.forEach((clear) => clear());
     activeSessionRef.current = null;
     setSession(null);
     if (persistSession && typeof window !== "undefined") {
@@ -190,6 +196,15 @@ export function WalletSessionProvider({
       error: null,
     });
   }, [persistSession, storageKey]);
+
+  useEffect(
+    () => () => {
+      sessionRevisionRef.current += 1;
+      signingReviewClearers.current.forEach((clear) => clear());
+      activeSessionRef.current = null;
+    },
+    [],
+  );
 
   useEffect(() => {
     onWalletStateChange?.(wallet);
@@ -245,14 +260,13 @@ export function WalletSessionProvider({
   }, [applySession, clearSession, providerMap, session]);
 
   const connectProvider = useCallback(
-    async (
-      providerId: WalletProviderId,
-      input?: { accountIndex: number },
-    ) => {
+    async (providerId: WalletProviderId, input?: { accountIndex: number }) => {
       const provider = providerMap.get(providerId);
       if (!provider) {
         throw new Error(`Unsupported wallet provider ${providerId}.`);
       }
+      sessionRevisionRef.current += 1;
+      signingReviewClearers.current.forEach((clear) => clear());
       setWallet((current) => ({
         ...current,
         loading: false,
@@ -277,14 +291,13 @@ export function WalletSessionProvider({
 
   const disconnectWallet = useCallback(async () => {
     const currentSession = activeSessionRef.current;
-    try {
-      if (currentSession) {
-        await providerMap
-          .get(currentSession.providerId)
-          ?.disconnect(currentSession);
-      }
-    } finally {
-      clearSession();
+    // Invalidate now. A device can take time to finish disconnecting.
+    // Do not clear a newer session when that device operation completes.
+    clearSession();
+    if (currentSession) {
+      await providerMap
+        .get(currentSession.providerId)
+        ?.disconnect(currentSession);
     }
   }, [clearSession, providerMap]);
 
@@ -292,6 +305,7 @@ export function WalletSessionProvider({
     async (request: ZkappSigningRequest): Promise<unknown> => {
       request.signal?.throwIfAborted();
       const currentSession = activeSessionRef.current;
+      const sessionRevision = sessionRevisionRef.current;
       if (!currentSession) {
         throw new Error("Connect a wallet before you sign the transaction.");
       }
@@ -304,9 +318,53 @@ export function WalletSessionProvider({
       if (!provider) {
         throw new Error("The connected wallet provider is not available.");
       }
-      const result = await provider.signZkapp(currentSession, request);
-      request.signal?.throwIfAborted();
-      return result;
+      let reviewActive = true;
+      const clearReview = () => {
+        reviewActive = false;
+        request.onSigningReview?.(null);
+      };
+      const guardedRequest = request.onSigningReview
+        ? {
+            ...request,
+            onSigningReview: (
+              review: Parameters<
+                NonNullable<ZkappSigningRequest["onSigningReview"]>
+              >[0],
+            ) => {
+              if (
+                !reviewActive ||
+                request.signal?.aborted ||
+                sessionRevisionRef.current !== sessionRevision ||
+                activeSessionRef.current !== currentSession
+              )
+                return;
+              request.onSigningReview?.(
+                currentSession.providerId === "ledger" ? review : null,
+              );
+            },
+          }
+        : request;
+      signingReviewClearers.current.add(clearReview);
+      request.signal?.addEventListener("abort", clearReview, { once: true });
+      try {
+        const result = await provider.signZkapp(currentSession, guardedRequest);
+        request.signal?.throwIfAborted();
+        if (
+          sessionRevisionRef.current !== sessionRevision ||
+          activeSessionRef.current !== currentSession
+        ) {
+          // The provider may have completed signing. Discard its stale result;
+          // this check does not claim to cancel an external wallet operation.
+          throw new Error(
+            "The wallet session changed while signing. The result was discarded.",
+          );
+        }
+        return result;
+      } finally {
+        clearReview();
+        signingReviewClearers.current.delete(clearReview);
+        request.signal?.removeEventListener("abort", clearReview);
+      }
     },
     [providerMap],
   );
