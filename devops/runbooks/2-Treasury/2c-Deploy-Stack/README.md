@@ -30,11 +30,25 @@ Set each `<REPLACE: ...>` value in `helmfile.yaml` before deployment:
 | `proving.redis.persistence.storageClass`     | A storage class for the proving queue volume (see `2d`) |
 | `config.treasuryOwnerContractAddress`        | `treasury-owner deploy` output (`2b`)                   |
 | `config.treasuryDeployedAtSlot`              | The value `2b` deployed with                            |
+| `config.multisigParticipantsPublicKeys`      | The five ordered signers `2b` deployed with             |
 | `indexer.extraEnvVars` `EVENTS_START_HEIGHT` | Just below the deploy block height (`2b`)               |
+| `backofficeHost`                             | Hostname for the break-glass console                    |
+| `backoffice.auth.basic.users`                | Credentials for the console                             |
 
 Confirm that `verification-keys.yaml` contains all required values. Without
 these values, the web application cannot create, vote, tally, or execute
-proposals.
+proposals. Both browser applications need them - give the file a `backoffice`
+block as well as a `web` one, or the console cannot prove a pause, unpause,
+proposal toggle or key rotation.
+
+Use chart `0.4.1` or newer. `0.4.0` added the console's proxy server block but
+not the `server_names_hash_bucket_size` that a hostname of about 50 characters
+needs, so the proxy refused to start and took every route with it. Earlier
+versions do not pass `PROOFS_ENABLED` to `proving-scheduler`, whose entrypoint
+requires it - the container exits 1 on every start while the other five in the
+pod stay healthy, showing as a `5/6` pod - and ship no Service for it, which
+`/sqlite` and `/proofs` proxy to, so nginx refuses to resolve the upstream and
+the whole ingress fails with it.
 
 ### Use a managed database
 
@@ -157,9 +171,17 @@ nodes for the database. The database volume is zonal.
 
 ```bash
 cd devops/runbooks/2-Treasury/2c-Deploy-Stack
-helmfile template . | kubectl diff -f -
-helmfile template . | kubectl apply -f -
+helmfile template . | kubectl diff -n <namespace> -f -
+helmfile template . | kubectl apply -n <namespace> -f -
 ```
+
+**Pass `-n` explicitly.** `helmfile template` gives `helm` the namespace so the
+templates can read it, but it does not write `metadata.namespace` into the
+output. Most objects therefore come out namespace-less and land in whatever the
+current kubectl context says, while the bundled Postgres subchart sets its own
+namespace and lands correctly - so an unqualified apply can split one release
+across two namespaces and overwrite an unrelated deployment. The command's
+safety otherwise depends entirely on ambient state.
 
 Read the complete diff before you apply it. This deployment does not use
 ArgoCD. No automatic reconciliation occurs. The apply command starts the
@@ -183,7 +205,7 @@ kubectl get pods -n <namespace> | grep decentralized-treasury
 ```
 
 Confirm that `api`, `indexer`, `indexer-api`, `processor`, `processor-api`,
-`proving-scheduler`, `proxy`, `web`, and `redis` are Running. Confirm that
+`proving-scheduler`, `proxy`, `web`, `backoffice`, and `redis` are Running. Confirm that
 `api-migrate` is Complete. When no proof work exists, `proving-worker` has 0
 replicas. This state shows that the autoscaler is at rest. It is not a failure.
 
@@ -222,6 +244,31 @@ When `remainingPendingBlocks` and `remainingCanonicalBlocks` are `0`, the
 indexer has processed the archive data. On a new deployment, a large value that
 decreases slowly usually shows an unset or low `EVENTS_START_HEIGHT`.
 
+### Check the break-glass console
+
+The console is on its own hostname, so check it separately. The third request
+is the one that matters:
+
+```bash
+B=https://<your backoffice host>
+curl -s -o /dev/null -w "%{http_code}\n" "$B/"          # 200, after auth
+curl -s -o /dev/null -w "%{http_code}\n" "$B/healthz"   # 200, never gated
+curl -s -X POST "$B/mina/graphql" \
+  -H 'content-type: application/json' -d '{"query":"{ syncStatus }"}'
+```
+
+The last one should return `{"data":{"syncStatus":"SYNCED"}}`. It proves the
+proxy is serving the daemon on the console's own origin, which is what the
+browser needs: the console POSTs `application/json`, so every call is
+preflighted, and a node on another origin fails unless it answers CORS. The app
+surfaces that as `Treasury owner account was not found: [object Object]` - a
+failed fetch, not a missing account.
+
+`/sqlite` and `/proofs` are served on the main host only, not on this one.
+
+A `401` on `/` with `auth.mode: basic` is the correct response, and the proxy -
+not the load balancer - is what issues it.
+
 ```bash
 curl -s "$H/processor/status"
 ```
@@ -242,16 +289,20 @@ verification keys. The keys can be absent or compiled with a different
 
 ## Troubleshooting
 
-| Symptom                                               | Cause / fix                                                                                                                                                    |
-| ----------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| All ingress routes return 502                         | The proving-scheduler Service is absent. nginx does not start when it cannot resolve the upstream. Keep the `extraObjects` workaround.                         |
-| `/mina/graphql` returns 502, but other routes respond | `minaNodeUpstream` must be an FQDN, not a Service name without a domain.                                                                                       |
-| The UI loads, but proposal actions fail               | `verification-keys.yaml` is empty, or the keys use an incorrect network or duration.                                                                           |
-| The indexer does not process all archive data         | `EVENTS_START_HEIGHT` is unset, so the indexer starts at genesis.                                                                                              |
-| Pods show `CreateContainerConfigError`                | The `securityContext.runAsUser: 1000` workaround is absent.                                                                                                    |
-| Pods remain `Pending`                                 | The nodes do not have the `nodeSelector` label, or the taint does not have a matching toleration. Check `kubectl describe pod`. Then, see "Use spot capacity". |
-| Only `proving-worker` remains `Pending`               | Its `nodeAffinity` requires the Karpenter-only `karpenter.k8s.aws/instance-cpu` key. Replace or remove this rule.                                              |
-| A second apply does not deploy new code               | The `latest` tag string did not change. Start a rollout restart.                                                                                               |
+| Symptom                                                                     | Cause / fix                                                                                                                                                    |
+| --------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| All ingress routes return 502                                               | On charts before `0.4.0`, the proving-scheduler Service is absent and nginx does not start when it cannot resolve the upstream. Supply it via `extraObjects`.  |
+| `proxy` crash-loops, `could not build server_names_hash`                    | The console hostname is longer than one hash bucket. Fixed in chart `0.4.1`.                                                                                   |
+| `proving-scheduler` shows `5/6`                                             | `PROOFS_ENABLED` does not reach that container, and its entrypoint requires it. Fixed in chart `0.4.0`; otherwise set it in `proving.scheduler.extraEnvVars`.  |
+| The console reports `Treasury owner account was not found: [object Object]` | A failed fetch, not a missing account: its Mina node is on another origin and answers no CORS. Route it via `ingress.hosts.backoffice`.                        |
+| One release lands across two namespaces                                     | `kubectl apply` was run without `-n`. Most objects carry no `metadata.namespace`, so they follow the current context. See "Apply".                             |
+| `/mina/graphql` returns 502, but other routes respond                       | `minaNodeUpstream` must be an FQDN, not a Service name without a domain.                                                                                       |
+| The UI loads, but proposal actions fail                                     | `verification-keys.yaml` is empty, or the keys use an incorrect network or duration.                                                                           |
+| The indexer does not process all archive data                               | `EVENTS_START_HEIGHT` is unset, so the indexer starts at genesis.                                                                                              |
+| Pods show `CreateContainerConfigError`                                      | The `securityContext.runAsUser: 1000` workaround is absent.                                                                                                    |
+| Pods remain `Pending`                                                       | The nodes do not have the `nodeSelector` label, or the taint does not have a matching toleration. Check `kubectl describe pod`. Then, see "Use spot capacity". |
+| Only `proving-worker` remains `Pending`                                     | Its `nodeAffinity` requires the Karpenter-only `karpenter.k8s.aws/instance-cpu` key. Replace or remove this rule.                                              |
+| A second apply does not deploy new code                                     | The `latest` tag string did not change. Start a rollout restart.                                                                                               |
 
 ## References
 

@@ -28,6 +28,46 @@ provider archive. It writes `<ledgerHash>.json` before it writes
 `lifecycle-<id>.hash`. The scheduler consumes this normalized pair. It does not
 parse the provider archive name or calculate an epoch.
 
+### A lifecycle whose epoch has passed cannot resolve
+
+Because selection is keyed on the ledger hash rather than the epoch number, the
+sync has to ask the daemon which hash belongs to a lifecycle. The daemon
+advertises exactly two: `stakingEpochData.ledger.hash` for the current epoch
+and `nextEpochData.ledger.hash` for the next one. A lifecycle whose epoch is
+further in the past than that has no live path back to its hash, and the cycle
+summary reports it as unresolved:
+
+```text
+cycle summary: listed=2584 selected=0 fetched=0 unparseable=0 unresolved=[0:no-hash]
+```
+
+The archive itself may well be in the bucket - the producer names its objects
+`<epoch>-<hash>.tar.gz` - but this container does not read epochs out of
+filenames, so it cannot make the connection. Pin the hash in
+`stakingLedgers.lifecycleLedgerHashes` as `<id>=<hash>` to resolve one
+explicitly.
+
+Do not confuse this with `no-object`, which looks similar and is benign:
+
+```text
+ERROR lifecycle 2 needs ledger jxuCXj4v... (resolved via daemon), but no object
+in <bucket> carries that hash
+cycle summary: listed=2590 selected=0 fetched=0 unparseable=0 unresolved=[2:no-object]
+```
+
+There the hash resolved correctly and only the archive is missing, because the
+producer writes one object per epoch boundary while this sync polls every five
+minutes. A lifecycle that begins just before its epoch's archive is uploaded
+reports `no-object` for one cycle and fetches on the next, with no
+intervention. `no-hash` does not clear on its own; `no-object` usually does.
+
+This is why a treasury deployed at a slot several epochs in the past starts
+with its first lifecycles permanently unresolvable. It does not wedge anything:
+the proving scheduler only considers lifecycles that already have a `.sqlite`
+and a `.done` in S3, so a lifecycle that was never built cannot starve later
+ones. Decide whether those early lifecycles are worth pinning - one whose
+voting period has already closed usually is not.
+
 | Stage                         | Runs in                                       | Parallel                 | Produces                                                |
 | ----------------------------- | --------------------------------------------- | ------------------------ | ------------------------------------------------------- |
 | `from-file`                   | `voting-ledger-scheduler` container           | no                       | `<id>.sqlite`, hydrated from the staking ledger         |
@@ -97,6 +137,39 @@ startup, the sidecars restore the published artifacts. The `.done` and
 `.proven` markers identify completed stages. S3 checkpoints separately supply
 partial `trace-digest` recovery. **Completion markers are state, and the system
 never prunes them.**
+
+## Clear artifacts before redeploying a treasury
+
+Lifecycle ids are relative to `treasuryDeployedAtSlot`, so a redeployed
+treasury reuses ids that the previous deployment already published under the
+same `network` prefix. Clear both prefixes first, or the stack adopts the old
+network's artifacts as its own.
+
+Order matters, because the sidecars will undo a naive deletion. `s3-sync-init`
+pulls the prefix down into the pod at startup and `s3-push` pushes it back on
+its own schedule, so objects deleted while those pods run reappear with fresh
+timestamps:
+
+```bash
+# 1. Stop the producers and pushers.
+kubectl scale deploy -n <namespace> --replicas=0   decentralized-treasury-voting-ledger-scheduler   decentralized-treasury-proving-scheduler   decentralized-treasury-proving-worker
+
+# 2. Wait for them to terminate, then delete. Scope to the prefix - these
+#    buckets hold other networks under sibling prefixes.
+aws s3 rm "s3://<sqlite bucket>/<network>/" --recursive
+aws s3 rm "s3://<proofs bucket>/<network>/" --recursive
+
+# 3. Bring them back, with an empty prefix to sync from.
+kubectl scale deploy -n <namespace> --replicas=1   decentralized-treasury-voting-ledger-scheduler   decentralized-treasury-proving-scheduler
+```
+
+Check whether the buckets are versioned before relying on the delete being
+final: with versioning enabled `aws s3 rm` writes delete markers and the
+objects remain recoverable, which is usually what you want here.
+
+The indexer's Postgres holds a cursor that also predates the new contracts.
+`EVENTS_START_HEIGHT` only applies to a database that has not indexed yet
+(see `2c`), so a redeploy wants a fresh volume as well.
 
 ## Fault tolerance and spot operation
 

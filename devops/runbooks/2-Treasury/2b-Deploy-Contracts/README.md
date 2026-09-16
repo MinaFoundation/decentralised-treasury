@@ -8,7 +8,10 @@ CI=true pnpm install --frozen-lockfile
 pnpm env:bootstrap testnet -- --sender-private-key <FUNDED_TESTNET_PRIVATE_KEY>
 # Review devops/.env.<family> and the apps/api, apps/backoffice, apps/cli, and apps/web .env.<family> files.
 dotenvx run -f apps/cli/.env.<family> -- pnpm run cli -- treasury-owner compile
-dotenvx run -f apps/cli/.env.<family> -- pnpm run cli -- treasury-owner deploy
+# `deploy` needs the two *_PUBLIC_KEY variables unset - see step 7.
+dotenvx run -f apps/cli/.env.<family> -- \
+  env -u TREASURY_OWNER_PUBLIC_KEY -u PAUSE_CONTROLLER_PUBLIC_KEY \
+  pnpm run cli -- treasury-owner deploy
 dotenvx run -f apps/cli/.env.<family> -- pnpm run cli -- treasury-owner fund-treasury --amount 1000000000000
 ```
 
@@ -61,6 +64,24 @@ when you intend to replace the related values.
 
 Do not commit these files. Do not put their content in logs, screenshots, or
 chat messages.
+
+Bootstrap renders each `.env.<family>.example` template and **overwrites** the
+output file rather than patching it, so two lifecycle values come back to the
+template's defaults on every run:
+
+- `LIFECYCLE_PERIOD_DURATION` is written as `7140`, whatever it was before.
+  This is a compile-time constant, so compiling without correcting it produces
+  verification keys for the wrong circuit. The deployment still succeeds and
+  the mismatch surfaces at `fund-treasury` as
+  `Invalid_proof (Pickles.verify dlog_check)`, after which only a fresh
+  deployment at a new address recovers - see step 5.
+- `TREASURY_DEPLOYED_AT_SLOT` is not written at all, and `deploy` defaults it
+  to `0`. On a chain that has been running for a while that makes every
+  elapsed lifecycle immediately due, and the proving scheduler works strictly
+  oldest-first.
+
+Set both in `apps/cli/.env.<family>` after bootstrap and before step 5. A
+bootstrap rerun resets them again.
 
 The contract deployment commands use only **`apps/cli/.env.<family>`**. These
 four other files configure the Compose stack and the browser applications:
@@ -232,10 +253,42 @@ fail, but it does not cause deployment to fail.
 
 ## 7. Deploy the contracts
 
+Bootstrap writes both a private and a public key for the Treasury Owner and the
+Pause Controller, but `deploy` treats them as two ways of naming one signer -
+the private key for `in-memory` mode, the public key for `ledger` mode - and
+refuses both at once:
+
+```text
+error: environment variable 'TREASURY_OWNER_PRIVATE_KEY' cannot be used with
+       environment variable 'TREASURY_OWNER_PUBLIC_KEY'
+```
+
+Nothing is sent when this happens; the command exits during option parsing.
+Unset the two public keys for this one command rather than deleting them from
+the file - `fund-treasury` and `read-state` both require
+`TREASURY_OWNER_PUBLIC_KEY`:
+
 ```bash
 dotenvx run -f apps/cli/.env.<family> -- \
+  env -u TREASURY_OWNER_PUBLIC_KEY -u PAUSE_CONTROLLER_PUBLIC_KEY \
   pnpm run cli -- treasury-owner deploy
 ```
+
+### Signing with a Ledger instead
+
+`--signer` applies to the whole command, and `deploy` has three signing roles:
+sender, treasury owner and pause controller. They cannot be mixed, so
+`--signer ledger` means all three are accounts on one device, at three indices,
+with three on-device approvals. A funded hot key therefore cannot pay the fees
+for a Ledger deploy - it has to send a plain payment to the Ledger sender
+address first. In that mode supply `--<role>-public-key` and
+`--<role>-ledger-account-index` for each role and omit the private keys, which
+is the reverse of the `env -u` above.
+
+`--network-id` accepts `mainnet`, `devnet` and `testnet`, but o1js treats
+`devnet` and `testnet` as one signature domain - only `mainnet` differs. The
+choice between those two is naming, not cryptography, though both browser
+applications display it.
 
 ```json
 {
