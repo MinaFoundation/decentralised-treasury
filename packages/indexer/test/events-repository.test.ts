@@ -237,6 +237,108 @@ describe("EventsRepository", () => {
     assert.equal(rows[1].status, "canonical");
   });
 
+  it("accepts epoch-millisecond block timestamps sent as strings", async () => {
+    // The shape archive-node-api actually sends. `new Date(string)` reads a
+    // numeric string as a date string, so this used to be Invalid Date and
+    // every block from such an archive was quarantined - which stopped all
+    // indexing, since no event is ingested without its block. Observed on
+    // singlenet at block 92754.
+    const events = [buildArchiveEventOutput(70)];
+    events[0].blockInfo.timestamp = "1789556754000";
+
+    const result = await repository.ingestRawEventsAndAdvanceCursor(
+      events,
+      "pending",
+      "events:epoch-ms",
+      70,
+    );
+
+    assert.equal(result.acceptedRows, 2);
+    assert.equal(result.rejectedRows, 0);
+    const row = await dataSource
+      .getRepository(ArchiveEventEntity)
+      .findOneByOrFail({ txHash: "tx-70", accountUpdateId: "1" });
+    assert.equal(row.blockTimestamp?.toISOString(), "2026-09-16T11:05:54.000Z");
+  });
+
+  it("accepts epoch-second block timestamps sent as strings", async () => {
+    const events = [buildArchiveEventOutput(71)];
+    events[0].blockInfo.timestamp = "1789556754";
+
+    const result = await repository.ingestRawEventsAndAdvanceCursor(
+      events,
+      "pending",
+      "events:epoch-s",
+      71,
+    );
+
+    assert.equal(result.acceptedRows, 2);
+    assert.equal(result.rejectedRows, 0);
+    const row = await dataSource
+      .getRepository(ArchiveEventEntity)
+      .findOneByOrFail({ txHash: "tx-71", accountUpdateId: "1" });
+    assert.equal(row.blockTimestamp?.toISOString(), "2026-09-16T11:05:54.000Z");
+  });
+
+  it("still accepts ISO 8601 block timestamps", async () => {
+    const events = [buildArchiveEventOutput(72)];
+    events[0].blockInfo.timestamp = "2026-09-16T11:05:54.000Z";
+
+    const result = await repository.ingestRawEventsAndAdvanceCursor(
+      events,
+      "pending",
+      "events:iso",
+      72,
+    );
+
+    assert.equal(result.acceptedRows, 2);
+    assert.equal(result.rejectedRows, 0);
+    const row = await dataSource
+      .getRepository(ArchiveEventEntity)
+      .findOneByOrFail({ txHash: "tx-72", accountUpdateId: "1" });
+    assert.equal(row.blockTimestamp?.toISOString(), "2026-09-16T11:05:54.000Z");
+  });
+
+  it("keeps quarantining timestamps that are neither an epoch offset nor a date", async () => {
+    const events = [buildArchiveEventOutput(73)];
+    events[0].blockInfo.timestamp = "not-a-time";
+
+    const result = await repository.ingestRawEventsAndAdvanceCursor(
+      events,
+      "pending",
+      "events:bad-time",
+      73,
+    );
+
+    assert.equal(result.acceptedRows, 0);
+    assert.equal(result.rejectedRows, 2);
+    const rejection = await dataSource
+      .getRepository(ArchiveEventRejectionEntity)
+      .findOneByOrFail({ blockHeight: 73 });
+    assert.equal(rejection.reasonCode, "INVALID_BLOCK_TIMESTAMP");
+  });
+
+  it("treats an absent block timestamp as null rather than a rejection", async () => {
+    // The archive client's fallback query omits timestamp entirely, so absence
+    // is a supported shape and must not quarantine the event.
+    const events = [buildArchiveEventOutput(74)];
+    delete events[0].blockInfo.timestamp;
+
+    const result = await repository.ingestRawEventsAndAdvanceCursor(
+      events,
+      "pending",
+      "events:no-time",
+      74,
+    );
+
+    assert.equal(result.acceptedRows, 2);
+    assert.equal(result.rejectedRows, 0);
+    const row = await dataSource
+      .getRepository(ArchiveEventEntity)
+      .findOneByOrFail({ txHash: "tx-74", accountUpdateId: "1" });
+    assert.equal(row.blockTimestamp, null);
+  });
+
   it("preserves all canonical payload fields when pending is re-seen", async () => {
     const canonical = [buildArchiveEventOutput(12)];
     canonical[0].blockInfo.timestamp = "2026-01-01T00:00:00.000Z";

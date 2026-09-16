@@ -103,6 +103,12 @@ const UNKNOWN_EVENT_TYPE = "unknown";
 const INDEXER_INGEST_ADVISORY_LOCK_NAMESPACE = 1_788_447_600;
 const INDEXER_INGEST_ADVISORY_LOCK_KEY = 2;
 const IMMUTABLE_LOOKUP_CHUNK_SIZE = 1_000;
+/**
+ * Below this, a bare epoch offset is read as seconds; at or above it, as
+ * milliseconds. 1e11 is 1973 in milliseconds and the year 5138 in seconds, so
+ * no real block timestamp is ambiguous.
+ */
+const EPOCH_SECONDS_UPPER_BOUND = 100_000_000_000;
 
 function assertSqlIdentifier(value: string, label: string): void {
   if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(value)) {
@@ -1147,6 +1153,27 @@ export class EventsRepository {
     return eventIndex;
   }
 
+  /**
+   * Parse blockInfo.timestamp, which archive implementations express in more
+   * than one shape.
+   *
+   * archive-node-api sends epoch milliseconds as a *string* - "1789556754000".
+   * `new Date(string)` parses a numeric string as a date string rather than as
+   * an epoch offset, so that value yields `Invalid Date` and every block from
+   * such an archive was rejected with INVALID_BLOCK_TIMESTAMP. Since no event
+   * can be ingested without its block, that silently stopped all indexing:
+   * no proposals, no votes, no tallies. A numeric string therefore has to go
+   * through `Number` first.
+   *
+   * Epoch seconds are accepted as well. Nothing observed sends them, but the
+   * cost of tolerating them is one comparison and the cost of not doing so is
+   * an outage of this shape on an archive nobody has tested yet. The boundary
+   * is unambiguous for any realistic block: 1e11 is 1973 read as milliseconds
+   * and the year 5138 read as seconds.
+   *
+   * ISO 8601 still works, which is what the tests and some archives use.
+   * Genuinely unparseable values - "not-a-time" - are still rejected.
+   */
   private resolveBlockTimestamp(value: unknown): Date | null {
     if (value === null || value === undefined || value === "") return null;
     if (typeof value !== "string" || value.trim() !== value || !value) {
@@ -1155,7 +1182,9 @@ export class EventsRepository {
         "blockInfo.timestamp must be a valid nonempty timestamp string",
       );
     }
-    const parsed = new Date(value);
+    const parsed = /^-?\d+$/.test(value)
+      ? new Date(this.epochOffsetToMilliseconds(Number(value)))
+      : new Date(value);
     if (Number.isNaN(parsed.getTime())) {
       throw this.observationError(
         "INVALID_BLOCK_TIMESTAMP",
@@ -1163,6 +1192,16 @@ export class EventsRepository {
       );
     }
     return parsed;
+  }
+
+  /**
+   * Scale a bare epoch offset to milliseconds. See resolveBlockTimestamp for
+   * why both scales are accepted.
+   */
+  private epochOffsetToMilliseconds(offset: number): number {
+    return Math.abs(offset) < EPOCH_SECONDS_UPPER_BOUND
+      ? offset * 1000
+      : offset;
   }
 
   private resolveOptionalNonnegativeInteger(
