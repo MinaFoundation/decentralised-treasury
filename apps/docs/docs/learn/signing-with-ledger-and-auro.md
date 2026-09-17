@@ -192,16 +192,16 @@ In-memory mode accepts a Proposal private key or generates one.
 The Backoffice separates participant signing from final transaction signing.
 Use one machine for each participant contribution.
 
-Signer mode imports an unsigned bundle, signs one participant position, and
-exports one contribution. It cannot merge, prove, or submit.
+Signer mode imports a bundle, signs one participant position, and exports a
+contribution. It preserves valid imported signatures. It cannot prove or submit.
 
 Submitter mode builds or imports the bundle and merges contributions. It proves
 and submits, but it does not create participant signatures.
 
 1. The submitter creates and exports one unsigned bundle.
-2. Each signer imports the same unsigned bundle in **Signer** mode.
+2. Each signer imports an unsigned or partially signed bundle in **Signer** mode.
 3. Each signer compares the bundle with current Mina state.
-4. Each signer connects the exact participant Ledger account.
+4. Each signer connects the exact participant Auro or Ledger account.
 5. Each signer approves one field signature and exports one contribution.
 6. The submitter merges at least three valid contributions.
 7. The submitter connects an Auro or Ledger fee payer.
@@ -218,8 +218,14 @@ Before a participant signs, check these bundle values:
 - Proposal address for a Proposal toggle;
 - current and new ordered keys for a key rotation.
 
-Signer mode accepts only a bundle with no participant signatures. The signer
-must manually compare the imported bundle with current Mina state.
+Signer mode verifies existing signatures and rejects invalid signatures.
+If the connected participant has already signed, the signer can export the
+bundle without another signing request. The signer must manually compare the
+imported bundle with current Mina state.
+
+Auro participant signing uses
+[`signFields`](https://docs.aurowallet.com/general/reference/api-reference/methods/mina_signfields).
+The app verifies the returned signature against the participant key and operation hash.
 
 Each contribution must match every unsigned bundle field. The merge rejects a
 different field or a conflicting signature in the same participant position.

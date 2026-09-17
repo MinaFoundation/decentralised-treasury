@@ -22,6 +22,12 @@ interface AuroResult {
 
 interface AuroProvider {
   requestAccounts?: () => Promise<string[]>;
+  signFields?: (args: { message: string[] }) => Promise<{
+    signature?: string;
+    publicKey?: string;
+    code?: number;
+    message?: string;
+  }>;
   request?: (args: { method: string; params?: unknown }) => Promise<AuroResult>;
   sendTransaction?: (args: {
     onlySign?: boolean;
@@ -141,6 +147,52 @@ export async function connectAuro(): Promise<string> {
   const account = accounts?.[0];
   if (!account) throw new Error("Auro did not return an account.");
   return account;
+}
+
+export async function signOperationWithAuro(
+  operation: OperationPackage,
+  participantIndex: number,
+): Promise<string> {
+  await assertOperationMessageHash(operation);
+  const expectedAddress = operation.participants[participantIndex];
+  if (!expectedAddress) throw new Error("The participant index is invalid.");
+  const provider = window.mina;
+  if (!provider?.requestAccounts || !provider.signFields) {
+    throw new Error("Auro is not installed or does not support field signing.");
+  }
+  const selected = (await provider.requestAccounts())[0];
+  if (selected !== expectedAddress) {
+    throw new Error(
+      `Auro is using ${selected ?? "no account"}, not ${expectedAddress}.`,
+    );
+  }
+  const result = await provider.signFields({
+    message: [operation.messageHash],
+  });
+  if (result.code && result.code !== 0) {
+    throw new Error(
+      result.message || `Auro rejected signing with code ${result.code}.`,
+    );
+  }
+  if (!result.signature)
+    throw new Error("Auro did not return a field signature.");
+  if (result.publicKey && result.publicKey !== expectedAddress) {
+    throw new Error("Auro returned a signature for another participant.");
+  }
+  const { Field, PublicKey, Signature } = await import("o1js");
+  const signature = Signature.fromBase58(result.signature);
+  if (
+    !signature
+      .verify(PublicKey.fromBase58(expectedAddress), [
+        Field(operation.messageHash),
+      ])
+      .toBoolean()
+  ) {
+    throw new Error(
+      "The Auro signature does not match this participant and operation.",
+    );
+  }
+  return signature.toBase58();
 }
 
 export function isAuroInstalled(): boolean {

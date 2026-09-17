@@ -43,7 +43,6 @@ import {
 import {
   assertOperationPackage,
   assertOperationMessageHash,
-  assertPureSigningOperation,
   createSigningOperation,
   createOperationPackage,
   downloadJson,
@@ -69,6 +68,7 @@ import {
 } from "./treasury-status-polling";
 import {
   getSessionLedgerAccountIndex,
+  signOperationWithAuro,
   signOperationWithLedger,
   submitSignedCommand,
   waitForInclusion,
@@ -670,33 +670,41 @@ function OperationWorkspace({
     }
   };
 
-  const signLedger = async () => {
+  const signBundle = async () => {
     if (!operation || !session) return;
     if (preview) return;
     const signerParticipantIndex = operation.participants.indexOf(
       session.address,
     );
     const ledgerAccountIndex = getSessionLedgerAccountIndex(session);
-    if (signerParticipantIndex < 0 || ledgerAccountIndex === null) return;
+    if (
+      signerParticipantIndex < 0 ||
+      operation.signatures[signerParticipantIndex] ||
+      (session.providerId !== "auro" && ledgerAccountIndex === null)
+    )
+      return;
     setPendingAction("sign");
     const signingRunId = ++signingReviewRunRef.current;
     setSigningReview(null);
-    setBusy(`Waiting for Ledger participant ${signerParticipantIndex + 1}`);
+    setBusy(
+      `Waiting for ${session.displayName} participant ${signerParticipantIndex + 1}`,
+    );
     setError(null);
     try {
-      const signature = await signOperationWithLedger(
-        operation,
-        signerParticipantIndex,
-        ledgerAccountIndex,
-        (review) => {
-          if (signingReviewRunRef.current === signingRunId)
-            setSigningReview(review);
-        },
-      );
-      const signatures = Array.from(
-        { length: operation.participants.length },
-        (): string | null => null,
-      );
+      const signature =
+        session.providerId === "auro"
+          ? await signOperationWithAuro(operation, signerParticipantIndex)
+          : await signOperationWithLedger(
+              operation,
+              signerParticipantIndex,
+              ledgerAccountIndex!,
+              (review) => {
+                if (signingReviewRunRef.current === signingRunId)
+                  setSigningReview(review);
+              },
+            );
+      if (signingReviewRunRef.current !== signingRunId) return;
+      const signatures = [...operation.signatures];
       signatures[signerParticipantIndex] = signature;
       setOperation({ ...operation, signatures });
       setValidSignatures(
@@ -727,14 +735,22 @@ function OperationWorkspace({
         );
       }
       if (workflowRole === "signer") {
-        const pureOperation = assertPureSigningOperation(imported);
-        await assertOperationMessageHash(pureOperation);
-        setOperation(pureOperation);
-        setProposalAddress(pureOperation.proposalAddress ?? "");
-        setNextParticipants(
-          pureOperation.nextParticipants ?? Array.from({ length: 5 }, () => ""),
+        await assertOperationMessageHash(imported);
+        const validity = await validateSignatures(imported);
+        const invalidIndex = imported.signatures.findIndex(
+          (signature, index) => signature !== null && !validity[index],
         );
-        setValidSignatures(Array.from({ length: 5 }, () => false));
+        if (invalidIndex >= 0) {
+          throw new Error(
+            `The signature for participant ${invalidIndex + 1} is invalid.`,
+          );
+        }
+        setOperation(imported);
+        setProposalAddress(imported.proposalAddress ?? "");
+        setNextParticipants(
+          imported.nextParticipants ?? Array.from({ length: 5 }, () => ""),
+        );
+        setValidSignatures(validity);
         return;
       }
       const fresh = await onRefresh();
@@ -839,10 +855,11 @@ function OperationWorkspace({
   };
 
   const validCount = validSignatures.filter(Boolean).length;
-  const signerSignatureIndex = operation?.signatures.findIndex(Boolean) ?? -1;
-  const signerHasSignature = signerSignatureIndex >= 0;
   const signerParticipantIndex =
     operation && session ? operation.participants.indexOf(session.address) : -1;
+  const signerHasSignature =
+    signerParticipantIndex >= 0 &&
+    Boolean(validSignatures[signerParticipantIndex]);
   const signerLedgerAccountIndex = getSessionLedgerAccountIndex(session);
   const signerWalletMatches = signerParticipantIndex >= 0;
   const rotationIsSafe =
@@ -852,7 +869,7 @@ function OperationWorkspace({
       !rotationReviewError);
   const signerCanSign =
     signerWalletMatches &&
-    signerLedgerAccountIndex !== null &&
+    (session?.providerId === "auro" || signerLedgerAccountIndex !== null) &&
     !signerHasSignature &&
     rotationIsSafe;
   const walletConnecting = wallet.loading || wallet.status === "connecting";
@@ -927,7 +944,7 @@ function OperationWorkspace({
         <div className="flex items-start gap-2 rounded-xl bg-amber-50 p-3 text-xs text-amber-900">
           <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
           The participant order and controller nonce are part of the
-          authorization. Review them before each Ledger approval.
+          authorization. Review them before each wallet approval.
         </div>
       ) : null}
 
@@ -1149,8 +1166,8 @@ function OperationWorkspace({
               <div>
                 <div className="font-medium">Your signature</div>
                 <p className="mt-1 text-sm text-muted-foreground">
-                  The connected wallet identifies your participant slot. This
-                  bundle does not contain other participant signatures.
+                  The connected wallet identifies your participant slot. The
+                  bundle preserves existing valid participant signatures.
                 </p>
               </div>
               {signerHasSignature ? (
@@ -1158,8 +1175,9 @@ function OperationWorkspace({
                   <Alert variant="success">
                     <AlertTitle>Signature ready</AlertTitle>
                     <AlertDescription>
-                      The signature contribution contains only participant{" "}
-                      {signerSignatureIndex + 1}. Return it to the submitter.
+                      The bundle contains your signature for participant{" "}
+                      {signerParticipantIndex + 1} and any imported signatures.
+                      Return it to the submitter or pass it to the next signer.
                     </AlertDescription>
                   </Alert>
                   <Button
@@ -1180,16 +1198,8 @@ function OperationWorkspace({
                   {!session ? (
                     <Alert>
                       <AlertDescription>
-                        Connect the Ledger account that controls one participant
-                        key.
-                      </AlertDescription>
-                    </Alert>
-                  ) : session.providerId !== "ledger" ? (
-                    <Alert variant="destructive">
-                      <AlertTitle>Ledger required</AlertTitle>
-                      <AlertDescription>
-                        Auro identifies {short(session.address)}. Connect the
-                        Ledger account for the participant signature.
+                        Connect the Auro or Ledger account that controls one
+                        participant key.
                       </AlertDescription>
                     </Alert>
                   ) : !signerWalletMatches ? (
@@ -1205,8 +1215,10 @@ function OperationWorkspace({
                         Participant {signerParticipantIndex + 1}
                       </AlertTitle>
                       <AlertDescription>
-                        Ledger account index {signerLedgerAccountIndex} controls{" "}
-                        {short(session.address, 14)}.
+                        {session.providerId === "ledger"
+                          ? `Ledger account index ${signerLedgerAccountIndex}`
+                          : "Auro"}{" "}
+                        controls {short(session.address, 14)}.
                       </AlertDescription>
                     </Alert>
                   )}
@@ -1220,7 +1232,7 @@ function OperationWorkspace({
                     }
                     aria-busy={pendingAction === "sign" || walletConnecting}
                     onClick={() => {
-                      if (session) void signLedger();
+                      if (session) void signBundle();
                       else connectWallet();
                     }}
                   >
@@ -1233,7 +1245,7 @@ function OperationWorkspace({
                       loading={pendingAction === "sign" || walletConnecting}
                       loadingLabel={
                         pendingAction === "sign"
-                          ? (busy ?? "Waiting for Ledger")
+                          ? (busy ?? "Waiting for wallet")
                           : "Connecting wallet"
                       }
                     >

@@ -310,7 +310,7 @@ contracts and does not run normal governance actions.
 `Signer` and `Submitter` are workflow modes. They are not authenticated roles
 or access controls.
 
-Backoffice creates participant field signatures with Ledger only. Collect at
+Backoffice creates participant field signatures with Auro or Ledger. Collect at
 least three valid signatures from the five unique ordered participant keys.
 The final transaction fee payer can use Auro or Ledger.
 
@@ -361,12 +361,17 @@ Each signer performs these steps on an individual machine:
 1. Select `Signer`.
 2. Import the operation file.
 3. Review the network, addresses, nonce, commitment, and action data.
-4. Enter the Ledger index for the applicable participant slot.
+4. Connect the Auro or Ledger account for the applicable participant slot.
 5. Sign and export the signed copy.
 6. Return the signed copy to the submitter.
 
-Each participant uses Ledger for the field signature. Ledger indices stay on
-signer machines. They are not part of exported files.
+Signers can import a file that already contains signatures. The app verifies
+and preserves those signatures when it adds the connected participant's signature.
+It rejects invalid imported signatures. Signers can pass the exported file to
+the next signer or return it to the submitter. A participant who has already
+signed can export the file without signing again.
+
+Ledger indices stay on signer machines. They are not part of exported files.
 
 The submitter then performs these steps:
 

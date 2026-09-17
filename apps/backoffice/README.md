@@ -8,7 +8,7 @@ The app supports:
 - global treasury pause and unpause;
 - proposal pause toggling with the current contract semantics;
 - multisig participant rotation;
-- Ledger participant signatures;
+- Auro or Ledger participant signatures;
 - Auro or Ledger fee-payer signatures;
 - browser proof generation;
 - direct Mina node submission;
@@ -51,13 +51,20 @@ no participant signatures. Each signer works on an individual machine:
 1. Select `Signer`.
 2. Import the submitter's signing bundle.
 3. Review the operation data.
-4. Connect the Ledger account that controls the participant key.
+4. Connect the Auro or Ledger account that controls the participant key.
 5. Confirm that the app found the correct participant slot.
 6. Sign and export the signature contribution.
 7. Return the contribution to the submitter.
 
-The signer machine does not prove, submit, or configure a fee payer. The
-signer does not receive or verify other participant signatures.
+The signer machine does not prove, submit, or configure a fee payer.
+Signers can also import a bundle that already contains participant signatures.
+The app verifies those signatures and preserves them when the signer adds a
+signature and exports the bundle. It rejects invalid imported signatures.
+If the connected participant has already signed, the app permits export without
+another signing request.
+
+Auro participant signing uses `signFields` to sign the operation hash. The app
+verifies the returned signature against the participant key and operation hash.
 
 The submitter then:
 
