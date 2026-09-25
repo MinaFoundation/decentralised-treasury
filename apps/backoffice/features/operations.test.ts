@@ -86,6 +86,24 @@ describe("operation packages", () => {
     expect(() => assertOperationPackage(value)).toThrow(/incomplete/);
   });
 
+  it.each([
+    { networkId: { name: "testnet" } },
+    { treasuryOwnerAddress: 1 },
+    { participants: [null, "two", "three", "four", "five"] },
+    { signatures: [false, null, null, null, null] },
+    { kind: "toggleProposal", proposalAddress: { address: "proposal" } },
+    {
+      kind: "rotateMultisig",
+      nextParticipants: [1, 2, 3, 4, 5],
+      nextMultisigCommitment: "12",
+    },
+    { kind: "unknown" },
+  ])("rejects malformed review fields: %j", (changes) => {
+    expect(() =>
+      assertOperationPackage({ ...operation(), ...changes }),
+    ).toThrow();
+  });
+
   it("merges signatures from independent participant packages", () => {
     const current = operation();
     current.signatures = ["a", null, null, null, null];

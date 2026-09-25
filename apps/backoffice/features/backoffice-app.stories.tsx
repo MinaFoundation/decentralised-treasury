@@ -82,16 +82,16 @@ const pauseOperation = createOperation("pauseTreasury");
 
 const toggleOperation = createOperation("toggleProposal", {
   proposalAddress: "B62qproposalM7v4aQf8pR2kHy6oL5vN2xWm3sC7dF9qT4uK8pY1mB5",
-  proposalStatusBefore: "VOTING",
+  proposalStatusBefore: "APPROVED",
   proposalStatusAfter: "PAUSED",
-  expectedProposalPaused: false,
+  expectedProposalPaused: true,
 });
 
 const unpauseProposalOperation = createOperation("toggleProposal", {
   proposalAddress: "B62qproposalM7v4aQf8pR2kHy6oL5vN2xWm3sC7dF9qT4uK8pY1mB5",
   proposalStatusBefore: "PAUSED",
   proposalStatusAfter: "UNKNOWN",
-  expectedProposalPaused: true,
+  expectedProposalPaused: false,
 });
 
 const rotateOperation = createOperation("rotateMultisig", {

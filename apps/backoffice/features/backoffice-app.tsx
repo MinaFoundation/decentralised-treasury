@@ -42,11 +42,12 @@ import {
 } from "@repo/ui/wallet-session-provider";
 import {
   assertOperationPackage,
-  assertOperationMessageHash,
+  assertProposalStatus,
   createSigningOperation,
   createOperationPackage,
   downloadJson,
   fetchTreasuryStatus,
+  fetchProposalStatus,
   inspectParticipantRotation,
   mergeOperationSignatures,
   REQUIRED_SIGNATURE_COUNT,
@@ -171,13 +172,13 @@ function StatusRow({
   mono?: boolean;
 }) {
   return (
-    <div className="flex items-start justify-between gap-5 border-b py-3 last:border-0">
+    <div className="grid gap-1 border-b py-3 last:border-0 sm:grid-cols-[10rem_minmax(0,1fr)] sm:gap-5">
       <span className="text-sm text-muted-foreground">{label}</span>
       <span
         className={
           mono
-            ? "break-all text-right font-mono text-xs"
-            : "text-right text-sm font-medium"
+            ? "min-w-0 break-all font-mono text-xs sm:text-right"
+            : "min-w-0 break-words text-sm font-medium sm:text-right"
         }
       >
         {value}
@@ -670,6 +671,19 @@ function OperationWorkspace({
     }
   };
 
+  const verifyBundle = async (bundle: OperationPackage) => {
+    const fresh = await onRefresh();
+    await verifyOperationPackage(bundle, fresh);
+    if (bundle.kind === "toggleProposal") {
+      const current = await fetchProposalStatus(
+        config,
+        fresh.treasuryOwnerAddress,
+        bundle.proposalAddress!,
+      );
+      assertProposalStatus(bundle, current.value);
+    }
+  };
+
   const signBundle = async () => {
     if (!operation || !session) return;
     if (preview) return;
@@ -686,11 +700,14 @@ function OperationWorkspace({
     setPendingAction("sign");
     const signingRunId = ++signingReviewRunRef.current;
     setSigningReview(null);
-    setBusy(
-      `Waiting for ${session.displayName} participant ${signerParticipantIndex + 1}`,
-    );
+    setBusy("Checking signing bundle");
     setError(null);
     try {
+      await verifyBundle(operation);
+      if (signingReviewRunRef.current !== signingRunId) return;
+      setBusy(
+        `Waiting for ${session.displayName} participant ${signerParticipantIndex + 1}`,
+      );
       const signature =
         session.providerId === "auro"
           ? await signOperationWithAuro(operation, signerParticipantIndex)
@@ -734,8 +751,8 @@ function OperationWorkspace({
           `This file contains “${actionLabels[imported.kind]}”, not “${kind ? actionLabels[kind] : "the selected signing bundle"}”.`,
         );
       }
+      await verifyBundle(imported);
       if (workflowRole === "signer") {
-        await assertOperationMessageHash(imported);
         const validity = await validateSignatures(imported);
         const invalidIndex = imported.signatures.findIndex(
           (signature, index) => signature !== null && !validity[index],
@@ -753,8 +770,6 @@ function OperationWorkspace({
         setValidSignatures(validity);
         return;
       }
-      const fresh = await onRefresh();
-      await verifyOperationPackage(imported, fresh);
       const validity = await validateSignatures(imported);
       const sanitizedImported = {
         ...imported,
@@ -789,8 +804,7 @@ function OperationWorkspace({
     setBusy("Checking signing bundle");
     setError(null);
     try {
-      const fresh = await onRefresh();
-      await verifyOperationPackage(operation, fresh);
+      await verifyBundle(operation);
       const validity = await validateSignatures(operation);
       if (validity.filter(Boolean).length < REQUIRED_SIGNATURE_COUNT) {
         throw new Error("Three valid participant signatures are required.");
@@ -1126,30 +1140,104 @@ function OperationWorkspace({
               event.target.value = "";
             }}
           />
-          <div className="rounded-xl border bg-muted/30 p-4 text-sm">
+          <section
+            aria-label="Operation review"
+            className="rounded-xl border bg-muted/30 p-4 text-sm"
+          >
+            <h3 className="font-semibold">Review operation</h3>
+            <p className="mt-1 text-muted-foreground">
+              Check the action, target, and participant keys before signing.
+              Backoffice checks the deployment and nonce again before wallet
+              approval.
+            </p>
+            <StatusRow label="Operation" value={actionLabels[operation.kind]} />
+            <StatusRow
+              label="Effect"
+              value={
+                operation.kind === "pauseTreasury"
+                  ? "Set the treasury to PAUSED."
+                  : operation.kind === "unpauseTreasury"
+                    ? "Set the treasury to ACTIVE."
+                    : operation.kind === "rotateMultisig"
+                      ? "Replace the five participant keys with the ordered set below. Three signatures will be required from that set."
+                      : "If the proposal is PAUSED, set it to UNKNOWN. Otherwise, set it to PAUSED. The previous status is not restored."
+              }
+            />
+            <StatusRow label="Network" value={operation.networkId} />
+            <StatusRow
+              label="Treasury owner"
+              value={operation.treasuryOwnerAddress}
+              mono
+            />
+            <StatusRow
+              label="Pause controller"
+              value={operation.pauseControllerAddress}
+              mono
+            />
+            {operation.kind === "toggleProposal" ? (
+              <>
+                <StatusRow
+                  label="Proposal address"
+                  value={operation.proposalAddress!}
+                  mono
+                />
+                <StatusRow
+                  label="Status at last check"
+                  value={operation.proposalStatusBefore!}
+                />
+                <StatusRow
+                  label="Expected status after toggle"
+                  value={operation.proposalStatusAfter!}
+                />
+                <p className="py-3 text-muted-foreground">
+                  Backoffice checked this status against the configured node. It
+                  checks again before signing and submission. The signature
+                  authorizes a toggle. It does not bind the proposal status.
+                </p>
+              </>
+            ) : null}
             <StatusRow
               label="Controller nonce"
               value={operation.controllerNonce}
+            />
+            <StatusRow
+              label="Current commitment"
+              value={operation.multisigCommitment}
+              mono
             />
             <StatusRow
               label="Message hash (decimal)"
               value={operation.messageHash}
               mono
             />
-            {operation.proposalAddress ? (
-              <StatusRow
-                label="Proposal transition"
-                value={`${operation.proposalStatusBefore} → ${operation.proposalStatusAfter}`}
-              />
-            ) : null}
-            {operation.nextMultisigCommitment ? (
+            {operation.kind === "rotateMultisig" ? (
               <StatusRow
                 label="New commitment"
-                value={operation.nextMultisigCommitment}
+                value={operation.nextMultisigCommitment!}
                 mono
               />
             ) : null}
-          </div>
+            <p className="mt-3 text-muted-foreground">
+              The signed hash does not include the network, treasury owner, or
+              pause controller address. Backoffice checks these against the
+              configured deployment.
+            </p>
+            {operation.kind !== "rotateMultisig" ? (
+              <div className="mt-4">
+                <h4 className="font-medium">Ordered participant keys</h4>
+                <p className="mt-1 text-muted-foreground">
+                  Three of these five participants must sign.
+                </p>
+                <ol className="mt-2 list-inside list-decimal space-y-2">
+                  {operation.participants.map((participant, index) => (
+                    <li key={index} className="break-all font-mono text-xs">
+                      {participant}
+                    </li>
+                  ))}
+                </ol>
+              </div>
+            ) : null}
+          </section>
 
           {operation.kind === "rotateMultisig" && operation.nextParticipants ? (
             <RotationParticipantReviewList

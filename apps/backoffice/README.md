@@ -57,6 +57,27 @@ no participant signatures. Each signer works on an individual machine:
 7. Return the contribution to the submitter.
 
 The signer machine does not prove, submit, or configure a fee payer.
+It needs access to the configured Mina node. At import and before signing, the
+app checks the network, deployment addresses, nonce, commitment, and ordered
+participants against fresh state. A failed check stops signing before wallet
+approval. Both wallet paths also recompute the operation hash.
+
+The operation review shows the full target addresses, effect, nonce, commitments,
+and participant keys. For a proposal toggle, it shows the proposal address and
+the contract rule: `PAUSED` becomes `UNKNOWN`; every other status becomes `PAUSED`.
+At import, before signing, and before submission, the app fetches the proposal
+under the configured Treasury Owner's token. It checks `proposalStatusBefore`,
+`proposalStatusAfter`, and `expectedProposalPaused` against that state and the
+toggle rule. Missing fields, inconsistent outcomes, unavailable accounts, and
+status changes stop the operation. The app does not change the imported bundle.
+The review shows the status from the last successful check and the expected result.
+The signature authorizes a toggle, not a fixed final status. State can change
+after the check; the proved transaction also enforces a status precondition.
+
+Network and deployment addresses are not included in the contract's signed hash.
+Backoffice checks these fields locally. This check does not prevent signature
+reuse on another deployment with matching authorization inputs.
+
 Signers can also import a bundle that already contains participant signatures.
 The app verifies those signatures and preserves them when the signer adds a
 signature and exports the bundle. It rejects invalid imported signatures.

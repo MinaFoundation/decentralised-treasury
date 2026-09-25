@@ -179,19 +179,48 @@ export function assertOperationPackage(value: unknown): OperationPackage {
       "The operation file has an unsupported schema or operation type.",
     );
   }
+  const isText = (field: unknown): field is string =>
+    typeof field === "string" && field.length > 0;
   if (
-    !candidate.networkId ||
-    !candidate.treasuryOwnerAddress ||
-    !candidate.pauseControllerAddress ||
-    !candidate.controllerNonce ||
-    !candidate.multisigCommitment ||
-    !candidate.messageHash ||
+    !isText(candidate.networkId) ||
+    !isText(candidate.treasuryOwnerAddress) ||
+    !isText(candidate.pauseControllerAddress) ||
+    !isText(candidate.controllerNonce) ||
+    !isText(candidate.multisigCommitment) ||
+    !isText(candidate.messageHash) ||
     !Array.isArray(candidate.participants) ||
     candidate.participants.length !== PARTICIPANT_COUNT ||
+    !candidate.participants.every(isText) ||
     !Array.isArray(candidate.signatures) ||
-    candidate.signatures.length !== PARTICIPANT_COUNT
+    candidate.signatures.length !== PARTICIPANT_COUNT ||
+    !candidate.signatures.every(
+      (signature) => signature === null || isText(signature),
+    )
   ) {
     throw new Error("The operation file is incomplete.");
+  }
+  if (
+    candidate.kind === "toggleProposal" &&
+    !isText(candidate.proposalAddress)
+  ) {
+    throw new Error("The proposal address is missing or invalid.");
+  }
+  if (
+    candidate.kind === "toggleProposal" &&
+    (!isText(candidate.proposalStatusBefore) ||
+      !isText(candidate.proposalStatusAfter) ||
+      typeof candidate.expectedProposalPaused !== "boolean")
+  ) {
+    throw new Error("The proposal-toggle operation is incomplete or invalid.");
+  }
+  if (
+    candidate.kind === "rotateMultisig" &&
+    (!Array.isArray(candidate.nextParticipants) ||
+      candidate.nextParticipants.length !== PARTICIPANT_COUNT ||
+      !candidate.nextParticipants.every(isText) ||
+      !isText(candidate.nextMultisigCommitment))
+  ) {
+    throw new Error("The new participant set is missing or invalid.");
   }
   return candidate as OperationPackage;
 }
@@ -459,6 +488,31 @@ function statusName(value: string): string {
   );
 }
 
+/** Check the bundle against independently fetched proposal state. */
+export function assertProposalStatus(
+  operation: OperationPackage,
+  currentStatus: string,
+): void {
+  if (!["0", "1", "2", "3"].includes(currentStatus)) {
+    throw new Error("The proposal status is not supported.");
+  }
+  if (operation.proposalStatusBefore !== statusName(currentStatus)) {
+    throw new Error(
+      "The proposal status changed. Create a new signing bundle.",
+    );
+  }
+  const expectedPaused = currentStatus !== "3";
+  const expectedStatus = expectedPaused ? "PAUSED" : "UNKNOWN";
+  if (
+    operation.proposalStatusAfter !== expectedStatus ||
+    operation.expectedProposalPaused !== expectedPaused
+  ) {
+    throw new Error(
+      "The proposal outcome is inconsistent. Create a new signing bundle.",
+    );
+  }
+}
+
 export async function fetchProposalStatus(
   config: BackofficeRuntimeConfig,
   treasuryOwnerAddress: string,
@@ -605,6 +659,7 @@ export async function verifyOperationPackage(
 export async function assertOperationMessageHash(
   operation: OperationPackage,
 ): Promise<void> {
+  assertOperationPackage(operation);
   if (
     (await calculateCommitment(operation.participants)) !==
     operation.multisigCommitment
