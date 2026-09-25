@@ -85,9 +85,7 @@ function buildProposalCreatedFieldEncodedEvent(): {
   event.eventIndex = 0;
   event.blockEventIndex = 0;
   event.rawEventData = {
-    data: ProposalCreatedEvent.toFields(payload).map((field) =>
-      field.toString(),
-    ),
+    data: ["0", ...ProposalCreatedEvent.toFields(payload).map(String)],
   } as never;
   event.indexedAt = now;
   event.updatedAt = now;
@@ -639,25 +637,25 @@ describe("ProposalCreatedEventHandler", () => {
       {
         label: "UInt32 lifecycle overflow",
         mutate: (data) => {
-          data[2] = "4294967296";
+          data[3] = "4294967296";
         },
       },
       {
         label: "UInt64 amount overflow",
         mutate: (data) => {
-          data[3] = "18446744073709551616";
+          data[4] = "18446744073709551616";
         },
       },
       {
         label: "UInt64 staking total overflow",
         mutate: (data) => {
-          data[8] = "18446744073709551616";
+          data[9] = "18446744073709551616";
         },
       },
       {
         label: "non-Boolean public-key parity",
         mutate: (data) => {
-          data[1] = "2";
+          data[2] = "2";
         },
       },
       {
@@ -665,7 +663,7 @@ describe("ProposalCreatedEventHandler", () => {
         mutate: (data) => {
           const differentProposer = PrivateKey.random().toPublicKey();
           data.splice(
-            9,
+            10,
             2,
             ...differentProposer.toFields().map((field) => field.toString()),
           );

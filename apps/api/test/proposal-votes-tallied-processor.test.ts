@@ -74,9 +74,7 @@ function buildFieldEncodedTalliedEvent(): {
   event.eventIndex = 0;
   event.blockEventIndex = 0;
   event.rawEventData = {
-    data: ProposalVotesTalliedEvent.toFields(payload).map((field) =>
-      field.toString(),
-    ),
+    data: ["4", ...ProposalVotesTalliedEvent.toFields(payload).map(String)],
   } as never;
   event.indexedAt = now;
   event.updatedAt = now;
@@ -235,10 +233,10 @@ describe("ProposalVotesTalliedEventHandler", () => {
   it("rejects field-encoded tally values outside contract UInt domains", async () => {
     const handler = new ProposalVotesTalliedEventHandler();
     const cases = [
-      { index: 2, value: "4294967296", label: "lifecycleId" },
-      { index: 3, value: "18446744073709551616", label: "yayWeight" },
-      { index: 4, value: "18446744073709551616", label: "nayWeight" },
-      { index: 5, value: "18446744073709551616", label: "abstainWeight" },
+      { index: 3, value: "4294967296", label: "lifecycleId" },
+      { index: 4, value: "18446744073709551616", label: "yayWeight" },
+      { index: 5, value: "18446744073709551616", label: "nayWeight" },
+      { index: 6, value: "18446744073709551616", label: "abstainWeight" },
     ];
 
     for (const testCase of cases) {

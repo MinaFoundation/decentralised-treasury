@@ -1,5 +1,10 @@
 import type { ArchiveEventEntity } from "@repo/indexer";
 import {
+  ProposalCreatedEvent,
+  ProposalExecutedEvent,
+  ProposalPauseToggledEvent,
+  ProposalVoteDispatchedEvent,
+  ProposalVotesTalliedEvent,
   PROPOSAL_CREATED_EVENT_NAME,
   PROPOSAL_EXECUTED_EVENT_NAME,
   PROPOSAL_PAUSE_TOGGLED_EVENT_NAME,
@@ -27,25 +32,20 @@ const PROPOSAL_EVENT_NAMES: ProposalEventName[] = [
   PROPOSAL_VOTES_TALLIED_EVENT_NAME,
 ].sort();
 
-const PAYLOAD_FIELD_COUNTS: Record<ProposalEventName, number> = {
-  [PROPOSAL_CREATED_EVENT_NAME]: 13,
-  [PROPOSAL_EXECUTED_EVENT_NAME]: 5,
-  [PROPOSAL_PAUSE_TOGGLED_EVENT_NAME]: 5,
-  [PROPOSAL_VOTE_DISPATCHED_EVENT_NAME]: 7,
-  [PROPOSAL_VOTES_TALLIED_EVENT_NAME]: 9,
-};
-
-const LEGACY_STRIPPED_FIELD_COUNTS: Partial<
-  Record<ProposalEventName, readonly number[]>
-> = {
-  [PROPOSAL_EXECUTED_EVENT_NAME]: [7],
+const EVENT_SCHEMAS = {
+  [PROPOSAL_CREATED_EVENT_NAME]: ProposalCreatedEvent,
+  [PROPOSAL_EXECUTED_EVENT_NAME]: ProposalExecutedEvent,
+  [PROPOSAL_PAUSE_TOGGLED_EVENT_NAME]: ProposalPauseToggledEvent,
+  [PROPOSAL_VOTE_DISPATCHED_EVENT_NAME]: ProposalVoteDispatchedEvent,
+  [PROPOSAL_VOTES_TALLIED_EVENT_NAME]: ProposalVotesTalliedEvent,
 };
 
 /**
  * Validate an o1js event discriminator and return only the Struct payload.
  *
- * Old indexer rows can contain an already stripped payload. The exact payload
- * size distinguishes those rows from the current raw archive representation.
+ * Select the current schema by discriminator before checking its width.
+ * Mina's event commitment permits omission of the last zero from an even-width
+ * event. Restore only that field; never interpret a short event as legacy data.
  */
 export function getRawProposalEventFields(
   event: ArchiveEventEntity,
@@ -67,22 +67,16 @@ export function getRawProposalEventFields(
     return { kind: "invalid" };
   }
 
-  const payloadFieldCount = PAYLOAD_FIELD_COUNTS[expectedEventType];
-  const legacyFieldCounts =
-    LEGACY_STRIPPED_FIELD_COUNTS[expectedEventType] ?? [];
-  if (
-    data.length === payloadFieldCount ||
-    legacyFieldCounts.includes(data.length)
-  ) {
-    return { kind: "fields", fields: data };
-  }
-  if (data.length !== payloadFieldCount + 1) {
-    return { kind: "invalid" };
-  }
-
   const expectedDiscriminator = PROPOSAL_EVENT_NAMES.indexOf(expectedEventType);
   if (data[0] !== String(expectedDiscriminator)) {
     return { kind: "invalid" };
   }
-  return { kind: "fields", fields: data.slice(1) };
+  const rawFieldCount = EVENT_SCHEMAS[expectedEventType].sizeInFields() + 1;
+  if (data.length === rawFieldCount) {
+    return { kind: "fields", fields: data.slice(1) };
+  }
+  if (rawFieldCount % 2 === 0 && data.length === rawFieldCount - 1) {
+    return { kind: "fields", fields: [...data.slice(1), "0"] };
+  }
+  return { kind: "invalid" };
 }

@@ -178,7 +178,18 @@ function fieldEncodedEvent(input: {
   event.eventIndex = 0;
   event.blockEventIndex = 0;
   event.rawEventData = {
-    data: input.fields.map((field) => field.toString()),
+    data: [
+      String(
+        [
+          "proposalCreated",
+          "proposalExecuted",
+          "proposalPauseToggled",
+          "proposalVoteDispatched",
+          "proposalVotesTallied",
+        ].indexOf(input.eventType),
+      ),
+      ...input.fields.map(String),
+    ],
   } as never;
   event.indexedAt = observedAt;
   event.updatedAt = observedAt;

@@ -79,42 +79,12 @@ async function decodeProposalExecutedPayload(
       import(o1jsModuleName),
       import(proposalEventsModuleName),
     ]);
-    const { Field, PublicKey, UInt64 } = o1jsModule as {
+    const { Field, PublicKey } = o1jsModule as {
       Field: (value: string) => unknown;
       PublicKey: {
-        fromFields(values: unknown[]): { toBase58(): string };
         check(value: unknown): void;
       };
-      UInt64: {
-        fromFields(values: unknown[]): { toString(): string };
-      };
     };
-    if (data.length === 7) {
-      const proposalPublicKey = PublicKey.fromFields(
-        data.slice(0, 2).map((value) => Field(value)),
-      );
-      const recipient = PublicKey.fromFields(
-        data.slice(2, 4).map((value) => Field(value)),
-      );
-      const senderPublicKey = PublicKey.fromFields(
-        data.slice(5, 7).map((value) => Field(value)),
-      );
-      PublicKey.check(proposalPublicKey);
-      PublicKey.check(recipient);
-      PublicKey.check(senderPublicKey);
-      const amountToPayOut = parseContractUInt64(
-        UInt64.fromFields([Field(data[4])]).toString(),
-      );
-      if (amountToPayOut === null) {
-        return null;
-      }
-      return {
-        proposalPublicKey: proposalPublicKey.toBase58(),
-        recipient: recipient.toBase58(),
-        amountToPayOut,
-        senderPublicKey: senderPublicKey.toBase58(),
-      };
-    }
     const ProposalExecutedEvent = (
       proposalEventsModule as {
         ProposalExecutedEvent: {

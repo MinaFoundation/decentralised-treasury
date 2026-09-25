@@ -46,9 +46,7 @@ function buildFieldEncodedExecutedEvent(): {
   event.eventIndex = 0;
   event.blockEventIndex = 0;
   event.rawEventData = {
-    data: ProposalExecutedEvent.toFields(payload).map((field) =>
-      field.toString(),
-    ),
+    data: ["1", ...ProposalExecutedEvent.toFields(payload).map(String)],
   } as never;
   event.indexedAt = now;
   event.updatedAt = now;
@@ -207,68 +205,30 @@ describe("ProposalExecutedEventHandler", () => {
     assert.equal(proposal?.paidOutAmount, expectedPaidOutAmount);
   });
 
-  it("decodes the recipient and derives projection fields for legacy field-encoded proposalExecuted payloads", async () => {
-    const {
-      event,
-      expectedProposalPublicKey,
-      expectedRecipient,
-      expectedSenderPublicKey,
-      expectedPaidOutAmount,
-      expectedRemainingAmount,
-      expectedBondAmount,
-    } = buildLegacyFieldEncodedExecutedEvent();
-    await dataSource.getRepository(ProposalEntity).insert({
-      proposalPublicKey: expectedProposalPublicKey,
-      lifecycleId: 2,
-      amount: "500000000",
-      recipient: expectedRecipient,
-      zkAppUriHash: "123456",
-      stakingEpochDataLedgerHash: null,
-      stakingEpochDataLedgerTotalCurrency: null,
-      requiredParticipationBp: null,
-      requiredApprovalBp: null,
-      requiredParticipation: null,
-      status: "canonical",
-      isPaused: false,
-      paidOutAmount: "0",
-      contents: null,
-      createdAtBlockHeight: 100,
-      createdAtBlockTimestamp: null,
-    });
-    const handler = new ProposalExecutedEventHandler();
+  it("rejects the removed legacy execution field format", async () => {
+    const { event } = buildLegacyFieldEncodedExecutedEvent();
     assert.equal(
-      await dataSource.transaction(
-        async (manager) => await handler.tryHandle(event, manager),
+      await new ProposalExecutedEventHandler().tryHandle(
+        event,
+        dataSource.manager,
       ),
-      true,
+      false,
     );
-
-    const execution = await dataSource
-      .getRepository(ProposalExecutionEntity)
-      .findOneBy({ archiveEventId: event.id });
-    assert.ok(execution);
-    assert.equal(execution?.proposalPublicKey, expectedProposalPublicKey);
-    assert.equal(execution?.recipient, expectedRecipient);
-    assert.equal(execution?.senderPublicKey, expectedSenderPublicKey);
-    assert.equal(execution?.paidOutAmount, expectedPaidOutAmount);
-    assert.equal(execution?.remainingAmount, expectedRemainingAmount);
-    assert.equal(execution?.bondAmount, expectedBondAmount);
-
-    const proposal = await dataSource.getRepository(ProposalEntity).findOneBy({
-      proposalPublicKey: expectedProposalPublicKey,
-    });
-    assert.ok(proposal);
-    assert.equal(proposal?.paidOutAmount, expectedPaidOutAmount);
-
-    const fact = await dataSource
-      .getRepository(ProposalEventFactEntity)
-      .findOneByOrFail({ archiveEventId: event.id });
-    assert.equal(fact.decodedPayload.recipient, expectedRecipient);
+    assert.equal(
+      await dataSource.getRepository(ProposalEventFactEntity).count(),
+      0,
+    );
   });
 
-  it("rejects a legacy execution recipient that differs from the proposal recipient", async () => {
+  it("rejects a structured execution recipient that differs from the proposal recipient", async () => {
     const { event, expectedProposalPublicKey, expectedRecipient } =
       buildLegacyFieldEncodedExecutedEvent();
+    event.rawEventData = {
+      proposalPublicKey: expectedProposalPublicKey,
+      recipient: expectedRecipient,
+      amountToPayOut: "100000000",
+      senderPublicKey: PrivateKey.random().toPublicKey().toBase58(),
+    } as never;
     const committedRecipient = PrivateKey.random().toPublicKey().toBase58();
     assert.notEqual(committedRecipient, expectedRecipient);
     await dataSource.getRepository(ProposalEntity).insert({
@@ -527,16 +487,12 @@ describe("ProposalExecutedEventHandler", () => {
     );
   });
 
-  it("rejects current and legacy field-encoded payout overflows", async () => {
+  it("rejects current field-encoded payout overflows", async () => {
     const handler = new ProposalExecutedEventHandler();
     const current = buildFieldEncodedExecutedEvent().event;
-    (current.rawEventData as { data: string[] }).data[2] =
+    (current.rawEventData as { data: string[] }).data[3] =
       "18446744073709551616";
-    const legacy = buildLegacyFieldEncodedExecutedEvent().event;
-    (legacy.rawEventData as { data: string[] }).data[4] =
-      "18446744073709551616";
-
-    for (const event of [current, legacy]) {
+    for (const event of [current]) {
       assert.equal(
         await dataSource.transaction(
           async (manager) => await handler.tryHandle(event, manager),

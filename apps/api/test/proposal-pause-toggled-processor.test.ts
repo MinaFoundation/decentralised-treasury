@@ -109,9 +109,7 @@ function buildFieldEncodedProposalPauseToggledEvent(paused: boolean): {
   event.eventIndex = 0;
   event.blockEventIndex = 0;
   event.rawEventData = {
-    data: ProposalPauseToggledEvent.toFields(payload).map((field) =>
-      field.toString(),
-    ),
+    data: ["2", ...ProposalPauseToggledEvent.toFields(payload).map(String)],
   } as never;
   event.indexedAt = now;
   event.updatedAt = now;
@@ -329,7 +327,7 @@ describe("ProposalPauseToggledEventHandler", () => {
 
   it("rejects a field-encoded pause value that is not a contract Bool", async () => {
     const { event } = buildFieldEncodedProposalPauseToggledEvent(true);
-    (event.rawEventData as { data: string[] }).data[2] = "2";
+    (event.rawEventData as { data: string[] }).data[3] = "2";
     const handler = new ProposalPauseToggledEventHandler();
 
     assert.equal(

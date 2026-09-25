@@ -9,6 +9,8 @@ import {
 import {
   EventProcessorRouter,
   EventsProcessor,
+  ProcessorEventFailureEntity,
+  ProcessorOffsetEntity,
   type IndexerEventsSource,
 } from "@repo/processor";
 import {
@@ -347,6 +349,81 @@ describe("proposal Archive status pipeline", () => {
     assert.deepEqual(
       (await archiveStatuses(dataSource, fixture)).map((event) => event.status),
       ["canonical", "canonical"],
+    );
+  });
+
+  it("processes shortened events and later proposals through status changes", async () => {
+    let senderSeed = 1n;
+    while (publicKey(senderSeed).isOdd.toBoolean()) senderSeed += 1n;
+    const shortened = buildStatusFixture({
+      name: "shortened",
+      baseHeight: 100,
+      accountUpdateId: 10,
+      proposalSeed: 101n,
+      recipientSeed: 102n,
+      senderSeed,
+      voterSeed: 104n,
+    });
+    const later = buildStatusFixture({
+      name: "later",
+      baseHeight: 102,
+      accountUpdateId: 12,
+      proposalSeed: 105n,
+      recipientSeed: 106n,
+      senderSeed: 107n,
+      voterSeed: 108n,
+    });
+    for (const event of [shortened.proposalEvent, shortened.voteEvent]) {
+      assert.equal(event.eventData![0].data!.pop(), "0");
+    }
+    const events = [
+      shortened.proposalEvent,
+      shortened.voteEvent,
+      later.proposalEvent,
+      later.voteEvent,
+    ];
+    assert.equal(await repository.insertRawEvents(events, "pending"), 4);
+    assert.equal(await processor.processOnce(), 4);
+    await assertActiveProjection(shortened, "pending");
+    await assertActiveProjection(later, "pending");
+    assert.equal(await processor.processOnce(), 0);
+    assert.equal(
+      await dataSource.getRepository(ProcessorEventFailureEntity).count(),
+      0,
+    );
+    const last = (await archiveStatuses(dataSource, later)).find((row) =>
+      row.txHash.endsWith("vote"),
+    )!;
+    const offset = await dataSource
+      .getRepository(ProcessorOffsetEntity)
+      .findOneByOrFail({
+        processorName: "proposal-archive-status-pipeline-test",
+      });
+    assert.equal(offset.lastSeenChangeSequence, last.changeSequence);
+
+    assert.equal(await repository.markPendingAsOrphaned(103, 0), 4);
+    await advancePgMemChangeSequence(dataSource, events);
+    assert.equal(await processor.processOnce(), 4);
+    assert.equal(await dataSource.getRepository(ProposalEntity).count(), 0);
+    assert.equal(await dataSource.getRepository(VoteEntity).count(), 0);
+
+    assert.equal(await repository.insertRawEvents(events, "canonical"), 4);
+    await advancePgMemChangeSequence(dataSource, events);
+    assert.equal(await processor.processOnce(), 4);
+    await assertActiveProjection(shortened, "canonical");
+    await assertActiveProjection(later, "canonical");
+    assert.equal(
+      await dataSource.getRepository(ProcessorEventFailureEntity).count(),
+      0,
+    );
+    const stored = await dataSource
+      .getRepository(ArchiveEventEntity)
+      .findOneByOrFail({
+        txHash: "tx-shortened-vote",
+      });
+    assert.deepEqual(
+      stored.rawEventData.data,
+      shortened.voteEvent.eventData![0].data,
     );
   });
 

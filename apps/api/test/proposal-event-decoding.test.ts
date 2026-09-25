@@ -102,36 +102,25 @@ describe("proposal event discriminator decoding", () => {
     }
   });
 
-  it("keeps the explicit stripped-payload compatibility boundary", () => {
+  it("rejects stripped and legacy execution payloads", () => {
     for (const [expectedEventType, fieldCount] of eventTypes) {
-      const archiveEvent = new ArchiveEventEntity();
-      archiveEvent.eventType = expectedEventType;
-      archiveEvent.rawEventData = {
-        data: Array.from({ length: fieldCount }, (_, index) => String(index)),
-      } as never;
-
+      const event = new ArchiveEventEntity();
+      event.eventType = expectedEventType;
+      event.rawEventData = {
+        data: Array.from({ length: fieldCount }, () => "123"),
+      };
+      assert.deepEqual(getRawProposalEventFields(event, expectedEventType), {
+        kind: "invalid",
+      });
+    }
+    const event = new ArchiveEventEntity();
+    event.eventType = PROPOSAL_EXECUTED_EVENT_NAME;
+    for (const data of [Array(7).fill("123"), ["1", ...Array(7).fill("123")]]) {
+      event.rawEventData = { data };
       assert.deepEqual(
-        getRawProposalEventFields(archiveEvent, expectedEventType),
-        {
-          kind: "fields",
-          fields: Array.from({ length: fieldCount }, (_, index) =>
-            String(index),
-          ),
-        },
+        getRawProposalEventFields(event, PROPOSAL_EXECUTED_EVENT_NAME),
+        { kind: "invalid" },
       );
     }
-
-    const legacyExecuted = new ArchiveEventEntity();
-    legacyExecuted.eventType = PROPOSAL_EXECUTED_EVENT_NAME;
-    legacyExecuted.rawEventData = {
-      data: Array.from({ length: 7 }, (_, index) => String(index)),
-    } as never;
-    assert.deepEqual(
-      getRawProposalEventFields(legacyExecuted, PROPOSAL_EXECUTED_EVENT_NAME),
-      {
-        kind: "fields",
-        fields: Array.from({ length: 7 }, (_, index) => String(index)),
-      },
-    );
   });
 });
