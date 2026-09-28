@@ -80,8 +80,10 @@ These 13 commands sign and submit Mina transactions:
 
 The commands do not export signed transactions for offline submission. A
 transaction can have multiple signing roles. Each account can require a
-different Ledger index. `proposal create` always signs the new Proposal
-account with a local private key.
+different Ledger index. For `proposal create`, both the Sender and Proposal
+accounts use the selected signer mode. Ledger mode requires a public key and
+Ledger account index for each account. Only `in-memory` mode accepts a Proposal
+private key or generates one for deployment.
 
 These four commands create one partial field signature and do not submit a
 Mina transaction:

@@ -147,8 +147,9 @@ Ledger transaction signing is available for:
 - `pause-controller rotate-multisig-keys`;
 - `transfer`.
 
-For `proposal create`, the Ledger signs the Sender only. The CLI uses the
-optional Proposal private key in memory or generates one for deployment.
+For `proposal create`, the Ledger signs both the Sender and Proposal accounts.
+Supply a public key and Ledger account index for each account.
+Only `in-memory` mode accepts a Proposal private key or generates one for deployment.
 
 Ledger partial signing is also available for these field-signature commands:
 

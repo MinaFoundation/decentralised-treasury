@@ -67,15 +67,16 @@ Follow [Vote](vote.md) for the content checks and transaction procedure.
 
 ## 4. Prove and Tally
 
-The operator prepares two proofs after voting.
-One proof transforms the recorded staking ledger into a voting ledger.
-The other proof reduces vote actions and prevents repeated weight from one voter.
+The backend prepares a proof that transforms the recorded staking ledger into a voting ledger.
+A separate proof reduces Proposal vote actions and prevents repeated weight from one voter.
+You can prepare this vote proof and submit the tally yourself.
 
 The tally transaction verifies both proofs.
 It then applies the participation and approval rules.
 
 Use [Results and Acceptance](results-and-acceptance.md) to read the result and
 the conditions that produced it.
+Follow [Tally Your Proposal](tally-a-proposal.md) to use the backend artifacts and submit the transaction.
 
 ## 5. Execute an Approved Proposal
 

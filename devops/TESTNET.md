@@ -852,6 +852,8 @@ dotenvx run -f apps/cli/.env.testnet -- \
 
 dotenvx run -f apps/cli/.env.testnet -- \
   pnpm run cli -- vote-reducer trace-run-batch \
+  --staking-ledger-to-voting-ledger-proof-path .data/testnet/staking-ledger-exhausted.json \
+  --treasury-owner-public-key <TREASURY_OWNER_PUBLIC_KEY> \
   --lifecycle-id 0 \
   --vote-actions-path .data/testnet/vote-actions.json
 ```
@@ -871,6 +873,7 @@ Prove and merge:
 ```bash
 dotenvx run -f apps/cli/.env.testnet -- \
   pnpm run cli -- vote-reducer prove-run-batch \
+  --vote-actions-path .data/testnet/vote-actions.json \
   --lifecycle-id 0 \
   --queue-name vote-reducer-0 \
   --redis-host 127.0.0.1 \
@@ -878,6 +881,7 @@ dotenvx run -f apps/cli/.env.testnet -- \
 
 dotenvx run -f apps/cli/.env.testnet -- \
   pnpm run cli -- vote-reducer prove-merge \
+  --vote-actions-path .data/testnet/vote-actions.json \
   --lifecycle-id 0 \
   --queue-name vote-reducer-0 \
   --redis-host 127.0.0.1 \

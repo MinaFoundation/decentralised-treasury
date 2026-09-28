@@ -8,10 +8,11 @@ page_kind: procedure
 
 The CLI gives you more control over the sender, signing method, and transaction
 inputs than the web application. You can use it to create a proposal, vote,
-read state, and execute an approved proposal.
+tally, read state, and execute an approved proposal.
 
-Operator commands also prepare ledgers, proofs, tallies, and pause actions.
-Those commands are outside this user workflow.
+Use [Tally Your Proposal](tally-a-proposal.md) to download backend files, prepare
+the vote proof, and submit your tally. Operators also manage ledger preparation
+and pause actions.
 
 ## Safety Rules
 
@@ -58,8 +59,11 @@ The built-in network ID is `devnet`.
 
 ## Install The Tools
 
-Complete [Required command tools](../developer/local-development/tools.md).
-Use the repository root for each command on this page.
+Follow [Required command tools](../developer/local-development/tools.md) to download the repository and install its dependencies.
+This revision uses Node.js **24.6.0**, pnpm **9.0.0**, and a separate global `dotenvx` command.
+Use the deployment's code revision when operating an existing Treasury.
+The CLI runs from source without a separate build or global CLI installation.
+Use the repository root for each command on this page. Relative paths start there.
 
 ## Get Command Help
 
@@ -93,10 +97,14 @@ Read the [CLI Ledger setup
 steps](/learn/signing-with-ledger-and-auro#set-up-ledger-for-the-cli) before
 this operation.
 
-You can supply `--proposal-private-key` for a predetermined Proposal address.
-Otherwise, the CLI generates the Proposal keypair in memory, adds the new
-account signature, and discards the private key. The Ledger signs only the
-sender authorization.
+Ledger mode requires a public key and Ledger account index for both the Sender
+and Proposal accounts. The Ledger signs both accounts.
+Do not supply private keys through options or environment variables in Ledger mode.
+
+In `in-memory` mode, you can supply `--proposal-private-key` for a predetermined
+Proposal address. Otherwise, the CLI generates the Proposal keypair in memory
+and discards the private key after deployment.
+
 The current builder uses the sender as the bond payer.
 The sender is also the fee payer. `--nonce` or `TX_NONCE` selects its nonce.
 
@@ -106,7 +114,8 @@ pnpm run cli -- proposal create \
   --network-id=<NETWORK_ID> \
   --sender-public-key <SENDER_PUBLIC_KEY> \
   --sender-ledger-account-index <SENDER_INDEX> \
-  --proposal-private-key <OPTIONAL_DEPLOYMENT_KEY> \
+  --proposal-public-key <PROPOSAL_PUBLIC_KEY> \
+  --proposal-ledger-account-index <PROPOSAL_INDEX> \
   --treasury-owner-public-key <TREASURY_OWNER_PUBLIC_KEY> \
   --proposal-lifecycle-id <LIFECYCLE_ID> \
   --recipient-public-key <RECIPIENT_PUBLIC_KEY> \
@@ -152,8 +161,8 @@ Keep the returned transaction hash.
 
 ## Wait for Tally and Check the Result
 
-Voting does not approve a proposal by itself. Wait for the operator to build
-the proofs and submit a successful tally. Then read Proposal state:
+Voting does not approve a proposal by itself. You can [submit the tally yourself](tally-a-proposal.md)
+or wait for another funded sender to submit it. Then read Proposal state:
 
 ```bash
 pnpm run cli -- proposal read-state \

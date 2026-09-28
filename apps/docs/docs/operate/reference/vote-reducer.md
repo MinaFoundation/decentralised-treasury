@@ -110,7 +110,7 @@ Only the first non-dummy action for one voter adds weight. Later actions still a
 
 A padding action is exactly `Vote.DUMMY` with `PublicKey.empty()`. It does not change action state, nullifiers, or totals.
 
-`Vote.DUMMY` with a non-empty key is not padding. It advances action and nullifier state but adds no vote weight.
+The Owner rejects `Vote.DUMMY` for new votes. Existing `Vote.DUMMY` with a non-empty key is not padding. It advances action and nullifier state but adds no vote weight.
 
 The source enum identifier is `Vote.ABSTRAIN`. The public output field is `abstain`.
 
@@ -194,16 +194,31 @@ See the [CLI command index](./cli-commands) for reducer and tally commands.
 - `vote-reducer trace-run-batch` records fixed-size batch traces.
 - `vote-reducer prove-run-batch` queues batch proofs.
 - `vote-reducer prove-merge` merges adjacent proofs.
-- `vote-reducer clear-state` removes the lifecycle-specific local reducer state.
+- `vote-reducer clear-state` removes only the selected Proposal reducer state.
 - `proposal tally-votes` submits the final proof.
+
+`trace-run-batch` requires the exhausted staking-to-voting proof and the Treasury Owner public key.
+Set `STAKING_LEDGER_TO_VOTING_LEDGER_PROOF_PATH` and `TREASURY_OWNER_PUBLIC_KEY`, or pass their CLI options.
+The command reads the Proposal from `MINA_NODE_URL` and checks its lifecycle and staking snapshot.
+It checks that the proof starts at index zero with an empty voting ledger and has exhausted the staking ledger.
+It also checks that the local voting ledger root matches the proof output.
+Cryptographic verification uses the local staking-to-voting program before any vote traces are recorded.
+Only explicit `PROOFS_ENABLED=false` skips cryptographic verification for local tests; all other checks still run.
+The SQLite database is still required to supply voting accounts and Merkle witnesses.
+
+All four state commands select the Proposal through `--vote-actions-path` or `VOTE_ACTIONS_PATH`.
+The actions file supplies the Proposal public key and token ID.
+The lifecycle voting ledger remains shared.
 
 The tracer stages trace and ledger changes before it flushes them to SQLite.
 
 These staged writes are not one atomic database transaction. A crash can leave partial trace or ledger state.
 
-Clear and rebuild the lifecycle-specific reducer state after an interrupted flush.
+Stop the affected writer after an interrupted flush. Clear and rebuild only the selected Proposal reducer state.
 
-Use one lifecycle-specific state set for each Proposal proof run.
+Mutable reducer state uses the lifecycle ID, canonical Proposal public key, and token ID as its scope.
+Each new Proposal starts with an empty nullifier root. Voting for one Proposal does not consume a vote for another Proposal.
+Legacy lifecycle-only reducer records are ignored. Recreate the affected traces and proofs with a Proposal actions file.
 
 ## Sources
 

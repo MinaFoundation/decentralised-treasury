@@ -15,6 +15,10 @@ more state.
 Read the [CLI prerequisites](../cli/prerequisites.md) before signing. Use the
 [CLI command index](../reference/cli-commands.md) to check command options.
 
+For a blocked event with one missing final zero, follow
+[Shortened Treasury events](./shortened-events.md).
+Other undecodable events are quarantined. Later valid events continue, but readiness remains false until the data is reconciled.
+
 Work through recovery in this order:
 
 1. Stop the affected writer or submitter.
@@ -380,7 +384,7 @@ or access controls.
 their exact order.
 
 Backoffice supports pause, unpause, one Proposal pause toggle, and participant
-rotation. It creates participant field signatures with Ledger only. The final
+rotation. It creates participant field signatures with Auro or Ledger. The final
 transaction fee payer can use Auro or Ledger.
 
 **Remedy:** Create this tunnel from the operator workstation:

@@ -84,17 +84,22 @@ Follow [Vote](vote.md) for the complete procedure.
 The application disables voting before the Voting period.
 It also disables voting for a paused proposal or a wallet with zero displayed weight.
 
-## Read the Result
+## Read Running Totals and the Final Result
 
-Open the **Voting** section after the operator submits the tally.
-Check the participation, approval, vote weights, and latest tally block.
+Open the **Voting** section during voting to see vote weights, participation, approval, and the latest tally block.
+The backend calculates running totals from indexed vote events and delegation weights in the Proposal's staking snapshot.
+The browser refreshes these totals when it detects a new Mina block.
+
+**Passing** and **Failing** describe the current totals. They do not mean that a final tally transaction was submitted.
+A latest tally block can also refer to a running calculation. Pending events and processing delays can change the display.
+
+In Cooldown, an `UNKNOWN` Proposal shows **Awaiting on-chain result**.
+The browser does not submit the final tally automatically.
+Use [Tally Your Proposal](tally-a-proposal.md) for the dotenvx CLI procedure and the [running-total explanation](tally-a-proposal.md#how-the-ui-shows-totals-during-voting).
 
 `APPROVED` and `REJECTED` are completed tally results.
-`UNKNOWN` can mean that no successful tally changed the state.
-
-Use [Results and Acceptance](results-and-acceptance.md) to check the stored
-result. Continue to execution only when the status is `APPROVED`. The current
-lifecycle must also be later than the Proposal lifecycle.
+Use [Results and Acceptance](results-and-acceptance.md) to check the stored result.
+Continue to execution only when the status is `APPROVED` and the current lifecycle is later than the Proposal lifecycle.
 
 ## Execute an Approved Proposal
 
@@ -124,3 +129,6 @@ The web application is not the final source of account state.
 - `apps/web/features/proposals/containers/proposal-detail-page-container.tsx` — `ProposalDetailPageContainer`
 - `packages/ui/src/treasury/proposals/proposal-creation-form.tsx` — `TreasuryProposalCreationForm`
 - `packages/ui/src/treasury/proposals/proposal-detail.tsx` — `TreasuryProposalDetail`
+- `apps/api/src/processors/proposals/staking-ledger-vote-weight.ts` — running vote weights
+- `apps/api/src/processors/proposals/proposal-projection-reconciler.ts` — running and final tallies
+- `packages/ui/src/treasury/proposals/proposals-table.tsx` — provisional and stored status labels

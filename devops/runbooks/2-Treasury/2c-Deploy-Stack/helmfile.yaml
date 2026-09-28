@@ -17,7 +17,7 @@ environments:
         # Mina daemon GraphQL (runbook 1b). Must be an FQDN and plain HTTP:
         # the /mina/ route 502s on a bare name, and sends no SNI, so an HTTPS
         # upstream fails the handshake.
-        minaNodeUpstream: http://graphql-proxy.devnet.svc.cluster.local:3085
+        minaNodeUpstream: http://graphql-proxy.devnet.svc.cluster.local:3000
         # Archive node API (runbook 1a).
         archiveNodeUrl: http://archive-node-api:8080
 

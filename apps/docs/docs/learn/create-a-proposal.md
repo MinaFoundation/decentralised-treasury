@@ -30,6 +30,12 @@ Without this account and balance, a later tally cannot succeed.
 
 ## Understand the Bond
 
+New proposals require at least `10 MINA` (`10000000000` nanomina).
+`MIN_PROPOSAL_AMOUNT` equals `BOND_AMOUNT_DIVISOR * 1000000000` nanomina.
+This requires a bond of at least `1 MINA`. The bond still uses integer division.
+The minimum applies only when the Owner creates a proposal.
+Existing proposal records and payout calculations remain valid.
+
 The bond divisor is `10`.
 The transaction calculates the bond in nanomina with integer division.
 

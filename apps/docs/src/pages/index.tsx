@@ -89,15 +89,15 @@ export default function Home(): JSX.Element {
               Learn how it works, operate a Treasury, or build with the code.
             </p>
             <div className={styles.actions}>
-              <Link className={styles.primaryAction} to="/learn/quickstart">
-                Get started <span aria-hidden="true">→</span>
-              </Link>
-              <a className={styles.secondaryAction} href={treasuryAppUrl}>
+              <a className={styles.primaryAction} href={treasuryAppUrl}>
                 {treasuryAppLabel} <span aria-hidden="true">↗</span>
               </a>
+              <Link className={styles.secondaryAction} to="/learn/quickstart">
+                Read the participant guide <span aria-hidden="true">→</span>
+              </Link>
             </div>
             <p className={styles.heroNote}>
-              On-chain rules. Public proposals. Verifiable results.
+              Use the app to browse proposals and vote. Start with the guide if you are new.
             </p>
           </div>
 

@@ -231,7 +231,7 @@ dotenvx run -f apps/cli/.env.local-blockchain -- \
   pnpm --dir apps/cli run dev proposal create \
   --proposal-lifecycle-id 0 \
   --recipient-public-key <RECIPIENT_PUBLIC_KEY> \
-  --amount 1000000000 \
+  --amount 10000000000 \
   --content-file "$PWD/DEMO_PROPOSAL.md" \
   --api-url http://127.0.0.1:4100
 ```
@@ -280,6 +280,8 @@ dotenvx run -f apps/cli/.env.local-blockchain -- \
 
 dotenvx run -f apps/cli/.env.local-blockchain -- \
   pnpm --dir apps/cli run dev vote-reducer trace-run-batch \
+  --staking-ledger-to-voting-ledger-proof-path .data/local-blockchain-staking-ledger-exhausted.json \
+  --treasury-owner-public-key <TREASURY_OWNER_PUBLIC_KEY> \
   --lifecycle-id 0 \
   --vote-actions-path .data/local-blockchain-vote-actions.json
 ```
@@ -290,6 +292,7 @@ merge the reduced votes:
 ```zsh
 dotenvx run -f apps/cli/.env.local-blockchain -- \
   pnpm --dir apps/cli run dev vote-reducer prove-run-batch \
+  --vote-actions-path .data/local-blockchain-vote-actions.json \
   --lifecycle-id 0 \
   --queue-name treasury-demo-0 \
   --redis-host 127.0.0.1 \
@@ -297,6 +300,7 @@ dotenvx run -f apps/cli/.env.local-blockchain -- \
 
 dotenvx run -f apps/cli/.env.local-blockchain -- \
   pnpm --dir apps/cli run dev vote-reducer prove-merge \
+  --vote-actions-path .data/local-blockchain-vote-actions.json \
   --lifecycle-id 0 \
   --queue-name treasury-demo-0 \
   --redis-host 127.0.0.1 \

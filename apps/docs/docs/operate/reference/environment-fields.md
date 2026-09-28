@@ -150,7 +150,7 @@ It is not a Mina fee-payer nonce.
 | `PAUSE_CONTROLLER_PUBLIC_KEY`  | Pause Controller account.                                       |
 | `PAUSE_CONTROLLER_PRIVATE_KEY` | Software deployment key for the Pause Controller.               |
 | `PROPOSAL_PUBLIC_KEY`          | Existing Proposal account.                                      |
-| `PROPOSAL_PRIVATE_KEY`         | Optional deployment-only Proposal key. Generated if absent.     |
+| `PROPOSAL_PRIVATE_KEY`         | Optional deployment-only Proposal key for `in-memory` mode. Generated if absent in that mode. Forbidden in Ledger mode. |
 | `PROPOSAL_LIFECYCLE_ID`        | Lifecycle ID for creation.                                      |
 | `PROPOSAL_AMOUNT`              | Requested amount in nanomina.                                   |
 | `PROPOSAL_CONTENT_FILE`        | Markdown file for creation.                                     |
@@ -226,7 +226,7 @@ Keep private values out of browser and API environments.
 | `DEVELOPMENT_VOTER_BALANCE`                  | Simulator snapshot balance for each voter in MINA.          |
 | `VOTE_ACTIONS_PATH`                          | Vote action JSON input.                                     |
 | `VOTE_REDUCER_PROOF_PATH`                    | Final Vote Reducer proof JSON.                              |
-| `STAKING_LEDGER_TO_VOTING_LEDGER_PROOF_PATH` | Final staking proof JSON.                                   |
+| `STAKING_LEDGER_TO_VOTING_LEDGER_PROOF_PATH` | Exhausted staking proof JSON for reducer tracing and tallying.                                   |
 | `PROOF_OUTPUT_PATH`                          | Explicit proof output file.                                 |
 | `PROPOSAL_ACTIONS_OUTPUT_PATH`               | Fetched action output file.                                 |
 | `CACHE_PATH`                                 | Optional compile cache path.                                |
@@ -477,3 +477,5 @@ option matrix.
 - `devops/runbooks/2-Treasury/2c-Deploy-Stack/README.md`
 - `devops/runbooks/2-Treasury/2c-Deploy-Stack/helmfile.yaml`
 - `devops/runbooks/2-Treasury/2c-Deploy-Stack/verification-keys.yaml`
+
+The vote-reducer tracing, proving, merging, and clearing commands all use `VOTE_ACTIONS_PATH` to select the Proposal.

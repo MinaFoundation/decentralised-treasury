@@ -101,6 +101,23 @@ curl -s "$H/sqlite/"            # lifecycle databases and markers
 curl -s "$H/proofs/"            # generated proofs
 ```
 
+Use the main Treasury host. The backoffice host does not serve `/sqlite/` or `/proofs/`.
+
+| Artifact URL | Contents | Use for a user tally |
+| --- | --- | --- |
+| `/sqlite/<L>.sqlite` | Staking ledger, voting ledger, saved traces, and intermediate proofs. | Download a local working copy. The CLI needs this database for vote proving and the Treasury Owner witness. |
+| `/sqlite/<L>.sqlite.done` | Lifecycle ID, source ledger hash, and tracing completion time. | Check that tracing completed for the selected lifecycle. |
+| `/sqlite/<L>.sqlite.proven` | Lifecycle ID, backend proof paths, and proving completion time. | Check that staking proving completed. The paths describe backend files, not local download paths. |
+| `/proofs/<L>-merge.json` | Merged staking-to-voting proof. | Not the Proposal vote proof. Tally uses the exhausted staking proof below. |
+| `/proofs/<L>-exhausted.json` | Final exhausted staking-to-voting proof. | Download for `vote-reducer trace-run-batch` validation and `proposal tally-votes`. |
+
+The backend pipeline does not produce the Proposal-specific Vote Reducer proof or submit the tally.
+Users must prepare that proof separately. They do not need backend administration access to use these published files.
+The user procedure is **Tally Your Proposal** in `apps/docs/docs/learn/tally-a-proposal.md`.
+
+Markers describe completed stages. They do not replace database checks, snapshot comparison, or proof verification.
+Wait for complete published files. Do not use a partial database or an S3 recovery checkpoint as a finished tally input.
+
 ```json
 [
   { "name": "0.sqlite", "type": "file", "size": 8922308608 },

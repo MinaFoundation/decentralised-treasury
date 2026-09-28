@@ -90,8 +90,14 @@ runtime default or override.
 | `CURVE_CONSTANT_PARTICIPATION_BP` |         `500` | basis-point curve factor           | Positive `UInt128`. Test all integer denominators. The source has no upper policy bound. | Treasury Proposal → Treasury Owner   |
 | `CURVE_CONSTANT_APPROVAL_BP`      |        `1000` | basis-point curve factor           | Positive `UInt128`. Test all integer denominators. The source has no upper policy bound. | Treasury Proposal → Treasury Owner   |
 | `BOND_AMOUNT_DIVISOR`             |          `10` | dimensionless divisor              | Positive integer. The source has no upper policy bound.                                  | Treasury Proposal and Treasury Owner |
+| `MIN_PROPOSAL_AMOUNT` | `10000000000` | nanomina | Derived from the divisor to require a 1 MINA bond. | Treasury Owner |
 
 These are source constants. They have no environment override.
+
+The proposal minimum changes the Owner verification key. Existing deployed keys do not acquire the new rule.
+The current Owner permissions prevent verification-key replacement during the current protocol version.
+Use a new deployment and matching CLI, web, and backoffice builds.
+Keep the previous client release for any previous deployment.
 
 ## Circuit Constant Catalog
 
@@ -549,6 +555,7 @@ Use this JSON shape. Replace every angle-bracket placeholder.
     "policyConstants": {
       "basisPoints": "10000",
       "bondAmountDivisor": "10",
+      "minProposalAmount": "10000000000",
       "curveConstantApprovalBp": "1000",
       "curveConstantParticipationBp": "500",
       "maxApprovalBp": "7000",

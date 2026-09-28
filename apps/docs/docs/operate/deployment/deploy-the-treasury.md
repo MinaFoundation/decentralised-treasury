@@ -26,6 +26,22 @@ to that sequence.
 
 ## Before You Start
 
+:::warning Open release checks
+
+The Kubernetes examples route public GraphQL traffic to the restricted proxy on port `3000`.
+Keep the full daemon API on port `3085` private and authenticated.
+Check that the public endpoint rejects administrative mutations and supports required queries and `sendZkapp`.
+
+Use the exact o1js 3.1.0 fork revision recorded in the workspace lockfile.
+It includes the account-update, UInt128, and nested-call integration corrections.
+Rebuild all affected verification keys with that exact dependency.
+Apply the processor quarantine migration before starting the upgraded processor.
+
+Complete a real-proof vote, tally, and execution test with the selected release and deployment configuration.
+Tests with proofs disabled do not replace this check.
+
+:::
+
 Obtain the approved configuration baseline. Confirm that it identifies:
 
 - one deployment ID and source revision;
@@ -268,6 +284,7 @@ The deployed verification key binds that value.
 | Pause Controller verification key | compile result                                 | Pause Controller account verification-key hash                         | Exact match                                   |
 | Duration                          | selected compile input                         | build-bound by Owner key; also used to calculate current period        | Runtime fields match the deployed Owner build |
 | Acceptance and bond constants     | selected source revision                       | build-bound by Proposal and Owner keys                                 | Source revision and expected key hashes match |
+| Minimum proposal amount | `10000000000` nanomina | build-bound by the Owner key | `policyConstants.minProposalAmount` matches the source |
 | ZkProgram keys and empty roots    | compile result                                 | build-bound by Proposal and Owner keys; distributed to proof consumers | Exact compile set in all consumers            |
 
 Do not state that a build-bound value was read as a separate Mina state field.
@@ -337,6 +354,9 @@ commands.
 
 ## Sources
 
+- `devops/O1JS-UINT128.md`
+- `devops/runbooks/1-Network/1b-Mina-Daemon/helmfile.yaml`
+- `devops/runbooks/2-Treasury/2c-Deploy-Stack/helmfile.yaml`
 - `devops/TESTNET.md`
 - `devops/runbooks/2-Treasury/2b-Deploy-Contracts/README.md`
 - `devops/runbooks/2-Treasury/2c-Deploy-Stack/README.md`

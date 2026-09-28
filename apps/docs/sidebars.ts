@@ -44,6 +44,7 @@ const sidebars: SidebarsConfig = {
       items: [
         "learn/create-a-proposal",
         "learn/vote",
+        "learn/tally-a-proposal",
         "learn/results-and-acceptance",
         "learn/execute-a-proposal",
       ],

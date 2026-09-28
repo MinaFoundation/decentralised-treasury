@@ -34,42 +34,22 @@ For package-specific details:
 
 ## Setup
 
-This repo pins Node via `.nvmrc` and uses pnpm workspaces.
-
-1. Install/use the pinned Node version:
-
-```bash
-nvm install
-nvm use
-```
-
-1. Ensure Corepack is enabled (if needed):
+Follow [Required command tools](apps/docs/docs/developer/local-development/tools.md)
+to download the repository and install native dependencies, Node.js **24.6.0**, pnpm **9.0.0**, and dotenvx.
+Use the deployment's code revision when operating an existing Treasury.
+The CLI runs from source without a separate build:
 
 ```bash
-corepack enable
+pnpm cli --help
 ```
 
-1. Install dependencies:
-
-```bash
-pnpm install
-```
-
-### Required command tools
-
-Complete [Required command tools](apps/docs/docs/developer/local-development/tools.md)
-before a local demo or CLI procedure. The commands require `dotenvx` on `PATH`.
-Workspace dependency installation does not supply that global command.
+Run this command from the repository root after installation.
+See [Use the CLI](apps/docs/docs/learn/cli.md) and [Tally Your Proposal](apps/docs/docs/learn/tally-a-proposal.md).
 
 ### o1js Fork
 
-The workspace uses the
-[`maht0rz/o1js` commit `87bc121a`](https://github.com/maht0rz/o1js/commit/87bc121acad6ba4d81df499e49ff44800c130ded).
-
-This commit is based on `o1js@3.0.0`. It includes Mesa support and
-the native Node.js prover.
-
-The workspace packages use this pinned commit.
+The workspace pins its o1js fork in `package.json` and `pnpm-lock.yaml`.
+Keep these files together. Do not substitute a registry release when running the CLI against a deployed Treasury.
 
 ## Common Workspace Commands
 

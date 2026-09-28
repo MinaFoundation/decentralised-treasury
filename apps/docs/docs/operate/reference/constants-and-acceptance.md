@@ -24,6 +24,7 @@ These constants define the lifecycle, proof shapes, status values, vote values, 
 | `LifecyclePeriod.COOLDOWN`                     | `3`                         | Cooldown and tally-start period.                            |
 | `LifecyclePeriod.NUMBER_OF_PERIODS`            | `4`                         | Equal periods in one lifecycle.                             |
 | `BOND_AMOUNT_DIVISOR`                          | `10`                        | Calculates the Proposal bond.                               |
+| `MIN_PROPOSAL_AMOUNT` | `10000000000` nanomina | Minimum new proposal amount; requires a 1 MINA bond. |
 | `TREASURY_OWNER_WITHDRAWAL_PERMISSIONS`        | `proof`, `proofOrSignature` | Allowed Owner withdrawal modes.                             |
 | `DEFAULT_TREASURY_OWNER_WITHDRAWAL_PERMISSION` | `proof`                     | Safe default Owner withdrawal mode.                         |
 | `BASIS_POINTS`                                 | `10000`                     | Represents 100 percent.                                     |
@@ -82,6 +83,12 @@ The [CLI](./cli-commands) and web flow calculate the URI from exact Markdown byt
 The signed messages do not include the network ID or contract address. Use a separate signer and nonce domain for each deployment.
 
 ## Bond calculation
+
+New proposals require at least `10 MINA` (`10000000000` nanomina).
+`MIN_PROPOSAL_AMOUNT` equals `BOND_AMOUNT_DIVISOR * 1000000000` nanomina.
+This requires a bond of at least `1 MINA`. The bond still uses integer division.
+The minimum applies only when the Owner creates a proposal.
+Existing proposal records and payout calculations remain valid.
 
 The bond uses unsigned integer division:
 

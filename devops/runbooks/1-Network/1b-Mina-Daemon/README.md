@@ -13,13 +13,13 @@ Ingress that expose the GraphQL endpoint.
 communicates with peers and validates the chain. It supplies these services:
 
 - **Blocks for the archive node** through the archive RPC at `archive:3086`.
-- **GraphQL on `:3085`** for the treasury CLI and browser. They use GraphQL to
+- **Restricted GraphQL on `:3000`** for the treasury CLI and browser. They use GraphQL to
   read account state and submit zkApp transactions.
 
 ```text
   network peers <--p2p 10801--> node-0 (mina) --(archive:3086)--> archive-node
                                      |
-                                     +-- :3085 graphql --> graphql-proxy --> treasury
+                                     +-- :3000 restricted GraphQL --> graphql-proxy --> treasury
 ```
 
 The treasury submits all on-chain transactions through this daemon. The archive
@@ -211,7 +211,7 @@ pod directly. Use the FQDN. A short name does not resolve in the nginx `/mina/`
 route.
 
 ```yaml
-minaNodeUpstream: http://graphql-proxy.devnet.svc.cluster.local:3085
+minaNodeUpstream: http://graphql-proxy.devnet.svc.cluster.local:3000
 ```
 
 The browser requires the public URL from the Ingress host:
@@ -238,3 +238,16 @@ NEXT_PUBLIC_MINA_NODE_URL=https://devnet.minaprotocol.network/graphql
 - Charts: <https://github.com/MinaFoundation/helm-charts/tree/main/mina-daemon>, <https://github.com/MinaFoundation/helm-charts/tree/main/raw>.
 - Local development alternative: [Mina single-node network](/developer/local-development/mina-single-node).
 - Previous: `1a-Archive-Node`. Next: `1c-Staking-Ledger-Provider`.
+
+## Public GraphQL security
+
+Both public ingress routes use the restricted proxy on port `3000`.
+Keep the full daemon API on port `3085` inside the private network.
+Do not publish it through an ingress or a browser proxy.
+Use an authenticated operator connection for administrative calls.
+The ledger provider can use the internal service on port `3085`.
+
+After deployment, check the public route with an administrative mutation.
+The proxy must reject it. Also check account queries and `sendZkapp`.
+If the deployed proxy does not support the required operations, configure a narrow operation allowlist before exposing it.
+Never restore public access to port `3085` to resolve an operation failure.

@@ -371,6 +371,12 @@ It rejects invalid imported signatures. Signers can pass the exported file to
 the next signer or return it to the submitter. A participant who has already
 signed can export the file without signing again.
 
+Before signing, Backoffice recomputes the message hash from the operation data.
+It rejects a supplied hash that does not match the displayed operation.
+It also checks the network, contract addresses, current nonce, and ordered participant keys against current deployment state.
+Proposal operations require a fresh Proposal state check.
+If a check fails, obtain a new bundle and review it before signing.
+
 Ledger indices stay on signer machines. They are not part of exported files.
 
 The submitter then performs these steps:

@@ -81,9 +81,13 @@ and send. Nonce increments allow a proof or the Treasury Owner signature.
 Every submitted transaction needs a fee-payer signature.
 
 `createProposal` requires the transaction sender and Proposal account
-signatures. The CLI accepts an optional Proposal private key. Otherwise, it
-generates the keypair in memory, adds its signature, and discards the private
-key after deployment. This key cannot authorize later Proposal control.
+signatures. In Ledger mode, the CLI requires a public key and Ledger account
+index for each account. Both accounts use Ledger signing.
+In `in-memory` mode, the CLI accepts an optional Proposal private key.
+Otherwise, it generates the keypair in memory, adds its signature, and discards
+the private key after deployment.
+
+The Proposal private key cannot authorize later Proposal control.
 Proposal state uses proof authorization, and its custom-token account updates
 require Treasury Owner approval. A different bond payer needs an additional
 signature.
@@ -132,6 +136,12 @@ The Pause Controller 3-of-5 signatures do not authorize this debit on the MINA n
 ## Business logic
 
 ### Creation
+
+New proposals require at least `10 MINA` (`10000000000` nanomina).
+`MIN_PROPOSAL_AMOUNT` equals `BOND_AMOUNT_DIVISOR * 1000000000` nanomina.
+This requires a bond of at least `1 MINA`. The bond still uses integer division.
+The minimum applies only when the Owner creates a proposal.
+Existing proposal records and payout calculations remain valid.
 
 `createProposal` calculates `floor(proposal.amount / 10)`. It adds that bond to the Owner balance.
 
@@ -184,6 +194,7 @@ Use the [break-glass procedure](../break-glass/index.md#emergency-fund-withdrawa
 | `LifecyclePeriod.COOLDOWN`          | `3`    | Cooldown period.             |
 | `LifecyclePeriod.NUMBER_OF_PERIODS` | `4`    | Periods in one lifecycle.    |
 | `BOND_AMOUNT_DIVISOR`               | `10`   | Proposal bond divisor.       |
+| `MIN_PROPOSAL_AMOUNT` | `10000000000` nanomina | Minimum new proposal amount; requires a 1 MINA bond. |
 
 ## Events
 

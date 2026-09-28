@@ -9,6 +9,14 @@ page_kind: concept
 A visible majority is not enough by itself. The tally checks both participation
 and approval, and a larger request must meet stronger requirements.
 
+## Running Totals in the UI
+
+The UI shows backend calculations while voting is in progress.
+These totals use indexed votes and delegation weights from the Proposal's staking snapshot.
+They can change as pending events become canonical or orphaned.
+**Passing** is a provisional display label; only a successful final tally stores `APPROVED` or `REJECTED` on Mina.
+See [How the UI Shows Totals During Voting](tally-a-proposal.md#how-the-ui-shows-totals-during-voting) for the full flow.
+
 ## Inputs
 
 The equations use these values:
@@ -91,20 +99,19 @@ The proposal then also stays `UNKNOWN`.
 
 ## Check the Result
 
-1. Wait until the operator submits the tally transaction.
+Use [Tally Your Proposal](tally-a-proposal.md) to submit a tally with backend artifacts.
+Any funded sender can submit it when the required inputs and conditions are valid.
+
+1. Wait until your tally transaction, or another sender's tally transaction, is included.
 2. Open the proposal in the web application, or run `proposal read-state`.
 3. Check the stored Proposal status on the Mina network.
 4. Compare the application result with the stored status.
 5. If the values differ, wait for the indexer and processor. Check again.
 
-Use this CLI command for a direct Proposal state read:
+After downloading the tally inputs, use the same dotenvx settings for a direct Proposal state read:
 
 ```bash
-pnpm run cli -- proposal read-state \
-  --treasury-owner-public-key <TREASURY_OWNER_PUBLIC_KEY> \
-  --proposal-public-key <PROPOSAL_PUBLIC_KEY> \
-  --mina-node-url <MINA_GRAPHQL_URL> \
-  --network-id <NETWORK_ID>
+dotenvx run --strict --overload -f .env.tally -f .data/tally/.env -- pnpm cli proposal read-state
 ```
 
 | Stored status | Meaning for the user                                      | Next action                                      |

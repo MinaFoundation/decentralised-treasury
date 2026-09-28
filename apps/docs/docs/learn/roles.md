@@ -16,7 +16,8 @@ Owner, Proposal account, or Pause Controller is unfamiliar.
 ## User
 
 A user can read proposals and public treasury state.
-A user can also create, vote, or submit an execution transaction when all conditions are present.
+A user can also create, vote, tally, or execute when all conditions are present.
+Use [Tally Your Proposal](tally-a-proposal.md) to tally with published backend files.
 
 Normal actions do not require approval from a named administrator.
 Each transaction must still include its required signatures, proofs, and state conditions.
@@ -24,7 +25,8 @@ Each transaction must still include its required signatures, proofs, and state c
 ## Operator
 
 The operator runs the infrastructure and prepares proof inputs.
-The operator also submits the final tally when the required proofs are ready.
+The operator can submit the final tally when the required proofs are ready.
+Other funded senders can also submit it.
 
 The operator keeps the indexer, processor, API, schedulers, workers, and web application available.
 This role does not replace the on-chain authorization rules.

@@ -45,11 +45,25 @@ Set each `<REPLACE: ...>` value in `helmfile.yaml` before deployment:
 | `proving.redis.persistence.storageClass`     | A storage class for the proving queue volume (see `2d`) |
 | `config.treasuryOwnerContractAddress`        | `treasury-owner deploy` output (`2b`)                   |
 | `config.treasuryDeployedAtSlot`              | The value `2b` deployed with                            |
+| `config.multisigParticipantsPublicKeys`      | The five ordered signers `2b` deployed with             |
 | `indexer.extraEnvVars` `EVENTS_START_HEIGHT` | Just below the deploy block height (`2b`)               |
+| `backofficeHost`                             | Hostname for the break-glass console                    |
+| `backoffice.auth.basic.users`                | Credentials for the console                             |
 
 Confirm that `verification-keys.yaml` contains all required values. Without
 these values, the web application cannot create, vote, tally, or execute
-proposals.
+proposals. Both browser applications need them - give the file a `backoffice`
+block as well as a `web` one, or the console cannot prove a pause, unpause,
+proposal toggle or key rotation.
+
+Use chart `0.4.1` or newer. `0.4.0` added the console's proxy server block but
+not the `server_names_hash_bucket_size` that a hostname of about 50 characters
+needs, so the proxy refused to start and took every route with it. Earlier
+versions do not pass `PROOFS_ENABLED` to `proving-scheduler`, whose entrypoint
+requires it - the container exits 1 on every start while the other five in the
+pod stay healthy, showing as a `5/6` pod - and ship no Service for it, which
+`/sqlite` and `/proofs` proxy to, so nginx refuses to resolve the upstream and
+the whole ingress fails with it.
 
 ### Use a managed database
 
@@ -172,9 +186,17 @@ nodes for the database. The database volume is zonal.
 
 ```bash
 cd devops/runbooks/2-Treasury/2c-Deploy-Stack
-helmfile template . | kubectl diff -f -
-helmfile template . | kubectl apply -f -
+helmfile template . | kubectl diff -n <namespace> -f -
+helmfile template . | kubectl apply -n <namespace> -f -
 ```
+
+**Pass `-n` explicitly.** `helmfile template` gives `helm` the namespace so the
+templates can read it, but it does not write `metadata.namespace` into the
+output. Most objects therefore come out namespace-less and land in whatever the
+current kubectl context says, while the bundled Postgres subchart sets its own
+namespace and lands correctly - so an unqualified apply can split one release
+across two namespaces and overwrite an unrelated deployment. The command's
+safety otherwise depends entirely on ambient state.
 
 Read the complete diff before you apply it. This deployment does not use
 ArgoCD. No automatic reconciliation occurs. The apply command starts the
@@ -198,7 +220,7 @@ kubectl get pods -n <namespace> | grep decentralized-treasury
 ```
 
 Confirm that `api`, `indexer`, `indexer-api`, `processor`, `processor-api`,
-`proving-scheduler`, `proxy`, `web`, and `redis` are Running. Confirm that
+`proving-scheduler`, `proxy`, `web`, `backoffice`, and `redis` are Running. Confirm that
 `api-migrate` is Complete. When no proof work exists, `proving-worker` has 0
 replicas. This state shows that the autoscaler is at rest. It is not a failure.
 
@@ -237,6 +259,31 @@ When `remainingPendingBlocks` and `remainingCanonicalBlocks` are `0`, the
 indexer has processed the archive data. On a new deployment, a large value that
 decreases slowly usually shows an unset or low `EVENTS_START_HEIGHT`.
 
+### Check the break-glass console
+
+The console is on its own hostname, so check it separately. The third request
+is the one that matters:
+
+```bash
+B=https://<your backoffice host>
+curl -s -o /dev/null -w "%{http_code}\n" "$B/"          # 200, after auth
+curl -s -o /dev/null -w "%{http_code}\n" "$B/healthz"   # 200, never gated
+curl -s -X POST "$B/mina/graphql" \
+  -H 'content-type: application/json' -d '{"query":"{ syncStatus }"}'
+```
+
+The last one should return `{"data":{"syncStatus":"SYNCED"}}`. It proves the
+proxy is serving the daemon on the console's own origin, which is what the
+browser needs: the console POSTs `application/json`, so every call is
+preflighted, and a node on another origin fails unless it answers CORS. The app
+surfaces that as `Treasury owner account was not found: [object Object]` - a
+failed fetch, not a missing account.
+
+`/sqlite` and `/proofs` are served on the main host only, not on this one.
+
+A `401` on `/` with `auth.mode: basic` is the correct response, and the proxy -
+not the load balancer - is what issues it.
+
 ```bash
 curl -s "$H/processor/status"
 ```
@@ -257,16 +304,20 @@ verification keys. The keys can be absent or compiled with a different
 
 ## Troubleshooting
 
-| Symptom                                               | Cause / fix                                                                                                                                                    |
-| ----------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| All ingress routes return 502                         | The proving-scheduler Service is absent. nginx does not start when it cannot resolve the upstream. Keep the `extraObjects` workaround.                         |
-| `/mina/graphql` returns 502, but other routes respond | `minaNodeUpstream` must be an FQDN, not a Service name without a domain.                                                                                       |
-| The UI loads, but proposal actions fail               | `verification-keys.yaml` is empty, or the keys use an incorrect network or duration.                                                                           |
-| The indexer does not process all archive data         | `EVENTS_START_HEIGHT` is unset, so the indexer starts at genesis.                                                                                              |
-| Pods show `CreateContainerConfigError`                | The `securityContext.runAsUser: 1000` workaround is absent.                                                                                                    |
-| Pods remain `Pending`                                 | The nodes do not have the `nodeSelector` label, or the taint does not have a matching toleration. Check `kubectl describe pod`. Then, see "Use spot capacity". |
-| Only `proving-worker` remains `Pending`               | Its `nodeAffinity` requires the Karpenter-only `karpenter.k8s.aws/instance-cpu` key. Replace or remove this rule.                                              |
-| A second apply does not deploy new code               | The `latest` tag string did not change. Start a rollout restart.                                                                                               |
+| Symptom                                                                     | Cause / fix                                                                                                                                                    |
+| --------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| All ingress routes return 502                                               | On charts before `0.4.0`, the proving-scheduler Service is absent and nginx does not start when it cannot resolve the upstream. Supply it via `extraObjects`.  |
+| `proxy` crash-loops, `could not build server_names_hash`                    | The console hostname is longer than one hash bucket. Fixed in chart `0.4.1`.                                                                                   |
+| `proving-scheduler` shows `5/6`                                             | `PROOFS_ENABLED` does not reach that container, and its entrypoint requires it. Fixed in chart `0.4.0`; otherwise set it in `proving.scheduler.extraEnvVars`.  |
+| The console reports `Treasury owner account was not found: [object Object]` | A failed fetch, not a missing account: its Mina node is on another origin and answers no CORS. Route it via `ingress.hosts.backoffice`.                        |
+| One release lands across two namespaces                                     | `kubectl apply` was run without `-n`. Most objects carry no `metadata.namespace`, so they follow the current context. See "Apply".                             |
+| `/mina/graphql` returns 502, but other routes respond                       | `minaNodeUpstream` must be an FQDN, not a Service name without a domain.                                                                                       |
+| The UI loads, but proposal actions fail                                     | `verification-keys.yaml` is empty, or the keys use an incorrect network or duration.                                                                           |
+| The indexer does not process all archive data                               | `EVENTS_START_HEIGHT` is unset, so the indexer starts at genesis.                                                                                              |
+| Pods show `CreateContainerConfigError`                                      | The `securityContext.runAsUser: 1000` workaround is absent.                                                                                                    |
+| Pods remain `Pending`                                                       | The nodes do not have the `nodeSelector` label, or the taint does not have a matching toleration. Check `kubectl describe pod`. Then, see "Use spot capacity". |
+| Only `proving-worker` remains `Pending`                                     | Its `nodeAffinity` requires the Karpenter-only `karpenter.k8s.aws/instance-cpu` key. Replace or remove this rule.                                              |
+| A second apply does not deploy new code                                     | The `latest` tag string did not change. Start a rollout restart.                                                                                               |
 
 ## References
 
@@ -293,11 +344,15 @@ environments:
         # Public origin. The browser bundle is built with same-origin API
         # paths, so /api, /indexer, /processor and /mina hang off this host.
         host: "<REPLACE: treasury.example.com>"
+        # The break-glass console's own hostname. Must be covered by the same
+        # certificate as `host`, which a single label under the same parent
+        # domain usually is.
+        backofficeHost: "<REPLACE: treasury-backoffice.example.com>"
         certificateArn: "<REPLACE: ACM certificate ARN>"
         # Mina daemon GraphQL (runbook 1b). Must be an FQDN and plain HTTP:
         # the /mina/ route 502s on a bare name, and sends no SNI, so an HTTPS
         # upstream fails the handshake.
-        minaNodeUpstream: http://graphql-proxy.devnet.svc.cluster.local:3085
+        minaNodeUpstream: http://graphql-proxy.devnet.svc.cluster.local:3000
         # Archive node API (runbook 1a).
         archiveNodeUrl: http://archive-node-api:8080
 
@@ -307,7 +362,7 @@ releases:
     namespace: {{ .Values.namespace }}
     # For devnet or mainnet. For the 21-lifecycles-per-epoch speedrun, use:
     #   git::https://github.com/MinaFoundation/helm-charts.git@decentralized-treasury?ref=spike/decentralized-treasury-lifecycle-speedrun
-    chart: git::https://github.com/MinaFoundation/helm-charts.git@decentralized-treasury?ref=decentralized-treasury-0.2.5
+    chart: git::https://github.com/MinaFoundation/helm-charts.git@decentralized-treasury?ref=decentralized-treasury-0.4.1
     values:
       - verification-keys.yaml
       - fullnameOverride: decentralized-treasury
@@ -355,6 +410,12 @@ releases:
         #         storageClass: "<REPLACE: storage class>"
         postgresql:
           enabled: false
+          # If you enable the bundled Postgres instead of the managed database
+          # below, pin auth.postgresPassword as well as auth.password. The
+          # subchart treats only `password` as user-supplied and mints a fresh
+          # random superuser password on every render, so each apply rewrites
+          # the Secret, `kubectl diff` is never clean, and the Secret ends up
+          # claiming a credential the running database does not have.
 
         externalDatabase:
           enabled: true
@@ -373,6 +434,18 @@ releases:
           # Emitted by `treasury-owner deploy`. A wrong address indexes nothing
           # at all rather than erroring.
           treasuryOwnerContractAddress: "<REPLACE: treasury owner public key>"
+          # The five ordered break-glass signers, exactly as passed to
+          # `treasury-owner deploy`. Order is part of the on-chain commitment -
+          # the contract checks signature i against participant i - so a list
+          # that is the right set in the wrong order fails at proving time with
+          # an invalid-commitment error, not a readable one. Required once
+          # backoffice.enabled is true.
+          multisigParticipantsPublicKeys:
+            - "<REPLACE: multisig participant 1>"
+            - "<REPLACE: multisig participant 2>"
+            - "<REPLACE: multisig participant 3>"
+            - "<REPLACE: multisig participant 4>"
+            - "<REPLACE: multisig participant 5>"
           corsAllowedOrigins:
             - https://{{ .Values.host }}
           # Must match what was compiled and deployed. 7140 = one Mina epoch
@@ -508,6 +581,40 @@ releases:
             NEXT_PUBLIC_SLOT_DURATION_MS: "90000"
             NEXT_PUBLIC_NETWORK_ID: DEVNET
 
+        # The break-glass console. Served on its own hostname by the
+        # in-cluster proxy, which is not cosmetic: the console talks to the
+        # Mina node from the browser with content-type application/json, so
+        # every call is preflighted. Pointed at a node on another origin it
+        # fails unless that node answers CORS, and the app reports it as
+        # "Treasury owner account was not found: [object Object]" - a failed
+        # fetch, not a missing account. With ingress.hosts.backoffice set in
+        # `proxy` mode the proxy serves /mina on the console's own origin and
+        # nothing is cross-origin.
+        #
+        # auth.mode is mandatory once it is routed. `basic` is enforced by the
+        # proxy's own nginx here, which is what makes it work behind an ALB -
+        # the load balancer implements no auth annotations of its own, so the
+        # chart refuses `basic` in any shape where an annotation would have to
+        # do the work. `none` publishes it unauthenticated: loading the page
+        # reveals nothing that is not already on chain and every break-glass
+        # action still needs signer keys, but it is a public page with a pause
+        # button, so treat it as temporary.
+        #
+        # Leave the hostname unset to deploy it unexposed and reach it with
+        # `kubectl port-forward`, which cluster RBAC already gates. Note that a
+        # port-forward loads the page but cannot use it, for the CORS reason
+        # above.
+        backoffice:
+          enabled: true
+          publicBaseUrl: https://{{ .Values.backofficeHost }}
+          publicEnv:
+            NEXT_PUBLIC_NETWORK_ID: DEVNET
+          auth:
+            mode: basic
+            basic:
+              users:
+                ops: "<REPLACE: console password>"
+
         # Strips path prefixes ahead of the APIs, which serve at the root.
         # Load balancers cannot do this themselves.
         proxy:
@@ -552,6 +659,15 @@ releases:
           mode: proxy
           className: alb
           host: {{ .Values.host }}
+          hosts:
+            # Forwarded wholesale to the in-cluster proxy, which has a server
+            # block for this name serving the console at / and the daemon at
+            # /mina/. The console gets no Ingress object of its own in this
+            # mode, so no annotation can leak onto the public web app.
+            #
+            # Keep it inside whatever the TLS certificate covers - a single
+            # label under the same parent domain as `host` usually is.
+            backoffice: {{ .Values.backofficeHost }}
           annotations:
             alb.ingress.kubernetes.io/backend-protocol: HTTP
             alb.ingress.kubernetes.io/certificate-arn: {{ .Values.certificateArn }}
@@ -581,7 +697,7 @@ The complete `devops/runbooks/2-Treasury/2c-Deploy-Stack/verification-keys.yaml`
 [Download `verification-keys.yaml`](pathname:///runbook-files/2-Treasury/2c-Deploy-Stack/verification-keys.yaml)
 
 ```yaml
-# Proving artefacts for the web frontend, kept out of helmfile.yaml because each
+# Proving artefacts for the browser applications, kept out of helmfile.yaml because each
 # verification key is a single multi-kilobyte line.
 #
 # Paste the `browserEnv` values emitted by `treasury-owner compile` (runbook 2b).
@@ -590,9 +706,24 @@ The complete `devops/runbooks/2-Treasury/2c-Deploy-Stack/verification-keys.yaml`
 # wrong keys fail at proof time, long after a successful deploy.
 #
 # The chart drops empty entries, so a value left unset renders as absent rather
-# than as an empty string, and the web app fails at proposal actions instead of
-# at startup. Fill in all five.
+# than as an empty string, and the app fails at proposal actions instead of at
+# startup. Fill in all five.
+#
+# Both applications need the same artefacts and both blocks are required when
+# backoffice.enabled is true: the web app proves create, vote and execute, and
+# the console proves the break-glass pause, unpause, proposal toggle and key
+# rotation. The chart supplies NEXT_PUBLIC_LIFECYCLE_PERIOD_DURATION to both
+# from config.lifecyclePeriodDuration, so it is deliberately not repeated
+# here.
 web:
+  publicEnv:
+    NEXT_PUBLIC_VOTE_REDUCER_VERIFICATION_KEY_JSON: '<REPLACE: {"data":"...","hash":"..."}>'
+    NEXT_PUBLIC_STAKING_LEDGER_TO_VOTING_LEDGER_VERIFICATION_KEY_JSON: '<REPLACE: {"data":"...","hash":"..."}>'
+    NEXT_PUBLIC_TREASURY_PROPOSAL_VERIFICATION_KEY_JSON: '<REPLACE: {"data":"...","hash":"..."}>'
+    NEXT_PUBLIC_EMPTY_VOTING_LEDGER_ROOT: '<REPLACE: decimal field element>'
+    NEXT_PUBLIC_EMPTY_NULLIFIER_ROOT: '<REPLACE: decimal field element>'
+
+backoffice:
   publicEnv:
     NEXT_PUBLIC_VOTE_REDUCER_VERIFICATION_KEY_JSON: '<REPLACE: {"data":"...","hash":"..."}>'
     NEXT_PUBLIC_STAKING_LEDGER_TO_VOTING_LEDGER_VERIFICATION_KEY_JSON: '<REPLACE: {"data":"...","hash":"..."}>'
@@ -603,6 +734,6 @@ web:
 
 ## Sources
 
-- `devops/runbooks/2-Treasury/2c-Deploy-Stack/README.md` (SHA-256: `d6ef8a7e262e68a2e78792f8774fc45c01042ec62e58edb395ebada089c697ba`)
-- `devops/runbooks/2-Treasury/2c-Deploy-Stack/helmfile.yaml` (SHA-256: `a86ca62d1f92d582a4ea5b807b71048452cf12f50faa6bd58d63642aa9c79263`)
-- `devops/runbooks/2-Treasury/2c-Deploy-Stack/verification-keys.yaml` (SHA-256: `e70d8353fb71741bcebbc221294ffbbfb7f516d39cb6965ee8272ce8a1227214`)
+- `devops/runbooks/2-Treasury/2c-Deploy-Stack/README.md` (SHA-256: `910bb3b9b3eb2a40c58bf8b8d3cbdab26f68ba14722776ae0ea8c1b422911d60`)
+- `devops/runbooks/2-Treasury/2c-Deploy-Stack/helmfile.yaml` (SHA-256: `58b1311319d56da3b7a495c58aa7c4d474d51481540c1a22218dfd31156d27a8`)
+- `devops/runbooks/2-Treasury/2c-Deploy-Stack/verification-keys.yaml` (SHA-256: `1ffb15646b8b8835aa9041afdd7041ba5c75349413cc87a7d081aafd528cff61`)

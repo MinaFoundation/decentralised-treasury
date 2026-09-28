@@ -96,7 +96,7 @@ for the demand and capacity checks.
 - [ ] Keep break-glass signers separate from the infrastructure operator.
 - [ ] Confirm that Backoffice exposes pause, unpause, Proposal toggle, and participant rotation only.
 - [ ] Treat `Signer` and `Submitter` as workflow modes, not authenticated roles.
-- [ ] Use Ledger only for each Backoffice participant field signature.
+- [ ] Use Auro or Ledger for each Backoffice participant field signature.
 - [ ] Collect valid signatures from at least three of the five participant positions.
 - [ ] Use Auro or Ledger for the final Backoffice transaction fee payer.
 - [ ] Confirm each Ledger account index returns the expected public key.

@@ -32,7 +32,8 @@ It does not add weight to the `yay` or `nay` approval denominator.
 
 ## Why Is a Proposal Still `UNKNOWN` After Voting?
 
-The operator might not have submitted a successful tally.
+No sender might have submitted a successful tally yet.
+You can [tally your Proposal](tally-a-proposal.md) with the backend files and CLI.
 The tally also fails when participation is insufficient or all weight is `abstain`.
 
 The Owner also checks five distinct, non-initial Proposal action-state hashes.

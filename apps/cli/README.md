@@ -17,11 +17,24 @@ This document focuses on practical CLI operation flows:
 
 ## Where To Run Commands
 
-From repo root (recommended):
+First complete [Required command tools](../docs/docs/developer/local-development/tools.md).
+It covers the repository download, native dependencies, Node.js **24.6.0**, pnpm **9.0.0**, and dotenvx.
+Use the deployment's code revision. Install the full workspace dependencies, including development dependencies.
+The CLI runs from source; no separate build or global CLI installation is needed.
+
+From the repository root:
 
 ```bash
+pnpm cli --help
 pnpm run cli -- <command> <subcommand> [options]
 ```
+
+Relative input and output paths use the repository root.
+`pnpm run mina-treasury -- <command> <subcommand> [options]` is an alias.
+Running `pnpm --dir apps/cli run mina-treasury -- ...` instead uses `apps/cli` as the working directory.
+
+Store variables in a procedure-specific environment file and load them with dotenvx.
+For the complete `.env.tally` file and commands, see [Tally Your Proposal](../docs/docs/learn/tally-a-proposal.md).
 
 ## Prover Backend
 
@@ -120,12 +133,6 @@ payment that is signed through the software Ledger boundary:
 pnpm verify:ledger -- --lightnet
 ```
 
-Alias (same behavior):
-
-```bash
-pnpm run mina-treasury -- <command> <subcommand> [options]
-```
-
 ## Emergency Treasury Withdrawal
 
 `treasury-owner emergency-withdraw` creates a signed default-token AccountUpdate for the Treasury Owner. It does not call a contract method or create a proof.
@@ -151,13 +158,6 @@ pnpm run cli -- treasury-owner emergency-withdraw \
 This is a single Treasury Owner account signature on the MINA network. It does not use the Pause Controller 3-of-5 signatures. It bypasses Proposal status, lifecycle, recipient, execution-cap, and global-pause checks.
 
 After inclusion, reconcile the transaction, Owner balance, recipient balance, and both signing-account nonces directly on the MINA network. The operation emits no Treasury Owner event and does not update Proposal `paidOutAmount`.
-
-Or run directly from this package:
-
-```bash
-cd apps/cli
-pnpm run mina-treasury -- <command> <subcommand> [options]
-```
 
 ## Compare Mina And o1js Ledger Hashes
 
@@ -450,11 +450,15 @@ pnpm run cli -- proposal create \
   --content-file ./proposals/demo.md
 ```
 
-You can supply `--proposal-private-key` for a predetermined address. If you do
-not supply it, the CLI generates the Proposal keypair in memory and discards
-the private key after deployment. It prints a warning that explains why the
-private key cannot control the Proposal after deployment. Save
-`proposalAddress` from the output for later commands.
+In Ledger mode, supply `--proposal-public-key` and `--proposal-ledger-account-index`
+for the Proposal account. The Sender and Proposal accounts both use Ledger signing.
+Do not supply private keys through options or environment variables in Ledger mode.
+
+In `in-memory` mode, you can supply `--proposal-private-key` for a predetermined
+address. If absent, the CLI generates the Proposal keypair in memory and discards
+the private key after deployment. It prints a warning about the generated key.
+The private key cannot control the Proposal after deployment.
+Save `proposalAddress` from the output for later commands.
 
 ### 2) Read proposal state
 
@@ -487,159 +491,20 @@ pnpm run cli -- proposal vote \
 
 ## Flow 3: Tally Votes And Execute
 
-`proposal tally-votes` requires two proofs:
+Follow [Tally Your Proposal](../docs/docs/learn/tally-a-proposal.md) for the complete dotenvx procedure:
 
-- merged vote-reducer proof
-- exhausted staking-ledger-to-voting-ledger proof
+1. Create `.env.tally` with the deployment, Proposal, worker, and signer settings.
+2. Download the server's staking proof and lifecycle database. The CLI writes their paths to `.data/tally/.env`.
+3. Load both files with dotenvx, then trace and prove the Proposal votes.
+4. Submit the tally with both proofs and check the Proposal status.
 
-### 1) Fetch proposal actions
+`trace-run-batch` verifies the downloaded staking proof and checks the Proposal snapshot and local voting ledger root before tracing.
+The database supplies the voting accounts and Merkle witnesses. You do not need to regenerate the server's staking proof.
 
-```bash
-pnpm run cli -- proposal fetch-actions \
-  --archive-node-url "$ARCHIVE_NODE_URL" \
-  --proposal-public-key <PROPOSAL_PUBLIC_KEY> \
-  --output-path ./apps/cli/artifacts/vote-actions.json
-```
+The UI displays running totals from indexed votes before the final tally is submitted.
+See [How the UI Shows Totals During Voting](../docs/docs/learn/tally-a-proposal.md#how-the-ui-shows-totals-during-voting).
 
-### 2) Build vote-reducer proof
-
-```bash
-pnpm run cli -- vote-reducer compile
-
-pnpm run cli -- vote-reducer trace-run-batch \
-  --lifecycle-id 0 \
-  --vote-actions-path ./apps/cli/artifacts/vote-actions.json
-```
-
-If you need to re-run vote-reducer from a clean state for the same lifecycle, clear
-vote-reducer-only dependencies (run-batch traces, reducer proofs, and nullifier ledger)
-without removing staking-ledger-to-voting-ledger outputs:
-
-```bash
-pnpm run cli -- vote-reducer clear-state \
-  --lifecycle-id 0
-```
-
-Start Redis:
-
-```bash
-docker run --rm -p 6379:6379 redis:7-alpine
-```
-
-You can also use an external Redis instance instead of local Docker.  
-If so, use that external host/port for every `--redis-host` / `--redis-port` flag below.
-
-Start worker for vote-reducer queue:
-
-```bash
-pnpm run cli -- worker start \
-  --queue-name vote-reducer-0 \
-  --redis-host 127.0.0.1 \
-  --redis-port 6379
-```
-
-Workers do not need to run on the same machine as the CLI commands.  
-You can run workers externally (or multiple workers across machines) as long as they share the same Redis and queue name.
-
-Then prove and merge:
-
-```bash
-pnpm run cli -- vote-reducer prove-run-batch \
-  --lifecycle-id 0 \
-  --redis-host 127.0.0.1 \
-  --redis-port 6379 \
-  --queue-name vote-reducer-0
-
-pnpm run cli -- vote-reducer prove-merge \
-  --lifecycle-id 0 \
-  --redis-host 127.0.0.1 \
-  --redis-port 6379 \
-  --queue-name vote-reducer-0 \
-  --proof-output-path ./apps/cli/artifacts/vote-reducer-merge.json
-```
-
-### 3) Build staking-ledger-to-voting-ledger exhausted proof
-
-Hydrate staking ledger:
-
-```bash
-pnpm run cli -- staking-ledger from-file \
-  --lifecycle-id 0 \
-  --staking-ledger-path <PATH_TO_STAKING_LEDGER_JSON>
-```
-
-Compile and trace:
-
-```bash
-pnpm run cli -- staking-ledger-to-voting-ledger compile
-
-pnpm run cli -- staking-ledger-to-voting-ledger trace-digest \
-  --lifecycle-id 0
-```
-
-Start worker for staking-ledger queue:
-
-```bash
-pnpm run cli -- worker start \
-  --queue-name staking-ledger-to-voting-ledger-0 \
-  --redis-host 127.0.0.1 \
-  --redis-port 6379
-```
-
-Same pattern applies here: workers can run on one machine or many machines, against the same external Redis and queue.
-
-Then prove and exhaust:
-
-```bash
-pnpm run cli -- staking-ledger-to-voting-ledger prove-digest \
-  --lifecycle-id 0 \
-  --redis-host 127.0.0.1 \
-  --redis-port 6379 \
-  --queue-name staking-ledger-to-voting-ledger-0
-
-pnpm run cli -- staking-ledger-to-voting-ledger prove-merge \
-  --lifecycle-id 0 \
-  --redis-host 127.0.0.1 \
-  --redis-port 6379 \
-  --queue-name staking-ledger-to-voting-ledger-0 \
-  --proof-output-path ./apps/cli/artifacts/staking-ledger-merge.json
-
-pnpm run cli -- staking-ledger-to-voting-ledger prove-exhaust \
-  --lifecycle-id 0 \
-  --proof-output-path ./apps/cli/artifacts/exhausted-proof.json
-```
-
-### 4) Tally votes
-
-```bash
-pnpm run cli -- proposal tally-votes \
-  --proposal-public-key <PROPOSAL_PUBLIC_KEY> \
-  --vote-reducer-proof-path ./apps/cli/artifacts/vote-reducer-merge.json \
-  --staking-ledger-to-voting-ledger-proof-path ./apps/cli/artifacts/exhausted-proof.json \
-  --lifecycle-id 0 \
-  --wait true
-```
-
-### 5) Execute approved proposal payout
-
-Full remaining payout:
-
-```bash
-pnpm run cli -- proposal execute \
-  --proposal-public-key <PROPOSAL_PUBLIC_KEY> \
-  --recipient-public-key <RECIPIENT_PUBLIC_KEY> \
-  --wait true
-```
-
-Partial payout:
-
-```bash
-pnpm run cli -- proposal execute \
-  --proposal-public-key <PROPOSAL_PUBLIC_KEY> \
-  --recipient-public-key <RECIPIENT_PUBLIC_KEY> \
-  --amount-to-pay-out 500000000 \
-  --wait true
-```
+After approval, follow [Execute a Proposal](../docs/docs/learn/execute-a-proposal.md) for the payout.
 
 ## Flow 4: Pause Controller And External Signature Exchange
 

@@ -74,6 +74,12 @@ Before creation, preserve the exact ledger for the recorded root. Confirm that i
 
 Creation does not check these conditions. A missing ledger, missing account, wrong token, or zero balance prevents a later tally.
 
+New proposals require at least `10 MINA` (`10000000000` nanomina).
+`MIN_PROPOSAL_AMOUNT` equals `BOND_AMOUNT_DIVISOR * 1000000000` nanomina.
+This requires a bond of at least `1 MINA`. The bond still uses integer division.
+The minimum applies only when the Owner creates a proposal.
+Existing proposal records and payout calculations remain valid.
+
 The bond is:
 
 ```text

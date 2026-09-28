@@ -15,6 +15,8 @@ fixed recipient.
 The proposal status must be `APPROVED`.
 Execution starts from the beginning of the next lifecycle.
 
+If voting ended but the result is still `UNKNOWN`, follow [Tally Your Proposal](tally-a-proposal.md).
+
 The treasury and the Proposal must not be paused.
 The transaction recipient must match the recipient hash stored during creation.
 

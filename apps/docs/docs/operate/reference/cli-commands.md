@@ -251,14 +251,14 @@ Uses `--mina-node-url`, `MINA_NODE_URL`, `--network-id`, and
 
 ### `proposal create`
 
-Uses the Mina connection, common transaction, and Sender signing options. The
-Proposal deployment key is always local to the CLI.
+Uses the Mina connection, common transaction, and Sender and Proposal signing
+options. Both accounts use the selected signer mode.
 
 | Option                                | Environment                 | Required | Default                 | Meaning                                                                                                |
 | ------------------------------------- | --------------------------- | -------- | ----------------------- | ------------------------------------------------------------------------------------------------------ |
 | `--api-url <url>`                     | `TREASURY_API_URL`          | No       | `http://127.0.0.1:4100` | App API base URL for Markdown submission.                                                              |
 | `--treasury-owner-public-key <key>`   | `TREASURY_OWNER_PUBLIC_KEY` | Yes      | None                    | Treasury Owner that creates the child Proposal.                                                        |
-| `--proposal-private-key <key>`        | `PROPOSAL_PRIVATE_KEY`      | No       | Generated in memory     | Optional deployment-only Proposal key. The CLI discards a generated private key when the command ends. |
+| `--proposal-private-key <key>`        | `PROPOSAL_PRIVATE_KEY`      | No       | Generated in `in-memory` mode | Optional deployment-only Proposal key for `in-memory` mode. Forbidden in Ledger mode. The CLI discards a generated private key when the command ends. |
 | `--proposal-public-key <key>` | `PROPOSAL_PUBLIC_KEY` | Ledger mode | None | Proposal account on the Ledger. |
 | `--proposal-ledger-account-index <index>` | `PROPOSAL_LEDGER_ACCOUNT_INDEX` | Ledger mode | None | Ledger index for the Proposal account. |
 | `--proposal-lifecycle-id <id>`        | `PROPOSAL_LIFECYCLE_ID`     | Yes      | None                    | Lifecycle in which the Proposal is created. The parser uses `UInt32`.                                  |
@@ -310,6 +310,29 @@ This is the only CLI command that reads the Archive endpoint.
 | `--treasury-owner-public-key <key>` | `TREASURY_OWNER_PUBLIC_KEY`    | Yes      | None    | Parent Owner, used to derive the Proposal token ID.    |
 | `--proposal-public-key <key>`       | `PROPOSAL_PUBLIC_KEY`          | Yes      | None    | Proposal whose actions are fetched.                    |
 | `--output-path <path>`              | `PROPOSAL_ACTIONS_OUTPUT_PATH` | No       | None    | Optional JSON output file. The result is also printed. |
+
+### `proposal download-tally-inputs`
+
+Downloads the backend lifecycle database, completion markers, and exhausted staking proof.
+Reads the lifecycle and snapshot from the Proposal on Mina. Checks marker identity, database integrity, staking roots, and the historical Treasury Owner account.
+Does not generate the Proposal vote proof, sign, or submit a transaction.
+See [Tally Your Proposal](../../learn/tally-a-proposal.md) for the short workflow.
+
+| Option | Environment | Required | Default | Meaning |
+| --- | --- | --- | --- | --- |
+| `--backend-url <url>` | None | Yes | None | Main Treasury host with `/sqlite/` and `/proofs/`. HTTP or HTTPS; no embedded credentials. |
+| `--output-directory <path>` | None | Yes | None | New directory for files and generated `.env`. Existing directories are refused. |
+| `--mina-node-url <mina-node-url>` | `MINA_NODE_URL` | No | `http://127.0.0.1:8080/graphql` | Mina GraphQL endpoint for Proposal state. |
+| `--network-id <network-id>` | `MINA_NETWORK_ID` | No | `devnet` | Mina network; `mainnet`, `devnet`, or `testnet`. |
+| `--treasury-owner-public-key <treasury-owner-public-key>` | `TREASURY_OWNER_PUBLIC_KEY` | Yes | None | Treasury Owner used to derive the Proposal token ID. |
+| `--proposal-public-key <proposal-public-key>` | `PROPOSAL_PUBLIC_KEY` | Yes | None | Proposal whose lifecycle and snapshot select the downloads. |
+
+The dotenv file stores public network values, Proposal identity, lifecycle ID, absolute input paths, and `PROOFS_ENABLED=true`.
+Load it with `dotenvx run --strict --overload -f .env.tally -f .data/tally/.env -- pnpm cli <command>`.
+It does not set signer credentials, `ARCHIVE_NODE_URL`, or `LIFECYCLE_PERIOD_DURATION`.
+Paths and Mina URLs must not contain single quotes or line breaks.
+The output includes `lifecycleId`, `settingsPath`, `sqlitePath`, and `stakingProofPath`.
+The command removes its new output directory on failure. Proof decoding and consistency checks do not replace cryptographic verification before reducer tracing and during tallying.
 
 ### `proposal tally-votes`
 
@@ -509,18 +532,25 @@ Their environment aliases are `VOTER1_PUBLIC_KEY`, `VOTER2_PUBLIC_KEY`,
 | ------------------------------ | ---------------------------- | ------------------- | -------- | ----------------------------- | ----------------------------------------------------------- |
 | `vote-reducer trace-run-batch` | `--lifecycle-id <id>`        | `LIFECYCLE_ID`      | Yes      | None                          | Lifecycle data namespace.                                   |
 | `vote-reducer trace-run-batch` | `--vote-actions-path <path>` | `VOTE_ACTIONS_PATH` | Yes      | None                          | Action JSON from `proposal fetch-actions`.                  |
+| `vote-reducer trace-run-batch` | `--staking-ledger-to-voting-ledger-proof-path <path>` | `STAKING_LEDGER_TO_VOTING_LEDGER_PROOF_PATH` | Yes | None | Exhausted staking-to-voting proof. Checked before tracing. |
+| `vote-reducer trace-run-batch` | `--treasury-owner-public-key <public-key>` | `TREASURY_OWNER_PUBLIC_KEY` | Yes | None | Treasury Owner used to read the Proposal snapshot. |
+| `vote-reducer trace-run-batch` | `--mina-node-url <url>` | `MINA_NODE_URL` | No | `http://127.0.0.1:8080/graphql` | Node used to read the Proposal snapshot. |
+| `vote-reducer trace-run-batch` | `--network-id <network-id>` | `MINA_NETWORK_ID` | No | `devnet` | `mainnet`, `devnet`, or `testnet`. |
 | `vote-reducer prove-run-batch` | `--lifecycle-id <id>`        | `LIFECYCLE_ID`      | Yes      | None                          | Lifecycle data namespace.                                   |
+| `vote-reducer prove-run-batch` | `--vote-actions-path <path>` | `VOTE_ACTIONS_PATH` | Yes | None | Actions JSON that selects the Proposal state. |
 | `vote-reducer prove-run-batch` | `--redis-host <host>`        | `REDIS_HOST`        | Runtime  | None                          | Redis host.                                                 |
 | `vote-reducer prove-run-batch` | `--redis-port <integer>`     | `REDIS_PORT`        | Runtime  | None                          | Redis port.                                                 |
 | `vote-reducer prove-run-batch` | `--queue-name <name>`        | `QUEUE_NAME`        | No       | `vote-reducer-<lifecycle-id>` | Proof queue.                                                |
 | `vote-reducer prove-run-batch` | `--start-index <integer>`    | `START_INDEX`       | No       | `0` at runtime                | First proof-task index.                                     |
 | `vote-reducer prove-run-batch` | `--end-index <integer>`      | `END_INDEX`         | No       | All remaining tasks           | Last range boundary.                                        |
 | `vote-reducer prove-merge`     | `--lifecycle-id <id>`        | `LIFECYCLE_ID`      | Yes      | None                          | Lifecycle data namespace.                                   |
+| `vote-reducer prove-merge` | `--vote-actions-path <path>` | `VOTE_ACTIONS_PATH` | Yes | None | Actions JSON that selects the Proposal state. |
 | `vote-reducer prove-merge`     | `--redis-host <host>`        | `REDIS_HOST`        | Runtime  | None                          | Redis host.                                                 |
 | `vote-reducer prove-merge`     | `--redis-port <integer>`     | `REDIS_PORT`        | Runtime  | None                          | Redis port.                                                 |
 | `vote-reducer prove-merge`     | `--queue-name <name>`        | `QUEUE_NAME`        | No       | `vote-reducer-<lifecycle-id>` | Proof queue.                                                |
 | `vote-reducer prove-merge`     | `--proof-output-path <path>` | `PROOF_OUTPUT_PATH` | No       | None                          | Optional merged-proof JSON file.                            |
-| `vote-reducer clear-state`     | `--lifecycle-id <id>`        | `LIFECYCLE_ID`      | Yes      | None                          | Local lifecycle state to clear. Voting-ledger data is kept. |
+| `vote-reducer clear-state`     | `--lifecycle-id <id>`        | `LIFECYCLE_ID`      | Yes      | None                          | Proposal state to clear. Other Proposals and voting-ledger data are kept. |
+| `vote-reducer clear-state` | `--vote-actions-path <path>` | `VOTE_ACTIONS_PATH` | Yes | None | Actions JSON that selects the Proposal state. |
 
 ## Services
 

@@ -168,12 +168,17 @@ dotenvx run -f <CLI_ENV_FILE> -- \
   --content-file <PROPOSAL_MARKDOWN_PATH>
 ```
 
-You can supply `--proposal-private-key` for a predetermined address. If it is
-absent, the CLI generates the Proposal keypair in memory and discards the
-private key after deployment. The private key cannot authorize later Proposal
-control. Proposal state uses proof authorization, and its custom-token account
-updates require Treasury Owner approval. Save `proposalAddress` from the output
-for reconciliation and later operations.
+In Ledger mode, supply `--proposal-public-key` and `--proposal-ledger-account-index`
+for the Proposal account. The Sender and Proposal accounts both use Ledger signing.
+Do not supply private keys through options or environment variables in Ledger mode.
+
+In `in-memory` mode, you can supply `--proposal-private-key` for a predetermined
+address. If absent, the CLI generates the Proposal keypair in memory and discards
+the private key after deployment.
+
+The private key cannot authorize later Proposal control. Proposal state uses
+proof authorization, and its custom-token account updates require Treasury Owner
+approval. Save `proposalAddress` from the output for reconciliation and later operations.
 
 The CLI commits a content hash on-chain. After inclusion, it submits the
 Markdown to the App API. The CLI retries HTTP `503` responses and the specific
@@ -251,6 +256,11 @@ voter and choice.
 
 ## 6. Build the Vote Reducer Proof
 
+For a user working from published backend files, follow
+[Tally Your Proposal](../../learn/tally-a-proposal.md).
+That procedure downloads the lifecycle database and staking proof before local vote proving.
+The commands below assume access to the Compose host directory.
+
 Read the detailed
 [Vote Reducer procedure](../proving/ledgers-and-proving.md#build-the-vote-reducer-proof)
 before this step.
@@ -275,6 +285,8 @@ dotenvx run -f <CLI_ENV_FILE> -- \
 SQLITE_DATA_DIRECTORY=<SQLITE_DATA_HOST_PATH> \
 dotenvx run -f <CLI_ENV_FILE> -- \
   pnpm run cli -- vote-reducer trace-run-batch \
+  --staking-ledger-to-voting-ledger-proof-path <SQLITE_DATA_HOST_PATH>/proofs/<L>-exhausted.json \
+  --treasury-owner-public-key <TREASURY_OWNER_PUBLIC_KEY> \
   --lifecycle-id <L> \
   --vote-actions-path .data/testnet/vote-actions.json
 ```
@@ -302,6 +314,7 @@ Prove and merge:
 SQLITE_DATA_DIRECTORY=<SQLITE_DATA_HOST_PATH> \
 dotenvx run -f <CLI_ENV_FILE> -- \
   pnpm run cli -- vote-reducer prove-run-batch \
+  --vote-actions-path .data/testnet/vote-actions.json \
   --lifecycle-id <L> \
   --queue-name vote-reducer-<L> \
   --redis-host 127.0.0.1 \
@@ -310,6 +323,7 @@ dotenvx run -f <CLI_ENV_FILE> -- \
 SQLITE_DATA_DIRECTORY=<SQLITE_DATA_HOST_PATH> \
 dotenvx run -f <CLI_ENV_FILE> -- \
   pnpm run cli -- vote-reducer prove-merge \
+  --vote-actions-path .data/testnet/vote-actions.json \
   --lifecycle-id <L> \
   --queue-name vote-reducer-<L> \
   --redis-host 127.0.0.1 \

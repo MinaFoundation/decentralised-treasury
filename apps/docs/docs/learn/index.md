@@ -20,7 +20,7 @@ try the user flow, or learn the system from basic blockchain terms.
 | See the application before you study it   | [User quickstart](quickstart.md)                                                     |
 | Learn without prior blockchain knowledge  | [Mina basics](foundations/mina-basics.md)                                            |
 | Follow one decision from request to funds | [How the Treasury works](how-it-works.md)                                            |
-| Complete a specific action                | [Create](create-a-proposal.md), [vote](vote.md), or [execute](execute-a-proposal.md) |
+| Complete a specific action                | [Create](create-a-proposal.md), [vote](vote.md), [tally](tally-a-proposal.md), or [execute](execute-a-proposal.md) |
 | Prepare Ledger or Auro                    | [Signing with Ledger and Auro](signing-with-ledger-and-auro.md)                      |
 | Check a term                              | [Glossary](glossary.md)                                                              |
 

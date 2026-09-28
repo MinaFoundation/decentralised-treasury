@@ -24,7 +24,7 @@ Each operation needs three valid participant field signatures from five
 ordered positions. Operators must configure five unique public keys in their
 exact order.
 
-Backoffice creates participant field signatures with Ledger only. The final
+Backoffice creates participant field signatures with Auro or Ledger. The final
 transaction fee payer can use Auro or Ledger.
 
 The application also supports:

@@ -15,6 +15,10 @@ proofs:
 
 Both proof flows must use the same lifecycle ID and SQLite file.
 
+To tally one Proposal with published backend files, follow
+[Tally Your Proposal](../../learn/tally-a-proposal.md).
+It covers downloads, snapshot checks, local vote proving, and tally submission.
+
 Read the [CLI prerequisites](../cli/prerequisites.md) before signing a tally.
 Use the [CLI command index](../reference/cli-commands.md) to check options.
 Use [Voting Capacity and Period Sizing](../lifecycle/voting-capacity-and-period-sizing.md)
@@ -62,6 +66,20 @@ Before proposal creation, preserve this exact ledger. Confirm that it contains
 the default-token Treasury Owner account with a nonzero balance.
 
 Creation does not check this viability. Tally later needs the account witness and divides by its historical balance.
+
+## Preserve Ledger Account Data
+
+Import the original snapshot bytes. Do not convert invalid UTF-8 bytes, replace
+unusual public keys, or remove accounts to make an import pass.
+
+The importer preserves token-symbol and zkApp URI bytes for account hashing.
+It preserves canonical compressed ledger public keys even when they do not
+identify a curve point. This decoding does not make those keys valid signers.
+Malformed encodings still fail validation.
+
+Always compare the imported root with the Proposal staking root before proving.
+If an older importer fails on these account fields, use the corrected importer
+and rebuild from the original snapshot.
 
 ## Use One SQLite Directory
 
@@ -460,6 +478,14 @@ dotenvx run -f <CLI_ENV_FILE> -- \
 
 ## Build the Vote Reducer Proof
 
+For published remote files, use [Tally Your Proposal](../../learn/tally-a-proposal.md).
+That procedure downloads the lifecycle SQLite database and exhausted staking proof, then loads their paths with dotenvx.
+The commands below assume those inputs already exist at the operator's selected paths.
+
+`trace-run-batch` requires the separate staking proof path, Treasury Owner public key, and Mina connection settings.
+It verifies the proof and checks its completion, Proposal snapshot, and local voting ledger root before recording traces.
+The lifecycle ID alone only selects storage. It does not authenticate the ledger.
+
 Fetch actions after Archive has indexed all votes:
 
 ```bash
@@ -481,6 +507,8 @@ dotenvx run -f <CLI_ENV_FILE> -- \
 
 dotenvx run -f <CLI_ENV_FILE> -- \
   pnpm run cli -- vote-reducer trace-run-batch \
+  --staking-ledger-to-voting-ledger-proof-path .data/testnet/staking-ledger-exhausted.json \
+  --treasury-owner-public-key <TREASURY_OWNER_PUBLIC_KEY> \
   --lifecycle-id <L> \
   --vote-actions-path .data/testnet/vote-actions.json
 ```
@@ -500,6 +528,7 @@ Prove and merge:
 ```bash
 dotenvx run -f <CLI_ENV_FILE> -- \
   pnpm run cli -- vote-reducer prove-run-batch \
+  --vote-actions-path .data/testnet/vote-actions.json \
   --lifecycle-id <L> \
   --queue-name vote-reducer-<L> \
   --redis-host 127.0.0.1 \
@@ -507,6 +536,7 @@ dotenvx run -f <CLI_ENV_FILE> -- \
 
 dotenvx run -f <CLI_ENV_FILE> -- \
   pnpm run cli -- vote-reducer prove-merge \
+  --vote-actions-path .data/testnet/vote-actions.json \
   --lifecycle-id <L> \
   --queue-name vote-reducer-<L> \
   --redis-host 127.0.0.1 \
@@ -514,8 +544,12 @@ dotenvx run -f <CLI_ENV_FILE> -- \
   --proof-output-path .data/testnet/vote-reducer-merge.json
 ```
 
-Use `vote-reducer clear-state --lifecycle-id <L>` only for an isolated retry.
-It preserves staking conversion data in the same lifecycle file.
+Use `vote-reducer clear-state --lifecycle-id <L> --vote-actions-path .data/testnet/vote-actions.json` before retracing the selected Proposal.
+It preserves the voting ledger and every other Proposal's reducer state.
+Use the same actions file for tracing, proving, merging, and clearing.
+You can set `VOTE_ACTIONS_PATH` once instead of repeating the option.
+Old lifecycle-only reducer state is not reused. Retrace each Proposal after upgrading.
+Run proving workflows sequentially when they share a queue.
 
 ## Decide Proving Resources
 
@@ -535,6 +569,11 @@ stages.
 
 ## Sources
 
+- `packages/sdk/src/ledgers/staking-ledger/staking-ledger.ts`
+- `packages/sdk/src/ledgers/staking-ledger/ledger-json-bytes.ts`
+- `packages/sdk/src/utils/public-key.ts`
+- `packages/sdk/src/provable/ledger-token-symbol.ts`
+- `packages/sdk/src/provable/ledger-zkapp-uri.ts`
 - `devops/TESTNET.md`
 - `packages/sdk/src/provable/contracts/treasury-owner.ts`
 - `packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts`

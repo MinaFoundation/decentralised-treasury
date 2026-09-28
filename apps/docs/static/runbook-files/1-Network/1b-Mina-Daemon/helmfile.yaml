@@ -96,4 +96,4 @@ releases:
                     service:
                       name: graphql-proxy
                       port:
-                        number: 3085
+                        number: 3000

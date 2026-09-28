@@ -3,7 +3,19 @@
 This Docusaurus site contains User, Operator, and Developer documentation for
 the Mina Decentralized Treasury.
 
-## Content structure
+## Public entry point
+
+Use the Treasury app as the main public entry point for participants.
+It provides the dashboard, proposals, and voting flow. Use this docs site for
+learning, help, operator procedures, and developer reference.
+
+The docs landing page gives `Open Treasury` priority. The navigation and final
+page action also link to the app. Set `TREASURY_APP_URL` to the intended
+deployment before publishing; the default points to the local app.
+
+This recommendation does not change production domains or redirects.
+
+## Reader paths
 
 Each main audience has the same layered entry path:
 
@@ -59,6 +71,15 @@ for the complete deployment flow.
 pnpm docs:build
 pnpm --dir apps/docs run start
 ```
+
+## Container image
+
+The `docs` target of `devops/docker/Dockerfile` builds the site for the
+`/docs/` path and serves it with nginx. The Helm chart deploys this image and
+exposes it at `/docs` on the treasury hostname. The image needs no build
+values for a deployment: nginx replaces the placeholder origin in the output
+with the origin of each request. See
+[Running the docs image](../../devops/PUBLISHING.md#running-the-docs-image).
 
 ## Check the documentation
 
