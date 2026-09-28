@@ -9,6 +9,10 @@ environments:
         # Public origin. The browser bundle is built with same-origin API
         # paths, so /api, /indexer, /processor and /mina hang off this host.
         host: "<REPLACE: treasury.example.com>"
+        # The break-glass console's own hostname. Must be covered by the same
+        # certificate as `host`, which a single label under the same parent
+        # domain usually is.
+        backofficeHost: "<REPLACE: treasury-backoffice.example.com>"
         certificateArn: "<REPLACE: ACM certificate ARN>"
         # Mina daemon GraphQL (runbook 1b). Must be an FQDN and plain HTTP:
         # the /mina/ route 502s on a bare name, and sends no SNI, so an HTTPS
@@ -23,7 +27,7 @@ releases:
     namespace: {{ .Values.namespace }}
     # For devnet or mainnet. For the 21-lifecycles-per-epoch speedrun, use:
     #   git::https://github.com/MinaFoundation/helm-charts.git@decentralized-treasury?ref=spike/decentralized-treasury-lifecycle-speedrun
-    chart: git::https://github.com/MinaFoundation/helm-charts.git@decentralized-treasury?ref=decentralized-treasury-0.2.5
+    chart: git::https://github.com/MinaFoundation/helm-charts.git@decentralized-treasury?ref=decentralized-treasury-0.4.1
     values:
       - verification-keys.yaml
       - fullnameOverride: decentralized-treasury
@@ -71,6 +75,12 @@ releases:
         #         storageClass: "<REPLACE: storage class>"
         postgresql:
           enabled: false
+          # If you enable the bundled Postgres instead of the managed database
+          # below, pin auth.postgresPassword as well as auth.password. The
+          # subchart treats only `password` as user-supplied and mints a fresh
+          # random superuser password on every render, so each apply rewrites
+          # the Secret, `kubectl diff` is never clean, and the Secret ends up
+          # claiming a credential the running database does not have.
 
         externalDatabase:
           enabled: true
@@ -89,6 +99,18 @@ releases:
           # Emitted by `treasury-owner deploy`. A wrong address indexes nothing
           # at all rather than erroring.
           treasuryOwnerContractAddress: "<REPLACE: treasury owner public key>"
+          # The five ordered break-glass signers, exactly as passed to
+          # `treasury-owner deploy`. Order is part of the on-chain commitment -
+          # the contract checks signature i against participant i - so a list
+          # that is the right set in the wrong order fails at proving time with
+          # an invalid-commitment error, not a readable one. Required once
+          # backoffice.enabled is true.
+          multisigParticipantsPublicKeys:
+            - "<REPLACE: multisig participant 1>"
+            - "<REPLACE: multisig participant 2>"
+            - "<REPLACE: multisig participant 3>"
+            - "<REPLACE: multisig participant 4>"
+            - "<REPLACE: multisig participant 5>"
           corsAllowedOrigins:
             - https://{{ .Values.host }}
           # Must match what was compiled and deployed. 7140 = one Mina epoch
@@ -224,6 +246,40 @@ releases:
             NEXT_PUBLIC_SLOT_DURATION_MS: "90000"
             NEXT_PUBLIC_NETWORK_ID: DEVNET
 
+        # The break-glass console. Served on its own hostname by the
+        # in-cluster proxy, which is not cosmetic: the console talks to the
+        # Mina node from the browser with content-type application/json, so
+        # every call is preflighted. Pointed at a node on another origin it
+        # fails unless that node answers CORS, and the app reports it as
+        # "Treasury owner account was not found: [object Object]" - a failed
+        # fetch, not a missing account. With ingress.hosts.backoffice set in
+        # `proxy` mode the proxy serves /mina on the console's own origin and
+        # nothing is cross-origin.
+        #
+        # auth.mode is mandatory once it is routed. `basic` is enforced by the
+        # proxy's own nginx here, which is what makes it work behind an ALB -
+        # the load balancer implements no auth annotations of its own, so the
+        # chart refuses `basic` in any shape where an annotation would have to
+        # do the work. `none` publishes it unauthenticated: loading the page
+        # reveals nothing that is not already on chain and every break-glass
+        # action still needs signer keys, but it is a public page with a pause
+        # button, so treat it as temporary.
+        #
+        # Leave the hostname unset to deploy it unexposed and reach it with
+        # `kubectl port-forward`, which cluster RBAC already gates. Note that a
+        # port-forward loads the page but cannot use it, for the CORS reason
+        # above.
+        backoffice:
+          enabled: true
+          publicBaseUrl: https://{{ .Values.backofficeHost }}
+          publicEnv:
+            NEXT_PUBLIC_NETWORK_ID: DEVNET
+          auth:
+            mode: basic
+            basic:
+              users:
+                ops: "<REPLACE: console password>"
+
         # Strips path prefixes ahead of the APIs, which serve at the root.
         # Load balancers cannot do this themselves.
         proxy:
@@ -268,6 +324,15 @@ releases:
           mode: proxy
           className: alb
           host: {{ .Values.host }}
+          hosts:
+            # Forwarded wholesale to the in-cluster proxy, which has a server
+            # block for this name serving the console at / and the daemon at
+            # /mina/. The console gets no Ingress object of its own in this
+            # mode, so no annotation can leak onto the public web app.
+            #
+            # Keep it inside whatever the TLS certificate covers - a single
+            # label under the same parent domain as `host` usually is.
+            backoffice: {{ .Values.backofficeHost }}
           annotations:
             alb.ingress.kubernetes.io/backend-protocol: HTTP
             alb.ingress.kubernetes.io/certificate-arn: {{ .Values.certificateArn }}

@@ -1,4 +1,4 @@
-# Proving artefacts for the web frontend, kept out of helmfile.yaml because each
+# Proving artefacts for the browser applications, kept out of helmfile.yaml because each
 # verification key is a single multi-kilobyte line.
 #
 # Paste the `browserEnv` values emitted by `treasury-owner compile` (runbook 2b).
@@ -7,9 +7,24 @@
 # wrong keys fail at proof time, long after a successful deploy.
 #
 # The chart drops empty entries, so a value left unset renders as absent rather
-# than as an empty string, and the web app fails at proposal actions instead of
-# at startup. Fill in all five.
+# than as an empty string, and the app fails at proposal actions instead of at
+# startup. Fill in all five.
+#
+# Both applications need the same artefacts and both blocks are required when
+# backoffice.enabled is true: the web app proves create, vote and execute, and
+# the console proves the break-glass pause, unpause, proposal toggle and key
+# rotation. The chart supplies NEXT_PUBLIC_LIFECYCLE_PERIOD_DURATION to both
+# from config.lifecyclePeriodDuration, so it is deliberately not repeated
+# here.
 web:
+  publicEnv:
+    NEXT_PUBLIC_VOTE_REDUCER_VERIFICATION_KEY_JSON: '<REPLACE: {"data":"...","hash":"..."}>'
+    NEXT_PUBLIC_STAKING_LEDGER_TO_VOTING_LEDGER_VERIFICATION_KEY_JSON: '<REPLACE: {"data":"...","hash":"..."}>'
+    NEXT_PUBLIC_TREASURY_PROPOSAL_VERIFICATION_KEY_JSON: '<REPLACE: {"data":"...","hash":"..."}>'
+    NEXT_PUBLIC_EMPTY_VOTING_LEDGER_ROOT: '<REPLACE: decimal field element>'
+    NEXT_PUBLIC_EMPTY_NULLIFIER_ROOT: '<REPLACE: decimal field element>'
+
+backoffice:
   publicEnv:
     NEXT_PUBLIC_VOTE_REDUCER_VERIFICATION_KEY_JSON: '<REPLACE: {"data":"...","hash":"..."}>'
     NEXT_PUBLIC_STAKING_LEDGER_TO_VOTING_LEDGER_VERIFICATION_KEY_JSON: '<REPLACE: {"data":"...","hash":"..."}>'
