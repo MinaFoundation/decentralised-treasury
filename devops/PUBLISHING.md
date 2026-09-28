@@ -34,12 +34,13 @@ The script refuses to run on a dirty working tree, because the tag would not
 identify the code inside the image. Override with `ALLOW_DIRTY=true` only for
 throwaway builds.
 
-It builds three image targets for `linux/amd64` and `linux/arm64`:
+It builds four image targets for `linux/amd64` and `linux/arm64`:
 
 | Dockerfile target | Pushed to                                                                                                                                                                 | Contents                                                                      |
 | ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
 | `web`             | `dt-web`                                                                                                                                                                  | Next.js standalone server, static assets, public dir                          |
 | `backoffice`      | `dt-backoffice`                                                                                                                                                           | Offline-first signer and submitter UI                                         |
+| `docs`            | `dt-docs`                                                                                                                                                                 | Static documentation site behind nginx, served at `/docs/`                    |
 | `base`            | `dt-api`, `dt-api-migrate`, `dt-indexer`, `dt-indexer-api`, `dt-processor`, `dt-processor-api`, `dt-voting-ledger-scheduler`, `dt-proving-worker`, `dt-proving-scheduler` | the pnpm workspace; services differ only by the command the orchestrator runs |
 
 Useful overrides:
@@ -131,6 +132,24 @@ container's values.
 
 The saved settings also retain `NEXT_PUBLIC_NETWORK_ID`. Clear the saved
 settings when a deployment moves to a different Mina network.
+
+## Running the docs image
+
+```sh
+docker run -p 3300:8080 minafoundation/dt-docs:<tag>
+```
+
+Open `http://127.0.0.1:3300/docs/`. The site is built for the `/docs/` path,
+so a reverse proxy must forward that prefix unchanged, as the Helm chart's
+proxy does. `/healthz` answers the readiness probe.
+
+The image takes no configuration. Docusaurus bakes absolute URLs into its
+output, so the build uses `https://treasury.invalid` as the documentation
+origin and as the `Open Treasury` link. The image's nginx
+(`devops/docker/docs-nginx.conf`) replaces that placeholder with the origin of
+each request, from the `Host` and `X-Forwarded-Proto` headers. The canonical
+and `og:image` tags then name the host the reader is on, and `Open Treasury`
+opens the treasury application at that host's root.
 
 ## Running the whole stack from published images
 

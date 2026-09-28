@@ -60,6 +60,15 @@ pnpm docs:build
 pnpm --dir apps/docs run start
 ```
 
+## Container image
+
+The `docs` target of `devops/docker/Dockerfile` builds the site for the
+`/docs/` path and serves it with nginx. The Helm chart deploys this image and
+exposes it at `/docs` on the treasury hostname. The image needs no build
+values for a deployment: nginx replaces the placeholder origin in the output
+with the origin of each request. See
+[Running the docs image](../../devops/PUBLISHING.md#running-the-docs-image).
+
 ## Check the documentation
 
 ```bash
