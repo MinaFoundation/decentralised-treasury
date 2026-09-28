@@ -128,3 +128,29 @@ COPY --from=backoffice-build --chown=node:node /app/apps/backoffice/.next/static
 EXPOSE 3200
 
 CMD ["node", "apps/backoffice/server.js"]
+
+# Builds the documentation for the path the chart serves it at, /docs/.
+# Docusaurus bakes absolute URLs into its output, so the origin and the
+# "Open Treasury" link are a placeholder here and the docs image's nginx swaps
+# in each request's own origin - see devops/docker/docs-nginx.conf.
+FROM base AS docs-build
+
+ENV DOCS_URL=https://treasury.invalid
+ENV DOCS_BASE_URL=/docs/
+ENV TREASURY_APP_URL=https://treasury.invalid/
+
+RUN pnpm --dir apps/docs run build
+
+# The published docs image: the static site behind nginx, at /docs/.
+FROM nginxinc/nginx-unprivileged:1.27-alpine AS docs
+
+ARG BUILD_SHA=unknown
+
+LABEL org.opencontainers.image.revision=$BUILD_SHA
+LABEL org.opencontainers.image.title="Mina Decentralized Treasury docs"
+LABEL org.opencontainers.image.description="User, operator and developer documentation for the Mina decentralized treasury, served at /docs/."
+
+COPY devops/docker/docs-nginx.conf /etc/nginx/conf.d/default.conf
+COPY --from=docs-build /app/apps/docs/build /usr/share/nginx/html/docs
+
+EXPOSE 8080

@@ -6,10 +6,12 @@
 #   ./devops/scripts/publish-images.sh v1.4.0           # explicit tag
 #   NAMESPACE=myorg ./devops/scripts/publish-images.sh  # somewhere other than Docker Hub minafoundation
 #
-# Three image targets are built, for linux/amd64 and linux/arm64:
+# Four image targets are built, for linux/amd64 and linux/arm64:
 #
 #   dt-web            the slim Next.js standalone UI (Dockerfile target `web`)
 #   dt-backoffice     the offline-first signing UI (Dockerfile target `backoffice`)
+#   dt-docs           the documentation site behind nginx, at /docs/
+#                     (Dockerfile target `docs`)
 #   dt-api, dt-api-migrate, dt-indexer, dt-indexer-api,
 #   dt-processor, dt-processor-api, dt-voting-ledger-scheduler,
 #   dt-proving-worker, dt-proving-scheduler
@@ -17,7 +19,7 @@
 #                     pushed under each name because compose distinguishes the
 #                     services only by the command it runs
 #
-# Neither image contains deployment-specific configuration; everything is
+# No image contains deployment-specific configuration; everything is
 # supplied through environment variables at run time. See devops/PUBLISHING.md.
 #
 # Environment overrides:
@@ -36,6 +38,7 @@ BUILDER="${BUILDER:-treasury-publisher}"
 
 WEB_REPOS=("dt-web")
 BACKOFFICE_REPOS=("dt-backoffice")
+DOCS_REPOS=("dt-docs")
 SERVICES_REPOS=(
   "dt-api"
   "dt-api-migrate"
@@ -111,6 +114,7 @@ build_image() {
 
 build_image web "${WEB_REPOS[@]}"
 build_image backoffice "${BACKOFFICE_REPOS[@]}"
+build_image docs "${DOCS_REPOS[@]}"
 build_image base "${SERVICES_REPOS[@]}"
 
 echo
