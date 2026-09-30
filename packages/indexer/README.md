@@ -4,7 +4,7 @@ Generic archive-events indexer for treasury-owner style contracts.
 
 ## What It Provides
 
-- `ArchiveClient`: fetches archive GraphQL data (`networkState`, `events`)
+- `ArchiveClient`: fetches archive GraphQL data (`networkState`, `blocks`, `events`)
 - `EventsRepository`: persists normalized events + cursors
 - `EventsIndexer`: polling loop for pending/canonical ingestion + orphan sweep
 - `EventsApiServer`: read API over indexed events
@@ -25,7 +25,7 @@ discriminator. A malformed event or an event with an unresolved type goes to
 ## Data Model
 
 - `archive_events`
-  - identity key: `(tx_hash, account_update_id, account_update_index, event_index)`
+  - identity key: `(tx_hash, account_update_index, event_index)`
   - block identity evidence: `global_slot_since_genesis`, `state_hash`,
     `parent_hash`, and `chain_status` when supplied by Archive
   - lifecycle fields: `status`, `pending_seen_at_height`
@@ -50,18 +50,16 @@ the same invalid observation reopens it.
 
 ## Polling Behavior (`EventsIndexer`)
 
-- pending sync polls `[cursor+1 .. pendingHead]`
+- pending sync validates and refreshes the entire pending branch on each poll
 - canonical sync polls with overlap:
   - `from = max(0, canonicalCursor - canonicalOverlapBlocks + 1)`
 - orphan sweep marks old `pending` rows as `orphaned` based on canonical cursor and
   `orphanDepthBlocks`
-- a complete pending range refresh marks prior pending identities that are absent
-  from that exact range snapshot as `orphaned`
+- a complete pending refresh retires every prior pending identity absent from the selected branch
+- newly canonical observations retire the old pending selection until the next complete pending refresh
 - only an explicit Archive `events` array is a complete snapshot; a null or
   absent collection fails the range fetch
-- if any observation in the pending range is rejected, snapshot retirement does
-  not run for that range; this prevents an incomplete observation set from
-  removing prior facts
+- invalid observations reject the complete pending replacement; the prior snapshot remains intact
 - accepted events, rejection rows, and a range cursor commit in one transaction
 - cursor height advances monotonically when concurrent workers finish out of order
 - an observation that changes an existing transaction event's immutable type or
@@ -135,3 +133,22 @@ tables, add and backfill `block_event_index` and `change_sequence`, create the
 `archive_event_change_sequence_seq` sequence and indexes, and install the
 commit-order trigger that assigns `change_sequence` on inserts and semantic
 updates. Do not deploy this package before that migration is applied.
+
+### Selected Archive branch and stable event identity
+
+Pending ingestion reads complete block ancestry, including blocks without Treasury events.
+It validates every parent back to the latest canonical block and checks the tip again after fetching events.
+It publishes the new pending set atomically and retires the previous branch.
+Canonical observations retain priority. Projection checks also reject known conflicts among pending facts.
+
+Archive API `0.0.9` requires `ENABLE_BLOCK_TRANSACTION_DETAILS=true` to return parent hashes from `blocks`.
+Its event query filters tied tips independently. The indexer therefore uses canonical events only while maximum-height pending tips are tied.
+The existing indexer status reports this ambiguity as a failed pending operation.
+The next poll restores pending projection after one complete, stable tip is available.
+Missing ancestry or an Archive change during a read also prevents pending publication.
+This fallback does not implement an externally pinned best-tip event query.
+
+Event identity is `(txHash, accountUpdateIndex, eventIndex)`.
+`accountUpdateId` is Archive metadata and can change after an Archive rebuild.
+Re-reading renumbered records updates the same event instead of creating another projection effect.
+Immutable payload conflicts remain rejected.

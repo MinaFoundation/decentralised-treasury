@@ -124,6 +124,8 @@ The Owner checks all five targets against the Proposal account. This binds the p
 
 All five targets must be distinct, non-initial, found by the proof, and present in Proposal account history.
 
+Include votes in at least five distinct slots during Voting.
+Multiple actions in one slot do not provide multiple retained history entries.
 One high-weight voter action is not sufficient for this condition.
 
 ### Action count and proof work

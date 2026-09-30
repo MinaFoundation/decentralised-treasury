@@ -32,12 +32,12 @@ The default `LIFECYCLE_PERIOD_DURATION` is `7140` slots. One lifecycle has four 
 
 | Operation         | Earliest period                      | Upper time limit in this protocol |
 | ----------------- | ------------------------------------ | --------------------------------- |
-| `createProposal`  | Proposal period                      | Exploration start slot, inclusive |
-| `vote`            | Voting period                        | Cooldown start slot, inclusive    |
+| `createProposal`  | Proposal period                      | Slot before Exploration starts |
+| `vote`            | Voting period                        | Slot before Cooldown starts    |
 | `tallyVotes`      | Cooldown period                      | No lifecycle upper bound          |
 | `executeProposal` | Proposal period of lifecycle `L + 1` | No lifecycle upper bound          |
 
-The pinned o1js `requireBetween` precondition includes both range limits. The contract sets each bounded upper limit to `period start + D`. Proposal and Exploration therefore share one boundary slot. Voting and Cooldown also share one boundary slot. Submit bounded operations before a shared boundary slot when possible.
+The pinned o1js `requireBetween` precondition includes both range limits. The contract sets each bounded upper limit to `period start + D - 1`. Each bounded period contains exactly `D` slots. Proposal creation ends before Exploration starts. Voting ends before Cooldown starts.
 
 Epoch alignment is the supported live-network operating convention. The
 contract does not check it.
@@ -72,7 +72,9 @@ The contract does not derive the staking snapshot epoch from `lifecycleId`.
 
 Before creation, preserve the exact ledger for the recorded root. Confirm that it contains the default-token Owner account with a nonzero balance.
 
-Creation does not check these conditions. A missing ledger, missing account, wrong token, or zero balance prevents a later tally.
+Creation requires the historical Owner account and its Merkle witness.
+It rejects a wrong Owner public key, a custom token, a zero balance, or a root mismatch before bond collection.
+Keep the exact ledger available for the later tally. The creation check does not guarantee future file availability.
 
 New proposals require at least `10 MINA` (`10000000000` nanomina).
 `MIN_PROPOSAL_AMOUNT` equals `BOND_AMOUNT_DIVISOR * 1000000000` nanomina.
@@ -103,6 +105,15 @@ The Proposal dispatches a `VoteAction`. The action contains the voter public key
 
 The transaction requires the voter signature. The transaction sender can be a different account.
 
+Some recorded voting weight cannot be used.
+This includes weight delegated to proof-only accounts, burn addresses without known private keys, and public keys outside the curve.
+These balances still count in the recorded total currency used to calculate participation thresholds.
+
+The Treasury Owner normally delegates to itself and cannot change its delegate after deployment.
+Its default `access: proof` permission prevents a signed vote with that weight.
+An Owner deployed with `proofOrSignature` can permit signing, but operators must not assume its funds will participate.
+Required participation can therefore exceed the stated percentage of usable voting weight.
+
 ## Proof preparation
 
 `StakingLedgerToVotingLedger` converts the recorded Mina staking ledger into delegate voting weights. It aggregates default-token balances by delegate.
@@ -125,7 +136,9 @@ The Proposal binds:
 
 The Owner also checks exactly five target action-state hashes. They must be found, non-initial, unique, and present in Proposal account history.
 
-This condition can block tally when only one high-weight voter submitted an action.
+Votes must be included in at least five distinct slots during Voting.
+Multiple votes in one slot do not provide multiple retained history entries.
+A high voting weight alone does not satisfy this condition.
 
 Tally has three distinct outcomes:
 
@@ -183,7 +196,10 @@ Reconcile the Proposal account after each toggle.
 
 :::
 
-The caller supplies the `paused` value in `proposalPauseToggled`. The contract does not bind this value to the new state.
+The caller supplies an explicit target and the current Proposal pause nonce.
+The Proposal checks both values and increments the nonce after a successful change.
+
+The Owner emits the checked resulting pause state in `proposalPauseToggled`. Earlier contract versions did not bind this event value to the transition.
 
 ## Verification-key configuration
 

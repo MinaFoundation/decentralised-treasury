@@ -96,8 +96,9 @@ Read Treasury Owner state after each manual slot change. Confirm the lifecycle
 ID and period before you submit a transaction.
 
 Five distinct non-initial action-state values are required by the manual demo
-tally path. Submit at least five included vote actions before Cooldown. A
-voter's later actions do not add weight after that voter's first valid action.
+tally path. Include votes in at least five distinct slots before Cooldown.
+See [the tally prerequisites](../learn/tally-a-proposal.md#before-you-start).
+A voter's later actions do not add weight after that voter's first valid action.
 
 ## Check Documentation
 

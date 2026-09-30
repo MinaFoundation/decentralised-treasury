@@ -77,7 +77,7 @@ Read the [testing strategy](../testing.md) for scope and limitations.
 
 | Group         | Fields                                                   |
 | ------------- | -------------------------------------------------------- |
-| Mina          | `MINA_NODE_URL`, `MINA_NETWORK_ID`                       |
+| Mina          | `MINA_NODE_URL`, `NETWORK`                       |
 | Archive       | `ARCHIVE_NODE_URL`                                       |
 | Contracts     | Treasury Owner, Pause Controller, and participant values |
 | Lifecycle     | `TREASURY_DEPLOYED_AT_SLOT`, `LIFECYCLE_PERIOD_DURATION` |

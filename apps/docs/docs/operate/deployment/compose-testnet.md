@@ -95,7 +95,7 @@ Generate the environment family from the repository root:
 
 ```bash
 pnpm env:bootstrap testnet -- \
-  --network-id <mainnet|devnet|testnet> \
+  --network <mainnet|devnet> \
   --proofs-enabled true \
   --sender-private-key <FUNDED_TESTNET_PRIVATE_KEY> \
   --mina-node-url <HOST_MINA_GRAPHQL_URL> \
@@ -318,8 +318,8 @@ restart, logs, migration, and update commands.
 
 Use [Ideal Lifecycle Operation](../lifecycle/ideal-lifecycle.md) for proposal,
 vote, tally, and execution work. A tally needs five distinct non-initial
-action-state targets. Use five eligible voter accounts in an acceptance run so
-each first vote can add weight.
+action-state targets. Include votes in at least five distinct slots during Voting.
+Use five eligible voter accounts in an acceptance run so each first vote can add weight.
 
 Stop Compose without deleting persistent data:
 

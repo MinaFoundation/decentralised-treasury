@@ -34,7 +34,7 @@ node --version # Must be 22.19.5 or later.
 pnpm --version # Must be 9.0.0.
 CI=true pnpm install --frozen-lockfile
 pnpm env:bootstrap testnet -- \
-  --network-id <mainnet|devnet|testnet> \
+  --network <mainnet|devnet> \
   --proofs-enabled true \
   --sender-private-key <FUNDED_TESTNET_PRIVATE_KEY> \
   --mina-node-url <HOST_MINA_GRAPHQL_URL> \
@@ -81,7 +81,7 @@ the live endpoints to bootstrap instead of editing generated files by hand:
 
 ```bash
 pnpm env:bootstrap testnet -- \
-  --network-id <mainnet|devnet|testnet> \
+  --network <mainnet|devnet> \
   --proofs-enabled true \
   --sender-private-key <FUNDED_TESTNET_PRIVATE_KEY> \
   --mina-node-url <HOST_MINA_GRAPHQL_URL> \
@@ -145,7 +145,7 @@ multisig, sender, and voter identities. Use `--overwrite-secrets` only when you
 want new infrastructure secrets such as `POSTGRES_PASSWORD`.
 
 The testnet templates use `devnet` signatures and enable proofs by default.
-Use `--network-id` and `--proofs-enabled` when the target requires other
+Use `--network` and `--proofs-enabled` when the target requires other
 values. The generator applies each override to all generated consumers.
 
 ## 3. Review Env Values
@@ -155,7 +155,7 @@ Check `apps/cli/.env.testnet`:
 ```text
 MINA_NODE_URL=<HOST_MINA_GRAPHQL_URL>
 ARCHIVE_NODE_URL=<HOST_ARCHIVE_GRAPHQL_URL>
-MINA_NETWORK_ID=<SIGNATURE_NETWORK_ID>
+NETWORK=<mainnet|devnet>
 SENDER_PRIVATE_KEY=<funded sender>
 LIFECYCLE_PERIOD_DURATION=7140
 SQLITE_DATA_DIRECTORY=./.data/testnet-sqlite
@@ -177,7 +177,7 @@ NEXT_PUBLIC_TREASURY_API_URL=<PUBLIC_WEB_ORIGIN>/api
 NEXT_PUBLIC_INDEXER_API_URL=<PUBLIC_WEB_ORIGIN>/indexer
 NEXT_PUBLIC_PROCESSOR_API_URL=<PUBLIC_WEB_ORIGIN>/processor
 NEXT_PUBLIC_MINA_NODE_URL=<PUBLIC_WEB_ORIGIN>/mina/graphql
-NEXT_PUBLIC_NETWORK_ID=DEVNET
+NEXT_PUBLIC_NETWORK_ID=devnet
 ```
 
 Check `apps/backoffice/.env.testnet`:
@@ -186,7 +186,7 @@ Check `apps/backoffice/.env.testnet`:
 NEXT_PUBLIC_MINA_NODE_URL=http://127.0.0.1:3200/mina/graphql
 NEXT_PUBLIC_TREASURY_OWNER_CONTRACT_ADDRESS=<generated treasury owner public key>
 NEXT_PUBLIC_MULTISIG_PARTICIPANTS_PUBLIC_KEYS=<five ordered public keys>
-NEXT_PUBLIC_NETWORK_ID=DEVNET
+NEXT_PUBLIC_NETWORK_ID=devnet
 ```
 
 Check `devops/.env.testnet`:
@@ -409,6 +409,9 @@ section after the stack is healthy.
 
 Create proposal content:
 
+The web application suppresses images in Proposal details and creation previews.
+Use text descriptions. Image alt text remains visible; stored Markdown remains unchanged.
+
 ```bash
 mkdir -p .data/testnet
 
@@ -469,8 +472,9 @@ dotenvx run -f apps/cli/.env.testnet -- \
 
 Repeat with `yay`, `nay`, or `abstain` for each voter you want in the test.
 
-Submit at least five included vote actions during the Voting period. Tally
-needs five distinct non-initial action-state targets. Use five eligible voter
+Include votes in at least five distinct slots during the Voting period.
+Wait for a later slot before the next vote and check its inclusion slot.
+Tally needs five distinct non-initial action-state targets. Use five eligible voter
 keys in an acceptance run so each first vote can add weight. Later actions from
 one voter do not add more weight.
 
@@ -483,7 +487,9 @@ dotenvx run -f apps/cli/.env.testnet -- \
   pnpm run cli -- multisig-sign toggle-pause-proposal \
   --multisig-signer-private-key <SIGNER_PRIVATE_KEY> \
   --proposal-public-key <PROPOSAL_PUBLIC_KEY> \
-  --nonce <PAUSE_CONTROLLER_NONCE>
+  --proposal-token-id <PROPOSAL_TOKEN_ID> \
+  --paused <true-or-false> \
+  --nonce <PROPOSAL_PAUSE_NONCE>
 ```
 
 Submit signatures in participant order:
@@ -492,12 +498,14 @@ Submit signatures in participant order:
 dotenvx run -f apps/cli/.env.testnet -- \
   pnpm run cli -- pause-controller toggle-pause-proposal \
   --proposal-public-key <PROPOSAL_PUBLIC_KEY> \
+  --proposal-nonce <PROPOSAL_PAUSE_NONCE> \
+  --paused <true-or-false> \
   --multisig-signatures <SIG1>,<SIG2>,<SIG3>,<SIG4>,<SIG5>
 ```
 
-The `multisig-sign --nonce` value is the Pause Controller action nonce. Do not
-copy this value to the state-changing submit command. The current submit option
-also sets the fee-payer transaction nonce.
+The `multisig-sign --nonce` value is the Proposal pause nonce.
+Pass the same value to the submit command with `--proposal-nonce`.
+The submit `--nonce` option sets the fee-payer transaction nonce.
 
 Empty positional slots are allowed with consecutive commas.
 
@@ -605,6 +613,20 @@ all eligible lifecycle pointers from newest to oldest. For each lifecycle, it:
 5. verifies the calculated root against the pointer hash;
 6. runs `staking-ledger-to-voting-ledger trace-digest`;
 7. writes `<lifecycleId>.sqlite.done`.
+
+Checkpoint restoration downloads a temporary file before it removes stale
+SQLite `-wal`, `-shm`, and `-journal` files and replaces the database.
+Stop all database users before a manual restore. Missing checkpoints and failed
+downloads leave the existing database and its sidecars unchanged.
+The scheduler forwards a container `SIGTERM` through the CLI launcher and waits for the active command to exit.
+It does not start another lifecycle or poll cycle after this signal.
+On `SIGTERM`, tracing stops after the current batch and waits for an active upload.
+It attempts a final checkpoint when enabled, then closes SQLite before exit with status `143`.
+A hard kill can prevent shutdown from finishing.
+Compose gives this scheduler `21m` before forced termination.
+An active upload and the final upload can each use ten minutes.
+Increase the grace period if the current batch, local copies, and database closure need more than the remaining minute.
+This limit does not extend a provider's shorter spot interruption deadline.
 
 A failed lifecycle gets exponential retry backoff. Other eligible lifecycles
 can still run in the same poll. The scheduler mounts snapshot input read-only.
@@ -930,3 +952,23 @@ dotenvx run -f apps/cli/.env.testnet -- \
   the already-deployed treasury owner address into `apps/api/.env.testnet`,
   `apps/backoffice/.env.testnet`, `apps/web/.env.testnet`, and
   `apps/cli/.env.testnet`.
+
+### Completed snapshot reads and automatic recovery
+
+The API and processor open `<L>.sqlite` only when its valid `<L>.sqlite.done` marker exists.
+The readers check the marker and file identity on each service lookup.
+After replacement, they close the previous store and open the completed replacement.
+Keep the stopped-rebuild procedure: do not replace a database during an active read.
+
+Missing or incomplete snapshots and snapshot root mismatches are temporary dependency failures.
+The processor retries them beyond five attempts, with exponential backoff capped at 60 seconds.
+Recoverable database and network failures use the same policy. Shutdown interrupts the wait.
+A restart preserves the attempt count and retry deadline. No manual retry is needed after the dependency recovers.
+Undecodable events remain quarantined, so later unrelated events can proceed.
+After each batch, the processor can finish projection replay from its committed offset, even when the final event is quarantined.
+The processor checks the locked Archive target and all non-quarantined facts before rebuilding projections.
+A completed replay does not clear quarantine or restore readiness while quarantine remains.
+Legacy projections without Archive history remain in the collecting state.
+Other operational errors also keep retrying. Each poll makes at most five attempts before yielding.
+Legacy blocked records retain the manual recovery command.
+Readiness can still fail for quarantined events, unresolved failures, or incomplete projection replay.

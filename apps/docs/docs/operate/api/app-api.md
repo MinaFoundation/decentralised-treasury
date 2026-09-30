@@ -564,7 +564,8 @@ Response `200`:
   "account": {
     "pk": "B62qAccount",
     "balance": "999",
-    "delegate": "B62qDelegate"
+    "delegate": "B62qDelegate",
+    "tokenSymbol": "field:0"
   },
   "witness": {
     "path": ["123", "456"],
@@ -575,6 +576,8 @@ Response `200`:
 
 The example abbreviates `account` and `witness`.
 The route returns the complete `Account.toJSON()` and witness JSON values.
+`account.tokenSymbol` uses `field:<decimal>` to preserve the committed 48-bit field.
+For example, `field:0` is the empty token symbol. Stored legacy text records remain readable; new responses use the field encoding.
 
 Additional status codes:
 
@@ -595,6 +598,11 @@ Path parameters:
 | `lifecycleId` | Unsigned 64-bit integer string. |
 | `publicKey`   | Valid Mina public key.          |
 
+Optional query: `tokenId=1` selects only the default-token account with that public key.
+Other token IDs return `400`. Without this query, the existing public-key lookup remains available.
+Proposal creation clients use `tokenId=1`, then request `/witnesses/<index>` for the selected account.
+The contract checks the returned account and witness against the transaction staking root.
+
 Response `200`:
 
 ```json
@@ -605,7 +613,8 @@ Response `200`:
   "account": {
     "pk": "B62qAccount",
     "balance": "999",
-    "delegate": "B62qDelegate"
+    "delegate": "B62qDelegate",
+    "tokenSymbol": "field:0"
   },
   "balance": "999",
   "delegatePublicKey": "B62qDelegate"
@@ -614,6 +623,8 @@ Response `200`:
 
 The example abbreviates `account`.
 The route returns the complete `Account.toJSON()` value.
+`account.tokenSymbol` uses the same `field:<decimal>` encoding as the witness response.
+Legacy text records remain readable; new responses preserve the committed field.
 
 Additional status codes:
 

@@ -35,7 +35,7 @@ GraphQL access to that database. The treasury uses only this API for archive dat
   treasury indexer <-- archive-node-api:8080 -------------+
 ```
 
-The indexer uses only two queries. The `networkState` query supplies the chain
+The indexer uses three queries. The `blocks` query validates complete pending ancestry. The `networkState` query supplies the chain
 heads. The `events` query filters events by the treasury owner address. Archive
 lag directly causes treasury data lag.
 
@@ -232,6 +232,13 @@ requires a rebuild, but it does not cause loss of source data.
 - Local development alternative: [Mina single-node network](/developer/local-development/mina-single-node).
 - Next: `1b-Mina-Daemon`.
 
+### Pending branch ancestry
+
+Set `ENABLE_BLOCK_TRANSACTION_DETAILS=true` on the Archive API deployment.
+Archive API `0.0.9` returns empty block parent hashes without this setting.
+The indexer rejects incomplete ancestry and reports the failed operation in its status response.
+It uses canonical-only projection when pending tips tie and restores pending projection after a unique tip becomes available.
+
 ## Configuration File: `helmfile.yaml`
 
 The complete `devops/runbooks/1-Network/1a-Archive-Node/helmfile.yaml` file follows.
@@ -294,6 +301,10 @@ releases:
         enableGraphiql: true
         enableIntrospection: true
         enableLogging: true
+        # Required to validate the complete parent chain of pending blocks.
+        extraEnvVars:
+          - name: ENABLE_BLOCK_TRANSACTION_DETAILS
+            value: "true"
         resources:
           limits:
             cpu: 500m
@@ -314,5 +325,5 @@ releases:
 
 ## Sources
 
-- `devops/runbooks/1-Network/1a-Archive-Node/README.md` (SHA-256: `3ac812dda8b1d20647ba7bd449a6d814bd328891efcea8c4d097f400e260f1fe`)
-- `devops/runbooks/1-Network/1a-Archive-Node/helmfile.yaml` (SHA-256: `4565d8bbb80fc424d55c648d111fb733cfe9c8d56695a575e0e544ecf1e732db`)
+- `devops/runbooks/1-Network/1a-Archive-Node/README.md` (SHA-256: `c0e8d263510ca5c3a9e53a5f0ffa529648ae2550ad2c65a549639175a9996911`)
+- `devops/runbooks/1-Network/1a-Archive-Node/helmfile.yaml` (SHA-256: `a78844fcca1fe0426718af52db529d2d260331afabae1a320489aba6bf807083`)

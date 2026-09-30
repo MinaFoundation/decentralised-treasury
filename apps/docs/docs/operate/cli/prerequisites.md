@@ -52,7 +52,7 @@ approved offline custody process.
 Confirm these inputs before a state-changing command:
 
 - `MINA_NODE_URL` points to the target MINA network;
-- `MINA_NETWORK_ID` is `mainnet`, `devnet`, or `testnet`;
+- `NETWORK` is `mainnet` or `devnet`;
 - `LIFECYCLE_PERIOD_DURATION` matches the compiled contracts;
 - the Treasury Owner and Pause Controller addresses are correct;
 - `TX_FEE` is sufficient for the target network.
@@ -63,12 +63,11 @@ Use each endpoint only for its specified command:
 | -------------------------- | ------------------ | ------------------------------- | --------------------------------------------------------------------------------------- |
 | `--mina-node-url <url>`    | `MINA_NODE_URL`    | `http://127.0.0.1:8080/graphql` | On-chain reads and Mina transactions.                                                   |
 | `--archive-node-url <url>` | `ARCHIVE_NODE_URL` | None                            | `proposal fetch-actions` only; required for that command.                               |
-| `--api-url <url>`          | `TREASURY_API_URL` | `http://127.0.0.1:4100`         | `proposal create` only, for the Proposal content submission after the Mina transaction. |
+| `--api-url <url>`          | `TREASURY_API_URL` | `http://127.0.0.1:4100`         | `proposal create` snapshot account and witness before the Mina transaction, and content submission afterward. |
 
-The CLI does not derive the signature network from `MINA_NODE_URL`.
-`MINA_NETWORK_ID` applies to every signed Mina transaction in both signer modes.
-You can use `--network-id` instead. Set the value explicitly for each target
-network.
+The CLI does not derive the network from `MINA_NODE_URL`.
+Set `--network` or `NETWORK` for each target network. The CLI accepts
+`mainnet` and `devnet`, converts input to lowercase, and defaults to `mainnet`.
 
 Amounts and fees use nanomina.
 
@@ -110,7 +109,7 @@ dotenvx run -f <CLI_ENV_FILE> -- \
   pnpm run cli -- transfer \
   --signer=ledger \
   --sender-ledger-account-index=<LEDGER_ACCOUNT_INDEX> \
-  --network-id=testnet \
+  --network=devnet \
   --recipient-public-key <RECIPIENT_PUBLIC_KEY> \
   --amount <NANOMINA>
 ```
@@ -214,7 +213,7 @@ Run the deployment from the repository root:
 dotenvx run -f <CLI_ENV_FILE> -- \
   pnpm run cli -- pause-controller deploy \
   --signer ledger \
-  --network-id <NETWORK_ID> \
+  --network <NETWORK> \
   --sender-public-key <SENDER_PUBLIC_KEY> \
   --sender-ledger-account-index <SENDER_LEDGER_ACCOUNT_INDEX> \
   --pause-controller-public-key <PAUSE_CONTROLLER_PUBLIC_KEY> \
@@ -232,7 +231,7 @@ Read the included state:
 ```bash
 dotenvx run -f <CLI_ENV_FILE> -- \
   pnpm run cli -- pause-controller read-state \
-  --network-id <NETWORK_ID> \
+  --network <NETWORK> \
   --pause-controller-public-key <PAUSE_CONTROLLER_PUBLIC_KEY>
 ```
 
@@ -258,7 +257,7 @@ Run a transfer that uses the Sender as the funding account:
 dotenvx run -f <CLI_ENV_FILE> -- \
   pnpm run cli -- transfer \
   --signer ledger \
-  --network-id <NETWORK_ID> \
+  --network <NETWORK> \
   --sender-public-key <SENDER_PUBLIC_KEY> \
   --sender-ledger-account-index <SENDER_LEDGER_ACCOUNT_INDEX> \
   --recipient-public-key <RECIPIENT_PUBLIC_KEY> \
@@ -292,7 +291,7 @@ State-changing commands normally support these options:
 | `--nonce <integer>` | `TX_NONCE`        | Current sender nonce from Mina | Explicit fee-payer nonce.       |
 | `--memo <text>`     | `TX_MEMO`         | None                           | Mina transaction memo.          |
 | `--wait <boolean>`  | `TX_WAIT`         | `true`                         | Wait for transaction inclusion. |
-| `--network-id <id>` | `MINA_NETWORK_ID` | `devnet`                       | Mina signature network.         |
+| `--network <network>` | `NETWORK`       | `mainnet`                      | Mina network: `mainnet` or `devnet`. |
 | `--signer <mode>`   | `SIGNER`          | `in-memory`                    | `in-memory` or `ledger`.        |
 
 For each option, the CLI uses this precedence:

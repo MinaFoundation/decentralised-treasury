@@ -80,17 +80,17 @@ names a dependent key that must compile against the changed key.
 A source-only constant has a current implemented value. It does not have a
 runtime default or override.
 
-| Value                             | Current value | Unit                               | Allowed release range                                                                    | Affected key                         |
-| --------------------------------- | ------------: | ---------------------------------- | ---------------------------------------------------------------------------------------- | ------------------------------------ |
-| `BASIS_POINTS`                    |       `10000` | basis points, where `10000 = 100%` | Keep at `10000` unless the complete acceptance scale changes.                            | Treasury Proposal → Treasury Owner   |
-| `MIN_PARTICIPATION_BP`            |        `2000` | basis points                       | `0..10000`; must be less than or equal to the maximum.                                   | Treasury Proposal → Treasury Owner   |
-| `MAX_PARTICIPATION_BP`            |        `5000` | basis points                       | `0..10000`; must be greater than or equal to the minimum.                                | Treasury Proposal → Treasury Owner   |
-| `MIN_APPROVAL_BP`                 |        `5100` | basis points                       | `0..10000`; must be less than or equal to the maximum.                                   | Treasury Proposal → Treasury Owner   |
-| `MAX_APPROVAL_BP`                 |        `7000` | basis points                       | `0..10000`; must be greater than or equal to the minimum.                                | Treasury Proposal → Treasury Owner   |
-| `CURVE_CONSTANT_PARTICIPATION_BP` |         `500` | basis-point curve factor           | Positive `UInt128`. Test all integer denominators. The source has no upper policy bound. | Treasury Proposal → Treasury Owner   |
-| `CURVE_CONSTANT_APPROVAL_BP`      |        `1000` | basis-point curve factor           | Positive `UInt128`. Test all integer denominators. The source has no upper policy bound. | Treasury Proposal → Treasury Owner   |
-| `BOND_AMOUNT_DIVISOR`             |          `10` | dimensionless divisor              | Positive integer. The source has no upper policy bound.                                  | Treasury Proposal and Treasury Owner |
-| `MIN_PROPOSAL_AMOUNT` | `10000000000` | nanomina | Derived from the divisor to require a 1 MINA bond. | Treasury Owner |
+| Value                             | Current value | Unit                               | Allowed release range                                                                   | Affected key                         |
+| --------------------------------- | ------------: | ---------------------------------- | --------------------------------------------------------------------------------------- | ------------------------------------ |
+| `BASIS_POINTS`                    |       `10000` | basis points, where `10000 = 100%` | Keep at `10000` unless the complete acceptance scale changes.                           | Treasury Proposal → Treasury Owner   |
+| `MIN_PARTICIPATION_BP`            |        `2000` | basis points                       | `0..10000`; must be less than or equal to the maximum.                                  | Treasury Proposal → Treasury Owner   |
+| `MAX_PARTICIPATION_BP`            |        `5000` | basis points                       | `0..10000`; must be greater than or equal to the minimum.                               | Treasury Proposal → Treasury Owner   |
+| `MIN_APPROVAL_BP`                 |        `5100` | basis points                       | `0..10000`; must be less than or equal to the maximum.                                  | Treasury Proposal → Treasury Owner   |
+| `MAX_APPROVAL_BP`                 |        `7000` | basis points                       | `0..10000`; must be greater than or equal to the minimum.                               | Treasury Proposal → Treasury Owner   |
+| `CURVE_CONSTANT_PARTICIPATION_BP` |         `500` | basis-point curve factor           | Positive `UInt96`. Test all integer denominators. The source has no upper policy bound. | Treasury Proposal → Treasury Owner   |
+| `CURVE_CONSTANT_APPROVAL_BP`      |        `1000` | basis-point curve factor           | Positive `UInt96`. Test all integer denominators. The source has no upper policy bound. | Treasury Proposal → Treasury Owner   |
+| `BOND_AMOUNT_DIVISOR`             |          `10` | dimensionless divisor              | Positive integer. The source has no upper policy bound.                                 | Treasury Proposal and Treasury Owner |
+| `MIN_PROPOSAL_AMOUNT`             | `10000000000` | nanomina                           | Derived from the divisor to require a 1 MINA bond.                                      | Treasury Owner                       |
 
 These are source constants. They have no environment override.
 
@@ -159,14 +159,13 @@ The supported compile order is:
 | Input                               | Default                         | Unit or type                                 | Allowed value or rule                                                                                                        | Affected key                                              |
 | ----------------------------------- | ------------------------------- | -------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------- |
 | Source revision                     | None                            | Git commit                                   | One immutable revision for compile, deployment, and services.                                                                | Identifies all keys; does not change one by itself.       |
-| `MINA_NETWORK_ID`                   | `devnet`                        | signature network                            | `mainnet`, `devnet`, or `testnet`; it must identify the target endpoint.                                                     | None                                                      |
+| `NETWORK`                           | `mainnet`                       | network                                      | `mainnet` or `devnet`; it must identify the target endpoint.                                                                 | All compiled verification keys and proof artifacts.       |
 | `MINA_NODE_URL`                     | `http://127.0.0.1:8080/graphql` | URL                                          | Reachable Mina GraphQL URL for the selected network.                                                                         | None                                                      |
 | Treasury Owner identity             | None                            | Mina public key and deployment authorization | One unused account for an initial deployment.                                                                                | None                                                      |
 | Pause Controller identity           | None                            | Mina public key and deployment authorization | One unused account for an initial deployment.                                                                                | None                                                      |
 | `TREASURY_DEPLOYED_AT_SLOT`         | `0`                             | Mina global slot                             | `0..4294967295`; supported operation uses the first slot of an epoch. A past or future epoch start is valid.                 | None; stored in Owner state.                              |
 | `TREASURY_WITHDRAWAL_PERMISSION`    | `proof`                         | account permission mode                      | `proof` or `proofOrSignature`. The value sets both `access` and `send`.                                                      | None; sets permanent account permissions.                 |
 | `MULTISIG_PARTICIPANTS_PUBLIC_KEYS` | None                            | ordered public-key list                      | Exactly five valid, distinct, non-empty Mina public keys.                                                                    | None; the commitment is stored in Pause Controller state. |
-| `ALLOW_DEPLOY_TO_EXISTING_ACCOUNT`  | `false`                         | Boolean                                      | Keep `false` for an initial release.                                                                                         | None                                                      |
 | `TX_FEE`                            | `1000000000`                    | nanomina                                     | `UInt64`; select a sufficient deployment fee.                                                                                | None                                                      |
 | `TX_NONCE`                          | Unset                           | fee-payer nonce                              | For deployment, use the current fee-payer nonce or an explicit valid integer. Other commands can use this field differently. | None                                                      |
 | `TX_MEMO`                           | Unset                           | text                                         | Optional transaction memo.                                                                                                   | None                                                      |
@@ -497,7 +496,7 @@ after each bootstrap run.
 | Period duration  | compile, deploy, CLI, API, scheduler, web, backoffice                   |
 | Start slot       | deploy `TREASURY_DEPLOYED_AT_SLOT`, API, scheduler                      |
 | Withdrawal mode  | deploy option, `TREASURY_WITHDRAWAL_PERMISSION`, configuration baseline |
-| Network          | `MINA_NETWORK_ID`, browser network ID, target Mina endpoint             |
+| Network          | `NETWORK`, browser network ID, target Mina endpoint                     |
 | Endpoints        | host, container, and browser forms for each consumer                    |
 
 Set `TREASURY_DEPLOYED_AT_SLOT` in the CLI environment before deployment. Set
@@ -539,7 +538,7 @@ Use this JSON shape. Replace every angle-bracket placeholder.
   "intended": {
     "sourceRevision": "<GIT_COMMIT>",
     "buildIdentity": "<BUILD_IDENTITY>",
-    "networkId": "<mainnet|devnet|testnet>",
+    "networkId": "<mainnet|devnet>",
     "treasuryOwnerAddress": "<OWNER_PUBLIC_KEY>",
     "pauseControllerAddress": "<PAUSE_CONTROLLER_PUBLIC_KEY>",
     "lifecyclePeriodDuration": "<SLOTS>",

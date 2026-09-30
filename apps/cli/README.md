@@ -57,15 +57,14 @@ Use a Ledger account as the fee payer and funding account:
 SENDER_PUBLIC_KEY=<LEDGER_PUBLIC_KEY> pnpm run cli -- transfer \
   --signer=ledger \
   --sender-ledger-account-index=<LEDGER_ACCOUNT_INDEX> \
-  --network-id=devnet \
+  --network=devnet \
   --recipient-public-key <RECIPIENT_PUBLIC_KEY> \
   --amount <NANOMINA>
 ```
 
-Set `--network-id=mainnet` for mainnet. The CLI does not detect the signature
-network from `--mina-node-url`. You can set `MINA_NETWORK_ID` instead of the
-option. Valid values are `mainnet`, `devnet`, and `testnet`. The default is
-`devnet`.
+Set `--network=devnet` for Devnet. The CLI does not detect the network from
+`--mina-node-url`. You can set `NETWORK` instead of the option. Valid values
+are `mainnet` and `devnet`. The default is `mainnet`.
 
 Set `FUNDING_PUBLIC_KEY` when a different Ledger account funds the transfer.
 Also set `--funding-ledger-account-index` for that account. The CLI checks each
@@ -144,7 +143,7 @@ Use separate Ledger accounts for the fee payer and Treasury Owner when applicabl
 ```bash
 pnpm run cli -- treasury-owner emergency-withdraw \
   --signer=ledger \
-  --network-id=<NETWORK_ID> \
+  --network=<NETWORK> \
   --sender-public-key=<FEE_PAYER_PUBLIC_KEY> \
   --sender-ledger-account-index=<FEE_PAYER_LEDGER_INDEX> \
   --treasury-owner-public-key=<TREASURY_OWNER_PUBLIC_KEY> \
@@ -413,6 +412,11 @@ If `--funding-private-key` is omitted, the funding account defaults to the sende
 ### 1) Create proposal
 
 `proposal create` only succeeds during the **proposal creation period** for the target lifecycle.
+It also requires the default-token Owner with a positive balance in the current staking snapshot.
+The CLI uses `--api-url` to fetch that historical account and its Merkle witness.
+The API must have the matching lifecycle ledger. A stale snapshot or missing Owner prevents creation.
+SDK callers pass `treasuryOwnerAccount` and `treasuryOwnerAccountWitness` to `createProposal`.
+
 
 Proposal creation window:
 
@@ -576,6 +580,9 @@ Other supported actions:
 `toggle-pause-proposal` is executed through the treasury-owner contract and requires
 `--treasury-owner-public-key` (or `TREASURY_OWNER_PUBLIC_KEY` in env) so proposal pause
 events are emitted and indexed correctly.
+The partial signature also requires `--proposal-token-id`, `--paused`, and the
+Proposal pause nonce in `--nonce`. The submit command requires the same target
+and accepts that nonce in `--proposal-nonce`.
 
 For every action, use matching `multisig-sign <action>` first.
 

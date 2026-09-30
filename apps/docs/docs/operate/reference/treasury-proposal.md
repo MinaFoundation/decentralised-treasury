@@ -20,27 +20,28 @@ The Owner coordinates every public transition. The Proposal performs proposal-sp
 
 ## Actors
 
-| Actor | Action |
-| --- | --- |
-| Owner contract | Calls Proposal methods and approves the token account update. |
-| Voter | Supplies a signed vote action through the Owner. |
-| Prover | Produces the staking and vote proofs. |
-| Fee payer | Pays for the submitted transaction. |
-| Transaction sender | Authorizes the coordinated Owner method. |
-| Recipient | Receives partial or complete execution. |
-| Break-glass signers | Authorize a local pause toggle through the Owner. |
+| Actor               | Action                                                        |
+| ------------------- | ------------------------------------------------------------- |
+| Owner contract      | Calls Proposal methods and approves the token account update. |
+| Voter               | Supplies a signed vote action through the Owner.              |
+| Prover              | Produces the staking and vote proofs.                         |
+| Fee payer           | Pays for the submitted transaction.                           |
+| Transaction sender  | Authorizes the coordinated Owner method.                      |
+| Recipient           | Receives partial or complete execution.                       |
+| Break-glass signers | Authorize a local pause toggle through the Owner.             |
 
 ## State and proof inputs
 
-| Name | Type | Purpose |
-| --- | --- | --- |
-| `recipientHash` | `Field` | Commits to the recipient public key. |
-| `amount` | `UInt64` | Stores the requested amount. |
-| `lifecycleId` | `UInt32` | Selects lifecycle windows. |
-| `stakingEpochDataLedgerHash` | `Field` | Stores the creation-time staking root. |
-| `stakingEpochDataLedgerTotalCurrency` | `UInt64` | Stores creation-time staking total currency. |
-| `status` | `ProposalStatus` | Stores `UNKNOWN`, `APPROVED`, `REJECTED`, or `PAUSED`. |
-| `paidOutAmount` | `UInt64` | Stores cumulative execution. |
+| Name                                  | Type             | Purpose                                                |
+| ------------------------------------- | ---------------- | ------------------------------------------------------ |
+| `recipientHash`                       | `Field`          | Commits to the recipient public key.                   |
+| `amount`                              | `UInt64`         | Stores the requested amount.                           |
+| `lifecycleId`                         | `UInt32`         | Selects lifecycle windows.                             |
+| `stakingEpochDataLedgerHash`          | `Field`          | Stores the creation-time staking root.                 |
+| `stakingEpochDataLedgerTotalCurrency` | `UInt64`         | Stores creation-time staking total currency.           |
+| `status`                              | `ProposalStatus` | Stores `UNKNOWN`, `APPROVED`, `REJECTED`, or `PAUSED`. |
+| `paidOutAmount`                       | `UInt64`         | Stores cumulative execution.                           |
+| `pauseNonce`                          | `UInt32`         | Prevents replay of Proposal pause authorizations.      |
 
 Static compile inputs are `voteReducerVerificationKey`, `stakingLedgerToVotingLedgerVerificationKey`, `emptyNullifierRoot`, and `emptyVotingLedgerRoot`.
 
@@ -48,17 +49,17 @@ These values are compile-time values. They are not mutable Proposal state.
 
 ## Methods
 
-| Method | Main effect |
-| --- | --- |
-| `requireNotPaused` | Rejects status `PAUSED`. |
-| `getLifecycleId` | Returns the stored lifecycle ID. |
-| `vote` | Dispatches a `VoteAction`. |
-| `minUInt128` | Returns the smaller of two values. |
-| `calculateAcceptanceCriteria` | Calculates participation and approval thresholds. |
-| `calculateApprovalStatus` | Calculates tally values and a candidate status. |
-| `tallyVotes` | Verifies proof bindings and stores the final status. |
-| `execute` | Checks the recipient and cap, then increases `paidOutAmount`. |
-| `togglePause` | Changes non-paused status to `PAUSED`, or `PAUSED` to `UNKNOWN`. |
+| Method                        | Main effect                                                      |
+| ----------------------------- | ---------------------------------------------------------------- |
+| `requireNotPaused`            | Rejects status `PAUSED`.                                         |
+| `getLifecycleId`              | Returns the stored lifecycle ID.                                 |
+| `vote`                        | Dispatches a `VoteAction`.                                       |
+| `minUInt96`                   | Returns the smaller of two values.                               |
+| `calculateAcceptanceCriteria` | Calculates participation and approval thresholds.                |
+| `calculateApprovalStatus`     | Calculates tally values and a candidate status.                  |
+| `tallyVotes`                  | Verifies proof bindings and stores the final status.             |
+| `execute`                     | Checks the recipient and cap, then increases `paidOutAmount`.    |
+| `setPaused`                   | Applies an explicit pause target and increments `pauseNonce`.   |
 
 ## Authorization
 
@@ -78,12 +79,12 @@ Delegate, permission, verification-key, URI, token-symbol, nonce, voting, and ti
 
 The Owner enforces lifecycle conditions before it calls the Proposal.
 
-| Method | Owner lifecycle condition | Proposal state condition |
-| --- | --- | --- |
-| `vote` | Voting period | Status is not `PAUSED`. |
-| `tallyVotes` | Cooldown or later | Status is `UNKNOWN`. |
-| `execute` | Lifecycle `L + 1` or later | Status is `APPROVED`. |
-| `togglePause` | None | No status restriction. |
+| Method        | Owner lifecycle condition  | Proposal state condition                            |
+| ------------- | -------------------------- | --------------------------------------------------- |
+| `vote`        | Voting period              | Status is not `PAUSED`.                             |
+| `tallyVotes`  | Cooldown or later          | Status is `UNKNOWN`.                                |
+| `execute`     | Lifecycle `L + 1` or later | Status is `APPROVED`.                               |
+| `setPaused`   | None                       | The signed nonce matches `pauseNonce`; the target changes the pause state. |
 
 ## Business logic
 
@@ -109,12 +110,12 @@ This condition can prevent tally after one high-weight voter action.
 
 `calculateApprovalStatus` can calculate `REJECTED` for low participation. However, `tallyVotes` rejects that transaction before it stores status.
 
-| Conditions | Stored result |
-| --- | --- |
-| Participation passes and approval passes | `APPROVED` |
-| Participation passes and approval fails | `REJECTED` |
-| Participation fails | No transition; status stays `UNKNOWN` |
-| `yay + nay = 0` | No transition; status stays `UNKNOWN` |
+| Conditions                               | Stored result                         |
+| ---------------------------------------- | ------------------------------------- |
+| Participation passes and approval passes | `APPROVED`                            |
+| Participation passes and approval fails  | `REJECTED`                            |
+| Participation fails                      | No transition; status stays `UNKNOWN` |
+| `yay + nay = 0`                          | No transition; status stays `UNKNOWN` |
 
 `abstain` counts for participation. It does not count for approval.
 
@@ -122,10 +123,10 @@ This condition can prevent tally after one high-weight voter action.
 
 The total execution cap is:
 
-~~~text
+```text
 amountWithBond = amount + floor(amount / BOND_AMOUNT_DIVISOR)
 remainingAmount = amountWithBond - paidOutAmount
-~~~
+```
 
 `execute` requires `amountToPayOut <= remainingAmount`. It then credits the committed recipient and increases `paidOutAmount`.
 
@@ -135,22 +136,26 @@ The supported workflow uses a positive value. Execution can be partial and repea
 
 :::danger Status loss
 
-`togglePause` changes `APPROVED` or `REJECTED` to `PAUSED`. A second toggle changes `PAUSED` to `UNKNOWN`.
+`setPaused` changes `APPROVED`, `REJECTED`, or `UNKNOWN` to `PAUSED`. An unpause changes `PAUSED` to `UNKNOWN`.
 
-Do not use the event `paused` field as the state authority. Reconcile the Proposal account.
+Reconcile the Proposal account after each toggle.
 
 :::
 
+`setPaused(nonce, paused)` requires the current Proposal pause nonce.
+It rejects a target that matches the current pause state.
+It increments `pauseNonce` after the state change.
+
 ## Constants
 
-| Identifier | Value |
-| --- | --- |
-| `ProposalStatus.UNKNOWN` | `0` |
-| `ProposalStatus.APPROVED` | `1` |
-| `ProposalStatus.REJECTED` | `2` |
-| `ProposalStatus.PAUSED` | `3` |
-| `BOND_AMOUNT_DIVISOR` | `10` |
-| `BASIS_POINTS` | `10000` |
+| Identifier                | Value   |
+| ------------------------- | ------- |
+| `ProposalStatus.UNKNOWN`  | `0`     |
+| `ProposalStatus.APPROVED` | `1`     |
+| `ProposalStatus.REJECTED` | `2`     |
+| `ProposalStatus.PAUSED`   | `3`     |
+| `BOND_AMOUNT_DIVISOR`     | `10`    |
+| `BASIS_POINTS`            | `10000` |
 
 See [Constants and acceptance math](./constants-and-acceptance) for all acceptance constants.
 
@@ -169,30 +174,31 @@ The Proposal reducer dispatches `VoteAction` actions. These actions are not the 
 - The historical Owner balance is proven under that same root.
 - `paidOutAmount` never decreases.
 - `paidOutAmount` cannot exceed the requested amount plus its bond.
+- Each successful pause state change increments `pauseNonce`.
 - Execution uses the recipient committed by `recipientHash`.
 
 ## Errors
 
-| Message | Cause |
-| --- | --- |
-| `Proposal is paused` | Status is `PAUSED`. |
-| `Vote result already set` | Status is not `UNKNOWN`. |
-| `fromActionsHash should be the initial action state` | Vote proof starts from another action hash. |
-| `fromNullifierRoot does not match` | Vote proof starts from another nullifier root. |
-| `voting ledger root does not match` | The two proofs use different voting roots. |
-| `staking ledger transformation must start at index 0` | Staking proof starts at another index. |
-| `initial voting ledger root must be empty` | Staking proof starts from another voting root. |
-| `staking ledger root does not match` | Staking proof uses another staking root. |
-| `staking ledger to voting ledger proof did not exhaust` | The proof has no successful `exhaust` step. |
-| `toActionsHash does not match action state one hash` | Vote proof output does not match the first target. |
-| `Treasury owner account public key does not match` | The historical account has another public key. |
-| `Treasury owner account token id does not match` | The historical account is not a default-token account. |
-| `Treasury owner account witness does not match staking ledger hash` | The account witness uses another staking root. |
-| `Participation not met` | Participating weight is below the threshold. |
-| `No approval votes cast` | `yay + nay` is zero. |
-| `Proposal not approved` | Execution status is not `APPROVED`. |
-| `Amount to pay out is greater than the remaining amount to pay out` | Execution exceeds the remaining cap. |
-| `Recipient hash does not match on chain state` | The supplied recipient does not match `recipientHash`. |
+| Message                                                             | Cause                                                  |
+| ------------------------------------------------------------------- | ------------------------------------------------------ |
+| `Proposal is paused`                                                | Status is `PAUSED`.                                    |
+| `Vote result already set`                                           | Status is not `UNKNOWN`.                               |
+| `fromActionsHash should be the initial action state`                | Vote proof starts from another action hash.            |
+| `fromNullifierRoot does not match`                                  | Vote proof starts from another nullifier root.         |
+| `voting ledger root does not match`                                 | The two proofs use different voting roots.             |
+| `staking ledger transformation must start at index 0`               | Staking proof starts at another index.                 |
+| `initial voting ledger root must be empty`                          | Staking proof starts from another voting root.         |
+| `staking ledger root does not match`                                | Staking proof uses another staking root.               |
+| `staking ledger to voting ledger proof did not exhaust`             | The proof has no successful `exhaust` step.            |
+| `toActionsHash does not match action state one hash`                | Vote proof output does not match the first target.     |
+| `Treasury owner account public key does not match`                  | The historical account has another public key.         |
+| `Treasury owner account token id does not match`                    | The historical account is not a default-token account. |
+| `Treasury owner account witness does not match staking ledger hash` | The account witness uses another staking root.         |
+| `Participation not met`                                             | Participating weight is below the threshold.           |
+| `No approval votes cast`                                            | `yay + nay` is zero.                                   |
+| `Proposal not approved`                                             | Execution status is not `APPROVED`.                    |
+| `Amount to pay out is greater than the remaining amount to pay out` | Execution exceeds the remaining cap.                   |
+| `Recipient hash does not match on chain state`                      | The supplied recipient does not match `recipientHash`. |
 
 ## CLI and UI operations
 
@@ -202,7 +208,7 @@ See the [CLI command index](./cli-commands) for options and signing inputs.
 - `proposal vote` dispatches a vote.
 - `proposal tally-votes` supplies both side-loaded proofs.
 - `proposal execute` executes a partial or complete remaining amount.
-- `pause-controller toggle-pause-proposal` calls `togglePause` through the Owner.
+- `pause-controller toggle-pause-proposal` calls `setPaused` through the Owner.
 - The web application builds vote and execution transactions.
 
 ## Sources

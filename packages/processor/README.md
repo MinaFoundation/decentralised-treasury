@@ -26,8 +26,8 @@ Important behavior:
 - processor does not mutate `event_type` in indexer after processing
 - if no handlers are registered, processor processes nothing
 - one failed event cannot roll back an earlier successful event in the page
-- one event gets five total attempts with exponential backoff
-- a failed current event blocks later processing
+- operational failures retry with capped exponential backoff; each poll makes at most five attempts
+- operational retries preserve source order; undecodable events are quarantined and later events continue
 - on each poll, one configured page is checked for a newer immutable version of
   the same Archive event; when found, the old failure becomes `superseded` and
   normal ordered processing resumes without moving the offset during the check
@@ -43,7 +43,7 @@ The active cursor uses the indexer's monotonic `change_sequence`. The legacy
 `processor_offsets` for migration and status API compatibility.
 
 The processor writes event failures to `processor_event_failures` and lifecycle
-health to `processor_runtime_status`. A blocked failure is not retried by the
+health to `processor_runtime_status`. Existing legacy blocked failures are not retried by the
 polling loop. The processor can retire it only when a bounded source scan proves
 that the same Archive event ID has a greater change sequence and unchanged event
 type, transaction identity, and raw contract payload. The scan does not advance

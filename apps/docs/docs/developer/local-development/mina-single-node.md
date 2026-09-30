@@ -135,7 +135,7 @@ Export the direct host endpoints:
 ```bash
 export MINA_NODE_URL=http://127.0.0.1:3001/graphql
 export ARCHIVE_NODE_URL=http://127.0.0.1:8282
-export MINA_NETWORK_ID=devnet
+export NETWORK=devnet
 ```
 
 Generate the existing `testnet` family from the Treasury repository:
@@ -151,7 +151,7 @@ single-node network:
 
 ```text
 apps/cli/.env.testnet:        LIFECYCLE_PERIOD_DURATION=48
-apps/cli/.env.testnet:        MINA_NETWORK_ID=devnet
+apps/cli/.env.testnet:        NETWORK=devnet
 apps/api/.env.testnet:        LIFECYCLE_PERIOD_DURATION=48
 apps/web/.env.testnet:        NEXT_PUBLIC_LIFECYCLE_PERIOD_DURATION=48
 apps/web/.env.testnet:        NEXT_PUBLIC_SLOT_DURATION_MS=37500

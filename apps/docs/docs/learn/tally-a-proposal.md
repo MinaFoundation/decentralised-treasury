@@ -16,7 +16,11 @@ Use the same code revision as the deployment. Any funded sender can submit a val
 - The proof must cover five distinct, non-initial action-state hashes from the Proposal account history.
 - Participation must meet the required threshold, with some `yay` or `nay` weight.
 
-Five action-state hashes are not the same as five unique voters. A high voting weight alone does not satisfy the history checks.
+Five action-state hashes are not the same as five unique voters.
+Include votes in at least five distinct slots during Voting.
+Multiple votes in one slot do not provide multiple retained history entries.
+Confirm five distinct, non-initial entries before Voting ends.
+A sufficient voting weight alone does not permit tallying.
 Insufficient participation or all-abstain voting leaves the Proposal `UNKNOWN` because the tally transaction fails.
 See [Results and Acceptance](results-and-acceptance.md) for the exact thresholds and outcomes.
 
@@ -26,7 +30,7 @@ Run commands from the repository root. Create `.env.tally` and replace the place
 
 ```dotenv
 MINA_NODE_URL='<MINA_GRAPHQL_URL>'
-MINA_NETWORK_ID='<mainnet|devnet|testnet>'
+NETWORK='<mainnet|devnet>'
 ARCHIVE_NODE_URL='<ARCHIVE_GRAPHQL_URL>'
 TREASURY_OWNER_PUBLIC_KEY='<TREASURY_OWNER_PUBLIC_KEY>'
 PROPOSAL_PUBLIC_KEY='<PROPOSAL_PUBLIC_KEY>'
@@ -40,7 +44,7 @@ REDIS_PORT='6389'
 MAX_TASK_DURATION_MS='3600000'
 ```
 
-Choose one network value: `mainnet`, `devnet`, or `testnet`. Use the deployment's compiled lifecycle duration.
+Choose `mainnet` or `devnet`. Use the deployment's compiled lifecycle duration.
 Download from the main Treasury host, not the backoffice host, into a new directory:
 
 ```bash
@@ -72,7 +76,9 @@ The database also supplies the historical Treasury Owner account and witness nee
 It can be several gigabytes. The proof JSON alone cannot supply these accounts and witnesses.
 The marker files describe completed stages; they are not cryptographic proofs.
 
-The downloader checks database integrity, staking snapshot consistency, and the historical Treasury Owner's nonzero balance.
+The downloader checks database integrity, staking snapshot consistency, and the default-token Treasury Owner's nonzero balance.
+The CLI selects the Owner by public key and `TokenId.default`. It uses that same account index for the Merkle witness.
+A custom-token account at the Owner address cannot replace the native-token account.
 It decodes the proof and checks its snapshot and exhausted flag. Cryptographic proof verification occurs before tracing and again during tallying.
 
 The server does not supply this Proposal's vote-reducer proof. You generate that proof in step 2.
@@ -107,7 +113,7 @@ The generated `.data/tally/.env` provides these options automatically:
 | `--staking-ledger-to-voting-ledger-proof-path` | `STAKING_LEDGER_TO_VOTING_LEDGER_PROOF_PATH` | Supplies the exhausted staking proof for validation. |
 | `--treasury-owner-public-key` | `TREASURY_OWNER_PUBLIC_KEY` | Identifies the Proposal's Treasury Owner. |
 | `--mina-node-url` | `MINA_NODE_URL` | Reads the Proposal's lifecycle and staking snapshot from Mina. |
-| `--network-id` | `MINA_NETWORK_ID` | Selects the Mina network. |
+| `--network` | `NETWORK` | Selects `mainnet` or `devnet`. The default is `mainnet`. |
 
 `SQLITE_DATA_DIRECTORY` points to the downloaded database directory.
 The lifecycle ID selects storage; the separate proof input authenticates the voting ledger root.

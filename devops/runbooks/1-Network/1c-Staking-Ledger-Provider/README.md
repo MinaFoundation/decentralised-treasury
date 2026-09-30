@@ -13,8 +13,7 @@ After the daemon leaves an epoch, it cannot export that epoch ledger again.
 
 This release polls the chain. When a new epoch ledger appears, it executes a
 command in a synced daemon pod. The command exports and packages the ledger.
-The release copies the package to storage and serves it through HTTP inside the
-namespace. The treasury voting-ledger scheduler downloads the package.
+The fetch pod copies the package to storage. A separate server pod supplies HTTP inside the namespace. The treasury voting-ledger scheduler downloads the package.
 
 ```text
   node-0 (mina) <--kubectl exec--- fetch container ---> /data (PVC)
@@ -45,17 +44,43 @@ selects a file by its hash.
 
 | Component  | Object                                       | Role                                                                                |
 | ---------- | -------------------------------------------- | ----------------------------------------------------------------------------------- |
-| Fetch loop | container `fetch`                            | Polls the chain, runs commands in the daemon, and exports and verifies ledgers      |
-| Server     | container `serve` (nginx, `:8080`)           | Read-only JSON autoindex over the ledger directory                                  |
-| Storage    | `PVC/mina-staking-ledgers-provider` (20Gi)   | Published archives. `ReadWriteOnce` requires HTTP access instead of a shared mount. |
+| Fetch loop | Deployment `mina-staking-ledgers-provider-fetch`, container `fetch`                            | Polls the chain, runs commands in the daemon, and exports and verifies ledgers      |
+| Server     | Deployment `mina-staking-ledgers-provider-serve`, container `serve` (nginx, `:8080`)           | Read-only JSON autoindex over the ledger directory                                  |
+| Storage    | `PVC/mina-staking-ledgers-provider` (20Gi)   | Published archives. The fetch and serve pods share this claim on one node. The server mount is read-only. |
 | Service    | `Service/mina-staking-ledgers-provider:8080` | Supplies the treasury download endpoint                                             |
-| RBAC       | `Role` + `RoleBinding`                       | `pods get/list` and `pods/exec create`. The ledger has no other interface.          |
+| RBAC       | `Role` + `RoleBinding`                       | `pods get/list` and `pods/exec create`, bound only to fetch. Serve has no Kubernetes API token.          |
 
 Keep the replica count at `1`. The template rejects all other values.
 
 - Chart: <https://github.com/MinaFoundation/helm-charts.git>
-  (`mina-staking-ledgers-provider`, pinned to `0.1.1`).
+  (`mina-staking-ledgers-provider`, pinned to source commit
+  `c648c68ab8ee1f1cb2a88e91c022411aafcb82f2`).
 - Values: Use `helmfile.yaml` in this directory.
+
+## Complete the chart security migration
+
+The checked-in Helmfile pins exact published source commit
+`c648c68ab8ee1f1cb2a88e91c022411aafcb82f2` from
+[PR 346](https://github.com/MinaFoundation/helm-charts/pull/346). This source
+contains the prepared split chart. The PR still needs the required reviews,
+merge, and a release tag. The immutable pin supports deterministic review and
+rendering; it does not claim a released or deployed chart. Complete those gates
+and the procedures below before a rollout.
+
+Preserve the existing ledger PVC and Service names.
+Stop the old combined Deployment before starting the new `-fetch` Deployment; do not run two fetch writers.
+Do not delete its PVC. The old deployment name is `mina-staking-ledgers-provider`.
+
+The two pods have separate ServiceAccounts. Only fetch has the daemon namespace RoleBinding.
+Serve has no cloud annotation or Kubernetes API token, and mounts the claim read-only.
+Set `minaNamespace` to the narrow daemon namespace.
+The label selector does not restrict the RBAC permission to matching pods.
+
+Required pod affinity places both pods on one node for `ReadWriteOnce` storage.
+Do not use `ReadWriteOncePod`. Verify storage topology and node capacity before rollout.
+A disabled Kubernetes token mount does not remove cloud identity tokens injected by a webhook.
+Inspect existing accounts, cloud trust, RoleBindings, and metadata access before deployment.
+Render checks do not establish these live permissions.
 
 ## Prerequisites
 
@@ -87,8 +112,8 @@ producer schedulable. Add this configuration if you apply this file.
 
 ```bash
 cd devops/runbooks/1-Network/1c-Staking-Ledger-Provider
-helmfile template . | kubectl diff -f -
-helmfile template . | kubectl apply -f -
+helmfile template . | kubectl diff -n devnet -f -
+helmfile template . | kubectl apply -n devnet -f -
 ```
 
 The PVC uses `ebs-gp3-encrypted`, which has the `Delete` reclaim policy. Do not
@@ -98,7 +123,7 @@ leaves an epoch, it cannot export that epoch archive again.
 ## 3. Watch The First Cycle
 
 ```bash
-kubectl logs -n devnet deploy/mina-staking-ledgers-provider -c fetch -f
+kubectl logs -n devnet deploy/mina-staking-ledgers-provider-fetch -c fetch -f
 ```
 
 A cycle with work logs the export, hash, verification, and published object. A
@@ -120,7 +145,7 @@ file only after completion. Thus, a consumer cannot list a partial file.
 Inspect the published files:
 
 ```bash
-kubectl exec -n devnet deploy/mina-staking-ledgers-provider -c serve -- \
+kubectl exec -n devnet deploy/mina-staking-ledgers-provider-serve -c serve -- \
   sh -c 'ls -la /data; cat /data/.provider-status'
 ```
 

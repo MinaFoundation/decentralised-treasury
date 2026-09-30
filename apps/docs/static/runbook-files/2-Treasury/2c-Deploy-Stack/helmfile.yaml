@@ -25,9 +25,8 @@ environments:
 releases:
   - name: decentralized-treasury
     namespace: {{ .Values.namespace }}
-    # For devnet or mainnet. For the 21-lifecycles-per-epoch speedrun, use:
-    #   git::https://github.com/MinaFoundation/helm-charts.git@decentralized-treasury?ref=spike/decentralized-treasury-lifecycle-speedrun
-    chart: git::https://github.com/MinaFoundation/helm-charts.git@decentralized-treasury?ref=decentralized-treasury-0.4.1
+    # Immutable source commit from PR 346. Review, merge, and a release tag are pending.
+    chart: git::https://github.com/MinaFoundation/helm-charts.git@decentralized-treasury?ref=c648c68ab8ee1f1cb2a88e91c022411aafcb82f2
     values:
       - verification-keys.yaml
       - fullnameOverride: decentralized-treasury
@@ -50,9 +49,8 @@ releases:
 
         serviceAccount:
           annotations: {}
-            # AWS only. IRSA role granting access to the S3 buckets below.
-            # Omit entirely on other clouds and grant S3 access another way.
-            # eks.amazonaws.com/role-arn: "<REPLACE: IAM role ARN>"
+          # Do not attach a shared cloud role. After the chart security upgrade,
+          # set serviceAccounts.<component>.annotations as described in README.md.
 
         s3:
           region: "<REPLACE: us-east-1>"
@@ -244,7 +242,7 @@ releases:
           publicBaseUrl: https://{{ .Values.host }}
           publicEnv:
             NEXT_PUBLIC_SLOT_DURATION_MS: "90000"
-            NEXT_PUBLIC_NETWORK_ID: DEVNET
+            NEXT_PUBLIC_NETWORK_ID: devnet
 
         # The break-glass console. Served on its own hostname by the
         # in-cluster proxy, which is not cosmetic: the console talks to the
@@ -273,7 +271,7 @@ releases:
           enabled: true
           publicBaseUrl: https://{{ .Values.backofficeHost }}
           publicEnv:
-            NEXT_PUBLIC_NETWORK_ID: DEVNET
+            NEXT_PUBLIC_NETWORK_ID: devnet
           auth:
             mode: basic
             basic:
@@ -292,31 +290,6 @@ releases:
             - key: staking-ledgers
               host: mina-staking-ledgers-provider
               port: 8080
-
-        # Chart bug (through 0.2.5): the proxy routes /sqlite and /proofs to
-        # the proving-scheduler, but the chart ships no Service for it. nginx
-        # refuses to boot on an unresolvable upstream, so without this the
-        # whole ingress goes down. Drop once the chart creates the Service.
-        extraObjects:
-          - apiVersion: v1
-            kind: Service
-            metadata:
-              name: decentralized-treasury-proving-scheduler
-              labels:
-                app.kubernetes.io/name: decentralized-treasury
-                app.kubernetes.io/instance: decentralized-treasury
-                app.kubernetes.io/component: proving-scheduler
-            spec:
-              type: ClusterIP
-              ports:
-                - name: http
-                  port: 8080
-                  targetPort: http
-                  protocol: TCP
-              selector:
-                app.kubernetes.io/name: decentralized-treasury
-                app.kubernetes.io/instance: decentralized-treasury
-                app.kubernetes.io/component: proving-scheduler
 
         # AWS ALB. Replace the annotations to match your ingress controller.
         ingress:

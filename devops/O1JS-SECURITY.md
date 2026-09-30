@@ -1,7 +1,7 @@
 # o1js 3.1.0 Treasury fork
 
 The workspace uses one immutable fork revision in all package manifests.
-The root `package.json` and `pnpm-lock.yaml` pin [b6ddc6ae](https://github.com/maht0rz/o1js/commit/b6ddc6ae65ea2c51ad9a38650df71e6f19ffd0b9).
+The root `package.json` and `pnpm-lock.yaml` pin [d670b3ef](https://github.com/maht0rz/o1js/commit/d670b3efd4fc7f0bf431a0b2211c28b1dc257944).
 This revision is published on the existing `feature/mesa-support` branch.
 The package version is `3.1.0`.
 
@@ -9,15 +9,16 @@ The package version is `3.1.0`.
 
 The fork includes the complete runtime source changes from the official npm
 [o1js 3.1.0 package](https://registry.npmjs.org/o1js/-/o1js-3.1.0.tgz).
-It retains `UInt128`, `VerificationKey.fromData`, `LocalBlockchain.setNetworkState`,
-and the additional exports used by the Treasury.
+It retains deprecated `UInt128`, `VerificationKey.fromData`,
+`LocalBlockchain.setNetworkState`, and the additional exports used by the Treasury.
+It adds `UInt96` for Treasury arithmetic.
 
 | Audit finding | Correction                                                                                                                       |
 | ------------- | -------------------------------------------------------------------------------------------------------------------------------- |
 | #00, #05      | Mandatory account updates remain in the call forest, including empty-key updates. Only explicit optional updates can be omitted. |
 | #01           | A nested call constrains the token ID against the callee instance.                                                               |
 | #02           | Every witnessed account update receives the full canonical field checks. The `skipCheck` bypass is removed.                      |
-| #09           | UInt128 multiplication and division use bounded integer constraints. See [the arithmetic record](O1JS-UINT128.md).               |
+| #09           | Treasury arithmetic uses `UInt96`. The checked `UInt128` remains for compatibility. See [the migration record](O1JS-UINT96.md).  |
 
 The fork also synchronizes the cached `SmartContract.self` update after a nested call.
 Compilation does not execute the callee witness. Proving does execute it.
@@ -40,6 +41,7 @@ Run these checks from the repository root:
 pnpm install --frozen-lockfile
 pnpm test:o1js-security
 pnpm test:o1js-uint128
+pnpm test:o1js-uint96
 pnpm test:o1js-security:browser
 O1JS_BACKEND=native pnpm test:o1js-security:proofs
 O1JS_BACKEND=native pnpm test:o1js-uint128:proofs

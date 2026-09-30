@@ -75,7 +75,7 @@ The staking ledger size and the voting ledger size are different:
 - `N` is the number of staking ledger accounts.
 - `D` is the number of distinct delegate keys with positive voting weight.
 - `D_s` is the number of those delegate keys that can sign a vote through the
-  supported workflow.
+  supported workflow. See [unavailable voting weight](../reference/protocol-behavior.md#voting).
 - `D_s <= D <= N`.
 - Several staking accounts can delegate to one key, so `D` can be much less
   than `N`.
@@ -130,10 +130,8 @@ Berkeley. However, Mesa also halves the wall-clock duration of an epoch.
 Therefore, the nominal zkApp count in one epoch falls from `171360` to
 `85680` under these soft-limit settings.
 
-The contract uses a closed interval and also permits the shared boundary slot
-at the start of cooldown. Do not include that shared slot in a sizing
-calculation.
-Use `7140` non-overlapping slots and keep a closing buffer.
+The contract ends Voting at `voting start + D - 1`. The first Cooldown slot is not a voting slot.
+Use `7140` voting slots and keep a closing buffer.
 
 ## Calculate a Safe Period Budget
 
@@ -219,8 +217,12 @@ A repeated delegate action advances the action hash, but the Vote Reducer
 gives it zero weight. This does not establish that five included actions are
 sufficient for all retained Mina action-state preconditions. Treat
 `max(k, 5)` as a necessary lower bound, not as a finalizability guarantee.
-Confirm the complete tally path on the target Mesa network before production
-use.
+
+Include votes in at least five distinct slots during Voting.
+Multiple votes in one slot do not provide multiple retained history entries.
+Confirm five distinct, non-initial entries before Voting ends.
+A sufficient voting weight alone does not permit tallying.
+Confirm the complete tally path on the target Mesa network before production use.
 
 For a mixed result, the acceptance conditions are:
 

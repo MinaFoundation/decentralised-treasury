@@ -45,7 +45,7 @@ environment and full Helm configuration.
 | Withdrawal permission     | `TREASURY_WITHDRAWAL_PERMISSION`, Owner deployment command, and public configuration record                                                                 |
 | Lifecycle period duration | `LIFECYCLE_PERIOD_DURATION`, `NEXT_PUBLIC_LIFECYCLE_PERIOD_DURATION`, Owner compile input, deployment command, CLI transaction builders, scheduler, and web |
 | Lifecycle start slot      | `TREASURY_DEPLOYED_AT_SLOT`, Owner deployment state, voting-ledger scheduler, and the public configuration record                                           |
-| Transaction network       | `MINA_NETWORK_ID` with `MINA_NODE_URL`; `NEXT_PUBLIC_NETWORK_ID` with each browser Mina URL                                                                 |
+| Transaction network       | `NETWORK` with `MINA_NODE_URL`; `NEXT_PUBLIC_NETWORK_ID` with each browser Mina URL                                                                          |
 | Vote Reducer key          | `NEXT_PUBLIC_VOTE_REDUCER_VERIFICATION_KEY_JSON` in web and backoffice                                                                                      |
 | Staking proof key         | `NEXT_PUBLIC_STAKING_LEDGER_TO_VOTING_LEDGER_VERIFICATION_KEY_JSON` in web and backoffice                                                                   |
 | Proposal key              | `NEXT_PUBLIC_TREASURY_PROPOSAL_VERIFICATION_KEY_JSON` in web and backoffice                                                                                 |
@@ -93,20 +93,20 @@ Do not give a browser a container-only hostname. Do not give a container a host 
 | ---------------------------------- | --------------------------------- | -------------------------------------------------------------------- |
 | `MINA_NODE_URL`                    | `http://127.0.0.1:8080/graphql`   | Mina GraphQL endpoint for on-chain reads and Mina transactions.      |
 | `ARCHIVE_NODE_URL`                 | None                              | Required Archive GraphQL endpoint for `proposal fetch-actions` only. |
-| `TREASURY_API_URL`                 | `http://127.0.0.1:4100`           | App API base URL for `proposal create` content submission only.      |
-| `MINA_NETWORK_ID`                  | `devnet`                          | Network ID for every signed Mina transaction.                        |
+| `TREASURY_API_URL`                 | `http://127.0.0.1:4100`           | App API base URL for creation snapshot inputs and content submission. |
+| `NETWORK`                          | `mainnet`                         | Network for transactions, compilation, and proof generation.        |
 | `SIGNER`                           | `in-memory`                       | `in-memory` or `ledger`.                                             |
 | `TX_FEE`                           | `1000000000` nanomina             | Fee in nanomina.                                                     |
 | `TX_NONCE`                         | Current fee-payer nonce from Mina | Fee-payer nonce for transaction commands.                            |
 | `TX_MEMO`                          | None                              | Optional memo.                                                       |
 | `TX_WAIT`                          | `true`                            | Wait for transaction inclusion.                                      |
-| `ALLOW_DEPLOY_TO_EXISTING_ACCOUNT` | `false`                           | Disables the new-account deployment precondition when true.          |
 | `LIFECYCLE_PERIOD_DURATION`        | `7140` slots                      | Contract compile period duration.                                    |
 | `TREASURY_DEPLOYED_AT_SLOT`        | `0`                               | Owner lifecycle start slot.                                          |
 | `TREASURY_WITHDRAWAL_PERMISSION`   | `proof`                           | Owner withdrawal mode: `proof` or `proofOrSignature`.                |
 
-The CLI does not derive `MINA_NETWORK_ID` from `MINA_NODE_URL`.
-The network ID applies to `in-memory` and `ledger` transactions.
+The CLI does not derive `NETWORK` from `MINA_NODE_URL`.
+`NETWORK` accepts `mainnet` and `devnet`. Input is case-insensitive.
+The CLI converts the value to lowercase. It uses `mainnet` by default.
 
 For each option, the CLI uses the command option before its environment field.
 If neither value exists, the CLI uses the built-in default when one exists.
@@ -154,6 +154,9 @@ It is not a Mina fee-payer nonce.
 | `PROPOSAL_LIFECYCLE_ID`        | Lifecycle ID for creation.                                      |
 | `PROPOSAL_AMOUNT`              | Requested amount in nanomina.                                   |
 | `PROPOSAL_CONTENT_FILE`        | Markdown file for creation.                                     |
+| `PROPOSAL_TOKEN_ID`            | Owner-derived token ID for a Proposal pause signature.          |
+| `PROPOSAL_PAUSE_NONCE`         | Proposal-local nonce for a Proposal pause transaction.          |
+| `PROPOSAL_PAUSED`              | Explicit target Proposal pause state.                           |
 | `RECIPIENT_PUBLIC_KEY`         | Proposal or emergency-withdrawal recipient.                     |
 | `VOTER_PRIVATE_KEY`            | Software voter key.                                             |
 | `PROPOSAL_VOTE`                | `yay`, `nay`, or `abstain`.                                     |
@@ -315,8 +318,12 @@ It does not change Mina consensus or the compiled Treasury lifecycle duration.
 Keep each browser Mina URL paired with `NEXT_PUBLIC_NETWORK_ID`. The browser
 does not derive the signing domain from a Mina URL.
 
-The main web application maps `MAINNET` to the mainnet signing domain. It maps
-all other `NEXT_PUBLIC_NETWORK_ID` values to the devnet signing domain.
+The browser accepts `mainnet` and `devnet`. Input is case-insensitive.
+The browser rejects all other `NEXT_PUBLIC_NETWORK_ID` values.
+
+Select the network before compilation. Compile caches, verification keys, and
+serialized compile artifacts are network-specific. Do not use a Devnet
+verification key for a Mainnet deployment.
 
 In Compose, `NEXT_PUBLIC_BACKOFFICE_MINA_NODE_URL` is an input variable.
 Compose passes its value to Backoffice as `NEXT_PUBLIC_MINA_NODE_URL`. For a

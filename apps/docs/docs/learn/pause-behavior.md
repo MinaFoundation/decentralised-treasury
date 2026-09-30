@@ -93,5 +93,5 @@ Key rotation requires the current threshold and binds both signer commitments.
 - `packages/sdk/src/provable/contracts/treasury-pause-controller/multisig-signatures.ts` — signer count, threshold, and signed action data
 - `packages/sdk/src/provable/contracts/treasury-owner.ts` — `requireNotPaused`, `togglePauseProposal`
 - `packages/sdk/src/services/sqlite/sqlite-treasury-owner-service.ts` — `emergencyWithdraw`
-- `packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts` — `requireNotPaused`, `togglePause`, `ProposalStatus`
+- `packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts` — `requireNotPaused`, `setPaused`, `pauseNonce`, `ProposalStatus`
 - `packages/sdk/src/provable/events/treasury-proposal-events.ts` — `ProposalPauseToggledEvent`

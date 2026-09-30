@@ -20,7 +20,7 @@ GraphQL access to that database. The treasury uses only this API for archive dat
   treasury indexer <-- archive-node-api:8080 -------------+
 ```
 
-The indexer uses only two queries. The `networkState` query supplies the chain
+The indexer uses three queries. The `blocks` query validates complete pending ancestry. The `networkState` query supplies the chain
 heads. The `events` query filters events by the treasury owner address. Archive
 lag directly causes treasury data lag.
 
@@ -216,3 +216,10 @@ requires a rebuild, but it does not cause loss of source data.
 - Consumer: `packages/indexer/src/archive/client.ts`, `queries.ts`.
 - Local development alternative: [Mina single-node network](/developer/local-development/mina-single-node).
 - Next: `1b-Mina-Daemon`.
+
+### Pending branch ancestry
+
+Set `ENABLE_BLOCK_TRANSACTION_DETAILS=true` on the Archive API deployment.
+Archive API `0.0.9` returns empty block parent hashes without this setting.
+The indexer rejects incomplete ancestry and reports the failed operation in its status response.
+It uses canonical-only projection when pending tips tie and restores pending projection after a unique tip becomes available.

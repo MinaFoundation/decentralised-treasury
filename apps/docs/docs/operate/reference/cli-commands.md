@@ -62,23 +62,25 @@ The sections below list every leaf command and all of its inputs.
 | Option                                      | Environment                         | Required                          | Default                         | Use                                                                                                      |
 | ------------------------------------------- | ----------------------------------- | --------------------------------- | ------------------------------- | -------------------------------------------------------------------------------------------------------- |
 | `--mina-node-url <url>`                     | `MINA_NODE_URL`                     | No                                | `http://127.0.0.1:8080/graphql` | Mina GraphQL endpoint for on-chain reads and transactions.                                               |
-| `--network-id <id>`                         | `MINA_NETWORK_ID`                   | No                                | `devnet`                        | Mina network ID. Allowed values are `mainnet`, `devnet`, and `testnet`. Input is converted to lowercase. |
+| `--network <network>`                    | `NETWORK`                           | No                                | `mainnet`                       | Mina network. Allowed values are `mainnet` and `devnet`. Input is converted to lowercase.                |
 | `--archive-node-url <url>`                  | `ARCHIVE_NODE_URL`                  | Yes, for `proposal fetch-actions` | None                            | Archive GraphQL endpoint. The CLI sends this URL to the Archive client without changing it.              |
-| `--api-url <url>`                           | `TREASURY_API_URL`                  | No                                | `http://127.0.0.1:4100`         | App API base URL used by `proposal create` to submit Proposal Markdown.                                  |
+| `--api-url <url>`                           | `TREASURY_API_URL`                  | No                                | `http://127.0.0.1:4100`         | App API base URL for the Owner snapshot witness and Proposal Markdown.                                  |
 | `--lightnet-account-manager-endpoint <url>` | `LIGHTNET_ACCOUNT_MANAGER_ENDPOINT` | No                                | `http://127.0.0.1:8181`         | Lightnet account manager used by `lightnet acquire-account`.                                             |
 
-The CLI does not derive the network ID from the Mina URL. Set both values for
-the target network. The network ID applies to software and Ledger transaction
-signing.
+The CLI does not derive the network from the Mina URL. Set both values for the
+target network. The network applies to compilation, proofs, transactions, and
+Ledger transaction signing.
 
 These commands accept `--mina-node-url`:
 
-- `treasury-owner deploy`, `fund-treasury`, `emergency-withdraw`, and `read-state`;
-- every `pause-controller` command except `compile`;
+- `treasury-owner compile`, `deploy`, `fund-treasury`, `emergency-withdraw`, and `read-state`;
+- every `pause-controller` command;
 - `proposal create`, `vote`, `execute`, `read-state`, and `tally-votes`;
+- `staking-ledger-to-voting-ledger compile` and `prove-exhaust`;
+- `vote-reducer compile` and `trace-run-batch`;
 - `transfer` and `lightnet acquire-account`.
 
-The same commands accept `--network-id`, except `lightnet acquire-account`.
+The same commands accept `--network`, except `lightnet acquire-account`.
 The Lightnet command always uses `devnet`.
 
 `proposal fetch-actions` is the only command that accepts
@@ -185,6 +187,8 @@ In Ledger mode, supply `--proposal-public-key` and
 Compiles the Vote Reducer, staking-to-voting program, Treasury Proposal, Pause
 Controller, and Treasury Owner in dependency order.
 
+The command accepts the common Mina endpoint and network options.
+
 | Option                                | Environment                 | Required | Default | Meaning                                                     |
 | ------------------------------------- | --------------------------- | -------- | ------- | ----------------------------------------------------------- |
 | `--lifecycle-period-duration <slots>` | `LIFECYCLE_PERIOD_DURATION` | No       | `7140`  | Duration of one lifecycle period. The parser uses `UInt32`. |
@@ -199,7 +203,6 @@ Pause Controller signing options.
 | `--treasury-deployed-at-slot <slot>`           | `TREASURY_DEPLOYED_AT_SLOT`         | No       | `0`     | Global slot at which lifecycle zero starts. The parser uses `UInt32`.              |
 | `--withdrawal-permission <mode>`               | `TREASURY_WITHDRAWAL_PERMISSION`    | No       | `proof` | Sets Owner `access` and `send`. Allowed values are `proof` and `proofOrSignature`. |
 | `--multisig-participants-public-keys <keys>`   | `MULTISIG_PARTICIPANTS_PUBLIC_KEYS` | Yes      | None    | Exactly five comma-separated, ordered public keys.                                 |
-| `--allow-deploy-to-existing-account <boolean>` | `ALLOW_DEPLOY_TO_EXISTING_ACCOUNT`  | No       | `false` | Removes the Owner `isNew` precondition. Keep `false` for an initial deployment.    |
 | `--lifecycle-period-duration <slots>`          | `LIFECYCLE_PERIOD_DURATION`         | No       | `7140`  | Must equal the value used for compilation.                                         |
 
 The signing table above lists the conditional private-key, public-key, and
@@ -239,8 +242,7 @@ This command does not use Pause Controller participant signatures.
 
 ### `treasury-owner read-state`
 
-Uses `--mina-node-url`, `MINA_NODE_URL`, `--network-id`, and
-`MINA_NETWORK_ID`.
+Uses `--mina-node-url`, `MINA_NODE_URL`, `--network`, and `NETWORK`.
 
 | Option                                | Environment                 | Required | Default | Meaning                                                  |
 | ------------------------------------- | --------------------------- | -------- | ------- | -------------------------------------------------------- |
@@ -256,7 +258,7 @@ options. Both accounts use the selected signer mode.
 
 | Option                                | Environment                 | Required | Default                 | Meaning                                                                                                |
 | ------------------------------------- | --------------------------- | -------- | ----------------------- | ------------------------------------------------------------------------------------------------------ |
-| `--api-url <url>`                     | `TREASURY_API_URL`          | No       | `http://127.0.0.1:4100` | App API base URL for Markdown submission.                                                              |
+| `--api-url <url>`                     | `TREASURY_API_URL`          | No       | `http://127.0.0.1:4100` | App API base URL for the Owner snapshot witness and Markdown submission.                                                              |
 | `--treasury-owner-public-key <key>`   | `TREASURY_OWNER_PUBLIC_KEY` | Yes      | None                    | Treasury Owner that creates the child Proposal.                                                        |
 | `--proposal-private-key <key>`        | `PROPOSAL_PRIVATE_KEY`      | No       | Generated in `in-memory` mode | Optional deployment-only Proposal key for `in-memory` mode. Forbidden in Ledger mode. The CLI discards a generated private key when the command ends. |
 | `--proposal-public-key <key>` | `PROPOSAL_PUBLIC_KEY` | Ledger mode | None | Proposal account on the Ledger. |
@@ -323,7 +325,7 @@ See [Tally Your Proposal](../../learn/tally-a-proposal.md) for the short workflo
 | `--backend-url <url>` | None | Yes | None | Main Treasury host with `/sqlite/` and `/proofs/`. HTTP or HTTPS; no embedded credentials. |
 | `--output-directory <path>` | None | Yes | None | New directory for files and generated `.env`. Existing directories are refused. |
 | `--mina-node-url <mina-node-url>` | `MINA_NODE_URL` | No | `http://127.0.0.1:8080/graphql` | Mina GraphQL endpoint for Proposal state. |
-| `--network-id <network-id>` | `MINA_NETWORK_ID` | No | `devnet` | Mina network; `mainnet`, `devnet`, or `testnet`. |
+| `--network <network>` | `NETWORK` | No | `mainnet` | Mina network; `mainnet` or `devnet`. |
 | `--treasury-owner-public-key <treasury-owner-public-key>` | `TREASURY_OWNER_PUBLIC_KEY` | Yes | None | Treasury Owner used to derive the Proposal token ID. |
 | `--proposal-public-key <proposal-public-key>` | `PROPOSAL_PUBLIC_KEY` | Yes | None | Proposal whose lifecycle and snapshot select the downloads. |
 
@@ -350,6 +352,8 @@ Uses the Mina connection, common transaction, and Sender signing options.
 ## `pause-controller`
 
 ### `pause-controller compile`
+
+The command accepts the common Mina endpoint and network options.
 
 | Option                | Environment  | Required | Default | Meaning                           |
 | --------------------- | ------------ | -------- | ------- | --------------------------------- |
@@ -404,6 +408,8 @@ Uses the Mina connection, common transaction, and Sender signing options.
 | `--pause-controller-public-key <key>`        | `PAUSE_CONTROLLER_PUBLIC_KEY`       | Yes      | None    | Pause Controller account.          |
 | `--treasury-owner-public-key <key>`          | `TREASURY_OWNER_PUBLIC_KEY`         | Yes      | None    | Parent Treasury Owner.             |
 | `--proposal-public-key <key>`                | `PROPOSAL_PUBLIC_KEY`               | Yes      | None    | Proposal whose status is toggled.  |
+| `--proposal-nonce <nonce>`                   | `PROPOSAL_PAUSE_NONCE`              | No       | Current | Proposal pause nonce in the signed payload. |
+| `--paused <boolean>`                         | `PROPOSAL_PAUSED`                   | Yes      | None    | Explicit target Proposal pause state. |
 | `--multisig-participants-public-keys <keys>` | `MULTISIG_PARTICIPANTS_PUBLIC_KEYS` | Yes      | None    | Current ordered five-key list.     |
 | `--multisig-signatures <signatures>`         | `MULTISIG_SIGNATURES`               | Yes      | None    | Aligned current-signer signatures. |
 | `--lifecycle-period-duration <slots>`        | `LIFECYCLE_PERIOD_DURATION`         | No       | `7140`  | Must equal the compiled duration.  |
@@ -435,7 +441,7 @@ a Mina transaction.
 | `--multisig-signer-private-key <key>`        | `MULTISIG_SIGNER_PRIVATE_KEY`       | Conditional | None        | Required for `in-memory` signing.                    |
 | `--ledger-signer-public-key <key>`           | `LEDGER_SIGNER_PUBLIC_KEY`          | Conditional | None        | Expected signer key for Ledger signing.              |
 | `--ledger-account-index <integer>`           | `LEDGER_ACCOUNT_INDEX`              | Conditional | None        | Required Ledger index from `0` through `4294967295`. |
-| `--nonce <integer>`                          | `TX_NONCE`                          | Yes         | None        | Current Pause Controller state nonce.                |
+| `--nonce <integer>`                          | `TX_NONCE`                          | Yes         | None        | Nonce included in the signed payload.                |
 
 Command-specific inputs:
 
@@ -444,6 +450,8 @@ Command-specific inputs:
 | `multisig-sign pause-treasury`        | None                                             | None                                    | No       | Signs the pause prefix and nonce.              |
 | `multisig-sign unpause-treasury`      | None                                             | None                                    | No       | Signs the unpause prefix and nonce.            |
 | `multisig-sign toggle-pause-proposal` | `--proposal-public-key <key>`                    | `PROPOSAL_PUBLIC_KEY`                   | Yes      | Adds the Proposal key to the signed payload.   |
+| `multisig-sign toggle-pause-proposal` | `--proposal-token-id <token-id>`                 | `PROPOSAL_TOKEN_ID`                     | Yes      | Adds the Owner-derived token ID.               |
+| `multisig-sign toggle-pause-proposal` | `--paused <boolean>`                             | `PROPOSAL_PAUSED`                       | Yes      | Adds the explicit target state.                |
 | `multisig-sign rotate-multisig-keys`  | `--new-multisig-participants-public-keys <keys>` | `NEW_MULTISIG_PARTICIPANTS_PUBLIC_KEYS` | Yes      | Adds the new commitment to the signed payload. |
 
 For these four `multisig-sign` commands, the parser requires exactly five
@@ -495,7 +503,8 @@ Their environment aliases are `VOTER1_PUBLIC_KEY`, `VOTER2_PUBLIC_KEY`,
 
 ## `staking-ledger-to-voting-ledger`
 
-`staking-ledger-to-voting-ledger compile` has no command options.
+`staking-ledger-to-voting-ledger compile` accepts the common Mina endpoint and
+network options. `prove-exhaust` accepts the same options.
 
 | Command                                              | Option                            | Environment            | Required | Default                                          | Meaning                                                     |
 | ---------------------------------------------------- | --------------------------------- | ---------------------- | -------- | ------------------------------------------------ | ----------------------------------------------------------- |
@@ -526,7 +535,7 @@ Their environment aliases are `VOTER1_PUBLIC_KEY`, `VOTER2_PUBLIC_KEY`,
 
 ## `vote-reducer`
 
-`vote-reducer compile` has no command options.
+`vote-reducer compile` accepts the common Mina endpoint and network options.
 
 | Command                        | Option                       | Environment         | Required | Default                       | Meaning                                                     |
 | ------------------------------ | ---------------------------- | ------------------- | -------- | ----------------------------- | ----------------------------------------------------------- |
@@ -535,7 +544,7 @@ Their environment aliases are `VOTER1_PUBLIC_KEY`, `VOTER2_PUBLIC_KEY`,
 | `vote-reducer trace-run-batch` | `--staking-ledger-to-voting-ledger-proof-path <path>` | `STAKING_LEDGER_TO_VOTING_LEDGER_PROOF_PATH` | Yes | None | Exhausted staking-to-voting proof. Checked before tracing. |
 | `vote-reducer trace-run-batch` | `--treasury-owner-public-key <public-key>` | `TREASURY_OWNER_PUBLIC_KEY` | Yes | None | Treasury Owner used to read the Proposal snapshot. |
 | `vote-reducer trace-run-batch` | `--mina-node-url <url>` | `MINA_NODE_URL` | No | `http://127.0.0.1:8080/graphql` | Node used to read the Proposal snapshot. |
-| `vote-reducer trace-run-batch` | `--network-id <network-id>` | `MINA_NETWORK_ID` | No | `devnet` | `mainnet`, `devnet`, or `testnet`. |
+| `vote-reducer trace-run-batch` | `--network <network>` | `NETWORK` | No | `mainnet` | `mainnet` or `devnet`. |
 | `vote-reducer prove-run-batch` | `--lifecycle-id <id>`        | `LIFECYCLE_ID`      | Yes      | None                          | Lifecycle data namespace.                                   |
 | `vote-reducer prove-run-batch` | `--vote-actions-path <path>` | `VOTE_ACTIONS_PATH` | Yes | None | Actions JSON that selects the Proposal state. |
 | `vote-reducer prove-run-batch` | `--redis-host <host>`        | `REDIS_HOST`        | Runtime  | None                          | Redis host.                                                 |

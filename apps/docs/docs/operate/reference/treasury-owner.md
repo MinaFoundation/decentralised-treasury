@@ -131,7 +131,7 @@ The Pause Controller 3-of-5 signatures do not authorize this debit on the MINA n
 | `vote`                | Voting period for the Proposal lifecycle | Treasury and Proposal are not paused.                        |
 | `tallyVotes`          | Cooldown or later                        | Treasury and Proposal are not paused; Proposal is `UNKNOWN`. |
 | `executeProposal`     | Lifecycle `L + 1` or later               | Treasury is not paused; Proposal is `APPROVED`.              |
-| `togglePauseProposal` | None                                     | Break-glass nonce and signatures are valid.                  |
+| `togglePauseProposal` | None                                     | Signatures bind the Proposal key, token ID, pause nonce, and explicit target state.                    |
 
 ## Business logic
 
@@ -153,7 +153,10 @@ The method records `stakingEpochData` from the transaction network state. It doe
 
 Before creation, preserve the exact recorded staking ledger. It must contain the default-token Owner account with a nonzero balance.
 
-Creation does not check these conditions. Tally later needs the account witness and divides by that historical balance.
+`createProposal` accepts the historical Owner `Account` and `PrefixedMerkleWitness36` after `lifecycleId`.
+It checks the public key, `TokenId.default`, positive balance, and witness root before it collects the bond.
+The witness root must equal the network staking root recorded by the transaction.
+Tally uses that same historical account and balance.
 
 ### Tally coordination
 

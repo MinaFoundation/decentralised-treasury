@@ -33,7 +33,7 @@ Keep the full daemon API on port `3085` private and authenticated.
 Check that the public endpoint rejects administrative mutations and supports required queries and `sendZkapp`.
 
 Use the exact o1js 3.1.0 fork revision recorded in the workspace lockfile.
-It includes the account-update, UInt128, and nested-call integration corrections.
+It includes the account-update, UInt96, checked UInt128 compatibility, and nested-call corrections.
 Rebuild all affected verification keys with that exact dependency.
 Apply the processor quarantine migration before starting the upgraded processor.
 
@@ -63,6 +63,15 @@ and `intended` into `<PUBLIC_INPUT_JSON>`.
 Return to configuration when any selected value changes. Do not repair a
 configuration difference during deployment.
 
+## Confirm Snapshot Readiness
+
+Fund the Owner before the snapshot used for the first Proposal period.
+Confirm that the active staking ledger contains the default-token Owner with a positive balance.
+Publish that exact ledger through the Treasury API before users create Proposals.
+The creation circuit now requires the Owner account and a matching Merkle witness.
+Funding the live account does not change an older snapshot. Wait for a usable snapshot and an eligible Proposal period.
+Recompile and deploy a matched release for this contract change; existing Owner verification keys do not include the check.
+
 ## Compile One Matched Release
 
 Run the complete compile command once. Keep its structured result:
@@ -71,6 +80,10 @@ Run the complete compile command once. Keep its structured result:
 LOG_LEVEL=silent dotenvx run -f <CLI_ENV_FILE> -- \
   pnpm run cli -- treasury-owner compile | tee <COMPILE_RESULT_JSON>
 ```
+
+Set `NETWORK` to `mainnet` or `devnet` before this command. The default is
+`mainnet`. The command selects the network before compilation and uses a
+network-specific cache. Use Mainnet compile output only for Mainnet.
 
 The service uses this order:
 
@@ -108,7 +121,6 @@ Confirm these values before deployment:
 - all Owner address fields identify the selected Owner account;
 - all five proof values are present in web and Backoffice;
 - all five participant keys are distinct and in the selected order;
-- `ALLOW_DEPLOY_TO_EXISTING_ACCOUNT=false`;
 - the withdrawal mode is the selected permanent mode;
 - the fee payer has enough balance and the expected nonce;
 - the Owner and Pause Controller accounts are unused;
@@ -142,7 +154,14 @@ must support emergency withdrawal.
 The command deploys Pause Controller first. It then deploys Treasury Owner.
 Keep both included transaction hashes.
 
-Do not set `ALLOW_DEPLOY_TO_EXISTING_ACCOUNT=true` for an initial deployment.
+The Owner address must not exist before deployment. Deployment always requires a
+new account. If another transaction creates the address first, use a fresh Owner
+key and update the deployment configuration. Do not fund the Owner before deployment.
+The CLI and SDK do not support an existing-account override.
+
+If Owner deployment fails after Pause Controller deployment, keep the Controller
+transaction record. The deployment command sends both transactions again. Use a
+fresh Pause Controller key with the fresh Owner key for the next attempt.
 
 Keep control of the Treasury Owner account key after deployment. If you select
 `proofOrSignature`, store the key as an offline emergency asset. Prefer the
@@ -270,22 +289,22 @@ correction.
 “Build-bound” means Mina does not expose the value as a separate state field.
 The deployed verification key binds that value.
 
-| Value                             | Intended source                                | Observed source                                                        | Required result                               |
-| --------------------------------- | ---------------------------------------------- | ---------------------------------------------------------------------- | --------------------------------------------- |
-| Network identity                  | selected `MINA_NETWORK_ID` and endpoint record | provider or daemon network identity                                    | Exact target network                          |
-| Treasury Owner address            | deployment input                               | deploy result and direct Mina account query                            | Exact match                                   |
-| Pause Controller address          | deployment input                               | deploy result, Owner state, and direct Mina account query              | Exact match                                   |
-| Lifecycle start slot              | deployment input                               | Owner `treasuryDeployedAtSlot` state                                   | Exact match                                   |
-| Withdrawal mode                   | deployment input                               | Owner `access` and `send` permissions                                  | Both permissions match the selected mode      |
-| Initial Owner link                | selected Pause Controller address              | Owner `pauseControllerPublicKey` state                                 | Exact match                                   |
-| Initial Pause Controller state    | `paused=false`                                 | Pause Controller state                                                 | Exact match                                   |
-| Signer commitment                 | commitment from five ordered keys              | Pause Controller `multisigCommitment` state                            | Exact match                                   |
-| Owner verification key            | compile result                                 | Owner account verification-key hash                                    | Exact match                                   |
-| Pause Controller verification key | compile result                                 | Pause Controller account verification-key hash                         | Exact match                                   |
-| Duration                          | selected compile input                         | build-bound by Owner key; also used to calculate current period        | Runtime fields match the deployed Owner build |
-| Acceptance and bond constants     | selected source revision                       | build-bound by Proposal and Owner keys                                 | Source revision and expected key hashes match |
-| Minimum proposal amount | `10000000000` nanomina | build-bound by the Owner key | `policyConstants.minProposalAmount` matches the source |
-| ZkProgram keys and empty roots    | compile result                                 | build-bound by Proposal and Owner keys; distributed to proof consumers | Exact compile set in all consumers            |
+| Value                             | Intended source                                | Observed source                                                        | Required result                                        |
+| --------------------------------- | ---------------------------------------------- | ---------------------------------------------------------------------- | ------------------------------------------------------ |
+| Network identity                  | selected `NETWORK` and endpoint record | provider or daemon network identity                                    | Exact target network                                   |
+| Treasury Owner address            | deployment input                               | deploy result and direct Mina account query                            | Exact match                                            |
+| Pause Controller address          | deployment input                               | deploy result, Owner state, and direct Mina account query              | Exact match                                            |
+| Lifecycle start slot              | deployment input                               | Owner `treasuryDeployedAtSlot` state                                   | Exact match                                            |
+| Withdrawal mode                   | deployment input                               | Owner `access` and `send` permissions                                  | Both permissions match the selected mode               |
+| Initial Owner link                | selected Pause Controller address              | Owner `pauseControllerPublicKey` state                                 | Exact match                                            |
+| Initial Pause Controller state    | `paused=false`                                 | Pause Controller state                                                 | Exact match                                            |
+| Signer commitment                 | commitment from five ordered keys              | Pause Controller `multisigCommitment` state                            | Exact match                                            |
+| Owner verification key            | compile result                                 | Owner account verification-key hash                                    | Exact match                                            |
+| Pause Controller verification key | compile result                                 | Pause Controller account verification-key hash                         | Exact match                                            |
+| Duration                          | selected compile input                         | build-bound by Owner key; also used to calculate current period        | Runtime fields match the deployed Owner build          |
+| Acceptance and bond constants     | selected source revision                       | build-bound by Proposal and Owner keys                                 | Source revision and expected key hashes match          |
+| Minimum proposal amount           | `10000000000` nanomina                         | build-bound by the Owner key                                           | `policyConstants.minProposalAmount` matches the source |
+| ZkProgram keys and empty roots    | compile result                                 | build-bound by Proposal and Owner keys; distributed to proof consumers | Exact compile set in all consumers                     |
 
 Do not state that a build-bound value was read as a separate Mina state field.
 Use the verification-key comparison and the reproducible release record.

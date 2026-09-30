@@ -100,9 +100,9 @@ The emergency Owner signature is not an embedded Pause Controller signature. It 
 | `vote`                        | Owner-called method         | Dispatches `VoteAction` to the reducer action state.                 |
 | `tallyVotes`                  | Owner-called method         | Verifies proof bindings and stores `APPROVED` or `REJECTED`.         |
 | `execute`                     | Owner-called method         | Checks the recipient and cap, then updates `paidOutAmount`.          |
-| `togglePause`                 | Owner-called method         | Changes any non-paused status to `PAUSED`, or `PAUSED` to `UNKNOWN`. |
+| `setPaused`                   | Owner-called method         | Applies a signed target and increments the Proposal pause nonce.     |
 | `requireNotPaused`            | Internal helper             | Rejects Proposal status `PAUSED`.                                    |
-| `minUInt128`                  | Static calculation helper   | Returns the smaller of two unsigned 128-bit values.                  |
+| `minUInt96`                   | Static calculation helper   | Returns the smaller of two unsigned 96-bit values.                   |
 | `calculateAcceptanceCriteria` | Static calculation helper   | Calculates participation and approval thresholds.                    |
 | `calculateApprovalStatus`     | Internal calculation helper | Calculates totals, threshold results, and the candidate status.      |
 
@@ -115,7 +115,7 @@ The emergency Owner signature is not an embedded Pause Controller signature. It 
 | `requireNotPaused`         | Owner-called method          | Adds the global unpaused precondition.                                |
 | `pauseTreasury`            | Submitted break-glass method | Sets `paused = true` and increments the nonce.                        |
 | `unpauseTreasury`          | Submitted break-glass method | Sets `paused = false` and increments the nonce.                       |
-| `togglePauseProposal`      | Public authorization method  | Authorizes one Proposal target and increments the nonce.              |
+| `togglePauseProposal`      | Public authorization method  | Verifies one signed Proposal state change.                             |
 | `rotateMultisigKeys`       | Submitted break-glass method | Replaces the signer commitment and increments the nonce.              |
 | `requireAndIncrementNonce` | Internal helper              | Requires the supplied account nonce and marks it for increment.       |
 | `verifySignatures`         | Internal helper              | Checks the participant commitment and positional signature threshold. |
@@ -139,7 +139,7 @@ The Owner is the only contract that debits the shared treasury balance. It appro
 The Owner and Proposal verify both side-loaded proofs. The Proposal calculates the result and controls `paidOutAmount`.
 
 The Pause Controller verifies embedded break-glass signatures.
-Its public `togglePauseProposal` method increments its nonce but does not change Proposal state.
+Its public `togglePauseProposal` method verifies authorization without changing state.
 
 For a `proofOrSignature` deployment, Owner `access` and `send` also accept its
 account signature. This path can debit available MINA without a Proposal proof
@@ -147,7 +147,7 @@ or Pause Controller authorization.
 
 The supported composite path calls `TreasuryOwnerSmartContract.togglePauseProposal`.
 This path also needs the Owner transaction sender signature.
-The Owner calls the Pause Controller and then calls the Proposal `togglePause` method.
+The Owner calls the Pause Controller and then calls the Proposal `setPaused` method.
 
 A direct Pause Controller call only proves authorization for the named Proposal.
 It consumes the signed nonce without changing that Proposal.
@@ -168,30 +168,30 @@ A direct emergency withdrawal emits no Owner event. It is visible through the Mi
 
 ## Event and projection path
 
-| Owner event              | Projection purpose                                 |
-| ------------------------ | -------------------------------------------------- |
-| `proposalCreated`        | Creates the Proposal record.                       |
-| `proposalVoteDispatched` | Creates the vote record used for action discovery. |
-| `proposalVotesTallied`   | Projects vote totals and the stored result.        |
-| `proposalExecuted`       | Projects one execution amount.                     |
-| `proposalPauseToggled`   | Projects the reported pause value.                 |
+| Owner event              | Projection purpose                                  |
+| ------------------------ | --------------------------------------------------- |
+| `proposalCreated`        | Creates the Proposal record.                        |
+| `proposalVoteDispatched` | Creates the vote record used for action discovery.  |
+| `proposalVotesTallied`   | Projects vote totals and the stored result.         |
+| `proposalExecuted`       | Projects one execution amount.                      |
+| `proposalPauseToggled`   | Records the toggle; the API replays status changes. |
 
 The Indexer reads canonical Mina events. The Processor updates API projections, and the web application reads those projections.
 
-Reconcile material transitions against Mina account state. The pause event value is caller supplied and is not state authority.
+Reconcile material transitions against Mina account state. The pause event contains the checked resulting state. Earlier contract versions emitted an unchecked caller value.
 
 ## Trust boundaries
 
-| Boundary                                | Required check                                                                             |
-| --------------------------------------- | ------------------------------------------------------------------------------------------ |
-| Source to deployed account              | Compare reproducible verification keys and account addresses.                              |
-| Mina ledger to staking proof            | Match the Proposal `stakingEpochDataLedgerHash`.                                           |
-| Staking proof to vote proof             | Match the final `votingLedgerRoot`.                                                        |
-| Vote actions to tally                   | Match action hashes and the five action-state targets.                                     |
-| Events to projection                    | Use the recorded canonical block and stored cursor.                                        |
-| Projection to user interface            | Treat API data as a projection and reconcile material transitions on the Mina network.     |
-| Break-glass keys to Pause Controller    | Preserve five distinct ordered keys and verify the commitment.                             |
-| Treasury Owner key to direct withdrawal | Confirm `proofOrSignature`, network, Owner, recipient, amount, and custody approval.         |
+| Boundary                                | Required check                                                                         |
+| --------------------------------------- | -------------------------------------------------------------------------------------- |
+| Source to deployed account              | Compare reproducible verification keys and account addresses.                          |
+| Mina ledger to staking proof            | Match the Proposal `stakingEpochDataLedgerHash`.                                       |
+| Staking proof to vote proof             | Match the final `votingLedgerRoot`.                                                    |
+| Vote actions to tally                   | Match action hashes and the five action-state targets.                                 |
+| Events to projection                    | Use the recorded canonical block and stored cursor.                                    |
+| Projection to user interface            | Treat API data as a projection and reconcile material transitions on the Mina network. |
+| Break-glass keys to Pause Controller    | Preserve five distinct ordered keys and verify the commitment.                         |
+| Treasury Owner key to direct withdrawal | Confirm `proofOrSignature`, network, Owner, recipient, amount, and custody approval.   |
 
 ## Component references
 

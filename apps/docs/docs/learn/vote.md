@@ -18,6 +18,9 @@ The proof process groups default-token stake by delegate public key.
 A voter key has weight when it is a delegate key in the selected voting ledger.
 The web application shows the connected wallet's available voting weight.
 
+Positive voting weight does not guarantee that its delegate can sign.
+See [unavailable voting weight](../operate/reference/protocol-behavior.md#voting).
+
 Later staking or delegation changes do not change this recorded snapshot.
 They can affect a later lifecycle that records a different snapshot.
 

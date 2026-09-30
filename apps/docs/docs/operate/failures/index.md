@@ -356,7 +356,7 @@ connection.
 signing is off, or the configured index is wrong.
 
 **Safe check:** Stop the transaction. Read the public key at the intended index.
-Confirm `MINA_NETWORK_ID` without signing.
+Confirm `NETWORK` without signing.
 
 **Remedy:** Close Ledger Live. Unlock the Ledger. Open the Mina app and enable
 blind signing. Correct the explicit public key and index pair.
@@ -448,7 +448,9 @@ recipient, wrong network, or a connection failure after submission.
 **Remedy:** For a proof-only deployment, do not retry the emergency command.
 Use normal proof-authorized Proposal execution when applicable. Otherwise,
 deploy a new Owner address with `proofOrSignature`.
-Do not use `ALLOW_DEPLOY_TO_EXISTING_ACCOUNT` to repair permissions.
+The deployment command requires a fresh Owner account. It cannot repair an
+existing Owner. If the chosen address already exists, use a fresh Owner key
+and update the deployment configuration.
 `setPermissions=impossible` makes the selection permanent for the address.
 
 **Reconciliation:** Confirm that the Owner balance decreased by the withdrawal amount and the recipient balance increased by the same amount. If the Owner also paid the fee, include that fee in its balance change. A separate fee payer can also pay a recipient account-creation fee. Confirm that no Proposal `paidOutAmount` changed.
@@ -495,3 +497,19 @@ changes after each partial execution.
 - `devops/runbooks/1-Network/1c-Staking-Ledger-Provider/README.md`
 - `devops/runbooks/2-Treasury/2c-Deploy-Stack/README.md`
 - `devops/runbooks/2-Treasury/2d-Lifecycle-Pipeline/README.md`
+
+### Completed snapshot reads and automatic recovery
+
+The API and processor open `<L>.sqlite` only when its valid `<L>.sqlite.done` marker exists.
+The readers check the marker and file identity on each service lookup.
+After replacement, they close the previous store and open the completed replacement.
+Keep the stopped-rebuild procedure: do not replace a database during an active read.
+
+Missing or incomplete snapshots and snapshot root mismatches are temporary dependency failures.
+The processor retries them beyond five attempts, with exponential backoff capped at 60 seconds.
+Recoverable database and network failures use the same policy. Shutdown interrupts the wait.
+A restart preserves the attempt count and retry deadline. No manual retry is needed after the dependency recovers.
+Undecodable events remain quarantined, so later unrelated events can proceed.
+Other operational errors also keep retrying. Each poll makes at most five attempts before yielding.
+Legacy blocked records retain the manual recovery command.
+Readiness can still fail for quarantined events, unresolved failures, or incomplete projection replay.

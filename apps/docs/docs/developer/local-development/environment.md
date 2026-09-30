@@ -51,7 +51,7 @@ Use the same signature network and proof mode in every generated consumer:
 
 ```bash
 pnpm env:bootstrap <FAMILY> -- \
-  --network-id <mainnet|devnet|testnet> \
+  --network <mainnet|devnet> \
   --proofs-enabled <true|false>
 ```
 
@@ -71,7 +71,7 @@ The Compose live-testnet stack is an [Operator deployment](../../operate/index.m
 
 | Group        | Main fields                                   | Consumers                         |
 | ------------ | --------------------------------------------- | --------------------------------- |
-| Mina         | `MINA_NODE_URL`, `MINA_NETWORK_ID`            | CLI, web, Backoffice              |
+| Mina         | `MINA_NODE_URL`, `NETWORK`                    | CLI, web, Backoffice              |
 | Archive      | `ARCHIVE_NODE_URL`                            | Indexer and action fetches        |
 | Treasury     | Treasury Owner and Pause Controller addresses | CLI, API, browser apps            |
 | Lifecycle    | Deployment slot and period duration           | Contracts, CLI, API, browser apps |

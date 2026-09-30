@@ -194,6 +194,20 @@ See the [CLI command index](./cli-commands) for proof and storage commands.
 - `staking-ledger-to-voting-ledger prove-merge` merges adjacent proofs.
 - `staking-ledger-to-voting-ledger prove-exhaust` creates the final proof.
 
+Stop all processes that access a lifecycle database before a manual checkpoint restore.
+The restore downloads a temporary file, removes `-wal`, `-shm`, and `-journal`, then replaces the database.
+A missing checkpoint or failed download leaves the existing database and its sidecars unchanged.
+A sidecar removal error fails the restore.
+
+The CLI launcher forwards `SIGTERM` to the active command and waits for its exit.
+On `SIGTERM`, `trace-digest` stops after the current batch and waits for any active checkpoint upload.
+If checkpoints are enabled, it attempts a final checkpoint.
+It closes SQLite before exit with status `143`, including when checkpoints are disabled.
+A hard kill can prevent shutdown from finishing.
+Allow time for the active upload and a final upload, each with a ten-minute timeout, plus local shutdown work.
+Compose permits 21 minutes. The prepared chart defaults `votingLedgerScheduler.terminationGracePeriodSeconds` to 1260 seconds.
+Increase these values for slower batches or disks. They do not extend a shorter spot interruption deadline.
+
 The tracer stages trace and ledger changes before it flushes them to SQLite.
 
 These staged writes are not one atomic database transaction. A crash can leave partial trace or ledger state.

@@ -19,7 +19,7 @@ The app supports:
 Set these required values:
 
 ```text
-NEXT_PUBLIC_NETWORK_ID=testnet
+NEXT_PUBLIC_NETWORK_ID=devnet
 NEXT_PUBLIC_MINA_NODE_URL=http://127.0.0.1:3200/mina/graphql
 NEXT_PUBLIC_TREASURY_OWNER_CONTRACT_ADDRESS=B62...
 NEXT_PUBLIC_MULTISIG_PARTICIPANTS_PUBLIC_KEYS=B62...,B62...,B62...,B62...,B62...
@@ -63,16 +63,18 @@ participants against fresh state. A failed check stops signing before wallet
 approval. Both wallet paths also recompute the operation hash.
 
 The operation review shows the full target addresses, effect, nonce, commitments,
-and participant keys. For a proposal toggle, it shows the proposal address and
-the contract rule: `PAUSED` becomes `UNKNOWN`; every other status becomes `PAUSED`.
+and participant keys. For a Proposal change, it shows the Proposal address,
+token ID, pause nonce, and explicit target state.
 At import, before signing, and before submission, the app fetches the proposal
 under the configured Treasury Owner's token. It checks `proposalStatusBefore`,
-`proposalStatusAfter`, and `expectedProposalPaused` against that state and the
-toggle rule. Missing fields, inconsistent outcomes, unavailable accounts, and
-status changes stop the operation. The app does not change the imported bundle.
+`proposalStatusAfter`, `proposalTokenId`, `proposalNonce`, and `proposalPaused`.
+Missing fields, inconsistent outcomes, unavailable accounts, and state changes
+stop the operation. The app does not change the imported bundle.
 The review shows the status from the last successful check and the expected result.
-The signature authorizes a toggle, not a fixed final status. State can change
-after the check; the proved transaction also enforces a status precondition.
+The signature authorizes one fixed target at one Proposal pause nonce.
+
+Signing bundle schema 2 contains these Proposal authorization fields.
+The app rejects schema 1 bundles. Create a new bundle and collect new signatures.
 
 Network and deployment addresses are not included in the contract's signed hash.
 Backoffice checks these fields locally. This check does not prevent signature

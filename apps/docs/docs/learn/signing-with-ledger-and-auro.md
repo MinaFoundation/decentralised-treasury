@@ -43,6 +43,9 @@ transaction.
 The signed field does not include the network ID or either contract address. A
 pause or unpause field includes its operation prefix and controller nonce.
 
+o1js field signatures use the fixed Devnet signature prefix on all networks.
+The transaction network does not change this field-signature prefix.
+
 A Proposal toggle also includes the Proposal address. A key rotation also
 includes the current and new participant commitments. Check all other bundle
 values separately.
@@ -110,9 +113,9 @@ The Compose testnet stack publishes the main web application on port `3100`.
 It publishes Backoffice on port `3200`. Each application uses its own
 same-origin `/mina/graphql` proxy path.
 
-The raw Compose fallback for `NEXT_PUBLIC_NETWORK_ID` is `MAINNET`. The
-generated testnet environment selects `DEVNET` unless you pass another
-`--network-id`. Confirm the generated value before startup. The stack name does
+The raw Compose fallback for `NEXT_PUBLIC_NETWORK_ID` is `mainnet`. The
+generated testnet environment selects `devnet` unless you pass another
+`--network`. Confirm the generated value before startup. The stack name does
 not select the signature network.
 
 The public HTTPS profile publishes the main web application only. It does not
@@ -169,12 +172,12 @@ message hash. The connected key must match one participant position.
 3. Close Ledger Live.
 4. Run the command from the repository root.
 5. Set `--signer=ledger`.
-6. Set `--network-id` or `MINA_NETWORK_ID` for the target network.
+6. Set `--network` or `NETWORK` for the target network.
 7. Supply one expected public key and account index for each signing role.
 8. Review and approve each request on the device.
 
-The CLI accepts `mainnet`, `devnet`, and `testnet`. It does not derive the
-network ID from the Mina node URL.
+The CLI accepts `mainnet` and `devnet`. It converts input to lowercase and
+defaults to `mainnet`. It does not derive the network from the Mina node URL.
 
 The CLI does not scan accounts. It verifies that each supplied account index
 returns its expected public key.
@@ -291,7 +294,7 @@ state with the approved operation before you continue.
 | Ledger address request failed              | The device, Mina app, or transport is unavailable.                 | Unlock the device, open Mina, close Ledger Live, and retry.              |
 | Ledger public key mismatch                 | The account index does not control the expected role key.          | Stop and enter the correct account index.                                |
 | Ledger returned an invalid signature       | The device result failed local verification.                       | Stop. Reconnect the device and verify its software and Mina app version. |
-| Unsupported network ID                     | The configured value is not supported by the selected signer.      | Use `mainnet`, `devnet`, or `testnet` as applicable.                     |
+| Unsupported network ID                     | The configured value is not supported by the selected signer.      | Use `mainnet` or `devnet`.                                               |
 | Fee-payer account not found                | The selected account does not exist on the configured Mina node.   | Check the network and endpoint, or fund the account.                     |
 | Insufficient balance                       | The fee payer or funding account cannot cover the required amount. | Check balances, fees, bonds, and account-creation fees.                  |
 | Signing bundle is stale                    | The controller nonce, commitment, or deployment changed.           | Discard the bundle and create a new unsigned bundle.                     |

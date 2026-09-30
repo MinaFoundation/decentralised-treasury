@@ -37,7 +37,7 @@ This checklist does not replace either procedure.
 
 ## Network and Endpoints
 
-- [ ] Confirm the target MINA network and `MINA_NETWORK_ID`.
+- [ ] Confirm the target MINA network and `NETWORK`.
 - [ ] Confirm the host can reach `MINA_NODE_URL` and `ARCHIVE_NODE_URL`.
 - [ ] Confirm containers can reach the Mina and Archive provider endpoints.
 - [ ] Confirm the browser can reach `NEXT_PUBLIC_MINA_NODE_URL`.

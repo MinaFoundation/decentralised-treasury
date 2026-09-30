@@ -25,7 +25,7 @@ Set these public values. Replace every example value before running the checks:
 set -euo pipefail
 export TREASURY_API_URL='https://<APP_HOST>/api'
 export MINA_NODE_URL='https://<APP_HOST>/mina/graphql'
-export MINA_NETWORK_ID='<devnet|mainnet|testnet>'
+export NETWORK='<devnet|mainnet>'
 export TREASURY_OWNER_PUBLIC_KEY='<OWNER_PUBLIC_KEY>'
 export PROPOSAL_PUBLIC_KEY='<PROPOSAL_PUBLIC_KEY>'
 export LIFECYCLE_PERIOD_DURATION='<DURATION_FROM_RECORD>'
@@ -113,7 +113,7 @@ LOG_LEVEL=silent pnpm --silent --dir apps/cli run mina-treasury -- proposal read
   --treasury-owner-public-key "$TREASURY_OWNER_PUBLIC_KEY" \
   --proposal-public-key "$PROPOSAL_PUBLIC_KEY" \
   --mina-node-url "$MINA_NODE_URL" \
-  --network-id "$MINA_NETWORK_ID"
+  --network "$NETWORK"
 ```
 
 Compare `status`, `paidOutAmount`, the requested amount, and lifecycle with the application.

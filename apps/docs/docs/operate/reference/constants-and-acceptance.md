@@ -24,7 +24,7 @@ These constants define the lifecycle, proof shapes, status values, vote values, 
 | `LifecyclePeriod.COOLDOWN`                     | `3`                         | Cooldown and tally-start period.                            |
 | `LifecyclePeriod.NUMBER_OF_PERIODS`            | `4`                         | Equal periods in one lifecycle.                             |
 | `BOND_AMOUNT_DIVISOR`                          | `10`                        | Calculates the Proposal bond.                               |
-| `MIN_PROPOSAL_AMOUNT` | `10000000000` nanomina | Minimum new proposal amount; requires a 1 MINA bond. |
+| `MIN_PROPOSAL_AMOUNT`                          | `10000000000` nanomina      | Minimum new proposal amount; requires a 1 MINA bond.        |
 | `TREASURY_OWNER_WITHDRAWAL_PERMISSIONS`        | `proof`, `proofOrSignature` | Allowed Owner withdrawal modes.                             |
 | `DEFAULT_TREASURY_OWNER_WITHDRAWAL_PERMISSION` | `proof`                     | Safe default Owner withdrawal mode.                         |
 | `BASIS_POINTS`                                 | `10000`                     | Represents 100 percent.                                     |
@@ -117,7 +117,8 @@ The calculation uses:
 | `snapshotTotalCurrency`   | Proposal `stakingEpochDataLedgerTotalCurrency` state.  |
 | `yay`, `nay`, `abstain`   | Vote Reducer proof output.                             |
 
-The source uses `UInt128` for intermediate acceptance arithmetic.
+The source uses `UInt96` for intermediate acceptance arithmetic.
+All current inputs and intermediate values use fewer than 78 bits.
 
 ## Exact equations
 
@@ -154,7 +155,7 @@ The source caps `ratioBp` at `10000`. A proposal above the historical Owner bala
 
 Before Proposal creation, preserve the exact ledger and confirm that it contains this default-token Owner account.
 
-Creation records the root and total currency. It does not check account inclusion or the nonzero balance.
+Creation records the root and total currency. It verifies inclusion of the default-token Owner and requires a positive historical balance.
 
 :::
 

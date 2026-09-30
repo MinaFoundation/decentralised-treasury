@@ -16,6 +16,11 @@ before you trust a local result or reuse a key.
 Generated local environment files contain disposable private keys. Keep these
 files outside version control.
 
+Git exclusion does not exclude a file from a Docker build.
+The repository uses `**/.env*` in `.dockerignore` to exclude all environment files from new image builds.
+It also excludes the root `output/` and `tmp/` directories, which can contain private audit data and generated artifacts.
+Verify replacement image layers and assess previously published images through the registry cleanup procedure in `devops/PUBLISHING.md`.
+
 The CLI can read private keys from options or environment values. Use Ledger
 signing and the approved custody process for keys that control real funds.
 

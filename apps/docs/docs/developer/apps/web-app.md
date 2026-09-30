@@ -81,6 +81,10 @@ complete view of the prepared zkApp transaction.
 `@repo/ui` owns reusable presentation and wallet components. App-specific data
 fetching and Zustand stores stay in `apps/web`.
 
+Both Proposal Markdown renderers suppress images and display their alt text.
+They do not pass image URLs to the browser. Raw HTML remains inactive.
+This protects readers from image tracking requests without changing stored content or its hash.
+
 Use Storybook for shared component development:
 
 ```bash

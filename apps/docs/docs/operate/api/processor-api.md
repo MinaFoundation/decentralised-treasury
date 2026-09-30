@@ -179,8 +179,15 @@ The direction is `ASC` or `DESC`.
 The default order is `updatedAt,DESC`, then `id,DESC`.
 Client sort fields run before missing default fields.
 
-Each valid TypeORM relation can be joined.
-Use dot notation for a valid nested relation path.
+Each declared TypeORM relation can be joined within these limits:
+
+- At most two relation levels per path.
+- At most four relation steps across the request. Duplicate paths also count.
+- A path must not revisit an entity, including its starting entity.
+
+Four first-level Proposal joins remain valid. `join=proposal.executions` is valid from `/votes`.
+`join=votes.proposal` is rejected from `/proposals` because it returns to the starting entity.
+Collection and item routes return `400` before database reads when a limit is exceeded.
 
 Collection response envelope:
 

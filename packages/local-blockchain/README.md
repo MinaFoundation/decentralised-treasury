@@ -204,8 +204,12 @@ Only available when `MINA_ARCHIVE_PORT` is set.
 Current GraphQL subset:
 
 - `networkState { maxBlockHeight { canonicalMaxBlockHeight pendingMaxBlockHeight } }`
+- `blocks(query: { blockHeight_gte blockHeight_lt inBestChain canonical }, limit: ..., sortBy: BLOCKHEIGHT_ASC)`
 - `events(input: { address tokenId status from to })`
 - `actions(input: { address tokenId })`
+
+Block queries include genesis and blocks without events. The lower height bound is inclusive; the upper bound is exclusive.
+Local transactions are final immediately. All local blocks are canonical and belong to one chain; this server does not model pending forks.
 
 ## Manual Slot Control
 

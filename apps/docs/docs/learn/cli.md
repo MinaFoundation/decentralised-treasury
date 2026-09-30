@@ -27,7 +27,7 @@ real funds.
 Check these values before each command:
 
 - `MINA_NODE_URL`;
-- `MINA_NETWORK_ID`;
+- `NETWORK`;
 - `TREASURY_OWNER_PUBLIC_KEY`;
 - `LIFECYCLE_PERIOD_DURATION`;
 - the sender public key and Ledger account index;
@@ -35,10 +35,9 @@ Check these values before each command:
 - the amount in nanomina;
 - the transaction fee and nonce.
 
-The CLI does not detect the signature network from the Mina node URL.
-The network ID applies to all signed Mina transactions.
-This rule applies to `in-memory` and `ledger` signing.
-Set `--network-id` or `MINA_NETWORK_ID` explicitly.
+The CLI does not detect the network from the Mina node URL.
+The network applies to compilation, proofs, and all Mina transactions.
+Set `--network` or `NETWORK` explicitly for Devnet.
 
 The CLI supports Ledger and `in-memory` signing. It does not support Auro.
 Use [Signing with Ledger and Auro](/learn/signing-with-ledger-and-auro) to
@@ -50,12 +49,15 @@ with multiple signing roles can require a different Ledger account index for
 each role.
 
 Use `MINA_NODE_URL` for the commands on this page.
-Only `proposal create` also uses `TREASURY_API_URL` for Proposal content.
+Only `proposal create` also uses `TREASURY_API_URL`. It gets the Owner snapshot
+account and witness before the transaction. It submits Proposal content after
+the transaction.
 Only `proposal fetch-actions` uses `ARCHIVE_NODE_URL`.
 
 The CLI gives a command option precedence over its matching environment field.
 It uses the built-in default only when neither value exists.
-The built-in network ID is `devnet`.
+The CLI accepts `mainnet` and `devnet`. It converts input to lowercase.
+The built-in network is `mainnet`.
 
 ## Install The Tools
 
@@ -111,7 +113,7 @@ The sender is also the fee payer. `--nonce` or `TX_NONCE` selects its nonce.
 ```bash
 pnpm run cli -- proposal create \
   --signer=ledger \
-  --network-id=<NETWORK_ID> \
+  --network=<NETWORK> \
   --sender-public-key <SENDER_PUBLIC_KEY> \
   --sender-ledger-account-index <SENDER_INDEX> \
   --proposal-public-key <PROPOSAL_PUBLIC_KEY> \
@@ -145,7 +147,7 @@ The sender is the fee payer. `--nonce` or `TX_NONCE` selects its nonce.
 ```bash
 pnpm run cli -- proposal vote \
   --signer=ledger \
-  --network-id=<NETWORK_ID> \
+  --network=<NETWORK> \
   --sender-public-key <VOTER_PUBLIC_KEY> \
   --sender-ledger-account-index <VOTER_INDEX> \
   --voter-public-key <VOTER_PUBLIC_KEY> \
@@ -167,7 +169,7 @@ or wait for another funded sender to submit it. Then read Proposal state:
 ```bash
 pnpm run cli -- proposal read-state \
   --mina-node-url <MINA_GRAPHQL_URL> \
-  --network-id <NETWORK_ID> \
+  --network <NETWORK> \
   --treasury-owner-public-key <TREASURY_OWNER_PUBLIC_KEY> \
   --proposal-public-key <PROPOSAL_PUBLIC_KEY>
 ```
@@ -190,7 +192,7 @@ The sender is the fee payer. `--nonce` or `TX_NONCE` selects its nonce.
 ```bash
 pnpm run cli -- proposal execute \
   --signer=ledger \
-  --network-id=<NETWORK_ID> \
+  --network=<NETWORK> \
   --sender-public-key <SENDER_PUBLIC_KEY> \
   --sender-ledger-account-index <SENDER_INDEX> \
   --treasury-owner-public-key <TREASURY_OWNER_PUBLIC_KEY> \

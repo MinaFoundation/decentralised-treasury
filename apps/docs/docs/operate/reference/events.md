@@ -84,16 +84,13 @@ The event does not contain the recipient or cumulative `paidOutAmount`. Read the
 | Field | Type | Meaning |
 | --- | --- | --- |
 | `proposalPublicKey` | `PublicKey` | Target Proposal. |
-| `paused` | `Bool` | Caller-supplied event value. |
+| `paused` | `Bool` | Checked resulting Proposal pause state. |
 | `senderPublicKey` | `PublicKey` | Signed transaction sender. |
 
-:::warning Caller-supplied field
+The signed authorization binds the Proposal key, token ID, pause nonce, and target state.
+The Proposal checks the nonce and target before the Owner emits `paused`.
 
-The contract does not bind `paused` to the resulting Proposal status. Do not use it as authoritative state.
-
-Reconcile `status` on the Proposal account after the transaction.
-
-:::
+Earlier contract versions emitted an unchecked caller value. Reconcile historical events against Proposal account state.
 
 ## Projection mapping
 

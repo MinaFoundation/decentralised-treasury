@@ -46,11 +46,9 @@ of `178.5` hours, or `7.4375` days. Four periods are `29.75` days.
 The application calculates the current period from `S`, `D`, and the current global slot.
 
 The contract uses a closed Mina slot range for Proposal and Voting operations.
-Both the start slot and the end slot are valid. The contract sets the end slot
-to `period start + D`. Therefore, the first slot of Exploration also satisfies
-the Proposal range. The first slot of Cooldown also satisfies the Voting range.
-Submit time-limited operations before these shared boundary slots when
-possible.
+Both the start slot and the end slot are valid. The end slot is `period start + D - 1`.
+Proposal creation is no longer valid when Exploration starts.
+Voting is no longer valid when Cooldown starts. Each bounded period contains exactly `D` slots.
 
 ## Mina Epoch Alignment
 
@@ -72,7 +70,8 @@ It records the network state that the creation transaction uses.
 Later proofs must use the recorded ledger hash.
 Later stake or delegation changes do not change that recorded snapshot.
 
-The contract does not check snapshot viability during creation.
+The creation circuit verifies the Owner account and its Merkle witness against the recorded root.
+It requires the Owner public key, default token, and positive historical balance.
 Before creation, verify that the exact ledger data is available.
 The ledger must contain the default-token Treasury Owner account with a nonzero balance.
 

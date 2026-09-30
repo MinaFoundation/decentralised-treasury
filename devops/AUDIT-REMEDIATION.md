@@ -1,5 +1,107 @@
 # Treasury audit remediation
 
+## Current review — 30 September 2026
+
+Source: `mina-treasury-2 (2).pdf`, 53 pages, 26 findings.
+SHA-256: `44a33618eeb823914cfa61d72cb6a1055d38f8fa90b0abf2fd8e15e09480142b`.
+Finding IDs below use the revised audit's hexadecimal sequence.
+
+The review is not complete. Treasury changes remain uncommitted.
+“Implemented” describes current source, not auditor acceptance or deployed behavior.
+Final integration runs, unresolved signing decisions, and external release work remain.
+Historical results below do not establish that the final candidate passes every test.
+
+The o1js fork is published at `d670b3efd4fc7f0bf431a0b2211c28b1dc257944` on `feature/mesa-support`.
+All eight manifests and the lockfile select this immutable revision, version 3.1.0.
+It retains Mesa support, exports checked UInt96, and deprecates corrected UInt128.
+Node ESM, CommonJS, and browser outputs are integrated. The 2,624 packaged files match the fork.
+Arithmetic proof and browser checks passed. These checks do not establish acceptance by a live Mainnet node.
+See [library security](O1JS-SECURITY.md) and [UInt96 migration](O1JS-UINT96.md).
+
+| Revised finding | Current correction or decision | Verification limit and durable reference |
+| --- | --- | --- |
+| #00 — Empty-key updates pruned | Published fork retains mandatory AccountUpdates; only explicit absent optional updates are omitted. | Native library checks passed. New deployed verification keys remain unverified. [Library security](O1JS-SECURITY.md). |
+| #01 — Nested token ID unbound | Published fork constrains the witnessed callee token ID. | Native nested-call checks passed. Recompile affected keys. [Library security](O1JS-SECURITY.md). |
+| #02 — AccountUpdate packing unchecked | Published fork removes the `skipCheck` bypass and checks complete witnessed updates. | Focused malformed-field checks passed; this is not an exhaustive Treasury exploit claim. [Library security](O1JS-SECURITY.md). |
+| #03 — Public administrative GraphQL | Public routes use limited port 3000. User declined the additional browser amount/recipient comparison. | Recommendation remains partial; deployed access requires operator checks. [Public routing regression](test/public-graphql.test.mjs). |
+| #04 — Misleading signing bundles | Signing paths recompute the displayed operation hash and verify imported context. | This does not close the three separate signing issues listed below. [Signing review](../apps/backoffice/features/signing-bundle-review.test.ts). |
+| #05 — DUMMY vote blocks tally | Fork retains mandatory signature updates; Owner rejects DUMMY votes before dispatch. | Reducer padding retains DUMMY support. [Owner contract](../packages/sdk/src/provable/contracts/treasury-owner.ts). |
+| #06 — Token-symbol and URI bytes break import | Import preserves bytes; hashing and storage avoid a text round trip. Invalid records no longer become empty accounts. | 36 synthetic accounts passed native-root checks and eight real proof batches. Full audited Mainnet export remains untested; details below. [Ledger regression](../packages/sdk/test/ledgers/staking-ledger/account-decoding.test.ts). |
+| #07 — Non-curve keys block tally | Shared compressed-key decoding covers import, storage, and delegate indexing. | Both audit keys occur in synthetic tests. This is not a full Mainnet import. [Key decoder](../packages/sdk/src/utils/public-key.ts). |
+| #08 — Shortened events halt processing | Schema decoding restores permitted trailing zero fields; undecodable events are quarantined transactionally. | Quarantine remains visible to readiness. Replay-tail correction and focused checks passed; broader integration remains pending. [Processor](../packages/processor/src/events-processor.ts). |
+| #09 — UInt128 arithmetic underconstrained | Treasury uses UInt96; the fork retains corrected UInt128 as deprecated compatibility. | Native arithmetic proofs passed. New compiled keys are required. [UInt96 migration](O1JS-UINT96.md). |
+| #0a — Existing Owner permits planted Proposal | SDK and CLI require a fresh Owner. Prepared-network fixtures replace incompatible genesis-Owner fixtures. | Historical composed Lightnet evidence is not a clean final-suite pass. [Lightnet guide](../apps/docs/docs/developer/local-development/lightnet.md). |
+| #0b — Proposal tracking pixels | Both Markdown renderers suppress images and retain alt text; stored content stays unchanged. | UI checks passed. Mermaid stays plain code; broader content moderation is not implemented. [Proposal detail regression](../packages/ui/src/treasury/proposals/proposal-detail.test.tsx). |
+| #0c — Environment files enter published images | Docker build contexts exclude `**/.env*` recursively and exclude root `output/` and `tmp/` artifacts. | Synthetic Docker check passed. Published images, registry caches, and credential exposure still need assessment. [Exclusion regression](test/docker-env-exclusion.test.mjs). |
+| #0d — Detached authorization prevents pause | Proposal owns its pause nonce. Signatures bind key, token ID, nonce, and explicit target; Controller verification consumes no Controller nonce. | Native integration checks passed. New keys and schema-2 bundles with new signatures are required. [Proposal contract](../packages/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.ts). |
+| #0e — Devnet compilation prevents Mainnet proving | Strict `--network` / `NETWORK` selects mainnet or devnet before compile; default is mainnet. Workers and caches carry network identity. | Real Controller proof verifies with its Mainnet key and rejects its Devnet key. No live Mainnet submission. [Network regression](../packages/sdk/test/assurance/contracts/network/mainnet-controller-proof.test.ts). |
+| #0f — Owner absent from staking snapshot | Creation requires positive default-token Owner membership under the exact staking root recorded by the transaction. | Wrong key, token, balance, and root regressions passed. Final caller integration remains under verification. [Creation regression](../packages/sdk/test/provable/contracts/creation-snapshot.test.ts). |
+| #10 — Adjacent periods overlap | Bounded periods end at `start + duration - 1`; unbounded operations keep their range. | Focused boundary checks passed. [Owner contract](../packages/sdk/src/provable/contracts/treasury-owner.ts). |
+| #11 — Reducer state shared across Proposals | Traces, nullifiers, and proofs use lifecycle, canonical Proposal key, and token ID; traces start from an empty nullifier root. | Native reducer checks passed. [Reducer service](../packages/sdk/src/services/sqlite/sqlite-vote-reducer-service.ts). |
+| #12 — Restore leaves stale SQLite sidecars | Restore clears sidecars. Shutdown drains checkpoint work and closes SQLite; Compose allows 21 minutes and the chart defaults to 1,260 seconds. | Recovery and signal checks passed. Hardware eviction or shorter spot deadlines can still interrupt shutdown. [Checkpoint regression](../apps/cli/test/checkpoint-recovery.test.ts). |
+| #13 — Transient failures block processing | Readers require complete snapshots and reopen replacements. Operational failures retry with persisted backoff. | Unit and database checks passed. The quarantine-tail regression and zero-target safeguard passed; broader integration remains pending. [Snapshot completion](../apps/api/src/staking-ledger/completed-snapshot.ts). |
+| #14 — Conflicting or duplicate projections | Pending events require one complete branch; tied tips use canonical-only output. Identity uses transaction hash, account-update index, and event index. | Migration and projection checks passed. Replay-tail correction passed focused checks; final integration remains open. [Identity migration](../apps/api/src/db/migrations/1790770000000-transaction-event-identity.ts). |
+| #15 — Unbounded API joins | Parser allows two levels and four relation steps, and rejects entity revisits before reads. | HTTP regressions passed; this is not a general database performance guarantee. [CRUD parser](../apps/api/src/processor-crud-routes.ts). |
+| #16 — Unusable voting weight | Documentation only, as requested. Unsignable weight remains in total currency. | No threshold or voting protocol change. [Protocol behavior](../apps/docs/docs/operate/reference/protocol-behavior.md). |
+| #17 — Five distinct vote slots required | Documentation states the distinct inclusion-slot requirement. Five voters alone do not satisfy it. | Protocol limit remains. [Protocol behavior](../apps/docs/docs/operate/reference/protocol-behavior.md). |
+| #18 — CLI tally ignores token ID | SQLite, API, and downloader use the default-token Owner and the same witness index. | Custom-token-first and custom-only regressions passed. [Snapshot inputs](../packages/sdk/test/services/treasury-owner-snapshot-inputs.test.ts). |
+| #19 — Excess pod privileges | Committed and pushed chart source separates accounts and public servers, honors false token mounts, and limits role assignment. | Render checks passed. PR 346 awaits required code-owner review. Both authored and generated chart source refs are independently verified at the pushed commit; release tags, cloud policies, and rollout remain unverified. [Pipeline runbook](runbooks/2-Treasury/2d-Lifecycle-Pipeline/README.md). |
+
+### Ledger and integration evidence
+
+The ledger regression includes invalid URI bytes `ed b0 80`, both reported non-curve keys, byte-valued symbols, Unicode, and boundary lengths.
+Thirty-six synthetic accounts passed import, SQLite storage, serialized trace replay, and eight generated and verified native proof batches.
+Native Mina independently returned the same staking root, `jwf6wMnmAYgDBAQNUfLtAGYPTvLLCFcRuMjuvQxgiGGuvxhE62d`.
+Four existing snapshots, with 17, 1,009, 1,007, and 10 accounts, passed import, stored-field, and native-root checks.
+The eight proof batches belong to the synthetic fixture, not all accounts in those four snapshots.
+The complete 288,898-account Mainnet export from the audit was not imported or proved in this work.
+
+The post-repair baseline backend command passed 67 indexer, 63 processor, and 239 API tests, with zero skips. The PostgreSQL suite passed 11 tests, with zero skips. Both runs had unchanged before/after source hashes.
+Its coverage percentages remain unvalidated TypeScript-offset approximations. Test passes do not establish accurate source coverage.
+The source-mapped assurance run passed its tests but remains below the recorded line and function coverage targets.
+API creation true mode passed 1/1 in 16.023 seconds, matching the saved false-mode cases and source hash with clean cleanup. API recovery true passed 16/16 and payout true 7/7, both with matched cases/sources. CLI operator true mode passed 2/2 in 2,190.796 seconds, with the saved false-mode cases and source hash matched, coverage recorded, and clean cleanup. Varied-ledger and negative CLI now pass both modes: 2/2 and 34/34, respectively, with matched cases and unchanged sources. These composed results do not establish a complete standard-wrapper pass. Recovery/payout false passed 16/16 and7/7.
+These reported counts can include parent and child tests and must not be summed across reruns.
+The title/body fixture corrections are complete. Corrected web proof-off passed 13/13 with unchanged sources; its wrapper stopped before Backoffice. Final browser proof-off passed web13/13 and Backoffice2/2 in2224.557seconds, with unchanged sources and clean cleanup. It includes the final warning-copy change. Web true passed 13/13 in 2,272.933 seconds and Backoffice true passed 2/2 in 693.948 seconds, with matched false cases, unchanged sources, coverage and clean unforced cleanup. Two separate default Backoffice browser tests passed against the verified production build.
+The replay-tail correction passed 64 focused API tests, 63 processor tests, and worker-wiring checks. It preserves quarantine visibility and legacy zero-target projections. The final backend and database checks passed. Broader API/CLI and browser runs remain separate. No clean full repository pass is claimed.
+
+The earlier disposable Lightnet check used a fresh Owner, actual funding, and a genuine local staking snapshot.
+The normal run created a Proposal, then failed on temporary API database setup.
+A separate recovery run passed five votes, reducer proofs, approved tally, execution, API assertions, and an 11 MINA payout.
+This is composed historical evidence. It predates the final creation-witness interface and does not establish a clean final-suite pass.
+It does not close the remaining prepared CLI or physical-device checks. Fresh current-key deployment and funding passed; The second read-only wait passed in 1,065.355 seconds: epoch 25, slot 18,012, 21 accounts, ledger root `jwrDL6WT5eFcM94CFzcqvZxucXMUaANzJtU66G5TMFEBDVtfxfp`, Owner present with positive balance. This establishes exported snapshot membership only; snapshot proofs and a completed current live flow remain unverified.
+The isolated 900-slot Lightnet Owner/Controller deployment passed in 323.905 seconds and received 1,000 local MINA. Its actual anchor is slot 22,320 at epoch 31 start. This fresh Owner needs its own funded staking snapshot and proof/live-flow checks. The first permitted wait timed out; the second failed early on HTTP 502. The unchanged container remains running, but the Mina daemon is absent and its RPC port refuses connections. Cause unknown; the four final live flows are blocked, with no restart or reset performed. The earlier 420-slot deployment and epoch 25 positive snapshot remain historical evidence, not evidence for this new Owner. Isolated Compose proof-off smoke passed in 44.467 seconds; exact UI/probes passed in 36.939 seconds (Playwright 1/1). All task containers, networks, volumes and reserved listeners were removed; the three image IDs were unchanged. The first standard Compose attempt failed because the fixture lacked its completion marker. After that fixture-only correction, the full proof-disabled workflow passed in 665.571 seconds. The duplicate true phase was deliberately stopped at the user's fast-finish request; it did not pass. The wrapper exited 1 after intentional SIGINT, with unchanged sources and unforced cleanup; both projects were verified empty and all seven ports free. No public-network transaction or production deployment is claimed.
+
+### Additional signing decisions and release limits
+
+Three additional signing defects remain unresolved; their implementations were not approved:
+
+- A client signing result can omit a required account signer. This does not bypass on-chain signature checks.
+- Controller authorization can replay across Controllers with matching participants and nonce. Cross-network replay needs a separate test.
+- Repeated participant keys can satisfy multiple threshold positions with one key.
+
+See the [signing regression](../packages/sdk/test/signing/ledger-review.test.ts).
+The Proposal-local pause correction does not close the separate Controller authorization issue.
+A Controller envelope change would require matching circuit, caller, bundle, verification-key, and signature migration.
+
+The user approved all remaining PDF implementation scopes. Finding #03's additional comparison remains declined; #16 is documentation-only; #17 remains a protocol limit.
+Replay-tail correction and independent source review are complete. Final integration, test reconciliation, and candidate hashes remain necessary before release.
+Chart source publication and both immutable runbook pins are complete. Required PR review, release tags, cluster rollout, registry cleanup, cloud permission checks, and public-network deployment remain incomplete.
+The fork was committed and pushed. Chart commit `c648c68ab8ee1f1cb2a88e91c022411aafcb82f2` is pushed and [PR 346](https://github.com/MinaFoundation/helm-charts/pull/346) awaits protected-branch review. Treasury remains uncommitted. The user authorizes separate commits and pushes after verification; no new publication approval is required.
+Updated operator and developer pages accompany the approved changes.
+
+
+After these eight continuations passed, a helper-only proof-mode label normalization was applied to the native result reader and its test. Nine focused tests passed; all six saved pairs and final lint now pass. Runtime and suite sources did not change.
+
+
+Verification is closed at the user's request with the completed checks and residual limits above. All eight API/CLI/browser matched continuations passed; this is not a complete original-wrapper or all-green repository result. Final retained Lightnet flows, the full audited Mainnet export and physical hardware remain unverified. No new proof/live job or backup/recovery is planned for this report. Finding-mapped Treasury commit IDs will be added to the concise change report after publication.
+
+## Previous audit baseline — 28 September 2026
+
+The remaining sections record the previous audit and validation baseline.
+They do not establish that the current worktree passes those full suites.
+Finding numbers differ between the two audit documents.
+The revised review must resolve the remaining implementation, dependency, and Lightnet fixture work before release.
+
 Assessment date: 2026-09-28.
 Source: `mina-treasury-2 (1).pdf`, 29 pages.
 SHA-256: `cb8cc39dece4e61457a3c86e96070cb2d0319e03c94f51f2b134ae3859d470ba`.
@@ -29,14 +131,14 @@ These results establish local implementation coverage. They do not establish aud
 | #04: misleading signing bundles; high               | Existing fixes recompute the operation hash and verify deployment, nonce, participant, and Proposal state before signing.                                 | All 101 backoffice tests pass. Both signing paths use the verified operation.                                                                                             |
 | #05: empty-key DUMMY vote poisons a tally; high     | Mandatory signature updates remain present. Owner voting also rejects `Vote.DUMMY`; reducer padding retains DUMMY support.                                | Authorization tests reject new DUMMY votes without adding actions. The full Treasury voting and tally proof tests pass.                                                   |
 | #06: raw ledger symbol and URI bytes; medium        | Ledger import preserves bytes before JSON parsing. Account hashing uses the committed fields. Invalid records no longer become empty accounts.            | Ledger decoding, native root fixtures, storage, and constrained hashing tests pass. The API uses the resulting Account JSON type directly.                                |
-| #07: compressed non-curve public keys; medium       | Import, storage, and delegate indexing use a canonical compressed-key decoder without requiring a curve point.                                            | Both reported mainnet keys decode. Canonical encoding, parity, checksum, and coordinate rejection tests pass.                                                             |
+| #07: compressed non-curve public keys; medium       | Import, storage, and delegate indexing use a canonical compressed-key decoder without requiring a curve point.                                            | Both reported mainnet keys decode. Round-trip and malformed-encoding checks pass. Separate invalid-parity and out-of-range-coordinate rejection cases were not established by that evidence.                                                             |
 | #08: shortened events stop processing; medium       | Existing schema decoding restores the omitted final zero. Other undecodable events are quarantined with their raw snapshot and cursor in one transaction. | API pipeline tests process later valid events. PostgreSQL tests prove rollback and atomic quarantine. Dependency failures still retry. Readiness reports incomplete data. |
 | #09: UInt128 arithmetic is underconstrained; medium | Checked 64-bit limbs enforce integer multiplication and overflow bounds. Division uses checked multiplication and a bounded remainder.                    | BigInt comparisons, malicious witnesses, overflow, zero divisor, and malformed limb tests pass. Real UInt128 and Treasury arithmetic proofs pass.                         |
 | #0a/#0B: shared reducer state; low                  | Traces, nullifiers, and proofs use lifecycle, canonical Proposal key, and token ID. A trace must start with the empty nullifier root.                     | Real reducer proofs cover two Proposals, restart, and clearing. Full Treasury tally and execution proofs pass.                                                            |
 
 ## Code references
 
-- Library corrections: [o1js security](O1JS-SECURITY.md) and [UInt128 constraints](O1JS-UINT128.md).
+- Library corrections: [o1js security](O1JS-SECURITY.md), [UInt96 migration](O1JS-UINT96.md), and [UInt128 compatibility](O1JS-UINT128.md).
 - Public routes: [daemon template](runbooks/1-Network/1b-Mina-Daemon/helmfile.yaml) and [stack template](runbooks/2-Treasury/2c-Deploy-Stack/helmfile.yaml).
 - Vote guard: [Treasury Owner](../packages/sdk/src/provable/contracts/treasury-owner.ts).
 - Ledger import: [staking ledger](../packages/sdk/src/ledgers/staking-ledger/staking-ledger.ts), [raw bytes](../packages/sdk/src/ledgers/staking-ledger/ledger-json-bytes.ts), and [key decoder](../packages/sdk/src/utils/public-key.ts).
@@ -45,7 +147,7 @@ These results establish local implementation coverage. They do not establish aud
 
 ## Dependency and integration
 
-The fork uses o1js version 3.1.0 and retains UInt128, `VerificationKey.fromData`, `LocalBlockchain.setNetworkState`, and additional exports.
+The fork uses o1js version 3.1.0 and retains deprecated UInt128, `VerificationKey.fromData`, `LocalBlockchain.setNetworkState`, and additional exports.
 A source comparison covers all 212 official `src/lib` TypeScript files.
 Only four files differ: the three required extension modules and `zkapp.ts`.
 The extra `zkapp.ts` correction synchronizes the nested callee's cached checked account update during compilation and proving.

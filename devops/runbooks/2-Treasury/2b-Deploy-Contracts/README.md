@@ -108,10 +108,10 @@ MINA_NODE_URL=https://devnet.minaprotocol.network/graphql
 | --------------- | ------------------------------------------------------------------------------ | -------------------------------------------------------------------- |
 | `MINA_NODE_URL` | The public Ingress from `1b`. The Ingress is reachable without a port-forward. | Each command that accesses the chain, including all commands in `2c` |
 
-The `treasury-owner compile`, `deploy`, and `fund-treasury` commands use only
-`MINA_NODE_URL`. The Kubernetes application fetches proposal actions from the
-archive node. The procedures in this runbook and `2c` do not require additional
-archive configuration.
+The `treasury-owner compile`, `deploy`, and `fund-treasury` commands use
+`MINA_NODE_URL` and `NETWORK`. The Kubernetes application fetches proposal
+actions from the archive node. The procedures in this runbook and `2c` do not
+require additional archive configuration.
 
 `MINA_NODE_URL` does not require a port-forward. Runbook `1b` exposes the daemon
 GraphQL endpoint through the `graphql-proxy` Ingress. Confirm that the endpoint
@@ -188,8 +188,12 @@ Best tip global slot (across all hard-forks):  873341
 
 Use the global "across all hard-forks" value. Do not use the epoch-relative
 value. Add `7140` for each epoch when you select a future epoch. The selected
-slot can be in the past. In this case, lifecycle 0 starts before the current
-chain slot.
+slot defines the schedule, but it does not establish snapshot readiness.
+For a new Owner, choose a future Proposal period after funding and staking snapshot inclusion.
+Before creation, verify that the active ledger contains the default-token Owner with a positive balance.
+The contract rejects creation until a matching historical account and witness are available.
+A past start does not bypass this check. Use a later scheduled Proposal period if readiness is delayed.
+Do not use a fixed waiting interval as proof of snapshot inclusion.
 
 ## 5. Compile
 
@@ -207,6 +211,10 @@ rm -rf apps/cli/cache packages/sdk/cache .turbo/cache
 dotenvx run -f apps/cli/.env.<family> -- \
   pnpm run cli -- treasury-owner compile
 ```
+
+The compile command selects `NETWORK` before it builds any circuit. The cache
+path includes the normalized network. Use Mainnet compile output only for a
+Mainnet deployment.
 
 Clear the caches before each compile for a real deployment. Do not clear the
 caches only after a visible circuit-code change. A stale cache can differ from
@@ -318,10 +326,9 @@ address first. In that mode supply `--<role>-public-key` and
 `--<role>-ledger-account-index` for each role and omit the private keys, which
 is the reverse of the `env -u` above.
 
-`--network-id` accepts `mainnet`, `devnet` and `testnet`, but o1js treats
-`devnet` and `testnet` as one signature domain - only `mainnet` differs. The
-choice between those two is naming, not cryptography, though both browser
-applications display it.
+`--network` accepts `mainnet` and `devnet`. Input is case-insensitive and the
+CLI converts it to lowercase. The default is `mainnet`. Select the network
+before compilation. Verification keys and compile caches are network-specific.
 
 ```json
 {

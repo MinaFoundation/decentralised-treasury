@@ -65,7 +65,9 @@ The base digest proof count is `ceil(N / 5)`. It does not use `D`.
 Before proposal creation, preserve this exact ledger. Confirm that it contains
 the default-token Treasury Owner account with a nonzero balance.
 
-Creation does not check this viability. Tally later needs the account witness and divides by its historical balance.
+Creation verifies default-token Owner membership and requires a positive historical balance.
+It checks the supplied Merkle witness against the transaction staking root before collecting the bond.
+Tally later needs that same historical account and witness.
 
 ## Preserve Ledger Account Data
 
@@ -590,3 +592,19 @@ stages.
 - `apps/cli/src/commands/staking-ledger-to-voting-ledger.ts`
 - `apps/cli/src/commands/vote-reducer.ts`
 - `apps/cli/src/commands/worker.ts`
+
+### Completed snapshot reads and automatic recovery
+
+The API and processor open `<L>.sqlite` only when its valid `<L>.sqlite.done` marker exists.
+The readers check the marker and file identity on each service lookup.
+After replacement, they close the previous store and open the completed replacement.
+Keep the stopped-rebuild procedure: do not replace a database during an active read.
+
+Missing or incomplete snapshots and snapshot root mismatches are temporary dependency failures.
+The processor retries them beyond five attempts, with exponential backoff capped at 60 seconds.
+Recoverable database and network failures use the same policy. Shutdown interrupts the wait.
+A restart preserves the attempt count and retry deadline. No manual retry is needed after the dependency recovers.
+Undecodable events remain quarantined, so later unrelated events can proceed.
+Other operational errors also keep retrying. Each poll makes at most five attempts before yielding.
+Legacy blocked records retain the manual recovery command.
+Readiness can still fail for quarantined events, unresolved failures, or incomplete projection replay.

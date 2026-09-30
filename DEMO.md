@@ -251,9 +251,10 @@ dotenvx run -f apps/cli/.env.local-blockchain -- \
 
 Set the simulator to the Voting start slot. Confirm `period=voting` with
 `treasury-owner read-state`. Use the web application or the CLI to submit at
-least five included vote actions. Five distinct non-initial action-state values
-are required by the tally flow. This demo uses five eligible voter keys so each
-first action can add voting weight. A CLI vote has this form:
+least five vote actions in distinct slots during Voting.
+Five distinct non-initial action-state values are required by the tally flow.
+This demo uses five eligible voter keys so each first action can add voting weight.
+A CLI vote has this form:
 
 ```zsh
 dotenvx run -f apps/cli/.env.local-blockchain -- \
@@ -264,9 +265,9 @@ dotenvx run -f apps/cli/.env.local-blockchain -- \
   --wait true
 ```
 
-Repeat the vote with the required eligible accounts. Set the simulator to the
-Cooldown start slot. Confirm `period=cooldown`. Fetch the actions and build the
-Vote Reducer trace:
+Repeat the vote with the required eligible accounts. Advance the simulator by at least one slot between included votes.
+Keep all five inclusion slots inside Voting. Then set the simulator to the Cooldown start slot.
+Confirm `period=cooldown`. Fetch the actions and build the Vote Reducer trace:
 
 ```zsh
 dotenvx run -f apps/cli/.env.local-blockchain -- \

@@ -44,17 +44,13 @@ the voting period. Tally is available from cooldown onward. Execution is
 available from the next lifecycle onward.
 
 The pinned o1js `requireBetween` precondition uses a closed interval. It
-includes the lower and upper slot values. The contract sets the upper value to
-`period start + D`. As a result, two bounded periods share one boundary slot:
+includes the lower and upper slot values. The upper value is `period start + D - 1`.
 
-- Proposal creation is valid from the Proposal start through the Exploration
-  start, inclusive.
-- Voting is valid from the Voting start through the Cooldown start,
-  inclusive.
+- Proposal creation is valid from Proposal start through the slot before Exploration starts.
+- Voting is valid from Voting start through the slot before Cooldown starts.
 
-The UI and scheduler can show the new period at a shared boundary slot while
-the preceding contract operation is still valid. Schedule operations away
-from the boundary when possible.
+Each bounded period contains exactly `D` slots. Adjacent periods do not share a slot.
+Keep an inclusion buffer before the end of Voting.
 
 ## Mina Epoch Alignment
 

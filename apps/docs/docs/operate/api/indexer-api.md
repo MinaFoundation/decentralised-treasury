@@ -179,7 +179,8 @@ Response fields:
 | `indexedAt`              | ISO string           | Initial Postgres insert time.                                 |
 | `updatedAt`              | ISO string           | Last material event-row update time.                          |
 
-The event identity uses `txHash`, `accountUpdateId`, `accountUpdateIndex`, and `eventIndex`.
+The event identity uses `txHash`, `accountUpdateIndex`, and `eventIndex`.
+`accountUpdateId` is replaceable Archive metadata.
 The block identity fields let the processor detect conflicting or disconnected observations.
 The indexer uses the Archive transaction sequence to calculate `blockEventIndex` when it is available.
 
@@ -318,3 +319,22 @@ Keep the same event-type filter for all pages in one scan.
 - `packages/indexer/src/entities.ts`
 - `packages/indexer/src/archive/client.ts`
 - `devops/proxy/Caddyfile`
+
+### Selected Archive branch and stable event identity
+
+Pending ingestion reads complete block ancestry, including blocks without Treasury events.
+It validates every parent back to the latest canonical block and checks the tip again after fetching events.
+It publishes the new pending set atomically and retires the previous branch.
+Canonical observations retain priority. Projection checks also reject known conflicts among pending facts.
+
+Archive API `0.0.9` requires `ENABLE_BLOCK_TRANSACTION_DETAILS=true` to return parent hashes from `blocks`.
+Its event query filters tied tips independently. The indexer therefore uses canonical events only while maximum-height pending tips are tied.
+The existing indexer status reports this ambiguity as a failed pending operation.
+The next poll restores pending projection after one complete, stable tip is available.
+Missing ancestry or an Archive change during a read also prevents pending publication.
+This fallback does not implement an externally pinned best-tip event query.
+
+Event identity is `(txHash, accountUpdateIndex, eventIndex)`.
+`accountUpdateId` is Archive metadata and can change after an Archive rebuild.
+Re-reading renumbered records updates the same event instead of creating another projection effect.
+Immutable payload conflicts remain rejected.

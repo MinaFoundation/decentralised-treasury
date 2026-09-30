@@ -26,7 +26,9 @@ Enter a proposal request greater than zero.
 
 Before creation, confirm that the recorded staking ledger is available.
 It must contain the default-token Treasury Owner account with a nonzero balance.
-Without this account and balance, a later tally cannot succeed.
+Creation rejects a missing Owner, a wrong token, a zero historical balance, or a witness for another root.
+The web app and CLI retrieve the account and witness from the Treasury API before they build the transaction.
+If the staking root changes, refresh the snapshot inputs and build a new transaction.
 
 ## Understand the Bond
 
@@ -56,6 +58,10 @@ The recipient can receive the bond component if the proposal is approved and exe
 
 The content must be non-empty Markdown.
 The default application limit is `32768` characters.
+
+Proposal details and creation previews do not load images.
+Image descriptions remain visible as text. Stored Markdown and its content hash do not change.
+Raw HTML does not create active elements.
 
 The App API rejects content that exceeds the limit.
 It also rejects content that fails its explicit-language check.

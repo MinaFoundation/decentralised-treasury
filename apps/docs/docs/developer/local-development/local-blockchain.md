@@ -53,8 +53,8 @@ curl --fail-with-body http://127.0.0.1:8080/healthz
 
 The simulator and all generated clients use the `devnet` signature network.
 This value selects the Mina signature domain. It does not connect the
-simulator to the public Devnet. The simulator gets its network ID from
-`Mina.LocalBlockchain`; the server does not read `MINA_NETWORK_ID` as a
+simulator to the public Devnet. The simulator gets its network from
+`Mina.LocalBlockchain`; the server does not read `NETWORK` as a
 separate network-selection input.
 
 ## Admin Controls

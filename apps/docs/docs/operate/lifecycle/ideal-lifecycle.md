@@ -242,9 +242,9 @@ dotenvx run -f <CLI_ENV_FILE> -- \
   --wait true
 ```
 
-Use `yay`, `nay`, or `abstain`. Submit at least five included vote actions
-during the Voting period. Tally needs five distinct non-initial action-state
-targets.
+Use `yay`, `nay`, or `abstain`. Include votes in at least five distinct slots during Voting.
+Tally needs five distinct non-initial action-state targets.
+See [the tally prerequisites](../../learn/tally-a-proposal.md#before-you-start).
 
 For a reliable acceptance run, use five eligible voter keys. Only the first
 action from each voter can add voting weight. Later actions from the same voter

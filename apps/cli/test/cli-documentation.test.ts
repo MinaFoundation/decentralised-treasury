@@ -17,7 +17,7 @@ const environmentReferenceUrl = new URL(
 // Change this value only after the CLI reference is updated for the new
 // command metadata. A mismatch prints the new value.
 const expectedMetadataSha256 =
-  "d38100eff3637efb05998db55b21c4570f330be28777a4b4b0bfb9e57132a931";
+  "bbc4778a635341d4a3880f7f40be96c3f3b36e7fabb433174a37c42dd9a6f661";
 
 interface LeafCommand {
   command: Command;

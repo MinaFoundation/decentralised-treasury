@@ -8,8 +8,10 @@ page_kind: procedure
 # Container Images
 
 Container images package the application code once. Runtime environment values
-then connect that code to a specific Treasury deployment, so the published
-images do not contain deployment-specific Treasury values.
+connect that code to a specific Treasury deployment.
+The `**/.env*` rule excludes environment files and templates at every folder depth from new builds.
+The root `output/` and `tmp/` directories are also outside the build context.
+Compose and Helm supply runtime values outside the image. Older published images require separate inspection and cleanup.
 
 ## Image Targets
 
@@ -38,6 +40,14 @@ override can still take precedence until the user clears it.
 
 The publishing script uses the current commit for tags. It rejects a dirty
 worktree by default.
+
+Run the synthetic build-context check before release:
+
+```bash
+DOCKER_IGNORE_TEST=true node --test devops/test/docker-env-exclusion.test.mjs
+```
+
+Inspect replacement image layers before publication. Check filenames without printing secret values.
 
 ```bash
 docker login
@@ -70,6 +80,10 @@ curl --silent http://127.0.0.1:3100/ | \
 ## Use Published Images In Compose
 
 Set the image variables before the no-build start command:
+
+Use verified replacement tags. The audit identified `minafoundation/dt-api:41c4809` and `minafoundation/dt-api:265b1c9` as affected images.
+These examples do not establish that other older tags are clean.
+Follow the registry inventory and cleanup procedure in `devops/PUBLISHING.md` before release.
 
 ```bash
 export APP_IMAGE=minafoundation/dt-api:<IMAGE_TAG>

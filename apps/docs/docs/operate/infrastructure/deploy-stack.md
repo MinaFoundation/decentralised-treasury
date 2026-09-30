@@ -21,6 +21,11 @@ deployment is equivalent to `pnpm testnet:up` for a local deployment.
 
 ## Prerequisites
 
+Use replacement image tags whose layers have been checked for environment files.
+The September audit identified `minafoundation/dt-api:41c4809` and `minafoundation/dt-api:265b1c9` as affected images.
+Do not use these references. Older images and registry caches need separate inspection.
+Follow the inventory and cleanup procedure in `devops/PUBLISHING.md`.
+
 Get these values and artifacts from runbook `2b`:
 
 - the **treasury owner address** from `treasury-owner deploy`;
@@ -56,14 +61,80 @@ proposals. Both browser applications need them - give the file a `backoffice`
 block as well as a `web` one, or the console cannot prove a pause, unpause,
 proposal toggle or key rotation.
 
-Use chart `0.4.1` or newer. `0.4.0` added the console's proxy server block but
-not the `server_names_hash_bucket_size` that a hostname of about 50 characters
-needs, so the proxy refused to start and took every route with it. Earlier
-versions do not pass `PROOFS_ENABLED` to `proving-scheduler`, whose entrypoint
-requires it - the container exits 1 on every start while the other five in the
-pod stay healthy, showing as a `5/6` pod - and ship no Service for it, which
-`/sqlite` and `/proofs` proxy to, so nginx refuses to resolve the upstream and
-the whole ingress fails with it.
+### Complete the chart security migration before deployment
+
+The checked-in Helmfile pins exact published source commit
+`c648c68ab8ee1f1cb2a88e91c022411aafcb82f2` from
+[PR 346](https://github.com/MinaFoundation/helm-charts/pull/346). This makes
+source review and rendering deterministic before a release tag exists. The PR
+still needs the required reviews, merge, and a release tag. This pin does not
+claim that the chart was released or deployed. Complete those gates and the
+security migration below before a rollout. Do not select a moving branch or an
+unverified release tag.
+
+The new chart separates each workload identity and the public artifact server.
+Configure cloud roles through `serviceAccounts.<component>.annotations`:
+
+| Component | Cloud permissions |
+| --- | --- |
+| `api`, `processor` | List and read the required SQLite prefix. No writes. |
+| `tally-scheduler`, if enabled | List and read the required SQLite and proof prefixes. No writes. |
+| `voting-ledger-scheduler` | Read its ledger source; write its SQLite, marker, and checkpoint prefixes. |
+| `proving-scheduler` | Read its inputs; write its completed SQLite, proof, and marker prefixes. |
+| Other workloads, including public servers | No cloud credentials. |
+
+For example, replace the role placeholders in the reviewed chart values:
+
+```yaml
+serviceAccount:
+  annotations: {}
+  automount: false
+serviceAccounts:
+  api:
+    annotations:
+      eks.amazonaws.com/role-arn: <READ_ONLY_SQLITE_ROLE>
+  processor:
+    annotations:
+      eks.amazonaws.com/role-arn: <READ_ONLY_SQLITE_ROLE>
+  voting-ledger-scheduler:
+    annotations:
+      eks.amazonaws.com/role-arn: <LEDGER_PIPELINE_ROLE>
+  proving-scheduler:
+    automount: true
+    annotations:
+      eks.amazonaws.com/role-arn: <PROVING_PIPELINE_ROLE>
+```
+
+Use separate cloud trust subjects for the generated account names.
+Global `serviceAccount.annotations` is rejected by the new chart.
+Only the proving scheduler receives Kubernetes scaling permissions and its API token, when autoscaling is enabled.
+The public artifact server uses another account and read-only PVC mounts.
+API and processor roles must not reuse the old writer role.
+
+`automountServiceAccountToken: false` does not prevent a cloud identity webhook from injecting another token.
+Verify actual IAM policies, trust subjects, existing RoleBindings, and pod credentials.
+The chart disables EC2 metadata credential fallback in its S3 clients.
+Cluster controls must also block direct node metadata access from public pods.
+
+Before migration, save unuploaded scheduler progress and stop the old writer.
+The new public artifact server shares dedicated SQLite and proof PVCs with the scheduler.
+Set `proving.scheduler.persistence.size`, its storage class, and `proving.scheduler.server.proofsStorageSize`.
+Both pods must fit on the same node when the claims use `ReadWriteOnce`.
+Inspect storage topology and capacity before rollout. Do not delete the old data until recovery is verified.
+Remove any old `extraObjects` Service override that selects the scheduler pod.
+The chart supplies the stable Service name and selects the new `artifacts` pod.
+
+The upgrade also includes changes from chart `0.4.1` through `0.9.0`:
+optional automatic tally, docs routing, API/processor persistence, and S3 synchronization fixes.
+Review those values. Keep automatic tally disabled unless the operator separately configures and funds it.
+Select `network: mainnet` or `network: devnet` explicitly; the new default is mainnet.
+CLI and proof processes receive `NETWORK`; browser processes derive `NEXT_PUBLIC_NETWORK_ID` from the same value.
+Remove legacy `MINA_NETWORK_ID` and `tallyScheduler.minaNetworkId` settings.
+Use verification keys compiled for that same network.
+
+Render both charts and inspect the complete resource diff before a separately approved rollout.
+Chart rendering does not verify live cloud permissions or storage scheduling.
+See the chart's `SECURITY-MIGRATION.md` for the release checklist.
 
 ### Use a managed database
 
@@ -171,14 +242,8 @@ nodes for the database. The database volume is zonal.
   content. An existing cursor takes precedence over `EVENTS_START_HEIGHT`.
   Therefore, this value affects only a database that does not have an indexer
   cursor.
-- **Select the chart reference.** Use `decentralized-treasury-0.2.5` for devnet
-  or mainnet. For the 21-lifecycles-per-epoch speed test, use the
-  `spike/decentralized-treasury-lifecycle-speedrun` branch. This value is a
-  branch, not a tag. Thus, a render can include chart changes that the operator
-  did not select.
-- **Configure `serviceAccount.annotations`.** The example contains an AWS IRSA
-  role. On other cloud platforms, remove this annotation and use a different
-  method to grant S3 access.
+- **Select the reviewed chart commit.** Complete the chart security migration above before applying this runbook.
+- **Configure per-workload cloud roles.** Give read-only roles to the API and processor. Give writer roles only to the pipeline.
 - **Configure `ingress.annotations`.** The supplied annotations are specific to
   AWS ALB. Replace the annotations for the selected ingress controller.
 
@@ -220,7 +285,7 @@ kubectl get pods -n <namespace> | grep decentralized-treasury
 ```
 
 Confirm that `api`, `indexer`, `indexer-api`, `processor`, `processor-api`,
-`proving-scheduler`, `proxy`, `web`, `backoffice`, and `redis` are Running. Confirm that
+`proving-scheduler`, `artifacts`, `proxy`, `web`, `backoffice`, and `redis` are Running. Confirm that
 `api-migrate` is Complete. When no proof work exists, `proving-worker` has 0
 replicas. This state shows that the autoscaler is at rest. It is not a failure.
 
@@ -306,7 +371,7 @@ verification keys. The keys can be absent or compiled with a different
 
 | Symptom                                                                     | Cause / fix                                                                                                                                                    |
 | --------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| All ingress routes return 502                                               | On charts before `0.4.0`, the proving-scheduler Service is absent and nginx does not start when it cannot resolve the upstream. Supply it via `extraObjects`.  |
+| All ingress routes return 502                                               | Check the chart Service and its `artifacts` selector. Remove obsolete `extraObjects` overrides before the security upgrade.  |
 | `proxy` crash-loops, `could not build server_names_hash`                    | The console hostname is longer than one hash bucket. Fixed in chart `0.4.1`.                                                                                   |
 | `proving-scheduler` shows `5/6`                                             | `PROOFS_ENABLED` does not reach that container, and its entrypoint requires it. Fixed in chart `0.4.0`; otherwise set it in `proving.scheduler.extraEnvVars`.  |
 | The console reports `Treasury owner account was not found: [object Object]` | A failed fetch, not a missing account: its Mina node is on another origin and answers no CORS. Route it via `ingress.hosts.backoffice`.                        |
@@ -325,6 +390,27 @@ verification keys. The keys can be absent or compiled with a different
 - Chart: [https://github.com/MinaFoundation/helm-charts/tree/main/decentralized-treasury](https://github.com/MinaFoundation/helm-charts/tree/main/decentralized-treasury)
 - Images: [https://hub.docker.com/u/minafoundation](https://hub.docker.com/u/minafoundation)
 - Previous: `2b-Deploy-Contracts` · Next: `2d-Lifecycle-Pipeline`
+
+### Upgrade transaction-relative event identity
+
+Stop the indexer and processor before migration `1790770000000-transaction-event-identity`.
+Back up the database first. Run the normal migration command before starting the new workers.
+The migration merges duplicate Archive identities and prefers canonical observations.
+It stops for operator review if duplicate identities contain different immutable payloads.
+It clears derived event rows, preserves Proposal contents, resets processor offsets, and requests projection replay.
+Historical failure records for removed duplicate rows become superseded.
+Existing pending rows become orphaned until the new indexer validates their branch.
+
+Set `ENABLE_BLOCK_TRANSACTION_DETAILS=true` on the Archive API deployment, then restart its pod.
+Confirm that `blocks` returns nonempty `parentHash` values.
+Start the indexer, then the processor. Wait for projection replay to complete before restoring normal API traffic.
+Check the existing indexer and processor status routes. Equal-height pending tips temporarily select canonical-only projection.
+Pending projection resumes automatically when one complete, stable tip is available.
+If replay remains `collecting` with target `0`, but legacy rows exist in
+`processor_proposals`, the database has no Proposal Archive facts from which to
+rebuild those rows. Restore or reindex the missing Archive facts, or restore the
+database backup. Never force the replay state to `complete`.
+Do not roll back this migration to recover duplicate observations. Restore the backup if the original rows are required.
 
 ## Configuration File: `helmfile.yaml`
 
@@ -360,9 +446,8 @@ environments:
 releases:
   - name: decentralized-treasury
     namespace: {{ .Values.namespace }}
-    # For devnet or mainnet. For the 21-lifecycles-per-epoch speedrun, use:
-    #   git::https://github.com/MinaFoundation/helm-charts.git@decentralized-treasury?ref=spike/decentralized-treasury-lifecycle-speedrun
-    chart: git::https://github.com/MinaFoundation/helm-charts.git@decentralized-treasury?ref=decentralized-treasury-0.4.1
+    # Immutable source commit from PR 346. Review, merge, and a release tag are pending.
+    chart: git::https://github.com/MinaFoundation/helm-charts.git@decentralized-treasury?ref=c648c68ab8ee1f1cb2a88e91c022411aafcb82f2
     values:
       - verification-keys.yaml
       - fullnameOverride: decentralized-treasury
@@ -385,9 +470,8 @@ releases:
 
         serviceAccount:
           annotations: {}
-            # AWS only. IRSA role granting access to the S3 buckets below.
-            # Omit entirely on other clouds and grant S3 access another way.
-            # eks.amazonaws.com/role-arn: "<REPLACE: IAM role ARN>"
+          # Do not attach a shared cloud role. After the chart security upgrade,
+          # set serviceAccounts.<component>.annotations as described in README.md.
 
         s3:
           region: "<REPLACE: us-east-1>"
@@ -579,7 +663,7 @@ releases:
           publicBaseUrl: https://{{ .Values.host }}
           publicEnv:
             NEXT_PUBLIC_SLOT_DURATION_MS: "90000"
-            NEXT_PUBLIC_NETWORK_ID: DEVNET
+            NEXT_PUBLIC_NETWORK_ID: devnet
 
         # The break-glass console. Served on its own hostname by the
         # in-cluster proxy, which is not cosmetic: the console talks to the
@@ -608,7 +692,7 @@ releases:
           enabled: true
           publicBaseUrl: https://{{ .Values.backofficeHost }}
           publicEnv:
-            NEXT_PUBLIC_NETWORK_ID: DEVNET
+            NEXT_PUBLIC_NETWORK_ID: devnet
           auth:
             mode: basic
             basic:
@@ -627,31 +711,6 @@ releases:
             - key: staking-ledgers
               host: mina-staking-ledgers-provider
               port: 8080
-
-        # Chart bug (through 0.2.5): the proxy routes /sqlite and /proofs to
-        # the proving-scheduler, but the chart ships no Service for it. nginx
-        # refuses to boot on an unresolvable upstream, so without this the
-        # whole ingress goes down. Drop once the chart creates the Service.
-        extraObjects:
-          - apiVersion: v1
-            kind: Service
-            metadata:
-              name: decentralized-treasury-proving-scheduler
-              labels:
-                app.kubernetes.io/name: decentralized-treasury
-                app.kubernetes.io/instance: decentralized-treasury
-                app.kubernetes.io/component: proving-scheduler
-            spec:
-              type: ClusterIP
-              ports:
-                - name: http
-                  port: 8080
-                  targetPort: http
-                  protocol: TCP
-              selector:
-                app.kubernetes.io/name: decentralized-treasury
-                app.kubernetes.io/instance: decentralized-treasury
-                app.kubernetes.io/component: proving-scheduler
 
         # AWS ALB. Replace the annotations to match your ingress controller.
         ingress:
@@ -734,6 +793,6 @@ backoffice:
 
 ## Sources
 
-- `devops/runbooks/2-Treasury/2c-Deploy-Stack/README.md` (SHA-256: `910bb3b9b3eb2a40c58bf8b8d3cbdab26f68ba14722776ae0ea8c1b422911d60`)
-- `devops/runbooks/2-Treasury/2c-Deploy-Stack/helmfile.yaml` (SHA-256: `58b1311319d56da3b7a495c58aa7c4d474d51481540c1a22218dfd31156d27a8`)
+- `devops/runbooks/2-Treasury/2c-Deploy-Stack/README.md` (SHA-256: `27a82dc6f60be5e3f75ac7f6b97e82a0dfefdce40c67b9cc624d76502ac3315a`)
+- `devops/runbooks/2-Treasury/2c-Deploy-Stack/helmfile.yaml` (SHA-256: `e0bb2d7d32019840f2a201eb88bf6ae69f8bb5fc65ed9f7b056fa970a9cc2b98`)
 - `devops/runbooks/2-Treasury/2c-Deploy-Stack/verification-keys.yaml` (SHA-256: `1ffb15646b8b8835aa9041afdd7041ba5c75349413cc87a7d081aafd528cff61`)

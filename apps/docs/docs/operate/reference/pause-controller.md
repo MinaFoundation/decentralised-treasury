@@ -20,7 +20,7 @@ The supported Proposal-toggle workflow passes through the Owner and Pause Contro
 The Pause Controller does not store or change Proposal state.
 
 The public Pause Controller method can also run directly.
-A direct call consumes the Pause Controller nonce but does not toggle the Proposal.
+A direct call only verifies the signed Proposal authorization.
 
 ## Actors
 
@@ -29,7 +29,7 @@ A direct call consumes the Pause Controller nonce but does not toggle the Propos
 | Five ordered break-glass positions | Hold distinct keys and sign operation-specific message hashes. |
 | Fee payer | Pays the fee and submits the transaction. |
 | Owner contract | Calls Proposal pause authorization and then toggles the Proposal. |
-| Operator | Preserves key order, commitment, nonce, and target addresses. |
+| Operator | Preserves key order, commitment, nonce, target state, and target addresses. |
 | Direct caller | Can submit the public authorization method without the Owner composite path. |
 
 ## State and signature input
@@ -53,7 +53,7 @@ A direct call consumes the Pause Controller nonce but does not toggle the Propos
 | `requireNotPaused` | Requires `paused = false`. |
 | `pauseTreasury` | Sets `paused = true`. |
 | `unpauseTreasury` | Sets `paused = false`. |
-| `togglePauseProposal` | Authorizes a Proposal target and increments the nonce. |
+| `togglePauseProposal` | Verifies authorization for one Proposal state change. |
 
 `MultisigSignature.dataPauseTreasury`, `dataUnpauseTreasury`, `dataTogglePauseProposal`, and `dataRotateMultisigKeys` construct signed message hashes.
 
@@ -61,7 +61,7 @@ A direct call consumes the Pause Controller nonce but does not toggle the Propos
 
 State edits and access require a Pause Controller proof. The verification key cannot change during the current protocol version.
 
-Each break-glass operation requires:
+Each global Pause Controller operation requires:
 
 - the current five-key commitment;
 - at least three valid signature positions;
@@ -81,15 +81,18 @@ A key in multiple positions can reuse one signature in matching positions. Confi
 
 :::
 
-The nonce is part of each signed message. A successful method increments the account nonce.
+Global operations sign the Pause Controller account nonce. A successful global operation increments that nonce.
+
+A Proposal operation signs the Proposal key, token ID, pause nonce, and target state.
+The Owner derives the token ID and applies the change through the Proposal account.
+The Proposal increments its pause nonce after a successful change.
 
 :::caution Use the Owner composite path for a Proposal toggle
 
 The CLI and service call `TreasuryOwnerSmartContract.togglePauseProposal`.
 This path verifies break-glass authorization and toggles the Proposal status.
 
-A direct call to `TreasuryPauseControllerSmartContract.togglePauseProposal` only increments the Pause Controller nonce.
-It does not change the Proposal status.
+A direct call to `TreasuryPauseControllerSmartContract.togglePauseProposal` does not change contract state.
 
 :::
 
@@ -100,9 +103,9 @@ Pause operations have no lifecycle condition.
 `pauseTreasury` can run when already paused. `unpauseTreasury` can run when already unpaused.
 
 `togglePauseProposal` does not check the global pause flag.
-It verifies authorization for the target Proposal public key and increments the nonce.
+It verifies authorization for the Proposal key, token ID, pause nonce, and target state.
 
-The method does not call `TreasuryProposalSmartContract.togglePause`.
+The method does not call `TreasuryProposalSmartContract.setPaused`.
 Use the Owner composite path when the operation must change Proposal status.
 
 ## Business logic
@@ -131,7 +134,9 @@ Reconcile the new commitment and nonce after inclusion.
 
 :::
 
-The signed messages do not include a network ID or contract address. Use a separate signer and nonce domain for each deployment.
+The signed messages do not include a network ID or Pause Controller address.
+Proposal messages bind the Owner-derived token ID.
+Use a separate signer domain for each deployment.
 
 ## Constants
 
@@ -152,8 +157,10 @@ The Owner emits `proposalPauseToggled` after a Proposal pause call. Global pause
 - At least three signature positions must verify.
 - The five configured public keys must be distinct during operation.
 - At least three different configured keys must sign each operation.
-- The supplied nonce must equal the account nonce.
-- A successful break-glass method increments the nonce.
+- A global operation nonce must equal the Pause Controller account nonce.
+- A Proposal operation nonce must equal the Proposal pause nonce.
+- A successful global operation increments the Pause Controller nonce.
+- A successful Proposal operation increments the Proposal pause nonce.
 - A direct `togglePauseProposal` call does not change Proposal state.
 - `requireNotPaused` requires `paused = false`.
 - Each operation uses a distinct message prefix.

@@ -1,8 +1,9 @@
 # Publishing and running the images
 
-The published images carry no deployment-specific configuration. The same
-`dt-web` image can serve a devnet, a testnet and a mainnet deployment; the
-difference is entirely in the environment variables passed at `docker run` time.
+Images use deployment configuration supplied at container start.
+The build context excludes every `.env*` file at every folder depth, including templates.
+Compose and Helm still supply runtime environment values outside the image.
+This exclusion applies to new builds. It does not establish that older published images are clean.
 
 ## Why the web image used to be environment-specific
 
@@ -24,6 +25,15 @@ The build therefore runs with **no** `NEXT_PUBLIC_*` variables set. Setting one
 during a build would inline it as a fallback and partly defeat the mechanism.
 
 ## Publishing
+
+First verify the environment-file exclusion with Docker running:
+
+```sh
+DOCKER_IGNORE_TEST=true node --test devops/test/docker-env-exclusion.test.mjs
+```
+
+The check uses synthetic files. It confirms that Docker excludes environment files and retains ordinary application files.
+Inspect replacement image layers before release. Do not print secret values during inspection.
 
 ```sh
 docker login                          # as the namespace owner
@@ -62,6 +72,18 @@ Confirm what was published:
 docker buildx imagetools inspect minafoundation/dt-web:<tag>
 ```
 
+## Previously Published Images
+
+The September audit identified `minafoundation/dt-api:41c4809` and `minafoundation/dt-api:265b1c9` as affected images.
+These references are not a complete inventory. Their current registry state is unverified.
+
+The registry owner must inventory affected tags, shared digests, architecture manifests, and build caches.
+The publisher exports registry caches with `mode=max`; include those caches in the inspection.
+With owner approval, remove affected references and caches, verify their removal, and record the results.
+Assess exposed credentials through the custody process. Removing an image does not revoke credentials.
+Publish and verify replacement images before updating deployment references.
+Repository changes alone do not complete this cleanup.
+
 ## Running the web image
 
 ```sh
@@ -70,7 +92,7 @@ docker run -p 3100:3100 \
   -e NEXT_PUBLIC_INDEXER_API_URL=https://treasury.example.org/indexer \
   -e NEXT_PUBLIC_PROCESSOR_API_URL=https://treasury.example.org/processor \
   -e NEXT_PUBLIC_MINA_NODE_URL=https://treasury.example.org/mina/graphql \
-  -e NEXT_PUBLIC_NETWORK_ID=DEVNET \
+  -e NEXT_PUBLIC_NETWORK_ID=devnet \
   -e TREASURY_OWNER_CONTRACT_ADDRESS=B62q... \
   -e LIFECYCLE_PERIOD_DURATION=7140 \
   minafoundation/dt-web:<tag>
@@ -95,7 +117,7 @@ the backend services already use, so a single variable can configure both.
 | `NEXT_PUBLIC_INDEXER_API_URL`                                                    | `http://127.0.0.1:3100/indexer`      | indexer API                                                          |
 | `NEXT_PUBLIC_PROCESSOR_API_URL`                                                  | `http://127.0.0.1:3100/processor`    | processor API                                                        |
 | `NEXT_PUBLIC_MINA_NODE_URL`                                                      | `http://127.0.0.1:3100/mina/graphql` | Mina GraphQL endpoint                                                |
-| `NEXT_PUBLIC_NETWORK_ID`                                                         | `MAINNET`                            | transaction and Ledger signing domain; also shown in the UI          |
+| `NEXT_PUBLIC_NETWORK_ID`                                                         | `mainnet`                            | transaction and Ledger signing domain; also shown in the UI          |
 | `NEXT_PUBLIC_TREASURY_OWNER_CONTRACT_ADDRESS`, `TREASURY_OWNER_CONTRACT_ADDRESS` | _(none)_                             | treasury owner contract; balance and actions are disabled without it |
 | `NEXT_PUBLIC_LIFECYCLE_PERIOD_DURATION`, `LIFECYCLE_PERIOD_DURATION`             | _(none)_                             | slots per lifecycle period                                           |
 | `NEXT_PUBLIC_SLOT_DURATION_MS`                                                   | _(none)_                             | slot duration, for countdowns                                        |

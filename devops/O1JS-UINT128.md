@@ -1,4 +1,8 @@
-# Audit #09: minimal UInt128 fix
+# Audit #09: UInt128 compatibility fix
+
+`UInt128` is deprecated for Treasury arithmetic.
+This record documents the checked implementation that remains for compatibility.
+See [the UInt96 migration](O1JS-UINT96.md) for the current Treasury type.
 
 Fix commit: `ac7eb036637f39e054ca68555c250f645a532da4`.
 Parent: `25c616cdaa63827cb07e5199ac73058163fc60a9`.
@@ -19,7 +23,7 @@ Division uses this checked multiplication for `q*y`, then retains the bounded re
 Every valid division has `q*y <= x`, so this bound rejects no valid UInt128 division.
 
 The fork's `UINT128-SECURITY.md` contains the complete integer argument.
-No new helper, public type, dependency, or backend change is required.
+This compatibility fix did not require a new dependency or backend change.
 Node ESM, CommonJS, and browser outputs were rebuilt.
 
 ## Verification
@@ -64,7 +68,7 @@ pnpm test:o1js-security:browser
 Run the Treasury proof check from `packages/sdk`:
 
 ```sh
-O1JS_SECURITY_PROOFS=true node --loader ts-node/esm --test test/assurance/primitive/uint128-treasury-proof.test.ts
+O1JS_SECURITY_PROOFS=true node --loader ts-node/esm --test test/assurance/primitive/uint96-treasury-proof.test.ts
 ```
 
 These circuit changes require new verification keys before deployment.

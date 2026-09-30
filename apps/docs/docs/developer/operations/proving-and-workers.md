@@ -39,8 +39,10 @@ semantics.
 
 ## SQLite Identity
 
-SQLite paths use lifecycle namespaces. Staking accounts, voting accounts,
-nullifiers, traces, and proofs must refer to the same lifecycle snapshot.
+SQLite files and staking/voting ledgers use lifecycle identity.
+Mutable Vote Reducer nullifiers, traces, and proofs also use the canonical Proposal public key and token ID.
+A new Proposal trace requires an empty nullifier root. Clearing one Proposal does not clear another Proposal.
+All records must refer to the same lifecycle snapshot.
 
 Archive or remove incompatible local data after a circuit, root, or snapshot
 change. Do not merge proofs from different roots or action ranges.

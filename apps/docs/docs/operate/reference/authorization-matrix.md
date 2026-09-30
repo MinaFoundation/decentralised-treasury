@@ -40,7 +40,7 @@ Every submitted Mina transaction needs a fee-payer signature. The table shows ad
 | Emergency withdrawal                | Direct signed Treasury Owner AccountUpdate; no contract method                                                                                                |
 | Pause treasury                      | `TreasuryPauseControllerSmartContract.pauseTreasury`                                                                                                          |
 | Unpause treasury                    | `TreasuryPauseControllerSmartContract.unpauseTreasury`                                                                                                        |
-| Toggle Proposal pause through Owner | `TreasuryOwnerSmartContract.togglePauseProposal`, `TreasuryPauseControllerSmartContract.togglePauseProposal`, and `TreasuryProposalSmartContract.togglePause` |
+| Set Proposal pause through Owner    | `TreasuryOwnerSmartContract.togglePauseProposal`, `TreasuryPauseControllerSmartContract.togglePauseProposal`, and `TreasuryProposalSmartContract.setPaused`   |
 | Authorize Proposal toggle directly  | `TreasuryPauseControllerSmartContract.togglePauseProposal`                                                                                                    |
 | Rotate keys                         | `TreasuryPauseControllerSmartContract.rotateMultisigKeys`                                                                                                     |
 
@@ -55,8 +55,8 @@ Current [CLI](./cli-commands) and web creation builders use the sender as bond p
 Owner create, vote, tally, execute, and Proposal-toggle methods bind the sender. A different fee payer does not replace that signature.
 
 The public Pause Controller `togglePauseProposal` method does not bind an Owner sender.
-It verifies the embedded signatures and increments the Pause Controller nonce.
-It does not change the Proposal status when called directly.
+It verifies the signed Proposal key, token ID, pause nonce, and target.
+It does not change contract state when called directly.
 
 A manually selected bond payer needs its signature in addition to the sender signature.
 

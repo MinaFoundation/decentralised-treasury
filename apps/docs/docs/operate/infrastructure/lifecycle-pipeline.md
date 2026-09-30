@@ -106,8 +106,20 @@ scheduler must get and process specific older lifecycles.
 
 ## Artifact locations
 
-The treasury host serves all three artifact groups as read-only JSON directory
-listings.
+The treasury host serves all three artifact groups as read-only JSON directory listings.
+Complete the chart security migration in `1c` and `2c` before a new rollout.
+The prepared chart source at commit
+`c648c68ab8ee1f1cb2a88e91c022411aafcb82f2` separates each public server from
+its privileged writer. [PR 346](https://github.com/MinaFoundation/helm-charts/pull/346)
+still needs review, merge, and a release tag. The immutable source pin supports
+review and rendering; it does not claim a released or deployed chart.
+
+The artifact server uses a separate `artifacts` Deployment with read-only SQLite and proof PVCs.
+The stable `proving-scheduler` Service selects this server.
+The ledger provider uses separate `-fetch` and `-serve` Deployments.
+Each server has a distinct account without Kubernetes or cloud permissions.
+The writer and server share a node for `ReadWriteOnce` volumes.
+Verify the actual cloud policies and injected credentials after rollout.
 
 ```bash
 H=https://<your host>
@@ -125,6 +137,10 @@ Use the main Treasury host. The backoffice host does not serve `/sqlite/` or `/p
 | `/sqlite/<L>.sqlite.proven` | Lifecycle ID, backend proof paths, and proving completion time. | Check that staking proving completed. The paths describe backend files, not local download paths. |
 | `/proofs/<L>-merge.json` | Merged staking-to-voting proof. | Not the Proposal vote proof. Tally uses the exhausted staking proof below. |
 | `/proofs/<L>-exhausted.json` | Final exhausted staking-to-voting proof. | Download for `vote-reducer trace-run-batch` validation and `proposal tally-votes`. |
+
+The CLI selects the historical Owner by public key and `TokenId.default`.
+It uses the selected account index for both the account and its Merkle witness.
+A custom-token account at the same public key is not eligible.
 
 The backend pipeline does not produce the Proposal-specific Vote Reducer proof or submit the tally.
 Users must prepare that proof separately. They do not need backend administration access to use these published files.
@@ -218,8 +234,15 @@ persisted proofs. Rebuild invalid lifecycle state.
   `checkpoint.intervalIndices` indices, the process tries to write an immutable
   SQLite snapshot below the `.checkpoints/` prefix of the SQLite bucket.
   Runbook `2c` sets the interval to 500. The process also requests a checkpoint
-  at normal completion and when it receives `SIGTERM`. It does not start a new
-  upload while an earlier upload is active. A failed upload does not stop the
+  at normal completion and when it receives `SIGTERM`. The scheduler forwards
+  a container `SIGTERM` through the CLI launcher to the active trace process.
+  It waits for shutdown and does not start another lifecycle or poll cycle.
+  On `SIGTERM`, tracing
+  stops after the current batch. The process waits for an active upload, then
+  attempts a final checkpoint. It closes SQLite before exit with status `143`.
+  This shutdown also closes SQLite when checkpoints are disabled. A hard kill
+  can prevent shutdown from finishing. It does not start a new upload while
+  an earlier upload is active. A failed upload does not stop the
   trace, so recovery uses the last valid checkpoint. After `trace-digest`
   completes, the scheduler deletes the checkpoint and then writes the `.done`
   marker. After a recoverable interruption, the operator repeats only the work
@@ -256,6 +279,21 @@ their scheduling separately from the chart-wide default:
   requires a node with at least 16 vCPUs. Pod anti-affinity prevents two workers
   from sharing one host.
 
+## Size the checkpoint shutdown grace period
+
+Compose sets `voting-ledger-scheduler.stop_grace_period` to `21m`.
+The prepared chart sets `votingLedgerScheduler.terminationGracePeriodSeconds` to `1260` seconds.
+This chart setting is available only after the security chart migration in `2c`.
+
+Shutdown can wait for an active upload, then attempt a final upload.
+Each upload has a ten-minute timeout. The default leaves one additional minute for the current batch, local copies, and SQLite closure.
+Increase the chart value when measured batch or disk work needs more time.
+Apply the equivalent larger Compose grace period for that environment.
+
+This setting controls normal container termination. It does not extend a cloud provider's spot interruption deadline.
+A forced eviction, host loss, hard kill, or shorter operator stop timeout can still interrupt shutdown.
+Recovery must use the last valid checkpoint. Verify it before continuing, or rebuild the lifecycle.
+
 ## Proving autoscaling
 
 Between lifecycles, `proving-worker` uses `minReplicas: 0`. Each idle replica
@@ -283,6 +321,13 @@ After a restart, the scheduler can restore a compatible checkpoint. Verify the
 restored state before work continues. If the checkpoint is absent or invalid,
 rebuild the lifecycle. Use these commands to inspect the result of a
 preemption. You can also clear a checkpoint that does not match the ledger.
+
+Stop all processes that access the lifecycle database before a manual restore.
+The restore first downloads a temporary file beside the database. After the
+download completes, it removes `-wal`, `-shm`, and `-journal`, then replaces
+the database. Stale SQLite sidecars cannot be replayed against the restored
+checkpoint. A missing checkpoint or failed download leaves the existing
+database and its sidecars unchanged. A sidecar removal error fails the restore.
 
 ```bash
 dotenvx run -f apps/cli/.env.<family> -- \
@@ -338,10 +383,9 @@ The scheduler pod runs these sidecars:
 - `s3-sync`, which pulls data;
 - `s3-push-markers`;
 - `s3-push-proofs`;
-- `serve-artifacts`, which is the nginx server for `/sqlite` and `/proofs`;
 - `proving-autoscale`.
 
-Use these names when you examine events.
+Use these names when you examine events. After the security migration, `serve-artifacts` runs in the separate `artifacts` Deployment.
 
 ## Troubleshooting
 
@@ -350,9 +394,9 @@ Use these names when you examine events.
 | No progress occurs, and workers are at `0/0`                         | This state is normal during `from-file` and `trace-digest`, which do not add jobs to the queue. Check the voting-ledger-scheduler log for the traced index count.                                                                                     |
 | An available lifecycle has no `.done` marker                         | Confirm that its `lifecycle-<id>.hash` pointer and hash-named ledger payload are present. Check its failure marker and retry backoff. The scheduler processes all eligible pointers newest-first during each poll.                                    |
 | Proving stops on an old lifecycle                                    | The scheduler uses strict oldest-first order. Thus, one unprovable lifecycle blocks each later lifecycle. Correct the lifecycle. As a last resort, write its `.proven` marker manually and include a reason. This operation bypasses the normal flow. |
-| `trace-digest` restarts at zero after an eviction                    | `checkpoint.intervalIndices` is `0`. Set a nonzero value before you use spot capacity.                                                                                                                                                                |
+| `trace-digest` restarts at zero after an eviction                    | Check for a disabled checkpoint interval, an absent checkpoint, or a restore error. Set a nonzero interval before you use spot capacity. Older CLI versions can replay stale SQLite sidecars and fail restoration. Update the CLI and check file permissions.                                                                                                                                                                |
 | The queue is empty after a Redis restart, and queue progress is lost | `proving.redis.persistence.enabled` is disabled. Proofs in SQLite remain, but the queue does not remain.                                                                                                                                              |
-| `/sqlite` and `/proofs` return 502                                   | The proving-scheduler Service is absent. See the `extraObjects` workaround in `2c`.                                                                                                                                                                   |
+| `/sqlite` and `/proofs` return 502                                   | Check the proving-scheduler Service and its `artifacts` selector. Remove obsolete `extraObjects` overrides during the migration in `2c`.                                                                                                                                                                   |
 | S3 and local sizes are different                                     | An upload can be active, or a sidecar can be between push cycles. Wait for one push cycle. Use the S3 multipart-upload list to identify an incomplete upload.                                                                                         |
 
 ## References
@@ -362,6 +406,22 @@ Use these names when you examine events.
   (`scripts/proving-autoscale.mjs` is the autoscaler)
 - Previous: `2c-Deploy-Stack`
 
+### Completed snapshot reads and automatic recovery
+
+The API and processor open `<L>.sqlite` only when its valid `<L>.sqlite.done` marker exists.
+The readers check the marker and file identity on each service lookup.
+After replacement, they close the previous store and open the completed replacement.
+Keep the stopped-rebuild procedure: do not replace a database during an active read.
+
+Missing or incomplete snapshots and snapshot root mismatches are temporary dependency failures.
+The processor retries them beyond five attempts, with exponential backoff capped at 60 seconds.
+Recoverable database and network failures use the same policy. Shutdown interrupts the wait.
+A restart preserves the attempt count and retry deadline. No manual retry is needed after the dependency recovers.
+Undecodable events remain quarantined, so later unrelated events can proceed.
+Other operational errors also keep retrying. Each poll makes at most five attempts before yielding.
+Legacy blocked records retain the manual recovery command.
+Readiness can still fail for quarantined events, unresolved failures, or incomplete projection replay.
+
 ## Sources
 
-- `devops/runbooks/2-Treasury/2d-Lifecycle-Pipeline/README.md` (SHA-256: `f826df0e23af358292c45dfeaf44d2067f1d3322a6f66ee3a2c05e6e51e027d5`)
+- `devops/runbooks/2-Treasury/2d-Lifecycle-Pipeline/README.md` (SHA-256: `4aa371cb8bfb020baca240637c08d7522cc351dbdd1e7d0a3e5f9a663368ce28`)

@@ -63,8 +63,9 @@ Before a signer approves an action, confirm these values:
 - exact five-key order;
 - action type and action-specific data.
 
-Each included action increments the Pause Controller nonce. A signature for an
-old nonce cannot authorize the next action.
+Each included global action increments the Pause Controller nonce.
+A Proposal action increments its Proposal pause nonce.
+A signature for an old nonce cannot authorize the next action.
 
 Stop the operation when a signer sees different data.
 
@@ -101,7 +102,9 @@ dotenvx run -f <CLI_ENV_FILE> -- \
   --multisig-signer-private-key <SIGNER_PRIVATE_KEY> \
   --multisig-participants-public-keys <PUB1>,<PUB2>,<PUB3>,<PUB4>,<PUB5> \
   --proposal-public-key <PROPOSAL_PUBLIC_KEY> \
-  --nonce <PAUSE_CONTROLLER_NONCE>
+  --proposal-token-id <PROPOSAL_TOKEN_ID> \
+  --paused <true-or-false> \
+  --nonce <PROPOSAL_PAUSE_NONCE>
 ```
 
 Use the matching `multisig-sign` subcommand for unpause and key rotation.
@@ -263,16 +266,15 @@ Submit the prepared signatures:
 dotenvx run -f <CLI_ENV_FILE> -- \
   pnpm run cli -- pause-controller toggle-pause-proposal \
   --proposal-public-key <PROPOSAL_PUBLIC_KEY> \
+  --proposal-nonce <PROPOSAL_PAUSE_NONCE> \
+  --paused <true-or-false> \
   --multisig-participants-public-keys <PUB1>,<PUB2>,<PUB3>,<PUB4>,<PUB5> \
   --multisig-signatures <SIG1>,<SIG2>,<SIG3>,<SIG4>,<SIG5> \
   --wait true
 ```
 
-Read Proposal state after inclusion. Also read the incremented Pause
-Controller nonce.
-
-Do not use the event `paused` field as authoritative state. The transaction
-caller supplies this event value separately from the Proposal state change.
+Read Proposal state after inclusion. Confirm that its pause nonce incremented.
+The Proposal authorization does not consume the Pause Controller nonce.
 
 ## Rotate Signer Keys
 
