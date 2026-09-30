@@ -8,12 +8,10 @@ node_modules/
 **/.next/
 **/.turbo/
 
-devops/.env.compose
-devops/.env.testnet
-devops/.env.*
+**/.env*
 devops/.data/
-.env
-.env.*
+output/
+tmp/
 
 npm-debug.log*
 yarn-debug.log*

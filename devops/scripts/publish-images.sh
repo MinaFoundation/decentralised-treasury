@@ -19,8 +19,9 @@
 #                     pushed under each name because compose distinguishes the
 #                     services only by the command it runs
 #
-# No image contains deployment-specific configuration; everything is
-# supplied through environment variables at run time. See devops/PUBLISHING.md.
+# New builds exclude every .env* file through .dockerignore. Deployment
+# configuration is supplied at runtime. Verify images before publication;
+# older images need separate cleanup. See devops/PUBLISHING.md.
 #
 # Environment overrides:
 #   NAMESPACE   registry namespace                  (default: minafoundation)
