@@ -562,6 +562,7 @@ export function parseTreasuryProposalStateResult(output: string):
       status: string;
       statusField: string;
       paidOutAmount: string;
+      pauseNonce: string;
     }
   | undefined {
   return parseMarkerJson(output, "TREASURY_PROPOSAL_STATE_JSON:") as
@@ -575,6 +576,7 @@ export function parseTreasuryProposalStateResult(output: string):
         status: string;
         statusField: string;
         paidOutAmount: string;
+        pauseNonce: string;
       }
     | undefined;
 }
@@ -819,7 +821,9 @@ export function parseTogglePauseProposalResult(output: string):
   | {
       pauseControllerAddress: string;
       proposalPublicKey: string;
-      nonce: string;
+      proposalTokenId: string;
+      proposalNonce: string;
+      paused: boolean;
       togglePauseProposalTxHash?: string;
     }
   | undefined {
@@ -827,7 +831,9 @@ export function parseTogglePauseProposalResult(output: string):
     | {
         pauseControllerAddress: string;
         proposalPublicKey: string;
-        nonce: string;
+        proposalTokenId: string;
+        proposalNonce: string;
+        paused: boolean;
         togglePauseProposalTxHash?: string;
       }
     | undefined;
@@ -865,6 +871,8 @@ export function parseMultisigSignResult(output: string):
       signature: string;
       validSignaturesCount: number;
       proposalPublicKey?: string;
+      proposalTokenId?: string;
+      paused?: boolean;
       previousMultisigCommitment?: string;
       newMultisigCommitment?: string;
     }
@@ -881,6 +889,8 @@ export function parseMultisigSignResult(output: string):
         signature: string;
         validSignaturesCount: number;
         proposalPublicKey?: string;
+        proposalTokenId?: string;
+        paused?: boolean;
         previousMultisigCommitment?: string;
         newMultisigCommitment?: string;
       }

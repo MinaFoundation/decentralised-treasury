@@ -32,7 +32,7 @@ const emptyPublicKey =
 
 function operation(): OperationPackage {
   return {
-    schemaVersion: 1,
+    schemaVersion: 2,
     kind: "pauseTreasury",
     networkId: "devnet",
     treasuryOwnerAddress: "owner",
@@ -78,6 +78,12 @@ describe("operation packages", () => {
 
   it("accepts the current schema", () => {
     expect(assertOperationPackage(operation())).toEqual(operation());
+  });
+
+  it("rejects schema 1 and requires new signatures", () => {
+    expect(() =>
+      assertOperationPackage({ ...operation(), schemaVersion: 1 }),
+    ).toThrow(/collect new signatures/);
   });
 
   it("rejects packages with fewer than five slots", () => {

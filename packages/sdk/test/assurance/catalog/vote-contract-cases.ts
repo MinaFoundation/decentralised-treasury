@@ -53,7 +53,7 @@ const proposalSource = {
     "TreasuryProposalSmartContract.calculateAcceptanceCriteria",
     "TreasuryProposalSmartContract.calculateApprovalStatus",
     "TreasuryProposalSmartContract.execute",
-    "TreasuryProposalSmartContract.togglePause",
+    "TreasuryProposalSmartContract.setPaused",
   ],
 } as const;
 

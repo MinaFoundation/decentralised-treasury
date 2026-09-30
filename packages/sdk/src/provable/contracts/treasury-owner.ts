@@ -283,8 +283,16 @@ export class TreasuryOwnerSmartContract extends TokenContract {
         isSome: Bool(true),
         value: Field(0),
       },
+      {
+        isSome: Bool(true),
+        value: Field(0),
+      },
+      {
+        isSome: Bool(true),
+        value: Field(0),
+      },
       // remainder of the 32 app state fields
-      ...Array(26).fill({ isSome: Bool(false), value: Field(0) }),
+      ...Array(24).fill({ isSome: Bool(false), value: Field(0) }),
     ];
 
     proposalUpdate.account.verificationKey.set(
@@ -516,9 +524,10 @@ export class TreasuryOwnerSmartContract extends TokenContract {
     paused: Bool,
   ) {
     const senderPublicKey = this.sender.getAndRequireSignature();
+    const proposalTokenId = this.deriveTokenId();
     const proposal = new TreasuryProposalSmartContract(
       proposalPublicKey,
-      this.deriveTokenId(),
+      proposalTokenId,
     );
     const pauseController = new TreasuryPauseControllerSmartContract(
       this.pauseControllerPublicKey.getAndRequireEquals(),
@@ -526,11 +535,13 @@ export class TreasuryOwnerSmartContract extends TokenContract {
 
     await pauseController.togglePauseProposal(
       proposalPublicKey,
+      proposalTokenId,
       signatures,
       nonce,
+      paused,
     );
 
-    await proposal.togglePause();
+    await proposal.setPaused(nonce, paused);
     this.emitEvent(
       PROPOSAL_PAUSE_TOGGLED_EVENT_NAME,
       new ProposalPauseToggledEvent({

@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { Field, PrivateKey, UInt32 } from "o1js";
+import { Bool, Field, PrivateKey, UInt32 } from "o1js";
 import { createPauseControllerTestContext } from "../../context/contracts/treasury-pause-controller-context.js";
 import {
   createLocalBlockchain,
@@ -299,25 +299,31 @@ test("toggle pause proposal", async (t) => {
     "should toggle pause proposal with valid signatures",
     async () => {
       const initialNonce = context.getNonce(blockchain);
-      const nonce = UInt32.from(initialNonce.toBigint());
+      const nonce = UInt32.from(0);
       const proposalPublicKey = PrivateKey.random().toPublicKey();
+      const proposalTokenId = Field(1);
+      const paused = Bool(true);
       const signatures = context.createTogglePauseProposalSignatures(
         proposalPublicKey,
+        proposalTokenId,
         nonce,
+        paused,
       );
 
       await transaction(feePayer, async () => {
         await context.contract.togglePauseProposal(
           proposalPublicKey,
+          proposalTokenId,
           signatures,
           nonce,
+          paused,
         );
       });
 
       const updatedNonce = context.getNonce(blockchain);
       assert(
-        updatedNonce.toBigint() === initialNonce.toBigint() + 1n,
-        "Nonce should increment after toggle pause proposal",
+        updatedNonce.toBigint() === initialNonce.toBigint(),
+        "Controller nonce must not change after Proposal authorization",
       );
     },
   );
@@ -326,19 +332,26 @@ test("toggle pause proposal", async (t) => {
     "should reject toggle pause proposal with incorrect nonce",
     async () => {
       const initialNonce = context.getNonce(blockchain);
-      const wrongNonce = UInt32.from(initialNonce.toBigint() + 1n);
+      const nonce = UInt32.from(0);
+      const wrongNonce = UInt32.from(1);
       const proposalPublicKey = PrivateKey.random().toPublicKey();
+      const proposalTokenId = Field(1);
+      const paused = Bool(true);
       const signatures = context.createTogglePauseProposalSignatures(
         proposalPublicKey,
-        wrongNonce,
+        proposalTokenId,
+        nonce,
+        paused,
       );
 
       await assert.rejects(async () => {
         await transaction(feePayer, async () => {
           await context.contract.togglePauseProposal(
             proposalPublicKey,
+            proposalTokenId,
             signatures,
             wrongNonce,
+            paused,
           );
         });
       });
@@ -355,11 +368,15 @@ test("toggle pause proposal", async (t) => {
     "should reject toggle pause proposal with insufficient signatures",
     async () => {
       const initialNonce = context.getNonce(blockchain);
-      const nonce = UInt32.from(initialNonce.toBigint());
+      const nonce = UInt32.from(0);
       const proposalPublicKey = PrivateKey.random().toPublicKey();
+      const proposalTokenId = Field(1);
+      const paused = Bool(true);
       const signatures = context.createTogglePauseProposalSignatures(
         proposalPublicKey,
+        proposalTokenId,
         nonce,
+        paused,
         MIN_VALID_MULTISIG_SIGNATURES_COUNT - 1,
       );
 
@@ -367,8 +384,10 @@ test("toggle pause proposal", async (t) => {
         await transaction(feePayer, async () => {
           await context.contract.togglePauseProposal(
             proposalPublicKey,
+            proposalTokenId,
             signatures,
             nonce,
+            paused,
           );
         });
       }, new RegExp(MultisigSignaturesErrors.NOT_ENOUGH_VALID_SIGNATURES));

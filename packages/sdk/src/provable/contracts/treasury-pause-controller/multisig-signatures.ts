@@ -1,4 +1,5 @@
 import {
+  Bool,
   Field,
   Poseidon,
   Provable,
@@ -40,16 +41,22 @@ export class MultisigSignature extends Signature {
   /**
    * Build the message hash for toggling a proposal pause state.
    *
-   * @param proposalPublicKey - Proposal public key to scope the toggle.
-   * @param nonce - Expected account nonce for this transaction.
+   * @param proposalPublicKey - Proposal public key to scope the state change.
+   * @param proposalTokenId - Token ID of the Proposal account.
+   * @param nonce - Expected Proposal pause nonce.
+   * @param paused - Explicit target pause state.
    */
   public static dataTogglePauseProposal(
     proposalPublicKey: PublicKey,
+    proposalTokenId: Field,
     nonce: UInt32,
+    paused: Bool,
   ) {
     return hashWithPrefix(this.prefixTogglePauseProposal, [
       ...proposalPublicKey.toFields(),
+      proposalTokenId,
       ...nonce.toFields(),
+      paused.toField(),
     ]);
   }
 

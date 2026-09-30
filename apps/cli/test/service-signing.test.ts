@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { Field, Mina, PrivateKey, Signature, UInt32, UInt64 } from "o1js";
+import { Bool, Field, Mina, PrivateKey, Signature, UInt32, UInt64 } from "o1js";
 import { SqliteTreasuryOwnerService } from "@repo/sdk/src/services/sqlite/sqlite-treasury-owner-service.js";
 import { SqlitePauseControllerService } from "@repo/sdk/src/services/sqlite/sqlite-pause-controller-service.js";
 import {
@@ -145,9 +145,13 @@ for (const signer of ["in-memory", "ledger"] as const) {
       new TreasuryOwnerSmartContract(owner.toPublicKey()).deriveTokenId(),
     );
     for (const expected of [ProposalStatus.PAUSED, ProposalStatus.UNKNOWN]) {
+      const proposalNonce = proposalContract.pauseNonce.get();
+      const paused = expected === ProposalStatus.PAUSED;
       const field = MultisigSignature.dataTogglePauseProposal(
         proposal.toPublicKey(),
-        local.getAccount(pause.toPublicKey()).nonce,
+        proposalContract.tokenId,
+        proposalNonce,
+        Bool(paused),
       );
       const signatures = new MultisigSignatures({
         signatures: await Promise.all(
@@ -164,10 +168,9 @@ for (const signer of ["in-memory", "ledger"] as const) {
         ),
       });
       const feePayerNonce = Number(local.getAccount(sender).nonce.toBigint());
-      const controllerNonce = Number(
+      const controllerNonceBefore = Number(
         local.getAccount(pause.toPublicKey()).nonce.toBigint(),
       );
-      assert.notEqual(feePayerNonce, controllerNonce);
       const toggleResult =
         await new SqlitePauseControllerService().togglePauseProposal({
           minaNodeUrl: "unused",
@@ -177,18 +180,22 @@ for (const signer of ["in-memory", "ledger"] as const) {
           proposalPublicKey: proposal.toPublicKey(),
           multisigParticipantsPublicKeys,
           signatures,
+          paused: Bool(paused),
           transactionSigner,
           nonce: feePayerNonce,
-          ...(expected === ProposalStatus.UNKNOWN ? { controllerNonce } : {}),
+          ...(expected === ProposalStatus.UNKNOWN
+            ? { proposalNonce: Number(proposalNonce.toBigint()) }
+            : {}),
         });
-      assert.equal(toggleResult.nonce, String(controllerNonce));
+      assert.equal(toggleResult.proposalNonce, proposalNonce.toString());
+      assert.equal(toggleResult.paused, paused);
       assert.equal(
         local.getAccount(sender).nonce.toBigint(),
         BigInt(feePayerNonce + 1),
       );
       assert.equal(
         local.getAccount(pause.toPublicKey()).nonce.toBigint(),
-        BigInt(controllerNonce + 1),
+        BigInt(controllerNonceBefore),
       );
       assert.equal(
         proposalContract.status.get().toString(),

@@ -243,7 +243,8 @@ test(
           },
           {
             name: "togglePause",
-            call: async () => fixture.proposal.togglePause(),
+            call: async () =>
+              fixture.proposal.setPaused(UInt32.from(0), Bool(true)),
           },
         ];
 
@@ -312,7 +313,7 @@ test(
 
         await assert.rejects(() =>
           sendTransaction(sender, async () => {
-            await wrongTokenProposal.togglePause();
+            await wrongTokenProposal.setPaused(UInt32.from(0), Bool(true));
           }),
         );
 

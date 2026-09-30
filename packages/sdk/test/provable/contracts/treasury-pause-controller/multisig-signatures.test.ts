@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { Field, Poseidon, PrivateKey, UInt32 } from "o1js";
+import { Bool, Field, Poseidon, PrivateKey, UInt32 } from "o1js";
 import {
   MIN_VALID_MULTISIG_SIGNATURES_COUNT,
   MULTISIG_PARTICIPANTS_COUNT,
@@ -52,11 +52,15 @@ test("multisig signature data hashes", async (t) => {
           const proposalKey = PrivateKey.random().toPublicKey();
           const hash1 = MultisigSignature.dataTogglePauseProposal(
             proposalKey,
+            Field(1),
             nonce,
+            Bool(true),
           );
           const hash2 = MultisigSignature.dataTogglePauseProposal(
             proposalKey,
+            Field(1),
             nonce,
+            Bool(true),
           );
           assert(hash1.equals(hash2).toBoolean());
         }
@@ -71,15 +75,44 @@ test("multisig signature data hashes", async (t) => {
         const otherProposalKey = PrivateKey.random().toPublicKey();
         const hash1 = MultisigSignature.dataTogglePauseProposal(
           proposalKey,
+          Field(1),
           nonce,
+          Bool(true),
         );
         const hash2 = MultisigSignature.dataTogglePauseProposal(
           otherProposalKey,
+          Field(1),
           nonce,
+          Bool(true),
         );
         assert(hash1.equals(hash2).not().toBoolean());
       },
     );
+
+    await t.test("binds token ID and explicit pause target", () => {
+      const proposalKey = PrivateKey.random().toPublicKey();
+      const nonce = UInt32.from(1);
+      const baseline = MultisigSignature.dataTogglePauseProposal(
+        proposalKey,
+        Field(1),
+        nonce,
+        Bool(true),
+      );
+      const wrongToken = MultisigSignature.dataTogglePauseProposal(
+        proposalKey,
+        Field(2),
+        nonce,
+        Bool(true),
+      );
+      const wrongTarget = MultisigSignature.dataTogglePauseProposal(
+        proposalKey,
+        Field(1),
+        nonce,
+        Bool(false),
+      );
+      assert(baseline.equals(wrongToken).not().toBoolean());
+      assert(baseline.equals(wrongTarget).not().toBoolean());
+    });
   });
 
   await t.test("rotate multisig keys data", async (t) => {
@@ -159,7 +192,9 @@ test("multisig signature data hashes", async (t) => {
           const proposalKey = PrivateKey.random().toPublicKey();
           const toggleHash = MultisigSignature.dataTogglePauseProposal(
             proposalKey,
+            Field(1),
             nonce,
+            Bool(true),
           );
           const rotateHash = MultisigSignature.dataRotateMultisigKeys(
             Field(1),
@@ -215,7 +250,12 @@ test("multisig signature data hashes", async (t) => {
       async () => {
         const proposalKey = PrivateKey.random().toPublicKey();
         const hashes = TEST_NONCES.map((nonce) =>
-          MultisigSignature.dataTogglePauseProposal(proposalKey, nonce),
+          MultisigSignature.dataTogglePauseProposal(
+            proposalKey,
+            Field(1),
+            nonce,
+            Bool(true),
+          ),
         );
         for (let i = 0; i < hashes.length; i += 1) {
           for (let j = i + 1; j < hashes.length; j += 1) {

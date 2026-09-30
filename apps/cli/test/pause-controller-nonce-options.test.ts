@@ -6,7 +6,6 @@ import pauseControllerCommandFactory from "../src/commands/pause-controller.js";
 const operations = [
   "pause-treasury",
   "unpause-treasury",
-  "toggle-pause-proposal",
   "rotate-multisig-keys",
 ];
 
@@ -83,4 +82,26 @@ test("controller operations parse fee-payer and controller nonces independently"
       delete process.env.PAUSE_CONTROLLER_NONCE;
     else process.env.PAUSE_CONTROLLER_NONCE = originalControllerNonce;
   }
+});
+
+test("proposal pause parses fee-payer and Proposal nonces independently", async () => {
+  const program = new Command();
+  pauseControllerCommandFactory(program);
+  const command = program.commands[0]!.commands.find(
+    (candidate) => candidate.name() === "toggle-pause-proposal",
+  )!;
+  for (const option of command.options.filter((option) => option.mandatory)) {
+    command.setOptionValue(option.attributeName(), "unused");
+  }
+  command.setOptionValueWithSource("signer", "in-memory", "cli");
+  command.setOptionValueWithSource("senderPrivateKey", "unused", "cli");
+  command.action((options) => {
+    assert.equal(options.nonce, 12);
+    assert.equal(options.proposalNonce, 3);
+    assert.equal(options.controllerNonce, undefined);
+  });
+  await command.parseAsync(
+    ["--nonce", "12", "--proposal-nonce", "3"],
+    { from: "user" },
+  );
 });

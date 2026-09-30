@@ -184,7 +184,10 @@ export async function buildAndProveBreakGlassTransaction(input: {
       `Pause controller account was not found: ${String(controllerFetch.error)}`,
     );
   const controllerAccount = Mina.getAccount(controllerKey);
-  if (controllerAccount.nonce.toString() !== operation.controllerNonce) {
+  if (
+    operation.kind !== "toggleProposal" &&
+    controllerAccount.nonce.toString() !== operation.controllerNonce
+  ) {
     throw new Error(
       "The pause controller nonce changed. Create a new operation.",
     );
@@ -217,14 +220,19 @@ export async function buildAndProveBreakGlassTransaction(input: {
     throw new Error("The treasury is already active.");
   }
   const signatureSet = createSignatureSet(loaded, operation);
-  const controllerNonce = UInt32.from(operation.controllerNonce);
+  const controllerNonce = operation.controllerNonce
+    ? UInt32.from(operation.controllerNonce)
+    : undefined;
   let toggleOwner: any;
   let toggleProposalKey: any;
-  let expectedProposalPaused: boolean | undefined;
+  let proposalNonce: any;
+  let proposalPaused: boolean | undefined;
   if (operation.kind === "toggleProposal") {
     if (
       !operation.proposalAddress ||
-      operation.expectedProposalPaused === undefined
+      !operation.proposalTokenId ||
+      !operation.proposalNonce ||
+      operation.proposalPaused === undefined
     ) {
       throw new Error("The proposal-toggle operation is incomplete.");
     }
@@ -245,6 +253,11 @@ export async function buildAndProveBreakGlassTransaction(input: {
     }
     toggleProposalKey = PublicKey.fromBase58(operation.proposalAddress);
     const proposalTokenId = toggleOwner.deriveTokenId();
+    if (proposalTokenId.toString() !== operation.proposalTokenId) {
+      throw new Error(
+        "The Proposal token ID changed. Create a new operation and collect new signatures.",
+      );
+    }
     const proposalFetch = await fetchAccount({
       publicKey: toggleProposalKey,
       tokenId: proposalTokenId,
@@ -258,7 +271,10 @@ export async function buildAndProveBreakGlassTransaction(input: {
       toggleProposalKey,
       proposalTokenId,
     );
-    const proposalStatus = await proposalContract.status.fetch();
+    const [proposalStatus, onChainProposalNonce] = await Promise.all([
+      proposalContract.status.fetch(),
+      proposalContract.pauseNonce.fetch(),
+    ]);
     const expectedStatusBefore = (
       {
         "0": "UNKNOWN",
@@ -273,7 +289,16 @@ export async function buildAndProveBreakGlassTransaction(input: {
     ) {
       throw new Error("The proposal status changed. Create a new operation.");
     }
-    expectedProposalPaused = operation.expectedProposalPaused;
+    if (
+      !onChainProposalNonce ||
+      onChainProposalNonce.toString() !== operation.proposalNonce
+    ) {
+      throw new Error(
+        "The Proposal pause nonce changed. Create a new operation and collect new signatures.",
+      );
+    }
+    proposalNonce = UInt32.from(operation.proposalNonce);
+    proposalPaused = operation.proposalPaused;
   }
   let transaction = await Mina.transaction(
     {
@@ -283,9 +308,9 @@ export async function buildAndProveBreakGlassTransaction(input: {
     },
     async () => {
       if (operation.kind === "pauseTreasury") {
-        await controller.pauseTreasury(signatureSet, controllerNonce);
+        await controller.pauseTreasury(signatureSet, controllerNonce!);
       } else if (operation.kind === "unpauseTreasury") {
-        await controller.unpauseTreasury(signatureSet, controllerNonce);
+        await controller.unpauseTreasury(signatureSet, controllerNonce!);
       } else if (operation.kind === "rotateMultisig") {
         if (!operation.nextMultisigCommitment) {
           throw new Error(
@@ -294,15 +319,15 @@ export async function buildAndProveBreakGlassTransaction(input: {
         }
         await controller.rotateMultisigKeys(
           Field(operation.nextMultisigCommitment),
-          controllerNonce,
+          controllerNonce!,
           signatureSet,
         );
       } else {
         await toggleOwner.togglePauseProposal(
           toggleProposalKey,
           signatureSet,
-          controllerNonce,
-          Bool(expectedProposalPaused!),
+          proposalNonce,
+          Bool(proposalPaused!),
         );
       }
     },

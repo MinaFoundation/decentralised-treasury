@@ -14,6 +14,7 @@ import {
 } from "../../src/provable/contracts/treasury-pause-controller/multisig-signatures.js";
 import {
   AccountUpdate,
+  Bool,
   fetchAccount,
   Field,
   method,
@@ -73,6 +74,11 @@ import { mkdirSync } from "node:fs";
 import { dirname } from "node:path";
 import { getSqliteDbPath } from "../../src/storage/sqlite/sqlite-db-path.js";
 import { SqliteTreasuryOwnerService } from "../../src/services/sqlite/sqlite-treasury-owner-service.js";
+import { SqlitePauseControllerService } from "../../src/services/sqlite/sqlite-pause-controller-service.js";
+import {
+  ProposalPauseToggledEvent,
+  PROPOSAL_PAUSE_TOGGLED_EVENT_NAME,
+} from "../../src/provable/events/treasury-proposal-events.js";
 
 const proofsEnabled = process.env.PROOFS_ENABLED === "true";
 
@@ -849,3 +855,226 @@ it("should execute a proposal", async () => {
     "Treasury proposal recipient balance is not the amount with bond",
   );
 });
+
+it("should emit the checked Proposal pause state through the SDK on both toggles", async () => {
+  const service = new SqlitePauseControllerService();
+  const expectedEvents: boolean[] = [];
+  for (const paused of [true, false]) {
+    const controllerNonce = Local.getAccount(pauseControllerPublicKey).nonce;
+    const nonce = (await treasuryProposal.pauseNonce.fetch())!;
+    const proposalTokenId = treasuryOwner.deriveTokenId();
+    const data = MultisigSignature.dataTogglePauseProposal(
+      treasuryProposalPublicKey,
+      proposalTokenId,
+      nonce,
+      Bool(paused),
+    );
+    const signatures = new MultisigSignatures({
+      signatures: multisigSigners.map(([key]) =>
+        MultisigSignature.create(key, [data]),
+      ),
+    });
+    // A signature for one target cannot authorize the opposite target.
+    await assert.rejects(
+      () =>
+        Mina.transaction(testAccount, async () => {
+          await treasuryOwner.togglePauseProposal(
+            treasuryProposalPublicKey,
+            signatures,
+            nonce,
+            Bool(!paused),
+          );
+        }),
+      /Not enough valid signatures/,
+    );
+    assert.equal(
+      Local.getAccount(pauseControllerPublicKey).nonce.toString(),
+      controllerNonce.toString(),
+    );
+    await service.togglePauseProposal({
+      minaNodeUrl: "unused",
+      senderPublicKey: testAccount.key.toPublicKey(),
+      treasuryOwnerPublicKey,
+      pauseControllerPublicKey,
+      proposalPublicKey: treasuryProposalPublicKey,
+      multisigParticipantsPublicKeys: multisigSigners.map(([, key]) => key),
+      signatures,
+      paused: Bool(paused),
+      proposalNonce: Number(nonce.toBigint()),
+      fee: UInt64.from(100_000_000),
+      transactionSigner: createServiceSigner([testAccount.key]),
+    });
+    assert.equal(
+      (await treasuryProposal.status.fetch())!.toString(),
+      (paused ? ProposalStatus.PAUSED : ProposalStatus.UNKNOWN).toString(),
+    );
+    assert.equal(
+      (await treasuryProposal.pauseNonce.fetch())!.toBigint(),
+      nonce.toBigint() + 1n,
+    );
+    assert.equal(
+      Local.getAccount(pauseControllerPublicKey).nonce.toString(),
+      controllerNonce.toString(),
+    );
+    expectedEvents.push(paused);
+    const events = (await treasuryOwner.fetchEvents()).filter(
+      (event) => event.type === PROPOSAL_PAUSE_TOGGLED_EVENT_NAME,
+    );
+    assert.equal(events.length, expectedEvents.length);
+    const actualEvents = events.map((event) => {
+      const payload = event.event.data as unknown as ProposalPauseToggledEvent;
+      assert.equal(
+        payload.proposalPublicKey.toBase58(),
+        treasuryProposalPublicKey.toBase58(),
+      );
+      return payload.paused.toBoolean();
+    });
+    assert.deepEqual(actualEvents.sort(), [...expectedEvents].sort());
+  }
+});
+
+it(
+  "keeps detached Controller authorization harmless and binds Proposal nonce, token, and target",
+  { skip: !proofsEnabled },
+  async () => {
+    const proposalTokenId = treasuryOwner.deriveTokenId();
+    const nonce = (await treasuryProposal.pauseNonce.fetch())!;
+    const paused = Bool(true);
+    const data = MultisigSignature.dataTogglePauseProposal(
+      treasuryProposalPublicKey,
+      proposalTokenId,
+      nonce,
+      paused,
+    );
+    const signatures = new MultisigSignatures({
+      signatures: multisigSigners.map(([key]) =>
+        MultisigSignature.create(key, [data]),
+      ),
+    });
+    const controllerNonceBefore =
+      Local.getAccount(pauseControllerPublicKey).nonce;
+    const original = await Mina.transaction(testAccount, async () => {
+      await treasuryOwner.togglePauseProposal(
+        treasuryProposalPublicKey,
+        signatures,
+        nonce,
+        paused,
+      );
+    });
+    await original.prove();
+
+    const originalJson = JSON.parse(original.toJSON()) as {
+      accountUpdates: Array<{
+        body: { publicKey: string; callDepth: number };
+      }>;
+    };
+    const controllerUpdate = originalJson.accountUpdates.find(
+      (update) => update.body.publicKey === pauseControllerPublicKey.toBase58(),
+    );
+    assert(controllerUpdate, "expected a Controller AccountUpdate");
+    const relayer = Local.testAccounts[4]!;
+    const detachedBase = await Mina.transaction(relayer, async () => {});
+    const detachedJson = JSON.parse(detachedBase.toJSON()) as typeof originalJson;
+    detachedJson.accountUpdates = [
+      {
+        ...controllerUpdate,
+        body: { ...controllerUpdate.body, callDepth: 0 },
+      },
+    ];
+    const detached = Mina.Transaction.fromJSON(JSON.stringify(detachedJson));
+    detached.transaction.feePayer.lazyAuthorization =
+      detachedBase.transaction.feePayer.lazyAuthorization;
+    await (await detached.sign([relayer.key]).send()).wait();
+
+    assert.equal(
+      Local.getAccount(pauseControllerPublicKey).nonce.toString(),
+      controllerNonceBefore.toString(),
+    );
+    assert.equal(
+      (await treasuryProposal.pauseNonce.fetch())!.toString(),
+      nonce.toString(),
+    );
+    assert.equal(
+      (await treasuryProposal.status.fetch())!.toString(),
+      ProposalStatus.UNKNOWN.toString(),
+    );
+
+    await (await original.sign([testAccount.key]).send()).wait();
+    assert.equal(
+      (await treasuryProposal.pauseNonce.fetch())!.toBigint(),
+      nonce.toBigint() + 1n,
+    );
+    assert.equal(
+      (await treasuryProposal.status.fetch())!.toString(),
+      ProposalStatus.PAUSED.toString(),
+    );
+    assert.equal(
+      Local.getAccount(pauseControllerPublicKey).nonce.toString(),
+      controllerNonceBefore.toString(),
+    );
+
+    await assert.rejects(
+      Mina.transaction(testAccount, async () => {
+        await treasuryOwner.togglePauseProposal(
+          treasuryProposalPublicKey,
+          signatures,
+          nonce,
+          paused,
+        );
+      }),
+      /Invalid proposal pause nonce|already matches target/,
+    );
+
+    const currentNonce = (await treasuryProposal.pauseNonce.fetch())!;
+    const assertRejectedAuthorization = async (
+      signedTokenId: Field,
+      signedNonce: UInt32,
+      signedPaused: Bool,
+      calledNonce: UInt32,
+      calledPaused: Bool,
+    ) => {
+      const signedData = MultisigSignature.dataTogglePauseProposal(
+        treasuryProposalPublicKey,
+        signedTokenId,
+        signedNonce,
+        signedPaused,
+      );
+      const signed = new MultisigSignatures({
+        signatures: multisigSigners.map(([key]) =>
+          MultisigSignature.create(key, [signedData]),
+        ),
+      });
+      await assert.rejects(
+        Mina.transaction(testAccount, async () => {
+          await treasuryOwner.togglePauseProposal(
+            treasuryProposalPublicKey,
+            signed,
+            calledNonce,
+            calledPaused,
+          );
+        }),
+      );
+    };
+    await assertRejectedAuthorization(
+      proposalTokenId.add(1),
+      currentNonce,
+      Bool(false),
+      currentNonce,
+      Bool(false),
+    );
+    await assertRejectedAuthorization(
+      proposalTokenId,
+      currentNonce,
+      Bool(true),
+      currentNonce,
+      Bool(false),
+    );
+    await assertRejectedAuthorization(
+      proposalTokenId,
+      currentNonce,
+      Bool(false),
+      currentNonce.add(1),
+      Bool(false),
+    );
+  },
+);

@@ -2,7 +2,7 @@ import { readFile } from "node:fs/promises";
 import { createHash } from "node:crypto";
 import { fileURLToPath } from "node:url";
 import type { Page, TestInfo } from "@playwright/test";
-import { Field, PrivateKey, PublicKey, Signature, TokenId } from "o1js";
+import { Bool, Field, PrivateKey, PublicKey, Signature, TokenId, UInt32 } from "o1js";
 import { expect, test } from "../../../web/e2e/utils/browser-test";
 import {
   availablePort,
@@ -15,6 +15,13 @@ import type { OperationPackage } from "../../features/operations";
 import { preserveNextGeneratedFiles } from "./preserve-next-generated-files";
 import { installHeldAuroWallet } from "./held-auro-wallet";
 import { createBackofficeLauncher } from "./backoffice-launcher";
+
+const { MultisigSignature } = (await import(
+  new URL(
+    "../../../../packages/sdk/src/provable/contracts/treasury-pause-controller/multisig-signatures.ts",
+    import.meta.url,
+  ).href
+)) as typeof import("@repo/sdk/src/provable/contracts/treasury-pause-controller/multisig-signatures.js");
 
 type ChainAccount = {
   nonce: string;
@@ -154,13 +161,32 @@ export async function expandedOperatorScenario(
     expect(operation.participants).toEqual(
       signers.map((participant) => participant.publicKey),
     );
-    await upload(page, {
-      ...operation,
-      controllerNonce: String(Number(operation.controllerNonce) - 1),
-    });
+    const nonce = BigInt(
+      operation.kind === "toggleProposal"
+        ? operation.proposalNonce!
+        : operation.controllerNonce!,
+    );
+    const staleNonce = String(nonce === 0n ? 1n : nonce - 1n);
+    await upload(
+      page,
+      operation.kind === "toggleProposal"
+        ? {
+            ...operation,
+            proposalNonce: staleNonce,
+            messageHash: MultisigSignature.dataTogglePauseProposal(
+              PublicKey.fromBase58(operation.proposalAddress!),
+              Field(operation.proposalTokenId!),
+              UInt32.from(staleNonce),
+              Bool(operation.proposalPaused!),
+            ).toString(),
+          }
+        : { ...operation, controllerNonce: staleNonce },
+    );
     await expect(
       page.getByText(
-        "The signing bundle is stale or belongs to another deployment.",
+        operation.kind === "toggleProposal"
+          ? "The Proposal authorization state changed. Create a new signing bundle and collect new signatures."
+          : "The signing bundle is stale or belongs to another deployment.",
         { exact: true },
       ),
     ).toBeVisible();
@@ -197,10 +223,15 @@ export async function expandedOperatorScenario(
         "--multisig-signer-private-key",
         signers[index]!.privateKey,
         "--nonce",
-        operation.controllerNonce,
+        operation.kind === "toggleProposal"
+          ? operation.proposalNonce!
+          : operation.controllerNonce!,
       ];
-      if (operation.proposalAddress)
+      if (operation.proposalAddress) {
         args.push("--proposal-public-key", operation.proposalAddress);
+        args.push("--proposal-token-id", operation.proposalTokenId!);
+        args.push("--paused", String(operation.proposalPaused));
+      }
       if (operation.nextParticipants)
         args.push(
           "--new-multisig-participants-public-keys",
@@ -222,9 +253,7 @@ export async function expandedOperatorScenario(
         await test.step("Reject a genuine toggle contribution mixed into the live pause bundle", async () => {
           expect(operation.kind).toBe("pauseTreasury");
           expect(foreignOperation.kind).toBe("toggleProposal");
-          expect(foreignOperation.controllerNonce).toBe(
-            operation.controllerNonce,
-          );
+          expect(foreignOperation.controllerNonce).toBeUndefined();
           expect(foreignOperation.multisigCommitment).toBe(
             operation.multisigCommitment,
           );
@@ -240,9 +269,13 @@ export async function expandedOperatorScenario(
             "--multisig-signer-private-key",
             signers[index]!.privateKey,
             "--nonce",
-            foreignOperation.controllerNonce,
+            foreignOperation.proposalNonce!,
             "--proposal-public-key",
             foreignOperation.proposalAddress!,
+            "--proposal-token-id",
+            foreignOperation.proposalTokenId!,
+            "--paused",
+            String(foreignOperation.proposalPaused),
           ]);
           const foreign = JSON.parse(foreignOutput.trim().split("\n").at(-1)!);
           expect(foreign.dataHash).toBe(foreignOperation.messageHash);
@@ -355,13 +388,22 @@ export async function expandedOperatorScenario(
       .getByRole("button", { name: "Prove and submit", exact: true })
       .click();
     // Check the chain independently. This preserves evidence if the receipt UI fails after inclusion.
+    const inclusionCheck =
+      operation.kind === "toggleProposal"
+        ? expect
+            .poll(async () => Number((await proposal()).zkappState[7]), {
+              timeout: 60 * 60_000,
+              intervals: [1000, 3000],
+            })
+            .toBe(Number(operation.proposalNonce) + 1)
+        : expect
+            .poll(async () => Number((await controller()).nonce), {
+              timeout: 60 * 60_000,
+              intervals: [1000, 3000],
+            })
+            .toBe(Number(operation.controllerNonce) + 1);
     await Promise.race([
-      expect
-        .poll(async () => Number((await controller()).nonce), {
-          timeout: 60 * 60_000,
-          intervals: [1000, 3000],
-        })
-        .toBe(Number(operation.controllerNonce) + 1),
+      inclusionCheck,
       page
         .getByText("Signing bundle stopped", { exact: true })
         .waitFor({ timeout: 60 * 60_000 })
@@ -432,7 +474,8 @@ export async function expandedOperatorScenario(
     ).toEqual([]);
     const after = await snapshot();
     const expectedController = structuredClone(before.controller);
-    expectedController.nonce = String(Number(operation.controllerNonce) + 1);
+    if (operation.kind !== "toggleProposal")
+      expectedController.nonce = String(Number(operation.controllerNonce) + 1);
     if (operation.kind === "rotateMultisig")
       expectedController.zkappState[0] = operation.nextMultisigCommitment!;
     if (operation.kind === "pauseTreasury")
@@ -444,9 +487,13 @@ export async function expandedOperatorScenario(
     expect(after.owner).toEqual(before.owner);
     expect(after.recipient).toEqual(before.recipient);
     const expectedProposal = structuredClone(before.proposal);
-    if (operation.kind === "toggleProposal")
+    if (operation.kind === "toggleProposal") {
       expectedProposal.zkappState[5] =
         operation.proposalStatusAfter === "PAUSED" ? "3" : "0";
+      expectedProposal.zkappState[7] = String(
+        Number(operation.proposalNonce) + 1,
+      );
+    }
     expect(after.proposal).toEqual(expectedProposal);
     const payingKey =
       feePayer === stack.proposer.publicKey ? "payer" : "secondPayer";
@@ -480,7 +527,7 @@ export async function expandedOperatorScenario(
     await upload(page, operation);
     await expect(
       page.getByText(
-        "The signing bundle is stale or belongs to another deployment.",
+        "The proposal status changed. Create a new signing bundle.",
         { exact: true },
       ),
     ).toBeVisible();
@@ -865,7 +912,7 @@ export async function expandedOperatorScenario(
           "--multisig-signer-private-key",
           stack.participants[0]!.privateKey,
           "--nonce",
-          operation.controllerNonce,
+          operation.controllerNonce!,
         ]),
       ).rejects.toThrow(/is not part of --multisig-participants-public-keys/);
       expect(await snapshot()).toEqual(before);
@@ -881,7 +928,7 @@ export async function expandedOperatorScenario(
           "--multisig-signer-private-key",
           stack.participants[index]!.privateKey,
           "--nonce",
-          operation.controllerNonce,
+          operation.controllerNonce!,
         ]);
         const contribution = JSON.parse(output.trim().split("\n").at(-1)!);
         expect(contribution.dataHash).toBe(operation.messageHash);

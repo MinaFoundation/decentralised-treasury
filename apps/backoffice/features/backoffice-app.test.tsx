@@ -28,7 +28,7 @@ const status: TreasuryStatus = {
 };
 
 const operation: OperationPackage = {
-  schemaVersion: 1,
+  schemaVersion: 2,
   kind: "pauseTreasury",
   networkId: "devnet",
   treasuryOwnerAddress: "owner",

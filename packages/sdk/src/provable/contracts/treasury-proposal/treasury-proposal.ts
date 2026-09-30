@@ -77,6 +77,7 @@ export class TreasuryProposalSmartContract extends SmartContract {
 
   @state(ProposalStatus) status = State<ProposalStatus>();
   @state(UInt64) paidOutAmount = State<UInt64>();
+  @state(UInt32) pauseNonce = State<UInt32>();
 
   public async requireNotPaused() {
     const status = this.status.getAndRequireEquals();
@@ -386,15 +387,21 @@ export class TreasuryProposalSmartContract extends SmartContract {
   }
 
   @method
-  public async togglePause() {
+  public async setPaused(nonce: UInt32, paused: Bool) {
+    const pauseNonce = this.pauseNonce.getAndRequireEquals();
+    pauseNonce.equals(nonce).assertTrue("Invalid proposal pause nonce");
     const status = this.status.getAndRequireEquals();
-    // if paused, unpause it, if not paused, pause it
+    status
+      .equals(ProposalStatus.PAUSED)
+      .equals(paused)
+      .assertFalse("Proposal pause state already matches target");
     const newStatus = Provable.if(
-      status.equals(ProposalStatus.PAUSED),
-      ProposalStatus.UNKNOWN,
+      paused,
       ProposalStatus.PAUSED,
+      ProposalStatus.UNKNOWN,
     );
 
     this.status.set(newStatus);
+    this.pauseNonce.set(pauseNonce.add(1));
   }
 }

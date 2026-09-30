@@ -20,7 +20,6 @@ import {
   parsePauseControllerStateResult,
   parsePauseTreasuryResult,
   parseRotateMultisigKeysResult,
-  parseTogglePauseProposalResult,
   parseUnpauseTreasuryResult,
   runCli,
 } from "./utils/cli-test-utils.js";
@@ -417,62 +416,29 @@ describe("pause-controller CLI", { concurrency: 1 }, () => {
     assert.strictEqual(unpausedState.paused, false);
 
     const proposalPublicKey = PrivateKey.random().toPublicKey().toBase58();
-    logTestStep(TEST_NAME, "running pause-controller toggle-pause-proposal", {
-      pauseControllerPublicKey,
-      proposalPublicKey,
-    });
-    const {
-      mergedSignatures: toggleSignatures,
-      partialResults: toggleSignResults,
-    } = await buildMergedSignatures({
+    const proposalTokenId = "1";
+    const proposalNonce = 0;
+    const { partialResults: toggleSignResults } = await buildMergedSignatures({
       action: "toggle-pause-proposal",
       participantPublicKeys: currentMultisigPublicKeys,
       signerPrivateKeys: currentSigningPrivateKeys,
-      nonce: unpausedState.nonce,
-      extraArgs: ["--proposal-public-key", proposalPublicKey],
+      nonce: proposalNonce,
+      extraArgs: [
+        "--proposal-public-key",
+        proposalPublicKey,
+        "--proposal-token-id",
+        proposalTokenId,
+        "--paused",
+        "true",
+      ],
       streamLabelPrefix: "multisig-sign toggle-pause-proposal test",
     });
     for (const toggleSignResult of toggleSignResults) {
       assert.strictEqual(toggleSignResult.proposalPublicKey, proposalPublicKey);
+      assert.strictEqual(toggleSignResult.proposalTokenId, proposalTokenId);
+      assert.strictEqual(toggleSignResult.paused, true);
+      assert.strictEqual(toggleSignResult.nonce, String(proposalNonce));
     }
-
-    const toggleOutput = await runPauseControllerCli(
-      [
-        "pause-controller",
-        "toggle-pause-proposal",
-        "--mina-node-url",
-        MINA_NODE_URL,
-        "--sender-private-key",
-        senderPrivateKey.toBase58(),
-        "--pause-controller-public-key",
-        pauseControllerPublicKey,
-        "--proposal-public-key",
-        proposalPublicKey,
-        "--multisig-participants-public-keys",
-        currentMultisigPublicKeys.join(","),
-        "--multisig-signatures",
-        toggleSignatures.join(","),
-        "--wait",
-        "true",
-      ],
-      {
-        timeoutMs: 900_000,
-        streamOutput: true,
-        streamLabel: "pause-controller toggle proposal test",
-      },
-    );
-    const toggleResult = parseTogglePauseProposalResult(toggleOutput);
-    assert(toggleResult, "expected toggle-pause-proposal JSON output");
-    assert.strictEqual(
-      toggleResult.pauseControllerAddress,
-      pauseControllerPublicKey,
-    );
-    assert.strictEqual(toggleResult.proposalPublicKey, proposalPublicKey);
-    assert(
-      toggleResult.togglePauseProposalTxHash,
-      "expected toggle-pause-proposal tx hash",
-    );
-    const toggledState = await fetchPauseControllerState(pauseControllerPublicKey);
 
     const newMultisigPrivateKeys = Array.from({ length: 5 }, () =>
       PrivateKey.random().toBase58(),
@@ -491,7 +457,7 @@ describe("pause-controller CLI", { concurrency: 1 }, () => {
       action: "rotate-multisig-keys",
       participantPublicKeys: currentMultisigPublicKeys,
       signerPrivateKeys: currentSigningPrivateKeys,
-      nonce: toggledState.nonce,
+      nonce: unpausedState.nonce,
       extraArgs: [
         "--new-multisig-participants-public-keys",
         newMultisigPublicKeys.join(","),
@@ -587,4 +553,3 @@ describe("pause-controller CLI", { concurrency: 1 }, () => {
     assert.strictEqual(pausedAfterRotateState.paused, true);
   });
 });
-

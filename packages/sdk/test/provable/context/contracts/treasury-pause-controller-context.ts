@@ -1,5 +1,6 @@
 import {
   AccountUpdate,
+  Bool,
   Field,
   Mina,
   PrivateKey,
@@ -66,12 +67,16 @@ export function createPauseControllerTestContext() {
 
   const createTogglePauseProposalSignatures = (
     proposalPublicKey: PublicKey,
+    proposalTokenId: Field,
     nonce: UInt32,
+    paused: Bool,
     validCount = multisigContext.getParticipants().length,
   ) => {
     const data = MultisigSignature.dataTogglePauseProposal(
       proposalPublicKey,
+      proposalTokenId,
       nonce,
+      paused,
     );
     return multisigContext.createSignatures(data, validCount);
   };

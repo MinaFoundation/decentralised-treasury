@@ -31,7 +31,7 @@ it("REVIEW DEFECT: a bundle labelled pause must not obtain a valid unpause signa
   const unpause = MultisigSignature.dataUnpauseTreasury(UInt32.from(9));
   const operation = assertPureSigningOperation(
     assertOperationPackage({
-      schemaVersion: 1,
+      schemaVersion: 2,
       kind: "pauseTreasury",
       networkId: "devnet",
       treasuryOwnerAddress: PrivateKey.random().toPublicKey().toBase58(),

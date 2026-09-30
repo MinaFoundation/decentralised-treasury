@@ -63,12 +63,13 @@ function createOperation(
   additions: Partial<OperationPackage> = {},
 ): OperationPackage {
   return {
-    schemaVersion: 1,
+    schemaVersion: 2,
     kind,
     networkId: activeStatus.networkId,
     treasuryOwnerAddress: activeStatus.treasuryOwnerAddress,
     pauseControllerAddress: activeStatus.pauseControllerAddress,
-    controllerNonce: activeStatus.controllerNonce,
+    controllerNonce:
+      kind === "toggleProposal" ? undefined : activeStatus.controllerNonce,
     multisigCommitment: activeStatus.onChainCommitment,
     participants,
     messageHash: "2481049827501928374650192837465019283746501928374650192837",
@@ -82,16 +83,20 @@ const pauseOperation = createOperation("pauseTreasury");
 
 const toggleOperation = createOperation("toggleProposal", {
   proposalAddress: "B62qproposalM7v4aQf8pR2kHy6oL5vN2xWm3sC7dF9qT4uK8pY1mB5",
+  proposalTokenId: "1",
+  proposalNonce: "0",
+  proposalPaused: true,
   proposalStatusBefore: "APPROVED",
   proposalStatusAfter: "PAUSED",
-  expectedProposalPaused: true,
 });
 
 const unpauseProposalOperation = createOperation("toggleProposal", {
   proposalAddress: "B62qproposalM7v4aQf8pR2kHy6oL5vN2xWm3sC7dF9qT4uK8pY1mB5",
+  proposalTokenId: "1",
+  proposalNonce: "1",
+  proposalPaused: false,
   proposalStatusBefore: "PAUSED",
   proposalStatusAfter: "UNKNOWN",
-  expectedProposalPaused: false,
 });
 
 const rotateOperation = createOperation("rotateMultisig", {

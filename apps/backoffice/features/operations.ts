@@ -11,19 +11,21 @@ export type OperationKind =
   | "rotateMultisig";
 
 export interface OperationPackage {
-  schemaVersion: 1;
+  schemaVersion: 2;
   kind: OperationKind;
   networkId: string;
   treasuryOwnerAddress: string;
   pauseControllerAddress: string;
-  controllerNonce: string;
+  controllerNonce?: string;
   multisigCommitment: string;
   participants: string[];
   messageHash: string;
   proposalAddress?: string;
+  proposalTokenId?: string;
+  proposalNonce?: string;
+  proposalPaused?: boolean;
   proposalStatusBefore?: string;
   proposalStatusAfter?: string;
-  expectedProposalPaused?: boolean;
   nextParticipants?: string[];
   nextMultisigCommitment?: string;
   signatures: Array<string | null>;
@@ -123,9 +125,11 @@ const OPERATION_PAYLOAD_FIELDS: ReadonlyArray<
   "participants",
   "messageHash",
   "proposalAddress",
+  "proposalTokenId",
+  "proposalNonce",
+  "proposalPaused",
   "proposalStatusBefore",
   "proposalStatusAfter",
-  "expectedProposalPaused",
   "nextParticipants",
   "nextMultisigCommitment",
   "createdAt",
@@ -165,6 +169,11 @@ export function assertOperationPackage(value: unknown): OperationPackage {
     throw new Error("The operation file is not a JSON object.");
   }
   const candidate = value as Partial<OperationPackage>;
+  if ((value as { schemaVersion?: unknown }).schemaVersion === 1) {
+    throw new Error(
+      "Signing bundle schema 1 is no longer supported. Create a new bundle and collect new signatures.",
+    );
+  }
   const kinds: OperationKind[] = [
     "pauseTreasury",
     "unpauseTreasury",
@@ -172,7 +181,7 @@ export function assertOperationPackage(value: unknown): OperationPackage {
     "rotateMultisig",
   ];
   if (
-    candidate.schemaVersion !== 1 ||
+    candidate.schemaVersion !== 2 ||
     !candidate.kind ||
     !kinds.includes(candidate.kind)
   ) {
@@ -186,7 +195,6 @@ export function assertOperationPackage(value: unknown): OperationPackage {
     !isText(candidate.networkId) ||
     !isText(candidate.treasuryOwnerAddress) ||
     !isText(candidate.pauseControllerAddress) ||
-    !isText(candidate.controllerNonce) ||
     !isText(candidate.multisigCommitment) ||
     !isText(candidate.messageHash) ||
     !Array.isArray(candidate.participants) ||
@@ -208,11 +216,23 @@ export function assertOperationPackage(value: unknown): OperationPackage {
   }
   if (
     candidate.kind === "toggleProposal" &&
-    (!isText(candidate.proposalStatusBefore) ||
+    (!isText(candidate.proposalTokenId) ||
+      !isText(candidate.proposalNonce) ||
+      typeof candidate.proposalPaused !== "boolean" ||
+      !isText(candidate.proposalStatusBefore) ||
       !isText(candidate.proposalStatusAfter) ||
-      typeof candidate.expectedProposalPaused !== "boolean")
+      candidate.controllerNonce !== undefined)
   ) {
     throw new Error("The proposal-toggle operation is incomplete or invalid.");
+  }
+  if (
+    candidate.kind !== "toggleProposal" &&
+    (!isText(candidate.controllerNonce) ||
+      candidate.proposalTokenId !== undefined ||
+      candidate.proposalNonce !== undefined ||
+      candidate.proposalPaused !== undefined)
+  ) {
+    throw new Error("The controller operation is incomplete or invalid.");
   }
   if (
     candidate.kind === "rotateMultisig" &&
@@ -489,8 +509,9 @@ function statusName(value: string): string {
 /** Check the bundle against independently fetched proposal state. */
 export function assertProposalStatus(
   operation: OperationPackage,
-  currentStatus: string,
+  current: { value: string; tokenId: string; pauseNonce: string },
 ): void {
+  const currentStatus = current.value;
   if (!["0", "1", "2", "3"].includes(currentStatus)) {
     throw new Error("The proposal status is not supported.");
   }
@@ -499,11 +520,19 @@ export function assertProposalStatus(
       "The proposal status changed. Create a new signing bundle.",
     );
   }
+  if (
+    operation.proposalTokenId !== current.tokenId ||
+    operation.proposalNonce !== current.pauseNonce
+  ) {
+    throw new Error(
+      "The Proposal authorization state changed. Create a new signing bundle and collect new signatures.",
+    );
+  }
   const expectedPaused = currentStatus !== "3";
   const expectedStatus = expectedPaused ? "PAUSED" : "UNKNOWN";
   if (
     operation.proposalStatusAfter !== expectedStatus ||
-    operation.expectedProposalPaused !== expectedPaused
+    operation.proposalPaused !== expectedPaused
   ) {
     throw new Error(
       "The proposal outcome is inconsistent. Create a new signing bundle.",
@@ -515,7 +544,12 @@ export async function fetchProposalStatus(
   config: BackofficeRuntimeConfig,
   treasuryOwnerAddress: string,
   proposalAddress: string,
-): Promise<{ value: string; name: string }> {
+): Promise<{
+  value: string;
+  name: string;
+  tokenId: string;
+  pauseNonce: string;
+}> {
   const [o1js, ownerModule, proposalModule] = await Promise.all([
     import("o1js"),
     import("@repo/sdk/src/provable/contracts/treasury-owner.js"),
@@ -543,7 +577,15 @@ export async function fetchProposalStatus(
   );
   const status = await proposal.status.fetch();
   if (!status) throw new Error("The proposal status is not available.");
-  return { value: status.toString(), name: statusName(status.toString()) };
+  const pauseNonce = await proposal.pauseNonce.fetch();
+  if (!pauseNonce)
+    throw new Error("The proposal pause nonce is not available.");
+  return {
+    value: status.toString(),
+    name: statusName(status.toString()),
+    tokenId: tokenId.toString(),
+    pauseNonce: pauseNonce.toString(),
+  };
 }
 
 export async function createOperationPackage(input: {
@@ -562,16 +604,22 @@ export async function createOperationPackage(input: {
     import("o1js"),
     import("@repo/sdk/src/provable/contracts/treasury-pause-controller/multisig-signatures.js"),
   ]);
-  const nonce = o1js.UInt32.from(input.status.controllerNonce);
   let messageHash;
+  let controllerNonce: string | undefined;
+  let proposalTokenId: string | undefined;
+  let proposalNonce: string | undefined;
+  let proposalPaused: boolean | undefined;
   let proposalStatusBefore: string | undefined;
   let proposalStatusAfter: string | undefined;
-  let expectedProposalPaused: boolean | undefined;
   let nextMultisigCommitment: string | undefined;
 
   if (input.kind === "pauseTreasury") {
+    controllerNonce = input.status.controllerNonce;
+    const nonce = o1js.UInt32.from(controllerNonce);
     messageHash = multisigModule.MultisigSignature.dataPauseTreasury(nonce);
   } else if (input.kind === "unpauseTreasury") {
+    controllerNonce = input.status.controllerNonce;
+    const nonce = o1js.UInt32.from(controllerNonce);
     messageHash = multisigModule.MultisigSignature.dataUnpauseTreasury(nonce);
   } else if (input.kind === "toggleProposal") {
     if (!input.proposalAddress)
@@ -583,12 +631,18 @@ export async function createOperationPackage(input: {
     );
     proposalStatusBefore = current.name;
     proposalStatusAfter = current.value === "3" ? "UNKNOWN" : "PAUSED";
-    expectedProposalPaused = proposalStatusAfter === "PAUSED";
+    proposalPaused = proposalStatusAfter === "PAUSED";
+    proposalTokenId = current.tokenId;
+    proposalNonce = current.pauseNonce;
     messageHash = multisigModule.MultisigSignature.dataTogglePauseProposal(
       o1js.PublicKey.fromBase58(input.proposalAddress),
-      nonce,
+      o1js.Field(proposalTokenId),
+      o1js.UInt32.from(proposalNonce),
+      o1js.Bool(proposalPaused),
     );
   } else {
+    controllerNonce = input.status.controllerNonce;
+    const nonce = o1js.UInt32.from(controllerNonce);
     if (!input.nextParticipants)
       throw new Error("Five new participant keys are required.");
     await validateParticipantRotation(
@@ -609,19 +663,21 @@ export async function createOperationPackage(input: {
   }
 
   return {
-    schemaVersion: 1,
+    schemaVersion: 2,
     kind: input.kind,
     networkId: input.config.networkId,
     treasuryOwnerAddress: input.status.treasuryOwnerAddress,
     pauseControllerAddress: input.status.pauseControllerAddress,
-    controllerNonce: input.status.controllerNonce,
+    controllerNonce,
     multisigCommitment: input.status.onChainCommitment,
     participants: [...input.status.participants],
     messageHash: messageHash.toString(),
     proposalAddress: input.proposalAddress,
+    proposalTokenId,
+    proposalNonce,
+    proposalPaused,
     proposalStatusBefore,
     proposalStatusAfter,
-    expectedProposalPaused,
     nextParticipants: input.nextParticipants
       ? [...input.nextParticipants]
       : undefined,
@@ -639,7 +695,8 @@ export async function verifyOperationPackage(
     operation.networkId.toLowerCase() !== status.networkId.toLowerCase() ||
     operation.treasuryOwnerAddress !== status.treasuryOwnerAddress ||
     operation.pauseControllerAddress !== status.pauseControllerAddress ||
-    operation.controllerNonce !== status.controllerNonce ||
+    (operation.kind !== "toggleProposal" &&
+      operation.controllerNonce !== status.controllerNonce) ||
     operation.multisigCommitment !== status.onChainCommitment ||
     operation.participants.join(",") !== status.participants.join(",")
   ) {
@@ -665,21 +722,31 @@ export async function assertOperationMessageHash(
     import("o1js"),
     import("@repo/sdk/src/provable/contracts/treasury-pause-controller/multisig-signatures.js"),
   ]);
-  const nonce = o1js.UInt32.from(operation.controllerNonce);
   let expectedMessage;
   if (operation.kind === "pauseTreasury") {
+    const nonce = o1js.UInt32.from(operation.controllerNonce!);
     expectedMessage = multisigModule.MultisigSignature.dataPauseTreasury(nonce);
   } else if (operation.kind === "unpauseTreasury") {
+    const nonce = o1js.UInt32.from(operation.controllerNonce!);
     expectedMessage =
       multisigModule.MultisigSignature.dataUnpauseTreasury(nonce);
   } else if (operation.kind === "toggleProposal") {
-    if (!operation.proposalAddress)
-      throw new Error("The proposal address is missing.");
+    if (
+      !operation.proposalAddress ||
+      !operation.proposalTokenId ||
+      !operation.proposalNonce ||
+      operation.proposalPaused === undefined
+    ) {
+      throw new Error("The proposal authorization fields are missing.");
+    }
     expectedMessage = multisigModule.MultisigSignature.dataTogglePauseProposal(
       o1js.PublicKey.fromBase58(operation.proposalAddress),
-      nonce,
+      o1js.Field(operation.proposalTokenId),
+      o1js.UInt32.from(operation.proposalNonce),
+      o1js.Bool(operation.proposalPaused),
     );
   } else {
+    const nonce = o1js.UInt32.from(operation.controllerNonce!);
     if (!operation.nextParticipants || !operation.nextMultisigCommitment) {
       throw new Error("The new participant set is missing.");
     }

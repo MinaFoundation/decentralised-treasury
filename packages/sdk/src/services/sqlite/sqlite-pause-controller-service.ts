@@ -1,6 +1,5 @@
 import {
   AccountUpdate,
-  Bool,
   Cache,
   fetchAccount,
   Mina,
@@ -13,10 +12,7 @@ import {
 } from "../../provable/contracts/treasury-pause-controller/multisig-signatures.js";
 import { TreasuryPauseControllerSmartContract } from "../../provable/contracts/treasury-pause-controller/treasury-pause-controller.js";
 import { TreasuryOwnerSmartContract } from "../../provable/contracts/treasury-owner.js";
-import {
-  ProposalStatus,
-  TreasuryProposalSmartContract,
-} from "../../provable/contracts/treasury-proposal/treasury-proposal.js";
+import { TreasuryProposalSmartContract } from "../../provable/contracts/treasury-proposal/treasury-proposal.js";
 import {
   type CompilePauseControllerOptions,
   type CompilePauseControllerResult,
@@ -242,9 +238,10 @@ export class SqlitePauseControllerService implements PauseControllerService {
       proposalPublicKey,
       multisigParticipantsPublicKeys,
       signatures,
+      paused,
       fee,
       nonce,
-      controllerNonce,
+      proposalNonce,
       memo,
       wait = true,
     } = options;
@@ -327,19 +324,16 @@ export class SqlitePauseControllerService implements PauseControllerService {
       );
     }
 
-    const resolvedControllerNonce = await this.resolvePauseControllerNonce(
-      configuredPauseControllerPublicKey,
-      controllerNonce,
-    );
-    // const currentProposalStatus = await proposal.status.fetch();
-    // if (!currentProposalStatus) {
-    //   throw new Error(
-    //     `Proposal status is not set for ${proposalPublicKey.toBase58()}`,
-    //   );
-    // }
-    // const pausedAfterToggle = !currentProposalStatus
-    //   .equals(ProposalStatus.PAUSED)
-    //   .toBoolean();
+    const onChainProposalNonce = await proposal.pauseNonce.fetch();
+    if (!onChainProposalNonce) {
+      throw new Error(
+        `Proposal pause nonce is not set for ${proposalPublicKey.toBase58()}`,
+      );
+    }
+    const resolvedProposalNonce =
+      proposalNonce === undefined
+        ? onChainProposalNonce
+        : UInt32.from(proposalNonce);
 
     const togglePauseProposalTx = await Mina.transaction(
       {
@@ -352,8 +346,8 @@ export class SqlitePauseControllerService implements PauseControllerService {
         await treasuryOwner.togglePauseProposal(
           proposalPublicKey,
           signatures,
-          resolvedControllerNonce,
-          Bool(true),
+          resolvedProposalNonce,
+          paused,
         );
       },
     );
@@ -372,7 +366,9 @@ export class SqlitePauseControllerService implements PauseControllerService {
       treasuryOwnerAddress: treasuryOwnerPublicKey.toBase58(),
       pauseControllerAddress: configuredPauseControllerPublicKey.toBase58(),
       proposalPublicKey: proposalPublicKey.toBase58(),
-      nonce: resolvedControllerNonce.toString(),
+      proposalTokenId: proposalTokenId.toString(),
+      proposalNonce: resolvedProposalNonce.toString(),
+      paused: paused.toBoolean(),
       togglePauseProposalTxHash: togglePendingTx.hash,
     };
   }

@@ -10,7 +10,7 @@ import { fileURLToPath } from "node:url";
 import test from "node:test";
 import type { Command } from "commander";
 import { MinaApp } from "@zondax/ledger-mina-js";
-import { LedgerHashBase58, PrivateKey, PublicKey } from "o1js";
+import { LedgerHashBase58, PrivateKey, PublicKey, TokenId } from "o1js";
 import { RedisMemoryServer } from "redis-memory-server";
 import { createProgram } from "../../src/cli.js";
 import {
@@ -915,17 +915,28 @@ test("selected signature-producing CLI commands work with a physical Ledger on t
         .unpauseTxHash,
     );
 
-    const toggleExtraArgs = ["--proposal-public-key", proposalPublicKey];
-    const toggleNonce = await accountNonce(
-      minaNodeUrl,
-      roles.pauseController.publicKey,
-    );
+    const proposalTokenId = TokenId.derive(
+      PublicKey.fromBase58(roles.treasuryOwner.publicKey),
+    ).toString();
+    const toggleNonce = 0;
+    const toggleExtraArgs = [
+      "--proposal-public-key",
+      proposalPublicKey,
+      "--proposal-token-id",
+      proposalTokenId,
+      "--paused",
+      "true",
+    ];
     const toggleSignatures = await buildMultisigSignatures(
       "toggle-pause-proposal",
       toggleNonce,
       toggleExtraArgs,
     );
-    const toggleArgs = (signatures: string): string[] => [
+    const toggleArgs = (
+      signatures: string,
+      proposalNonce: number,
+      paused: boolean,
+    ): string[] => [
       "pause-controller",
       "toggle-pause-proposal",
       ...ledgerTransactionArgs(minaNodeUrl, roles.sender),
@@ -935,6 +946,10 @@ test("selected signature-producing CLI commands work with a physical Ledger on t
       roles.treasuryOwner.publicKey,
       "--proposal-public-key",
       proposalPublicKey,
+      "--proposal-nonce",
+      String(proposalNonce),
+      "--paused",
+      String(paused),
       "--multisig-participants-public-keys",
       multisigParticipantsArg,
       "--multisig-signatures",
@@ -944,7 +959,7 @@ test("selected signature-producing CLI commands work with a physical Ledger on t
     ];
     const toggleOutput = await signingCli(
       "pause-controller toggle-pause-proposal",
-      toggleArgs(toggleSignatures),
+      toggleArgs(toggleSignatures, toggleNonce, true),
     );
     assert(
       parseJsonResult<{ togglePauseProposalTxHash: string }>(
@@ -953,18 +968,22 @@ test("selected signature-producing CLI commands work with a physical Ledger on t
       ).togglePauseProposalTxHash,
     );
 
-    const untoggleNonce = await accountNonce(
-      minaNodeUrl,
-      roles.pauseController.publicKey,
-    );
+    const untoggleNonce = toggleNonce + 1;
     const untoggleSignatures = await buildMultisigSignatures(
       "toggle-pause-proposal",
       untoggleNonce,
-      toggleExtraArgs,
+      [
+        "--proposal-public-key",
+        proposalPublicKey,
+        "--proposal-token-id",
+        proposalTokenId,
+        "--paused",
+        "false",
+      ],
     );
     const untoggleOutput = await signingCli(
       "pause-controller toggle-pause-proposal",
-      toggleArgs(untoggleSignatures),
+      toggleArgs(untoggleSignatures, untoggleNonce, false),
       "pause-controller toggle-pause-proposal restore",
     );
     assert(

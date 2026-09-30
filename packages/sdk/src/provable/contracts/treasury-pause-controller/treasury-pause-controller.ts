@@ -193,25 +193,29 @@ export class TreasuryPauseControllerSmartContract extends SmartContract {
   }
 
   /**
-   * Toggle pause state for a specific proposal (validated by multisig).
-   * This does not mutate contract state directly; it only enforces authorization.
+   * Verify authorization for a Proposal pause-state change.
+   * This method does not mutate Controller state.
    *
    * @param proposalPublicKey - Proposal public key whose pause flag is toggled.
-   * @param signatures - Multisig signatures authorizing the toggle.
-   * @param nonce - Expected account nonce for this transaction.
+   * @param proposalTokenId - Token ID of the Proposal account.
+   * @param signatures - Multisig signatures authorizing the target state.
+   * @param nonce - Expected Proposal pause nonce.
+   * @param paused - Explicit target pause state.
    */
   @method
   public async togglePauseProposal(
     proposalPublicKey: PublicKey,
+    proposalTokenId: Field,
     signatures: MultisigSignatures,
     nonce: UInt32,
+    paused: Bool,
   ) {
     const data = MultisigSignature.dataTogglePauseProposal(
       proposalPublicKey,
+      proposalTokenId,
       nonce,
+      paused,
     );
     await this.verifySignatures(signatures, data);
-
-    await this.requireAndIncrementNonce(nonce);
   }
 }

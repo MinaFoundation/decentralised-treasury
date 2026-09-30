@@ -7,7 +7,7 @@ import {
   within,
 } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { Field, PrivateKey, Signature, UInt32 } from "o1js";
+import { Bool, Field, PrivateKey, Signature, UInt32 } from "o1js";
 import {
   MultisigSignature,
   MultisigSignatures,
@@ -55,7 +55,7 @@ const keys = Array.from({ length: 5 }, () => PrivateKey.random());
 const participants = keys.map((key) => key.toPublicKey().toBase58());
 const message = MultisigSignature.dataPauseTreasury(UInt32.from(2));
 const operation: OperationPackage = {
-  schemaVersion: 1,
+  schemaVersion: 2,
   kind: "pauseTreasury",
   networkId: "devnet",
   treasuryOwnerAddress: PrivateKey.random().toPublicKey().toBase58(),
@@ -81,7 +81,7 @@ const status: TreasuryStatus = {
   pauseControllerAddress: operation.pauseControllerAddress,
   treasuryBalance: "1000000000",
   paused: false,
-  controllerNonce: operation.controllerNonce,
+  controllerNonce: operation.controllerNonce!,
   onChainCommitment: operation.multisigCommitment,
   configuredCommitment: operation.multisigCommitment,
   participantCommitmentMatches: true,
@@ -112,6 +112,8 @@ beforeEach(() => {
   vi.mocked(fetchProposalStatus).mockResolvedValue({
     value: "1",
     name: "APPROVED",
+    tokenId: "1",
+    pauseNonce: "0",
   });
   window.mina = { requestAccounts, signFields };
   ledger.getAddress.mockResolvedValue({
@@ -144,19 +146,24 @@ describe("Auro participant signatures", () => {
     "signs the exact %s hash and verifies the result with o1js",
     async (kind) => {
       const bundle = { ...operation, kind, signatures: Array(5).fill(null) };
-      const nonce = UInt32.from(bundle.controllerNonce);
+      const nonce = UInt32.from(bundle.controllerNonce!);
       if (kind === "unpauseTreasury") {
         bundle.messageHash =
           MultisigSignature.dataUnpauseTreasury(nonce).toString();
       } else if (kind === "toggleProposal") {
         const proposal = PrivateKey.random().toPublicKey();
         bundle.proposalAddress = proposal.toBase58();
+        delete bundle.controllerNonce;
+        bundle.proposalTokenId = "1";
+        bundle.proposalNonce = "0";
+        bundle.proposalPaused = true;
         bundle.proposalStatusBefore = "APPROVED";
         bundle.proposalStatusAfter = "PAUSED";
-        bundle.expectedProposalPaused = true;
         bundle.messageHash = MultisigSignature.dataTogglePauseProposal(
           proposal,
-          nonce,
+          Field(bundle.proposalTokenId),
+          UInt32.from(bundle.proposalNonce),
+          Bool(bundle.proposalPaused),
         ).toString();
       } else if (kind === "rotateMultisig") {
         const nextKeys = Array.from({ length: 5 }, () =>
@@ -292,18 +299,23 @@ function importBundle(bundle: OperationPackage) {
   });
 }
 
-function proposalBundle(): OperationPackage {
+function proposalBundle(paused = true): OperationPackage {
   const proposal = PrivateKey.random().toPublicKey();
   return {
     ...operation,
     kind: "toggleProposal",
+    controllerNonce: undefined,
     proposalAddress: proposal.toBase58(),
-    proposalStatusBefore: "APPROVED",
-    proposalStatusAfter: "PAUSED",
-    expectedProposalPaused: true,
+    proposalTokenId: "1",
+    proposalNonce: "0",
+    proposalPaused: paused,
+    proposalStatusBefore: paused ? "APPROVED" : "PAUSED",
+    proposalStatusAfter: paused ? "PAUSED" : "UNKNOWN",
     messageHash: MultisigSignature.dataTogglePauseProposal(
       proposal,
-      UInt32.from(operation.controllerNonce),
+      Field(1),
+      UInt32.from(0),
+      Bool(paused),
     ).toString(),
     signatures: Array(5).fill(null),
   };
@@ -320,14 +332,12 @@ describe("proposal state verification", () => {
     async (value, name) => {
       for (const provider of ["auro", "ledger"] as const) {
         const bundle = {
-          ...proposalBundle(),
+          ...proposalBundle(value !== "3"),
           proposalStatusBefore: name,
-          proposalStatusAfter: value === "3" ? "UNKNOWN" : "PAUSED",
-          expectedProposalPaused: value !== "3",
         };
         vi.mocked(fetchProposalStatus)
           .mockClear()
-          .mockResolvedValue({ value, name });
+          .mockResolvedValue({ value, name, tokenId: "1", pauseNonce: "0" });
         await renderSigner(participants[1], provider, "toggleProposal");
         importBundle(bundle);
         const sign = await screen.findByRole("button", { name: "Sign bundle" });
@@ -336,7 +346,9 @@ describe("proposal state verification", () => {
         );
         expect(review.getByText(name, { exact: true })).toBeVisible();
         expect(
-          review.getByText(bundle.proposalStatusAfter, { exact: true }),
+          within(
+            review.getByText("Expected status after toggle").parentElement!,
+          ).getByText(bundle.proposalStatusAfter!, { exact: true }),
         ).toBeVisible();
         expect(fetchProposalStatus).toHaveBeenCalledTimes(1);
         expect(fetchProposalStatus).toHaveBeenLastCalledWith(
@@ -365,12 +377,12 @@ describe("proposal state verification", () => {
   it.each([
     { proposalStatusBefore: undefined },
     { proposalStatusAfter: undefined },
-    { expectedProposalPaused: undefined },
-    { expectedProposalPaused: "true" },
+    { proposalPaused: undefined },
+    { proposalPaused: "true" },
     { proposalStatusBefore: "PAUSED" },
     { proposalStatusBefore: "FORGED" },
     { proposalStatusAfter: "UNKNOWN" },
-    { expectedProposalPaused: false },
+    { proposalPaused: false },
   ])(
     "rejects invalid proposal metadata before accepting the bundle: %j",
     async (changes) => {
@@ -378,7 +390,7 @@ describe("proposal state verification", () => {
       importBundle({ ...proposalBundle(), ...changes } as OperationPackage);
       expect(
         await screen.findByText(
-          /proposal-toggle operation is incomplete|proposal status changed|proposal outcome is inconsistent/,
+          /proposal-toggle operation is incomplete|proposal status changed|proposal outcome is inconsistent|operation message hash is invalid/,
         ),
       ).toBeVisible();
       expect(
@@ -398,6 +410,8 @@ describe("proposal state verification", () => {
       vi.mocked(fetchProposalStatus).mockResolvedValue({
         value: "3",
         name: "PAUSED",
+        tokenId: "1",
+        pauseNonce: "0",
       });
       fireEvent.click(screen.getByRole("button", { name: "Sign bundle" }));
       expect(await screen.findByText(/proposal status changed/)).toBeVisible();
@@ -451,6 +465,8 @@ describe("proposal state verification", () => {
     vi.mocked(fetchProposalStatus).mockResolvedValue({
       value: "3",
       name: "PAUSED",
+      tokenId: "1",
+      pauseNonce: "0",
     });
     fireEvent.click(submit);
     expect(await screen.findByText(/proposal status changed/)).toBeVisible();
@@ -470,7 +486,7 @@ describe("signer bundle exchange", () => {
       kind,
       signatures: Array(5).fill(null),
     };
-    const nonce = UInt32.from(bundle.controllerNonce);
+    const nonce = UInt32.from(bundle.controllerNonce!);
     if (kind === "unpauseTreasury") {
       vi.mocked(fetchTreasuryStatus).mockResolvedValue({
         ...status,
@@ -480,14 +496,19 @@ describe("signer bundle exchange", () => {
         MultisigSignature.dataUnpauseTreasury(nonce).toString();
     } else if (kind === "toggleProposal") {
       const proposal = PrivateKey.random().toPublicKey();
+      delete bundle.controllerNonce;
       bundle.proposalAddress = proposal.toBase58();
+      bundle.proposalTokenId = "1";
+      bundle.proposalNonce = "0";
+      bundle.proposalPaused = true;
       bundle.messageHash = MultisigSignature.dataTogglePauseProposal(
         proposal,
-        nonce,
+        Field(bundle.proposalTokenId),
+        UInt32.from(bundle.proposalNonce),
+        Bool(bundle.proposalPaused),
       ).toString();
       bundle.proposalStatusBefore = "APPROVED";
       bundle.proposalStatusAfter = "PAUSED";
-      bundle.expectedProposalPaused = true;
     } else if (kind === "rotateMultisig") {
       const replacements = Array.from({ length: 5 }, () =>
         PrivateKey.random().toPublicKey(),
@@ -510,11 +531,13 @@ describe("signer bundle exchange", () => {
       bundle.networkId,
       bundle.treasuryOwnerAddress,
       bundle.pauseControllerAddress,
-      bundle.controllerNonce,
+      ...(bundle.kind === "toggleProposal"
+        ? [bundle.proposalTokenId, bundle.proposalNonce]
+        : [bundle.controllerNonce]),
       bundle.multisigCommitment,
       bundle.messageHash,
     ]) {
-      expect(review.getByText(value, { exact: true })).toBeVisible();
+      expect(review.getByText(value!, { exact: true })).toBeVisible();
     }
     if (kind === "toggleProposal") {
       expect(review.getByText(bundle.proposalAddress!)).toBeVisible();
@@ -522,7 +545,11 @@ describe("signer bundle exchange", () => {
         review.getByText(/If the proposal is PAUSED, set it to UNKNOWN/),
       ).toBeVisible();
       expect(review.getByText("APPROVED", { exact: true })).toBeVisible();
-      expect(review.getByText("PAUSED", { exact: true })).toBeVisible();
+      expect(
+        within(
+          review.getByText("Signed pause target").parentElement!,
+        ).getByText("PAUSED", { exact: true }),
+      ).toBeVisible();
     }
     if (kind === "rotateMultisig") {
       expect(review.getByText(bundle.nextMultisigCommitment!)).toBeVisible();
@@ -568,7 +595,7 @@ describe("signer bundle exchange", () => {
       messageHash: MultisigSignature.dataRotateMultisigKeys(
         Field(operation.multisigCommitment),
         Field(123),
-        UInt32.from(operation.controllerNonce),
+        UInt32.from(operation.controllerNonce!),
       ).toString(),
     });
     expect(

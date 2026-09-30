@@ -680,7 +680,7 @@ function OperationWorkspace({
         fresh.treasuryOwnerAddress,
         bundle.proposalAddress!,
       );
-      assertProposalStatus(bundle, current.value);
+      assertProposalStatus(bundle, current);
     }
   };
 
@@ -957,7 +957,7 @@ function OperationWorkspace({
       {operation && !receipt ? (
         <div className="flex items-start gap-2 rounded-xl bg-amber-50 p-3 text-xs text-amber-900">
           <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
-          The participant order and controller nonce are part of the
+                The participant order and operation nonce are part of the
           authorization. Review them before each wallet approval.
         </div>
       ) : null}
@@ -1189,17 +1189,32 @@ function OperationWorkspace({
                   label="Expected status after toggle"
                   value={operation.proposalStatusAfter!}
                 />
+                <StatusRow
+                  label="Proposal token ID"
+                  value={operation.proposalTokenId!}
+                  mono
+                />
+                <StatusRow
+                  label="Proposal pause nonce"
+                  value={operation.proposalNonce!}
+                />
+                <StatusRow
+                  label="Signed pause target"
+                  value={operation.proposalPaused ? "PAUSED" : "ACTIVE"}
+                />
                 <p className="py-3 text-muted-foreground">
                   Backoffice checked this status against the configured node. It
                   checks again before signing and submission. The signature
-                  authorizes a toggle. It does not bind the proposal status.
+                  binds the Proposal address, token ID, pause nonce, and target.
                 </p>
               </>
             ) : null}
-            <StatusRow
-              label="Controller nonce"
-              value={operation.controllerNonce}
-            />
+            {operation.kind === "toggleProposal" ? null : (
+              <StatusRow
+                label="Controller nonce"
+                value={operation.controllerNonce!}
+              />
+            )}
             <StatusRow
               label="Current commitment"
               value={operation.multisigCommitment}

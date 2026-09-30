@@ -1,4 +1,4 @@
-import type { PublicKey, UInt64, VerificationKey } from "o1js";
+import type { Bool, PublicKey, UInt64, VerificationKey } from "o1js";
 import type { MultisigSignatures } from "../provable/contracts/treasury-pause-controller/multisig-signatures.js";
 import type { TransactionSigner } from "./transaction-signing.js";
 
@@ -83,10 +83,12 @@ export interface TogglePauseProposalOptions {
   proposalPublicKey: PublicKey;
   multisigParticipantsPublicKeys: PublicKey[];
   signatures: MultisigSignatures;
+  /** Explicit target pause state signed by the multisig. */
+  paused: Bool;
   /** Fee-payer account nonce. Defaults to the current account nonce. */
   nonce?: number;
-  /** Controller nonce signed by the multisig. Defaults to the current controller nonce. */
-  controllerNonce?: number;
+  /** Proposal-local pause nonce. Defaults to the current Proposal pause nonce. */
+  proposalNonce?: number;
   fee?: UInt64;
   memo?: string;
   wait?: boolean;
@@ -96,7 +98,9 @@ export interface TogglePauseProposalResult {
   treasuryOwnerAddress: string;
   pauseControllerAddress: string;
   proposalPublicKey: string;
-  nonce: string;
+  proposalTokenId: string;
+  proposalNonce: string;
+  paused: boolean;
   togglePauseProposalTxHash?: string;
 }
 

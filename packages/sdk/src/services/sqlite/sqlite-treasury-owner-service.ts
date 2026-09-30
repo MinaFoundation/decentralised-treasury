@@ -845,6 +845,7 @@ export class SqliteTreasuryOwnerService implements TreasuryOwnerService {
       stakingEpochDataLedgerTotalCurrency,
       statusField,
       paidOutAmount,
+      pauseNonce,
     ] = await Promise.all([
       proposal.recipientHash.fetch(),
       proposal.amount.fetch(),
@@ -853,6 +854,7 @@ export class SqliteTreasuryOwnerService implements TreasuryOwnerService {
       proposal.stakingEpochDataLedgerTotalCurrency.fetch(),
       proposal.status.fetch(),
       proposal.paidOutAmount.fetch(),
+      proposal.pauseNonce.fetch(),
     ]);
 
     if (
@@ -862,7 +864,8 @@ export class SqliteTreasuryOwnerService implements TreasuryOwnerService {
       !stakingEpochDataLedgerHash ||
       !stakingEpochDataLedgerTotalCurrency ||
       !statusField ||
-      !paidOutAmount
+      !paidOutAmount ||
+      !pauseNonce
     ) {
       throw new Error(
         `Proposal state is incomplete for ${proposalPublicKey.toBase58()} (tokenId=${proposalTokenId.toString()})`,
@@ -880,6 +883,7 @@ export class SqliteTreasuryOwnerService implements TreasuryOwnerService {
       status: this.toProposalStatusName(statusField),
       statusField: statusField.toString(),
       paidOutAmount: paidOutAmount.toString(),
+      pauseNonce: pauseNonce.toString(),
     };
   }
 

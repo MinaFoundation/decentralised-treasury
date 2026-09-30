@@ -45,7 +45,7 @@ import { backofficeWalletProviders, signOperationWithLedger } from "./wallets";
 
 function operation(): OperationPackage {
   return {
-    schemaVersion: 1,
+    schemaVersion: 2,
     kind: "pauseTreasury",
     networkId: "devnet",
     treasuryOwnerAddress: "owner",

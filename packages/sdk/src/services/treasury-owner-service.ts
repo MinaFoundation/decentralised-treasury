@@ -213,6 +213,7 @@ export interface GetTreasuryProposalStateResult {
   status: string;
   statusField: string;
   paidOutAmount: string;
+  pauseNonce: string;
 }
 
 export type LifecyclePeriodName =

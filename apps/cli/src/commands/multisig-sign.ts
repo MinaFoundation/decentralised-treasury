@@ -1,12 +1,12 @@
 import { Command, Option, InvalidArgumentError } from "commander";
-import { Field, PrivateKey, PublicKey, UInt32 } from "o1js";
+import { Bool, Field, PrivateKey, PublicKey, UInt32 } from "o1js";
 import {
   MULTISIG_PARTICIPANTS_COUNT,
   MultisigSignature,
   MultisigSignatures,
 } from "@repo/sdk/src/provable/contracts/treasury-pause-controller/multisig-signatures.js";
 import { signFieldWithLedger } from "../ledger/ledger-signing.js";
-import { parseIntOption } from "./option-parsers.js";
+import { parseBooleanOption, parseIntOption } from "./option-parsers.js";
 import {
   configureSigningOptions,
   logWaitingForSignatures,
@@ -29,6 +29,8 @@ interface SignUnpauseTreasuryOptions extends BaseSignOptions {}
 
 interface SignTogglePauseProposalOptions extends BaseSignOptions {
   proposalPublicKey: PublicKey;
+  proposalTokenId: Field;
+  paused: boolean;
 }
 
 interface SignRotateMultisigKeysOptions extends BaseSignOptions {
@@ -46,6 +48,8 @@ interface MultisigSignCommandResult {
   signature: string;
   validSignaturesCount: number;
   proposalPublicKey?: string;
+  proposalTokenId?: string;
+  paused?: boolean;
   previousMultisigCommitment?: string;
   newMultisigCommitment?: string;
 }
@@ -165,12 +169,16 @@ export async function signTogglePauseProposal(
   const nonce = UInt32.from(options.nonce);
   const dataHash = MultisigSignature.dataTogglePauseProposal(
     options.proposalPublicKey,
+    options.proposalTokenId,
     nonce,
+    Bool(options.paused),
   );
   console.log(
     JSON.stringify(
       await buildSignaturesResult("toggle-pause-proposal", options, dataHash, {
         proposalPublicKey: options.proposalPublicKey.toBase58(),
+        proposalTokenId: options.proposalTokenId.toString(),
+        paused: options.paused,
       }),
     ),
   );
@@ -248,7 +256,7 @@ export default function multisigSignCommandFactory(program: Command) {
           .argParser(parseSignerPrivateKey),
       )
       .addOption(
-        new Option("--nonce <nonce>", "Pause controller nonce")
+        new Option("--nonce <nonce>", "Nonce included in the signed payload")
           .env("TX_NONCE")
           .argParser(parseIntOption)
           .makeOptionMandatory(),
@@ -288,7 +296,23 @@ export default function multisigSignCommandFactory(program: Command) {
           .argParser(parsePublicKey)
           .makeOptionMandatory(),
       ),
-  ).action(signTogglePauseProposal);
+  )
+    .addOption(
+      new Option(
+        "--proposal-token-id <proposal-token-id>",
+        "Proposal token ID",
+      )
+        .env("PROPOSAL_TOKEN_ID")
+        .argParser((value) => Field(value))
+        .makeOptionMandatory(),
+    )
+    .addOption(
+      new Option("--paused <paused>", "Explicit target Proposal pause state")
+        .env("PROPOSAL_PAUSED")
+        .argParser(parseBooleanOption)
+        .makeOptionMandatory(),
+    )
+    .action(signTogglePauseProposal);
 
   baseOptions(
     command

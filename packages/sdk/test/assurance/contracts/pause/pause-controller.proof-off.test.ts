@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
   AccountUpdate,
+  Bool,
   Field,
   Mina,
   PrivateKey,
@@ -344,9 +345,13 @@ test(
         const signedProposal = PrivateKey.fromBigInt(75_200n).toPublicKey();
         const calledProposal = PrivateKey.fromBigInt(75_201n).toPublicKey();
         const nonce = currentNonce(fixture);
+        const proposalTokenId = Field(1);
+        const paused = Bool(true);
         const data = MultisigSignature.dataTogglePauseProposal(
           signedProposal,
+          proposalTokenId,
           nonce,
+          paused,
         );
         const before = await stateSnapshot(fixture);
         await assert.rejects(
@@ -354,8 +359,10 @@ test(
             sendTransaction(fixture.feePayer, async () => {
               await fixture.contract.togglePauseProposal(
                 calledProposal,
+                proposalTokenId,
                 signatures(data, fixture.participants, [0, 1, 2]),
                 nonce,
+                paused,
               );
             }),
           new RegExp(MultisigSignaturesErrors.NOT_ENOUGH_VALID_SIGNATURES),

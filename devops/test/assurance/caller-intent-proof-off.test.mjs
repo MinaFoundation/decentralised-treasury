@@ -3,7 +3,15 @@ import { readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import { Command } from "commander";
 import { describe, it } from "node:test";
-import { Field, PrivateKey, Signature, UInt32 } from "o1js";
+import {
+  AccountUpdate,
+  Bool,
+  Field,
+  Mina,
+  PrivateKey,
+  Signature,
+  UInt32,
+} from "o1js";
 
 import { loadApiConfig } from "../../../apps/api/src/config.js";
 import { minaNetworkOption } from "../../../apps/cli/src/commands/mina-instance.js";
@@ -755,7 +763,9 @@ describe("proof-off caller intent", () => {
         type: "toggle-pause-proposal",
         dataHash: MultisigSignature.dataTogglePauseProposal(
           proposalPublicKey,
+          Field(1),
           UInt32.from(71),
+          Bool(true),
         ),
       },
       {

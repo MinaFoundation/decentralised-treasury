@@ -7,7 +7,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import test from "node:test";
-import { PrivateKey, PublicKey } from "o1js";
+import { PrivateKey, PublicKey, TokenId } from "o1js";
 import { RedisMemoryServer } from "redis-memory-server";
 import {
   startLocalE2EBackend,
@@ -1197,15 +1197,24 @@ test(
         "true",
       ]);
 
+      let proposalPauseNonce = 0;
+      let proposalPaused = false;
+      const proposalTokenId = TokenId.derive(
+        PublicKey.fromBase58(treasuryOwner.publicKey),
+      ).toString();
       const toggleProposal = async (): Promise<void> => {
-        const nonce = await accountNonce(
-          minaNodeUrl,
-          pauseController.publicKey,
-        );
-        const extraArgs = ["--proposal-public-key", proposal.publicKey];
+        const targetPaused = !proposalPaused;
+        const extraArgs = [
+          "--proposal-public-key",
+          proposal.publicKey,
+          "--proposal-token-id",
+          proposalTokenId,
+          "--paused",
+          String(targetPaused),
+        ];
         const signatures = await buildMultisigSignatures(
           "toggle-pause-proposal",
-          nonce,
+          proposalPauseNonce,
           extraArgs,
         );
         const output = await cli([
@@ -1219,6 +1228,10 @@ test(
           treasuryOwner.publicKey,
           "--proposal-public-key",
           proposal.publicKey,
+          "--proposal-nonce",
+          String(proposalPauseNonce),
+          "--paused",
+          String(targetPaused),
           "--multisig-participants-public-keys",
           participantPublicKeysArg,
           "--multisig-signatures",
@@ -1236,6 +1249,8 @@ test(
             "togglePauseProposalTxHash",
           ).togglePauseProposalTxHash,
         );
+        proposalPauseNonce += 1;
+        proposalPaused = targetPaused;
       };
       await toggleProposal();
       await toggleProposal();

@@ -1,5 +1,5 @@
 import { Command, Option } from "commander";
-import { PrivateKey, PublicKey, UInt32, UInt64 } from "o1js";
+import { Bool, PrivateKey, PublicKey, UInt32, UInt64 } from "o1js";
 import {
   MIN_VALID_MULTISIG_SIGNATURES_COUNT,
   MULTISIG_PARTICIPANTS_COUNT,
@@ -71,6 +71,8 @@ interface UnpauseTreasuryCommandOptions extends BasePauseControllerCommandOption
 interface TogglePauseProposalCommandOptions extends BasePauseControllerCommandOptions {
   treasuryOwnerPublicKey: PublicKey;
   proposalPublicKey: PublicKey;
+  proposalNonce?: number;
+  paused: boolean;
   multisigParticipantsPublicKeys: PublicKey[];
   multisigSignatures: MultisigSignatures;
   lifecyclePeriodDuration: UInt32;
@@ -327,9 +329,10 @@ export async function togglePauseProposal(
     proposalPublicKey: options.proposalPublicKey,
     multisigParticipantsPublicKeys: options.multisigParticipantsPublicKeys,
     signatures: options.multisigSignatures,
+    paused: Bool(options.paused),
     fee: options.fee,
     nonce: options.nonce,
-    controllerNonce: options.controllerNonce,
+    proposalNonce: options.proposalNonce,
     memo: options.memo,
     wait: options.wait,
   });
@@ -713,11 +716,17 @@ export default function pauseControllerCommandFactory(program: Command) {
     )
     .addOption(
       new Option(
-        "--controller-nonce <nonce>",
-        "Controller nonce signed by the multisig (defaults to the current controller nonce)",
+        "--proposal-nonce <nonce>",
+        "Proposal pause nonce signed by the multisig (defaults to the current Proposal pause nonce)",
       )
-        .env("PAUSE_CONTROLLER_NONCE")
+        .env("PROPOSAL_PAUSE_NONCE")
         .argParser((value) => Number(UInt32.from(value).toBigint())),
+    )
+    .addOption(
+      new Option("--paused <paused>", "Explicit target Proposal pause state")
+        .env("PROPOSAL_PAUSED")
+        .argParser(parseBooleanOption)
+        .makeOptionMandatory(),
     )
     .addOption(
       new Option("--memo <memo>", "Memo to use for transaction").env("TX_MEMO"),

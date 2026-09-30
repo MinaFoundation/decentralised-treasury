@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { AccountUpdate, UInt64 } from "o1js";
+import { AccountUpdate, Bool, UInt32, UInt64 } from "o1js";
 import { ProposalStatus } from "../../../../src/provable/contracts/treasury-proposal/treasury-proposal.js";
 import {
   compileAuthorizationContracts,
@@ -182,7 +182,7 @@ test(
         ]) {
           const fixture = await createStandaloneProposalFixture({ status });
           await sendTransaction(fixture.feePayer, async () => {
-            await fixture.proposal.togglePause();
+            await fixture.proposal.setPaused(UInt32.from(0), Bool(true));
           });
           assert.equal(
             (await fixture.proposal.status.fetch())!.toString(),
@@ -190,7 +190,7 @@ test(
           );
 
           await sendTransaction(fixture.feePayer, async () => {
-            await fixture.proposal.togglePause();
+            await fixture.proposal.setPaused(UInt32.from(1), Bool(false));
           });
           assert.equal(
             (await fixture.proposal.status.fetch())!.toString(),
