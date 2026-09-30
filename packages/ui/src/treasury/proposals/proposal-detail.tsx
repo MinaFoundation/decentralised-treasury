@@ -144,6 +144,7 @@ export interface TreasuryProposalDetailProps {
 const PROPOSAL_BOND_AMOUNT_DIVISOR = 10n;
 const NANOMINA_PER_MINA = 1_000_000_000n;
 const PROPOSAL_MARKDOWN_COMPONENTS: Components = {
+  img: ({ alt }) => alt ?? null,
   h1: ({ children }: { children?: ReactNode }) => (
     <h1 className="mb-4 text-2xl font-semibold tracking-tight">{children}</h1>
   ),

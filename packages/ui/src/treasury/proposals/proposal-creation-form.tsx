@@ -67,6 +67,7 @@ Describe the proposal intent and why treasury funding is needed.
 Explain how progress updates and final outcomes will be shared.`;
 
 const PROPOSAL_MARKDOWN_COMPONENTS: Components = {
+  img: ({ alt }) => alt ?? null,
   h1: ({ children }: { children?: ReactNode }) => (
     <h1 className="mb-4 text-2xl font-semibold tracking-tight">{children}</h1>
   ),

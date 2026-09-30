@@ -309,6 +309,27 @@ describe("TreasuryProposalDetail", () => {
     expect(screen.getByText("60,000 MINA")).toBeTruthy();
   });
 
+  it("suppresses Markdown images without changing their descriptive text", () => {
+    const { container } = render(
+      <TreasuryProposalDetail
+        proposal={{
+          ...proposal,
+          contents: [
+            "![Inline description](https://tracker.example/inline.png)",
+            "![Reference description][image]",
+            "![](https://tracker.example/pixel.png)",
+            '<img src="https://tracker.example/raw.png">',
+            "[image]: https://tracker.example/reference.png",
+          ].join("\n\n"),
+        }}
+      />,
+    );
+
+    expect(container.querySelector("img")).toBeNull();
+    expect(screen.getByText("Inline description")).toBeTruthy();
+    expect(screen.getByText("Reference description")).toBeTruthy();
+  });
+
   it("shows preview voting details and expands the rest on demand", () => {
     render(<TreasuryProposalDetail proposal={proposal} />);
 

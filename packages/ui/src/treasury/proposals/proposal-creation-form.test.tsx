@@ -259,6 +259,35 @@ describe("TreasuryProposalCreationForm", () => {
     });
   });
 
+  it("suppresses images in the Markdown preview and preserves the draft", async () => {
+    const content = [
+      "![Inline description](https://tracker.example/inline.png)",
+      "![Reference description][image]",
+      "![](https://tracker.example/pixel.png)",
+      '<img src="https://tracker.example/raw.png">',
+      "[image]: https://tracker.example/reference.png",
+    ].join("\n\n");
+    const { container } = render(
+      <TreasuryProposalCreationForm
+        lifecycleId={12}
+        connectedWalletAddress="wallet"
+        initialContent={content}
+      />,
+    );
+    expect(
+      (screen.getByLabelText("Content") as HTMLTextAreaElement).value,
+    ).toBe(content);
+    const previewTab = screen.getByRole("tab", { name: "Preview" });
+    fireEvent.mouseDown(previewTab);
+    fireEvent.click(previewTab);
+
+    await waitFor(() => {
+      expect(screen.getByText("Inline description")).toBeTruthy();
+      expect(screen.getByText("Reference description")).toBeTruthy();
+    });
+    expect(container.querySelector("img")).toBeNull();
+  });
+
   it("renders a cancel action when provided", () => {
     const onCancel = vi.fn();
     render(
