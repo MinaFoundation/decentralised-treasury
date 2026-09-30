@@ -45,10 +45,17 @@ packages/sdk/cache
 packages/sdk/daemon.json
 packages/sdk/.data
 packages/sdk/test/.data/cache
+/packages/sdk/test/.data/test-ledger-merge-proof.json
 packages/sdk/thresholds-chart.svg
 apps/cli/cache
 apps/cli/test/fixtures/cache
 apps/cli/test/fixtures/.data/
+/apps/cli/test/fixtures/0-data-voting-ledger.sqlite
+/apps/cli/test/fixtures/vote-reducer-cli-test-merged-proof.json
+/apps/cli/test/fixtures/staking-ledger-to-voting-ledger-proof-lightnet-tail-exhaust.json
+/apps/cli/test/fixtures/staking-ledger-to-voting-ledger-proof-lightnet-tail-merge.json
+/apps/cli/test/fixtures/staking-ledger-to-voting-ledger-proof-lightnet.json
+/apps/cli/test/fixtures/vote-reducer-mock-merged-proof.json
 apps/indexer/test/fixtures/archive/
 .cursor/
 .pnpm-store/
@@ -83,6 +90,9 @@ apps/docs/.docusaurus/
 apps/docs/build/
 
 # AI analysis and review support files are local-only.
+/output/
+/tmp/
+/devops/AUDIT-*.md
 /.audit-spec/
 /.codebase-analysis/
 /.ledger-review/
