@@ -1,5 +1,6 @@
 import type { RedisOptions } from "bullmq";
-import type { Proof } from "o1js";
+import type { Field, Proof } from "o1js";
+import type { StakingLedgerToVotingLedgerProof } from "../provable/staking-ledger-to-voting-ledger.js";
 import type {
   SideLoadedVoteReducerProof,
   VoteAction,
@@ -29,6 +30,11 @@ export interface VoteReducerServiceOptions {
 export interface VoteReducerService {
   start(): Promise<void>;
   getVoteWeight(voterPublicKey: string): Promise<bigint>;
+  validateVotingLedgerProof(
+    proof: StakingLedgerToVotingLedgerProof,
+    expectedStakingLedgerRoot: Field,
+    proofsEnabled?: boolean,
+  ): Promise<void>;
   clearPersistentState(): Promise<void>;
   compile(options?: CompileVoteReducerOptions): Promise<void>;
   fetchProposalActions(): Promise<FetchProposalActionsResult>;
@@ -45,6 +51,9 @@ export interface VoteReducerService {
     ) => void,
   ): Promise<void>;
   proveMerge(
-    onMergeComplete?: (index: number, proof: SideLoadedVoteReducerProof) => void,
+    onMergeComplete?: (
+      index: number,
+      proof: SideLoadedVoteReducerProof,
+    ) => void,
   ): Promise<SideLoadedVoteReducerProof>;
 }

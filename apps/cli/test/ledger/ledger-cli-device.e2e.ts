@@ -1107,6 +1107,10 @@ test("selected signature-producing CLI commands work with a physical Ledger on t
       [
         "vote-reducer",
         "trace-run-batch",
+        "--staking-ledger-to-voting-ledger-proof-path",
+        stakingProofPath,
+        "--treasury-owner-public-key",
+        roles.treasuryOwner.publicKey,
         "--lifecycle-id",
         LIFECYCLE_ID,
         "--vote-actions-path",
@@ -1127,6 +1131,8 @@ test("selected signature-producing CLI commands work with a physical Ledger on t
         [
           "vote-reducer",
           "prove-run-batch",
+          "--vote-actions-path",
+          actionsPath,
           "--lifecycle-id",
           LIFECYCLE_ID,
           ...redisArgs,
@@ -1137,6 +1143,8 @@ test("selected signature-producing CLI commands work with a physical Ledger on t
         [
           "vote-reducer",
           "prove-merge",
+          "--vote-actions-path",
+          actionsPath,
           "--lifecycle-id",
           LIFECYCLE_ID,
           ...redisArgs,

@@ -7,6 +7,8 @@ import { RedisMemoryServer } from "redis-memory-server";
 import { KeyvSqlite } from "@keyv/sqlite";
 import { Reducer, UInt64 } from "o1js";
 import { VoteAction } from "@repo/sdk/src/provable/contracts/treasury-proposal/vote-reducer.js";
+import { getVoteReducerScope, SqliteVoteReducerService } from "@repo/sdk/src/services/sqlite/sqlite-vote-reducer-service.js";
+import type { VoteReducerActionStateHistoryTargetSnapshot } from "@repo/sdk/src/services/vote-reducer-types.js";
 import { VotingAccount } from "@repo/sdk/src/provable/voting-account.js";
 import { createSqliteVoteReducerProofStorage } from "@repo/sdk/src/storage/sqlite/factory/sqlite-vote-reducer-proof-storage.js";
 import { createSqliteNullifierLedgerStorage } from "@repo/sdk/src/storage/sqlite/factory/sqlite-nullifier-ledger-storage.js";
@@ -26,7 +28,7 @@ const runSdkCli = (args: string[]) =>
 function assertVoteReducerProofMatchesExpectedActionHistory(
   proofLabel: string,
   proofFile: { publicInput?: unknown; publicOutput?: unknown },
-  actionStateHistoryTarget: Record<string, string>,
+  actionStateHistoryTarget: VoteReducerActionStateHistoryTargetSnapshot,
 ) {
   assert(proofFile.publicInput, `expected ${proofLabel} to contain publicInput`);
   assert(proofFile.publicOutput, `expected ${proofLabel} to contain publicOutput`);
@@ -96,13 +98,15 @@ it("exposes vote-reducer commands in help", async () => {
 
 it("clears vote-reducer dependencies while preserving voting ledger", async () => {
   const lifecycleId = "cli-vote-reducer-clear-state";
+  const voteActionsPath = join(FIXTURES_DIRECTORY, "vote-reducer-lightnet-actions.json");
+  const scopeId = getVoteReducerScope({ lifecycleId, ...JSON.parse(await readFile(voteActionsPath, "utf8")) });
   const dbPath = join(SQLITE_FIXTURE_DIRECTORY, `${lifecycleId}.sqlite`);
   await mkdir(SQLITE_FIXTURE_DIRECTORY, { recursive: true });
   await rm(dbPath, { force: true });
 
   const sqliteStore = new KeyvSqlite({ uri: dbPath });
   const nullifierLedgerStorage = createSqliteNullifierLedgerStorage(
-    lifecycleId,
+    scopeId,
     sqliteStore,
   );
   const votingLedgerStorage = createSqliteVotingLedgerStorage(
@@ -132,11 +136,13 @@ it("clears vote-reducer dependencies while preserving voting ledger", async () =
     "clear-state",
     "--lifecycle-id",
     lifecycleId,
+    "--vote-actions-path",
+    voteActionsPath,
   ]);
 
   const verifyStore = new KeyvSqlite({ uri: dbPath });
   const verifyNullifierLedgerStorage = createSqliteNullifierLedgerStorage(
-    lifecycleId,
+    scopeId,
     verifyStore,
   );
   const verifyVotingLedgerStorage = createSqliteVotingLedgerStorage(
@@ -183,7 +189,9 @@ it("runs vote-reducer cli flow end-to-end with Lightnet action-state snapshot or
   await rm(dbPath, { force: true });
   await rm(mergedProofPath, { force: true });
   const voteActionsPayload = JSON.parse(await readFile(voteActionsPath, "utf8")) as {
-    actionStateHistoryTarget?: Record<string, string>;
+    proposalPublicKey: string;
+    proposalTokenId: string;
+    actionStateHistoryTarget?: VoteReducerActionStateHistoryTargetSnapshot;
     voteActions?: Record<string, unknown>[];
   };
   assert(
@@ -211,7 +219,7 @@ it("runs vote-reducer cli flow end-to-end with Lightnet action-state snapshot or
   await sleep(400);
 
   try {
-    const baseArgs = ["--lifecycle-id", lifecycleId];
+    const baseArgs = ["--lifecycle-id", lifecycleId, "--vote-actions-path", voteActionsPath];
     const provingArgs = [
       ...baseArgs,
       "--queue-name",
@@ -223,19 +231,28 @@ it("runs vote-reducer cli flow end-to-end with Lightnet action-state snapshot or
     ];
 
     await runSdkCli(["vote-reducer", "compile"]);
-    await runSdkCli(
-      [
-        "vote-reducer",
-        "trace-run-batch",
-        ...baseArgs,
-        "--vote-actions-path",
-        voteActionsPath,
-      ],
-    );
+    const previousDirectory = process.env.SQLITE_DATA_DIRECTORY;
+    process.env.SQLITE_DATA_DIRECTORY = SQLITE_FIXTURE_DIRECTORY;
+    // This archive fixture has no live Proposal. Trace through the SDK here;
+    // vote-reducer-proof-input.test.ts tests CLI validation against Proposal state.
+    const service = new SqliteVoteReducerService({
+      lifecycleId,
+      proposalPublicKey: voteActionsPayload.proposalPublicKey,
+      proposalTokenId: voteActionsPayload.proposalTokenId,
+      actionStateHistoryTarget: voteActionsPayload.actionStateHistoryTarget,
+    });
+    try {
+      await service.start();
+      await service.traceRunBatch(voteActions);
+    } finally {
+      await service.close();
+      if (previousDirectory === undefined) delete process.env.SQLITE_DATA_DIRECTORY;
+      else process.env.SQLITE_DATA_DIRECTORY = previousDirectory;
+    }
     await runSdkCli(["vote-reducer", "prove-run-batch", ...provingArgs]);
 
     const proofStore = new KeyvSqlite({ uri: dbPath });
-    const proofStorage = createSqliteVoteReducerProofStorage(lifecycleId, proofStore);
+    const proofStorage = createSqliteVoteReducerProofStorage(getVoteReducerScope({ lifecycleId, ...voteActionsPayload }), proofStore);
     const baseProofCount = await proofStorage.count();
     const mergeProofCount = await proofStorage.mergeCount();
     const baseProof = await proofStorage.getProof("0");
@@ -299,3 +316,35 @@ it("runs vote-reducer cli flow end-to-end with Lightnet action-state snapshot or
   }
 });
 
+
+it("selects Proposal state from VOTE_ACTIONS_PATH and rejects missing identity", async () => {
+  const voteActionsPath = join(
+    FIXTURES_DIRECTORY,
+    "vote-reducer-lightnet-actions.json",
+  );
+  const result = await runCli(["vote-reducer", "clear-state"], {
+    envOverrides: {
+      LIFECYCLE_ID: "cli-vote-reducer-clear-state",
+      VOTE_ACTIONS_PATH: voteActionsPath,
+      SQLITE_DATA_DIRECTORY: SQLITE_FIXTURE_DIRECTORY,
+    },
+  });
+  assert.match(result, /done/);
+  for (const command of [
+    "trace-run-batch",
+    "prove-run-batch",
+    "prove-merge",
+    "clear-state",
+  ]) {
+    await assert.rejects(
+      runCli(["vote-reducer", command, "--lifecycle-id", "missing-scope"], {
+        envOverrides: {
+          VOTE_ACTIONS_PATH: "",
+          STAKING_LEDGER_TO_VOTING_LEDGER_PROOF_PATH: "unused-proof.json",
+          TREASURY_OWNER_PUBLIC_KEY: JSON.parse(await readFile(voteActionsPath, "utf8")).proposalPublicKey,
+        },
+      }),
+      /vote-actions-path/,
+    );
+  }
+});

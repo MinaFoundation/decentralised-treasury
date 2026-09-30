@@ -1823,11 +1823,14 @@ async function prepareVoteReducerProof(treasury, createResult) {
 
   await runCli(["vote-reducer", "compile"]);
   await runCli(["vote-reducer", "trace-run-batch"], {
+    STAKING_LEDGER_TO_VOTING_LEDGER_PROOF_PATH: STAKING_PROOF_FILE,
+    TREASURY_OWNER_PUBLIC_KEY: treasury.treasuryOwner.publicKey,
     LIFECYCLE_ID: "0",
     VOTE_ACTIONS_PATH: VOTE_ACTIONS_FILE,
   });
   await withCliProvingWorker("vote-reducer", async (redis) => {
     const redisEnv = {
+      VOTE_ACTIONS_PATH: VOTE_ACTIONS_FILE,
       REDIS_HOST: redis.host,
       REDIS_PORT: String(redis.port),
       QUEUE_NAME: redis.queueName,

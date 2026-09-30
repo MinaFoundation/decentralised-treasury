@@ -1290,6 +1290,10 @@ test(
       await cli([
         "vote-reducer",
         "trace-run-batch",
+        "--staking-ledger-to-voting-ledger-proof-path",
+        stakingProofPath,
+        "--treasury-owner-public-key",
+        treasuryOwner.publicKey,
         "--lifecycle-id",
         LIFECYCLE_ID,
         "--vote-actions-path",
@@ -1311,6 +1315,8 @@ test(
           await cli([
             "vote-reducer",
             "prove-run-batch",
+            "--vote-actions-path",
+            actionsPath,
             "--lifecycle-id",
             LIFECYCLE_ID,
             ...redisArgs,
@@ -1318,6 +1324,8 @@ test(
           await cli([
             "vote-reducer",
             "prove-merge",
+            "--vote-actions-path",
+            actionsPath,
             "--lifecycle-id",
             LIFECYCLE_ID,
             ...redisArgs,

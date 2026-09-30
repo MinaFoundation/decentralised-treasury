@@ -1,4 +1,8 @@
 import { Command, Option } from "commander";
+import { Field, PublicKey, TokenId } from "o1js";
+import { StakingLedgerToVotingLedgerProof } from "@repo/sdk/src/provable/staking-ledger-to-voting-ledger.js";
+import { TreasuryOwnerSmartContract } from "@repo/sdk/src/provable/contracts/treasury-owner.js";
+import { SqliteTreasuryOwnerService } from "@repo/sdk/src/services/sqlite/sqlite-treasury-owner-service.js";
 import {
   VoteAction,
   VOTE_ACTION_BATCH_SIZE,
@@ -17,6 +21,7 @@ import {
 
 interface BaseOptions {
   lifecycleId: string;
+  voteActionsPath: string;
   redisHost?: string;
   redisPort?: number;
   queueName?: string;
@@ -69,6 +74,11 @@ function resolveRedisConfig({
 async function readVoteActions(
   voteActionsPath: string,
 ): Promise<VoteActionsFilePayload> {
+  if (!voteActionsPath) {
+    throw new Error(
+      "Select the Proposal with --vote-actions-path or VOTE_ACTIONS_PATH.",
+    );
+  }
   const file = await readFile(voteActionsPath, "utf8");
   const parsed = JSON.parse(file) as unknown;
   const parsedObject =
@@ -92,6 +102,17 @@ async function readVoteActions(
   if (!voteActionsInput) {
     throw new Error(
       "Invalid vote actions JSON. Expected an array or an object with a voteActions array.",
+    );
+  }
+
+  if (
+    typeof parsedObject?.proposalPublicKey !== "string" ||
+    !parsedObject.proposalPublicKey ||
+    typeof parsedObject?.proposalTokenId !== "string" ||
+    !parsedObject.proposalTokenId
+  ) {
+    throw new Error(
+      "Vote-actions JSON must include proposalPublicKey and proposalTokenId. Use proposal fetch-actions to export it.",
     );
   }
 
@@ -152,8 +173,15 @@ export async function compile(options: {
 export async function traceRunBatch({
   lifecycleId,
   voteActionsPath,
-}: Pick<BaseOptions, "lifecycleId"> & {
-  voteActionsPath: string;
+  stakingLedgerToVotingLedgerProofPath,
+  treasuryOwnerPublicKey,
+  minaNodeUrl,
+  network,
+}: Pick<BaseOptions, "lifecycleId" | "voteActionsPath"> & {
+  stakingLedgerToVotingLedgerProofPath: string;
+  treasuryOwnerPublicKey: PublicKey;
+  minaNodeUrl: string;
+  network: TreasuryNetwork;
 }) {
   const startedAt = Date.now();
   const voteActionsPayload = await readVoteActions(voteActionsPath);
@@ -167,9 +195,42 @@ export async function traceRunBatch({
       "trace-run-batch requires vote-actions JSON to include proposalPublicKey, proposalTokenId, and actionStateHistoryTarget",
     );
   }
+  if (!stakingLedgerToVotingLedgerProofPath) {
+    throw new Error(
+      "Supply --staking-ledger-to-voting-ledger-proof-path or STAKING_LEDGER_TO_VOTING_LEDGER_PROOF_PATH.",
+    );
+  }
+  const stakingProof = await StakingLedgerToVotingLedgerProof.fromJSON(
+    JSON.parse(await readFile(stakingLedgerToVotingLedgerProofPath, "utf8")),
+  );
+  const tokenId = /^\d+$/.test(voteActionsPayload.proposalTokenId)
+    ? Field(voteActionsPayload.proposalTokenId)
+    : TokenId.fromBase58(voteActionsPayload.proposalTokenId);
+  if (
+    !tokenId
+      .equals(
+        new TreasuryOwnerSmartContract(treasuryOwnerPublicKey).deriveTokenId(),
+      )
+      .toBoolean()
+  ) {
+    throw new Error(
+      "The vote-actions Proposal token does not match the Treasury Owner.",
+    );
+  }
+  configureMinaNetwork(minaNodeUrl, network);
+  const proposal = await new SqliteTreasuryOwnerService().getProposalState({
+    minaNodeUrl,
+    treasuryOwnerPublicKey,
+    proposalPublicKey: PublicKey.fromBase58(
+      voteActionsPayload.proposalPublicKey,
+    ),
+  });
+  if (proposal.lifecycleId !== lifecycleId) {
+    throw new Error("The selected lifecycle does not match the Proposal.");
+  }
   let tracedCount = 0;
   logger.info(
-    `[vote-reducer:trace-run-batch] starting (lifecycleId=${lifecycleId}, voteActions=${voteActions.length}, batchSize=${VOTE_ACTION_BATCH_SIZE})`,
+    `[vote-reducer:trace-run-batch] starting (lifecycleId=${lifecycleId}, proposal=${voteActionsPayload.proposalPublicKey}, voteActions=${voteActions.length}, batchSize=${VOTE_ACTION_BATCH_SIZE})`,
   );
   const service = new SqliteVoteReducerService({
     lifecycleId,
@@ -179,6 +240,17 @@ export async function traceRunBatch({
   });
   try {
     await service.start();
+    const proofsEnabled = process.env.PROOFS_ENABLED !== "false";
+    await service.validateVotingLedgerProof(
+      stakingProof,
+      Field(proposal.stakingEpochDataLedgerHash),
+      proofsEnabled,
+    );
+    if (!proofsEnabled) {
+      logger.warn(
+        "PROOFS_ENABLED=false: skipped cryptographic staking-proof verification. Use this mode only for local tests.",
+      );
+    }
     await service.traceRunBatch(voteActions, (index) => {
       tracedCount += 1;
       logger.info(
@@ -195,6 +267,7 @@ export async function traceRunBatch({
 
 export async function proveRunBatch({
   lifecycleId,
+  voteActionsPath,
   redisHost,
   redisPort,
   queueName,
@@ -203,12 +276,15 @@ export async function proveRunBatch({
 }: BaseOptions & { startIndex?: number; endIndex?: number }) {
   const startedAt = Date.now();
   let provedCount = 0;
+  const proposal = await readVoteActions(voteActionsPath);
   const redisConfig = resolveRedisConfig({ redisHost, redisPort, queueName });
   logger.info(
-    `[vote-reducer:prove-run-batch] starting (lifecycleId=${lifecycleId}, redis=${redisConfig.redisHost}:${redisConfig.redisPort}, queueName=${redisConfig.queueName ?? `vote-reducer-${lifecycleId}`}, startIndex=${String(startIndex ?? 0)}, endIndex=${String(endIndex ?? Infinity)})`,
+    `[vote-reducer:prove-run-batch] starting (lifecycleId=${lifecycleId}, proposal=${proposal.proposalPublicKey}, redis=${redisConfig.redisHost}:${redisConfig.redisPort}, queueName=${redisConfig.queueName ?? `vote-reducer-${lifecycleId}`}, startIndex=${String(startIndex ?? 0)}, endIndex=${String(endIndex ?? Infinity)})`,
   );
   const service = new SqliteVoteReducerService({
     lifecycleId,
+    proposalPublicKey: proposal.proposalPublicKey,
+    proposalTokenId: proposal.proposalTokenId,
     redisConnection: {
       host: redisConfig.redisHost,
       port: redisConfig.redisPort,
@@ -233,6 +309,7 @@ export async function proveRunBatch({
 
 export async function proveMerge({
   lifecycleId,
+  voteActionsPath,
   redisHost,
   redisPort,
   queueName,
@@ -240,12 +317,15 @@ export async function proveMerge({
 }: BaseOptions & { proofOutputPath?: string }) {
   const startedAt = Date.now();
   let mergeCount = 0;
+  const proposal = await readVoteActions(voteActionsPath);
   const redisConfig = resolveRedisConfig({ redisHost, redisPort, queueName });
   logger.info(
-    `[vote-reducer:prove-merge] starting (lifecycleId=${lifecycleId}, redis=${redisConfig.redisHost}:${redisConfig.redisPort}, queueName=${redisConfig.queueName ?? `vote-reducer-${lifecycleId}`})`,
+    `[vote-reducer:prove-merge] starting (lifecycleId=${lifecycleId}, proposal=${proposal.proposalPublicKey}, redis=${redisConfig.redisHost}:${redisConfig.redisPort}, queueName=${redisConfig.queueName ?? `vote-reducer-${lifecycleId}`})`,
   );
   const service = new SqliteVoteReducerService({
     lifecycleId,
+    proposalPublicKey: proposal.proposalPublicKey,
+    proposalTokenId: proposal.proposalTokenId,
     redisConnection: {
       host: redisConfig.redisHost,
       port: redisConfig.redisPort,
@@ -282,10 +362,16 @@ export async function proveMerge({
 
 export async function clearState({
   lifecycleId,
-}: Pick<BaseOptions, "lifecycleId">) {
-  logger.info(`[vote-reducer:clear-state] starting (lifecycleId=${lifecycleId})`);
+  voteActionsPath,
+}: Pick<BaseOptions, "lifecycleId" | "voteActionsPath">) {
+  const proposal = await readVoteActions(voteActionsPath);
+  logger.info(
+    `[vote-reducer:clear-state] starting (lifecycleId=${lifecycleId}, proposal=${proposal.proposalPublicKey})`,
+  );
   const service = new SqliteVoteReducerService({
     lifecycleId,
+    proposalPublicKey: proposal.proposalPublicKey,
+    proposalTokenId: proposal.proposalTokenId,
   });
   try {
     await service.clearPersistentState();
@@ -318,11 +404,37 @@ export default function voteReducerCommandFactory(program: Command) {
     .addOption(
       new Option(
         "--vote-actions-path <vote-actions-path>",
-        "Path to a JSON array (or { voteActions: [] }) of vote actions",
+        "Proposal actions JSON from proposal fetch-actions",
       )
         .env("VOTE_ACTIONS_PATH")
         .makeOptionMandatory(),
     )
+    .addOption(
+      new Option(
+        "--staking-ledger-to-voting-ledger-proof-path <path>",
+        "Exhausted staking-to-voting proof JSON for validation before tracing",
+      )
+        .env("STAKING_LEDGER_TO_VOTING_LEDGER_PROOF_PATH")
+        .makeOptionMandatory(),
+    )
+    .addOption(
+      new Option(
+        "--treasury-owner-public-key <public-key>",
+        "Treasury Owner of the Proposal",
+      )
+        .env("TREASURY_OWNER_PUBLIC_KEY")
+        .argParser((value) => PublicKey.fromBase58(value))
+        .makeOptionMandatory(),
+    )
+    .addOption(
+      new Option(
+        "--mina-node-url <url>",
+        "Mina GraphQL URL for the Proposal snapshot",
+      )
+        .env("MINA_NODE_URL")
+        .default("http://127.0.0.1:8080/graphql"),
+    )
+    .addOption(minaNetworkOption())
     .action(traceRunBatch);
 
   command
@@ -330,6 +442,14 @@ export default function voteReducerCommandFactory(program: Command) {
     .addOption(
       new Option("--lifecycle-id <lifecycle-id>", "Lifecycle ID")
         .env("LIFECYCLE_ID")
+        .makeOptionMandatory(),
+    )
+    .addOption(
+      new Option(
+        "--vote-actions-path <vote-actions-path>",
+        "Proposal actions JSON from proposal fetch-actions",
+      )
+        .env("VOTE_ACTIONS_PATH")
         .makeOptionMandatory(),
     )
     .addOption(
@@ -363,6 +483,14 @@ export default function voteReducerCommandFactory(program: Command) {
         .makeOptionMandatory(),
     )
     .addOption(
+      new Option(
+        "--vote-actions-path <vote-actions-path>",
+        "Proposal actions JSON from proposal fetch-actions",
+      )
+        .env("VOTE_ACTIONS_PATH")
+        .makeOptionMandatory(),
+    )
+    .addOption(
       new Option("--redis-host <redis-host>", "Redis host").env("REDIS_HOST"),
     )
     .addOption(
@@ -384,11 +512,19 @@ export default function voteReducerCommandFactory(program: Command) {
   command
     .command("clear-state")
     .description(
-      "Clear vote-reducer traces/proofs/nullifier state while preserving voting ledger data",
+      "Clear the selected Proposal reducer state while preserving other Proposals and voting ledger data",
     )
     .addOption(
       new Option("--lifecycle-id <lifecycle-id>", "Lifecycle ID")
         .env("LIFECYCLE_ID")
+        .makeOptionMandatory(),
+    )
+    .addOption(
+      new Option(
+        "--vote-actions-path <vote-actions-path>",
+        "Proposal actions JSON from proposal fetch-actions",
+      )
+        .env("VOTE_ACTIONS_PATH")
         .makeOptionMandatory(),
     )
     .action(clearState);

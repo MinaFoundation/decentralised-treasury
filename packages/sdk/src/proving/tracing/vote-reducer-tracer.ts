@@ -202,6 +202,16 @@ export class VoteReducerTracer {
     voteActions: VoteAction[],
     onTraceComplete?: (index: number, trace: VoteReducerRunBatchTrace) => void,
   ) {
+    const fromNullifierRoot = await this.nullifierLedger.getRoot();
+    const emptyRoot = this.nullifierLedger.merkleTree.zeroes.at(-1)!;
+    if (
+      !fromNullifierRoot.equals(emptyRoot).toBoolean() ||
+      (await this.traceStorage.getTrace(0))
+    ) {
+      throw new Error(
+        "Proposal reducer state already exists. Clear this Proposal's state before retracing.",
+      );
+    }
     const recordingVotingLedger = new RecordingVotingLedger(this.votingLedger);
     const recordingNullifierLedger = new RecordingNullifierLedger(
       this.nullifierLedger,
@@ -216,7 +226,7 @@ export class VoteReducerTracer {
     let currentPublicInput: VoteReducerPublicInput = {
       fromActionsHash: Reducer.initialActionState,
       votingLedgerRoot: await this.votingLedger.getRoot(),
-      fromNullifierRoot: await this.nullifierLedger.getRoot(),
+      fromNullifierRoot,
       actionStateHistoryTarget,
     };
     let publicOutput: VoteReducerPublicOutput | undefined;

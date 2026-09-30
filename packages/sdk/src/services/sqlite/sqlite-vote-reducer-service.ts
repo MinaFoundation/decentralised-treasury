@@ -1,10 +1,17 @@
 import { KeyvSqlite } from "@keyv/sqlite";
+import { createHash } from "node:crypto";
 import { mkdirSync } from "node:fs";
 import { dirname } from "node:path";
-import { Field, Reducer, TokenId, type Proof } from "o1js";
+import { Field, PublicKey, Reducer, TokenId, type Proof } from "o1js";
 import { InMemoryVotingLedger } from "../../ledgers/voting-ledger/in-memory-voting-ledger.js";
 import { InMemoryNullifierLedger } from "../../ledgers/nullifier-ledger/in-memory-nullifier-ledger.js";
 import { ReplayableVotingLedger } from "../../ledgers/voting-ledger/replayable-voting-ledger.js";
+import { ReplayableStakingLedger } from "../../ledgers/staking-ledger/replayable-staking-ledger.js";
+import {
+  StakingLedgerToVotingLedger,
+  StakingLedgerToVotingLedgerProof,
+  stakingLedgerToVotingLedgerContext,
+} from "../../provable/staking-ledger-to-voting-ledger.js";
 import { ReplayableNullifierLedger } from "../../ledgers/nullifier-ledger/replayable-nullifier-ledger.js";
 import {
   type SideLoadedVoteReducerProof,
@@ -60,6 +67,10 @@ export class SqliteVoteReducerService implements VoteReducerService {
 
   public async start(): Promise<void> {
     const { lifecycleId } = this.options;
+    const scopeId =
+      this.options.proposalPublicKey || this.options.proposalTokenId
+        ? getVoteReducerScope(this.options)
+        : undefined;
     const sqlitePath = getSqliteDbPath(lifecycleId);
     mkdirSync(dirname(sqlitePath), { recursive: true });
     this.sqliteStore = new KeyvSqlite({ uri: sqlitePath });
@@ -72,8 +83,11 @@ export class SqliteVoteReducerService implements VoteReducerService {
       votingLedgerStorage.merkleTreeStorage,
     );
 
+    // Lifecycle-only callers read vote weights without opening reducer state.
+    if (!scopeId) return;
+
     const nullifierLedgerStorage = createInMemoryNullifierLedgerStorage(
-      createSqliteNullifierLedgerStorage(lifecycleId, this.sqliteStore),
+      createSqliteNullifierLedgerStorage(scopeId, this.sqliteStore),
     );
     this.nullifierLedger = new InMemoryNullifierLedger(
       nullifierLedgerStorage.nullifierStorage,
@@ -81,11 +95,11 @@ export class SqliteVoteReducerService implements VoteReducerService {
     );
 
     this.traceStorage = createSqliteVoteReducerRunBatchTraceStorage(
-      lifecycleId,
+      scopeId,
       this.sqliteStore,
     );
     this.proofStorage = createSqliteVoteReducerProofStorage(
-      lifecycleId,
+      scopeId,
       this.sqliteStore,
     );
     this.traceBatchWriter = createSqliteBatchWriter(this.sqliteStore);
@@ -107,18 +121,20 @@ export class SqliteVoteReducerService implements VoteReducerService {
 
   public async clearPersistentState(): Promise<void> {
     const { lifecycleId } = this.options;
-    const sqliteStore = this.sqliteStore ?? new KeyvSqlite({ uri: getSqliteDbPath(lifecycleId) });
+    const scopeId = getVoteReducerScope(this.options);
+    const sqliteStore =
+      this.sqliteStore ?? new KeyvSqlite({ uri: getSqliteDbPath(lifecycleId) });
     const shouldDisconnectStore = !this.sqliteStore;
     const traceStorage = createSqliteVoteReducerRunBatchTraceStorage(
-      lifecycleId,
+      scopeId,
       sqliteStore,
     );
     const proofStorage = createSqliteVoteReducerProofStorage(
-      lifecycleId,
+      scopeId,
       sqliteStore,
     );
     const nullifierLedgerStorage = createSqliteNullifierLedgerStorage(
-      lifecycleId,
+      scopeId,
       sqliteStore,
     );
 
@@ -127,6 +143,9 @@ export class SqliteVoteReducerService implements VoteReducerService {
       await proofStorage.clear();
       await nullifierLedgerStorage.nullifierStorage.clear();
       await nullifierLedgerStorage.merkleTreeStorage.clear();
+      this.nullifierLedger?.clearEntries();
+      this.traceStorage?.clearEntries();
+      this.proofStorage?.clearEntries();
     } finally {
       await traceStorage.close();
       await proofStorage.close();
@@ -144,8 +163,68 @@ export class SqliteVoteReducerService implements VoteReducerService {
         "SqliteVoteReducerService.start() must be called before getVoteWeight()",
       );
     }
-    const votingAccount = await this.votingLedger.getVotingAccount(voterPublicKey);
+    const votingAccount =
+      await this.votingLedger.getVotingAccount(voterPublicKey);
     return votingAccount.balance.toBigInt();
+  }
+
+  /** Validate the supplied proof before recording any reducer state. */
+  public async validateVotingLedgerProof(
+    proof: StakingLedgerToVotingLedgerProof,
+    expectedStakingLedgerRoot: Field,
+    proofsEnabled = true,
+  ): Promise<void> {
+    if (!this.votingLedger) {
+      throw new Error(
+        "Start the vote reducer service before validating the voting ledger proof.",
+      );
+    }
+    if (!proof.publicOutput.exhausted.toBoolean()) {
+      throw new Error("The staking-to-voting proof must be exhausted.");
+    }
+    if (proof.publicInput.index.toBigInt() !== 0n) {
+      throw new Error("The staking-to-voting proof must start at index 0.");
+    }
+    if (
+      !proof.publicInput.votingLedgerRoot
+        .equals(this.votingLedger.merkleTree.zeroes.at(-1)!)
+        .toBoolean()
+    ) {
+      throw new Error(
+        "The staking-to-voting proof must start with an empty voting ledger.",
+      );
+    }
+    if (
+      !proof.publicInput.stakingLedgerRoot
+        .equals(expectedStakingLedgerRoot)
+        .toBoolean()
+    ) {
+      throw new Error(
+        "The staking-to-voting proof does not match the Proposal snapshot.",
+      );
+    }
+    if (
+      !(await this.votingLedger.getRoot())
+        .equals(proof.publicOutput.votingLedgerRoot)
+        .toBoolean()
+    ) {
+      throw new Error(
+        "The local voting ledger root does not match the staking-to-voting proof.",
+      );
+    }
+    if (proofsEnabled) {
+      // Derive the trusted verification key from this deployment's local program.
+      stakingLedgerToVotingLedgerContext.set({
+        stakingLedger: new ReplayableStakingLedger({}),
+        votingLedger: new ReplayableVotingLedger({}, {}),
+      });
+      await StakingLedgerToVotingLedger.compile({ proofsEnabled: true });
+      if (!(await StakingLedgerToVotingLedger.verify(proof))) {
+        throw new Error(
+          "The staking-to-voting proof failed cryptographic verification.",
+        );
+      }
+    }
   }
 
   public async compile(options: CompileVoteReducerOptions = {}): Promise<void> {
@@ -221,7 +300,9 @@ export class SqliteVoteReducerService implements VoteReducerService {
 
     const actionBlocks = payload.data?.actions ?? [];
     const voteActions = actionBlocks
-      .flatMap((actionBlock) => normalizeArchiveActionBlock(actionBlock.actionData))
+      .flatMap((actionBlock) =>
+        normalizeArchiveActionBlock(actionBlock.actionData),
+      )
       .map((actionFields) => actionFields.map((field) => Field(field)))
       .map((actionFields) => {
         const isDummyAction = actionFields.every((field) =>
@@ -246,7 +327,16 @@ export class SqliteVoteReducerService implements VoteReducerService {
     voteActions: VoteAction[],
     onTraceComplete?: (index: number, trace: VoteReducerRunBatchTrace) => void,
   ): Promise<void> {
+    getVoteReducerScope(this.options);
     const tracer = this.getTracer();
+    if (
+      (await this.proofStorage!.count()) ||
+      (await this.proofStorage!.mergeCount())
+    ) {
+      throw new Error(
+        "Proposal reducer state already exists. Use vote-reducer clear-state with this Proposal's actions file before retracing.",
+      );
+    }
     await tracer.runBatch(voteActions, onTraceComplete);
   }
 
@@ -263,7 +353,10 @@ export class SqliteVoteReducerService implements VoteReducerService {
   }
 
   public async proveMerge(
-    onMergeComplete?: (index: number, proof: SideLoadedVoteReducerProof) => void,
+    onMergeComplete?: (
+      index: number,
+      proof: SideLoadedVoteReducerProof,
+    ) => void,
   ): Promise<SideLoadedVoteReducerProof> {
     const prover = this.getOrCreateProver();
     return await prover.merge(onMergeComplete);
@@ -284,6 +377,7 @@ export class SqliteVoteReducerService implements VoteReducerService {
     }
 
     if (!this.traceStorage || !this.proofStorage || !this.proofBatchWriter) {
+      if (this.sqliteStore) getVoteReducerScope(this.options);
       throw new Error(
         "SqliteVoteReducerService.start() must be called before proving",
       );
@@ -336,6 +430,35 @@ export class SqliteVoteReducerService implements VoteReducerService {
   }
 }
 
+/** Local reducer identity. Voting-ledger storage remains scoped to the lifecycle. */
+export function getVoteReducerScope({
+  lifecycleId,
+  proposalPublicKey,
+  proposalTokenId,
+}: Pick<
+  VoteReducerServiceOptions,
+  "lifecycleId" | "proposalPublicKey" | "proposalTokenId"
+>): string {
+  if (!proposalPublicKey || !proposalTokenId) {
+    throw new Error(
+      "Vote reducer state requires proposalPublicKey and proposalTokenId. Select the Proposal's vote-actions file.",
+    );
+  }
+  const publicKey = PublicKey.fromBase58(proposalPublicKey).toBase58();
+  const tokenId = /^\d+$/.test(proposalTokenId)
+    ? Field(proposalTokenId)
+    : TokenId.fromBase58(proposalTokenId);
+  if (
+    /^\d+$/.test(proposalTokenId) &&
+    tokenId.toBigInt() !== BigInt(proposalTokenId)
+  ) {
+    throw new Error("Invalid Proposal token ID");
+  }
+  return `vote-v2-${createHash("sha256")
+    .update(JSON.stringify([lifecycleId, publicKey, tokenId.toString()]))
+    .digest("hex")}`;
+}
+
 interface ArchiveActionBlock {
   actionState?: Partial<VoteReducerActionStateHistoryTargetSnapshot> | null;
   actionData?: ArchiveActionData[];
@@ -350,7 +473,9 @@ interface ArchiveActionData {
   } | null;
 }
 
-function normalizeArchiveActionBlock(actionData: ArchiveActionData[] = []): string[][] {
+function normalizeArchiveActionBlock(
+  actionData: ArchiveActionData[] = [],
+): string[][] {
   const sortedActionData = [...actionData];
 
   if (!sortedActionData[0]?.transactionInfo) {

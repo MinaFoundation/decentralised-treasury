@@ -451,78 +451,26 @@ test("vote reducer", async (t) => {
       },
     );
 
-    await t.test(
-      "should ignore out-of-range vote values",
-      { skip: true },
-      async () => {
-        const action = new VoteAction({
-          vote: Field(99) as Vote,
-          publicKey: context.testAccounts[1].pk,
-        });
-        const actions = [
-          action,
-          ...context.createDummyVoteActions(VOTE_ACTION_BATCH_SIZE),
-        ].slice(0, VOTE_ACTION_BATCH_SIZE);
-
-        const fromNullifierRoot = await context.nullifierLedger.getRoot();
-
-        const proof = await VoteReducer.reduceBatch(
-          {
-            fromActionsHash: Reducer.initialActionState,
-            votingLedgerRoot: await context.votingLedger.getRoot(),
-            fromNullifierRoot,
-            actionStateHistoryTarget:
-              context.buildActionStateHistoryTarget(actions),
-          },
-          actions,
-        );
-
-        const expectedToActionsHash = appendActionToHashList(
-          Reducer.initialActionState,
-          VoteAction.toFields(action),
-        );
-
-        assert(
-          proof.proof.publicOutput.toActionsHash
-            .equals(expectedToActionsHash)
-            .toBoolean(),
-          "expected out-of-range vote to update actions hash",
-        );
-
-        const expectedNullifierLedger =
-          await context.createExpectedNullifierLedger([action.publicKey]);
-        await expectedNullifierLedger.setLeaf(
-          action.publicKey.toBase58(),
-          Bool(true),
-        );
-        const expectedNullifierRoot = await expectedNullifierLedger.getRoot();
-
-        assert(
-          proof.proof.publicOutput.toNullifierRoot
-            .equals(expectedNullifierRoot)
-            .toBoolean(),
-          "expected nullifier root to update for out-of-range vote",
-        );
-
-        assert.equal(
-          proof.proof.publicOutput.yay.toBigInt(),
-          0n,
-          "expected yay total to be zero",
-        );
-        assert.equal(
-          proof.proof.publicOutput.nay.toBigInt(),
-          0n,
-          "expected nay total to be zero",
-        );
-        assert.equal(
-          proof.proof.publicOutput.abstain.toBigInt(),
-          0n,
-          "expected abstain total to be zero",
-        );
-
-        await expectedNullifierLedger.close();
-      },
-    );
+    await t.test("rejects out-of-range vote values", async () => {
+      const action = new VoteAction({
+        vote: new Vote(99),
+        publicKey: context.testAccounts[1].pk,
+      });
+      const actions = [
+        action,
+        ...context.createDummyVoteActions(VOTE_ACTION_BATCH_SIZE),
+      ].slice(0, VOTE_ACTION_BATCH_SIZE);
+      const input = {
+        fromActionsHash: Reducer.initialActionState,
+        votingLedgerRoot: await context.votingLedger.getRoot(),
+        fromNullifierRoot: await context.nullifierLedger.getRoot(),
+        actionStateHistoryTarget: context.buildActionStateHistoryTarget(actions),
+      };
+      await assert.rejects(
+        () => VoteReducer.reduceBatch(input, actions),
+        /Invalid vote/,
+      );
+    });
   });
 
   await t.test("cross-batch invariants", async (t) => {
@@ -709,7 +657,7 @@ test("vote reducer", async (t) => {
         );
       });
 
-      await t.test("should ignore actions beyond batch size", async () => {
+      await t.test("rejects oversized proof inputs; raw proof-off execution consumes one batch", async () => {
         const actions = [
           new VoteAction({
             vote: Vote.YAY,
@@ -741,15 +689,21 @@ test("vote reducer", async (t) => {
           actions.slice(0, VOTE_ACTION_BATCH_SIZE),
         );
 
-        const proof = await VoteReducer.reduceBatch(
-          {
-            fromActionsHash: Reducer.initialActionState,
-            votingLedgerRoot: await context.votingLedger.getRoot(),
-            fromNullifierRoot: await context.nullifierLedger.getRoot(),
-            actionStateHistoryTarget,
-          },
-          actions,
-        );
+        const input = {
+          fromActionsHash: Reducer.initialActionState,
+          votingLedgerRoot: await context.votingLedger.getRoot(),
+          fromNullifierRoot: await context.nullifierLedger.getRoot(),
+          actionStateHistoryTarget,
+        };
+        if (process.env.PROOFS_ENABLED === "true") {
+          // o1js validates the fixed-size private input before proving.
+          await assert.rejects(
+            () => VoteReducer.reduceBatch(input, actions),
+            /Expected witnessed values of length/,
+          );
+          return;
+        }
+        const proof = await VoteReducer.reduceBatch(input, actions);
 
         let expectedToActionsHash = Reducer.initialActionState;
         for (const action of actions.slice(0, VOTE_ACTION_BATCH_SIZE)) {
