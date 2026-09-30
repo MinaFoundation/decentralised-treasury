@@ -162,33 +162,26 @@ test(
     );
 
     await t.test(
-      "SC-OWNER-012 characterizes DUMMY with a real voter key",
+      "audit #05 rejects DUMMY votes without changing actions",
       async () => {
         const fixture = await createOwnerProposalFixture();
         const voter = fixture.blockchain.testAccounts[1]!;
-
-        await sendTransaction(voter, async () => {
-          await fixture.owner.vote(
-            fixture.proposal.address,
-            voter.key.toPublicKey(),
-            Vote.DUMMY,
-          );
-        });
-
-        const actions = await Mina.getActions(
-          fixture.proposal.address,
-          {},
-          fixture.proposalTokenId,
+        const before = currentActionState(fixture.blockchain, fixture.proposal);
+        await assert.rejects(
+          () =>
+            sendTransaction(voter, async () => {
+              await fixture.owner.vote(
+                fixture.proposal.address,
+                voter.key.toPublicKey(),
+                Vote.DUMMY,
+              );
+            }),
+          /DUMMY votes are reserved for reducer padding/,
         );
-        const dispatched = VoteAction.fromFields(
-          actions[0]!.actions[0]!.map((value) => Field(value)),
-        );
-        assert.equal(dispatched.vote.toBigInt(), Vote.DUMMY.toBigInt());
         assert.equal(
-          dispatched.publicKey.toBase58(),
-          voter.key.toPublicKey().toBase58(),
+          currentActionState(fixture.blockchain, fixture.proposal),
+          before,
         );
-        assert.equal(VoteAction.isDummy(dispatched).toBoolean(), false);
       },
     );
 

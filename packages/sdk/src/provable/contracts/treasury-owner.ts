@@ -373,6 +373,9 @@ export class TreasuryOwnerSmartContract extends TokenContract {
     );
 
     Vote.assertValid(vote);
+    vote
+      .equals(Vote.DUMMY)
+      .assertFalse("DUMMY votes are reserved for reducer padding");
 
     await proposal.vote({
       vote,
