@@ -2,7 +2,8 @@
 releases:
   - name: mina-staking-ledgers-provider
     namespace: devnet
-    chart: git::https://github.com/MinaFoundation/helm-charts.git@mina-staking-ledgers-provider?ref=mina-staking-ledgers-provider-0.1.1
+    # Immutable source commit from PR 346. Review, merge, and a release tag are pending.
+    chart: git::https://github.com/MinaFoundation/helm-charts.git@mina-staking-ledgers-provider?ref=c648c68ab8ee1f1cb2a88e91c022411aafcb82f2
     values:
       # The treasury chart defaults to exactly this Service name.
       - fullnameOverride: mina-staking-ledgers-provider
