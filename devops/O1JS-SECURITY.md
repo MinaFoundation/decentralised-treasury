@@ -52,8 +52,6 @@ The nested-update regression includes two nested calls, a voter signature, and e
 It must prove and include the transaction with both child proof authorizations present.
 Negative proof tests can print an expected proving error while the test passes.
 
-Use [the remediation record](AUDIT-REMEDIATION.md) for the complete finding inventory and final validation results.
-
 ## Deployment
 
 Recompile all affected contracts and generate matching verification keys.
