@@ -12,6 +12,7 @@ import { SideLoadedStakingLedgerToVotingLedgerProof } from "@repo/sdk/src/provab
 import { TreasuryOwnerSmartContract } from "@repo/sdk/src/provable/contracts/treasury-owner.js";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname } from "node:path";
+import { downloadTallyInputs } from "./proposal-tally-download.js";
 import {
   configureMinaNetwork,
   minaNetworkOption,
@@ -419,6 +420,51 @@ export default function proposalCommandFactory(program: Command) {
       "after",
       "\nTip: if you are waiting for a lifecycle period, run `treasury-owner read-state` and check `currentLifecyclePeriod`.",
     );
+
+  command
+    .command("download-tally-inputs")
+    .description(
+      "Download and check backend artifacts; does not submit a transaction",
+    )
+    .addOption(
+      new Option(
+        "--backend-url <url>",
+        "Main Treasury host serving /sqlite/ and /proofs/",
+      ).makeOptionMandatory(),
+    )
+    .addOption(
+      new Option(
+        "--output-directory <path>",
+        "New directory for downloaded inputs and .env",
+      ).makeOptionMandatory(),
+    )
+    .addOption(
+      new Option("--mina-node-url <mina-node-url>", "Mina GraphQL URL")
+        .env("MINA_NODE_URL")
+        .default("http://127.0.0.1:8080/graphql"),
+    )
+    .addOption(minaNetworkOption())
+    .addOption(
+      new Option(
+        "--treasury-owner-public-key <treasury-owner-public-key>",
+        "Treasury owner public key",
+      )
+        .env("TREASURY_OWNER_PUBLIC_KEY")
+        .argParser(parsePublicKey)
+        .makeOptionMandatory(),
+    )
+    .addOption(
+      new Option(
+        "--proposal-public-key <proposal-public-key>",
+        "Proposal public key",
+      )
+        .env("PROPOSAL_PUBLIC_KEY")
+        .argParser(parsePublicKey)
+        .makeOptionMandatory(),
+    )
+    .action(async (options) => {
+      await downloadTallyInputs(options);
+    });
 
   addTransactionSignerOptions(
     command
