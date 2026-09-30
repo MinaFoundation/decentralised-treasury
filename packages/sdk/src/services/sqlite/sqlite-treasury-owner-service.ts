@@ -261,7 +261,6 @@ export class SqliteTreasuryOwnerService implements TreasuryOwnerService {
       treasuryDeployedAtSlot,
       withdrawalPermission = DEFAULT_TREASURY_OWNER_WITHDRAWAL_PERMISSION,
       multisigParticipantsPublicKeys,
-      allowDeployToExistingAccount,
       fee,
       nonce,
       memo,
@@ -312,15 +311,10 @@ export class SqliteTreasuryOwnerService implements TreasuryOwnerService {
         memo,
       },
       async () => {
-        if (!allowDeployToExistingAccount) {
-          AccountUpdate.fundNewAccount(senderPublicKey, 1);
-        }
+        AccountUpdate.fundNewAccount(senderPublicKey, 1);
         await treasuryOwner.deployWithWithdrawalPermission(
           withdrawalPermission,
         );
-        if (allowDeployToExistingAccount) {
-          treasuryOwner.account.isNew.requireNothing();
-        }
       },
     );
     const provedTreasuryOwnerTx = await treasuryOwnerTx.prove();

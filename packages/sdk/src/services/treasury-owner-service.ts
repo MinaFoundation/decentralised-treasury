@@ -37,7 +37,6 @@ export interface DeployTreasuryOwnerOptions {
   treasuryDeployedAtSlot: UInt32;
   withdrawalPermission?: TreasuryOwnerWithdrawalPermission;
   multisigParticipantsPublicKeys: PublicKey[];
-  allowDeployToExistingAccount?: boolean;
   fee?: UInt64;
   nonce?: number;
   memo?: string;

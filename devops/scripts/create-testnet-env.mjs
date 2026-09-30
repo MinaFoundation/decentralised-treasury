@@ -436,7 +436,6 @@ function buildCliEnvFile(options, roles) {
     formatEnvLine("TX_FEE", options.txFee),
     formatEnvLine("TX_WAIT", "true"),
     formatEnvLine("TX_MEMO", options.txMemo),
-    formatEnvLine("ALLOW_DEPLOY_TO_EXISTING_ACCOUNT", "false"),
     ...section("Sender account"),
     formatEnvLine("SENDER_PRIVATE_KEY", roles.sender.privateKey),
     ...section("Treasury owner zkApp account"),

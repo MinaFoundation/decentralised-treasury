@@ -69,7 +69,6 @@ interface DeployTreasuryOwnerCommandOptions {
   treasuryDeployedAtSlot: UInt32;
   withdrawalPermission: TreasuryOwnerWithdrawalPermission;
   multisigParticipantsPublicKeys: PublicKey[];
-  allowDeployToExistingAccount: boolean;
   fee?: UInt64;
   nonce?: number;
   memo?: string;
@@ -254,7 +253,7 @@ export async function deployTreasuryOwner(
   const treasuryOwnerPublicKey = treasuryOwner.publicKey.toBase58();
   const pauseControllerPublicKey = pauseController.publicKey.toBase58();
   logger.info(
-    `[treasury-owner:deploy] starting (minaNodeUrl=${options.minaNodeUrl}, sender=${senderPublicKey}, treasuryOwner=${treasuryOwnerPublicKey}, pauseController=${pauseControllerPublicKey}, treasuryDeployedAtSlot=${options.treasuryDeployedAtSlot.toString()}, withdrawalPermission=${options.withdrawalPermission}, multisigParticipants=${options.multisigParticipantsPublicKeys.length}, allowDeployToExistingAccount=${String(options.allowDeployToExistingAccount)}, wait=${String(options.wait)})`,
+    `[treasury-owner:deploy] starting (minaNodeUrl=${options.minaNodeUrl}, sender=${senderPublicKey}, treasuryOwner=${treasuryOwnerPublicKey}, pauseController=${pauseControllerPublicKey}, treasuryDeployedAtSlot=${options.treasuryDeployedAtSlot.toString()}, withdrawalPermission=${options.withdrawalPermission}, multisigParticipants=${options.multisigParticipantsPublicKeys.length}, wait=${String(options.wait)})`,
   );
 
   const { SqliteTreasuryOwnerService } =
@@ -288,7 +287,6 @@ export async function deployTreasuryOwner(
     treasuryDeployedAtSlot: options.treasuryDeployedAtSlot,
     withdrawalPermission: options.withdrawalPermission,
     multisigParticipantsPublicKeys: options.multisigParticipantsPublicKeys,
-    allowDeployToExistingAccount: options.allowDeployToExistingAccount,
     fee: options.fee,
     nonce: options.nonce,
     memo: options.memo,
@@ -513,15 +511,6 @@ export default function treasuryOwnerCommandFactory(program: Command) {
         .env("MULTISIG_PARTICIPANTS_PUBLIC_KEYS")
         .argParser(parsePublicKeys)
         .makeOptionMandatory(),
-    )
-    .addOption(
-      new Option(
-        "--allow-deploy-to-existing-account <allow-deploy-to-existing-account>",
-        "Disable deploy isNew precondition for treasury owner (unsafe for initial production deploy)",
-      )
-        .env("ALLOW_DEPLOY_TO_EXISTING_ACCOUNT")
-        .argParser(parseBooleanOption)
-        .default(false),
     )
     .addOption(
       new Option("--fee <fee>", "Transaction fee in nanomina")
