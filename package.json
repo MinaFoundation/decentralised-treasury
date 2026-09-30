@@ -62,7 +62,8 @@
     "test:o1js-security:browser": "node devops/test/o1js-browser-smoke.mjs",
     "test:o1js-uint128": "node --test devops/test/o1js-uint128-security.test.mjs",
     "test:o1js-uint128:proofs": "O1JS_SECURITY_PROOFS=true node --test --test-concurrency=1 devops/test/o1js-uint128-security-proof.test.mjs",
-    "test:o1js-uint96": "node --test devops/test/o1js-uint96-security.test.mjs"
+    "test:o1js-uint96": "node --test devops/test/o1js-uint96-security.test.mjs",
+    "test:o1js-uint96:proofs": "O1JS_SECURITY_PROOFS=true pnpm --dir packages/sdk exec node --loader ts-node/esm --test --test-concurrency=1 test/assurance/primitive/uint96-treasury-proof.test.ts"
   },
   "devDependencies": {
     "@changesets/changelog-github": "^0.5.1",

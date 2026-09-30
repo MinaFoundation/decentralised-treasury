@@ -7,7 +7,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import test from "node:test";
-import { LedgerHashBase58, Reducer, UInt128, UInt64 } from "o1js";
+import { LedgerHashBase58, Reducer, UInt64, UInt96 } from "o1js";
 import { RedisMemoryServer } from "redis-memory-server";
 import { KeyvSqlite } from "@keyv/sqlite";
 import { PersistentStakingLedger } from "@repo/sdk/src/ledgers/staking-ledger/persistent-staking-ledger.js";
@@ -685,8 +685,8 @@ test("validates the varied UInt64 ledger arithmetic and import boundary", async 
   assert.equal(REQUIRED_PARTICIPATION, "3689348814741910323");
   const acceptanceCriteria =
     TreasuryProposalSmartContract.calculateAcceptanceCriteria(
-      UInt128.from(PROPOSAL_AMOUNT),
-      UInt128.from(BALANCES.O),
+      UInt96.from(PROPOSAL_AMOUNT),
+      UInt96.from(BALANCES.O),
       UInt64.from(UINT64_MAX),
     );
   assert.equal(

@@ -2,7 +2,7 @@ import { Bool, Field, PublicKey } from "o1js";
 
 export const MAX_UINT32 = 4_294_967_295n;
 export const MAX_UINT64 = 18_446_744_073_709_551_615n;
-export const MAX_UINT128 = 340_282_366_920_938_463_463_374_607_431_768_211_455n;
+export const MAX_UINT96 = 79_228_162_514_264_337_593_543_950_335n;
 
 const UNSIGNED_DECIMAL_PATTERN = /^(0|[1-9]\d*)$/;
 
@@ -36,9 +36,9 @@ export function parseContractUInt64(value: unknown): string | null {
   return parsed.toString();
 }
 
-export function parseContractUInt128(value: unknown): string | null {
+export function parseContractUInt96(value: unknown): string | null {
   const parsed = parseUnsignedDecimal(value);
-  if (parsed === null || parsed > MAX_UINT128) {
+  if (parsed === null || parsed > MAX_UINT96) {
     return null;
   }
   return parsed.toString();
@@ -53,10 +53,10 @@ export function requireContractUInt64(value: bigint, label: string): bigint {
   return value;
 }
 
-export function requireContractUInt128(value: bigint, label: string): bigint {
-  if (value < 0n || value > MAX_UINT128) {
+export function requireContractUInt96(value: bigint, label: string): bigint {
+  if (value < 0n || value > MAX_UINT96) {
     throw new Error(
-      `[proposal-processor] ${label} must be in the UInt128 range`,
+      `[proposal-processor] ${label} must be in the UInt96 range`,
     );
   }
   return value;

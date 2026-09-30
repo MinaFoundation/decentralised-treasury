@@ -6,7 +6,7 @@ import {
   Mina,
   Reducer,
   TokenId,
-  UInt128,
+  UInt96,
   UInt32,
   UInt64,
   VerificationKey,
@@ -135,9 +135,9 @@ async function tallyThroughOwner(
 
 function exactThresholdWeights(): TallyWeights {
   const criteria = TreasuryProposalSmartContract.calculateAcceptanceCriteria(
-    UInt128.from(1_000_000_000),
-    UInt128.from(10_000_000_000),
-    UInt64.from(10_000_000_000),
+    UInt96.from(10_000_000_000),
+    UInt96.from(100_000_000_000),
+    UInt64.from(100_000_000_000),
   );
   const total = criteria.requiredParticipation.toBigInt();
   const approvalBp = criteria.requiredApprovalBp.toBigInt();
@@ -158,9 +158,9 @@ test(
       async () => {
         const required =
           TreasuryProposalSmartContract.calculateAcceptanceCriteria(
-            UInt128.from(1_000_000_000),
-            UInt128.from(10_000_000_000),
-            UInt64.from(10_000_000_000),
+            UInt96.from(10_000_000_000),
+            UInt96.from(100_000_000_000),
+            UInt64.from(100_000_000_000),
           ).requiredParticipation.toBigInt();
         const cases = [
           {

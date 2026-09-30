@@ -1,66 +1,62 @@
 /// <reference types="node" />
 import fs from "node:fs";
 import path from "node:path";
-import { UInt128, UInt64 } from "o1js";
+import { UInt64, UInt96 } from "o1js";
 import { TreasuryProposalSmartContract } from "../src/provable/contracts/treasury-proposal/treasury-proposal.js";
 import { BASIS_POINTS } from "../src/provable/contracts/treasury-constants.js";
 
 type ChartConfig = {
-    steps: number;
-    outputPath: string;
+  steps: number;
+  outputPath: string;
 };
 
 function parseArgs(): ChartConfig {
-    const args = new Map<string, string>();
-    for (const arg of process.argv.slice(2)) {
-        const [key, value] = arg.split("=");
-        if (key && value) args.set(key, value);
-    }
+  const args = new Map<string, string>();
+  for (const arg of process.argv.slice(2)) {
+    const [key, value] = arg.split("=");
+    if (key && value) args.set(key, value);
+  }
 
-    const steps = Number(args.get("--steps") ?? "100");
-    const outputPath =
-        args.get("--output") ??
-        path.resolve(process.cwd(), "thresholds-chart.svg");
+  const steps = Number(args.get("--steps") ?? "100");
+  const outputPath =
+    args.get("--output") ?? path.resolve(process.cwd(), "thresholds-chart.svg");
 
-    if (!Number.isFinite(steps) || steps <= 0) {
-        throw new Error("--steps must be a positive integer");
-    }
+  if (!Number.isFinite(steps) || steps <= 0) {
+    throw new Error("--steps must be a positive integer");
+  }
 
-    return { steps, outputPath };
+  return { steps, outputPath };
 }
 
 function formatSvg(
-    dataPoints: Array<{
-        ratioBp: number;
-        participationBp: number;
-        approvalBp: number;
-    }>
+  dataPoints: Array<{
+    ratioBp: number;
+    participationBp: number;
+    approvalBp: number;
+  }>,
 ) {
-    const width = 900;
-    const height = 500;
-    const margin = 60;
-    const plotWidth = width - margin * 2;
-    const plotHeight = height - margin * 2;
+  const width = 900;
+  const height = 500;
+  const margin = 60;
+  const plotWidth = width - margin * 2;
+  const plotHeight = height - margin * 2;
 
-    const scaleX = (bp: number) => margin + (bp / 10_000) * plotWidth;
-    const scaleY = (bp: number) =>
-        height - margin - (bp / 10_000) * plotHeight;
+  const scaleX = (bp: number) => margin + (bp / 10_000) * plotWidth;
+  const scaleY = (bp: number) => height - margin - (bp / 10_000) * plotHeight;
 
-    const participationPoints = dataPoints
-        .map(
-            ({ ratioBp, participationBp }) =>
-                `${scaleX(ratioBp).toFixed(2)},${scaleY(
-                    participationBp
-                ).toFixed(2)}`
-        )
-        .join(" ");
+  const participationPoints = dataPoints
+    .map(
+      ({ ratioBp, participationBp }) =>
+        `${scaleX(ratioBp).toFixed(2)},${scaleY(participationBp).toFixed(2)}`,
+    )
+    .join(" ");
 
-    const approvalPoints = dataPoints
-        .map(
-            ({ ratioBp, approvalBp }) =>
-                `${scaleX(ratioBp).toFixed(2)},${scaleY(approvalBp).toFixed(2)}`
-        )
-        .join(" ");
+  const approvalPoints = dataPoints
+    .map(
+      ({ ratioBp, approvalBp }) =>
+        `${scaleX(ratioBp).toFixed(2)},${scaleY(approvalBp).toFixed(2)}`,
+    )
+    .join(" ");
 
   const ticks = [0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100];
 
@@ -69,11 +65,11 @@ function formatSvg(
   <rect width="100%" height="100%" fill="#ffffff" />
   <g stroke="#e5e7eb" stroke-width="1">
     ${ticks
-            .map((p) => {
-                const y = scaleY(p * 100);
-                return `<line x1="${margin}" y1="${y}" x2="${width - margin}" y2="${y}" />`;
-            })
-            .join("")}
+      .map((p) => {
+        const y = scaleY(p * 100);
+        return `<line x1="${margin}" y1="${y}" x2="${width - margin}" y2="${y}" />`;
+      })
+      .join("")}
   </g>
   <g stroke="#111827" stroke-width="2">
     <line x1="${margin}" y1="${height - margin}" x2="${width - margin}" y2="${height - margin}" />
@@ -92,58 +88,58 @@ function formatSvg(
   </g>
   <g fill="#6b7280" font-size="11" font-family="Arial, sans-serif">
     ${ticks
-            .map((p) => {
-                const x = scaleX(p * 100);
-                const y = scaleY(p * 100);
-                return `
+      .map((p) => {
+        const x = scaleX(p * 100);
+        const y = scaleY(p * 100);
+        return `
           <text x="${x}" y="${height - margin + 18}" text-anchor="middle">${p}%</text>
           <text x="${margin - 10}" y="${y + 4}" text-anchor="end">${p}%</text>
         `;
-            })
-            .join("")}
+      })
+      .join("")}
   </g>
 </svg>
 `.trim();
 }
 
 function main() {
-    const config = parseArgs();
-    const treasuryBalance = UInt128.from(10_000);
-    const stakingEpochDataLedgerTotalCurrency = UInt64.from(10_000);
+  const config = parseArgs();
+  const treasuryBalance = UInt96.from(10_000);
+  const stakingEpochDataLedgerTotalCurrency = UInt64.from(10_000);
 
-    const dataPoints: Array<{
-        ratioBp: number;
-        participationBp: number;
-        approvalBp: number;
-    }> = [];
+  const dataPoints: Array<{
+    ratioBp: number;
+    participationBp: number;
+    approvalBp: number;
+  }> = [];
 
-    for (let i = 0; i <= config.steps; i += 1) {
-        const proposalAmount = treasuryBalance
-            .mul(UInt128.from(i))
-            .div(UInt128.from(config.steps));
-        const acceptanceCriteria =
-            TreasuryProposalSmartContract.calculateAcceptanceCriteria(
-            proposalAmount,
-            treasuryBalance,
-            stakingEpochDataLedgerTotalCurrency
-        );
-        const ratioBp = Math.floor((i * 10_000) / config.steps);
+  for (let i = 0; i <= config.steps; i += 1) {
+    const proposalAmount = treasuryBalance
+      .mul(UInt96.from(i))
+      .div(UInt96.from(config.steps));
+    const acceptanceCriteria =
+      TreasuryProposalSmartContract.calculateAcceptanceCriteria(
+        proposalAmount,
+        treasuryBalance,
+        stakingEpochDataLedgerTotalCurrency,
+      );
+    const ratioBp = Math.floor((i * 10_000) / config.steps);
 
-        dataPoints.push({
-            ratioBp,
-            participationBp: Number(
-                acceptanceCriteria.requiredParticipationBp.toBigInt()
-            ),
-            approvalBp: Number(acceptanceCriteria.requiredApprovalBp.toBigInt()),
-        });
-    }
+    dataPoints.push({
+      ratioBp,
+      participationBp: Number(
+        acceptanceCriteria.requiredParticipationBp.toBigInt(),
+      ),
+      approvalBp: Number(acceptanceCriteria.requiredApprovalBp.toBigInt()),
+    });
+  }
 
-    const svg = formatSvg(dataPoints);
-    fs.mkdirSync(path.dirname(config.outputPath), { recursive: true });
-    fs.writeFileSync(config.outputPath, svg, "utf8");
+  const svg = formatSvg(dataPoints);
+  fs.mkdirSync(path.dirname(config.outputPath), { recursive: true });
+  fs.writeFileSync(config.outputPath, svg, "utf8");
 
-    console.log(`Chart written to ${config.outputPath}`);
-    console.log(`Basis points scale: ${BASIS_POINTS.toString()}`);
+  console.log(`Chart written to ${config.outputPath}`);
+  console.log(`Basis points scale: ${BASIS_POINTS.toString()}`);
 }
 
 main();

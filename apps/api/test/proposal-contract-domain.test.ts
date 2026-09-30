@@ -5,12 +5,15 @@ import {
   isExactVoteReducerPadding,
   MAX_UINT32,
   MAX_UINT64,
+  MAX_UINT96,
   parseContractBool,
   parseContractField,
   parseContractPublicKey,
   parseContractUInt32,
   parseContractUInt64,
+  parseContractUInt96,
   requireContractUInt64,
+  requireContractUInt96,
 } from "../src/processors/proposals/proposal-contract-domain.js";
 
 describe("proposal contract domains", () => {
@@ -33,6 +36,17 @@ describe("proposal contract domains", () => {
     assert.throws(
       () => requireContractUInt64(MAX_UINT64 + 1n, "test value"),
       /UInt64 range/,
+    );
+
+    assert.equal(
+      parseContractUInt96(MAX_UINT96.toString()),
+      MAX_UINT96.toString(),
+    );
+    assert.equal(parseContractUInt96((MAX_UINT96 + 1n).toString()), null);
+    assert.equal(parseContractUInt96("-1"), null);
+    assert.throws(
+      () => requireContractUInt96(MAX_UINT96 + 1n, "test value"),
+      /UInt96 range/,
     );
   });
 

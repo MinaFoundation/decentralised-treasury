@@ -15,7 +15,7 @@ import {
   parseContractField,
   parseContractFieldArray,
   parseContractPublicKey,
-  parseContractUInt128,
+  parseContractUInt96,
   parseContractUInt32,
   parseContractUInt64,
 } from "./proposal-contract-domain.js";
@@ -57,7 +57,7 @@ interface AcceptanceCriteriaComputationModules {
   UInt64: {
     from(value: bigint): unknown;
   };
-  UInt128: {
+  UInt96: {
     from(value: bigint): unknown;
   };
   TreasuryProposalSmartContract: {
@@ -94,11 +94,11 @@ async function getAcceptanceCriteriaComputationModules(): Promise<AcceptanceCrit
       UInt64: (
         o1jsModule as { UInt64: AcceptanceCriteriaComputationModules["UInt64"] }
       ).UInt64,
-      UInt128: (
+      UInt96: (
         o1jsModule as {
-          UInt128: AcceptanceCriteriaComputationModules["UInt128"];
+          UInt96: AcceptanceCriteriaComputationModules["UInt96"];
         }
-      ).UInt128,
+      ).UInt96,
       TreasuryProposalSmartContract: (
         treasuryProposalModule as {
           TreasuryProposalSmartContract: AcceptanceCriteriaComputationModules["TreasuryProposalSmartContract"];
@@ -304,17 +304,17 @@ function decodeArchiveProvidedProposalPayload(
     candidate.requiredParticipationBp === null ||
     candidate.requiredParticipationBp === undefined
       ? null
-      : parseContractUInt128(candidate.requiredParticipationBp);
+      : parseContractUInt96(candidate.requiredParticipationBp);
   const requiredApprovalBp =
     candidate.requiredApprovalBp === null ||
     candidate.requiredApprovalBp === undefined
       ? null
-      : parseContractUInt128(candidate.requiredApprovalBp);
+      : parseContractUInt96(candidate.requiredApprovalBp);
   const requiredParticipation =
     candidate.requiredParticipation === null ||
     candidate.requiredParticipation === undefined
       ? null
-      : parseContractUInt128(candidate.requiredParticipation);
+      : parseContractUInt96(candidate.requiredParticipation);
   const senderPublicKey =
     candidate.senderPublicKey === null ||
     candidate.senderPublicKey === undefined
@@ -405,8 +405,8 @@ async function deriveAcceptanceCriteria(input: {
   const modules = await getAcceptanceCriteriaComputationModules();
   const criteria =
     modules.TreasuryProposalSmartContract.calculateAcceptanceCriteria(
-      modules.UInt128.from(proposalAmount),
-      modules.UInt128.from(treasuryBalance),
+      modules.UInt96.from(proposalAmount),
+      modules.UInt96.from(treasuryBalance),
       modules.UInt64.from(stakingEpochDataLedgerTotalCurrency),
     );
   return {

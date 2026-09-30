@@ -4,7 +4,7 @@ import {
   ProposalStatus,
   TreasuryProposalSmartContract,
 } from "@repo/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.js";
-import { UInt128, UInt64 } from "o1js";
+import { UInt64, UInt96 } from "o1js";
 import {
   assessReferenceFinalTally,
   referenceAcceptanceCriteria,
@@ -20,8 +20,8 @@ function contractAcceptanceCriteria(input: {
   stakingTotal: bigint;
 }): Omit<ReferenceCriteria, "ratioBp"> {
   const result = TreasuryProposalSmartContract.calculateAcceptanceCriteria(
-    UInt128.from(input.proposalAmount),
-    UInt128.from(input.treasuryBalance),
+    UInt96.from(input.proposalAmount),
+    UInt96.from(input.treasuryBalance),
     UInt64.from(input.stakingTotal),
   );
   return {
@@ -39,11 +39,11 @@ function contractApprovalDecision(input: {
   requiredApprovalBp: bigint;
 }): ReferenceDecision {
   const result = TreasuryProposalSmartContract.calculateApprovalStatus({
-    yay: UInt128.from(input.yay),
-    nay: UInt128.from(input.nay),
-    abstain: UInt128.from(input.abstain),
-    requiredParticipation: UInt128.from(input.requiredParticipation),
-    requiredApprovalBp: UInt128.from(input.requiredApprovalBp),
+    yay: UInt96.from(input.yay),
+    nay: UInt96.from(input.nay),
+    abstain: UInt96.from(input.abstain),
+    requiredParticipation: UInt96.from(input.requiredParticipation),
+    requiredApprovalBp: UInt96.from(input.requiredApprovalBp),
   });
   const approved = result.approved.toBoolean();
   return {

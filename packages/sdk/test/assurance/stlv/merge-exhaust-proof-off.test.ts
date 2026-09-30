@@ -7,7 +7,7 @@ import {
   Mina,
   Reducer,
   TokenId,
-  UInt128,
+  UInt96,
   UInt32,
   UInt64,
   ZkProgram,
@@ -452,9 +452,9 @@ async function createContractFixture() {
   const history = ActionStateHistory.fromTarget(target);
   for (const state of Object.values(history)) state.found = Bool(true);
   const criteria = TreasuryProposalSmartContract.calculateAcceptanceCriteria(
-    UInt128.from(1_000_000_000),
-    UInt128.from(10_000_000_000),
-    UInt64.from(10_000_000_000),
+    UInt96.from(fixture.proposalAmount),
+    UInt96.from(fixture.treasurySnapshotAccount!.balance),
+    (await fixture.proposal.stakingEpochDataLedgerTotalCurrency.fetch())!,
   );
   const participating = criteria.requiredParticipation.toBigInt();
   const approvalBasisPoints = criteria.requiredApprovalBp.toBigInt();

@@ -11,7 +11,7 @@ import {
 import {
   parseContractFieldArray,
   parseContractPublicKey,
-  parseContractUInt128,
+  parseContractUInt96,
   parseContractUInt64,
   requireContractUInt64,
 } from "./proposal-contract-domain.js";
@@ -187,7 +187,7 @@ function decodeArchiveProvidedVotePayload(
 function createContractProposalApprovalMath(): ProposalApprovalMath {
   const loadApprovalMathDeps = async (): Promise<{
     UInt64: { from(value: bigint): unknown };
-    UInt128: { from(value: bigint): unknown };
+    UInt96: { from(value: bigint): unknown };
     ProposalStatus: {
       APPROVED: { equals(value: unknown): { toBoolean(): boolean } };
     };
@@ -218,7 +218,7 @@ function createContractProposalApprovalMath(): ProposalApprovalMath {
 
     return {
       UInt64: o1jsAny.UInt64,
-      UInt128: o1jsAny.UInt128,
+      UInt96: o1jsAny.UInt96,
       ProposalStatus: treasuryProposalAny.ProposalStatus,
       TreasuryProposalSmartContract:
         treasuryProposalAny.TreasuryProposalSmartContract,
@@ -227,12 +227,12 @@ function createContractProposalApprovalMath(): ProposalApprovalMath {
 
   return {
     async calculateAcceptanceCriteria(input) {
-      const { UInt64, UInt128, TreasuryProposalSmartContract } =
+      const { UInt64, UInt96, TreasuryProposalSmartContract } =
         await loadApprovalMathDeps();
       const criteria =
         TreasuryProposalSmartContract.calculateAcceptanceCriteria(
-          UInt128.from(input.proposalAmount),
-          UInt128.from(input.treasuryBalance),
+          UInt96.from(input.proposalAmount),
+          UInt96.from(input.treasuryBalance),
           UInt64.from(input.stakingEpochDataLedgerTotalCurrency),
         );
       return {
@@ -241,15 +241,15 @@ function createContractProposalApprovalMath(): ProposalApprovalMath {
       };
     },
     async calculateVoteResult(input) {
-      const { ProposalStatus, TreasuryProposalSmartContract, UInt128 } =
+      const { ProposalStatus, TreasuryProposalSmartContract, UInt96 } =
         await loadApprovalMathDeps();
       const contractVoteStatus =
         TreasuryProposalSmartContract.calculateApprovalStatus({
-          yay: UInt128.from(input.yay),
-          nay: UInt128.from(input.nay),
-          abstain: UInt128.from(input.abstain),
-          requiredParticipation: UInt128.from(input.requiredParticipation),
-          requiredApprovalBp: UInt128.from(input.requiredApprovalBp),
+          yay: UInt96.from(input.yay),
+          nay: UInt96.from(input.nay),
+          abstain: UInt96.from(input.abstain),
+          requiredParticipation: UInt96.from(input.requiredParticipation),
+          requiredApprovalBp: UInt96.from(input.requiredApprovalBp),
         });
       const isApproved = ProposalStatus.APPROVED.equals(
         contractVoteStatus.voteResult,
@@ -389,15 +389,15 @@ export class ProposalVoteDispatchedEventHandler implements EventProcessorHandler
       proposal.requiredParticipation !== null &&
       proposal.requiredApprovalBp !== null
     ) {
-      const requiredParticipation = parseContractUInt128(
+      const requiredParticipation = parseContractUInt96(
         proposal.requiredParticipation,
       );
-      const requiredApprovalBp = parseContractUInt128(
+      const requiredApprovalBp = parseContractUInt96(
         proposal.requiredApprovalBp,
       );
       if (requiredParticipation === null || requiredApprovalBp === null) {
         throw new Error(
-          `[proposal-processor] proposal ${proposal.proposalPublicKey} has acceptance criteria outside the contract UInt128 domain`,
+          `[proposal-processor] proposal ${proposal.proposalPublicKey} has acceptance criteria outside the contract UInt96 domain`,
         );
       }
       criteria = {

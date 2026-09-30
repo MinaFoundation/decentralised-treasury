@@ -1574,8 +1574,8 @@ describe("proposal projection contract fidelity", () => {
     assert.equal(await dataSource.getRepository(VoteTallyEntity).count(), 0);
   });
 
-  it("uses UInt128 for total participation across UInt64 tally components", async () => {
-    const proposalPublicKey = "uint128-total-tally";
+  it("uses UInt96 for total participation across UInt64 tally components", async () => {
+    const proposalPublicKey = "uint96-total-tally";
     await insertProposal(dataSource, proposalPublicKey);
     const reconciler = new ProposalProjectionReconciler();
 
@@ -1609,8 +1609,8 @@ describe("proposal projection contract fidelity", () => {
     assert.equal(tally.sourceStatus, "canonical");
   });
 
-  it("sums three maximum UInt64 tally components in the contract UInt128 domain", async () => {
-    const proposalPublicKey = "uint128-three-component-total";
+  it("sums three maximum UInt64 tally components in the contract UInt96 domain", async () => {
+    const proposalPublicKey = "uint96-three-component-total";
     await insertProposal(dataSource, proposalPublicKey);
     const reconciler = new ProposalProjectionReconciler();
 

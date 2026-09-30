@@ -11,7 +11,7 @@ import {
   PrivateKey,
   UInt32,
   UInt64,
-  UInt128,
+  UInt96,
   TokenId,
 } from "o1js";
 import type { DataSource } from "typeorm";
@@ -368,8 +368,8 @@ describe(
         const expectedTreasuryBalance = "1000000000";
         const expectedAcceptanceCriteria =
           TreasuryProposalSmartContract.calculateAcceptanceCriteria(
-            UInt128.from(BigInt(expectedProposal.amount)),
-            UInt128.from(BigInt(expectedTreasuryBalance)),
+            UInt96.from(BigInt(expectedProposal.amount)),
+            UInt96.from(BigInt(expectedTreasuryBalance)),
             UInt64.from(
               BigInt(expectedProposal.stakingEpochDataLedgerTotalCurrency),
             ),

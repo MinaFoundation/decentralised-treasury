@@ -15,7 +15,7 @@ import type { EntityManager } from "typeorm";
 import { ProposalContentEntity } from "./proposal-content-entity.js";
 import {
   isExactVoteReducerPadding,
-  requireContractUInt128,
+  requireContractUInt96,
   requireContractUInt64,
 } from "./proposal-contract-domain.js";
 import {
@@ -189,8 +189,8 @@ function calculateParticipatingVotes(
   abstain: bigint,
   label: string,
 ): bigint {
-  const approvalVotes = requireContractUInt128(yay + nay, `${label} approval`);
-  return requireContractUInt128(
+  const approvalVotes = requireContractUInt96(yay + nay, `${label} approval`);
+  return requireContractUInt96(
     approvalVotes + abstain,
     `${label} participation`,
   );
@@ -219,7 +219,7 @@ function calculatePayloadLocalFinalTally(
     abstainWeight,
     `final tally for archiveEventId=${archiveEventId}`,
   );
-  const decisiveVotes = requireContractUInt128(
+  const decisiveVotes = requireContractUInt96(
     yayWeight + nayWeight,
     `final decisive tally for archiveEventId=${archiveEventId}`,
   );
@@ -243,11 +243,11 @@ function calculatePayloadLocalFinalTally(
     };
   }
 
-  const requiredParticipation = requireContractUInt128(
+  const requiredParticipation = requireContractUInt96(
     BigInt(proposal.requiredParticipation),
     `required participation for proposalPublicKey=${proposal.proposalPublicKey}`,
   );
-  const requiredApprovalBp = requireContractUInt128(
+  const requiredApprovalBp = requireContractUInt96(
     BigInt(proposal.requiredApprovalBp),
     `required approval basis points for proposalPublicKey=${proposal.proposalPublicKey}`,
   );

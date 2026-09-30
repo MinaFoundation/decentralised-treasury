@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { Mina, PrivateKey, UInt128, UInt32, UInt64 } from "o1js";
+import { Mina, PrivateKey, UInt32, UInt64, UInt96 } from "o1js";
 import { LIFECYCLE_PERIOD_DURATION } from "../../../../src/provable/contracts/treasury-owner.js";
 import {
   ProposalStatus,
@@ -223,8 +223,8 @@ test(
         for (const testCase of cases) {
           const result =
             TreasuryProposalSmartContract.calculateAcceptanceCriteria(
-              UInt128.from(testCase.amount),
-              UInt128.from(testCase.treasury),
+              UInt96.from(testCase.amount),
+              UInt96.from(testCase.treasury),
               testCase.treasury,
             );
           assert.equal(
@@ -241,8 +241,8 @@ test(
 
         assert.throws(() =>
           TreasuryProposalSmartContract.calculateAcceptanceCriteria(
-            UInt128.from(1),
-            UInt128.from(0),
+            UInt96.from(1),
+            UInt96.from(0),
             UInt64.from(0),
           ),
         );
@@ -292,11 +292,11 @@ test(
 
         for (const testCase of cases) {
           const result = TreasuryProposalSmartContract.calculateApprovalStatus({
-            yay: UInt128.from(testCase.yay),
-            nay: UInt128.from(testCase.nay),
-            abstain: UInt128.from(testCase.abstain),
-            requiredParticipation: UInt128.from(10_000),
-            requiredApprovalBp: UInt128.from(6_000),
+            yay: UInt96.from(testCase.yay),
+            nay: UInt96.from(testCase.nay),
+            abstain: UInt96.from(testCase.abstain),
+            requiredParticipation: UInt96.from(10_000),
+            requiredApprovalBp: UInt96.from(6_000),
           });
           assert.equal(
             result.approved.toBoolean(),

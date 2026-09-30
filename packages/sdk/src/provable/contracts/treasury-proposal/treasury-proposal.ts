@@ -16,7 +16,7 @@ import {
   Poseidon,
   TokenId,
   Types,
-  UInt128,
+  UInt96,
 } from "o1js";
 import { provableLog } from "../../../logging/logger.js";
 import {
@@ -95,21 +95,21 @@ export class TreasuryProposalSmartContract extends SmartContract {
     this.reducer.dispatch(voteAction);
   }
 
-  public static minUInt128(a: UInt128, b: UInt128): UInt128 {
-    return Provable.if<UInt128>(a.lessThan(b), a, b);
+  public static minUInt96(a: UInt96, b: UInt96): UInt96 {
+    return Provable.if<UInt96>(a.lessThan(b), a, b);
   }
 
   public static calculateAcceptanceCriteria(
-    proposalAmount: UInt128,
-    treasuryBalance: UInt128,
+    proposalAmount: UInt96,
+    treasuryBalance: UInt96,
     stakingEpochDataLedgerTotalCurrency: UInt64,
   ): {
-    requiredParticipationBp: UInt128;
-    requiredApprovalBp: UInt128;
-    requiredParticipation: UInt128;
+    requiredParticipationBp: UInt96;
+    requiredApprovalBp: UInt96;
+    requiredParticipation: UInt96;
   } {
     // ratio in basis points, capped at 100%
-    const ratioBp = TreasuryProposalSmartContract.minUInt128(
+    const ratioBp = TreasuryProposalSmartContract.minUInt96(
       proposalAmount.mul(BASIS_POINTS).div(treasuryBalance),
       BASIS_POINTS,
     );
@@ -148,7 +148,7 @@ export class TreasuryProposalSmartContract extends SmartContract {
         .div(BASIS_POINTS),
     );
 
-    const requiredParticipation = UInt128.from(
+    const requiredParticipation = UInt96.from(
       stakingEpochDataLedgerTotalCurrency,
     )
       .mul(requiredParticipationBp)
@@ -162,31 +162,32 @@ export class TreasuryProposalSmartContract extends SmartContract {
   }
 
   public static calculateApprovalStatus(input: {
-    yay: UInt128;
-    nay: UInt128;
-    abstain: UInt128;
-    requiredParticipation: UInt128;
-    requiredApprovalBp: UInt128;
+    yay: UInt96;
+    nay: UInt96;
+    abstain: UInt96;
+    requiredParticipation: UInt96;
+    requiredApprovalBp: UInt96;
   }): {
-    totalParticipatingVotes: UInt128;
-    requiredParticipation: UInt128;
+    totalParticipatingVotes: UInt96;
+    requiredParticipation: UInt96;
     participationMet: Bool;
-    totalVotes: UInt128;
+    totalVotes: UInt96;
     hasApprovalVotes: Bool;
-    approvalBp: UInt128;
+    approvalBp: UInt96;
     approved: Bool;
     voteResult: ProposalStatus;
   } {
     const totalParticipatingVotes = input.yay.add(input.nay).add(input.abstain);
-    const participationMet =
-      totalParticipatingVotes.greaterThanOrEqual(input.requiredParticipation);
+    const participationMet = totalParticipatingVotes.greaterThanOrEqual(
+      input.requiredParticipation,
+    );
 
     const totalVotes = input.yay.add(input.nay);
-    const hasApprovalVotes = totalVotes.greaterThan(UInt128.from(0));
+    const hasApprovalVotes = totalVotes.greaterThan(UInt96.from(0));
     const safeTotalVotes = Provable.if(
       hasApprovalVotes,
       totalVotes,
-      UInt128.from(1),
+      UInt96.from(1),
     );
     const approvalBp = input.yay.mul(BASIS_POINTS).div(safeTotalVotes);
     const approved = participationMet
@@ -292,9 +293,9 @@ export class TreasuryProposalSmartContract extends SmartContract {
       nay: nayUInt64,
       abstain: abstainUInt64,
     } = voteReducerPublicOutput;
-    const yay = UInt128.from(yayUInt64);
-    const nay = UInt128.from(nayUInt64);
-    const abstain = UInt128.from(abstainUInt64);
+    const yay = UInt96.from(yayUInt64);
+    const nay = UInt96.from(nayUInt64);
+    const abstain = UInt96.from(abstainUInt64);
     const proposalAmount = this.amount.getAndRequireEquals();
 
     treasuryOwnerAccount.pk
@@ -324,17 +325,18 @@ export class TreasuryProposalSmartContract extends SmartContract {
     const treasuryOwnerBalance = treasuryOwnerAccount.balance;
     const { requiredApprovalBp, requiredParticipation } =
       TreasuryProposalSmartContract.calculateAcceptanceCriteria(
-        UInt128.from(proposalAmount),
-        UInt128.from(treasuryOwnerBalance),
+        UInt96.from(proposalAmount),
+        UInt96.from(treasuryOwnerBalance),
         stakingEpochDataLedgerTotalCurrency,
       );
-    const approvalStatus = TreasuryProposalSmartContract.calculateApprovalStatus({
-      yay,
-      nay,
-      abstain,
-      requiredParticipation,
-      requiredApprovalBp,
-    });
+    const approvalStatus =
+      TreasuryProposalSmartContract.calculateApprovalStatus({
+        yay,
+        nay,
+        abstain,
+        requiredParticipation,
+        requiredApprovalBp,
+      });
 
     provableLog("totalParticipatingVotes", {
       totalParticipatingVotes: approvalStatus.totalParticipatingVotes,

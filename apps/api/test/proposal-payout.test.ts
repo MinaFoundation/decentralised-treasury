@@ -3,6 +3,18 @@ import { describe, it } from "node:test";
 import { calculateProposalPayoutAmounts } from "../src/proposal-payout.js";
 
 describe("proposal payout response fields", () => {
+  it("preserves payouts for historical proposals below the new creation minimum", () => {
+    assert.deepEqual(calculateProposalPayoutAmounts("1000000000", "500000000"), {
+      totalPayoutAmount: "1100000000",
+      remainingPayoutAmount: "600000000",
+      payoutAmountIntegrity: true,
+    });
+    assert.deepEqual(calculateProposalPayoutAmounts("10000000000", "0"), {
+      totalPayoutAmount: "11000000000",
+      remainingPayoutAmount: "11000000000",
+      payoutAmountIntegrity: true,
+    });
+  });
   it("uses exact nanomina arithmetic above Number.MAX_SAFE_INTEGER", () => {
     assert.deepEqual(calculateProposalPayoutAmounts("9007199254740993", "0"), {
       totalPayoutAmount: "9907919180215092",
