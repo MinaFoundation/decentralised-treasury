@@ -66,7 +66,7 @@ it("determines current lifecycle period using Mina global slot", async () => {
   assert.strictEqual(votingResult.lifecycleId, "0");
   assert.strictEqual(votingResult.period, "voting");
   assert.strictEqual(votingResult.periodStartSlot, "20");
-  assert.strictEqual(votingResult.periodEndSlot, "30");
+  assert.strictEqual(votingResult.periodEndSlot, "29");
 
   Local.setGlobalSlot(45);
   const nextLifecycleResult = await service.getCurrentLifecyclePeriod({
@@ -79,6 +79,5 @@ it("determines current lifecycle period using Mina global slot", async () => {
   assert.strictEqual(nextLifecycleResult.lifecycleId, "1");
   assert.strictEqual(nextLifecycleResult.period, "proposal");
   assert.strictEqual(nextLifecycleResult.periodStartSlot, "40");
-  assert.strictEqual(nextLifecycleResult.periodEndSlot, "50");
+  assert.strictEqual(nextLifecycleResult.periodEndSlot, "49");
 });
-

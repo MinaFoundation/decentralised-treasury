@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { Mina, PrivateKey, UInt32, UInt64, UInt96 } from "o1js";
 import { LIFECYCLE_PERIOD_DURATION } from "../../../../src/provable/contracts/treasury-owner.js";
+import { Vote } from "../../../../src/provable/contracts/treasury-proposal/vote-reducer.js";
 import {
   ProposalStatus,
   TreasuryProposalSmartContract,
@@ -9,6 +10,7 @@ import {
 import {
   compileAuthorizationContracts,
   createOwnerDeploymentFixture,
+  sendTransaction,
   submitProposal,
 } from "../helpers.js";
 
@@ -112,7 +114,7 @@ test(
           { id: "SC-OWNER-001/005", slot: 0 },
           {
             id: "SC-OWNER-002",
-            slot: Number(LIFECYCLE_PERIOD_DURATION.toBigint()),
+            slot: Number(LIFECYCLE_PERIOD_DURATION.toBigint()) - 1,
           },
         ]) {
           const fixture = await createOwnerDeploymentFixture();
@@ -232,7 +234,7 @@ test(
           {
             id: "SC-OWNER-004",
             lifecycleId: 0,
-            slot: duration + 1,
+            slot: duration,
             key: 42_101n,
           },
         ] as const;
@@ -271,6 +273,31 @@ test(
         }
       },
     );
+
+    await t.test("voting ends before the first Cooldown slot", async () => {
+      const fixture = await createOwnerDeploymentFixture();
+      const created = await submitProposal(fixture);
+      fixture.blockchain.incrementGlobalSlot(
+        LIFECYCLE_PERIOD_DURATION.mul(3).sub(1),
+      );
+      const vote = () =>
+        sendTransaction(fixture.feePayer, async () => {
+          await fixture.owner.vote(
+            created.proposal.address,
+            fixture.feePayer.key.toPublicKey(),
+            Vote.YAY,
+          );
+        });
+      await vote();
+      const actionState = () =>
+        fixture.blockchain
+          .getAccount(created.proposal.address, fixture.owner.deriveTokenId())
+          .zkapp!.actionState.map((hash) => hash.toString());
+      const actionsBefore = actionState();
+      fixture.blockchain.incrementGlobalSlot(UInt32.from(1));
+      await assert.rejects(vote);
+      assert.deepEqual(actionState(), actionsBefore);
+    });
 
     await t.test(
       "SC-PROPOSAL-014/015/016 characterize zero, one, and maximum amount boundaries",

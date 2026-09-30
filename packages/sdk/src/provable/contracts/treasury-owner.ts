@@ -194,7 +194,7 @@ export class TreasuryOwnerSmartContract extends TokenContract {
     const toSlot = Provable.if(
       noUpperBoundToSlot,
       UInt32.MAXINT(),
-      fromSlot.add(TreasuryOwnerSmartContract.lifecyclePeriodDuration),
+      fromSlot.add(TreasuryOwnerSmartContract.lifecyclePeriodDuration).sub(1),
     );
 
     return { fromSlot, toSlot };

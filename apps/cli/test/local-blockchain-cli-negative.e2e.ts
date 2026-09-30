@@ -1027,7 +1027,7 @@ test(
       await context.test(
         "S30 boundary create at last proposal slot accepts",
         async () => {
-          await setSlot(treasuryDeployedAtSlot + LIFECYCLE_PERIOD_DURATION);
+          await setSlot(treasuryDeployedAtSlot + LIFECYCLE_PERIOD_DURATION - 1);
           await createProposal(proposals["vote-boundary"]!);
         },
       );
@@ -1035,7 +1035,7 @@ test(
       await context.test(
         "S30-002 create one slot after proposal period rejects",
         async () => {
-          await setSlot(treasuryDeployedAtSlot + LIFECYCLE_PERIOD_DURATION + 1);
+          await setSlot(treasuryDeployedAtSlot + LIFECYCLE_PERIOD_DURATION);
           await expectCliFailure(createArgs(proposals["after-create-window"]!));
         },
       );
@@ -1135,7 +1135,7 @@ test(
       await context.test(
         "S30 boundary vote at last voting slot accepts",
         async () => {
-          await setSlot(votingStart + LIFECYCLE_PERIOD_DURATION);
+          await setSlot(votingStart + LIFECYCLE_PERIOD_DURATION - 1);
           await vote(proposals["vote-boundary"]!, participants[1]!, "yay");
         },
       );
@@ -1147,7 +1147,7 @@ test(
             proposals["vote-boundary"]!,
             "vote-after-before",
           );
-          await setSlot(votingStart + LIFECYCLE_PERIOD_DURATION + 1);
+          await setSlot(votingStart + LIFECYCLE_PERIOD_DURATION);
           await expectCliFailure(
             voteArgs(proposals["vote-boundary"]!, participants[2]!, "yay"),
           );
