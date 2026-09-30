@@ -53,6 +53,7 @@ const nodeArguments = [
   tsNodeLoader,
   ...(coverageEnabled
     ? [
+        "--enable-source-maps",
         "--experimental-test-coverage",
         "--test-reporter=spec",
         "--test-reporter-destination=stdout",
@@ -91,6 +92,7 @@ if (exitStatus === 0 && apiTestFiles.length > 0) {
     apiTsNodeLoader,
     ...(coverageEnabled
       ? [
+          "--enable-source-maps",
           "--experimental-test-coverage",
           "--test-reporter=spec",
           "--test-reporter-destination=stdout",
@@ -140,7 +142,8 @@ if (coverageEnabled) {
 
   if (exitStatus === 0) {
     const postCoverageEnvironment = { ...process.env };
-    delete postCoverageEnvironment.NODE_V8_COVERAGE;
+    // Node re-injects inherited coverage unless this key is explicitly present.
+    postCoverageEnvironment.NODE_V8_COVERAGE = undefined;
     delete postCoverageEnvironment.PROVABLE_COVERAGE;
     const postCoverageResult = spawnSync(
       process.execPath,

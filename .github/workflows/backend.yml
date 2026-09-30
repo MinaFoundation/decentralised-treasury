@@ -53,6 +53,7 @@ jobs:
       - run: pnpm --dir packages/indexer run check-types
       - run: pnpm --dir packages/processor run check-types
       - run: pnpm --dir apps/api run check-types
+      - run: pnpm --dir packages/sdk run check-types
       - run: pnpm test:devops:compose-config
       - run: pnpm test:o1js-security && pnpm test:o1js-uint128 && pnpm test:o1js-uint96
       - name: Indexer coverage
@@ -122,12 +123,14 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm --dir apps/api run test:e2e:local-blockchain
 
-  lightnet:
+  native-proofs:
     if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     timeout-minutes: 45
     env:
       O1JS_BACKEND: native
+      PROOFS_ENABLED: "true"
+      NETWORK: devnet
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -138,12 +141,19 @@ jobs:
           node-version-file: .nvmrc
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - run: pnpm --dir apps/api run test:e2e:lightnet
+      # Real Lightnet tests need an operator-prepared network, snapshot, and manifest.
+      # Hosted runners use local native proofs; see the Lightnet development guide.
+      - run: pnpm test:o1js-security:proofs
+      - run: pnpm test:o1js-uint128:proofs
+      - run: pnpm test:o1js-uint96:proofs
+      - name: Treasury lifecycle with native proofs
+        run: pnpm --dir packages/sdk exec node --loader ts-node/esm --test --test-concurrency=1 test/integration/treasury-owner.test.ts
       - uses: actions/upload-artifact@v4
         if: failure()
         with:
-          name: lightnet-backend-diagnostics
+          name: native-proof-diagnostics
           path: |
             apps/api/cache
             apps/cli/cache
+            packages/sdk/cache
           if-no-files-found: ignore

@@ -125,7 +125,7 @@ const Local = await Mina.LocalBlockchain({
 
 Mina.setActiveInstance(Local);
 
-const lifecycleId = "treasury-owner-test";
+const lifecycleId = `treasury-owner-test-${process.pid}-${Date.now()}`;
 const sqlitePath = getSqliteDbPath(lifecycleId);
 mkdirSync(dirname(sqlitePath), { recursive: true });
 const sqlite = new KeyvSqlite({ uri: sqlitePath });

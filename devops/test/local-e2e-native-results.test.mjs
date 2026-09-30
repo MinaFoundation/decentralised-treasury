@@ -57,6 +57,45 @@ test("native identities preserve input values and normalize only proof-mode labe
   );
 });
 
+test("normalizes only the exact nested transported-artifact mode label", () => {
+  const file = fileURLToPath(
+    new URL(
+      "../../apps/cli/test/local-blockchain-cli.e2e.ts",
+      import.meta.url,
+    ),
+  );
+  const item = {
+    ...good,
+    file,
+    line: 1440,
+    nesting: 1,
+    name: "tallies and executes with transported proof-off artifacts",
+  };
+  const off = read([item]);
+  const onName =
+    "tallies and executes with transported proof-on artifacts";
+  const on = read([{ ...item, name: onName }], "true");
+
+  assertSameNativeCases(off, on);
+  assert.equal(
+    off.cases[0].identity[4],
+    "tallies and executes with transported proof-<mode> artifacts",
+  );
+  for (const change of [
+    { nesting: 0 },
+    { file: fileURLToPath(import.meta.url) },
+    { name: `${onName} changed` },
+  ])
+    assert.throws(
+      () =>
+        assertSameNativeCases(
+          off,
+          read([{ ...item, name: onName, ...change }], "true"),
+        ),
+      /Native cases changed/,
+    );
+});
+
 test("the actual Node reporter retains nested cases and matches both modes", async () => {
   const results = [];
   const env = { ...process.env };

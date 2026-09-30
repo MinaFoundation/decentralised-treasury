@@ -71,7 +71,7 @@ async function fillProposal(page: Page, title: string) {
     .fill(stack.recipientPublicKey);
   await page
     .getByLabel("Content", { exact: true })
-    .fill(`# ${title}\n\nFund a public treasury test deliverable.`);
+    .fill("Fund a public treasury test deliverable.");
 }
 
 for (const scenario of [
@@ -518,9 +518,10 @@ for (const scenario of [
     await connectWallet(page);
     const title = `Content outage recovery through ${scenario.name}`;
     await fillProposal(page, title);
-    const originalContents = await page
+    const body = await page
       .getByLabel("Content", { exact: true })
       .inputValue();
+    const originalContents = `# ${title}\n\n${body}`;
     await page
       .getByRole("button", { name: "Create proposal", exact: true })
       .click();
@@ -532,8 +533,16 @@ for (const scenario of [
     const before = await snapshotProtectedState(stack);
     let stopped = false;
     try {
-      await stack.services.stop("app-api");
-      stopped = true;
+      // Creation needs the API witness. Stop the real service at content upload.
+      await page.route(
+        `${stack.treasuryApiUrl}/proposals/*/content`,
+        async (route) => {
+          await stack.services.stop("app-api");
+          stopped = true;
+          await route.continue();
+        },
+        { times: 1 },
+      );
       await page
         .getByRole("dialog")
         .getByRole("button", { name: "Sign and send", exact: true })

@@ -16,7 +16,7 @@ import {
 import { loadApiConfig } from "../../../apps/api/src/config.js";
 import { minaNetworkOption } from "../../../apps/cli/src/commands/mina-instance.js";
 import {
-  createLedgerTransactionSigner,
+  createTransactionSigner,
   resolveSigningAccount,
   selectTransactionLedgerAccountIndices,
 } from "../../../apps/cli/src/ledger/transaction-signer.js";
@@ -881,13 +881,13 @@ describe("proof-off caller intent", () => {
     const first = deterministicPrivateKey(500).toPublicKey();
     const second = deterministicPrivateKey(501).toPublicKey();
     const account = (label, publicKey, ledgerAccountIndex) => ({
+      signer: "ledger",
       label,
       publicKey,
       ledgerAccountIndex,
     });
     const calls = [];
-    const acceptedSigner = createLedgerTransactionSigner(
-      "ledger",
+    const acceptedSigner = createTransactionSigner(
       [account("Sender", first, 7), account("Funding", first, 7)],
       "devnet",
       async (transaction, indices, networkId) => {
@@ -896,23 +896,21 @@ describe("proof-off caller intent", () => {
       },
     );
     assert.ok(acceptedSigner);
-    await acceptedSigner(
-      transactionShape(first.toBase58(), [
-        {
-          body: {
-            publicKey: first.toBase58(),
-            authorizationKind: { isSigned: true },
-          },
-        },
-      ]),
-    );
+    // The signer now logs a real transaction hash before calling the provider.
+    const local = await Mina.LocalBlockchain({ proofsEnabled: false });
+    Mina.setActiveInstance(local);
+    local.addAccount(first, "100000000000");
+    const transaction = await Mina.transaction(first, async () => {
+      AccountUpdate.createSigned(first);
+    });
+    await acceptedSigner(transaction);
     assert.deepEqual(calls, [
       { indices: [[first.toBase58(), 7]], networkId: "devnet" },
     ]);
 
     assert.throws(
       () =>
-        createLedgerTransactionSigner("ledger", [
+        createTransactionSigner([
           account("Sender", first, 7),
           account("Owner", first, 8),
         ]),
@@ -920,7 +918,7 @@ describe("proof-off caller intent", () => {
     );
     assert.throws(
       () =>
-        createLedgerTransactionSigner("ledger", [
+        createTransactionSigner([
           account("Sender", first, 7),
           account("Owner", second, 7),
         ]),
@@ -986,14 +984,24 @@ describe("proof-off caller intent", () => {
       );
     }
 
-    const signingSource = compact(
-      await readRepositorySource("packages/sdk/src/signing/ledger-signing.ts"),
+    const validLedger = softwareLedger(new Map([[accountIndex, expectedKey]]));
+    const observedNetworks = [];
+    const signature = await signFieldWithLedgerClient(
+      dataHash,
+      {
+        ...validLedger,
+        async signFieldElement(account, networkId, bytes) {
+          observedNetworks.push(networkId);
+          return validLedger.signFieldElement(account, networkId, bytes);
+        },
+      },
+      expectedKey.toPublicKey(),
+      accountIndex,
     );
-    assert.ok(
-      signingSource.includes(
-        "const signature = await signFieldAtAccount(ledger, account, field, 0);",
-      ),
-      "break-glass field signing always sends Ledger network ID 0",
+    assert.deepEqual(observedNetworks, [0]);
+    assert.equal(
+      signature.verify(expectedKey.toPublicKey(), [dataHash]).toBoolean(),
+      true,
     );
   });
 

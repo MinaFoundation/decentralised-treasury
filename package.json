@@ -56,7 +56,7 @@
     "local-blockchain:config": "docker compose --env-file devops/.env.local-blockchain --env-file apps/api/.env.local-blockchain --env-file apps/backoffice/.env.local-blockchain --env-file apps/web/.env.local-blockchain -f devops/compose.yml --profile proxy config",
     "compose:test": "node devops/test/compose-smoke.mjs",
     "compose:e2e": "node devops/test/compose-e2e.mjs",
-    "test:devops:compose-config": "node --test devops/test/bootstrap-env.test.mjs devops/test/compose-native-backend.test.mjs devops/test/voting-ledger-scheduler.test.mjs",
+    "test:devops:compose-config": "node --test devops/test/bootstrap-env.test.mjs devops/test/compose-native-backend.test.mjs devops/test/voting-ledger-scheduler.test.mjs devops/test/public-graphql.test.mjs",
     "test:o1js-security": "node --test devops/test/o1js-security-regression.test.mjs",
     "test:o1js-security:proofs": "O1JS_SECURITY_PROOFS=true node --test --test-concurrency=1 devops/test/o1js-security-proof.test.mjs devops/test/o1js-nested-update-proof.test.mjs",
     "test:o1js-security:browser": "node devops/test/o1js-browser-smoke.mjs",

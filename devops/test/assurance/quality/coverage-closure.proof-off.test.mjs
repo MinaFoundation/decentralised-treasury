@@ -314,8 +314,8 @@ test("QA-COVERAGE-005 publishes deterministic semantic assurance category totals
 test("QA-COVERAGE-006 rejects a missing current Codecov flag even if an older flag passed", async (t) => {
   const configuration = await codecovConfiguration();
   assert.deepEqual(configuration, {
-    status: "NOT_CONFIGURED",
-    configured: [],
+    status: "CONFIGURED",
+    configured: [".github/workflows/local-e2e.yml"],
   });
   assert.throws(
     () =>

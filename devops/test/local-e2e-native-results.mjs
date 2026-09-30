@@ -31,6 +31,14 @@ export function readNativeResults(source, { root, mode }) {
       const cliPrefix = `runs the ${mode === "false" ? "proof-off" : "proof-on"} `;
       if (item.nesting === 0 && name.startsWith(cliPrefix))
         name = `runs the proof-<mode> ${name.slice(cliPrefix.length)}`;
+      if (
+        file === "apps/cli/test/local-blockchain-cli.e2e.ts" &&
+        item.nesting === 1 &&
+        name ===
+          `tallies and executes with transported proof-${mode === "false" ? "off" : "on"} artifacts`
+      )
+        name =
+          "tallies and executes with transported proof-<mode> artifacts";
       return {
         ...item,
         file,

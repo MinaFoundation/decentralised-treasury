@@ -7,10 +7,7 @@ import {
   waitFor,
 } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type {
-  ProviderSession,
-  WalletSigningProvider,
-} from "./wallet-provider";
+import type { ProviderSession, WalletSigningProvider } from "./wallet-provider";
 import {
   WALLET_SESSION_STORAGE_KEY,
   WalletSessionProvider,
@@ -32,8 +29,12 @@ function session(
 }
 
 function TestConsumer() {
-  const { wallet, session: activeSession, connectWallet, signZkapp } =
-    useWalletSession();
+  const {
+    wallet,
+    session: activeSession,
+    connectWallet,
+    signZkapp,
+  } = useWalletSession();
   return (
     <div>
       <button onClick={connectWallet}>Open wallet</button>
@@ -150,9 +151,7 @@ describe("WalletSessionProvider", () => {
     await waitFor(() => expect(screen.getByText("B62qauro")).toBeTruthy());
 
     await act(async () => {
-      fireEvent.click(
-        screen.getByRole("button", { name: "Sign transaction" }),
-      );
+      fireEvent.click(screen.getByRole("button", { name: "Sign transaction" }));
     });
     await waitFor(() => expect(signZkapp).toHaveBeenCalledOnce());
     expect(signZkapp.mock.calls[0]?.[0]).toEqual(

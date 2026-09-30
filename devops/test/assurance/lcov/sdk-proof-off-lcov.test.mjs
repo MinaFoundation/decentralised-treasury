@@ -11,18 +11,18 @@ const KNOWN_PROVABLE_EXECUTION = [
   {
     source: "packages/sdk/src/provable/account.ts",
     line: 238,
-    branchLine: 238,
+    branchLine: 231,
   },
   {
     source:
       "packages/sdk/src/provable/contracts/treasury-proposal/vote-reducer.ts",
     line: 411,
-    branchLine: 411,
+    branchLine: 335,
   },
   {
     source: "packages/sdk/src/provable/hashing-helpers.ts",
     line: 21,
-    branchLine: 21,
+    branchLine: 14,
   },
   {
     source: "packages/sdk/src/provable/merkle-tree/prefixed-merkle-tree.ts",
@@ -32,12 +32,12 @@ const KNOWN_PROVABLE_EXECUTION = [
   {
     source: "packages/sdk/src/provable/staking-ledger-to-voting-ledger.ts",
     line: 181,
-    branchLine: 181,
+    branchLine: 150,
   },
   {
     source: "packages/sdk/src/provable/voting-account.ts",
-    line: 10,
-    branchLine: 10,
+    line: 15,
+    branchLine: 14,
   },
 ];
 
@@ -149,7 +149,7 @@ async function codecovStatus() {
       await access(resolve(REPOSITORY_ROOT, candidate));
       configuredFiles.push(candidate);
     } catch {
-      // An absent optional config is the expected Phase A state.
+      // Workflow configuration can exist without a separate Codecov file.
     }
   }
 
@@ -237,7 +237,10 @@ test("QA-COVERAGE-001 validates proof-off LCOV source maps and counters", async 
   }
 
   const codecov = await codecovStatus();
-  assert.equal(codecov.status, "NOT_CONFIGURED");
+  assert.deepEqual(codecov, {
+    status: "CONFIGURED",
+    configuredFiles: [".github/workflows/local-e2e.yml"],
+  });
   t.diagnostic(
     JSON.stringify({
       lcov: "coverage/sdk-proof-off/lcov.info",
@@ -249,9 +252,9 @@ test("QA-COVERAGE-001 validates proof-off LCOV source maps and counters", async 
   );
 });
 
-test("QA-COVERAGE-004 records Phase A Codecov state", async () => {
+test("QA-COVERAGE-004 records the configured Codecov workflow", async () => {
   assert.deepEqual(await codecovStatus(), {
-    status: "NOT_CONFIGURED",
-    configuredFiles: [],
+    status: "CONFIGURED",
+    configuredFiles: [".github/workflows/local-e2e.yml"],
   });
 });

@@ -32,7 +32,7 @@
     "test:unit": "node --loader ts-node/esm --test \"test/*.test.ts\"",
     "test:coverage": "node ../../devops/scripts/run-node-test-coverage.mjs \"--include=src/**/*.ts\" \"--exclude=src/api-main.ts\" \"--exclude=src/db/ensure-database-schema.ts\" \"--exclude=src/db/typeorm-cli-data-source.ts\" \"--exclude=src/db/migrations/**/*.ts\" \"--test-pattern=test/*.test.ts\"",
     "test:integration:postgres": "node --loader ts-node/esm --test --test-concurrency=1 \"test/integration/**/*.integration.test.ts\"",
-    "test:e2e:lightnet": "RUN_LIGHTNET_E2E=true NODE_NO_WARNINGS=1 SLOT_TIME_MS=1000 LIGHTNET_LIFECYCLE_PERIOD_DURATION_SLOTS=420 node --loader ts-node/esm --test --test-concurrency=1 \"test/e2e/**/*.e2e.ts\"",
+    "test:e2e:lightnet": "RUN_LIGHTNET_E2E=true PROOFS_ENABLED=true NODE_NO_WARNINGS=1 node --loader ts-node/esm --test --test-concurrency=1 \"test/e2e/proposal-lifecycle-lightnet.e2e.ts\"",
     "test:e2e:local-blockchain": "RUN_LOCAL_BLOCKCHAIN_E2E=true PROOFS_ENABLED=false NODE_NO_WARNINGS=1 node --loader ts-node/esm --test --test-concurrency=1 \"test/e2e/proposal-created-local-blockchain.e2e.ts\"",
     "fixtures:proposal-created:lightnet": "NODE_NO_WARNINGS=1 node --loader ts-node/esm scripts/lightnet/generate-proposal-created-fixtures.ts"
   },

@@ -177,7 +177,7 @@ test("S40-006/007: browser completes two lifecycles with distinct snapshots on o
         .fill(stack.recipientPublicKey);
       await page
         .getByLabel("Content", { exact: true })
-        .fill(`# ${title}\n\nApprove and execute a real browser payout.`);
+        .fill("Approve and execute a real browser payout.");
       await page
         .getByRole("button", { name: "Create proposal", exact: true })
         .click();

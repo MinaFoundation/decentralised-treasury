@@ -30,20 +30,41 @@ export function proofMode(): "false" | "true" {
   return value;
 }
 
+// Stay below the standard Linux and macOS dynamic port ranges so outbound
+// connections cannot reuse a fixture port between its probe and delayed bind.
+const FIXTURE_PORT_MIN = 20_000;
+const FIXTURE_PORT_COUNT = 10_000;
+const reservedFixturePorts = new Set<number>();
+
 export async function availablePort(): Promise<number> {
-  return new Promise((resolve, reject) => {
-    const server = createServer();
-    server.once("error", reject);
-    server.listen(0, "127.0.0.1", () => {
-      const address = server.address();
-      if (!address || typeof address === "string") {
-        server.close();
-        reject(new Error("Cannot allocate a local port."));
-        return;
+  const first = Math.floor(Math.random() * FIXTURE_PORT_COUNT);
+  for (let offset = 0; offset < FIXTURE_PORT_COUNT; offset++) {
+    const port = FIXTURE_PORT_MIN + ((first + offset) % FIXTURE_PORT_COUNT);
+    if (reservedFixturePorts.has(port)) continue;
+    reservedFixturePorts.add(port);
+    try {
+      await new Promise<void>((resolve, reject) => {
+        const server = createServer();
+        server.once("error", reject);
+        // Match the wildcard bind used by the API servers.
+        server.listen(port, () => {
+          server.close((error) => (error ? reject(error) : resolve()));
+        });
+      });
+      return port;
+    } catch (error) {
+      reservedFixturePorts.delete(port);
+      if (
+        error instanceof Error &&
+        "code" in error &&
+        error.code === "EADDRINUSE"
+      ) {
+        continue;
       }
-      server.close((error) => (error ? reject(error) : resolve(address.port)));
-    });
-  });
+      throw error;
+    }
+  }
+  throw new Error("Cannot allocate a local fixture port.");
 }
 
 export async function readJson<T>(url: string): Promise<T> {
@@ -71,7 +92,7 @@ export async function waitForUrl(url: string, timeout = 60_000): Promise<void> {
 }
 
 export function parseCliJson<T>(output: string, key: string): T {
-  for (const line of output.split(/\r?\n/).reverse()) {
+  for (const line of [output, ...output.split(/\r?\n/).reverse()]) {
     try {
       const value = JSON.parse(line);
       if (value && typeof value === "object" && key in value) return value as T;

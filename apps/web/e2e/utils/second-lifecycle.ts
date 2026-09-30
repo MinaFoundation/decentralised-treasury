@@ -277,7 +277,7 @@ export async function completeSecondLifecycle(input: {
     await page.getByLabel("Recipient", { exact: true }).fill(recipient);
     await page
       .getByLabel("Content", { exact: true })
-      .fill(`# ${title}\n\nKeep the completed lifecycle 0 proposal unchanged.`);
+      .fill("Keep the completed lifecycle 0 proposal unchanged.");
     await page
       .getByRole("button", { name: "Create proposal", exact: true })
       .click();
