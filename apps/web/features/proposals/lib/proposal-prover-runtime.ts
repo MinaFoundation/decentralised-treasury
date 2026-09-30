@@ -5,6 +5,11 @@ import {
 import { getRuntimeConfig } from "../../runtime-config/lib/get-runtime-config";
 import { resolveProofsEnabled } from "../../runtime-config/lib/resolve-proofs-enabled";
 import { resolveMinaNetworkId } from "../../endpoint-settings/lib/mina-network-id";
+import {
+  assertMinimumProposalAmount,
+  BOND_AMOUNT_DIVISOR,
+  parseProposalAmountMinaToNanomina as parseCreateProposalAmount,
+} from "@repo/sdk/src/utils/proposal-amount.js";
 
 const MINA_DECIMALS = 1_000_000_000n;
 
@@ -611,6 +616,8 @@ async function constructCreateProposalTransactionInCurrentThread(
     compileArtifacts?: SerializedProposalCompileArtifacts;
   },
 ): Promise<ConstructedCreateProposalTransaction> {
+  const amountNanomina = parseCreateProposalAmount(input.amount);
+  assertMinimumProposalAmount(amountNanomina);
   const startedAt = Date.now();
   if (options?.compileArtifacts) {
     console.info("[proposal-prover][create] applying cached compile artifacts");
@@ -650,10 +657,8 @@ async function constructCreateProposalTransactionInCurrentThread(
   );
   const proposalPrivateKey = PrivateKey.random();
   const proposalPublicKey = proposalPrivateKey.toPublicKey();
-  const proposalAmount = UInt64.from(
-    parseProposalAmountMinaToNanomina(input.amount),
-  );
-  const bondAmount = proposalAmount.div(10);
+  const proposalAmount = UInt64.from(amountNanomina);
+  const bondAmount = proposalAmount.div(BOND_AMOUNT_DIVISOR);
   const feeNanomina = Number(parseDecimalMinaToNanomina(input.fee));
   const lifecycleId = UInt32.from(input.lifecycleId);
   console.info("[proposal-prover][create] deriving proposal zkApp URI");

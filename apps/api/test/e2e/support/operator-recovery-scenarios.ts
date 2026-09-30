@@ -4,6 +4,7 @@ import { writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import type { TestContext } from "node:test";
 import { PrivateKey } from "o1js";
+import { parseProposalAmountMinaToNanomina } from "@repo/sdk/src/utils/proposal-amount.js";
 import {
   parseCliJson,
   readJson,
@@ -164,7 +165,10 @@ export async function runOperatorRecoveryScenarios(
         const key = PrivateKey.fromBigInt(BigInt(12_345 + index));
         const publicKey = key.toPublicKey().toBase58();
         const contents = `# Recovery proposal ${index + 1}\n\nPublic service restart case: ${stopped}.\n`;
-        const amount = ["1", "1000000000", "2000000000"][index]!;
+        const amount = (
+          parseProposalAmountMinaToNanomina(stack.proposalAmount) *
+          BigInt(index + 1)
+        ).toString();
         const contentPath = join(
           stack.artifactDirectory,
           `recovery-${stopped}.md`,

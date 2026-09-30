@@ -424,7 +424,7 @@ test(
         const eventsBefore = (
           await Mina.fetchEvents(fixture.owner.address, TokenId.default)
         ).length;
-        const payout = UInt64.from(1_100_000_000);
+        const payout = UInt64.from(11_000_000_000);
 
         await sendTransaction(fixture.blockchain.testAccounts[2]!, async () => {
           await fixture.owner.executeProposal(

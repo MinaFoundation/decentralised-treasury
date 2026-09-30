@@ -267,7 +267,7 @@ test("S40-002/003/004: a funded wallet creates a proposal through the real form 
     `${stack.treasuryApiUrl}/proposals/${proposalPublicKey}`,
   );
   expect(proposal.proposalPublicKey).toBe(proposalPublicKey);
-  expect(proposal.amount).toBe("1000000000");
+  expect(proposal.amount).toBe("10000000000");
   expect(proposal.recipient).toBe(stack.recipientPublicKey);
   expect(proposal.contents).toContain(title);
   const senderAfter = await account(stack.proposer.publicKey);
@@ -279,18 +279,18 @@ test("S40-002/003/004: a funded wallet creates a proposal through the real form 
   expect(
     BigInt(senderBefore.balance.total) - BigInt(senderAfter.balance.total),
   ).toBe(
-    BigInt(signedCommand.feePayer.body.fee) + 1_000_000_000n + 100_000_000n,
+    BigInt(signedCommand.feePayer.body.fee) + 1_000_000_000n + 1_000_000_000n,
   );
   expect(
     BigInt(ownerAfter.balance.total) - BigInt(ownerBefore.balance.total),
-  ).toBe(100_000_000n);
+  ).toBe(1_000_000_000n);
   const proposalAccount = await account(
     proposalPublicKey,
     TokenId.toBase58(
       TokenId.derive(PublicKey.fromBase58(stack.treasuryOwnerPublicKey)),
     ),
   );
-  expect(proposalAccount.zkappState[1]).toBe("1000000000");
+  expect(proposalAccount.zkappState[1]).toBe("10000000000");
   expect(proposalAccount.zkappState[2]).toBe("0");
   const events = await readJson<{
     items: Array<{ eventType: string; txHash: string }>;

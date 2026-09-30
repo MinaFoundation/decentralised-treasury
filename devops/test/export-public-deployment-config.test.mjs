@@ -99,6 +99,7 @@ function fixture() {
       policyConstants: {
         basisPoints: "10000",
         bondAmountDivisor: "10",
+        minProposalAmount: "10000000000",
         curveConstantApprovalBp: "1000",
         curveConstantParticipationBp: "500",
         maxApprovalBp: "7000",
@@ -291,6 +292,15 @@ test("a zero curve constant is rejected", () => {
   assert.throws(
     () => buildPublicDeploymentRecord(input),
     /curveConstantApprovalBp must be at least 1/,
+  );
+});
+
+test("the deployment policy records the minimum proposal amount and rejects an incorrect minimum", () => {
+  const input = fixture();
+  input.intended.policyConstants.minProposalAmount = "10";
+  assert.throws(
+    () => buildPublicDeploymentRecord(input),
+    /minimum bond of 1 MINA/,
   );
 });
 

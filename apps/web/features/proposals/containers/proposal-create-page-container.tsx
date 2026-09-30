@@ -2,6 +2,10 @@
 
 import { useEffect, useRef, useState, type JSX } from "react";
 import { useRouter } from "next/navigation";
+import {
+  BOND_AMOUNT_DIVISOR,
+  parseProposalAmountMinaToNanomina,
+} from "@repo/sdk/src/utils/proposal-amount.js";
 import type { TreasuryProposalCreationDraft } from "@repo/ui/treasury-proposal-creation-form";
 import { TreasuryProposalCreationForm } from "@repo/ui/treasury-proposal-creation-form";
 import type { TreasuryTransactionSummaryItem } from "@repo/ui/treasury-transaction-flow-dialog";
@@ -121,13 +125,18 @@ function resolveCreateProposalPeriod(
 }
 
 function formatBondAmount(amount: string): string {
-  const parsed = Number(amount);
-  if (!Number.isFinite(parsed)) {
+  try {
+    const bond =
+      parseProposalAmountMinaToNanomina(amount) / BigInt(BOND_AMOUNT_DIVISOR);
+    const whole = new Intl.NumberFormat("en-US").format(bond / 1_000_000_000n);
+    const fraction = (bond % 1_000_000_000n)
+      .toString()
+      .padStart(9, "0")
+      .replace(/0+$/, "");
+    return fraction ? `${whole}.${fraction}` : whole;
+  } catch {
     return "-";
   }
-  return new Intl.NumberFormat("en-US", {
-    maximumFractionDigits: 9,
-  }).format(parsed / 10);
 }
 
 function extractProposalTitle(contents: string): string {

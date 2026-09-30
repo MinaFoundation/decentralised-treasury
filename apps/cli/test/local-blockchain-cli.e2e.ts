@@ -37,8 +37,8 @@ const LIFECYCLE_PERIOD_DURATION = 20;
 const TX_FEE = "100000000";
 const VOTER_FUNDING_AMOUNT = "2000000000";
 const TREASURY_FUNDING_AMOUNT = "100000000000";
-const PROPOSAL_AMOUNT = "1000000000";
-const PROPOSAL_PAYOUT_AMOUNT = "1100000000";
+const PROPOSAL_AMOUNT = "10000000000";
+const PROPOSAL_PAYOUT_AMOUNT = "11000000000";
 const EMERGENCY_WITHDRAWAL_AMOUNT = "1000000000";
 const PROOFS_ENABLED_VALUE = process.env.PROOFS_ENABLED;
 if (PROOFS_ENABLED_VALUE !== "false" && PROOFS_ENABLED_VALUE !== "true") {
@@ -491,7 +491,7 @@ async function waitForExactPayout(
         proposalPublicKey,
         recipient: recipientPublicKey,
         amountToPayOut: PROPOSAL_PAYOUT_AMOUNT,
-        bondAmount: "100000000",
+        bondAmount: "1000000000",
         paidOutAmount: PROPOSAL_PAYOUT_AMOUNT,
         remainingAmount: "0",
         status: "canonical",

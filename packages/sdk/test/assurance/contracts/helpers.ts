@@ -32,8 +32,8 @@ import type { MerkleTreeStorage } from "../../../src/storage/merkle-tree-storage
 import { createLocalBlockchain } from "../../provable/context/contracts/mina-local.js";
 
 const fee = UInt64.from(100_000_000);
-const proposalAmount = UInt64.from(1_000_000_000);
-const treasuryFunding = UInt64.from(10_000_000_000);
+const proposalAmount = UInt64.from(10_000_000_000);
+const treasuryFunding = UInt64.from(100_000_000_000);
 const pauseControllerKey = PrivateKey.fromBigInt(40_001n);
 const ownerKey = PrivateKey.fromBigInt(40_002n);
 const proposalKey = PrivateKey.fromBigInt(40_003n);

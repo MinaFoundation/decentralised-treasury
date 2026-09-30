@@ -1,5 +1,6 @@
 import { Command, Option } from "commander";
 import { PrivateKey, PublicKey, TokenId, UInt32, UInt64 } from "o1js";
+import { assertMinimumProposalAmount } from "@repo/sdk/src/utils/proposal-amount.js";
 import { parseBooleanOption, parseIntOption } from "./option-parsers.js";
 import { type ProposalVote } from "@repo/sdk/src/services/treasury-owner-service.js";
 import {
@@ -132,6 +133,7 @@ interface ReadProposalStateCommandOptions {
 export async function createProposal(
   options: CreateProposalCommandOptions,
 ): Promise<void> {
+  assertMinimumProposalAmount(options.amount.toBigInt());
   const sender = resolveSigningAccount({
     signer: options.signer,
     label: "Sender",

@@ -180,20 +180,20 @@ export async function completeSecondLifecycle(input: {
     originalState.stakingEpochDataLedgerHash,
   );
   const firstCriteria = lifecycleExpectations(
-    1_000_000_000n,
+    10_000_000_000n,
     1_000_000_000_000n,
     1_500_000_000_000n,
   );
   const { amountWithBond, ...secondCriteria } = lifecycleExpectations(
-    2_000_000_000n,
+    20_000_000_000n,
     1_000_000_000_000n,
     2_000_000_000_000n,
   );
-  expect(amountWithBond).toBe("2200000000");
+  expect(amountWithBond).toBe("22000000000");
   expect(secondCriteria).toEqual({
-    requiredParticipationBp: "2115",
-    requiredApprovalBp: "5137",
-    requiredParticipation: "423000000000",
+    requiredParticipationBp: "2869",
+    requiredApprovalBp: "5421",
+    requiredParticipation: "573800000000",
   });
   expect(
     await readJson<Record<string, unknown>>(
@@ -206,7 +206,7 @@ export async function completeSecondLifecycle(input: {
   });
   expect(originalState).toMatchObject({
     lifecycleId: "0",
-    paidOutAmount: "1100000000",
+    paidOutAmount: "11000000000",
     status: "approved",
   });
   expect(snapshot.stakingEpochDataLedgerHash).not.toBe(
@@ -264,7 +264,7 @@ export async function completeSecondLifecycle(input: {
     const treasuryBefore = await balance(stack, stack.treasuryOwnerPublicKey);
     await page.goto(`${webUrl}/proposals/create`);
     await page.getByLabel("Title", { exact: true }).fill(title);
-    await page.getByLabel("Amount", { exact: true }).fill("2");
+    await page.getByLabel("Amount", { exact: true }).fill("20");
     await page.getByLabel("Recipient", { exact: true }).fill(recipient);
     await page
       .getByLabel("Content", { exact: true })
@@ -290,15 +290,15 @@ export async function completeSecondLifecycle(input: {
     expect(Number(senderAfter.nonce)).toBe(Number(senderBefore.nonce) + 1);
     expect(
       BigInt(senderBefore.balance.total) - BigInt(senderAfter.balance.total),
-    ).toBe(BigInt(command.feePayer.body.fee) + 1_000_000_000n + 200_000_000n);
+    ).toBe(BigInt(command.feePayer.body.fee) + 1_000_000_000n + 2_000_000_000n);
     expect(
       BigInt(treasuryAfter.balance.total) -
         BigInt(treasuryBefore.balance.total),
-    ).toBe(200_000_000n);
+    ).toBe(2_000_000_000n);
     signed.push(...wallet.signedTransactions);
     expect(await proposalState(stack, proposal)).toMatchObject({
       lifecycleId: "1",
-      amount: "2000000000",
+      amount: "20000000000",
       paidOutAmount: "0",
       stakingEpochDataLedgerHash: snapshot.stakingEpochDataLedgerHash,
       stakingEpochDataLedgerTotalCurrency:
@@ -310,7 +310,7 @@ export async function completeSecondLifecycle(input: {
       ),
     ).toMatchObject({
       lifecycleId: 1,
-      amount: "2000000000",
+      amount: "20000000000",
       recipient,
       contents: `# ${title}\n\nKeep the completed lifecycle 0 proposal unchanged.`,
       stakingEpochDataLedgerHash: snapshot.stakingEpochDataLedgerHash,
@@ -420,12 +420,12 @@ export async function completeSecondLifecycle(input: {
   // This does not create or complete a third proposal lifecycle.
   await importSnapshot(stack, "2", snapshot.outputPath);
   await setLifecycleSlot(stack, 1600);
-  await test.step("Lifecycle 1: execute 2.2 MINA through Web and preserve lifecycle 0", async () => {
+  await test.step("Lifecycle 1: execute 22 MINA through Web and preserve lifecycle 0", async () => {
     await selectAccount(stack.proposer, route, title);
     const senderBefore = await balance(stack, stack.proposer.publicKey);
     const treasuryBefore = await balance(stack, stack.treasuryOwnerPublicKey);
     const recipientBefore = await balance(stack, recipient);
-    await page.getByLabel("Payout amount", { exact: true }).fill("2.2");
+    await page.getByLabel("Payout amount", { exact: true }).fill("22");
     await page
       .getByRole("button", { name: "Execute proposal", exact: true })
       .click();
@@ -450,19 +450,19 @@ export async function completeSecondLifecycle(input: {
     expect(
       BigInt((await balance(stack, recipient)).balance.total) -
         BigInt(recipientBefore.balance.total),
-    ).toBe(2_200_000_000n);
+    ).toBe(22_000_000_000n);
     expect(
       BigInt(treasuryBefore.balance.total) -
         BigInt(
           (await balance(stack, stack.treasuryOwnerPublicKey)).balance.total,
         ),
-    ).toBe(2_200_000_000n);
+    ).toBe(22_000_000_000n);
     await expect
       .poll(
         async () =>
           (await readJson<{ paidOutAmount: string }>(apiRoute)).paidOutAmount,
       )
-      .toBe("2200000000");
+      .toBe("22000000000");
     const execution = await readJson<{ total: number; items: unknown[] }>(
       `${apiRoute}/executions`,
     );
@@ -470,15 +470,15 @@ export async function completeSecondLifecycle(input: {
     expect(execution.items).toEqual([
       expect.objectContaining({
         recipient,
-        amountToPayOut: "2200000000",
-        bondAmount: "200000000",
+        amountToPayOut: "22000000000",
+        bondAmount: "2000000000",
         senderPublicKey: stack.proposer.publicKey,
-        paidOutAmount: "2200000000",
+        paidOutAmount: "22000000000",
         remainingAmount: "0",
       }),
     ]);
     expect(await proposalState(stack, proposal)).toMatchObject({
-      paidOutAmount: "2200000000",
+      paidOutAmount: "22000000000",
       lifecycleId: "1",
       stakingEpochDataLedgerHash: snapshot.stakingEpochDataLedgerHash,
     });

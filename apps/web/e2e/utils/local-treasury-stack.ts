@@ -494,7 +494,7 @@ export async function startLocalTreasuryStack(
       voter2,
       participants,
       recipientPublicKey: recipient.publicKey,
-      proposalAmount: "1",
+      proposalAmount: "10",
       proofsEnabled: mode === "true",
       runtimeEnv,
       artifactDirectory,

@@ -26,6 +26,86 @@ test(
     await compileAuthorizationContracts(proofsEnabled);
 
     await t.test(
+      "requires a 1 MINA bond at the proposal amount boundary",
+      async () => {
+        const fixture = await createOwnerDeploymentFixture();
+        const payer = fixture.blockchain.testAccounts[2]!;
+        for (const amount of [0n, 1n, 9n, 9_999_999_999n]) {
+          const key = 49_000n + amount;
+          const ownerBefore = fixture.blockchain
+            .getAccount(fixture.owner.address)
+            .balance.toBigInt();
+          const payerBefore = fixture.blockchain
+            .getAccount(payer)
+            .balance.toBigInt();
+          const eventsBefore = (await fixture.owner.fetchEvents()).length;
+          await assert.rejects(
+            () =>
+              submitProposal(fixture, {
+                amount: UInt64.from(amount),
+                proposalKeyValue: key,
+                bondPayerIndex: 2,
+              }),
+            /Proposal amount must be at least 10 MINA/,
+          );
+          assert.equal(
+            fixture.blockchain
+              .getAccount(fixture.owner.address)
+              .balance.toBigInt(),
+            ownerBefore,
+          );
+          assert.equal(
+            fixture.blockchain.getAccount(payer).balance.toBigInt(),
+            payerBefore,
+          );
+          assert.equal(
+            (await fixture.owner.fetchEvents()).length,
+            eventsBefore,
+          );
+          assert.equal(
+            Mina.hasAccount(
+              PrivateKey.fromBigInt(key).toPublicKey(),
+              fixture.owner.deriveTokenId(),
+            ),
+            false,
+          );
+        }
+        for (const [amount, bond] of [
+          [10_000_000_000n, 1_000_000_000n],
+          [10_000_000_001n, 1_000_000_000n],
+          [10_000_000_009n, 1_000_000_000n],
+          [10_000_000_010n, 1_000_000_001n],
+        ]) {
+          const ownerBefore = fixture.blockchain
+            .getAccount(fixture.owner.address)
+            .balance.toBigInt();
+          const payerBefore = fixture.blockchain
+            .getAccount(payer)
+            .balance.toBigInt();
+          const created = await submitProposal(fixture, {
+            amount: UInt64.from(amount),
+            proposalKeyValue: 49_100n + amount,
+            bondPayerIndex: 2,
+          });
+          assert.equal(
+            (await created.proposal.amount.fetch())!.toBigInt(),
+            amount,
+          );
+          assert.equal(
+            fixture.blockchain
+              .getAccount(fixture.owner.address)
+              .balance.toBigInt(),
+            ownerBefore + bond,
+          );
+          assert.equal(
+            fixture.blockchain.getAccount(payer).balance.toBigInt(),
+            payerBefore - bond,
+          );
+        }
+      },
+    );
+
+    await t.test(
       "SC-OWNER-001/002/005/008 accept the first and last lifecycle-zero proposal slots and create a new account",
       async () => {
         for (const testCase of [
@@ -53,7 +133,7 @@ test(
           );
           assert.equal(
             (await created.proposal.amount.fetch())!.toBigInt(),
-            1_000_000_000n,
+            10_000_000_000n,
             testCase.id,
           );
         }
@@ -338,13 +418,13 @@ test(
         );
         assert.equal(
           fixture.blockchain.getAccount(bondPayer).balance.toBigInt(),
-          before.toBigInt() - 100_000_000n,
+          before.toBigInt() - 1_000_000_000n,
         );
         assert.equal(
           fixture.blockchain
             .getAccount(fixture.owner.address)
             .balance.toBigInt(),
-          100_000_000n,
+          1_000_000_000n,
         );
       },
     );

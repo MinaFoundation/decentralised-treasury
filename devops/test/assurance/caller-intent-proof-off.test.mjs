@@ -53,6 +53,7 @@ function deploymentFixture() {
       policyConstants: {
         basisPoints: "10000",
         bondAmountDivisor: "10",
+        minProposalAmount: "10000000000",
         curveConstantApprovalBp: "1000",
         curveConstantParticipationBp: "500",
         maxApprovalBp: "7000",

@@ -171,7 +171,7 @@ test("S40-006/007: browser completes two lifecycles with distinct snapshots on o
       await page.goto(`${webUrl}/proposals/create`);
       await connect(page);
       await page.getByLabel("Title", { exact: true }).fill(title);
-      await page.getByLabel("Amount", { exact: true }).fill("1");
+      await page.getByLabel("Amount", { exact: true }).fill("10");
       await page
         .getByLabel("Recipient", { exact: true })
         .fill(stack.recipientPublicKey);
@@ -366,8 +366,8 @@ test("S40-006/007: browser completes two lifecycles with distinct snapshots on o
       },
       {
         name: "payout exceeds remaining",
-        value: "2",
-        error: "Payout amount cannot exceed the remaining payout of 1.1 MINA.",
+        value: "12",
+        error: "Payout amount cannot exceed the remaining payout of 11 MINA.",
       },
     ]) {
       await test.step(`Reject ${scenario.name} before signing`, async () => {
@@ -400,7 +400,7 @@ test("S40-006/007: browser completes two lifecycles with distinct snapshots on o
       const senderBefore = await account(stack, stack.proposer.publicKey);
       const recipientBefore = await account(stack, stack.recipientPublicKey);
       const treasuryBefore = await account(stack, stack.treasuryOwnerPublicKey);
-      await page.getByLabel("Payout amount", { exact: true }).fill("1.1");
+      await page.getByLabel("Payout amount", { exact: true }).fill("11");
       await page
         .getByRole("button", { name: "Execute proposal", exact: true })
         .click();
@@ -425,14 +425,14 @@ test("S40-006/007: browser completes two lifecycles with distinct snapshots on o
       expect(
         BigInt(recipientAfter.balance.total) -
           BigInt(recipientBefore.balance.total),
-      ).toBe(1_100_000_000n);
+      ).toBe(11_000_000_000n);
       expect(
         BigInt(treasuryBefore.balance.total) -
           BigInt(treasuryAfter.balance.total),
-      ).toBe(1_100_000_000n);
+      ).toBe(11_000_000_000n);
       await expect
         .poll(async () => (await readJson<Proposal>(apiRoute)).paidOutAmount)
-        .toBe("1100000000");
+        .toBe("11000000000");
       await expect
         .poll(
           async () =>
@@ -445,9 +445,9 @@ test("S40-006/007: browser completes two lifecycles with distinct snapshots on o
       expect(executions.items).toHaveLength(1);
       expect(executions.items[0]).toMatchObject({
         recipient: stack.recipientPublicKey,
-        amountToPayOut: "1100000000",
+        amountToPayOut: "11000000000",
         senderPublicKey: stack.proposer.publicKey,
-        paidOutAmount: "1100000000",
+        paidOutAmount: "11000000000",
         remainingAmount: "0",
       });
       const final = await readJson<Proposal>(apiRoute);
@@ -470,7 +470,7 @@ test("S40-006/007: browser completes two lifecycles with distinct snapshots on o
         ]),
         "proposalAddress",
       );
-      expect(chainState.paidOutAmount).toBe("1100000000");
+      expect(chainState.paidOutAmount).toBe("11000000000");
       signed.push(...wallet.signedTransactions);
       evidence.execution = {
         senderBefore,

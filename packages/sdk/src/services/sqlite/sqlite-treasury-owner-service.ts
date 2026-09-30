@@ -60,6 +60,7 @@ import {
 } from "../../provable/contracts/treasury-owner.js";
 import { TreasuryPauseControllerSmartContract } from "../../provable/contracts/treasury-pause-controller/treasury-pause-controller.js";
 import { BOND_AMOUNT_DIVISOR } from "../../provable/contracts/treasury-constants.js";
+import { assertMinimumProposalAmount } from "../../utils/proposal-amount.js";
 import { KeyvSqlite } from "@keyv/sqlite";
 import { createSqliteVotingLedgerStorage } from "../../storage/sqlite/factory/sqlite-voting-ledger-storage.js";
 import { createSqliteNullifierLedgerStorage } from "../../storage/sqlite/factory/sqlite-nullifier-ledger-storage.js";
@@ -340,6 +341,7 @@ export class SqliteTreasuryOwnerService implements TreasuryOwnerService {
   public async createProposal(
     options: CreateTreasuryProposalOptions,
   ): Promise<CreateTreasuryProposalResult> {
+    assertMinimumProposalAmount(options.amount.toBigInt());
     const {
       senderPublicKey,
       treasuryOwnerPublicKey,

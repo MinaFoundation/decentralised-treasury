@@ -123,11 +123,11 @@ test(
     assert.equal((await fixture.owner.fetchEvents()).length, 1);
 
     const voterCases = [
-      { balance: 4_000_000_000n, key: 50_001n, vote: Vote.YAY },
-      { balance: 2_000_000_000n, key: 50_002n, vote: Vote.YAY },
-      { balance: 1_000_000_000n, key: 50_003n, vote: Vote.NAY },
-      { balance: 500_000_000n, key: 50_004n, vote: Vote.ABSTRAIN },
-      { balance: 250_000_000n, key: 50_005n, vote: Vote.ABSTRAIN },
+      { balance: 40_000_000_000n, key: 50_001n, vote: Vote.YAY },
+      { balance: 20_000_000_000n, key: 50_002n, vote: Vote.YAY },
+      { balance: 10_000_000_000n, key: 50_003n, vote: Vote.NAY },
+      { balance: 5_000_000_000n, key: 50_004n, vote: Vote.ABSTRAIN },
+      { balance: 2_500_000_000n, key: 50_005n, vote: Vote.ABSTRAIN },
     ].map((entry) => {
       const privateKey = PrivateKey.fromBigInt(entry.key);
       fixture.blockchain.addAccount(

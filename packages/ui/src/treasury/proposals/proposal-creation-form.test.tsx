@@ -14,6 +14,58 @@ afterEach(() => {
 });
 
 describe("TreasuryProposalCreationForm", () => {
+  it.each(["1", "9.999999999", "9.9999999999"])(
+    "rejects %s MINA below the minimum",
+    (amount) => {
+      const onSubmit = vi.fn();
+      render(
+        <TreasuryProposalCreationForm
+          lifecycleId={0}
+          connectedWalletAddress="wallet"
+          initialTitle="Proposal"
+          initialContent="Work"
+          initialRecipient="recipient"
+          initialAmount={amount}
+          onSubmit={onSubmit}
+        />,
+      );
+      expect(
+        screen.getByText(
+          "Requested amount must be at least 10 MINA. The minimum bond is 1 MINA.",
+        ),
+      ).toBeTruthy();
+      expect(screen.getByLabelText("Amount").getAttribute("aria-invalid")).toBe(
+        "true",
+      );
+      fireEvent.click(screen.getByRole("button", { name: "Create proposal" }));
+      expect(onSubmit).not.toHaveBeenCalled();
+    },
+  );
+
+  it.each([
+    ["10", "1 MINA"],
+    ["10.000000009", "1 MINA"],
+    ["10.00000001", "1.000000001 MINA"],
+    ["10.1", "1.01 MINA"],
+  ])("submits %s MINA and displays the exact bond", (amount, bond) => {
+    const onSubmit = vi.fn();
+    render(
+      <TreasuryProposalCreationForm
+        lifecycleId={0}
+        connectedWalletAddress="wallet"
+        initialTitle="Proposal"
+        initialContent="Work"
+        initialRecipient="recipient"
+        initialAmount={amount}
+        onSubmit={onSubmit}
+      />,
+    );
+    expect(screen.getByText(bond)).toBeTruthy();
+    expect(screen.getByLabelText("Amount").getAttribute("min")).toBe("10");
+    fireEvent.click(screen.getByRole("button", { name: "Create proposal" }));
+    expect(onSubmit).toHaveBeenCalledWith(expect.objectContaining({ amount }));
+  });
+
   it("shows lifecycle as read-only context and submits a valid draft", () => {
     const onSubmit = vi.fn();
 

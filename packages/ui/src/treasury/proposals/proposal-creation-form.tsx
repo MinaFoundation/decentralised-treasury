@@ -11,6 +11,12 @@ import ReactMarkdown, { type Components } from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { useTreasuryIntl } from "../../i18n";
 import { cn } from "../../lib/utils";
+import { formatMinaAmount, formatMinaAmountWithSuffix } from "../../lib/mina";
+import {
+  BOND_AMOUNT_DIVISOR,
+  MIN_PROPOSAL_AMOUNT,
+  parseProposalAmountMinaToNanomina,
+} from "@repo/sdk/src/utils/proposal-amount.js";
 import { Alert, AlertDescription, AlertTitle } from "../../components/ui/alert";
 import { Button } from "../../components/ui/button";
 import {
@@ -234,9 +240,15 @@ export function TreasuryProposalCreationForm({
   );
   const previewMarkdownContent = normalizedContent;
   const normalizedRecipient = recipient.trim();
-  const parsedAmountValue = parseProposalAmount(amount);
+  const parsedAmountNanomina = parseProposalAmount(amount);
+  const parsedAmountValue =
+    parsedAmountNanomina === null
+      ? null
+      : Number(parsedAmountNanomina) / 1_000_000_000;
   const derivedBondAmount =
-    parsedAmountValue !== null ? Math.floor(parsedAmountValue / 10) : null;
+    parsedAmountNanomina !== null
+      ? parsedAmountNanomina / BigInt(BOND_AMOUNT_DIVISOR)
+      : null;
   const votingRequirementEstimate = useMemo(
     () =>
       calculateVotingRequirementEstimate({
@@ -274,17 +286,23 @@ export function TreasuryProposalCreationForm({
           id: "ui.proposalCreation.amountRequired",
           defaultMessage: "Enter a requested amount.",
         })
-      : parsedAmountValue === null
+      : parsedAmountNanomina === null
         ? intl.formatMessage({
             id: "ui.proposalCreation.amountInvalid",
             defaultMessage: "Enter a valid MINA amount.",
           })
-        : parsedAmountValue <= 0
+        : parsedAmountNanomina <= 0n
           ? intl.formatMessage({
               id: "ui.proposalCreation.amountNonPositive",
               defaultMessage: "Requested amount must be greater than zero.",
             })
-          : null;
+          : parsedAmountNanomina < MIN_PROPOSAL_AMOUNT
+            ? intl.formatMessage({
+                id: "ui.proposalCreation.amountBelowMinimum",
+                defaultMessage:
+                  "Requested amount must be at least 10 MINA. The minimum bond is 1 MINA.",
+              })
+            : null;
   const recipientError =
     normalizedRecipient.length === 0
       ? intl.formatMessage({
@@ -385,7 +403,7 @@ export function TreasuryProposalCreationForm({
     lifecycleId: lifecycleId ?? null,
     proposerAddress: hasConnectedWallet ? normalizedWalletAddress : null,
     content: markdownContent,
-    amount: formatProposalAmountForSubmit(parsedAmountValue),
+    amount: formatMinaAmount(parsedAmountNanomina) ?? "",
     recipient: normalizedRecipient,
   });
 
@@ -515,6 +533,7 @@ export function TreasuryProposalCreationForm({
               <FieldShell label={amountLabel} error={amountError}>
                 <MinaAmountInput
                   value={amount}
+                  min={Number(MIN_PROPOSAL_AMOUNT / 1_000_000_000n)}
                   onChange={(event) => setAmount(event.target.value)}
                   placeholder={intl.formatMessage({
                     id: "ui.proposalCreation.amountPlaceholder",
@@ -769,7 +788,7 @@ export function TreasuryProposalCreationForm({
                 })}
                 value={
                   parsedAmountValue !== null
-                    ? formatProposalAmount(parsedAmountValue)
+                    ? (formatMinaAmountWithSuffix(parsedAmountNanomina) ?? "-")
                     : "-"
                 }
               />
@@ -780,7 +799,7 @@ export function TreasuryProposalCreationForm({
                 })}
                 value={
                   derivedBondAmount !== null
-                    ? formatProposalAmount(derivedBondAmount)
+                    ? (formatMinaAmountWithSuffix(derivedBondAmount) ?? "-")
                     : "-"
                 }
               />
@@ -948,23 +967,16 @@ function SummaryRow({
   );
 }
 
-function parseProposalAmount(value: string): number | null {
-  const normalized = value.replace(/,/g, "").trim();
-  if (!normalized) {
+function parseProposalAmount(value: string): bigint | null {
+  try {
+    return parseProposalAmountMinaToNanomina(value);
+  } catch {
     return null;
   }
-  const parsed = Number(normalized);
-  return Number.isFinite(parsed) ? parsed : null;
 }
 
 function normalizeProposalAmountInput(value: string): string {
   return value.replace(/,/g, "").trim();
-}
-
-function formatProposalAmount(value: number): string {
-  return `${new Intl.NumberFormat("en-US", {
-    maximumFractionDigits: 9,
-  }).format(value)} MINA`;
 }
 
 function formatVoteCriteriaAmount(value: number): string {
@@ -979,15 +991,6 @@ function formatBasisPointsPercent(value: number): string {
     minimumFractionDigits: 0,
     maximumFractionDigits: 2,
   }).format(value / 100)}%`;
-}
-
-function formatProposalAmountForSubmit(value: number | null): string {
-  if (value === null) {
-    return "";
-  }
-  return new Intl.NumberFormat("en-US", {
-    maximumFractionDigits: 9,
-  }).format(value);
 }
 
 async function computeProposalZkAppUriHash(markdown: string): Promise<string> {

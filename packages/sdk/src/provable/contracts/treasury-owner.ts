@@ -29,7 +29,10 @@ import {
 } from "./treasury-proposal/treasury-proposal.js";
 import { SideLoadedStakingLedgerToVotingLedgerProof } from "../staking-ledger-to-voting-ledger.js";
 import { Proposal } from "./treasury-proposal/treasury-proposal.js";
-import { BOND_AMOUNT_DIVISOR } from "./treasury-constants.js";
+import {
+  BOND_AMOUNT_DIVISOR,
+  MIN_PROPOSAL_AMOUNT,
+} from "./treasury-constants.js";
 import { TreasuryPauseControllerSmartContract } from "./treasury-pause-controller/treasury-pause-controller.js";
 import {
   MultisigSignature,
@@ -230,6 +233,11 @@ export class TreasuryOwnerSmartContract extends TokenContract {
     lifecycleId: UInt32,
   ) {
     provableLog("createProposal", { lifecycleId });
+
+    proposal.amount.assertGreaterThanOrEqual(
+      UInt64.from(MIN_PROPOSAL_AMOUNT),
+      "Proposal amount must be at least 10 MINA (10000000000 nanomina).",
+    );
 
     const { stakingEpochDataLedgerHash, stakingEpochDataLedgerTotalCurrency } =
       await this.snapshotStakingEpochData();

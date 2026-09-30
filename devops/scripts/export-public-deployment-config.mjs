@@ -228,6 +228,11 @@ function requirePolicyConstants(value, path, participantCount) {
       `${path}.bondAmountDivisor`,
       { minimum: 1n },
     ),
+    minProposalAmount: requireNonnegativeInteger(
+      constants.minProposalAmount,
+      `${path}.minProposalAmount`,
+      { minimum: 1n },
+    ),
     curveConstantApprovalBp: requireNonnegativeInteger(
       constants.curveConstantApprovalBp,
       `${path}.curveConstantApprovalBp`,
@@ -271,6 +276,14 @@ function requirePolicyConstants(value, path, participantCount) {
     ),
   };
 
+  if (
+    BigInt(result.minProposalAmount) !==
+    BigInt(result.bondAmountDivisor) * 1_000_000_000n
+  ) {
+    throw new Error(
+      `${path}.minProposalAmount must require a minimum bond of 1 MINA`,
+    );
+  }
   const basisPoints = BigInt(result.basisPoints);
   const requireBasisPointRange = (name) => {
     if (BigInt(result[name]) > basisPoints) {

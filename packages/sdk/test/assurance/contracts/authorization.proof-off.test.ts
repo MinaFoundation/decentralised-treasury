@@ -346,7 +346,7 @@ test(
         const voteOutput = new VoteReducerPublicOutput({
           toActionsHash: target.actionStateOne,
           toNullifierRoot: Field(0),
-          yay: UInt64.from(5_000_000_000),
+          yay: UInt64.from(50_000_000_000),
           nay: UInt64.from(0),
           abstain: UInt64.from(0),
           actionStateHistory: ActionStateHistory.fromTarget(target),

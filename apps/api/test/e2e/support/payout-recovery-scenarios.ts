@@ -5,6 +5,10 @@ import { join } from "node:path";
 import type { TestContext } from "node:test";
 import { PrivateKey, PublicKey, TokenId } from "o1js";
 import {
+  BOND_AMOUNT_DIVISOR,
+  parseProposalAmountMinaToNanomina,
+} from "@repo/sdk/src/utils/proposal-amount.js";
+import {
   PROPOSAL_CREATED_EVENT_NAME,
   PROPOSAL_VOTE_DISPATCHED_EVENT_NAME,
   PROPOSAL_VOTES_TALLIED_EVENT_NAME,
@@ -105,6 +109,13 @@ export async function runPayoutRecoveryScenarios(
   t: TestContext,
   stack: LocalTreasuryStack,
 ) {
+  const proposalAmount = parseProposalAmountMinaToNanomina(
+    stack.proposalAmount,
+  );
+  const bondAmount = proposalAmount / BigInt(BOND_AMOUNT_DIVISOR);
+  const totalPayout = proposalAmount + bondAmount;
+  const partialPayout = (proposalAmount * 4n) / 10n;
+  const remainingPayout = totalPayout - partialPayout;
   const admin = () => readJson<AdminState>(`${stack.baseUrl}/admin/state`);
   const initial = await admin();
   assert.equal(initial.proofsEnabled, stack.proofsEnabled);
@@ -204,7 +215,7 @@ export async function runPayoutRecoveryScenarios(
             "--recipient-public-key",
             stack.recipientPublicKey,
             "--amount",
-            "1000000000",
+            proposalAmount.toString(),
             "--content-file",
             path,
             ...txArgs,
@@ -362,15 +373,15 @@ export async function runPayoutRecoveryScenarios(
   for (const scenario of [
     {
       name: "partial payout while Processor is stopped",
-      amount: "400000000",
-      paid: "400000000",
-      remaining: "700000000",
+      amount: partialPayout.toString(),
+      paid: partialPayout.toString(),
+      remaining: remainingPayout.toString(),
       stopProcessor: true,
     },
     {
       name: "complete remaining payout after projection recovery",
-      amount: "700000000",
-      paid: "1100000000",
+      amount: remainingPayout.toString(),
+      paid: totalPayout.toString(),
       remaining: "0",
       stopProcessor: false,
     },
@@ -455,7 +466,7 @@ export async function runPayoutRecoveryScenarios(
             (row) =>
               row.amountToPayOut === scenario.amount &&
               row.proposalPublicKey === paid.publicKey &&
-              row.bondAmount === "100000000" &&
+              row.bondAmount === bondAmount.toString() &&
               row.status === "canonical" &&
               row.paidOutAmount === scenario.paid &&
               row.remainingAmount === scenario.remaining &&

@@ -120,7 +120,7 @@ for (const signer of ["in-memory", "ledger"] as const) {
       proposalPublicKey: proposal.toPublicKey(),
       proposalLifecycleId: UInt32.from(0),
       recipientPublicKey: recipient,
-      amount: UInt64.from(1_000_000_000),
+      amount: UInt64.from(10_000_000_000),
       proposalZkappUri: "https://example.com/proposal",
       transactionSigner,
     });
@@ -213,7 +213,7 @@ for (const signer of ["in-memory", "ledger"] as const) {
     });
     assert.equal(
       local.getAccount(owner.toPublicKey()).balance.toBigInt(),
-      2_100_000_000n,
+      3_000_000_000n,
     );
     const pauseResult = await new SqlitePauseControllerService().deploy({
       minaNodeUrl: "unused",

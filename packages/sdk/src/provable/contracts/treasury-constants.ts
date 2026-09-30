@@ -1,7 +1,11 @@
 import { UInt96 } from "o1js";
 
+export {
+  BOND_AMOUNT_DIVISOR,
+  MIN_PROPOSAL_AMOUNT,
+} from "../../utils/proposal-amount.js";
+
 // TODO: configure appropriate values based on real world data
-export const BOND_AMOUNT_DIVISOR = 10;
 export const BASIS_POINTS = UInt96.from(10_000);
 
 export const MIN_PARTICIPATION_BP = UInt96.from(2_000);
