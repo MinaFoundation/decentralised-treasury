@@ -54,6 +54,7 @@ jobs:
       - run: pnpm --dir packages/processor run check-types
       - run: pnpm --dir apps/api run check-types
       - run: pnpm test:devops:compose-config
+      - run: pnpm test:o1js-security && pnpm test:o1js-uint128 && pnpm test:o1js-uint96
       - name: Indexer coverage
         run: |
           set -o pipefail

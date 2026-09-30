@@ -50,6 +50,6 @@
     "vitest": "^4.1.2"
   },
   "peerDependencies": {
-    "o1js": "github:maht0rz/o1js#87bc121acad6ba4d81df499e49ff44800c130ded"
+    "o1js": "github:maht0rz/o1js#d670b3efd4fc7f0bf431a0b2211c28b1dc257944"
   }
 }
