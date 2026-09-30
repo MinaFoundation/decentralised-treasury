@@ -17,12 +17,8 @@ class RequestValidationError extends Error {}
 export const STAKING_LEDGER_ACCOUNT_NOT_FOUND_ERROR =
   "staking account for publicKey is not available";
 
-const accountCodec = Account as unknown as {
-  toJSON(value: unknown): Record<string, unknown>;
-};
-
-function toAccountJson(account: unknown): Record<string, unknown> {
-  return accountCodec.toJSON(account);
+function toAccountJson(account: Account): ReturnType<typeof Account.toJSON> {
+  return Account.toJSON(account);
 }
 
 function toWitnessJson(witness: PrefixedMerkleWitness36): Record<string, unknown> {
@@ -201,6 +197,6 @@ export function createStakingLedgerWitnessRoutes({
 export type StakingLedgerWitnessPayload = {
   lifecycleId: string;
   index: string;
-  account: Record<string, unknown>;
+  account: ReturnType<typeof Account.toJSON>;
   witness: Record<string, unknown>;
 };

@@ -1,6 +1,11 @@
 import { createReadStream, statSync } from "fs";
 import streamJson from "stream-json";
 import StreamArray from "stream-json/streamers/StreamArray.js";
+import { pipeline, Writable } from "stream";
+import { ledgerJsonByteStrings } from "./ledger-json-bytes.js";
+import { ledgerPublicKeyFromBase58 } from "../../utils/public-key.js";
+import { LedgerTokenSymbol } from "../../provable/ledger-token-symbol.js";
+import { hashLedgerZkappUri } from "../../provable/ledger-zkapp-uri.js";
 import {
   Account,
   packToFields,
@@ -13,13 +18,11 @@ import {
   Field,
   PublicKey,
   TokenId,
-  TokenSymbol,
   UInt64,
   StateHashBase58,
   ReceiptChainHashBase58,
   UInt32,
   Bool,
-  ZkappUri,
   VerificationKey,
 } from "o1js";
 import {
@@ -202,52 +205,47 @@ export abstract class BaseStakingLedger implements StakingLedger {
     const { parser } = streamJson;
     const { streamArray } = StreamArray;
 
-    let accountCount = 0;
-    const accounts: Record<number, Account> = {};
-
-    return new Promise(async (resolve, reject) => {
-      const { size: totalSize } = statSync(stakingLedgerPath);
-      const readStream = createReadStream(stakingLedgerPath);
-      let parseQueue = Promise.resolve();
-
-      readStream
-        .pipe(parser())
-        .pipe(streamArray())
-        .on("data", ({ value }: { key: number; value: any }) => {
-          accountCount++;
-          const index = accountCount;
-
-          parseQueue = parseQueue.then(async () => {
-            const account = await this.parseStakingLedgerAccount(value);
-            accounts[index] = account;
-            onAccountReadComplete?.(readStream.bytesRead, totalSize);
-          });
-        })
-        .on("end", async () => {
-          try {
-            await parseQueue;
-            const accountsArray = Object.entries(accounts)
-              .sort(([a], [b]) => Number(a) - Number(b))
-              .map(([, account]) => account);
-            resolve(accountsArray);
-            onAccountReadComplete?.(readStream.bytesRead, totalSize);
-          } catch (error) {
-            reject(error);
-          }
-        })
-        .on("error", (error: Error) => {
-          logger.error("Error reading staking ledger", error);
-          reject(error);
-        });
+    const accounts: Account[] = [];
+    const { size: totalSize } = statSync(stakingLedgerPath);
+    const readStream = createReadStream(stakingLedgerPath);
+    await new Promise<void>((resolve, reject) => {
+      pipeline(
+        readStream,
+        ledgerJsonByteStrings,
+        parser(),
+        streamArray(),
+        new Writable({
+          objectMode: true,
+          write: ({ value }, _encoding, done) => {
+            (async () => {
+              value.token_symbol = Buffer.from(value.token_symbol, "latin1");
+              if (value.zkapp)
+                value.zkapp.zkapp_uri = Buffer.from(
+                  value.zkapp.zkapp_uri,
+                  "latin1",
+                );
+              accounts.push(await this.parseStakingLedgerAccount(value));
+              onAccountReadComplete?.(readStream.bytesRead, totalSize);
+            })().then(() => done(), done);
+          },
+        }),
+        (error) => (error ? reject(error) : resolve()),
+      );
     });
+    onAccountReadComplete?.(readStream.bytesRead, totalSize);
+    return accounts;
   }
 
   // TODO: should be typed to match the JSON schema
   public async parseStakingLedgerAccount(value: any): Promise<Account> {
     return new Account({
-      pk: PublicKey.fromBase58(value.pk),
+      pk: ledgerPublicKeyFromBase58(value.pk),
       tokenId: TokenId.fromBase58(value.token),
-      tokenSymbol: TokenSymbol.from(value.token_symbol),
+      tokenSymbol: LedgerTokenSymbol.fromBytes(
+        typeof value.token_symbol === "string"
+          ? new TextEncoder().encode(value.token_symbol)
+          : value.token_symbol,
+      ),
       nonce: UInt32.from(value.nonce ?? 0),
 
       receiptChainHash: ReceiptChainHashBase58.fromBase58(
@@ -313,16 +311,17 @@ export abstract class BaseStakingLedger implements StakingLedger {
             ),
             lastActionSlot: Field(value.zkapp.last_action_slot),
             provedState: Bool(value.zkapp.proved_state),
-            zkappUri:
-              value.zkapp.zkapp_uri === ""
-                ? Zkapp.empty().zkappUri
-                : ZkappUri.from(value.zkapp.zkapp_uri).hash,
+            zkappUri: hashLedgerZkappUri(
+              typeof value.zkapp.zkapp_uri === "string"
+                ? new TextEncoder().encode(value.zkapp.zkapp_uri)
+                : value.zkapp.zkapp_uri,
+            ),
           })
         : Zkapp.empty(),
 
       balance: UInt64.from(parseMinaAmountToNanomina(value.balance)),
       delegate: value.delegate
-        ? PublicKey.fromBase58(value.delegate)
+        ? ledgerPublicKeyFromBase58(value.delegate)
         : PublicKey.empty(),
     });
   }

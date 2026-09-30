@@ -372,13 +372,16 @@ describe("proof-off primitive account packing and hashing", () => {
     for (const testCase of malformedCases) {
       const json = structuredClone(valid);
       testCase.mutate(json);
-      const decoded = Account.fromJSON(json);
-      assert.equal(Account.isEmpty(decoded).toBoolean(), true, testCase.name);
+      assert.throws(
+        () => Account.fromJSON(json as any),
+        undefined,
+        testCase.name,
+      );
     }
 
     const withUnknown = structuredClone(valid);
     withUnknown.unknownAssuranceField = "ignored";
-    const decoded = Account.fromJSON(withUnknown);
+    const decoded = Account.fromJSON(withUnknown as any);
     assert.equal(Account.isEmpty(decoded).toBoolean(), false);
     assert.equal(decoded.balance.toBigInt(), account.balance.toBigInt());
   });

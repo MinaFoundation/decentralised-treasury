@@ -1,5 +1,8 @@
 import assert from "node:assert/strict";
 import { createServer } from "node:net";
+import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { afterEach, describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
 import { EventsApiServer } from "@repo/indexer";
@@ -8,7 +11,12 @@ import type {
   EventsPageQuery,
   EventsRepository,
 } from "@repo/indexer";
-import { Account, packToFields } from "@repo/sdk/src/provable/account.js";
+import {
+  Account,
+  packToFields,
+  Zkapp,
+} from "@repo/sdk/src/provable/account.js";
+import { hashLedgerZkappUri } from "@repo/sdk/src/provable/ledger-zkapp-uri.js";
 import { hashWithPrefix } from "@repo/sdk/src/provable/hashing-helpers.js";
 import { PrefixedMerkleWitness36 } from "@repo/sdk/src/provable/merkle-tree/prefixed-merkle-tree.js";
 import {
@@ -158,6 +166,74 @@ describe("staking ledger witness endpoint", () => {
       assert.equal(computedRoot, expectedRoot);
     },
   );
+
+  it("preserves non-UTF-8 token-symbol and URI commitments through witness HTTP JSON", async (t) => {
+    const directory = await mkdtemp(join(tmpdir(), "byte-witness-api-"));
+    t.after(() => rm(directory, { recursive: true, force: true }));
+    const base = JSON.parse(
+      await readFile(LIGHTNET_STAKING_LEDGER_PATH, "utf8"),
+    )[0];
+    const symbolBytes = Buffer.from([0xff, 0x80, 0xc0, 0xaf, 0xfe, 0x7f]);
+    const uriBytes = Buffer.from([0xff, 0xfe, 0x80, 0x61]);
+    const emptyZkapp = Zkapp.empty();
+    const rawJson = JSON.stringify([
+      {
+        ...base,
+        token_symbol: "RAW_TOKEN_BYTES",
+        zkapp: {
+          app_state: emptyZkapp.appState.map(String),
+          action_state: emptyZkapp.actionState.map(String),
+          zkapp_version: "0",
+          last_action_slot: 0,
+          proved_state: false,
+          zkapp_uri: "RAW_URI_BYTES",
+        },
+      },
+    ])
+      .replace('"RAW_TOKEN_BYTES"', `"${symbolBytes.toString("latin1")}"`)
+      .replace('"RAW_URI_BYTES"', `"${uriBytes.toString("latin1")}"`);
+    const ledgerPath = join(directory, "ledger.json");
+    await writeFile(ledgerPath, Buffer.from(rawJson, "latin1"));
+    const expectedSymbolField = 0x7ffeafc080ffn.toString();
+    const expectedUriHash = hashLedgerZkappUri(uriBytes).toString();
+    assert.notEqual(
+      expectedUriHash,
+      hashLedgerZkappUri(Buffer.from(uriBytes.toString("utf8"))).toString(),
+    );
+
+    const services = new LifecycleStakingLedgerServiceRegistry(
+      (lifecycleId) =>
+        new SqliteStakingLedgerService({ lifecycleId, inMemory: true }),
+    );
+    stakingLedgerServices = services;
+    const service = await services.getService(TEST_LIFECYCLE_ID);
+    await service.hydrateAccounts({ stakingLedgerPath: ledgerPath });
+    await service.hydrateMerkleTree();
+    const imported = await service.getAccount(0n);
+    assert.equal(imported.tokenSymbol.field.toString(), expectedSymbolField);
+    assert.equal(imported.zkapp.zkappUri.toString(), expectedUriHash);
+    const expectedRoot = (await service.getRootHash()).toString();
+
+    const port = await getAvailablePort();
+    server = new EventsApiServer(createRepositoryStub(), {
+      port,
+      pageLimitDefault: 50,
+      pageLimitMax: 200,
+      registerRoutes: createStakingLedgerWitnessRoutes({
+        stakingLedgerServices: services,
+      }),
+    });
+    await server.start();
+    const payload = await fetchWitnessPayload(port, TEST_LIFECYCLE_ID, 0);
+    assert.equal(payload.account.tokenSymbol, `field:${expectedSymbolField}`);
+    assert.equal(payload.account.zkapp.zkappUri, expectedUriHash);
+    const reconstructed = Account.fromJSON(payload.account);
+    assert.deepEqual(
+      Account.toFields(reconstructed).map(String),
+      Account.toFields(imported).map(String),
+    );
+    assert.equal(computeRootFromWitnessPayload(payload), expectedRoot);
+  });
 
   it("returns 404 when lifecycle sqlite file is missing", async () => {
     const port = await getAvailablePort();

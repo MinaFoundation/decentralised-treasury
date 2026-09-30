@@ -18,6 +18,8 @@ import {
   Reducer,
 } from "o1js";
 import { hashWithPrefix } from "./hashing-helpers.js";
+import { LedgerPublicKey } from "../utils/public-key.js";
+import { LedgerTokenSymbol } from "./ledger-token-symbol.js";
 
 const EMPTY_ZKAPP_URI_HASH =
   "20639848968581348850513072699760590695338607317404146322838943866773129280073";
@@ -159,7 +161,10 @@ export class Permissions extends Struct({
         Permission.toHashInput(permissions.setDelegate),
         Permission.toHashInput(permissions.setPermissions),
         Permission.toHashInput(permissions.setVerificationKey[0] as Permission),
-        packed((permissions.setVerificationKey[1] as UInt32).toFields()[0]!, 32),
+        packed(
+          (permissions.setVerificationKey[1] as UInt32).toFields()[0]!,
+          32,
+        ),
         Permission.toHashInput(permissions.setZkappUri),
         Permission.toHashInput(permissions.editActionState),
         Permission.toHashInput(permissions.setTokenSymbol),
@@ -211,41 +216,18 @@ export class Zkapp extends Struct({
 }
 
 export class Account extends Struct({
-  pk: PublicKey,
+  pk: LedgerPublicKey,
   tokenId: TokenId,
-  tokenSymbol: TokenSymbol,
+  tokenSymbol: LedgerTokenSymbol,
   balance: UInt64,
   nonce: UInt32,
   receiptChainHash: Field,
-  delegate: PublicKey,
+  delegate: LedgerPublicKey,
   votingFor: Field,
   timing: Timing,
   permissions: Permissions,
   zkapp: Zkapp,
 }) {
-  // TODO: this is a hack to bypass checks during fromJSON, it'll result in returning an empty account if the deserialization fails
-  // this case occurs if PublicKey.empty() is used for pk or delegate, or any other field that is not a valid PublicKey
-  public static fromJSON(json: Record<string, any>): Account {
-    let account: Account;
-    let emptyDelegate = false;
-
-    // TODO: delegate should be physically empty for custom token accounts, why does it come back as PublicKey.empty()?
-    if (!json.delegate || json.delegate === PublicKey.empty().toBase58()) {
-      emptyDelegate = true;
-      json.delegate = json.pk;
-    }
-
-    try {
-      account = super.fromJSON(json as any);
-      if (emptyDelegate) {
-        account.delegate = PublicKey.empty();
-      }
-    } catch (error) {
-      account = Account.empty();
-    }
-    return account;
-  }
-
   public static empty() {
     return new Account({
       pk: PublicKey.empty(),
