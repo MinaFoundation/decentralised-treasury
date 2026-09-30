@@ -201,6 +201,45 @@ describe("processor CRUD routes on main API", () => {
     assert.equal(payload.data[0]?.executions[0]?.remainingAmount, "0");
     assert.equal(payload.data[0]?.executions[0]?.blockEventIndex, 5);
 
+    const twoLevel = await fetch(
+      `http://127.0.0.1:${port}/votes?join=proposal.executions`,
+    );
+    assert.equal(twoLevel.status, 200);
+    const twoLevelPayload = (await twoLevel.json()) as {
+      data: Array<{ proposal: { executions: unknown[] } }>;
+    };
+    assert.equal(twoLevelPayload.data[0]?.proposal.executions.length, 1);
+
+    const proposalRepository = dataSource.getRepository(ProposalEntity);
+    const originalList =
+      proposalRepository.findAndCount.bind(proposalRepository);
+    const originalOne = proposalRepository.findOne.bind(proposalRepository);
+    let reads = 0;
+    proposalRepository.findAndCount = async (...args) => {
+      reads++;
+      return originalList(...args);
+    };
+    proposalRepository.findOne = async (...args) => {
+      reads++;
+      return originalOne(...args);
+    };
+    for (const suffix of ["", `/${proposal.id}`]) {
+      for (const query of [
+        "join=votes.proposal", // repeats the root entity
+        "join=votes.proposal.executions", // three levels
+        "join=votes&join=votes&join=votes&join=votes&join=votes", // duplicates count
+        "join=missing", // metadata validation remains active
+      ]) {
+        const invalid = await fetch(
+          `http://127.0.0.1:${port}/proposals${suffix}?${query}`,
+        );
+        assert.equal(invalid.status, 400, query);
+      }
+    }
+    assert.equal(reads, 0);
+    proposalRepository.findAndCount = originalList;
+    proposalRepository.findOne = originalOne;
+
     const detailCases: Array<{
       path: string;
       id: string;

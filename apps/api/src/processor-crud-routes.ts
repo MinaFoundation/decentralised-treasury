@@ -182,8 +182,13 @@ function appendJoinPath(
     throw new RequestValidationError("join must reference a relation path");
   }
 
+  if (segments.length > 2)
+    throw new RequestValidationError(
+      "join paths allow at most two relation levels",
+    );
   let currentNode = relations;
   let currentMetadata = metadata;
+  const visited = new Set([metadata]);
 
   for (const segment of segments) {
     const relation = currentMetadata.relations.find(
@@ -194,6 +199,10 @@ function appendJoinPath(
         `unsupported join path: ${relationPath}`,
       );
     }
+    if (visited.has(relation.inverseEntityMetadata)) {
+      throw new RequestValidationError("join paths must not revisit an entity");
+    }
+    visited.add(relation.inverseEntityMetadata);
     const existing = currentNode[segment];
     if (existing === undefined || existing === true) {
       currentNode[segment] = {};
@@ -208,7 +217,13 @@ function parseJoinList(
   value: unknown,
 ): FindOptionsRelations<ObjectLiteral> {
   const relations: RelationTree = {};
+  let steps = 0;
   for (const join of parseStringList(value)) {
+    steps += join.split(".").filter(Boolean).length;
+    if (steps > 4)
+      throw new RequestValidationError(
+        "joins allow at most four relation steps per request",
+      );
     appendJoinPath(relations, metadata, join);
   }
   return relations as FindOptionsRelations<ObjectLiteral>;
