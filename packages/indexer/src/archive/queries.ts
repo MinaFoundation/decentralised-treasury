@@ -55,3 +55,11 @@ query Events($input: EventFilterOptionsInput!) {
   }
 }
 `;
+
+export const BLOCKS_QUERY = `
+query Blocks($query: BlockQueryInput!, $limit: Int!) {
+  blocks(query: $query, limit: $limit, sortBy: BLOCKHEIGHT_ASC) {
+    blockHeight stateHash parentHash
+  }
+}
+`;

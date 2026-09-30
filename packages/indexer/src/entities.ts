@@ -45,7 +45,7 @@ export const UINT32_NUMBER_TRANSFORMER: ValueTransformer = {
 @Entity({ name: "archive_events" })
 @Index(
   "ux_archive_events_identity",
-  ["txHash", "accountUpdateId", "accountUpdateIndex", "eventIndex"],
+  ["txHash", "accountUpdateIndex", "eventIndex"],
   { unique: true },
 )
 @Index("ix_archive_events_updated_at_id", ["updatedAt", "id"])

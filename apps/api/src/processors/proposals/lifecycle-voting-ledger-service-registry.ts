@@ -1,5 +1,7 @@
-import { existsSync } from "node:fs";
-import { getSqliteDbPath } from "@repo/sdk/src/storage/sqlite/sqlite-db-path.js";
+import {
+  completedSnapshotIdentity,
+  LifecycleStakingLedgerFileNotFoundError,
+} from "../../staking-ledger/completed-snapshot.js";
 import { MAX_UINT32 } from "./proposal-contract-domain.js";
 
 // TODO: Add CLI/SDK support to compute and materialize lifecycle voting ledgers
@@ -34,12 +36,7 @@ function normalizeLifecycleId(lifecycleId: string): string {
   return parsed.toString();
 }
 
-export class LifecycleVotingLedgerFileNotFoundError extends Error {
-  public constructor(public readonly lifecycleId: string) {
-    super("data for lifecycleid is not available");
-    this.name = "LifecycleVotingLedgerFileNotFoundError";
-  }
-}
+export { LifecycleStakingLedgerFileNotFoundError as LifecycleVotingLedgerFileNotFoundError };
 
 class SqliteVotingLedgerService implements VotingLedgerService {
   private voteReducerService: {
@@ -94,38 +91,45 @@ export class LifecycleVotingLedgerServiceRegistry implements VotingLedgerService
   private state: RegistryState = "open";
   private closePromise: Promise<void> | null = null;
 
+  private readonly identities = new Map<string, string>();
+  private readonly createService: (lifecycleId: string) => VotingLedgerService;
+  private readonly snapshotIdentity: (lifecycleId: string) => string;
+
   public constructor(
-    private readonly createService: CreateVotingLedgerService = (
-      lifecycleId,
-    ) => {
-      const sqlitePath = getSqliteDbPath(lifecycleId);
-      if (!existsSync(sqlitePath)) {
-        throw new LifecycleVotingLedgerFileNotFoundError(lifecycleId);
-      }
-      return new SqliteVotingLedgerService(lifecycleId);
-    },
-  ) {}
+    createService?: (lifecycleId: string) => VotingLedgerService,
+    snapshotIdentity?: (lifecycleId: string) => string,
+  ) {
+    this.createService =
+      createService ??
+      ((lifecycleId) => new SqliteVotingLedgerService(lifecycleId));
+    this.snapshotIdentity =
+      snapshotIdentity ??
+      (createService ? () => "custom" : completedSnapshotIdentity);
+  }
 
   public async getService(lifecycleId: string): Promise<VotingLedgerService> {
     if (this.state !== "open") {
       throw new Error(REGISTRY_CLOSED_ERROR);
     }
     const normalizedLifecycleId = normalizeLifecycleId(lifecycleId);
-    const existingService = this.services.get(normalizedLifecycleId);
-    if (existingService) {
-      return existingService;
-    }
-
     const inFlight = this.servicePromises.get(normalizedLifecycleId);
-    if (inFlight) {
-      return await inFlight;
-    }
+    if (inFlight) return await inFlight;
 
     let startupPromise: Promise<VotingLedgerService>;
     startupPromise = (async () => {
+      await Promise.resolve();
       let service: VotingLedgerService | null = null;
       let serviceClosed = false;
       try {
+        const identity = this.snapshotIdentity(normalizedLifecycleId);
+        const existing = this.services.get(normalizedLifecycleId);
+        if (existing && this.identities.get(normalizedLifecycleId) === identity)
+          return existing;
+        if (existing) {
+          this.services.delete(normalizedLifecycleId);
+          this.identities.delete(normalizedLifecycleId);
+          await existing.close();
+        }
         service = this.createService(normalizedLifecycleId);
         await service.start();
         if (this.state !== "open") {
@@ -133,6 +137,12 @@ export class LifecycleVotingLedgerServiceRegistry implements VotingLedgerService
           serviceClosed = true;
           throw new Error(REGISTRY_CLOSED_ERROR);
         }
+        if (this.snapshotIdentity(normalizedLifecycleId) !== identity) {
+          throw new LifecycleStakingLedgerFileNotFoundError(
+            normalizedLifecycleId,
+          );
+        }
+        this.identities.set(normalizedLifecycleId, identity);
         this.services.set(normalizedLifecycleId, service);
         return service;
       } catch (error) {
@@ -170,6 +180,7 @@ export class LifecycleVotingLedgerServiceRegistry implements VotingLedgerService
         await Promise.allSettled(Array.from(this.servicePromises.values()));
         const activeServices = Array.from(this.services.values());
         this.services.clear();
+        this.identities.clear();
         const results = await Promise.allSettled(
           activeServices.map((service) => service.close()),
         );

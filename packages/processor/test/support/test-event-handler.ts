@@ -39,7 +39,7 @@ export class TestProjectionEventHandler implements EventProcessorHandler {
   ): Promise<boolean> {
     this.attemptCount += 1;
     if (this.rejectEvents) {
-      return false;
+      throw new Error("Transient projection failure");
     }
     const repository = manager.getRepository(TestProjectionEntity);
     const payload = decodeProjectionPayload(event);

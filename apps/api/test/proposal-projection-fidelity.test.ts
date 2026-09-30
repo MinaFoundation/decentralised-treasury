@@ -157,6 +157,29 @@ describe("proposal projection contract fidelity", () => {
     await dataSource.destroy();
   });
 
+  it("keeps legacy projections collecting when no Archive history exists", async () => {
+    await insertProposal(dataSource, "legacy-without-history", true);
+    await dataSource.getRepository(ProposalProjectionReplayEntity).insert({
+      projectionName: "proposal",
+      targetChangeSequence: "0",
+      state: "collecting",
+      completedAt: null,
+    });
+    assert.equal(
+      await new ProposalProjectionReconciler().finishReplay(
+        dataSource.manager,
+        "0",
+      ),
+      true,
+    );
+    assert.equal(await dataSource.getRepository(ProposalEntity).count(), 1);
+    const replay = await dataSource
+      .getRepository(ProposalProjectionReplayEntity)
+      .findOneByOrFail({ projectionName: "proposal" });
+    assert.equal(replay.state, "collecting");
+    assert.equal(replay.completedAt, null);
+  });
+
   it("preserves legacy projections while replay collects, then removes rows without creation facts", async () => {
     await insertProposal(dataSource, "legacy-proposal", true);
     await dataSource.getRepository(VoteTallyEntity).insert({
@@ -1032,7 +1055,7 @@ describe("proposal projection contract fidelity", () => {
     );
   });
 
-  it("applies pending same-height toggles to the current-view pause state", async () => {
+  it("rejects same-height pending forks", async () => {
     const proposalPublicKey = "same-height-fork";
     await insertProposal(dataSource, proposalPublicKey);
     const reconciler = new ProposalProjectionReconciler();
@@ -1055,23 +1078,26 @@ describe("proposal projection contract fidelity", () => {
       );
     });
 
-    await dataSource.transaction(async (manager) => {
-      await reconciler.recordAndReconcile(
-        event({
-          id: "same-height-fork-b",
-          changeSequence: "2",
-          eventType: PROPOSAL_PAUSE_TOGGLED_EVENT_NAME,
-          proposalPublicKey,
-          status: "pending",
-          blockHeight: 40,
-          stateHash: "state-b",
-          parentHash: "parent-39",
-        }),
-        PROPOSAL_PAUSE_TOGGLED_EVENT_NAME,
-        { proposalPublicKey, paused: false, senderPublicKey: "sender" },
-        manager,
-      );
-    });
+    await assert.rejects(
+      dataSource.transaction(async (manager) => {
+        await reconciler.recordAndReconcile(
+          event({
+            id: "same-height-fork-b",
+            changeSequence: "2",
+            eventType: PROPOSAL_PAUSE_TOGGLED_EVENT_NAME,
+            proposalPublicKey,
+            status: "pending",
+            blockHeight: 40,
+            stateHash: "state-b",
+            parentHash: "parent-39",
+          }),
+          PROPOSAL_PAUSE_TOGGLED_EVENT_NAME,
+          { proposalPublicKey, paused: false, senderPublicKey: "sender" },
+          manager,
+        );
+      }),
+      /ambiguous proposal branch/,
+    );
     assert.equal(
       await dataSource
         .getRepository(ProposalEventFactEntity)
@@ -1084,11 +1110,11 @@ describe("proposal projection contract fidelity", () => {
           .getRepository(ProposalEntity)
           .findOneByOrFail({ proposalPublicKey })
       ).isPaused,
-      false,
+      true,
     );
   });
 
-  it("applies pending disconnected toggles to the current-view pause state", async () => {
+  it("rejects disconnected pending toggles before applying the second effect", async () => {
     const proposalPublicKey = "disconnected-branch";
     await insertProposal(dataSource, proposalPublicKey);
     const reconciler = new ProposalProjectionReconciler();
@@ -1111,23 +1137,26 @@ describe("proposal projection contract fidelity", () => {
       );
     });
 
-    await dataSource.transaction(async (manager) => {
-      await reconciler.recordAndReconcile(
-        event({
-          id: "branch-height-51",
-          changeSequence: "2",
-          eventType: PROPOSAL_PAUSE_TOGGLED_EVENT_NAME,
-          proposalPublicKey,
-          status: "pending",
-          blockHeight: 51,
-          stateHash: "state-51",
-          parentHash: "different-state-50",
-        }),
-        PROPOSAL_PAUSE_TOGGLED_EVENT_NAME,
-        { proposalPublicKey, paused: false, senderPublicKey: "sender" },
-        manager,
-      );
-    });
+    await assert.rejects(
+      dataSource.transaction(async (manager) => {
+        await reconciler.recordAndReconcile(
+          event({
+            id: "branch-height-51",
+            changeSequence: "2",
+            eventType: PROPOSAL_PAUSE_TOGGLED_EVENT_NAME,
+            proposalPublicKey,
+            status: "pending",
+            blockHeight: 51,
+            stateHash: "state-51",
+            parentHash: "different-state-50",
+          }),
+          PROPOSAL_PAUSE_TOGGLED_EVENT_NAME,
+          { proposalPublicKey, paused: false, senderPublicKey: "sender" },
+          manager,
+        );
+      }),
+      /disconnected proposal branch/,
+    );
     assert.equal(
       await dataSource
         .getRepository(ProposalEventFactEntity)
@@ -1140,11 +1169,11 @@ describe("proposal projection contract fidelity", () => {
           .getRepository(ProposalEntity)
           .findOneByOrFail({ proposalPublicKey })
       ).isPaused,
-      false,
+      true,
     );
   });
 
-  it("applies incomplete pending branch facts to the current-view pause state", async () => {
+  it("rejects conflicting pending branches even with sparse Proposal events", async () => {
     const scenarios = [
       {
         name: "missing-state-hash",
@@ -1211,21 +1240,24 @@ describe("proposal projection contract fidelity", () => {
         });
       }
 
-      await dataSource.transaction(async (manager) => {
-        await reconciler.recordAndReconcile(
-          event({
-            id: String(1_009 + scenarioIndex * 10),
-            changeSequence: String(1_009 + scenarioIndex * 10),
-            eventType: PROPOSAL_PAUSE_TOGGLED_EVENT_NAME,
-            proposalPublicKey,
-            status: "pending",
-            ...scenario.conflicting,
-          }),
-          PROPOSAL_PAUSE_TOGGLED_EVENT_NAME,
-          { proposalPublicKey, paused: false, senderPublicKey: "sender" },
-          manager,
-        );
-      });
+      await assert.rejects(
+        dataSource.transaction(async (manager) => {
+          await reconciler.recordAndReconcile(
+            event({
+              id: String(1_009 + scenarioIndex * 10),
+              changeSequence: String(1_009 + scenarioIndex * 10),
+              eventType: PROPOSAL_PAUSE_TOGGLED_EVENT_NAME,
+              proposalPublicKey,
+              status: "pending",
+              ...scenario.conflicting,
+            }),
+            PROPOSAL_PAUSE_TOGGLED_EVENT_NAME,
+            { proposalPublicKey, paused: false, senderPublicKey: "sender" },
+            manager,
+          );
+        }),
+        /ambiguous proposal branch/,
+      );
       assert.equal(
         await dataSource
           .getRepository(ProposalEventFactEntity)
@@ -1239,7 +1271,7 @@ describe("proposal projection contract fidelity", () => {
             .getRepository(ProposalEntity)
             .findOneByOrFail({ proposalPublicKey })
         ).isPaused,
-        true,
+        false,
         scenario.name,
       );
     }

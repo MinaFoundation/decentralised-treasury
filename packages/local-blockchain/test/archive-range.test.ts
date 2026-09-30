@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { createServer } from "node:net";
 import { after, before, describe, it } from "node:test";
 import { ArchiveClient } from "../../indexer/src/archive/client.js";
-import { TokenId } from "../src/o1js.js";
+import { TokenId, UInt32 } from "../src/o1js.js";
 import { proofsEnabled } from "./proof-mode.js";
 import {
   createArchiveHttpServer,
@@ -16,10 +16,11 @@ import {
 describe("public Archive endpoint uses an inclusive from and exclusive to", () => {
   let server: ArchiveHttpServer;
   let url: string;
+  let runtime: LocalBlockchainRuntime;
   const address = "B62qarchive-range-fixture";
   const tokenId = TokenId.toBase58(TokenId.default);
   before(async () => {
-    const runtime = await LocalBlockchainRuntime.create({
+    runtime = await LocalBlockchainRuntime.create({
       proofsEnabled,
     });
     // Supporting protocol test: only the archived rows are synthetic. Requests
@@ -143,5 +144,90 @@ describe("public Archive endpoint uses an inclusive from and exclusive to", () =
       events.map((event) => event.blockInfo.height),
       [8, 9],
     );
+  });
+
+  it("provides the canonical anchor required by ArchiveClient before any transaction", async () => {
+    const client = new ArchiveClient(url, {
+      treasuryOwnerContractAddress: address,
+      archiveRequestTimeoutMs: 5_000,
+    });
+    const anchor = runtime.getBestChain(1)[0]!;
+    assert.deepEqual(await client.fetchPendingSnapshot(10), {
+      height: runtime.getCurrentBlockHeight(),
+      events: [],
+      ancestry: [
+        {
+          blockHeight: runtime.getCurrentBlockHeight(),
+          stateHash: anchor.stateHash,
+          parentHash: anchor.protocolState.previousStateHash,
+        },
+      ],
+      ambiguous: false,
+    });
+  });
+
+  it("returns linked eventless blocks with Archive range, limit, and canonical filters", async () => {
+    const originalHeight = runtime.getCurrentBlockHeight();
+    runtime.blockchain.setBlockchainLength(UInt32.from(3));
+    try {
+      const fetchBlocks = async (
+        query: Record<string, unknown>,
+        limit = 1000,
+      ) => {
+        const response = await fetch(url, {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({
+            query:
+              "query Blocks($query: BlockQueryInput!, $limit: Int!) { blocks(query: $query, limit: $limit, sortBy: BLOCKHEIGHT_ASC) { blockHeight stateHash parentHash } }",
+            variables: { query, limit },
+          }),
+          signal: AbortSignal.timeout(5_000),
+        });
+        assert.equal(response.status, 200);
+        const payload = await response.json();
+        assert.equal(payload.errors, undefined);
+        return payload.data.blocks as Array<{
+          blockHeight: number;
+          stateHash: string;
+          parentHash: string;
+        }>;
+      };
+      const blocks = await fetchBlocks({
+        blockHeight_gte: 0,
+        blockHeight_lt: 4,
+        inBestChain: true,
+        canonical: true,
+      });
+      assert.deepEqual(
+        blocks.map((block) => block.blockHeight),
+        [0, 1, 2, 3],
+      );
+      for (let index = 1; index < blocks.length; index++) {
+        assert.equal(blocks[index]!.parentHash, blocks[index - 1]!.stateHash);
+      }
+      assert.deepEqual(
+        await fetchBlocks({ blockHeight_gte: 1, blockHeight_lt: 3 }, 1),
+        blocks.slice(1, 2),
+      );
+      assert.deepEqual(
+        await fetchBlocks({ blockHeight_gte: 3, blockHeight_lt: 3 }),
+        [],
+      );
+      assert.deepEqual(await fetchBlocks({ canonical: false }), []);
+      assert.deepEqual(await fetchBlocks({ inBestChain: false }), []);
+      const client = new ArchiveClient(url, {
+        treasuryOwnerContractAddress: address,
+        archiveRequestTimeoutMs: 5_000,
+      });
+      assert.deepEqual(await client.fetchPendingSnapshot(10), {
+        height: 3,
+        events: [],
+        ancestry: [blocks[3]],
+        ambiguous: false,
+      });
+    } finally {
+      runtime.blockchain.setBlockchainLength(UInt32.from(originalHeight));
+    }
   });
 });

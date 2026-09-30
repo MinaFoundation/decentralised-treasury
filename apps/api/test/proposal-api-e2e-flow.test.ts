@@ -312,6 +312,30 @@ class FakeArchiveSource {
     this.canonicalHead = Math.max(this.canonicalHead, height);
   }
 
+  public async fetchPendingSnapshot(batchSize: number) {
+    const heights = await this.getMaxBlockHeights();
+    const events: ArchiveEventOutput[] = [];
+    for (
+      let from = 0;
+      from <= heights.pendingMaxBlockHeight;
+      from += batchSize
+    ) {
+      events.push(
+        ...(await this.fetchEvents({
+          status: "PENDING",
+          from,
+          to: Math.min(from + batchSize - 1, heights.pendingMaxBlockHeight),
+        })),
+      );
+    }
+    return {
+      events,
+      height: heights.pendingMaxBlockHeight,
+      ambiguous: false,
+      ancestry: [],
+    };
+  }
+
   public async getMaxBlockHeights(): Promise<ArchiveMaxHeights> {
     return {
       canonicalMaxBlockHeight: this.canonicalHead,

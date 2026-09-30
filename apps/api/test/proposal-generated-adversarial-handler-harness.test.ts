@@ -1265,7 +1265,7 @@ describe("generated proposal handler harness", () => {
       );
     });
 
-    it("PROCESSOR_POLICY: overlays pending effects and removes them on rollback", async () => {
+    it("PROCESSOR_POLICY: removes pending effects before applying a conflicting canonical branch", async () => {
       const pauseProposal = (
         await harness.createProposal({
           seed: 9_300,
@@ -1298,6 +1298,10 @@ describe("generated proposal handler harness", () => {
         voteFields(pauseProposal, mainVoter, "yay"),
       );
       assert.equal(await harness.deliver(pendingPause), true);
+      assert.equal(
+        await harness.deliver(harness.clock.replay(pendingPause, "orphaned")),
+        true,
+      );
       assert.equal(await harness.deliver(canonicalVote), true);
       assert.equal(
         (
@@ -1305,7 +1309,7 @@ describe("generated proposal handler harness", () => {
             .getRepository(ProposalEntity)
             .findOneByOrFail({ proposalPublicKey: pauseProposal.toBase58() })
         ).isPaused,
-        true,
+        false,
       );
       assert.equal(
         await harness.dataSource
@@ -1349,13 +1353,15 @@ describe("generated proposal handler harness", () => {
         voteFields(voteProposal, canonicalVoter, "nay"),
       );
       assert.equal(await harness.deliver(pendingVote), true);
+      assert.equal(
+        await harness.deliver(harness.clock.replay(pendingVote, "orphaned")),
+        true,
+      );
       assert.equal(await harness.deliver(mainVote), true);
       const forkVoteRow = await harness.dataSource
         .getRepository(VoteEntity)
-        .findOneByOrFail({ archiveEventId: String(pendingVote.id) });
-      assert.equal(forkVoteRow.status, "pending");
-      assert.equal(forkVoteRow.voteWeight, "50");
-      assert.equal(forkVoteRow.isNullified, false);
+        .findOneBy({ archiveEventId: String(pendingVote.id) });
+      assert.equal(forkVoteRow, null);
       assert.deepEqual(
         (
           await harness.dataSource.getRepository(VoteNullifierEntity).findBy({
@@ -1364,7 +1370,7 @@ describe("generated proposal handler harness", () => {
         )
           .map((row) => row.voterPublicKey)
           .sort(),
-        [forkVoter.toBase58(), canonicalVoter.toBase58()].sort(),
+        [canonicalVoter.toBase58()],
       );
 
       const lifecycleId = 5_340;
@@ -1406,6 +1412,12 @@ describe("generated proposal handler harness", () => {
         executionFields(executionProposal, 10n),
       );
       assert.equal(await harness.deliver(pendingExecution), true);
+      assert.equal(
+        await harness.deliver(
+          harness.clock.replay(pendingExecution, "orphaned"),
+        ),
+        true,
+      );
       assert.equal(await harness.deliver(canonicalExecution), true);
       const executionProposalKey = executionProposal.toBase58();
       assert.equal(
@@ -1414,14 +1426,14 @@ describe("generated proposal handler harness", () => {
             .getRepository(ProposalEntity)
             .findOneByOrFail({ proposalPublicKey: executionProposalKey })
         ).paidOutAmount,
-        "30",
+        "10",
       );
       assert.equal(
         await harness.dataSource
           .getRepository(ProposalExecutionEntity)
           .countBy({ proposalPublicKey: executionProposalKey }),
-        2,
-        "the pending fork row remains as provenance",
+        1,
+        "only the canonical execution remains active",
       );
 
       assert.equal(

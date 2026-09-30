@@ -11,6 +11,7 @@ import {
 export type ProcessorEventFailureState =
   | "retrying"
   | "blocked"
+  | "quarantined"
   | "resolved"
   | "superseded";
 

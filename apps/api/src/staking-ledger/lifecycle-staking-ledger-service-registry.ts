@@ -1,4 +1,7 @@
-import { existsSync } from "node:fs";
+import {
+  completedSnapshotIdentity,
+  LifecycleStakingLedgerFileNotFoundError,
+} from "./completed-snapshot.js";
 import { SqliteStakingLedgerService } from "@repo/sdk/src/services/sqlite/sqlite-staking-ledger-service.js";
 import { getSqliteDbPath } from "@repo/sdk/src/storage/sqlite/sqlite-db-path.js";
 import type { StakingLedgerService } from "@repo/sdk/src/services/staking-ledger-service.js";
@@ -42,12 +45,7 @@ export function normalizeLifecycleId(lifecycleId: string): string {
   return parsedLifecycleId.toString();
 }
 
-export class LifecycleStakingLedgerFileNotFoundError extends Error {
-  public constructor(public readonly lifecycleId: string) {
-    super(LIFECYCLE_DATA_UNAVAILABLE_ERROR);
-    this.name = "LifecycleStakingLedgerFileNotFoundError";
-  }
-}
+export { LifecycleStakingLedgerFileNotFoundError };
 
 export class LifecycleStakingLedgerServiceRegistry implements StakingLedgerServiceLookup {
   private readonly services = new Map<string, StakingLedgerService>();
@@ -58,21 +56,25 @@ export class LifecycleStakingLedgerServiceRegistry implements StakingLedgerServi
   private state: RegistryState = "open";
   private closePromise: Promise<void> | null = null;
 
+  private readonly identities = new Map<string, string>();
+  private readonly createService: (lifecycleId: string) => StakingLedgerService;
+  private readonly snapshotIdentity: (lifecycleId: string) => string;
+
   public constructor(
-    private readonly createService: CreateStakingLedgerService = (
-      lifecycleId,
-    ) => {
-      const sqlitePath = getSqliteDbPath(lifecycleId);
-      console.log("sqlitePath", sqlitePath);
-      if (!existsSync(sqlitePath)) {
-        throw new LifecycleStakingLedgerFileNotFoundError(lifecycleId);
-      }
-      return new SqliteStakingLedgerService({
-        lifecycleId,
-        dbPath: sqlitePath,
-      });
-    },
-  ) {}
+    createService?: (lifecycleId: string) => StakingLedgerService,
+    snapshotIdentity?: (lifecycleId: string) => string,
+  ) {
+    this.createService =
+      createService ??
+      ((lifecycleId) =>
+        new SqliteStakingLedgerService({
+          lifecycleId,
+          dbPath: getSqliteDbPath(lifecycleId),
+        }));
+    this.snapshotIdentity =
+      snapshotIdentity ??
+      (createService ? () => "custom" : completedSnapshotIdentity);
+  }
 
   public async getService(lifecycleId: string): Promise<StakingLedgerService> {
     if (this.state !== "open") {
@@ -80,23 +82,24 @@ export class LifecycleStakingLedgerServiceRegistry implements StakingLedgerServi
     }
     const normalizedLifecycleId = normalizeLifecycleId(lifecycleId);
 
-    const existingService = this.services.get(normalizedLifecycleId);
-    if (existingService) {
-      return existingService;
-    }
-
-    const existingStartupPromise = this.startupPromises.get(
-      normalizedLifecycleId,
-    );
-    if (existingStartupPromise) {
-      return await existingStartupPromise;
-    }
+    const inFlight = this.startupPromises.get(normalizedLifecycleId);
+    if (inFlight) return await inFlight;
 
     let startupPromise: Promise<StakingLedgerService>;
     startupPromise = (async () => {
+      await Promise.resolve();
       let service: StakingLedgerService | null = null;
       let serviceClosed = false;
       try {
+        const identity = this.snapshotIdentity(normalizedLifecycleId);
+        const existing = this.services.get(normalizedLifecycleId);
+        if (existing && this.identities.get(normalizedLifecycleId) === identity)
+          return existing;
+        if (existing) {
+          this.services.delete(normalizedLifecycleId);
+          this.identities.delete(normalizedLifecycleId);
+          await existing.close();
+        }
         service = this.createService(normalizedLifecycleId);
         await service.start();
         if (this.state !== "open") {
@@ -104,6 +107,12 @@ export class LifecycleStakingLedgerServiceRegistry implements StakingLedgerServi
           serviceClosed = true;
           throw new Error(REGISTRY_CLOSED_ERROR);
         }
+        if (this.snapshotIdentity(normalizedLifecycleId) !== identity) {
+          throw new LifecycleStakingLedgerFileNotFoundError(
+            normalizedLifecycleId,
+          );
+        }
+        this.identities.set(normalizedLifecycleId, identity);
         this.services.set(normalizedLifecycleId, service);
         return service;
       } catch (error) {
@@ -141,6 +150,7 @@ export class LifecycleStakingLedgerServiceRegistry implements StakingLedgerServi
         await Promise.allSettled(Array.from(this.startupPromises.values()));
         const servicesToClose = Array.from(this.services.values());
         this.services.clear();
+        this.identities.clear();
         const results = await Promise.allSettled(
           servicesToClose.map((service) => service.close()),
         );

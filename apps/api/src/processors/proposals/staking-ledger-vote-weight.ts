@@ -1,3 +1,4 @@
+import { TransientEventError } from "@repo/processor";
 import { Account, packToFields } from "@repo/sdk/src/provable/account.js";
 import { hashWithPrefix } from "@repo/sdk/src/provable/hashing-helpers.js";
 import {
@@ -173,7 +174,7 @@ export class StakingLedgerVoteWeightResolver {
   ): Promise<void> {
     const actualRoot = (await stakingLedger.getRootHash()).toString();
     if (actualRoot !== expectedStakingLedgerRoot) {
-      throw new Error(
+      throw new TransientEventError(
         `[proposal-processor] staking ledger root mismatch for lifecycleId=${lifecycleId}: expected=${expectedStakingLedgerRoot} actual=${actualRoot}`,
       );
     }

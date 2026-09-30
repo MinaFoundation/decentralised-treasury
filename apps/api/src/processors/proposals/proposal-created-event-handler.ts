@@ -1,3 +1,4 @@
+import { TransientEventError } from "@repo/processor";
 import type { ArchiveEventEntity } from "@repo/indexer";
 import type { EventProcessorHandler } from "@repo/processor";
 import { PROPOSAL_CREATED_EVENT_NAME } from "@repo/sdk/src/provable/events/treasury-proposal-events.js";
@@ -166,6 +167,7 @@ async function decodeProposalCreatedPayload(
     return null;
   }
 
+  let decoding = true;
   try {
     const o1jsModuleName = "o1js";
     const proposalEventsModuleName =
@@ -228,6 +230,7 @@ async function decodeProposalCreatedPayload(
 
     const stakingEpochDataLedgerHash =
       decoded.stakingEpochDataLedgerHash.toString();
+    decoding = false;
     const treasuryBalance = await getTreasuryBalanceForLifecycle(
       lifecycleId,
       stakingEpochDataLedgerHash,
@@ -252,6 +255,7 @@ async function decodeProposalCreatedPayload(
       senderPublicKey: decoded.senderPublicKey.toBase58(),
     };
   } catch (error) {
+    if (!decoding) throw error;
     console.error(
       `[proposal-processor] failed to decode proposalCreated event id=${event.id}`,
       error,
@@ -512,7 +516,7 @@ export class ProposalCreatedEventHandler implements EventProcessorHandler {
     }
     const localStakingLedgerRoot = (await service.getRootHash()).toString();
     if (localStakingLedgerRoot !== expectedStakingLedgerRoot) {
-      throw new Error(
+      throw new TransientEventError(
         `[proposal-processor] staking ledger root mismatch for lifecycleId=${lifecycleId}: expected=${expectedStakingLedgerRoot} actual=${localStakingLedgerRoot}`,
       );
     }

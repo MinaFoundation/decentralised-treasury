@@ -1,6 +1,6 @@
 import type { Page } from "@playwright/test";
 import { join } from "node:path";
-import { readFile } from "node:fs/promises";
+import { readFile, writeFile } from "node:fs/promises";
 import { expect, test } from "./browser-test";
 import {
   readJson,
@@ -17,6 +17,7 @@ import { lifecycleExpectations } from "./lifecycle-expectations";
 
 type Snapshot = {
   outputPath: string;
+  ledgerHashBase58: string;
   stakingEpochDataLedgerHash: string;
   stakingEpochDataLedgerTotalCurrency: string;
 };
@@ -43,7 +44,7 @@ export async function prepareSecondLifecycle(
     ]),
     "stakingEpochDataLedgerHash",
   );
-  await importSnapshot(stack, "1", snapshot.outputPath);
+  await importSnapshot(stack, "1", snapshot);
   const before = await readJson<AdminState>(`${stack.baseUrl}/admin/state`);
   // Documented simulator epoch setup. Contract state is not changed here.
   const response = await fetch(`${stack.baseUrl}/admin/network-state`, {
@@ -77,7 +78,7 @@ export async function prepareSecondLifecycle(
 async function importSnapshot(
   stack: LocalTreasuryStack,
   lifecycleId: string,
-  path: string,
+  snapshot: Snapshot,
 ) {
   await stack.cli([
     "staking-ledger",
@@ -85,7 +86,7 @@ async function importSnapshot(
     "--lifecycle-id",
     lifecycleId,
     "--staking-ledger-path",
-    path,
+    snapshot.outputPath,
   ]);
   await stack.cli([
     "staking-ledger-to-voting-ledger",
@@ -93,6 +94,14 @@ async function importSnapshot(
     "--lifecycle-id",
     lifecycleId,
   ]);
+  await writeFile(
+    join(stack.artifactDirectory, "sqlite", `${lifecycleId}.sqlite.done`),
+    JSON.stringify({
+      lifecycleId,
+      ledgerHash: snapshot.ledgerHashBase58,
+      processedAt: new Date().toISOString(),
+    }),
+  );
 }
 
 async function proposalState(stack: LocalTreasuryStack, proposal: string) {
@@ -418,7 +427,7 @@ export async function completeSecondLifecycle(input: {
   });
   // Execution begins in lifecycle 2; provide its wallet lookup data through CLI.
   // This does not create or complete a third proposal lifecycle.
-  await importSnapshot(stack, "2", snapshot.outputPath);
+  await importSnapshot(stack, "2", snapshot);
   await setLifecycleSlot(stack, 1600);
   await test.step("Lifecycle 1: execute 22 MINA through Web and preserve lifecycle 0", async () => {
     await selectAccount(stack.proposer, route, title);

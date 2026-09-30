@@ -1,19 +1,61 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { ArchiveEventEntity } from "@repo/indexer";
+import { Field, Mina, UInt32, UInt64 } from "o1js";
 import {
   PROPOSAL_CREATED_EVENT_NAME,
   PROPOSAL_EXECUTED_EVENT_NAME,
   PROPOSAL_PAUSE_TOGGLED_EVENT_NAME,
   PROPOSAL_VOTE_DISPATCHED_EVENT_NAME,
   PROPOSAL_VOTES_TALLIED_EVENT_NAME,
+  ProposalCreatedEvent,
 } from "@repo/sdk/src/provable/events/treasury-proposal-events.js";
 import {
   getRawProposalEventFields,
   type ProposalEventName,
 } from "../src/processors/proposals/proposal-event-decoding.js";
+import { LightnetProposalCreatedFixtureContract } from "./contracts/lightnet-proposal-created-fixture-contract.js";
 
 describe("proposal event discriminator decoding", () => {
+  it("emits the canonical discriminator from the integration fixture", async () => {
+    const local = await Mina.LocalBlockchain({ proofsEnabled: false });
+    Mina.setActiveInstance(local);
+    const sender = local.testAccounts[0]!;
+    const address = local.testAccounts[1]!;
+    const fixture = new LightnetProposalCreatedFixtureContract(address);
+    const payload = new ProposalCreatedEvent({
+      proposalPublicKey: address,
+      lifecycleId: UInt32.from(3),
+      amount: UInt64.from(250_000_000),
+      recipient: sender,
+      zkAppUriHash: Field(123),
+      stakingEpochDataLedgerHash: Field(456),
+      stakingEpochDataLedgerTotalCurrency: UInt64.from(4_000_000_000),
+      proposerPublicKey: sender,
+      senderPublicKey: sender,
+    });
+    const transaction = await Mina.transaction(sender, async () => {
+      await fixture.emitProposalCreated(payload);
+    });
+    const update = transaction.transaction.accountUpdates.find((candidate) =>
+      candidate.body.publicKey.equals(address).toBoolean(),
+    );
+    assert.ok(update);
+    const fields = ProposalCreatedEvent.toFields(payload).map(String);
+    const data = update.body.events.data[0]!.map(String);
+    assert.deepEqual(data, ["0", ...fields]);
+    const event = new ArchiveEventEntity();
+    event.eventType = PROPOSAL_CREATED_EVENT_NAME;
+    event.rawEventData = { data };
+    assert.deepEqual(
+      getRawProposalEventFields(event, PROPOSAL_CREATED_EVENT_NAME),
+      {
+        kind: "fields",
+        fields,
+      },
+    );
+  });
+
   // o1js assigns event discriminators from the lexical order of the declared
   // event names. Keep the expected values fixed so this test cannot repeat a
   // sorting defect in the decoder.

@@ -92,6 +92,13 @@ export function createArchiveHttpServer(options: ArchiveHttpServerOptions): Arch
       const body = (await readJsonBody(request)) as {
         query?: string;
         variables?: {
+          query?: {
+            blockHeight_gte?: number;
+            blockHeight_lt?: number;
+            inBestChain?: boolean;
+            canonical?: boolean;
+          };
+          limit?: number;
           input?: {
             address?: string;
             tokenId?: string;
@@ -127,6 +134,25 @@ export function createArchiveHttpServer(options: ArchiveHttpServerOptions): Arch
             events: toArchiveEventOutput(events),
           },
         });
+        return;
+      }
+      if (query.includes("blocks(")) {
+        const filter = body.variables?.query ?? {};
+        // Local transactions are final immediately; this runtime has one
+        // canonical chain, including its genesis and eventless blocks.
+        const blocks = filter.canonical === false || filter.inBestChain === false
+          ? []
+          : options.runtime.getBestChain(options.runtime.getCurrentBlockHeight() + 1)
+            .map((block) => ({
+              blockHeight: Number(block.protocolState.consensusState.blockHeight),
+              stateHash: block.stateHash,
+              parentHash: block.protocolState.previousStateHash,
+            }))
+            .filter((block) => block.blockHeight >= (filter.blockHeight_gte ?? 0)
+              && block.blockHeight < (filter.blockHeight_lt ?? Number.MAX_SAFE_INTEGER))
+            .reverse()
+            .slice(0, body.variables?.limit ?? 1000);
+        writeJson(response, 200, { data: { blocks } });
         return;
       }
       if (query.includes("actions(")) {

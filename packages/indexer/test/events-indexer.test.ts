@@ -16,6 +16,21 @@ class FakeArchiveSource {
   public canonicalHead = 0;
   public fetchCalls: FetchEventsOptions[] = [];
 
+  public async fetchPendingSnapshot(batchSize: number) {
+    const head = (await this.getMaxBlockHeights()).pendingMaxBlockHeight;
+    const events: ArchiveEventOutput[] = [];
+    for (let from = 0; from <= head; from += batchSize) {
+      events.push(
+        ...(await this.fetchEvents({
+          status: "PENDING",
+          from,
+          to: Math.min(from + batchSize - 1, head),
+        })),
+      );
+    }
+    return { events, height: head, ambiguous: false, ancestry: [] };
+  }
+
   public async getMaxBlockHeights(): Promise<ArchiveMaxHeights> {
     return {
       canonicalMaxBlockHeight: this.canonicalHead,
@@ -101,7 +116,7 @@ describe("EventsIndexer", () => {
       ],
     );
     assert.equal(await repository.getCursor(EventsIndexer.PENDING_CURSOR), 24);
-    assert.equal(heartbeatCount, 6);
+    assert.equal(heartbeatCount, 2);
 
     archive.fetchCalls = [];
     archive.pendingHead = 27;
@@ -110,13 +125,13 @@ describe("EventsIndexer", () => {
     assert.deepEqual(
       archive.fetchCalls.map(({ status, from, to }) => [status, from, to]),
       [
-        ["PENDING", 5, 14],
-        ["PENDING", 15, 24],
-        ["PENDING", 25, 27],
+        ["PENDING", 0, 9],
+        ["PENDING", 10, 19],
+        ["PENDING", 20, 27],
       ],
     );
     assert.equal(await repository.getCursor(EventsIndexer.PENDING_CURSOR), 27);
-    assert.equal(heartbeatCount, 12);
+    assert.equal(heartbeatCount, 4);
   });
 
   it("writes synced event rows through repository", async () => {
@@ -169,7 +184,7 @@ describe("EventsIndexer", () => {
     );
   });
 
-  it("marks old pending events as orphaned using canonical cursor", async () => {
+  it("retires the pending branch as canonical observations advance", async () => {
     const indexer = new EventsIndexer(archive, repository, {
       pollPendingIntervalMs: 60_000,
       pollCanonicalIntervalMs: 60_000,
@@ -202,7 +217,15 @@ describe("EventsIndexer", () => {
     await indexer.syncCanonicalOnce();
 
     const orphanedRows = await indexer.sweepOrphanedPendingEvents();
-    assert.equal(orphanedRows, 1);
+    assert.equal(orphanedRows, 0);
+    assert.equal(
+      (
+        await dataSource
+          .getRepository(ArchiveEventEntity)
+          .findOneByOrFail({ txHash: "tx-orphan-candidate" })
+      ).status,
+      "orphaned",
+    );
   });
 
   it("starts polling without waiting for the initial catch-up", async () => {
@@ -214,6 +237,10 @@ describe("EventsIndexer", () => {
       releaseArchive = resolve;
     });
     const slowArchive = {
+      fetchPendingSnapshot: async () => {
+        await archiveGate;
+        return { events: [], height: 0, ambiguous: false, ancestry: [] };
+      },
       getMaxBlockHeights: async () => {
         await archiveGate;
         return { canonicalMaxBlockHeight: 0, pendingMaxBlockHeight: 0 };
@@ -312,6 +339,15 @@ describe("EventsIndexer", () => {
     ];
     const calls: Array<unknown[]> = [];
     const archiveStub = {
+      async fetchPendingSnapshot() {
+        calls.push(["fetchPendingSnapshot"]);
+        return {
+          events: fetchedRows,
+          height: 4,
+          ambiguous: false,
+          ancestry: [],
+        };
+      },
       async getMaxBlockHeights() {
         calls.push(["getMaxBlockHeights"]);
         return {
@@ -373,10 +409,8 @@ describe("EventsIndexer", () => {
 
     assert.deepEqual(calls, [
       ["recordRuntimeStarted", EventsIndexer.PENDING_CURSOR],
-      ["getMaxBlockHeights"],
-      ["getCursor", EventsIndexer.PENDING_CURSOR],
       ["recordRuntimeHeartbeat", EventsIndexer.PENDING_CURSOR],
-      ["fetchEvents", { status: "PENDING", from: 0, to: 4 }],
+      ["fetchPendingSnapshot"],
       [
         "ingestRawEventsAndAdvanceCursor",
         fetchedRows,
@@ -388,6 +422,71 @@ describe("EventsIndexer", () => {
       ["recordRuntimeHeartbeat", EventsIndexer.PENDING_CURSOR],
       ["recordRuntimeSucceeded", EventsIndexer.PENDING_CURSOR],
     ]);
+  });
+
+  it("retires conflicting pending branches during a tie and resumes automatically", async () => {
+    const indexer = new EventsIndexer(archive, repository, {
+      pollPendingIntervalMs: 60000,
+      pollCanonicalIntervalMs: 60000,
+      blockBatchSize: 10,
+      startHeight: 0,
+      pendingOverlapBlocks: 0,
+      canonicalOverlapBlocks: 0,
+      orphanDepthBlocks: 30,
+    });
+    archive.pendingHead = 3;
+    const original = archive.fetchPendingSnapshot.bind(archive);
+    let tied = false;
+    let fork = "a";
+    archive.fetchPendingSnapshot = async (size) => {
+      const snapshot = await original(size);
+      snapshot.ambiguous = tied;
+      snapshot.events = tied
+        ? []
+        : snapshot.events.map((row) => ({
+            ...row,
+            eventData: row.eventData!.map((update) => ({
+              ...update,
+              transactionInfo: {
+                ...update.transactionInfo!,
+                hash: `${update.transactionInfo!.hash}-${fork}`,
+              },
+            })),
+          }));
+      return snapshot;
+    };
+    await indexer.syncPendingOnce();
+    assert.equal(
+      await dataSource
+        .getRepository(ArchiveEventEntity)
+        .countBy({ status: "pending" }),
+      4,
+    );
+    tied = true;
+    await indexer.syncPendingOnce();
+    assert.equal(
+      await dataSource
+        .getRepository(ArchiveEventEntity)
+        .countBy({ status: "pending" }),
+      0,
+    );
+    assert.match(
+      (await repository.getOperationalStatus()).failedRuntimeOperations[0]!
+        .lastError!,
+      /ambiguous/,
+    );
+    tied = false;
+    fork = "b";
+    await indexer.syncPendingOnce();
+    const pending = await dataSource
+      .getRepository(ArchiveEventEntity)
+      .findBy({ status: "pending" });
+    assert.equal(pending.length, 4);
+    assert.ok(pending.every((row) => row.txHash.endsWith("-b")));
+    assert.equal(
+      (await repository.getOperationalStatus()).failedRuntimeOperations.length,
+      0,
+    );
   });
 
   it("records an initial archive failure without blocking startup", async () => {

@@ -9,6 +9,8 @@ import {
   IndexerRuntimeStatusEntity,
 } from "@repo/indexer";
 import {
+  EventProcessorRouter,
+  EventsProcessor,
   ProcessorEventFailureEntity,
   ProcessorOffsetEntity,
   ProcessorRuntimeStatusEntity,
@@ -24,6 +26,7 @@ import { ConfigureProcessorSchema1775649313439 } from "../../src/db/migrations/1
 import { InitializeProcessorSchema1775649313440 } from "../../src/db/migrations/1775649313440-initialize-processor-schema.js";
 import { BackendPipelineHardening1788447600000 } from "../../src/db/migrations/1788447600000-backend-pipeline-hardening.js";
 import { ProposalContractProjection1788451200000 } from "../../src/db/migrations/1788451200000-proposal-contract-projection.js";
+import { ProcessorEventQuarantine1790586000000 } from "../../src/db/migrations/1790586000000-processor-event-quarantine.js";
 import { proposalProcessorOutputEntities } from "../../src/processors/proposals/processor-output-entities.js";
 import { ProposalEntity } from "../../src/processors/proposals/proposal-entity.js";
 import { ProposalEventFactEntity } from "../../src/processors/proposals/proposal-event-fact-entity.js";
@@ -59,6 +62,7 @@ function postgresDataSource(databaseUrl: string, schema: string): DataSource {
       InitializeProcessorSchema1775649313440,
       BackendPipelineHardening1788447600000,
       ProposalContractProjection1788451200000,
+      ProcessorEventQuarantine1790586000000,
     ],
     migrationsTableName: "typeorm_migrations",
   });
@@ -382,6 +386,122 @@ test(
         await readVoteState(dataSource, proposalPublicKey),
         stateBeforeRejection,
       );
+    });
+  },
+);
+
+test(
+  "PostgreSQL quarantine rolls back handler writes and commits the snapshot with the cursor",
+  {
+    skip: databaseTestUrl ? false : "DATABASE_TEST_URL is not set",
+  },
+  async () => {
+    await withPostgresDataSource(async (dataSource) => {
+      const key = PrivateKey.fromBigInt(900n).toPublicKey().toBase58();
+      await insertProposal(dataSource, key);
+      const observations = ["1", "2"].map((id) =>
+        event({
+          id,
+          changeSequence: id,
+          eventType: "audit",
+          blockHeight: Number(id),
+          rawEventData: { id },
+        }),
+      );
+      const schema = String((dataSource.options as { schema: string }).schema);
+      await dataSource.query(
+        `CREATE FUNCTION "${schema}".reject_audit_offset() RETURNS trigger AS $$ BEGIN RAISE EXCEPTION 'injected offset failure'; END; $$ LANGUAGE plpgsql`,
+      );
+      await dataSource.query(
+        `CREATE TRIGGER reject_audit_offset BEFORE INSERT ON "${schema}".processor_offsets FOR EACH ROW EXECUTE FUNCTION "${schema}".reject_audit_offset()`,
+      );
+      const processor = new EventsProcessor(
+        dataSource,
+        new EventProcessorRouter([
+          {
+            eventType: "audit",
+            async tryHandle(observation, manager) {
+              const proposals = manager.getRepository(ProposalEntity);
+              if (observation.id === "1") {
+                await proposals.update(
+                  { proposalPublicKey: key },
+                  { amount: "200" },
+                );
+                return false;
+              }
+              assert.equal(
+                (await proposals.findOneByOrFail({ proposalPublicKey: key }))
+                  .amount,
+                "100",
+              );
+              await proposals.update(
+                { proposalPublicKey: key },
+                { amount: "300" },
+              );
+              return true;
+            },
+          },
+        ]),
+        {
+          processorName: "audit-quarantine",
+          pollIntervalMs: 60_000,
+          batchSize: 2,
+        },
+        {
+          async fetchEventsPage({ changeSequenceAfter }) {
+            return {
+              items: observations.filter(
+                (row) =>
+                  BigInt(row.changeSequence) > BigInt(changeSequenceAfter),
+              ),
+              nextCursor: null,
+            };
+          },
+        },
+      );
+      assert.equal(await processor.processOnce(), 0);
+      assert.equal(
+        await dataSource
+          .getRepository(ProcessorOffsetEntity)
+          .countBy({ processorName: "audit-quarantine" }),
+        0,
+      );
+      assert.equal(
+        await dataSource
+          .getRepository(ProcessorEventFailureEntity)
+          .countBy({ processorName: "audit-quarantine" }),
+        0,
+      );
+      assert.equal(
+        (
+          await dataSource
+            .getRepository(ProposalEntity)
+            .findOneByOrFail({ proposalPublicKey: key })
+        ).amount,
+        "100",
+      );
+      await dataSource.query(
+        `DROP TRIGGER reject_audit_offset ON "${schema}".processor_offsets`,
+      );
+      assert.equal(await processor.processOnce(), 1);
+      const failure = await dataSource
+        .getRepository(ProcessorEventFailureEntity)
+        .findOneByOrFail({ processorName: "audit-quarantine" });
+      assert.equal(failure.state, "quarantined");
+      assert.deepEqual(failure.eventSnapshot.rawEventData, { id: "1" });
+      const offset = await dataSource
+        .getRepository(ProcessorOffsetEntity)
+        .findOneByOrFail({ processorName: "audit-quarantine" });
+      assert.equal(offset.lastSeenChangeSequence, "2");
+      assert.equal(
+        (
+          await dataSource
+            .getRepository(ProposalEntity)
+            .findOneByOrFail({ proposalPublicKey: key })
+        ).amount,
+        "300",
+      );
+      await processor.stop();
     });
   },
 );

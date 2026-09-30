@@ -3,6 +3,7 @@ import type {
   ArchiveEventOutput,
   ArchiveMaxHeights,
   FetchEventsOptions,
+  PendingArchiveSnapshot,
 } from "./archive/client.js";
 import { ArchiveClient } from "./archive/client.js";
 import { createIndexerDataSource } from "./db/indexer-data-source.js";
@@ -19,6 +20,7 @@ export interface EventsIndexerOptions {
 }
 
 interface ArchiveEventsSource {
+  fetchPendingSnapshot(batchSize: number): Promise<PendingArchiveSnapshot>;
   getMaxBlockHeights(): Promise<ArchiveMaxHeights>;
   fetchEvents(options: FetchEventsOptions): Promise<ArchiveEventOutput[]>;
 }
@@ -320,11 +322,30 @@ export class EventsIndexer {
     cursorName: string;
     overlapBlocks: number;
   }): Promise<void> {
+    if (input.archiveStatus === "PENDING") {
+      await this.repository.recordRuntimeHeartbeat(input.cursorName);
+      const snapshot = await this.archiveClient.fetchPendingSnapshot(
+        this.options.blockBatchSize,
+      );
+      // Retire every old pending branch and publish the selected branch atomically.
+      await this.repository.ingestRawEventsAndAdvanceCursor(
+        snapshot.events,
+        "pending",
+        input.cursorName,
+        snapshot.height,
+        { from: 0, to: snapshot.height },
+        true,
+        snapshot.ambiguous ? undefined : snapshot.ancestry,
+      );
+      await this.repository.recordRuntimeHeartbeat(input.cursorName);
+      if (snapshot.ambiguous)
+        throw new Error(
+          "Pending Archive tips are ambiguous; projection uses canonical events only",
+        );
+      return;
+    }
     const maxHeights = await this.archiveClient.getMaxBlockHeights();
-    const archiveHead =
-      input.archiveStatus === "PENDING"
-        ? maxHeights.pendingMaxBlockHeight
-        : maxHeights.canonicalMaxBlockHeight;
+    const archiveHead = maxHeights.canonicalMaxBlockHeight;
     assertNonnegativeInteger(
       archiveHead,
       `${input.archiveStatus} archive head`,

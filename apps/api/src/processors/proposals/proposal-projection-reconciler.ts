@@ -1,3 +1,4 @@
+import { ProcessorEventFailureEntity } from "@repo/processor";
 import { ArchiveEventEntity } from "@repo/indexer";
 import {
   PROPOSAL_CREATED_EVENT_NAME,
@@ -328,11 +329,7 @@ function assertCoherentProposalBranch(
     { stateHashes: Set<string>; parentHashes: Set<string> }
   >();
   for (const fact of facts) {
-    if (
-      fact.status !== "canonical" ||
-      fact.blockHeight === null ||
-      !fact.stateHash
-    ) {
+    if (!isSurviving(fact) || fact.blockHeight === null || !fact.stateHash) {
       continue;
     }
     const block = blocks.get(fact.blockHeight) ?? {
@@ -401,6 +398,7 @@ function selectCreationFact(
 }
 
 export class ProposalProjectionReconciler {
+  public constructor(private readonly processorName = "proposal-processor") {}
   private voteDependencies: VoteProjectionDependencies | null = null;
 
   public configureVoteProjection(
@@ -523,10 +521,44 @@ export class ProposalProjectionReconciler {
       );
     }
 
+    if (await this.finishReplay(manager, event.changeSequence)) return;
+
+    if (
+      previousFact &&
+      (previousFact.proposalPublicKey !== decodedPayload.proposalPublicKey ||
+        previousFact.eventType !== eventType)
+    ) {
+      await this.removeEventProjection(previousFact.archiveEventId, manager);
+    }
+
+    const previousCreationSemanticsChanged =
+      previousFact?.eventType === PROPOSAL_CREATED_EVENT_NAME &&
+      previousFact.eventType !== eventType;
+    if (
+      previousFact &&
+      (previousFact.proposalPublicKey !== decodedPayload.proposalPublicKey ||
+        previousCreationSemanticsChanged)
+    ) {
+      await this.reconcileProposal(
+        previousFact.proposalPublicKey,
+        manager,
+        previousCreationSemanticsChanged ||
+          previousFact.eventType === PROPOSAL_CREATED_EVENT_NAME,
+      );
+    }
+    await this.reconcileProposal(decodedPayload.proposalPublicKey, manager);
+  }
+
+  public async finishReplay(
+    manager: EntityManager,
+    processedChangeSequence: string,
+  ): Promise<boolean> {
     const replay = await this.getReplayState(manager);
     if (replay?.state === "collecting") {
-      if (BigInt(event.changeSequence) < BigInt(replay.targetChangeSequence)) {
-        return;
+      if (
+        BigInt(processedChangeSequence) < BigInt(replay.targetChangeSequence)
+      ) {
+        return true;
       }
 
       await this.lockArchiveReplaySnapshot(manager);
@@ -543,9 +575,14 @@ export class ProposalProjectionReconciler {
           },
         );
       }
-      if (BigInt(event.changeSequence) < BigInt(replay.targetChangeSequence)) {
-        return;
+      if (
+        BigInt(processedChangeSequence) < BigInt(replay.targetChangeSequence)
+      ) {
+        return true;
       }
+
+      // A zero target can represent retained legacy projections without Archive history.
+      if (BigInt(replay.targetChangeSequence) === 0n) return true;
 
       const missingFactCount = await this.countMissingReplayFacts(
         replay.targetChangeSequence,
@@ -574,33 +611,9 @@ export class ProposalProjectionReconciler {
           { projectionName: replay.projectionName },
           { state: "complete", completedAt: new Date() },
         );
-      return;
+      return true;
     }
-
-    if (
-      previousFact &&
-      (previousFact.proposalPublicKey !== decodedPayload.proposalPublicKey ||
-        previousFact.eventType !== eventType)
-    ) {
-      await this.removeEventProjection(previousFact.archiveEventId, manager);
-    }
-
-    const previousCreationSemanticsChanged =
-      previousFact?.eventType === PROPOSAL_CREATED_EVENT_NAME &&
-      previousFact.eventType !== eventType;
-    if (
-      previousFact &&
-      (previousFact.proposalPublicKey !== decodedPayload.proposalPublicKey ||
-        previousCreationSemanticsChanged)
-    ) {
-      await this.reconcileProposal(
-        previousFact.proposalPublicKey,
-        manager,
-        previousCreationSemanticsChanged ||
-          previousFact.eventType === PROPOSAL_CREATED_EVENT_NAME,
-      );
-    }
-    await this.reconcileProposal(decodedPayload.proposalPublicKey, manager);
+    return false;
   }
 
   private async lockArchiveReplaySnapshot(
@@ -647,6 +660,15 @@ export class ProposalProjectionReconciler {
          AND proposal_fact.change_sequence = archive_event.change_sequence
          AND proposal_fact.event_type = archive_event.event_type`,
       )
+      .leftJoin(
+        ProcessorEventFailureEntity,
+        "quarantine",
+        `quarantine.archive_event_id = archive_event.id
+         AND quarantine.change_sequence = archive_event.change_sequence
+         AND quarantine.processor_name = :processorName
+         AND quarantine.state = 'quarantined'`,
+        { processorName: this.processorName },
+      )
       .where("archive_event.event_type IN (:...eventTypes)", {
         eventTypes: PROPOSAL_EVENT_TYPES,
       })
@@ -654,6 +676,7 @@ export class ProposalProjectionReconciler {
         targetChangeSequence,
       })
       .andWhere("proposal_fact.archive_event_id IS NULL")
+      .andWhere("quarantine.archive_event_id IS NULL")
       .getCount();
   }
 
@@ -749,6 +772,30 @@ export class ProposalProjectionReconciler {
     const facts = await manager.getRepository(ProposalEventFactEntity).findBy({
       proposalPublicKey,
     });
+    const pendingIds = facts
+      .filter(
+        (fact) =>
+          fact.status === "pending" && /^\d+$/.test(fact.archiveEventId),
+      )
+      .map((fact) => fact.archiveEventId);
+    const currentRows = pendingIds.length
+      ? await manager
+          .getRepository(ArchiveEventEntity)
+          .createQueryBuilder("event")
+          .where("event.id IN (:...pendingIds)", { pendingIds })
+          .getMany()
+      : [];
+    const currentById = new Map(
+      currentRows.map((row) => [String(row.id), row]),
+    );
+    for (const fact of facts) {
+      const current = currentById.get(fact.archiveEventId);
+      if (
+        current &&
+        (current.status === "orphaned" || current.stateHash !== fact.stateHash)
+      )
+        fact.status = "orphaned";
+    }
     facts.sort(compareFacts);
     assertCoherentProposalBranch(proposalPublicKey, facts);
 

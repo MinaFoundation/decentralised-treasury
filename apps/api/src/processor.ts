@@ -1,5 +1,5 @@
 import "reflect-metadata";
-import { EventsProcessor } from "@repo/processor";
+import { EventsProcessor, ProcessorOffsetEntity } from "@repo/processor";
 import { TreasuryOwnerSmartContract } from "@repo/sdk/src/provable/contracts/treasury-owner.js";
 import { pathToFileURL } from "node:url";
 import { type ApiConfig, loadApiConfig } from "./config.js";
@@ -41,7 +41,9 @@ export function createProcessorWorkerRuntime({
   config,
   stakingLedgerServices = new LifecycleStakingLedgerServiceRegistry(),
   votingLedgerServices,
-  proposalProjectionReconciler = new ProposalProjectionReconciler(),
+  proposalProjectionReconciler = new ProposalProjectionReconciler(
+    config.processorName,
+  ),
   processorFactory = (processorConfig, setup) =>
     EventsProcessor.fromConfig(processorConfig, setup),
 }: ProcessorWorkerRuntimeDependencies): ProcessorWorkerRuntime {
@@ -70,6 +72,15 @@ export function createProcessorWorkerRuntime({
     outputEntitySchemas: proposalProcessorOutputEntities,
     beforeProcessing: async ({ manager, processorName }) => {
       await rewindProposalProjectionReplay(manager, processorName);
+    },
+    afterProcessing: async ({ manager, processorName }) => {
+      const offset = await manager
+        .getRepository(ProcessorOffsetEntity)
+        .findOneBy({ processorName });
+      await proposalProjectionReconciler.finishReplay(
+        manager,
+        offset?.lastSeenChangeSequence ?? "0",
+      );
     },
   };
   const processor = processorFactory(

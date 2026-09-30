@@ -89,6 +89,29 @@ describe("EventsRepository", () => {
     assert.deepEqual(rows[0].rawEventData, archiveEvents[0].eventData?.[0]);
   });
 
+  it("reuses transaction-relative identities after Archive account updates are renumbered", async () => {
+    const original = buildArchiveEventOutput(10);
+    await repository.insertRawEvents([original], "pending");
+    const ids = (await dataSource.getRepository(ArchiveEventEntity).find())
+      .map((row) => row.id)
+      .sort();
+    const rebuilt = structuredClone(original);
+    for (const update of rebuilt.eventData!) {
+      update.accountUpdateId = String(Number(update.accountUpdateId) + 1000);
+      update.transactionInfo!.zkappAccountUpdateIds = [1001, 1002];
+    }
+    await repository.insertRawEvents([rebuilt], "canonical");
+    await repository.insertRawEvents([rebuilt], "canonical");
+    const rows = await dataSource.getRepository(ArchiveEventEntity).find();
+    assert.equal(rows.length, 2);
+    assert.deepEqual(rows.map((row) => row.id).sort(), ids);
+    assert.ok(rows.every((row) => row.status === "canonical"));
+    assert.equal(
+      await dataSource.getRepository(ArchiveEventRejectionEntity).count(),
+      0,
+    );
+  });
+
   it("quarantines an unresolved event type", async () => {
     const strictDataSource = createInMemoryDataSource();
     const strictRepository = new EventsRepository(strictDataSource, "public", {

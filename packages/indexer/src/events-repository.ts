@@ -1,6 +1,10 @@
 import { createHash } from "node:crypto";
 import { DataSource, type EntityManager } from "typeorm";
-import type { ArchiveEventData, ArchiveEventOutput } from "./archive/client.js";
+import type {
+  ArchiveChainBlock,
+  ArchiveEventData,
+  ArchiveEventOutput,
+} from "./archive/client.js";
 import {
   ArchiveEventEntity,
   ArchiveEventRejectionEntity,
@@ -45,7 +49,7 @@ interface NormalizedBatch {
   rejected: ArchiveEventRejectionInsertInput[];
 }
 
-type PreparedBatch = NormalizedBatch;
+type PreparedBatch = NormalizedBatch & { advancesCanonical?: boolean };
 
 export interface IngestBatchResult {
   acceptedRows: number;
@@ -199,6 +203,8 @@ export class EventsRepository {
     cursorName: string,
     blockHeight: number,
     completeRange?: CompleteArchiveRange,
+    replacePendingBranch = false,
+    selectedAncestry?: ArchiveChainBlock[],
   ): Promise<IngestBatchResult> {
     const storedStatus = asStoredStatus(status);
     this.assertCursorName(cursorName);
@@ -223,6 +229,45 @@ export class EventsRepository {
     return this.dataSource.transaction(async (manager) => {
       await this.lockIngestion(manager);
       const prepared = await this.prepareBatch(manager, batch);
+      if (selectedAncestry?.length) {
+        const anchor = selectedAncestry[0]!;
+        const hashes = new Set(
+          selectedAncestry.map((block) => block.stateHash),
+        );
+        const canonicalRows = await manager
+          .getRepository(ArchiveEventEntity)
+          .createQueryBuilder("event")
+          .where("event.status = :status", { status: "canonical" })
+          .andWhere("event.block_height >= :height", {
+            height: anchor.blockHeight,
+          })
+          .getMany();
+        if (
+          canonicalRows.some(
+            (row) => row.stateHash && !hashes.has(row.stateHash),
+          )
+        ) {
+          throw new Error(
+            "Canonical ingestion advanced beyond the selected pending snapshot",
+          );
+        }
+      }
+      if (prepared.advancesCanonical) {
+        // A newly canonical branch invalidates the old pending selection. Its
+        // next complete snapshot can restore compatible pending observations.
+        await manager
+          .getRepository(ArchiveEventEntity)
+          .createQueryBuilder()
+          .update(ArchiveEventEntity)
+          .set({ status: "orphaned", updatedAt: () => "NOW()" } as never)
+          .where("status = :status", { status: "pending" })
+          .execute();
+      }
+      if (replacePendingBranch && prepared.rejected.length > 0) {
+        throw new Error(
+          "Selected pending branch contains invalid observations",
+        );
+      }
       if (
         storedStatus === "pending" &&
         completeRange &&
@@ -230,7 +275,7 @@ export class EventsRepository {
       ) {
         await this.retireAbsentPendingEvents(
           manager,
-          completeRange,
+          replacePendingBranch ? { from: 0, to: 2_147_483_647 } : completeRange,
           prepared.accepted,
         );
       }
@@ -532,15 +577,10 @@ export class EventsRepository {
   private eventIdentity(
     row: Pick<
       ArchiveEventInsertInput,
-      "txHash" | "accountUpdateId" | "accountUpdateIndex" | "eventIndex"
+      "txHash" | "accountUpdateIndex" | "eventIndex"
     >,
   ): string {
-    return stableJson([
-      row.txHash,
-      row.accountUpdateId,
-      row.accountUpdateIndex,
-      row.eventIndex,
-    ]);
+    return stableJson([row.txHash, row.accountUpdateIndex, row.eventIndex]);
   }
 
   private immutableEventMatches(
@@ -603,15 +643,15 @@ export class EventsRepository {
         uniqueRows.set(identity, row);
         continue;
       }
-      rejected.push(
-        this.immutableConflictRejection(
-          row,
-          prior,
-          this.immutableEventMatches(prior, row)
-            ? "DUPLICATE_EVENT_IDENTITY"
-            : "IMMUTABLE_EVENT_CONFLICT",
-        ),
-      );
+      if (!this.immutableEventMatches(prior, row)) {
+        rejected.push(
+          this.immutableConflictRejection(
+            row,
+            prior,
+            "IMMUTABLE_EVENT_CONFLICT",
+          ),
+        );
+      }
     }
 
     const candidates = Array.from(uniqueRows.values());
@@ -657,7 +697,12 @@ export class EventsRepository {
         ),
       );
     }
-    return { accepted, rejected };
+    const advancesCanonical = accepted.some(
+      (row) =>
+        row.status === "canonical" &&
+        existingByIdentity.get(this.eventIdentity(row))?.status !== "canonical",
+    );
+    return { accepted, rejected, advancesCanonical };
   }
 
   private enforceCompleteRange(
@@ -711,7 +756,7 @@ export class EventsRepository {
       .values(rows)
       .onConflict(
         `
-        ("tx_hash","account_update_id","account_update_index","event_index")
+        ("tx_hash","account_update_index","event_index")
         DO UPDATE SET
           "updated_at" = CASE
             WHEN "archive_events"."status" = 'canonical' AND EXCLUDED."status" <> 'canonical'
@@ -789,6 +834,11 @@ export class EventsRepository {
             WHEN "archive_events"."status" = 'canonical' AND EXCLUDED."status" <> 'canonical'
               THEN "archive_events"."block_event_index"
             ELSE EXCLUDED."block_event_index"
+          END,
+          "account_update_id" = CASE
+            WHEN "archive_events"."status" = 'canonical' AND EXCLUDED."status" <> 'canonical'
+              THEN "archive_events"."account_update_id"
+            ELSE EXCLUDED."account_update_id"
           END,
           "raw_event_data" = CASE
             WHEN "archive_events"."status" = 'canonical' AND EXCLUDED."status" <> 'canonical'

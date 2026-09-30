@@ -27,6 +27,7 @@ import { Field, PrivateKey, PublicKey, UInt32, UInt64 } from "o1js";
 import type { DataSource } from "typeorm";
 import { ProposalCreatedEventHandler } from "../src/processors/proposals/proposal-created-event-handler.js";
 import { ProposalEntity } from "../src/processors/proposals/proposal-entity.js";
+import { ProposalProjectionReplayEntity } from "../src/processors/proposals/proposal-projection-replay-entity.js";
 import { ProposalProjectionReconciler } from "../src/processors/proposals/proposal-projection-reconciler.js";
 import { ProposalVoteDispatchedEventHandler } from "../src/processors/proposals/proposal-vote-dispatched-event-handler.js";
 import { proposalProcessorOutputEntities } from "../src/processors/proposals/processor-output-entities.js";
@@ -188,12 +189,16 @@ function repositoryEventSource(
 ): IndexerEventsSource {
   return {
     async fetchEventsPage({ handledEventTypes, changeSequenceAfter, limit }) {
-      const items = await repository.getEventsPage({
+      const rows = await repository.getEventsPage({
         eventTypes: handledEventTypes,
         includeUnknown: false,
         changeSequenceAfter,
         limit,
       });
+      // Match the HTTP source: pg-mem returns generated bigint IDs as numbers.
+      const items = rows.map((event) =>
+        Object.assign(event, { id: String(event.id) }),
+      );
       const lastItem = items.at(-1);
       return {
         items,
@@ -243,8 +248,10 @@ describe("proposal Archive status pipeline", () => {
   let dataSource: DataSource;
   let repository: EventsRepository;
   let processor: EventsProcessor;
+  let ledgerUnavailable = false;
 
   beforeEach(async () => {
+    ledgerUnavailable = false;
     dataSource = createInMemoryDataSource(
       "public",
       proposalProcessorOutputEntities,
@@ -255,13 +262,19 @@ describe("proposal Archive status pipeline", () => {
     await repository.initialize();
     await dataSource.synchronize();
 
-    const reconciler = new ProposalProjectionReconciler();
+    const reconciler = new ProposalProjectionReconciler(
+      "proposal-archive-status-pipeline-test",
+    );
     processor = new EventsProcessor(
       dataSource,
       new EventProcessorRouter([
         new ProposalCreatedEventHandler(
           {
-            resolveTreasuryBalanceForLifecycle: async () => "20",
+            resolveTreasuryBalanceForLifecycle: async () => {
+              if (ledgerUnavailable)
+                throw new Error("Ledger temporarily unavailable");
+              return "20";
+            },
             deriveAcceptanceCriteria: async () => ({
               requiredParticipationBp: "2000",
               requiredApprovalBp: "5100",
@@ -281,8 +294,20 @@ describe("proposal Archive status pipeline", () => {
         processorName: "proposal-archive-status-pipeline-test",
         pollIntervalMs: 60_000,
         batchSize: 20,
+        maxAttempts: 2,
+        retryBaseDelayMs: 0,
       },
       repositoryEventSource(repository),
+      undefined,
+      async ({ manager, processorName }) => {
+        const offset = await manager
+          .getRepository(ProcessorOffsetEntity)
+          .findOneBy({ processorName });
+        await reconciler.finishReplay(
+          manager,
+          offset?.lastSeenChangeSequence ?? "0",
+        );
+      },
     );
   });
 
@@ -350,6 +375,181 @@ describe("proposal Archive status pipeline", () => {
       (await archiveStatuses(dataSource, fixture)).map((event) => event.status),
       ["canonical", "canonical"],
     );
+  });
+
+  it("keeps one projection effect when Archive account-update IDs change", async () => {
+    const fixture = buildStatusFixture({
+      name: "renumbered",
+      baseHeight: 100,
+      accountUpdateId: 10,
+      proposalSeed: 101n,
+      recipientSeed: 102n,
+      senderSeed: 103n,
+      voterSeed: 104n,
+    });
+    const events = [fixture.proposalEvent, fixture.voteEvent];
+    await repository.insertRawEvents(events, "pending");
+    assert.equal(await processor.processOnce(), 2);
+    const rebuilt = structuredClone(events);
+    for (const event of rebuilt)
+      for (const update of event.eventData!) {
+        update.accountUpdateId = String(Number(update.accountUpdateId) + 10000);
+        update.transactionInfo!.zkappAccountUpdateIds =
+          update.transactionInfo!.zkappAccountUpdateIds!.map(
+            (id) => id + 10000,
+          );
+      }
+    await repository.insertRawEvents(rebuilt, "canonical");
+    await advancePgMemChangeSequence(dataSource, rebuilt);
+    assert.equal(await processor.processOnce(), 2);
+    assert.equal(await dataSource.getRepository(ArchiveEventEntity).count(), 2);
+    assert.equal(await dataSource.getRepository(ProposalEntity).count(), 1);
+    assert.equal(await dataSource.getRepository(VoteEntity).count(), 1);
+    assert.equal(await processor.processOnce(), 0);
+  });
+
+  it("retries temporary ledger failures without quarantining valid events", async () => {
+    const fixture = buildStatusFixture({
+      name: "retry",
+      baseHeight: 100,
+      accountUpdateId: 10,
+      proposalSeed: 101n,
+      recipientSeed: 102n,
+      senderSeed: 103n,
+      voterSeed: 104n,
+    });
+    await repository.insertRawEvents([fixture.proposalEvent], "pending");
+    ledgerUnavailable = true;
+    assert.equal(await processor.processOnce(), 0);
+    const failure = await dataSource
+      .getRepository(ProcessorEventFailureEntity)
+      .findOneByOrFail({ state: "retrying" });
+    assert.equal(failure.errorCode, "EVENT_HANDLER_FAILED");
+    assert.equal(
+      await dataSource.getRepository(ProcessorOffsetEntity).count(),
+      0,
+    );
+    ledgerUnavailable = false;
+    assert.equal(await processor.processOnce(), 1);
+    assert.equal(await dataSource.getRepository(ProposalEntity).count(), 1);
+  });
+
+  it("quarantines malformed fields without stopping unrelated Proposal events", async () => {
+    const bad = buildStatusFixture({
+      name: "bad",
+      baseHeight: 100,
+      accountUpdateId: 10,
+      proposalSeed: 101n,
+      recipientSeed: 102n,
+      senderSeed: 103n,
+      voterSeed: 104n,
+    });
+    const later = buildStatusFixture({
+      name: "later",
+      baseHeight: 102,
+      accountUpdateId: 12,
+      proposalSeed: 105n,
+      recipientSeed: 106n,
+      senderSeed: 107n,
+      voterSeed: 108n,
+    });
+    bad.proposalEvent.eventData![0].data!.splice(2);
+    await repository.insertRawEvents(
+      [bad.proposalEvent, later.proposalEvent, later.voteEvent],
+      "pending",
+    );
+    await dataSource.getRepository(ProposalProjectionReplayEntity).insert({
+      projectionName: "proposal",
+      targetChangeSequence: "3",
+      state: "collecting",
+      completedAt: null,
+    });
+    assert.equal(await processor.processOnce(), 2);
+    await assertActiveProjection(later, "pending");
+    const failure = await dataSource
+      .getRepository(ProcessorEventFailureEntity)
+      .findOneByOrFail({ state: "quarantined" });
+    assert.equal(failure.errorCode, "EVENT_NOT_HANDLED");
+    assert.deepEqual(
+      (failure.eventSnapshot.rawEventData as { data: string[] }).data,
+      bad.proposalEvent.eventData![0].data,
+    );
+    assert.equal(
+      await dataSource
+        .getRepository(ProposalEntity)
+        .countBy({ proposalPublicKey: bad.proposalPublicKey }),
+      0,
+    );
+  });
+
+  it("finishes replay after a quarantined tail without a later valid event", async () => {
+    const valid = buildStatusFixture({
+      name: "valid-tail",
+      baseHeight: 100,
+      accountUpdateId: 10,
+      proposalSeed: 101n,
+      recipientSeed: 102n,
+      senderSeed: 103n,
+      voterSeed: 104n,
+    });
+    const bad = buildStatusFixture({
+      name: "bad-tail",
+      baseHeight: 102,
+      accountUpdateId: 12,
+      proposalSeed: 105n,
+      recipientSeed: 106n,
+      senderSeed: 107n,
+      voterSeed: 108n,
+    });
+    bad.proposalEvent.eventData![0].data!.splice(2);
+    await repository.insertRawEvents(
+      [valid.proposalEvent, bad.proposalEvent],
+      "canonical",
+    );
+    await dataSource.getRepository(ProposalProjectionReplayEntity).insert({
+      projectionName: "proposal",
+      targetChangeSequence: "2",
+      state: "collecting",
+      completedAt: null,
+    });
+
+    assert.equal(await processor.processOnce(), 1);
+    const replay = await dataSource
+      .getRepository(ProposalProjectionReplayEntity)
+      .findOneByOrFail({ projectionName: "proposal" });
+    assert.equal(replay.state, "complete");
+    assert.ok(replay.completedAt);
+    assert.equal(
+      await dataSource
+        .getRepository(ProposalEntity)
+        .countBy({ proposalPublicKey: valid.proposalPublicKey }),
+      1,
+    );
+    assert.equal(
+      await dataSource
+        .getRepository(ProposalEntity)
+        .countBy({ proposalPublicKey: bad.proposalPublicKey }),
+      0,
+    );
+    const failure = await dataSource
+      .getRepository(ProcessorEventFailureEntity)
+      .findOneByOrFail({ state: "quarantined" });
+    assert.equal(failure.changeSequence, "2");
+    assert.equal(failure.errorCode, "EVENT_NOT_HANDLED");
+    const offset = await dataSource
+      .getRepository(ProcessorOffsetEntity)
+      .findOneByOrFail({
+        processorName: "proposal-archive-status-pipeline-test",
+      });
+    assert.equal(offset.lastSeenChangeSequence, "2");
+    assert.equal(await processor.processOnce(), 0);
+    assert.equal(
+      await dataSource
+        .getRepository(ProcessorEventFailureEntity)
+        .countBy({ state: "quarantined" }),
+      1,
+    );
+    assert.equal(await dataSource.getRepository(ProposalEntity).count(), 1);
   });
 
   it("processes shortened events and later proposals through status changes", async () => {

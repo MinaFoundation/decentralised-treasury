@@ -9,6 +9,7 @@ import {
 } from "@repo/indexer";
 import { type DataSource, TypeORMError } from "typeorm";
 import {
+  TransientEventError,
   EventProcessorRouter,
   EventsProcessor,
   IndexerEventsApiClient,
@@ -268,15 +269,12 @@ describe("EventsProcessor", () => {
     assert.equal(runtime?.lifecycleState, "idle");
   });
 
-  it("does not advance offset when an event cannot be handled", async () => {
+  it("quarantines an undecodable event and processes the next event", async () => {
     const invalidEvent: ArchiveEventOutput = {
-      blockInfo: {
-        height: 11,
-      },
+      blockInfo: { height: 11 },
       eventData: [
         {
           accountUpdateId: "11",
-          // The test handler expects exactly [eventKey, payload].
           data: ["invalid"],
           transactionInfo: {
             hash: "tx-invalid-11",
@@ -285,40 +283,98 @@ describe("EventsProcessor", () => {
         },
       ],
     };
-    await repository.insertRawEvents([invalidEvent], "pending");
-
-    assert.equal(await processor.processOnce(), 0);
-    assert.equal(
-      await dataSource.getRepository(TestProjectionEntity).count(),
-      0,
+    const valid = buildProjectionFixture(12);
+    await repository.insertRawEvents(
+      [invalidEvent, valid.archiveEvent],
+      "pending",
     );
-
-    const offset = await dataSource
-      .getRepository(ProcessorOffsetEntity)
-      .findOne({
-        where: { processorName: "test-projection-processor" },
-      });
-    assert.equal(offset, null);
-
+    assert.equal(await processor.processOnce(), 1);
     const failure = await dataSource
       .getRepository(ProcessorEventFailureEntity)
-      .findOneBy({ processorName: "test-projection-processor" });
-    assert.equal(failure?.state, "blocked");
-    assert.equal(failure?.attemptCount, 5);
-
-    const runtime = await dataSource
-      .getRepository(ProcessorRuntimeStatusEntity)
-      .findOneBy({ processorName: "test-projection-processor" });
-    assert.equal(runtime?.lifecycleState, "blocked");
-
+      .findOneByOrFail({ processorName: "test-projection-processor" });
+    assert.equal(failure.state, "quarantined");
+    assert.equal(failure.attemptCount, 1);
+    assert.equal(failure.errorCode, "EVENT_NOT_HANDLED");
+    assert.deepEqual(failure.eventSnapshot.rawEventData, {
+      data: ["invalid"],
+      accountUpdateId: "11",
+      transactionInfo: { hash: "tx-invalid-11", zkappAccountUpdateIds: [11] },
+    });
+    const offset = await dataSource
+      .getRepository(ProcessorOffsetEntity)
+      .findOneByOrFail({ processorName: "test-projection-processor" });
+    assert.ok(
+      BigInt(offset.lastSeenChangeSequence) > BigInt(failure.changeSequence),
+    );
+    assert.equal(
+      await dataSource.getRepository(TestProjectionEntity).count(),
+      1,
+    );
     assert.equal(await processor.processOnce(), 0);
-    const unchangedFailure = await dataSource
-      .getRepository(ProcessorEventFailureEntity)
-      .findOneBy({ processorName: "test-projection-processor" });
-    assert.equal(unchangedFailure?.attemptCount, 5);
+    assert.equal(await processor.retryBlockedEvent(), 0);
   });
 
-  it("blocks a TypeORM handler failure after bounded event attempts", async () => {
+  it("recovers from transient snapshot failures beyond five attempts and after restart", async () => {
+    const event = buildSequencedEvent({
+      id: "991",
+      changeSequence: "991",
+      eventKey: "recovered",
+      payload: "value",
+    });
+    const name = "transient-snapshot-processor";
+    await dataSource.getRepository(ProcessorEventFailureEntity).save({
+      processorName: name,
+      archiveEventId: event.id,
+      changeSequence: event.changeSequence,
+      state: "retrying",
+      attemptCount: 6,
+      retryAfter: new Date(),
+      errorCode: "EVENT_DEPENDENCY_UNAVAILABLE",
+      boundedErrorMessage: "snapshot missing",
+      eventSnapshot: {},
+      firstFailedAt: new Date(),
+      lastFailedAt: new Date(),
+      resolvedAt: null,
+    });
+    let attempts = 0;
+    processor = new EventsProcessor(
+      dataSource,
+      new EventProcessorRouter([
+        {
+          eventType: "testProjectionCreated",
+          tryHandle: async (observed, manager) => {
+            if (++attempts <= 7)
+              throw new TransientEventError("snapshot missing");
+            return eventHandler.tryHandle(observed, manager);
+          },
+        },
+      ]),
+      {
+        processorName: name,
+        pollIntervalMs: 60000,
+        batchSize: 1,
+        retryBaseDelayMs: 1,
+        retryMaxDelayMs: 2,
+      },
+      {
+        fetchEventsPage: async () => ({ items: [event], nextCursor: null }),
+      },
+    );
+    assert.equal(await processor.processOnce(), 0);
+    assert.equal(await processor.processOnce(), 1);
+    assert.equal(attempts, 8);
+    const failure = await dataSource
+      .getRepository(ProcessorEventFailureEntity)
+      .findOneByOrFail({ processorName: name });
+    assert.equal(failure.state, "resolved");
+    assert.equal(failure.attemptCount, 13);
+    assert.equal(
+      await dataSource.getRepository(TestProjectionEntity).count(),
+      1,
+    );
+  });
+
+  it("keeps retrying database failures after bounded attempts per poll", async () => {
     const fixture = buildProjectionFixture(111);
     await repository.insertRawEvents([fixture.archiveEvent], "pending");
     const event = await dataSource.getRepository(ArchiveEventEntity).findOneBy({
@@ -361,7 +417,7 @@ describe("EventsProcessor", () => {
     const failure = await dataSource
       .getRepository(ProcessorEventFailureEntity)
       .findOneBy({ processorName: "typeorm-event-failure-processor" });
-    assert.equal(failure?.state, "blocked");
+    assert.equal(failure?.state, "retrying");
     assert.equal(failure?.attemptCount, 5);
     assert.equal(failure?.errorCode, "EVENT_DATABASE_FAILED");
     assert.equal(
@@ -372,10 +428,10 @@ describe("EventsProcessor", () => {
     );
 
     assert.equal(await processor.processOnce(), 0);
-    assert.equal(attemptCount, 5);
+    assert.equal(attemptCount, 10);
   });
 
-  it("commits successful events before a later event blocks", async () => {
+  it("commits successful events and quarantines a later malformed event", async () => {
     const validFixture = buildProjectionFixture(13);
     const invalidEvent: ArchiveEventOutput = {
       blockInfo: { height: 14 },
@@ -411,11 +467,11 @@ describe("EventsProcessor", () => {
       .getRepository(ProcessorEventFailureEntity)
       .findOneBy({
         processorName: "test-projection-processor",
-        state: "blocked",
+        state: "quarantined",
       });
     assert.ok(blockedFailure);
     assert.equal(
-      BigInt(blockedFailure.changeSequence) >
+      BigInt(blockedFailure.changeSequence) ===
         BigInt(offset.lastSeenChangeSequence),
       true,
     );
@@ -427,6 +483,12 @@ describe("EventsProcessor", () => {
     eventHandler.rejectEvents = true;
 
     assert.equal(await processor.processOnce(), 0);
+    await dataSource
+      .getRepository(ProcessorEventFailureEntity)
+      .update(
+        { processorName: "test-projection-processor" },
+        { state: "blocked", retryAfter: null },
+      );
     assert.equal(eventHandler.attemptCount, 5);
     assert.equal(await processor.processOnce(), 0);
     assert.equal(eventHandler.attemptCount, 5);
@@ -510,7 +572,8 @@ describe("EventsProcessor", () => {
         {
           eventType: "testProjectionCreated",
           tryHandle: async (event) => {
-            if (event.changeSequence === oldEvent.changeSequence) return false;
+            if (event.changeSequence === oldEvent.changeSequence)
+              throw new Error("Projection temporarily unavailable");
             handledSequences.push(event.changeSequence);
             return true;
           },
@@ -528,6 +591,12 @@ describe("EventsProcessor", () => {
 
     try {
       assert.equal(await healingProcessor.processOnce(), 0);
+      await isolatedDataSource
+        .getRepository(ProcessorEventFailureEntity)
+        .update(
+          { processorName: "superseded-blocked-processor" },
+          { state: "blocked", retryAfter: null },
+        );
       currentRows = [interveningEvent, currentEvent];
       assert.equal(await healingProcessor.processOnce(), 2);
 
@@ -578,7 +647,7 @@ describe("EventsProcessor", () => {
           eventType: "testProjectionCreated",
           tryHandle: async () => {
             handlerAttempts += 1;
-            return false;
+            throw new Error("Projection temporarily unavailable");
           },
         },
       ]),
@@ -607,6 +676,12 @@ describe("EventsProcessor", () => {
 
     try {
       assert.equal(await guardedProcessor.processOnce(), 0);
+      await isolatedDataSource
+        .getRepository(ProcessorEventFailureEntity)
+        .update(
+          { processorName: "immutable-conflict-blocked-processor" },
+          { state: "blocked", retryAfter: null },
+        );
       currentRows = [conflictingEvent];
       assert.equal(await guardedProcessor.processOnce(), 0);
       assert.equal(handlerAttempts, 1);
@@ -667,7 +742,8 @@ describe("EventsProcessor", () => {
         {
           eventType: "testProjectionCreated",
           tryHandle: async (event) => {
-            if (event.changeSequence === oldEvent.changeSequence) return false;
+            if (event.changeSequence === oldEvent.changeSequence)
+              throw new Error("Projection temporarily unavailable");
             handledSequences.push(event.changeSequence);
             return true;
           },
@@ -708,6 +784,12 @@ describe("EventsProcessor", () => {
 
     try {
       assert.equal(await boundedProcessor.processOnce(), 0);
+      await isolatedDataSource
+        .getRepository(ProcessorEventFailureEntity)
+        .update(
+          { processorName: "bounded-supersession-processor" },
+          { state: "blocked", retryAfter: null },
+        );
       currentRows = [interveningEvent, unseenSuccessor];
       recoveryStarted = true;
       assert.equal(await boundedProcessor.processOnce(), 1);
@@ -913,89 +995,97 @@ describe("EventsProcessor", () => {
     }
   });
 
-  it("supersedes a retrying stale event after the advisory-lock offset check", async () => {
-    let advisoryLockCount = 0;
-    const isolatedDataSource = createInMemoryDataSource("public", [], {
-      onProcessorAdvisoryLock: () => {
-        advisoryLockCount += 1;
-      },
-    });
-    await isolatedDataSource.initialize();
-    await isolatedDataSource.synchronize();
-
-    const event = buildSequencedEvent({
-      id: "82",
-      changeSequence: "82",
-      eventKey: "stale-event",
-      payload: "stale-payload",
-    });
-    await isolatedDataSource.getRepository(ProcessorOffsetEntity).save(
-      Object.assign(new ProcessorOffsetEntity(), {
-        processorName: "stale-event-processor",
-        lastSeenUpdatedAt: new Date("2026-01-01T00:01:23.000Z"),
-        lastSeenEventId: "83",
-        lastSeenChangeSequence: "83",
-      }),
-    );
-    await isolatedDataSource.getRepository(ProcessorEventFailureEntity).save(
-      Object.assign(new ProcessorEventFailureEntity(), {
-        processorName: "stale-event-processor",
-        archiveEventId: event.id,
-        changeSequence: event.changeSequence,
-        state: "retrying",
-        attemptCount: 1,
-        retryAfter: null,
-        errorCode: "EVENT_NOT_HANDLED",
-        boundedErrorMessage: "previous failure",
-        eventSnapshot: { id: event.id },
-        firstFailedAt: new Date("2026-01-01T00:00:00.000Z"),
-        lastFailedAt: new Date("2026-01-01T00:00:01.000Z"),
-        resolvedAt: null,
-      }),
-    );
-    let dispatchCount = 0;
-    const staleProcessor = new EventsProcessor(
-      isolatedDataSource,
-      new EventProcessorRouter([
-        {
-          eventType: "testProjectionCreated",
-          tryHandle: async () => {
-            dispatchCount += 1;
-            return true;
-          },
+  for (const failureState of ["retrying", "quarantined"] as const) {
+    it(`preserves the meaning of a stale ${failureState} event after the advisory-lock offset check`, async () => {
+      let advisoryLockCount = 0;
+      const isolatedDataSource = createInMemoryDataSource("public", [], {
+        onProcessorAdvisoryLock: () => {
+          advisoryLockCount += 1;
         },
-      ]),
-      {
-        processorName: "stale-event-processor",
-        pollIntervalMs: 60_000,
-        batchSize: 1,
-      },
-      {
-        fetchEventsPage: async () => ({
-          items: [event],
-          nextCursor: { changeSequenceAfter: event.changeSequence },
-        }),
-      },
-    );
+      });
+      await isolatedDataSource.initialize();
+      await isolatedDataSource.synchronize();
 
-    try {
-      assert.equal(await staleProcessor.processOnce(), 0);
-      assert.equal(dispatchCount, 0);
-      assert.equal(advisoryLockCount, 1);
-      const failure = await isolatedDataSource
-        .getRepository(ProcessorEventFailureEntity)
-        .findOneByOrFail({
+      const event = buildSequencedEvent({
+        id: "82",
+        changeSequence: "82",
+        eventKey: "stale-event",
+        payload: "stale-payload",
+      });
+      await isolatedDataSource.getRepository(ProcessorOffsetEntity).save(
+        Object.assign(new ProcessorOffsetEntity(), {
+          processorName: "stale-event-processor",
+          lastSeenUpdatedAt: new Date("2026-01-01T00:01:23.000Z"),
+          lastSeenEventId: "83",
+          lastSeenChangeSequence: "83",
+        }),
+      );
+      await isolatedDataSource.getRepository(ProcessorEventFailureEntity).save(
+        Object.assign(new ProcessorEventFailureEntity(), {
           processorName: "stale-event-processor",
           archiveEventId: event.id,
           changeSequence: event.changeSequence,
-        });
-      assert.equal(failure.state, "superseded");
-      assert.equal(failure.retryAfter, null);
-      assert.ok(failure.resolvedAt);
-    } finally {
-      await staleProcessor.stop();
-    }
-  });
+          state: failureState,
+          attemptCount: 1,
+          retryAfter: null,
+          errorCode: "EVENT_NOT_HANDLED",
+          boundedErrorMessage: "previous failure",
+          eventSnapshot: { id: event.id },
+          firstFailedAt: new Date("2026-01-01T00:00:00.000Z"),
+          lastFailedAt: new Date("2026-01-01T00:00:01.000Z"),
+          resolvedAt: null,
+        }),
+      );
+      let dispatchCount = 0;
+      const staleProcessor = new EventsProcessor(
+        isolatedDataSource,
+        new EventProcessorRouter([
+          {
+            eventType: "testProjectionCreated",
+            tryHandle: async () => {
+              dispatchCount += 1;
+              return true;
+            },
+          },
+        ]),
+        {
+          processorName: "stale-event-processor",
+          pollIntervalMs: 60_000,
+          batchSize: 1,
+        },
+        {
+          fetchEventsPage: async () => ({
+            items: [event],
+            nextCursor: { changeSequenceAfter: event.changeSequence },
+          }),
+        },
+      );
+
+      try {
+        assert.equal(await staleProcessor.processOnce(), 0);
+        assert.equal(dispatchCount, 0);
+        assert.equal(advisoryLockCount, 1);
+        const failure = await isolatedDataSource
+          .getRepository(ProcessorEventFailureEntity)
+          .findOneByOrFail({
+            processorName: "stale-event-processor",
+            archiveEventId: event.id,
+            changeSequence: event.changeSequence,
+          });
+        assert.equal(
+          failure.state,
+          failureState === "quarantined" ? "quarantined" : "superseded",
+        );
+        assert.equal(failure.retryAfter, null);
+        assert.equal(
+          failure.resolvedAt !== null,
+          failureState !== "quarantined",
+        );
+      } finally {
+        await staleProcessor.stop();
+      }
+    });
+  }
 
   it("preserves a blocked failure that appears during the indexer fetch", async () => {
     let advisoryLockCount = 0;
@@ -1373,7 +1463,7 @@ describe("EventsProcessor", () => {
           tryHandle: async () => {
             attemptCount += 1;
             reportAttempt?.();
-            return false;
+            throw new Error("Projection temporarily unavailable");
           },
         },
       ]),
@@ -1436,7 +1526,11 @@ describe("EventsProcessor", () => {
     const router = new EventProcessorRouter([
       {
         eventType: "testProjectionCreated",
-        tryHandle: async () => acceptEvent,
+        tryHandle: async () => {
+          if (!acceptEvent)
+            throw new Error("Projection temporarily unavailable");
+          return true;
+        },
       },
     ]);
     const source = {
@@ -1458,6 +1552,12 @@ describe("EventsProcessor", () => {
       source,
     );
     assert.equal(await blockingProcessor.processOnce(), 0);
+    await isolatedDataSource
+      .getRepository(ProcessorEventFailureEntity)
+      .update(
+        { processorName: "one-shot-retry-processor" },
+        { state: "blocked", retryAfter: null },
+      );
     await blockingProcessor.stop();
     assert.equal(isolatedDataSource.isInitialized, false);
 

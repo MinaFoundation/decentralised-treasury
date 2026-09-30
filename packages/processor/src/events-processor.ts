@@ -5,7 +5,10 @@ import {
   ProcessorOffsetEntity,
   ProcessorRuntimeStatusEntity,
 } from "./entities.js";
-import type { EventProcessorHandler } from "./event-handler.js";
+import {
+  TransientEventError,
+  type EventProcessorHandler,
+} from "./event-handler.js";
 import {
   IndexerEventsApiClient,
   IndexerEventsApiError,
@@ -50,6 +53,9 @@ export interface EventsProcessorSetup {
   beforeProcessing?: (
     context: EventsProcessorBeforeProcessingContext,
   ) => Promise<void>;
+  afterProcessing?: (
+    context: EventsProcessorBeforeProcessingContext,
+  ) => Promise<void>;
 }
 
 export interface EventsProcessorBeforeProcessingContext {
@@ -79,6 +85,7 @@ function eventFailureCode(error: unknown): string {
   if (error instanceof EventHandlingError) {
     return error.code;
   }
+  if (error instanceof TransientEventError) return error.code;
   if (error instanceof TypeORMError) {
     return "EVENT_DATABASE_FAILED";
   }
@@ -151,7 +158,6 @@ function isImmutableSuccessor(
     snapshot.id === event.id &&
     snapshot.eventType === event.eventType &&
     snapshot.txHash === event.txHash &&
-    snapshot.accountUpdateId === event.accountUpdateId &&
     snapshot.accountUpdateIndex === event.accountUpdateIndex &&
     snapshot.eventIndex === event.eventIndex &&
     stableJson(snapshotContractData) === stableJson(event.rawEventData.data)
@@ -244,6 +250,7 @@ export class EventsProcessor {
       },
       eventsApiClient,
       setup.beforeProcessing,
+      setup.afterProcessing,
     );
   }
 
@@ -253,6 +260,9 @@ export class EventsProcessor {
     options: EventsProcessorOptions,
     private readonly eventsApiClient: IndexerEventsSource,
     private readonly beforeProcessing?: (
+      context: EventsProcessorBeforeProcessingContext,
+    ) => Promise<void>,
+    private readonly afterProcessing?: (
       context: EventsProcessorBeforeProcessingContext,
     ) => Promise<void>,
   ) {
@@ -520,6 +530,18 @@ export class EventsProcessor {
       const { fetchedRows, processedRows, blocked } =
         await this.processOnceFromIndexerApi(handledEventTypes);
       if (!blocked && !this.stopping) {
+        if (this.afterProcessing) {
+          await this.dataSource.transaction(async (manager) => {
+            await manager.query(
+              "SELECT pg_advisory_xact_lock(hashtext($1), $2)",
+              [this.options.processorName, PROCESSOR_ADVISORY_LOCK_NAMESPACE],
+            );
+            await this.afterProcessing!({
+              manager,
+              processorName: this.options.processorName,
+            });
+          });
+        }
         await this.updateRuntime("idle", { lastSuccessAt: new Date() });
       }
       console.log(
@@ -673,7 +695,8 @@ export class EventsProcessor {
       }
     }
 
-    while (attemptCount < this.options.maxAttempts) {
+    let attemptsThisPass = 0;
+    while (!this.stopping && attemptsThisPass < this.options.maxAttempts) {
       try {
         const result = await this.dataSource.transaction(async (manager) => {
           await manager.query(
@@ -689,7 +712,7 @@ export class EventsProcessor {
             BigInt(committedOffset.lastSeenChangeSequence) >=
               BigInt(event.changeSequence)
           ) {
-            if (failure) {
+            if (failure && failure.state !== "quarantined") {
               await manager.getRepository(ProcessorEventFailureEntity).update(
                 {
                   processorName: this.options.processorName,
@@ -749,20 +772,27 @@ export class EventsProcessor {
             .andWhere("change_sequence <> :changeSequence", {
               changeSequence: event.changeSequence,
             })
-            .andWhere("state = :state", { state: "retrying" })
+            .andWhere("state IN (:...states)", {
+              states: ["retrying", "quarantined"],
+            })
             .execute();
           return "processed" as const;
         });
         return result;
       } catch (error) {
         attemptCount += 1;
+        attemptsThisPass += 1;
         failure = await this.recordEventFailure(event, error, attemptCount);
+        if (failure.state === "quarantined") {
+          return "skipped";
+        }
         if (failure.state === "blocked") {
           return "blocked";
         }
         if (this.stopping) {
           return "blocked";
         }
+        if (attemptsThisPass >= this.options.maxAttempts) return "blocked";
         const waitMs = Math.max(
           0,
           (failure.retryAfter?.getTime() ?? Date.now()) - Date.now(),
@@ -783,15 +813,42 @@ export class EventsProcessor {
     attemptCount: number,
   ): Promise<ProcessorEventFailureEntity> {
     const now = new Date();
-    const blocked = attemptCount >= this.options.maxAttempts;
+    const quarantined = error instanceof EventHandlingError;
     const delayMs = Math.min(
-      this.options.retryBaseDelayMs * 2 ** Math.max(0, attemptCount - 1),
+      this.options.retryBaseDelayMs *
+        2 ** Math.min(30, Math.max(0, attemptCount - 1)),
       this.options.retryMaxDelayMs,
     );
     const errorCode = eventFailureCode(error);
     const message = boundedErrorMessage(error);
 
     return await this.dataSource.transaction(async (manager) => {
+      if (quarantined) {
+        // The failed handler transaction has rolled back. Save the rejection
+        // and advance the offset together, under the normal processor lock.
+        await manager.query("SELECT pg_advisory_xact_lock(hashtext($1), $2)", [
+          this.options.processorName,
+          PROCESSOR_ADVISORY_LOCK_NAMESPACE,
+        ]);
+        const offsets = manager.getRepository(ProcessorOffsetEntity);
+        const offset = await offsets.findOneBy({
+          processorName: this.options.processorName,
+        });
+        if (
+          !offset ||
+          BigInt(offset.lastSeenChangeSequence) < BigInt(event.changeSequence)
+        ) {
+          await offsets.upsert(
+            {
+              processorName: this.options.processorName,
+              lastSeenUpdatedAt: event.updatedAt,
+              lastSeenEventId: event.id,
+              lastSeenChangeSequence: event.changeSequence,
+            },
+            ["processorName"],
+          );
+        }
+      }
       const failures = manager.getRepository(ProcessorEventFailureEntity);
       const existing = await failures.findOneBy({
         processorName: this.options.processorName,
@@ -802,9 +859,11 @@ export class EventsProcessor {
       failure.processorName = this.options.processorName;
       failure.archiveEventId = event.id;
       failure.changeSequence = event.changeSequence;
-      failure.state = blocked ? "blocked" : "retrying";
+      failure.state = quarantined ? "quarantined" : "retrying";
       failure.attemptCount = attemptCount;
-      failure.retryAfter = blocked ? null : new Date(now.getTime() + delayMs);
+      failure.retryAfter = quarantined
+        ? null
+        : new Date(now.getTime() + delayMs);
       failure.errorCode = errorCode;
       failure.boundedErrorMessage = message;
       failure.eventSnapshot = eventSnapshot(event);
@@ -812,15 +871,11 @@ export class EventsProcessor {
       failure.lastFailedAt = now;
       failure.resolvedAt = null;
       const savedFailure = await failures.save(failure);
-      await this.updateRuntimeWithManager(
-        manager,
-        blocked ? "blocked" : "running",
-        {
-          lastErrorAt: now,
-          lastErrorCode: errorCode,
-          boundedLastError: message,
-        },
-      );
+      await this.updateRuntimeWithManager(manager, "running", {
+        lastErrorAt: now,
+        lastErrorCode: errorCode,
+        boundedLastError: message,
+      });
       return savedFailure;
     });
   }

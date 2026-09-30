@@ -433,6 +433,17 @@ describe("indexer and processor status endpoints", () => {
       failures: { due: number };
     };
     assert.equal(dueFailureStatus.failures.due, 1);
+    await dataSource
+      .getRepository(ProcessorEventFailureEntity)
+      .update(
+        { processorName: "proposal-processor" },
+        { state: "quarantined", retryAfter: null },
+      );
+    const quarantineStatus = await fetch(
+      `http://127.0.0.1:${processorPort}/status`,
+    );
+    assert.equal(quarantineStatus.status, 503);
+    assert.equal((await quarantineStatus.json()).failures.due, 1);
 
     await dataSource.getRepository(ArchiveEventRejectionEntity).insert({
       archiveStatus: "pending",

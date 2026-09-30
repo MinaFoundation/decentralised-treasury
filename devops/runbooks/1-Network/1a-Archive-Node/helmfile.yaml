@@ -53,6 +53,10 @@ releases:
         enableGraphiql: true
         enableIntrospection: true
         enableLogging: true
+        # Required to validate the complete parent chain of pending blocks.
+        extraEnvVars:
+          - name: ENABLE_BLOCK_TRANSACTION_DETAILS
+            value: "true"
         resources:
           limits:
             cpu: 500m

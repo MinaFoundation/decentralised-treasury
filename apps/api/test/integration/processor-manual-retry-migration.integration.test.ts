@@ -9,10 +9,12 @@ import { BackendPipelineHardening1788447600000 } from "../../src/db/migrations/1
 import { ProposalContractProjection1788451200000 } from "../../src/db/migrations/1788451200000-proposal-contract-projection.js";
 import { ProcessorManualRetryAttemptCount1788454800000 } from "../../src/db/migrations/1788454800000-processor-manual-retry-attempt-count.js";
 
+import { ProcessorEventQuarantine1790586000000 } from "../../src/db/migrations/1790586000000-processor-event-quarantine.js";
+
 const databaseTestUrl = process.env.DATABASE_TEST_URL;
 
 test(
-  "PostgreSQL migration permits the manual retry attempt reset",
+  "PostgreSQL migrations permit retry reset and quarantine with lossless rollback",
   { skip: databaseTestUrl ? false : "DATABASE_TEST_URL is not set" },
   async () => {
     assert.ok(databaseTestUrl);
@@ -34,6 +36,7 @@ test(
           BackendPipelineHardening1788447600000,
           ProposalContractProjection1788451200000,
           ProcessorManualRetryAttemptCount1788454800000,
+          ProcessorEventQuarantine1790586000000,
         ],
         migrationsTableName: "typeorm_migrations",
       });
@@ -41,7 +44,7 @@ test(
       const applied = await dataSource.runMigrations();
       assert.equal(
         applied.at(-1)?.name,
-        "ProcessorManualRetryAttemptCount1788454800000",
+        "ProcessorEventQuarantine1790586000000",
       );
 
       await dataSource.query(
@@ -72,6 +75,25 @@ test(
            WHERE "processor_name" = 'manual-retry-test'`,
         ),
         /check constraint|violates check/i,
+      );
+      await dataSource.query(
+        `UPDATE "${schema}"."processor_event_failures" SET "state" = 'quarantined'`,
+      );
+      await dataSource.undoLastMigration();
+      const [rolledBack] = await dataSource.query(
+        `SELECT "state", "event_snapshot" FROM "${schema}"."processor_event_failures"`,
+      );
+      assert.equal(rolledBack.state, "blocked");
+      assert.deepEqual(rolledBack.event_snapshot, {});
+      await assert.rejects(
+        dataSource.query(
+          `UPDATE "${schema}"."processor_event_failures" SET "state" = 'quarantined'`,
+        ),
+        /check constraint|violates check/i,
+      );
+      await dataSource.runMigrations();
+      await dataSource.query(
+        `UPDATE "${schema}"."processor_event_failures" SET "state" = 'quarantined'`,
       );
     } finally {
       if (dataSource?.isInitialized) {

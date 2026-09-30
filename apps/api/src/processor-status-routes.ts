@@ -212,7 +212,7 @@ async function readDueFailureCount(
      FROM ${processorFailuresTable}
      WHERE "processor_name" = $1
        AND (
-         "state" = 'blocked'
+         "state" IN ('blocked', 'quarantined')
          OR (
            "state" = 'retrying'
            AND ("retry_after" IS NULL OR "retry_after" <= NOW())

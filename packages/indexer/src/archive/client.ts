@@ -1,4 +1,5 @@
 import {
+  BLOCKS_QUERY,
   EVENTS_QUERY,
   EVENTS_QUERY_FALLBACK,
   NETWORK_STATE_QUERY,
@@ -68,6 +69,53 @@ export interface FetchEventsOptions {
   status: ArchiveBlockStatus;
   from: number;
   to: number;
+}
+
+export interface ArchiveChainBlock {
+  blockHeight: number;
+  stateHash: string;
+  parentHash: string;
+}
+
+export interface PendingArchiveSnapshot {
+  events: ArchiveEventOutput[];
+  height: number;
+  ambiguous: boolean;
+  ancestry: ArchiveChainBlock[];
+}
+
+/** Select one maximum-height tip and follow every parent to the canonical anchor. */
+export function selectPendingChain(
+  blocks: ArchiveChainBlock[],
+  anchor: ArchiveChainBlock,
+  height: number,
+): ArchiveChainBlock[] {
+  const byHash = new Map(blocks.map((block) => [block.stateHash, block]));
+  const tips = blocks.filter((block) => block.blockHeight === height);
+  if (tips.length !== 1)
+    throw new Error("Archive selected tip is missing or ambiguous");
+  const tip = tips[0]!;
+  const chain: ArchiveChainBlock[] = [];
+  let current = tip;
+  while (current.blockHeight > anchor.blockHeight) {
+    if (!current.stateHash || !current.parentHash) {
+      throw new Error(
+        "Archive ancestry is missing; enable ENABLE_BLOCK_TRANSACTION_DETAILS",
+      );
+    }
+    chain.push(current);
+    const parent =
+      current.parentHash === anchor.stateHash
+        ? anchor
+        : byHash.get(current.parentHash);
+    if (!parent || parent.blockHeight !== current.blockHeight - 1) {
+      throw new Error("Archive pending ancestry is incomplete");
+    }
+    current = parent;
+  }
+  if (current.stateHash !== anchor.stateHash)
+    throw new Error("Archive pending branch does not reach canonical anchor");
+  return chain.reverse();
 }
 
 export interface ArchiveClientConfig {
@@ -180,6 +228,125 @@ export class ArchiveClient {
     return {
       canonicalMaxBlockHeight: canonical,
       pendingMaxBlockHeight: pending,
+    };
+  }
+
+  private async fetchBlocks(
+    from: number,
+    to: number,
+    canonical?: boolean,
+  ): Promise<ArchiveChainBlock[]> {
+    const data = await this.post<{ blocks: ArchiveChainBlock[] }>(
+      BLOCKS_QUERY,
+      {
+        query: {
+          blockHeight_gte: from,
+          blockHeight_lt: to + 1,
+          inBestChain: true,
+          ...(canonical === undefined ? {} : { canonical }),
+        },
+        limit: 1000,
+      },
+    );
+    if (
+      !Array.isArray(data.blocks) ||
+      data.blocks.length >= 1000 ||
+      data.blocks.some(
+        (block) =>
+          !block ||
+          !Number.isSafeInteger(block.blockHeight) ||
+          block.blockHeight < from ||
+          block.blockHeight > to ||
+          typeof block.stateHash !== "string" ||
+          !block.stateHash ||
+          typeof block.parentHash !== "string",
+      )
+    ) {
+      throw new Error("Archive blocks response is invalid or truncated");
+    }
+    return data.blocks;
+  }
+
+  public async fetchPendingSnapshot(
+    batchSize: number,
+  ): Promise<PendingArchiveSnapshot> {
+    const heights = await this.getMaxBlockHeights();
+    const canonical = heights.canonicalMaxBlockHeight;
+    const height = Math.max(canonical, heights.pendingMaxBlockHeight);
+    const anchors = await this.fetchBlocks(canonical, canonical, true);
+    if (anchors.length !== 1)
+      throw new Error("Archive canonical anchor is missing or ambiguous");
+    const anchor = anchors[0]!;
+    const blocks: ArchiveChainBlock[] = [anchor];
+    for (let from = canonical + 1; from <= height; from += 100) {
+      blocks.push(
+        ...(await this.fetchBlocks(from, Math.min(from + 99, height))),
+      );
+    }
+    const competingTips = blocks.filter(
+      (block) => block.blockHeight === height,
+    );
+    if (competingTips.length === 0)
+      throw new Error("Archive selected tip is missing");
+    // Archive 0.0.9 filters event tips independently and cannot pin events to a
+    // chosen hash. Publish only canonical data until a unique tip is available.
+    const chain =
+      competingTips.length === 1
+        ? selectPendingChain(blocks, anchor, height)
+        : [];
+    const observedTips = competingTips
+      .map((block) => block.stateHash)
+      .sort()
+      .join(",");
+    const selected = new Map(chain.map((block) => [block.stateHash, block]));
+    const events: ArchiveEventOutput[] = [];
+    for (
+      let from = canonical + 1;
+      chain.length && from <= height;
+      from += batchSize
+    ) {
+      const rows = await this.fetchEvents({
+        status: "PENDING",
+        from,
+        to: Math.min(from + batchSize - 1, height),
+      });
+      for (const row of rows) {
+        if (!row.blockInfo?.stateHash)
+          throw new Error("Archive pending event has no block identity");
+        const block = selected.get(row.blockInfo.stateHash);
+        if (!block) continue;
+        if (
+          row.blockInfo.height !== block.blockHeight ||
+          row.blockInfo.parentHash !== block.parentHash
+        ) {
+          throw new Error("Archive event differs from selected ancestry");
+        }
+        events.push(row);
+      }
+    }
+    // All event pages must describe the same selected tip and canonical anchor.
+    const after = await this.getMaxBlockHeights();
+    const tips = await this.fetchBlocks(height, height);
+    tips.sort((a, b) =>
+      a.stateHash < b.stateHash ? -1 : a.stateHash > b.stateHash ? 1 : 0,
+    );
+    const anchorsAfter = await this.fetchBlocks(canonical, canonical, true);
+    if (
+      after.canonicalMaxBlockHeight !== canonical ||
+      Math.max(after.pendingMaxBlockHeight, canonical) !== height ||
+      tips
+        .map((block) => block.stateHash)
+        .sort()
+        .join(",") !== observedTips ||
+      anchorsAfter[0]?.stateHash !== anchor.stateHash
+    ) {
+      throw new Error("Archive branch changed during pending snapshot");
+    }
+    return {
+      events,
+      height,
+      ambiguous: competingTips.length > 1,
+      ancestry: [anchor, ...chain],
     };
   }
 

@@ -27,6 +27,95 @@ describe("ArchiveClient", () => {
     server = null;
   });
 
+  it("validates full ancestry through empty blocks and falls back during tied tips", async () => {
+    const client = new ArchiveClient("https://archive.example", {
+      treasuryOwnerContractAddress: "B62qtest",
+      archiveRequestTimeoutMs: 1000,
+    });
+    let tied = false;
+    let missingParent = false;
+    let missingTip = false;
+    const blocks = [
+      { blockHeight: 10, stateHash: "canonical", parentHash: "nine" },
+      { blockHeight: 11, stateHash: "empty", parentHash: "canonical" },
+      { blockHeight: 12, stateHash: "selected", parentHash: "empty" },
+    ];
+    globalThis.fetch = async (_url, options) => {
+      const { query, variables } = JSON.parse(String(options?.body));
+      let data;
+      if (query.includes("networkState"))
+        data = {
+          networkState: {
+            maxBlockHeight: {
+              canonicalMaxBlockHeight: 10,
+              pendingMaxBlockHeight: 12,
+            },
+          },
+        };
+      else if (query.includes("blocks(")) {
+        const all = [
+          ...blocks,
+          ...(tied
+            ? [{ blockHeight: 12, stateHash: "other", parentHash: "empty" }]
+            : []),
+        ];
+        data = {
+          blocks: all.filter(
+            (block) =>
+              block.blockHeight >= variables.query.blockHeight_gte &&
+              block.blockHeight < variables.query.blockHeight_lt &&
+              !(missingParent && block.blockHeight === 11) &&
+              !(missingTip && block.blockHeight === 12),
+          ),
+        };
+      } else
+        data = {
+          events: [
+            {
+              blockInfo: {
+                height: 12,
+                stateHash: "selected",
+                parentHash: "empty",
+              },
+              eventData: [],
+            },
+            {
+              blockInfo: {
+                height: 11,
+                stateHash: "unselected",
+                parentHash: "canonical",
+              },
+              eventData: [],
+            },
+          ],
+        };
+      return new Response(JSON.stringify({ data }), { status: 200 });
+    };
+    const first = await client.fetchPendingSnapshot(10);
+    assert.deepEqual(
+      first.events.map((row) => row.blockInfo.stateHash),
+      ["selected"],
+    );
+    assert.equal(first.ambiguous, false);
+    tied = true;
+    const fallback = await client.fetchPendingSnapshot(10);
+    assert.deepEqual(fallback.events, []);
+    assert.equal(fallback.ambiguous, true);
+    tied = false;
+    assert.equal((await client.fetchPendingSnapshot(10)).events.length, 1);
+    missingParent = true;
+    await assert.rejects(
+      client.fetchPendingSnapshot(10),
+      /ancestry is incomplete/,
+    );
+    missingParent = false;
+    missingTip = true;
+    await assert.rejects(
+      client.fetchPendingSnapshot(10),
+      /selected tip is missing/,
+    );
+  });
+
   it("validates constructor and range options", async () => {
     assert.throws(
       () =>

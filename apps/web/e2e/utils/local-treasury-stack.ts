@@ -317,6 +317,14 @@ export async function startLocalTreasuryStack(
         "--lifecycle-id",
         "0",
       ]);
+      await writeFile(
+        join(env.SQLITE_DATA_DIRECTORY!, "0.sqlite.done"),
+        JSON.stringify({
+          lifecycleId: "0",
+          ledgerHash: snapshot.ledgerHashBase58,
+          processedAt: new Date().toISOString(),
+        }),
+      );
       const response = await fetch(`${baseUrl}/admin/network-state`, {
         method: "POST",
         headers: { "content-type": "application/json" },
