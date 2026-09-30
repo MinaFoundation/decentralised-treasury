@@ -1,29 +1,22 @@
 import assert from "node:assert";
 import { before, after, it } from "node:test";
-import { type ChildProcess } from "node:child_process";
-import { readFile, rm, writeFile } from "node:fs/promises";
+import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { fileURLToPath } from "node:url";
 import { RedisMemoryServer } from "redis-memory-server";
 import {
   Field,
-  fetchAccount,
   LedgerHashBase58,
-  Mina,
   PrivateKey,
-  Provable,
   PublicKey,
   Reducer,
+  UInt32,
   UInt64,
 } from "o1js";
 import {
   getCurrentGlobalSlot,
-  LIGHTNET_ACCOUNT_MANAGER_ENDPOINT,
   MINA_NODE_URL,
-  SLOT_TIME_MS,
-  ensureLightnetReady,
   parseTreasuryProposalActionsResult,
-  parseTreasuryProposalResult,
   parseTreasuryProposalTallyResult,
   parseTreasuryProposalVoteResult,
   runCli,
@@ -31,84 +24,40 @@ import {
   spawnCliWorker,
   waitForExit,
 } from "./utils/cli-test-utils.js";
+import {
+  loadPreparedLightnetFixture,
+  prepareVotingLedgerForLifecycle,
+  selectPreparedProposalLifecycle,
+  type PreparedLightnetFixture,
+  validatePreparedLightnetFixture,
+} from "./utils/prepared-lightnet-fixture.js";
 import { TreasuryOwnerSmartContract } from "@repo/sdk/src/provable/contracts/treasury-owner.js";
+import { MIN_PROPOSAL_AMOUNT } from "@repo/sdk/src/provable/contracts/treasury-constants.js";
 import {
   ProposalStatus,
   TreasuryProposalSmartContract,
 } from "@repo/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.js";
-import { SqliteVoteReducerService } from "@repo/sdk/src/services/sqlite/sqlite-vote-reducer-service.js";
+import { getVoteReducerScope } from "@repo/sdk/src/services/sqlite/sqlite-vote-reducer-service.js";
 import { createSqliteVoteReducerProofStorage } from "@repo/sdk/src/storage/sqlite/factory/sqlite-vote-reducer-proof-storage.js";
 import { KeyvSqlite } from "@keyv/sqlite";
+import { SqliteTreasuryOwnerService } from "@repo/sdk/src/services/sqlite/sqlite-treasury-owner-service.js";
+import { createInMemoryTransactionSigner } from "@repo/sdk/src/services/transaction-signing.js";
 
-let lightnetProcess: ChildProcess | undefined;
-const FIXTURES_DIRECTORY = fileURLToPath(
-  new URL("./fixtures", import.meta.url),
-);
-const SQLITE_FIXTURE_DIRECTORY = fileURLToPath(
-  new URL("./.data/sqlite", import.meta.url),
-);
-const SQLITE_LIFECYCLE_ID = "0";
-const LIGHTNET_ONLINE_WHALE_0_PRIVATE_KEY =
-  "EKFGQcsWmQR9Jj1W2XoGNQzF43T1PNqRhaQrm1vDS948GVbyemrj";
-const LIGHTNET_ONLINE_WHALE_1_PRIVATE_KEY =
-  "EKERqTxjB7N9x2FzrQyaEJf8XAgm6ShsW4viGdgt6KDjFSfdeHAE";
-const LIGHTNET_VOTER_0_PRIVATE_KEY =
-  "EKEnVLUhYHDJvgmgQu5SzaV8MWKNfhAXYSkLBRk5KEfudWZRbs4P";
-const LIGHTNET_VOTER_1_PRIVATE_KEY =
-  "EKEXS3qUZRhxDzExtuAaQVHtxLzt8A3fqS7o7iL9NpvdATsshvB6";
-const LIGHTNET_VOTER_2_PRIVATE_KEY =
-  "EKF3qRhoze6r6bgF5uRmhMkEahfZJHHQ3hzxqCbPvaNzdhxMVCQh";
-const LIGHTNET_VOTER_3_PRIVATE_KEY =
-  "EKFd1GxnQ53H3shreTB2VzQJxECz9DE9NjorrkfKyEuKCsHDHVSE";
+let fixture: PreparedLightnetFixture;
+let runDirectory: string;
+let sqliteDataDirectory: string;
+let originalSqliteDataDirectory: string | undefined;
+let originalProofsEnabled: string | undefined;
+let originalNetworkId: string | undefined;
+let originalLifecyclePeriodDuration: string | undefined;
+let originalMinaNodeUrl: string | undefined;
+let originalArchiveNodeUrl: string | undefined;
+let originalAccountManagerUrl: string | undefined;
 
 const runTreasuryCliWithSqliteFixtures = (args: string[]) =>
   runCli(args, {
     timeoutMs: 600_000,
   });
-
-function parseTreasuryFundResult(
-  output: string,
-):
-  | { from: string; to: string; amount: string; transferTxHash?: string }
-  | undefined {
-  const marker = "TREASURY_FUND_TREASURY_JSON:";
-  const markerIndex = output.lastIndexOf(marker);
-  if (markerIndex !== -1) {
-    const jsonLine = output
-      .slice(markerIndex + marker.length)
-      .split("\n")[0]
-      ?.trim();
-    if (!jsonLine) return undefined;
-    try {
-      return JSON.parse(jsonLine) as {
-        from: string;
-        to: string;
-        amount: string;
-        transferTxHash?: string;
-      };
-    } catch {
-      return undefined;
-    }
-  }
-
-  const lines = output
-    .split("\n")
-    .map((line) => line.trim())
-    .filter((line) => line.length > 0);
-  for (let index = lines.length - 1; index >= 0; index -= 1) {
-    try {
-      return JSON.parse(lines[index]) as {
-        from: string;
-        to: string;
-        amount: string;
-        transferTxHash?: string;
-      };
-    } catch {
-      // Keep scanning for a parseable JSON line.
-    }
-  }
-  return undefined;
-}
 
 function logStep(message: string, details?: unknown): void {
   const timestamp = new Date().toISOString();
@@ -121,15 +70,6 @@ function logStep(message: string, details?: unknown): void {
 
 function fieldToLedgerHashBase58(fieldValue: Field): string {
   return LedgerHashBase58.toBase58(fieldValue);
-}
-
-function configureTestMinaNetwork(): void {
-  Mina.setActiveInstance(
-    Mina.Network({
-      mina: MINA_NODE_URL,
-      lightnetAccountManager: LIGHTNET_ACCOUNT_MANAGER_ENDPOINT,
-    }),
-  );
 }
 
 function parseProofFieldAt(
@@ -256,43 +196,49 @@ async function fetchCurrentStakingEpochLedgerHash(): Promise<Field> {
 }
 
 before(async () => {
-  logStep("ensuring lightnet is ready");
-  lightnetProcess = await ensureLightnetReady();
-  logStep("lightnet ready");
+  fixture = await loadPreparedLightnetFixture();
+  await validatePreparedLightnetFixture(fixture);
+  runDirectory = await mkdtemp(join(tmpdir(), "treasury-owner-lightnet-"));
+  originalSqliteDataDirectory = process.env.SQLITE_DATA_DIRECTORY;
+  originalProofsEnabled = process.env.PROOFS_ENABLED;
+  originalNetworkId = process.env.NETWORK;
+  originalLifecyclePeriodDuration = process.env.LIFECYCLE_PERIOD_DURATION;
+  originalMinaNodeUrl = process.env.MINA_NODE_URL;
+  originalArchiveNodeUrl = process.env.ARCHIVE_NODE_URL;
+  originalAccountManagerUrl = process.env.LIGHTNET_ACCOUNT_MANAGER_ENDPOINT;
+  process.env.PROOFS_ENABLED = String(fixture.proofsEnabled);
+  process.env.NETWORK = fixture.networkId;
+  process.env.MINA_NODE_URL = fixture.minaNodeUrl;
+  process.env.ARCHIVE_NODE_URL = fixture.archiveNodeUrl;
+  process.env.LIGHTNET_ACCOUNT_MANAGER_ENDPOINT = fixture.accountManagerUrl;
+  process.env.LIFECYCLE_PERIOD_DURATION = String(
+    fixture.lifecyclePeriodDurationSlots,
+  );
 });
 
 after(() => {
-  logStep("tearing down lightnet process started by test", {
-    startedProcess: Boolean(lightnetProcess),
-  });
-  lightnetProcess?.kill("SIGTERM");
-});
-
-async function loadLedgerVotingPower(): Promise<{
-  delegateVotingPower: Map<string, bigint>;
-  totalVotingPower: bigint;
-}> {
-  const ledgerPath = join(
-    FIXTURES_DIRECTORY,
-    "staking-epoch-ledger-lightnet.json",
-  );
-  const ledger = JSON.parse(await readFile(ledgerPath, "utf8")) as Array<{
-    pk: string;
-    balance: string;
-    delegate: string;
-  }>;
-  const delegateVotingPower = new Map<string, bigint>();
-  let totalVotingPower = 0n;
-  for (const account of ledger) {
-    const balance = BigInt(Number(account.balance) * 1_000_000_000);
-    totalVotingPower += balance;
-    delegateVotingPower.set(
-      account.delegate,
-      (delegateVotingPower.get(account.delegate) ?? 0n) + balance,
-    );
+  if (originalSqliteDataDirectory === undefined)
+    delete process.env.SQLITE_DATA_DIRECTORY;
+  else process.env.SQLITE_DATA_DIRECTORY = originalSqliteDataDirectory;
+  if (originalProofsEnabled === undefined) delete process.env.PROOFS_ENABLED;
+  else process.env.PROOFS_ENABLED = originalProofsEnabled;
+  if (originalNetworkId === undefined) delete process.env.NETWORK;
+  else process.env.NETWORK = originalNetworkId;
+  if (originalLifecyclePeriodDuration === undefined) {
+    delete process.env.LIFECYCLE_PERIOD_DURATION;
+  } else {
+    process.env.LIFECYCLE_PERIOD_DURATION = originalLifecyclePeriodDuration;
   }
-  return { delegateVotingPower, totalVotingPower };
-}
+  if (originalMinaNodeUrl === undefined) delete process.env.MINA_NODE_URL;
+  else process.env.MINA_NODE_URL = originalMinaNodeUrl;
+  if (originalArchiveNodeUrl === undefined) delete process.env.ARCHIVE_NODE_URL;
+  else process.env.ARCHIVE_NODE_URL = originalArchiveNodeUrl;
+  if (originalAccountManagerUrl === undefined) {
+    delete process.env.LIGHTNET_ACCOUNT_MANAGER_ENDPOINT;
+  } else {
+    process.env.LIGHTNET_ACCOUNT_MANAGER_ENDPOINT = originalAccountManagerUrl;
+  }
+});
 
 function formatEtaMs(ms: number): string {
   const totalSeconds = Math.max(0, Math.ceil(ms / 1000));
@@ -313,7 +259,7 @@ async function waitForSlotWithProgress(
   while (Date.now() - start < timeoutMs) {
     const currentSlot = await getCurrentGlobalSlot();
     const remainingSlots = Math.max(0, targetSlot - currentSlot);
-    const etaMs = remainingSlots * SLOT_TIME_MS;
+    const etaMs = remainingSlots * fixture.slotDurationMs;
 
     const now = Date.now();
     const shouldLog =
@@ -325,7 +271,7 @@ async function waitForSlotWithProgress(
         targetSlot,
         remainingSlots,
         estimatedWait: formatEtaMs(etaMs),
-        slotDurationMs: SLOT_TIME_MS,
+        slotDurationMs: fixture.slotDurationMs,
       });
       lastProgressLogAt = now;
       lastLoggedSlot = currentSlot;
@@ -393,39 +339,28 @@ async function fetchProposalActionsWithRetry(options: {
   );
 }
 
-async function clearSqliteFixtureMutableState(): Promise<void> {
-  const voteReducerService = new SqliteVoteReducerService({
-    lifecycleId: SQLITE_LIFECYCLE_ID,
-  });
-  await voteReducerService.clearPersistentState();
-}
-
 async function runTreasuryOwnerFlow(): Promise<void> {
-  configureTestMinaNetwork();
-
-  const lifecyclePeriodDuration = Number.parseInt(
-    process.env.LIFECYCLE_PERIOD_DURATION ?? "60",
-    10,
-  );
-  assert(
-    Number.isFinite(lifecyclePeriodDuration) && lifecyclePeriodDuration > 0,
-    "expected LIFECYCLE_PERIOD_DURATION env var to be a positive integer",
-  );
-
+  const lifecyclePeriodDuration = fixture.lifecyclePeriodDurationSlots;
   const txFee = UInt64.from(5 * 10 ** 9);
-  const proofLifecycleId = SQLITE_LIFECYCLE_ID;
+  const lifecycle = await selectPreparedProposalLifecycle(fixture, {
+    minimumRemainingSlots: Math.ceil(lifecyclePeriodDuration / 2),
+  });
+  const proposalLifecycleId = lifecycle.lifecycleId;
+  const proofLifecycleId = String(proposalLifecycleId);
+  ({ sqliteDataDirectory } = await prepareVotingLedgerForLifecycle(
+    fixture,
+    proofLifecycleId,
+    runDirectory,
+  ));
+  process.env.SQLITE_DATA_DIRECTORY = sqliteDataDirectory;
   const proofQueueName = `proofs-lightnet-${Date.now()}`;
-  const actionsOutputPath = join(
-    FIXTURES_DIRECTORY,
-    "proposal-actions-from-lightnet.json",
-  );
+  const actionsOutputPath = join(runDirectory, "proposal-actions.json");
   const voteReducerMergedProofOutputPath = join(
-    FIXTURES_DIRECTORY,
-    "vote-reducer-merged-proof-from-lightnet.json",
+    runDirectory,
+    "vote-reducer-merged-proof.json",
   );
-  const stakingLedgerToVotingLedgerExhaustProofArtifactPath = fileURLToPath(
-    new URL("../artifacts/exhausted-proof.json", import.meta.url),
-  );
+  const stakingLedgerToVotingLedgerExhaustProofArtifactPath =
+    fixture.exhaustedProofPath;
   const stakingProofFile = JSON.parse(
     await readFile(stakingLedgerToVotingLedgerExhaustProofArtifactPath, "utf8"),
   ) as { publicInput?: unknown; publicOutput?: unknown };
@@ -458,195 +393,52 @@ async function runTreasuryOwnerFlow(): Promise<void> {
     lifecyclePeriodDuration,
     txFee: txFee.toString(),
   });
-  await clearSqliteFixtureMutableState();
-  logStep("cleared sqlite vote-reducer mutable state", {
-    lifecycleId: SQLITE_LIFECYCLE_ID,
-  });
 
-  const senderPrivateKey = PrivateKey.fromBase58(
-    LIGHTNET_ONLINE_WHALE_0_PRIVATE_KEY,
+  const selectedVoters = fixture.voters.slice(0, 5);
+  const voterPrivateKeys = selectedVoters.map(({ privateKey }) =>
+    PrivateKey.fromBase58(privateKey),
   );
-  const treasuryOwnerPrivateKey = PrivateKey.fromBase58(
-    LIGHTNET_ONLINE_WHALE_1_PRIVATE_KEY,
-  );
-  const pauseControllerPrivateKey = PrivateKey.random();
+  const senderPrivateKey = voterPrivateKeys[0];
+  assert(senderPrivateKey);
   const recipientPublicKey = PrivateKey.random().toPublicKey();
-  const { delegateVotingPower, totalVotingPower } =
-    await loadLedgerVotingPower();
-  const voterPrivateKeys = [
-    senderPrivateKey,
-    PrivateKey.fromBase58(LIGHTNET_VOTER_0_PRIVATE_KEY),
-    PrivateKey.fromBase58(LIGHTNET_VOTER_1_PRIVATE_KEY),
-    PrivateKey.fromBase58(LIGHTNET_VOTER_2_PRIVATE_KEY),
-    PrivateKey.fromBase58(LIGHTNET_VOTER_3_PRIVATE_KEY),
-  ];
-
-  assert(
-    senderPrivateKey
-      .toPublicKey()
-      .equals(treasuryOwnerPrivateKey.toPublicKey())
-      .not()
-      .toBoolean(),
-    "expected whale sender voter key to differ from treasury owner key",
-  );
-
-  const selectedVotingPower = voterPrivateKeys.reduce((accumulator, key) => {
-    return (
-      accumulator +
-      (delegateVotingPower.get(key.toPublicKey().toBase58()) ?? 0n)
-    );
-  }, 0n);
-  assert(
-    selectedVotingPower > 0n,
-    "expected selected voters to have non-zero voting power",
-  );
-
-  const selectedParticipationBp =
-    totalVotingPower > 0n
-      ? Number((selectedVotingPower * 10_000n) / totalVotingPower)
-      : 0;
-  logStep("selected voters voting power", {
-    selectedVotingPower: selectedVotingPower.toString(),
-    totalLedgerVotingPower: totalVotingPower.toString(),
-    selectedParticipationBp,
-    selectedParticipationPct: selectedParticipationBp / 100,
-    selectedVoterPublicKeys: voterPrivateKeys.map((key) =>
-      key.toPublicKey().toBase58(),
-    ),
-  });
-  assert(
-    selectedParticipationBp >= 2_000,
-    "expected selected voters to satisfy minimum participation threshold baseline",
-  );
-
-  const multisigParticipantsPublicKeys = Array.from({ length: 5 }, () =>
-    PrivateKey.random().toPublicKey(),
-  );
   const senderPublicKey = senderPrivateKey.toPublicKey();
-  const treasuryOwnerPublicKey = treasuryOwnerPrivateKey.toPublicKey();
-  const pauseControllerPublicKey = pauseControllerPrivateKey.toPublicKey();
-
-  Provable.log("treasury owner e2e keys", {
-    senderPublicKey: senderPublicKey.toBase58(),
-    treasuryOwnerPublicKey: treasuryOwnerPublicKey.toBase58(),
-    pauseControllerPublicKey: pauseControllerPublicKey.toBase58(),
-    recipientPublicKey: recipientPublicKey.toBase58(),
-    multisigParticipantsPublicKeys: multisigParticipantsPublicKeys.map((key) =>
-      key.toBase58(),
-    ),
-  });
-
-  logStep("deploying treasury-owner and pause-controller contracts");
-  const currentSlot = await getCurrentGlobalSlot();
-  const treasuryDeployedAtSlot = currentSlot;
-  logStep("choosing treasury deployment slot at current slot", {
-    currentSlot,
-    treasuryDeployedAtSlot,
-  });
-  console.time("treasury-owner.e2e.lightnet.deploy");
-  const deployOutput = await runTreasuryCliWithSqliteFixtures([
-    "treasury-owner",
-    "deploy",
-    "--sender-private-key",
-    senderPrivateKey.toBase58(),
-    "--treasury-owner-private-key",
-    treasuryOwnerPrivateKey.toBase58(),
-    "--pause-controller-private-key",
-    pauseControllerPrivateKey.toBase58(),
-    "--treasury-deployed-at-slot",
-    String(treasuryDeployedAtSlot),
-    "--multisig-participants-public-keys",
-    multisigParticipantsPublicKeys.map((key) => key.toBase58()).join(","),
-    "--allow-deploy-to-existing-account",
-    "true",
-    "--fee",
-    txFee.toString(),
-  ]);
-  console.timeEnd("treasury-owner.e2e.lightnet.deploy");
-  assert(deployOutput.length > 0, "expected treasury-owner deploy CLI output");
-  const slotAfterDeploy = await getCurrentGlobalSlot();
-  await waitForSlotWithProgress(
-    slotAfterDeploy + 1,
-    "post-deploy block",
-    120_000,
-  );
-
-  const treasuryFundingAmount = UInt64.from(10 * 10 ** 9);
-  const fundOutput = await runTreasuryCliWithSqliteFixtures([
-    "treasury-owner",
-    "fund-treasury",
-    "--sender-private-key",
-    senderPrivateKey.toBase58(),
-    "--treasury-owner-public-key",
-    treasuryOwnerPublicKey.toBase58(),
-    "--amount",
-    treasuryFundingAmount.toString(),
-    "--fee",
-    txFee.toString(),
-  ]);
-  const transferResult = parseTreasuryFundResult(fundOutput);
-  assert(transferResult, "expected treasury funding JSON marker output");
-  assert(
-    transferResult.transferTxHash,
-    "expected treasury funding transaction hash",
-  );
-  const slotAfterFund = await getCurrentGlobalSlot();
-  await waitForSlotWithProgress(slotAfterFund + 1, "post-fund block", 120_000);
+  const treasuryOwnerPublicKey = PublicKey.fromBase58(fixture.ownerPublicKey);
+  await validatePreparedLightnetFixture(fixture);
 
   const treasuryOwnerContract = new TreasuryOwnerSmartContract(
     treasuryOwnerPublicKey,
   );
-  const deployedAtSlot = treasuryDeployedAtSlot;
-  const cycleLength = lifecyclePeriodDuration * 4;
-  const currentLifecycleSlot = await getCurrentGlobalSlot();
-  let proposalLifecycleId = Math.max(
-    0,
-    Math.floor((currentLifecycleSlot - deployedAtSlot) / cycleLength),
-  );
-  let proposalPhaseStartSlot =
-    deployedAtSlot + proposalLifecycleId * cycleLength;
-  let proposalPhaseEndSlot = proposalPhaseStartSlot + lifecyclePeriodDuration;
-  if (currentLifecycleSlot > proposalPhaseEndSlot) {
-    proposalLifecycleId += 1;
-    proposalPhaseStartSlot += cycleLength;
-    proposalPhaseEndSlot += cycleLength;
-  }
-
-  if (currentLifecycleSlot < proposalPhaseStartSlot) {
-    await waitForSlotWithProgress(
-      proposalPhaseStartSlot,
-      "proposal phase",
-      Math.max(1, proposalPhaseStartSlot - currentLifecycleSlot) *
-        SLOT_TIME_MS +
-        120_000,
-    );
-  }
+  const proposalPhaseStartSlot = lifecycle.startSlot;
+  const service = new SqliteTreasuryOwnerService();
+  await service.compile({
+    proofsEnabled: fixture.proofsEnabled,
+    lifecyclePeriodDuration: UInt32.from(lifecyclePeriodDuration),
+  });
+  await validatePreparedLightnetFixture(fixture);
 
   console.time("treasury-owner.e2e.lightnet.createProposal");
-  const createProposalOutput = await runTreasuryCliWithSqliteFixtures([
-    "proposal",
-    "create",
-    "--sender-private-key",
-    senderPrivateKey.toBase58(),
-    "--treasury-owner-public-key",
-    treasuryOwnerPublicKey.toBase58(),
-    "--proposal-lifecycle-id",
-    String(proposalLifecycleId),
-    "--recipient-public-key",
-    recipientPublicKey.toBase58(),
-    "--amount",
-    String(1_000_000_000),
-    "--proposal-zkapp-uri",
-    "https://example.com/proposals/test-e2e",
-    "--fee",
-    txFee.toString(),
-  ]);
-  const proposalResult = parseTreasuryProposalResult(createProposalOutput);
+  const proposalPrivateKey = PrivateKey.random();
+  const proposalResult = await service.createProposal({
+    ...(await service.getTreasuryOwnerProofInputsFromSqliteStakingLedger(
+      proofLifecycleId,
+      treasuryOwnerPublicKey,
+    )),
+    minaNodeUrl: fixture.minaNodeUrl,
+    senderPublicKey,
+    treasuryOwnerPublicKey,
+    proposalPublicKey: proposalPrivateKey.toPublicKey(),
+    proposalLifecycleId: UInt32.from(proposalLifecycleId),
+    recipientPublicKey,
+    amount: UInt64.from(MIN_PROPOSAL_AMOUNT),
+    proposalZkappUri: "https://example.com/proposals/test-e2e",
+    fee: txFee,
+    wait: true,
+    transactionSigner: createInMemoryTransactionSigner([
+      senderPrivateKey,
+      proposalPrivateKey,
+    ]),
+  });
   console.timeEnd("treasury-owner.e2e.lightnet.createProposal");
-  assert(proposalResult, "expected proposal create JSON marker output");
-  const proposalPublicKey = PublicKey.fromBase58(
-    proposalResult.proposalAddress,
-  );
   const slotAfterCreateProposal = await getCurrentGlobalSlot();
   await waitForSlotWithProgress(
     slotAfterCreateProposal + 1,
@@ -703,7 +495,9 @@ async function runTreasuryOwnerFlow(): Promise<void> {
     await waitForSlotWithProgress(
       voteStartSlot,
       "voting phase",
-      Math.max(1, voteStartSlot - currentVoteWaitSlot) * SLOT_TIME_MS + 120_000,
+      Math.max(1, voteStartSlot - currentVoteWaitSlot) *
+        fixture.slotDurationMs +
+        120_000,
     );
   }
 
@@ -722,7 +516,7 @@ async function runTreasuryOwnerFlow(): Promise<void> {
       "--voter-private-key",
       voterPrivateKey.toBase58(),
       "--vote",
-      "yay",
+      selectedVoters[i]!.vote,
       "--fee",
       txFee.toString(),
       "--wait",
@@ -808,15 +602,14 @@ async function runTreasuryOwnerFlow(): Promise<void> {
         stakingProofPublicOutputVotingRoot.toString(),
     });
 
-    await runTreasuryCliWithSqliteFixtures([
-      "vote-reducer",
-      "compile",
-      "--lifecycle-id",
-      proofLifecycleId,
-    ]);
+    await runTreasuryCliWithSqliteFixtures(["vote-reducer", "compile"]);
     await runTreasuryCliWithSqliteFixtures([
       "vote-reducer",
       "trace-run-batch",
+      "--staking-ledger-to-voting-ledger-proof-path",
+      stakingLedgerToVotingLedgerExhaustProofArtifactPath,
+      "--treasury-owner-public-key",
+      treasuryOwnerPublicKey.toBase58(),
       "--lifecycle-id",
       proofLifecycleId,
       "--vote-actions-path",
@@ -825,6 +618,8 @@ async function runTreasuryOwnerFlow(): Promise<void> {
     await runTreasuryCliWithSqliteFixtures([
       "vote-reducer",
       "prove-run-batch",
+      "--vote-actions-path",
+      actionsOutputPath,
       "--lifecycle-id",
       proofLifecycleId,
       "--queue-name",
@@ -836,10 +631,13 @@ async function runTreasuryOwnerFlow(): Promise<void> {
     ]);
 
     const proofStore = new KeyvSqlite({
-      uri: join(SQLITE_FIXTURE_DIRECTORY, `${proofLifecycleId}.sqlite`),
+      uri: join(sqliteDataDirectory, `${proofLifecycleId}.sqlite`),
     });
     const proofStorage = createSqliteVoteReducerProofStorage(
-      proofLifecycleId,
+      getVoteReducerScope({
+        lifecycleId: proofLifecycleId,
+        ...JSON.parse(await readFile(actionsOutputPath, "utf8")),
+      }),
       proofStore,
     );
 
@@ -921,6 +719,18 @@ async function runTreasuryOwnerFlow(): Promise<void> {
           .equals(stakingProofPublicOutputVotingRoot)
           .toBoolean(),
     });
+
+    const cooldownStartSlot =
+      proposalPhaseStartSlot + lifecyclePeriodDuration * 3;
+    const slotBeforeTally = await getCurrentGlobalSlot();
+    if (slotBeforeTally < cooldownStartSlot) {
+      await waitForSlotWithProgress(
+        cooldownStartSlot,
+        "cooldown phase",
+        (cooldownStartSlot - slotBeforeTally) * fixture.slotDurationMs +
+          120_000,
+      );
+    }
 
     const tallyOutput = await runTreasuryCliWithSqliteFixtures([
       "proposal",

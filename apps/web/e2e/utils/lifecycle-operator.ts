@@ -200,6 +200,10 @@ export async function tallyBrowserVotes(
     await stack.cli([
       "vote-reducer",
       "trace-run-batch",
+      "--staking-ledger-to-voting-ledger-proof-path",
+      stakingProof,
+      "--treasury-owner-public-key",
+      stack.treasuryOwnerPublicKey,
       "--lifecycle-id",
       lifecycleId,
       "--vote-actions-path",
@@ -208,6 +212,8 @@ export async function tallyBrowserVotes(
     await stack.cli([
       "vote-reducer",
       "prove-run-batch",
+      "--vote-actions-path",
+      voteActions,
       "--lifecycle-id",
       lifecycleId,
       ...queueArgs,
@@ -215,6 +221,8 @@ export async function tallyBrowserVotes(
     await stack.cli([
       "vote-reducer",
       "prove-merge",
+      "--vote-actions-path",
+      voteActions,
       "--lifecycle-id",
       lifecycleId,
       ...queueArgs,

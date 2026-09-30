@@ -890,6 +890,23 @@ test(
         ],
         { SQLITE_DATA_DIRECTORY: backend.sqliteDirectory },
       );
+      await cli(
+        [
+          "staking-ledger-to-voting-ledger",
+          "trace-digest",
+          "--lifecycle-id",
+          LIFECYCLE_ID,
+        ],
+        { SQLITE_DATA_DIRECTORY: backend.sqliteDirectory },
+      );
+      await writeFile(
+        join(backend.sqliteDirectory, `${LIFECYCLE_ID}.sqlite.done`),
+        JSON.stringify({
+          lifecycleId: LIFECYCLE_ID,
+          ledgerHash: snapshot.ledgerHashBase58,
+          processedAt: new Date().toISOString(),
+        }),
+      );
       await waitForExactSnapshotProjection(
         backend,
         treasuryOwner.publicKey,

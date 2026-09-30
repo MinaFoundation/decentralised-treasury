@@ -1,6 +1,14 @@
+import { Account } from "@repo/sdk/src/provable/account.js";
+import { SqliteStakingLedgerService } from "@repo/sdk/src/services/sqlite/sqlite-staking-ledger-service.js";
+import { findDefaultTokenAccountIndex } from "@repo/sdk/src/utils/default-token-account.js";
+import {
+  loadPreparedLightnetFixture,
+  validatePreparedLightnetFixture,
+  selectPreparedProposalLifecycle,
+  type PreparedLightnetFixture,
+} from "./utils/prepared-lightnet-fixture.js";
 import assert from "node:assert";
-import { after, before, describe, it } from "node:test";
-import { type ChildProcess } from "node:child_process";
+import { before, describe, it } from "node:test";
 import { createServer } from "node:http";
 import type { AddressInfo } from "node:net";
 import { readFile, rm, writeFile } from "node:fs/promises";
@@ -14,16 +22,12 @@ import {
 } from "@repo/sdk/src/provable/contracts/treasury-proposal/vote-reducer.js";
 import { appendActionToHashList } from "@repo/sdk/src/provable/hashing-helpers.js";
 import {
-  ensureLightnetReady,
   getCurrentGlobalSlot,
-  LIGHTNET_ACCOUNT_MANAGER_ENDPOINT,
   logTestStep,
-  MINA_NODE_URL,
   parseTreasuryProposalActionsResult,
   parseTreasuryProposalResult,
   parseTreasuryProposalStateResult,
   parseTreasuryProposalVoteResult,
-  parseTreasuryOwnerDeployResult,
   runCli,
   waitForGlobalSlot,
 } from "./utils/cli-test-utils.js";
@@ -33,32 +37,22 @@ const FIXTURES_DIRECTORY = fileURLToPath(
 );
 const PROPOSAL_TEST_NAME = "proposal.test";
 
-const PROPOSAL_LIFECYCLE_ID = "0";
-const PROPOSAL_AMOUNT = "1000000000";
+const PROPOSAL_AMOUNT = "10000000000";
 const PROPOSAL_MARKDOWN_CONTENT = `# CLI E2E Proposal
 
 This proposal is created from markdown content.
 `;
-const LIFECYCLE_PERIOD_DURATION = 60;
-const PROPOSAL_START_LEAD_SLOTS = 60;
-
 const PROPOSAL_VOTE = "yay";
-const VOTER_PRIVATE_KEY =
-  "EKEnVLUhYHDJvgmgQu5SzaV8MWKNfhAXYSkLBRk5KEfudWZRbs4P";
-const PROOFS_ENABLED = "false";
-
-if (!Number.isFinite(LIFECYCLE_PERIOD_DURATION)) {
-  throw new Error("LIFECYCLE_PERIOD_DURATION must parse as an integer");
-}
 
 function votingPhaseStartSlot(
   treasuryDeployedAtSlot: number,
   proposalLifecycleId: number,
+  lifecyclePeriodDuration: number,
 ): number {
   return (
     treasuryDeployedAtSlot +
-    LIFECYCLE_PERIOD_DURATION * 4 * proposalLifecycleId +
-    LIFECYCLE_PERIOD_DURATION * 2
+    lifecyclePeriodDuration * 4 * proposalLifecycleId +
+    lifecyclePeriodDuration * 2
   );
 }
 
@@ -138,13 +132,28 @@ async function startMockArchiveNode(voteActions: VoteAction[]) {
   };
 }
 
-async function startMockProposalContentApi() {
+async function startMockProposalContentApi(proofInputs: {
+  account: ReturnType<typeof Account.toJSON>;
+  witness: Record<string, unknown>;
+  index: string;
+}) {
   const requests: Array<{
     method?: string;
     url?: string;
     body: string;
   }> = [];
   const server = createServer(async (request, response) => {
+    if (request.method === "GET") {
+      response.writeHead(200, { "content-type": "application/json" });
+      response.end(
+        JSON.stringify(
+          request.url?.includes("/accounts/")
+            ? { index: proofInputs.index }
+            : proofInputs,
+        ),
+      );
+      return;
+    }
     const chunks: Buffer[] = [];
     for await (const chunk of request) {
       chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
@@ -281,223 +290,217 @@ it("fetches proposal actions and persists action state target", async () => {
   }
 });
 
-describe("proposal create e2e", { concurrency: 1 }, () => {
-  let lightnetProcess: ChildProcess | undefined;
-  let treasuryOwnerPublicKey: string | undefined;
-  let createdProposalPublicKey: string | undefined;
-  let treasuryDeployedAtSlot: number | undefined;
+describe(
+  "proposal create e2e",
+  { concurrency: 1, skip: !process.env.LIGHTNET_FIXTURE_MANIFEST_PATH },
+  () => {
+    let fixture: PreparedLightnetFixture;
+    let treasuryOwnerPublicKey: string;
+    let createdProposalPublicKey: string | undefined;
+    let treasuryDeployedAtSlot: number;
+    let selectedLifecycleId: number;
+    let proofInputs: Parameters<typeof startMockProposalContentApi>[0];
 
-  before(async () => {
-    logTestStep(
-      PROPOSAL_TEST_NAME,
-      "setup: starting Lightnet for proposal create e2e",
-    );
-    lightnetProcess = await ensureLightnetReady();
-    Mina.setActiveInstance(
-      Mina.Network({
-        mina: MINA_NODE_URL,
-        lightnetAccountManager: LIGHTNET_ACCOUNT_MANAGER_ENDPOINT,
-      }),
-    );
-
-    const treasuryOwnerPrivateKey = PrivateKey.random();
-    const pauseControllerPrivateKey = PrivateKey.random();
-    const multisigParticipantsPublicKeys = Array.from({ length: 5 }, () =>
-      PrivateKey.random().toPublicKey(),
-    );
-    const currentSlot = await getCurrentGlobalSlot();
-    // Deploy before lifecycle 0 starts. The create step waits for this lower
-    // bound so Lightnet does not reject the contract slot precondition.
-    treasuryDeployedAtSlot = currentSlot + PROPOSAL_START_LEAD_SLOTS;
-    logTestStep(
-      PROPOSAL_TEST_NAME,
-      "setup: deploying treasury owner for proposal test",
-      {
-        treasuryOwnerPublicKey: treasuryOwnerPrivateKey
-          .toPublicKey()
-          .toBase58(),
-        pauseControllerPublicKey: pauseControllerPrivateKey
-          .toPublicKey()
-          .toBase58(),
-        treasuryDeployedAtSlot,
-      },
-    );
-
-    const deployOutput = await runCli(["treasury-owner", "deploy"], {
-      timeoutMs: 600_000,
-      streamOutput: true,
-      streamLabel: "proposal create setup deploy",
-      envOverrides: {
-        SENDER_PRIVATE_KEY: VOTER_PRIVATE_KEY,
-        TREASURY_OWNER_PRIVATE_KEY: treasuryOwnerPrivateKey.toBase58(),
-        PAUSE_CONTROLLER_PRIVATE_KEY: pauseControllerPrivateKey.toBase58(),
-        TREASURY_DEPLOYED_AT_SLOT: String(treasuryDeployedAtSlot),
-        MULTISIG_PARTICIPANTS_PUBLIC_KEYS: multisigParticipantsPublicKeys
-          .map((key) => key.toBase58())
-          .join(","),
-        LIFECYCLE_PERIOD_DURATION: String(LIFECYCLE_PERIOD_DURATION),
-        PROOFS_ENABLED,
-      },
+    before(async () => {
+      fixture = await loadPreparedLightnetFixture();
+      await validatePreparedLightnetFixture(fixture);
+      Mina.setActiveInstance(
+        Mina.Network({
+          mina: fixture.minaNodeUrl,
+          networkId: fixture.networkId,
+        }),
+      );
+      treasuryOwnerPublicKey = fixture.ownerPublicKey;
+      treasuryDeployedAtSlot = fixture.deployedAtSlot;
+      const lifecycle = await selectPreparedProposalLifecycle(fixture, {
+        minimumRemainingSlots: Math.ceil(
+          fixture.lifecyclePeriodDurationSlots / 2,
+        ),
+      });
+      selectedLifecycleId = lifecycle.lifecycleId;
+      const ledger = new SqliteStakingLedgerService({
+        lifecycleId: fixture.artifactLifecycleId,
+        dbPath: fixture.votingLedgerSqlitePath,
+      });
+      await ledger.start();
+      try {
+        const accounts = await ledger.getAllAccounts();
+        const index = findDefaultTokenAccountIndex(
+          accounts,
+          PublicKey.fromBase58(treasuryOwnerPublicKey),
+        );
+        assert(
+          index >= 0,
+          "prepared snapshot must contain the default-token Owner",
+        );
+        proofInputs = {
+          account: Account.toJSON(accounts[index]!),
+          witness: (await ledger.getWitness(BigInt(index))).toJSON(),
+          index: String(index),
+        };
+      } finally {
+        await ledger.close();
+      }
     });
-    const deployResult = parseTreasuryOwnerDeployResult(deployOutput);
-    assert(deployResult, "expected treasury-owner deploy JSON output");
-    treasuryOwnerPublicKey = deployResult.treasuryOwnerAddress;
 
-    logTestStep(
-      PROPOSAL_TEST_NAME,
-      "setup: treasury owner deployed and confirmed",
-      {
+    it("creates proposal after treasury owner setup", async () => {
+      assert(
+        treasuryOwnerPublicKey !== undefined &&
+          treasuryDeployedAtSlot !== undefined,
+        "expected treasury owner setup to run before test",
+      );
+
+      const recipientPublicKey = PrivateKey.random().toPublicKey().toBase58();
+      const proposalLifecycleId = selectedLifecycleId;
+      const currentSlot = await getCurrentGlobalSlot();
+      if (currentSlot < treasuryDeployedAtSlot) {
+        await waitForGlobalSlot(treasuryDeployedAtSlot, 300_000);
+      }
+
+      logTestStep(PROPOSAL_TEST_NAME, "running proposal create CLI command", {
         treasuryOwnerPublicKey,
-      },
-    );
-  });
+        recipientPublicKey,
+        proposalLifecycleId,
+        lifecyclePeriodDuration: fixture.lifecyclePeriodDurationSlots,
+        treasuryDeployedAtSlot,
+      });
+      const proposalContentPath = join(
+        FIXTURES_DIRECTORY,
+        "proposal-create-e2e-content.md",
+      );
+      const contentApi = await startMockProposalContentApi(proofInputs);
+      await writeFile(proposalContentPath, PROPOSAL_MARKDOWN_CONTENT, "utf8");
+      const createOutput = await runCli(["proposal", "create"], {
+        timeoutMs: 600_000,
+        streamOutput: true,
+        streamLabel: "proposal create e2e",
+        envOverrides: {
+          SENDER_PRIVATE_KEY: fixture.voters[0]!.privateKey,
+          MINA_NODE_URL: fixture.minaNodeUrl,
+          NETWORK: fixture.networkId,
+          TREASURY_API_URL: contentApi.url,
+          TREASURY_OWNER_PUBLIC_KEY: treasuryOwnerPublicKey,
+          PROPOSAL_LIFECYCLE_ID: String(proposalLifecycleId),
+          RECIPIENT_PUBLIC_KEY: recipientPublicKey,
+          PROPOSAL_AMOUNT,
+          PROPOSAL_CONTENT_FILE: proposalContentPath,
+          LIFECYCLE_PERIOD_DURATION: String(
+            fixture.lifecyclePeriodDurationSlots,
+          ),
+          PROOFS_ENABLED: String(fixture.proofsEnabled),
+        },
+      }).finally(async () => {
+        await contentApi.close();
+        await rm(proposalContentPath, { force: true });
+      });
 
-  after(() => {
-    lightnetProcess?.kill("SIGTERM");
-  });
+      const createResult = parseTreasuryProposalResult(createOutput);
+      assert(createResult, "expected proposal create JSON output");
+      assert(
+        createOutput.includes(
+          "The CLI generated an in-memory keypair for deployment and will discard the private key after this command",
+        ),
+        "expected proposal create to warn about its generated deployment key",
+      );
+      const proposalPublicKey = createResult.proposalAddress;
+      PublicKey.fromBase58(proposalPublicKey);
+      assert(createResult.proposalTokenId, "expected proposal token id");
+      assert(createResult.proposalTxHash, "expected proposal transaction hash");
+      assert.strictEqual(contentApi.requests.length, 1);
+      assert.strictEqual(
+        contentApi.requests[0]?.url,
+        `/proposals/${encodeURIComponent(proposalPublicKey)}/content`,
+      );
+      assert.deepStrictEqual(JSON.parse(contentApi.requests[0]?.body ?? "{}"), {
+        contents: PROPOSAL_MARKDOWN_CONTENT,
+      });
+      createdProposalPublicKey = createResult.proposalAddress;
 
-  it("creates proposal after treasury owner setup", async () => {
-    assert(
-      treasuryOwnerPublicKey !== undefined &&
-        treasuryDeployedAtSlot !== undefined,
-      "expected treasury owner setup to run before test",
-    );
-
-    const recipientPublicKey = PrivateKey.random().toPublicKey().toBase58();
-    const proposalLifecycleId = Number.parseInt(PROPOSAL_LIFECYCLE_ID, 10);
-    assert.strictEqual(
-      proposalLifecycleId,
-      0,
-      "proposal e2e expects lifecycle id 0",
-    );
-    const currentSlot = await getCurrentGlobalSlot();
-    if (currentSlot < treasuryDeployedAtSlot) {
-      await waitForGlobalSlot(treasuryDeployedAtSlot, 300_000);
-    }
-
-    logTestStep(PROPOSAL_TEST_NAME, "running proposal create CLI command", {
-      treasuryOwnerPublicKey,
-      recipientPublicKey,
-      proposalLifecycleId,
-      lifecyclePeriodDuration: LIFECYCLE_PERIOD_DURATION,
-      treasuryDeployedAtSlot,
+      const proposalStateOutput = await runCli(["proposal", "read-state"], {
+        timeoutMs: 120_000,
+        streamOutput: true,
+        streamLabel: "proposal state e2e",
+        envOverrides: {
+          TREASURY_OWNER_PUBLIC_KEY: treasuryOwnerPublicKey,
+          PROPOSAL_PUBLIC_KEY: proposalPublicKey,
+        },
+      });
+      const proposalStateResult =
+        parseTreasuryProposalStateResult(proposalStateOutput);
+      assert(proposalStateResult, "expected proposal state JSON output");
+      assert.strictEqual(
+        proposalStateResult.proposalAddress,
+        proposalPublicKey,
+      );
+      assert.strictEqual(
+        proposalStateResult.lifecycleId,
+        String(proposalLifecycleId),
+      );
+      assert.strictEqual(proposalStateResult.amount, PROPOSAL_AMOUNT);
     });
-    const proposalContentPath = join(
-      FIXTURES_DIRECTORY,
-      "proposal-create-e2e-content.md",
-    );
-    const contentApi = await startMockProposalContentApi();
-    await writeFile(proposalContentPath, PROPOSAL_MARKDOWN_CONTENT, "utf8");
-    const createOutput = await runCli(["proposal", "create"], {
-      timeoutMs: 600_000,
-      streamOutput: true,
-      streamLabel: "proposal create e2e",
-      envOverrides: {
-        SENDER_PRIVATE_KEY: VOTER_PRIVATE_KEY,
-        TREASURY_API_URL: contentApi.url,
-        TREASURY_OWNER_PUBLIC_KEY: treasuryOwnerPublicKey,
-        PROPOSAL_LIFECYCLE_ID: String(proposalLifecycleId),
-        RECIPIENT_PUBLIC_KEY: recipientPublicKey,
-        PROPOSAL_AMOUNT,
-        PROPOSAL_CONTENT_FILE: proposalContentPath,
-        LIFECYCLE_PERIOD_DURATION: String(LIFECYCLE_PERIOD_DURATION),
-        PROOFS_ENABLED,
-      },
-    }).finally(async () => {
-      await contentApi.close();
-      await rm(proposalContentPath, { force: true });
-    });
 
-    const createResult = parseTreasuryProposalResult(createOutput);
-    assert(createResult, "expected proposal create JSON output");
-    assert(
-      createOutput.includes(
-        "The CLI generated an in-memory keypair for deployment and will discard the private key after this command",
-      ),
-      "expected proposal create to warn about its generated deployment key",
-    );
-    const proposalPublicKey = createResult.proposalAddress;
-    PublicKey.fromBase58(proposalPublicKey);
-    assert(createResult.proposalTokenId, "expected proposal token id");
-    assert(createResult.proposalTxHash, "expected proposal transaction hash");
-    assert.strictEqual(contentApi.requests.length, 1);
-    assert.strictEqual(
-      contentApi.requests[0]?.url,
-      `/proposals/${encodeURIComponent(proposalPublicKey)}/content`,
-    );
-    assert.deepStrictEqual(JSON.parse(contentApi.requests[0]?.body ?? "{}"), {
-      contents: PROPOSAL_MARKDOWN_CONTENT,
-    });
-    createdProposalPublicKey = createResult.proposalAddress;
+    it("casts one fast vote on created proposal", async () => {
+      assert(
+        treasuryOwnerPublicKey &&
+          createdProposalPublicKey &&
+          treasuryDeployedAtSlot !== undefined,
+        "expected proposal create step to run before vote step",
+      );
 
-    const proposalStateOutput = await runCli(["proposal", "read-state"], {
-      timeoutMs: 120_000,
-      streamOutput: true,
-      streamLabel: "proposal state e2e",
-      envOverrides: {
-        TREASURY_OWNER_PUBLIC_KEY: treasuryOwnerPublicKey,
-        PROPOSAL_PUBLIC_KEY: proposalPublicKey,
-      },
-    });
-    const proposalStateResult =
-      parseTreasuryProposalStateResult(proposalStateOutput);
-    assert(proposalStateResult, "expected proposal state JSON output");
-    assert.strictEqual(proposalStateResult.proposalAddress, proposalPublicKey);
-    assert.strictEqual(
-      proposalStateResult.lifecycleId,
-      String(proposalLifecycleId),
-    );
-    assert.strictEqual(proposalStateResult.amount, PROPOSAL_AMOUNT);
-  });
+      const voterPrivateKey = PrivateKey.fromBase58(
+        fixture.voters[0]!.privateKey,
+      );
+      const proposalLifecycleId = selectedLifecycleId;
+      const votePhaseStart = votingPhaseStartSlot(
+        treasuryDeployedAtSlot,
+        proposalLifecycleId,
+        fixture.lifecyclePeriodDurationSlots,
+      );
+      const currentSlot = await getCurrentGlobalSlot();
+      if (currentSlot < votePhaseStart) {
+        logTestStep(PROPOSAL_TEST_NAME, "waiting for vote phase", {
+          currentSlot,
+          votePhaseStart,
+        });
+        await waitForGlobalSlot(
+          votePhaseStart,
+          Math.max(
+            300_000,
+            (votePhaseStart - currentSlot + 2) * fixture.slotDurationMs,
+          ),
+        );
+      }
 
-  it("casts one fast vote on created proposal", async () => {
-    assert(
-      treasuryOwnerPublicKey &&
-        createdProposalPublicKey &&
-        treasuryDeployedAtSlot !== undefined,
-      "expected proposal create step to run before vote step",
-    );
-
-    const voterPrivateKey = PrivateKey.fromBase58(VOTER_PRIVATE_KEY);
-    const proposalLifecycleId = Number.parseInt(PROPOSAL_LIFECYCLE_ID, 10);
-    const votePhaseStart = votingPhaseStartSlot(
-      treasuryDeployedAtSlot,
-      proposalLifecycleId,
-    );
-    const currentSlot = await getCurrentGlobalSlot();
-    if (currentSlot < votePhaseStart) {
-      logTestStep(PROPOSAL_TEST_NAME, "waiting for vote phase", {
-        currentSlot,
+      logTestStep(PROPOSAL_TEST_NAME, "running proposal vote CLI command", {
+        treasuryOwnerPublicKey,
+        proposalPublicKey: createdProposalPublicKey,
+        vote: PROPOSAL_VOTE,
+        proposalLifecycleId,
         votePhaseStart,
       });
-      await waitForGlobalSlot(votePhaseStart, 300_000);
-    }
+      const voteOutput = await runCli(["proposal", "vote"], {
+        timeoutMs: 600_000,
+        streamOutput: true,
+        streamLabel: "proposal vote e2e",
+        envOverrides: {
+          SENDER_PRIVATE_KEY: fixture.voters[0]!.privateKey,
+          MINA_NODE_URL: fixture.minaNodeUrl,
+          NETWORK: fixture.networkId,
+          TREASURY_OWNER_PUBLIC_KEY: treasuryOwnerPublicKey,
+          PROPOSAL_PUBLIC_KEY: createdProposalPublicKey,
+          VOTER_PRIVATE_KEY: voterPrivateKey.toBase58(),
+          PROPOSAL_VOTE: PROPOSAL_VOTE,
+          LIFECYCLE_PERIOD_DURATION: String(
+            fixture.lifecyclePeriodDurationSlots,
+          ),
+          PROOFS_ENABLED: String(fixture.proofsEnabled),
+        },
+      });
 
-    logTestStep(PROPOSAL_TEST_NAME, "running proposal vote CLI command", {
-      treasuryOwnerPublicKey,
-      proposalPublicKey: createdProposalPublicKey,
-      vote: PROPOSAL_VOTE,
-      proposalLifecycleId,
-      votePhaseStart,
+      const voteResult = parseTreasuryProposalVoteResult(voteOutput);
+      assert(voteResult, "expected proposal vote JSON output");
+      assert.strictEqual(voteResult.proposalAddress, createdProposalPublicKey);
+      assert(voteResult.voteTxHash, "expected vote transaction hash");
     });
-    const voteOutput = await runCli(["proposal", "vote"], {
-      timeoutMs: 600_000,
-      streamOutput: true,
-      streamLabel: "proposal vote e2e",
-      envOverrides: {
-        SENDER_PRIVATE_KEY: VOTER_PRIVATE_KEY,
-        TREASURY_OWNER_PUBLIC_KEY: treasuryOwnerPublicKey,
-        PROPOSAL_PUBLIC_KEY: createdProposalPublicKey,
-        VOTER_PRIVATE_KEY: voterPrivateKey.toBase58(),
-        PROPOSAL_VOTE: PROPOSAL_VOTE,
-        LIFECYCLE_PERIOD_DURATION: String(LIFECYCLE_PERIOD_DURATION),
-        PROOFS_ENABLED,
-      },
-    });
-
-    const voteResult = parseTreasuryProposalVoteResult(voteOutput);
-    assert(voteResult, "expected proposal vote JSON output");
-    assert.strictEqual(voteResult.proposalAddress, createdProposalPublicKey);
-    assert(voteResult.voteTxHash, "expected vote transaction hash");
-  });
-});
+  },
+);

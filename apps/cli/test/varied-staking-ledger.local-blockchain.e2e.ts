@@ -1146,6 +1146,23 @@ test(
         backendRootResult.stakingEpochDataLedgerHash,
         oracle.stakingRoot,
       );
+      await cli(
+        [
+          "staking-ledger-to-voting-ledger",
+          "trace-digest",
+          "--lifecycle-id",
+          LIFECYCLE_ID,
+        ],
+        { SQLITE_DATA_DIRECTORY: backend.sqliteDirectory },
+      );
+      await writeFile(
+        join(backend.sqliteDirectory, `${LIFECYCLE_ID}.sqlite.done`),
+        JSON.stringify({
+          lifecycleId: LIFECYCLE_ID,
+          ledgerHash: backendRootResult.ledgerHashBase58,
+          processedAt: new Date().toISOString(),
+        }),
+      );
 
       const proposalContentPath = join(tempRoot, "proposal.md");
       const proposalContents =

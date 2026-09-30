@@ -1,9 +1,8 @@
 import assert from "node:assert";
-import { after, before, describe, it } from "node:test";
-import { type ChildProcess } from "node:child_process";
+import { before, describe, it } from "node:test";
 import { fetchAccount, Mina, Permissions, PrivateKey, PublicKey } from "o1js";
 import {
-  ensureLightnetReady,
+  ensureExistingLightnetReady,
   getCurrentGlobalSlot,
   LIGHTNET_ACCOUNT_MANAGER_ENDPOINT,
   logTestStep,
@@ -13,30 +12,44 @@ import {
   parseTreasuryOwnerDeployResult,
   parseTreasuryOwnerCompileResult,
   parseTreasuryOwnerStateResult,
-  runCli,
+  runCli as runCliWithEnv,
   waitForGlobalSlot,
 } from "./utils/cli-test-utils.js";
 
-let lightnetProcess: ChildProcess | undefined;
+import {
+  loadPreparedLightnetFixture,
+  type PreparedLightnetFixture,
+} from "./utils/prepared-lightnet-fixture.js";
+
+let fixture: PreparedLightnetFixture;
+const runCli = (
+  args: string[],
+  options: NonNullable<Parameters<typeof runCliWithEnv>[1]> = {},
+) =>
+  runCliWithEnv(args, {
+    ...options,
+    envOverrides: {
+      ...options.envOverrides,
+      MINA_NODE_URL: fixture.minaNodeUrl,
+      LIGHTNET_ACCOUNT_MANAGER_ENDPOINT: fixture.accountManagerUrl,
+      NETWORK: fixture.networkId,
+      PROOFS_ENABLED: String(fixture.proofsEnabled),
+      LIFECYCLE_PERIOD_DURATION: String(fixture.lifecyclePeriodDurationSlots),
+      SENDER_PRIVATE_KEY,
+      TRANSFER_AMOUNT,
+      TX_WAIT: "true",
+    },
+  });
+
 let compileCommandCompleted = false;
 let deployedTreasuryOwnerPublicKey: string | undefined;
 let deployedTreasuryOwnerPrivateKey: string | undefined;
 
 const TREASURY_OWNER_TEST_NAME = "treasury-owner.test";
 
-function requireEnv(name: string): string {
-  const value = process.env[name];
-  if (!value) {
-    throw new Error(
-      `Missing required env var ${name} for treasury-owner e2e test`,
-    );
-  }
-  return value;
-}
-
-const LIFECYCLE_PERIOD_DURATION = requireEnv("LIFECYCLE_PERIOD_DURATION");
-const SENDER_PRIVATE_KEY = requireEnv("SENDER_PRIVATE_KEY");
-const TRANSFER_AMOUNT = requireEnv("TRANSFER_AMOUNT");
+let LIFECYCLE_PERIOD_DURATION: string;
+let SENDER_PRIVATE_KEY: string;
+const TRANSFER_AMOUNT = process.env.TRANSFER_AMOUNT ?? "1000000000";
 
 type AccountPermission = ReturnType<typeof Permissions.proof>;
 
@@ -59,11 +72,33 @@ function assertPermissionEqual(
 }
 
 before(async () => {
-  logTestStep(TREASURY_OWNER_TEST_NAME, "step 0: setting up Lightnet");
-  lightnetProcess = await ensureLightnetReady();
+  logTestStep(
+    TREASURY_OWNER_TEST_NAME,
+    "step 0: checking the prepared Lightnet",
+  );
+  fixture = await loadPreparedLightnetFixture();
+  assert.strictEqual(
+    MINA_NODE_URL,
+    fixture.minaNodeUrl,
+    "MINA_NODE_URL must match the prepared fixture before importing this suite",
+  );
+  assert.strictEqual(
+    LIGHTNET_ACCOUNT_MANAGER_ENDPOINT,
+    fixture.accountManagerUrl,
+    "The account manager must match the prepared fixture",
+  );
+  await ensureExistingLightnetReady({
+    minaNodeUrl: fixture.minaNodeUrl,
+    expectedChainId: fixture.chainId,
+    expectedSlotDurationMs: fixture.slotDurationMs,
+    expectedSlotsPerEpoch: fixture.slotsPerEpoch,
+  });
+  SENDER_PRIVATE_KEY = fixture.voters[4]!.privateKey;
+  LIFECYCLE_PERIOD_DURATION = String(fixture.lifecyclePeriodDurationSlots);
   Mina.setActiveInstance(
     Mina.Network({
       mina: MINA_NODE_URL,
+      networkId: fixture.networkId,
       lightnetAccountManager: LIGHTNET_ACCOUNT_MANAGER_ENDPOINT,
     }),
   );
@@ -71,10 +106,6 @@ before(async () => {
     minaNodeUrl: MINA_NODE_URL,
     lifecyclePeriodDuration: LIFECYCLE_PERIOD_DURATION,
   });
-});
-
-after(() => {
-  lightnetProcess?.kill("SIGTERM");
 });
 
 describe("treasury-owner CLI", { concurrency: 1 }, () => {

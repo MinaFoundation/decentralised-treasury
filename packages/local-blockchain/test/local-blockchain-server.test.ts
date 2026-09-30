@@ -1,3 +1,5 @@
+import { Account } from "../../sdk/src/provable/account.js";
+import { PrefixedMerkleWitness36 } from "../../sdk/src/provable/merkle-tree/prefixed-merkle-tree.js";
 import assert from "node:assert/strict";
 import {
   assertServerProofMode,
@@ -1011,7 +1013,7 @@ describe(suiteName, suiteOptions, () => {
       );
       const proposalPrivateKey = PrivateKey.random();
       const proposalPublicKey = proposalPrivateKey.toPublicKey();
-      const proposalAmount = UInt64.from(1_000_000_000);
+      const proposalAmount = UInt64.from(10_000_000_000);
       const transaction = await Mina.transaction(
         {
           sender: senderPublicKey,

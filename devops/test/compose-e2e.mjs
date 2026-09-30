@@ -1564,6 +1564,14 @@ async function prepareStakingLedgerProof(treasury) {
     PROOF_OUTPUT_PATH: STAKING_PROOF_FILE,
   });
   await assertProofArtifact(STAKING_PROOF_FILE, "staking-ledger proof");
+  await writeFile(
+    join(SQLITE_DATA_DIRECTORY, "0.sqlite.done"),
+    JSON.stringify({
+      lifecycleId: "0",
+      ledgerHash: snapshot.ledgerHashBase58,
+      processedAt: new Date().toISOString(),
+    }),
+  );
   return snapshot;
 }
 

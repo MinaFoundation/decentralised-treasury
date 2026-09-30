@@ -1019,38 +1019,42 @@ export async function expandedOperatorScenario(
         );
         await otherPage.goto(backoffice.url);
         await connect(otherPage);
-        await otherPage
-          .getByRole("tab", { name: "Toggle proposal pause", exact: true })
-          .click();
-        await otherPage
-          .getByLabel("Proposal address", { exact: true })
-          .fill(proposalAddress);
-        const competing = await build(
-          "Toggle proposal pause",
-          "competing-proposal-pause",
-          otherPage,
-        );
-        expect(competing.controllerNonce).toBe(operation.controllerNonce);
-        await collect(
-          competing,
-          "competing-proposal-pause",
-          activeSigners,
-          [0, 1, 2],
-          otherPage,
-        );
-        await submit(
-          competing,
-          "competing-proposal-pause",
-          otherPage,
-          otherWallet,
-          stack.voter1.publicKey,
-        );
+        const proposalBeforeCompeting = await proposal();
+        for (const [index, [label, name, paused]] of (
+          [
+            ["Pause treasury", "competing-global-pause", "1"],
+            ["Unpause treasury", "competing-global-unpause", "0"],
+          ] as const
+        ).entries()) {
+          const competing = await build(label, name, otherPage);
+          expect(competing.controllerNonce).toBe(
+            String(Number(operation.controllerNonce) + index),
+          );
+          await collect(
+            competing,
+            name,
+            activeSigners,
+            [0, 1, 2],
+            otherPage,
+          );
+          await submit(
+            competing,
+            name,
+            otherPage,
+            otherWallet,
+            stack.voter1.publicKey,
+          );
+          expect((await controller()).zkappState[1]).toBe(paused);
+          await otherPage
+            .getByRole("button", { name: "Start new bundle", exact: true })
+            .click();
+        }
         const afterCompeting = await snapshot();
         expect(afterCompeting.controller.nonce).toBe(
-          String(Number(operation.controllerNonce) + 1),
+          String(Number(operation.controllerNonce) + 2),
         );
         expect(afterCompeting.controller.zkappState[1]).toBe("0");
-        expect(afterCompeting.proposal.zkappState[5]).toBe("3");
+        expect(afterCompeting.proposal).toEqual(proposalBeforeCompeting);
         const rejected = page.waitForResponse(
           (response) =>
             response
@@ -1073,10 +1077,24 @@ export async function expandedOperatorScenario(
         ).toHaveCount(0);
         expect(wallet.signedTransactions).toHaveLength(signaturesBefore + 1);
         expect(wallet.signedTransactions.at(-1)!.digest).toBe(digest);
-        expect(await snapshot()).toEqual({
+        // LocalBlockchain applies the fee payer before reporting failed account updates.
+        const feePayer = provedCommand.feePayer.body;
+        expect(feePayer.publicKey).toBe(stack.proposer.publicKey);
+        expect(String(feePayer.nonce)).toBe(afterCompeting.payer.nonce);
+        const expectedRejected = {
           ...afterCompeting,
+          payer: {
+            ...afterCompeting.payer,
+            nonce: String(BigInt(feePayer.nonce) + 1n),
+            balance: {
+              total: String(
+                BigInt(afterCompeting.payer.balance.total) - BigInt(feePayer.fee),
+              ),
+            },
+          },
           walletSignatures: signaturesBefore + 1,
-        });
+        };
+        expect(await snapshot()).toEqual(expectedRejected);
         await evidence("stale-after-proof-rejection", {
           failure,
           state: await snapshot(),
@@ -1091,10 +1109,7 @@ export async function expandedOperatorScenario(
           ),
         ).toBeVisible();
         expect(wallet.signedTransactions).toHaveLength(signaturesBefore + 1);
-        expect(await snapshot()).toEqual({
-          ...afterCompeting,
-          walletSignatures: signaturesBefore + 1,
-        });
+        expect(await snapshot()).toEqual(expectedRejected);
         await page
           .getByRole("button", { name: "Start over", exact: true })
           .click();
@@ -1103,7 +1118,7 @@ export async function expandedOperatorScenario(
         await collect(fresh, "fresh-after-race");
         await submit(fresh, "fresh-after-race");
         expect((await controller()).zkappState[1]).toBe("1");
-        expect((await proposal()).zkappState[5]).toBe("3");
+        expect(await proposal()).toEqual(proposalBeforeCompeting);
       } finally {
         held.cancel();
         await otherContext.close();

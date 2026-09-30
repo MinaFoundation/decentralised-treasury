@@ -1,6 +1,5 @@
 import assert from "node:assert";
-import { after, before, describe, it } from "node:test";
-import { type ChildProcess } from "node:child_process";
+import { before, describe, it } from "node:test";
 import { fetchAccount, Mina, PrivateKey, PublicKey } from "o1js";
 import { TreasuryPauseControllerSmartContract } from "@repo/sdk/src/provable/contracts/treasury-pause-controller/treasury-pause-controller.js";
 import {
@@ -10,7 +9,7 @@ import {
   MultisigSignatures,
 } from "@repo/sdk/src/provable/contracts/treasury-pause-controller/multisig-signatures.js";
 import {
-  ensureLightnetReady,
+  ensureExistingLightnetReady,
   LIGHTNET_ACCOUNT_MANAGER_ENDPOINT,
   logTestStep,
   MINA_NODE_URL,
@@ -24,18 +23,14 @@ import {
   runCli,
 } from "./utils/cli-test-utils.js";
 
+import {
+  loadPreparedLightnetFixture,
+  type PreparedLightnetFixture,
+} from "./utils/prepared-lightnet-fixture.js";
+
 const TEST_NAME = "pause-controller.test";
-const PROOFS_ENABLED = "true";
-
-function requireEnv(name: string): string {
-  const value = process.env[name];
-  if (!value) {
-    throw new Error(`Missing required env var ${name} for pause-controller e2e test`);
-  }
-  return value;
-}
-
-const SENDER_PRIVATE_KEY = requireEnv("SENDER_PRIVATE_KEY");
+let fixture: PreparedLightnetFixture;
+let SENDER_PRIVATE_KEY: string;
 
 async function runPauseControllerCli(
   args: string[],
@@ -45,7 +40,13 @@ async function runPauseControllerCli(
     ...options,
     envOverrides: {
       ...(options.envOverrides ?? {}),
-      PROOFS_ENABLED,
+      MINA_NODE_URL: fixture.minaNodeUrl,
+      LIGHTNET_ACCOUNT_MANAGER_ENDPOINT: fixture.accountManagerUrl,
+      NETWORK: fixture.networkId,
+      PROOFS_ENABLED: String(fixture.proofsEnabled),
+      LIFECYCLE_PERIOD_DURATION: String(fixture.lifecyclePeriodDurationSlots),
+      SENDER_PRIVATE_KEY,
+      TX_WAIT: "true",
     },
   });
 }
@@ -178,24 +179,40 @@ function countValidSignatures(signatures: string[]): number {
 }
 
 describe("pause-controller CLI", { concurrency: 1 }, () => {
-  let lightnetProcess: ChildProcess | undefined;
   let pauseControllerPublicKey: string | undefined;
   let currentMultisigPrivateKeys: string[] = [];
   let currentMultisigPublicKeys: string[] = [];
 
   before(async () => {
-    logTestStep(TEST_NAME, "setup: starting Lightnet for pause-controller e2e");
-    lightnetProcess = await ensureLightnetReady();
+    logTestStep(
+      TEST_NAME,
+      "setup: checking the prepared Lightnet for pause-controller e2e",
+    );
+    fixture = await loadPreparedLightnetFixture();
+    assert.strictEqual(
+      MINA_NODE_URL,
+      fixture.minaNodeUrl,
+      "MINA_NODE_URL must match the prepared fixture before importing this suite",
+    );
+    assert.strictEqual(
+      LIGHTNET_ACCOUNT_MANAGER_ENDPOINT,
+      fixture.accountManagerUrl,
+      "The account manager must match the prepared fixture",
+    );
+    await ensureExistingLightnetReady({
+      minaNodeUrl: fixture.minaNodeUrl,
+      expectedChainId: fixture.chainId,
+      expectedSlotDurationMs: fixture.slotDurationMs,
+      expectedSlotsPerEpoch: fixture.slotsPerEpoch,
+    });
+    SENDER_PRIVATE_KEY = fixture.voters[4]!.privateKey;
     Mina.setActiveInstance(
       Mina.Network({
-        mina: MINA_NODE_URL,
-        lightnetAccountManager: LIGHTNET_ACCOUNT_MANAGER_ENDPOINT,
+        mina: fixture.minaNodeUrl,
+        networkId: fixture.networkId,
+        lightnetAccountManager: fixture.accountManagerUrl,
       }),
     );
-  });
-
-  after(() => {
-    lightnetProcess?.kill("SIGTERM");
   });
 
   it("exposes pause-controller command in help", async () => {

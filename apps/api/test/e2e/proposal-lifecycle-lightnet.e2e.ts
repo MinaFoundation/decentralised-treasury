@@ -1,19 +1,10 @@
 import assert from "node:assert/strict";
-import { spawn, type ChildProcess } from "node:child_process";
-import {
-  mkdtemp,
-  copyFile,
-  mkdir,
-  readFile,
-  rm,
-  writeFile,
-} from "node:fs/promises";
+import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { createServer } from "node:net";
-import { after, before, describe, it } from "node:test";
-import { fileURLToPath } from "node:url";
-import { Mina, PrivateKey, PublicKey, TokenId, UInt32, UInt64 } from "o1js";
+import { before, describe, it } from "node:test";
+import { Mina, PrivateKey, PublicKey, UInt32, UInt64 } from "o1js";
 import { RedisMemoryServer } from "redis-memory-server";
 import {
   ArchiveClient,
@@ -31,10 +22,12 @@ import { type ProposalVote } from "@repo/sdk/src/services/treasury-owner-service
 import { HttpApiServer } from "../../src/http-api-server.js";
 import { createIndexerStatusRoutes } from "../../src/indexer-status-routes.js";
 import { createProcessorCrudRoutes } from "../../src/processor-crud-routes.js";
+import { createProposalContentRoutes } from "../../src/proposal-content-routes.js";
 import { createProcessorStatusRoutes } from "../../src/processor-status-routes.js";
 import { ProposalCreatedEventHandler } from "../../src/processors/proposals/proposal-created-event-handler.js";
 import { ProposalExecutedEventHandler } from "../../src/processors/proposals/proposal-executed-event-handler.js";
 import { ProposalEventFactEntity } from "../../src/processors/proposals/proposal-event-fact-entity.js";
+import { ProposalProjectionReplayEntity } from "../../src/processors/proposals/proposal-projection-replay-entity.js";
 import { ProposalExecutionEntity } from "../../src/processors/proposals/proposal-execution-entity.js";
 import { LifecycleVotingLedgerServiceRegistry } from "../../src/processors/proposals/lifecycle-voting-ledger-service-registry.js";
 import { ProposalVoteDispatchedEventHandler } from "../../src/processors/proposals/proposal-vote-dispatched-event-handler.js";
@@ -48,14 +41,8 @@ import {
 } from "../../src/processors/proposals/vote-entity.js";
 import { createInMemoryDataSource } from "../support/create-in-memory-data-source.js";
 import {
-  ARCHIVE_NODE_URL,
-  CLI_PACKAGE_DIRECTORY,
-  ensureLightnetReady,
   getCurrentGlobalSlot,
-  LIGHTNET_ACCOUNT_MANAGER_ENDPOINT,
   logTestStep,
-  MINA_NODE_URL,
-  parseTreasuryOwnerDeployResult,
   parseTreasuryProposalResult,
   parseTreasuryProposalActionsResult,
   parseTreasuryProposalVoteResult,
@@ -68,31 +55,16 @@ import {
   waitForGlobalSlot,
 } from "../../../cli/test/utils/cli-test-utils.js";
 
+import {
+  loadPreparedLightnetFixture,
+  validatePreparedLightnetFixture,
+  selectPreparedProposalLifecycle,
+  prepareVotingLedgerForLifecycle,
+  type PreparedLightnetFixture,
+} from "../../../cli/test/utils/prepared-lightnet-fixture.js";
+
 const RUN_LIGHTNET_E2E = process.env.RUN_LIGHTNET_E2E === "true";
 const TEST_NAME = "proposal-lifecycle-lightnet.e2e";
-const REPO_ROOT = fileURLToPath(new URL("../../../../", import.meta.url));
-const READONLY_VOTING_LEDGER_SQLITE_FIXTURE_PATH = fileURLToPath(
-  new URL(
-    "../../../cli/test/fixtures/0-data-voting-ledger.sqlite",
-    import.meta.url,
-  ),
-);
-const STAKING_EPOCH_LEDGER_FIXTURE_PATH = fileURLToPath(
-  new URL(
-    "../../../cli/test/fixtures/staking-epoch-ledger-lightnet.json",
-    import.meta.url,
-  ),
-);
-const STAKING_LEDGER_TO_VOTING_LEDGER_PROOF_PATH = fileURLToPath(
-  new URL("../../../cli/artifacts/exhausted-proof.json", import.meta.url),
-);
-const FIXTURE_PATH = fileURLToPath(
-  new URL(
-    "../../../cli/test/fixtures/vote-reducer-lightnet-actions.json",
-    import.meta.url,
-  ),
-);
-const SQLITE_DATA_DIRECTORY = join(CLI_PACKAGE_DIRECTORY, ".data", "sqlite");
 const TRACKED_EVENT_TYPES = [
   "proposalCreated",
   "proposalVoteDispatched",
@@ -108,23 +80,11 @@ const INDEXER_EVENT_TYPE_ORDER = [
 ] as const;
 const PROCESSOR_NAME = "proposal-lifecycle-lightnet-e2e";
 const ARCHIVE_REQUEST_TIMEOUT_MS = 15_000;
-const LIGHTNET_STARTUP_TIMEOUT_MS = 600_000;
 const POLL_INTERVAL_MS = 2_000;
 const API_POLL_TIMEOUT_MS = 180_000;
 const TX_FEE = UInt64.from(1_000_000_000);
 const VOTES_TO_CAST = 5;
-const PROPOSAL_AMOUNT = UInt64.from("1000000000");
-const PROPOSAL_LIFECYCLE_ID = UInt32.from(0);
-const PROOF_LIFECYCLE_ID = "0";
-const parsedLifecyclePeriodDurationSlots = Number.parseInt(
-  process.env.LIGHTNET_LIFECYCLE_PERIOD_DURATION_SLOTS ?? "420",
-  10,
-);
-const LIFECYCLE_PERIOD_DURATION_SLOTS =
-  Number.isFinite(parsedLifecyclePeriodDurationSlots) &&
-  parsedLifecyclePeriodDurationSlots > 0
-    ? parsedLifecyclePeriodDurationSlots
-    : 60;
+const PROPOSAL_AMOUNT = UInt64.from("10000000000");
 const PROPOSAL_AMOUNT_WITH_BOND = PROPOSAL_AMOUNT.add(
   PROPOSAL_AMOUNT.div(BOND_AMOUNT_DIVISOR),
 );
@@ -132,34 +92,7 @@ const CLI_PROOF_ENV = {
   PROOFS_ENABLED: "true",
 } as const;
 
-// These private keys are the known counterparts of fixture voteActions public keys.
-const KNOWN_FIXTURE_VOTER_PRIVATE_KEYS = [
-  "EKFGQcsWmQR9Jj1W2XoGNQzF43T1PNqRhaQrm1vDS948GVbyemrj",
-  "EKEnVLUhYHDJvgmgQu5SzaV8MWKNfhAXYSkLBRk5KEfudWZRbs4P",
-  "EKEXS3qUZRhxDzExtuAaQVHtxLzt8A3fqS7o7iL9NpvdATsshvB6",
-  "EKF3qRhoze6r6bgF5uRmhMkEahfZJHHQ3hzxqCbPvaNzdhxMVCQh",
-  "EKFd1GxnQ53H3shreTB2VzQJxECz9DE9NjorrkfKyEuKCsHDHVSE",
-];
-const KNOWN_BIG_STAKE_VOTER_PUBLIC_KEY =
-  "B62qikT41XWwfMuoRC1SBvQxBfvHPnYfY7Hm9TUWNQXMLka5eP4xowB";
-const KNOWN_EXISTING_TREASURY_OWNER_PRIVATE_KEY =
-  "EKDpoov2DNs2aBLmm2yZNwLKHDvG42EdwPGaeCTrhm1kaFHc5f1g";
-
 type KnownEventType = (typeof TRACKED_EVENT_TYPES)[number];
-
-type FixtureVoteAction = {
-  vote: string;
-  publicKey: string;
-};
-
-type VoteReducerActionsFixture = {
-  voteActions: FixtureVoteAction[];
-};
-
-type StakingEpochLedgerEntry = {
-  pk: string;
-  balance: string;
-};
 
 interface IndexedEventRow {
   id: string;
@@ -268,13 +201,6 @@ interface LifecycleApiState {
   snapshot: ApiSnapshot;
 }
 
-function fixtureVoteToProposalVote(vote: string): ProposalVote {
-  if (vote === "1") return "yay";
-  if (vote === "2") return "nay";
-  if (vote === "3") return "abstain";
-  throw new Error(`Unsupported fixture vote value: ${vote}`);
-}
-
 function getAvailablePort(): Promise<number> {
   return new Promise((resolve, reject) => {
     const server = createServer();
@@ -297,56 +223,6 @@ function getAvailablePort(): Promise<number> {
       });
     });
   });
-}
-
-async function runCommandIgnoreFailure(
-  command: string,
-  args: string[],
-): Promise<string> {
-  return await new Promise<string>((resolve) => {
-    const child = spawn(command, args, {
-      cwd: REPO_ROOT,
-      env: { ...process.env },
-      stdio: "pipe",
-    });
-
-    let stdout = "";
-    child.stdout?.on("data", (chunk) => {
-      stdout += chunk.toString();
-    });
-    child.on("error", () => {
-      resolve("");
-    });
-    child.on("close", () => {
-      resolve(stdout);
-    });
-  });
-}
-
-async function forceStopLightnetAtTestStart(): Promise<void> {
-  await runCommandIgnoreFailure("pnpm", [
-    "--filter",
-    "@repo/sdk",
-    "exec",
-    "zkapp-cli",
-    "lightnet",
-    "stop",
-  ]);
-
-  const containerIdsOutput = await runCommandIgnoreFailure("docker", [
-    "ps",
-    "--filter",
-    "name=lightnet",
-    "--format",
-    "{{.ID}}",
-  ]);
-  const containerIds = containerIdsOutput
-    .split("\n")
-    .map((line) => line.trim())
-    .filter((line) => line.length > 0);
-  for (const containerId of containerIds) {
-    await runCommandIgnoreFailure("docker", ["rm", "-f", containerId]);
-  }
 }
 
 async function waitForSlotWithPollingLogs(
@@ -376,10 +252,6 @@ async function waitForSlotWithPollingLogs(
   }
 
   throw new Error(`Timed out waiting for ${phaseLabel} at slot ${targetSlot}`);
-}
-
-function resolveSqliteLifecycleDbPath(lifecycleId: string): string {
-  return join(SQLITE_DATA_DIRECTORY, `${lifecycleId}.sqlite`);
 }
 
 async function writeProposalContentFile(
@@ -672,30 +544,26 @@ describe(
     concurrency: 1,
   },
   () => {
-    let lightnetProcess: ChildProcess | undefined;
+    let fixture: PreparedLightnetFixture;
 
     before(async () => {
-      await forceStopLightnetAtTestStart();
-      lightnetProcess = await ensureLightnetReady(LIGHTNET_STARTUP_TIMEOUT_MS);
+      fixture = await loadPreparedLightnetFixture();
+      await validatePreparedLightnetFixture(fixture);
       Mina.setActiveInstance(
         Mina.Network({
-          mina: MINA_NODE_URL,
-          archive: ARCHIVE_NODE_URL,
-          lightnetAccountManager: LIGHTNET_ACCOUNT_MANAGER_ENDPOINT,
+          mina: fixture.minaNodeUrl,
+          archive: fixture.archiveNodeUrl,
+          lightnetAccountManager: fixture.accountManagerUrl,
+          networkId: fixture.networkId,
         }),
       );
     });
 
-    after(() => {
-      lightnetProcess?.kill("SIGTERM");
-    });
-
     it(
       "indexes and serves create-to-execute proposal lifecycle state",
-      { timeout: 1_800_000 },
+      { timeout: 7_200_000 },
       async () => {
         const originalSqliteDataDirectory = process.env.SQLITE_DATA_DIRECTORY;
-        process.env.SQLITE_DATA_DIRECTORY = SQLITE_DATA_DIRECTORY;
 
         let tempDirectory: string | null = null;
         let dataSource = null;
@@ -719,167 +587,51 @@ describe(
             tempDirectory,
             "vote-reducer-merge.json",
           );
-          const sqliteLifecycleDbPath =
-            resolveSqliteLifecycleDbPath(PROOF_LIFECYCLE_ID);
+          const lifecycle = await selectPreparedProposalLifecycle(fixture, {
+            minimumRemainingSlots: Math.ceil(
+              fixture.lifecyclePeriodDurationSlots / 2,
+            ),
+          });
+          const proposalLifecycleId = UInt32.from(lifecycle.lifecycleId);
+          const proofLifecycleId = String(lifecycle.lifecycleId);
+          const { sqliteDataDirectory } = await prepareVotingLedgerForLifecycle(
+            fixture,
+            proofLifecycleId,
+            tempDirectory,
+          );
+          process.env.SQLITE_DATA_DIRECTORY = sqliteDataDirectory;
+          Object.assign(CLI_PROOF_ENV, {
+            MINA_NODE_URL: fixture.minaNodeUrl,
+            ARCHIVE_NODE_URL: fixture.archiveNodeUrl,
+            NETWORK: fixture.networkId,
+          });
           const proposalContentPath =
             await writeProposalContentFile(tempDirectory);
-
-          await mkdir(SQLITE_DATA_DIRECTORY, { recursive: true });
-          await copyFile(
-            READONLY_VOTING_LEDGER_SQLITE_FIXTURE_PATH,
-            sqliteLifecycleDbPath,
-          );
-          await rm(voteActionsOutputPath, { force: true });
-          await rm(voteReducerMergedProofPath, { force: true });
-
-          const fixture = JSON.parse(
-            await readFile(FIXTURE_PATH, "utf8"),
-          ) as VoteReducerActionsFixture;
-          assert(
-            fixture.voteActions.length >= VOTES_TO_CAST,
-            `expected at least ${VOTES_TO_CAST} vote actions in ${FIXTURE_PATH}`,
-          );
-
-          const privateKeyByPublicKey = new Map(
-            KNOWN_FIXTURE_VOTER_PRIVATE_KEYS.map((privateKeyBase58) => {
-              const privateKey = PrivateKey.fromBase58(privateKeyBase58);
-              return [privateKey.toPublicKey().toBase58(), privateKeyBase58];
-            }),
-          );
-
-          const selectedVoteActions = fixture.voteActions.slice(
-            0,
-            VOTES_TO_CAST,
-          );
-          assert(
-            selectedVoteActions.some(
-              (voteAction) =>
-                voteAction.publicKey === KNOWN_BIG_STAKE_VOTER_PUBLIC_KEY,
-            ),
-            `expected selected fixture votes to include big stake voter ${KNOWN_BIG_STAKE_VOTER_PUBLIC_KEY}`,
-          );
-
-          const voterPrivateKeys = selectedVoteActions.map(
-            (voteAction, index) => {
-              const privateKeyBase58 = privateKeyByPublicKey.get(
-                voteAction.publicKey,
-              );
-              assert(
-                privateKeyBase58,
-                `missing known private key for fixture vote #${index + 1}: ${voteAction.publicKey}`,
-              );
-              return PrivateKey.fromBase58(privateKeyBase58);
-            },
-          );
-
-          const treasuryOwnerPrivateKey = PrivateKey.fromBase58(
-            KNOWN_EXISTING_TREASURY_OWNER_PRIVATE_KEY,
-          );
-          const treasuryOwnerPublicKeyBase58 = treasuryOwnerPrivateKey
-            .toPublicKey()
-            .toBase58();
-
-          const stakingEpochLedger = JSON.parse(
-            await readFile(STAKING_EPOCH_LEDGER_FIXTURE_PATH, "utf8"),
-          ) as StakingEpochLedgerEntry[];
-          const treasuryOwnerLedgerEntry = stakingEpochLedger.find(
-            (entry) => entry.pk === treasuryOwnerPublicKeyBase58,
-          );
-          assert(
-            treasuryOwnerLedgerEntry,
-            `known treasury owner account must exist in ${STAKING_EPOCH_LEDGER_FIXTURE_PATH}: ${treasuryOwnerPublicKeyBase58}`,
-          );
-          assert(
-            BigInt(treasuryOwnerLedgerEntry.balance) > 0n,
-            `known treasury owner account must have non-zero balance in ${STAKING_EPOCH_LEDGER_FIXTURE_PATH}: ${treasuryOwnerPublicKeyBase58}`,
-          );
-
-          const senderPrivateKey = voterPrivateKeys[0];
-          const senderPublicKeyBase58 = senderPrivateKey
-            .toPublicKey()
-            .toBase58();
-          assert.notStrictEqual(
-            treasuryOwnerPublicKeyBase58,
-            senderPublicKeyBase58,
-            "treasury owner deploy account must not reuse sender account",
-          );
-          for (const voterPrivateKey of voterPrivateKeys) {
-            assert.notStrictEqual(
-              treasuryOwnerPublicKeyBase58,
-              voterPrivateKey.toPublicKey().toBase58(),
-              "treasury owner deploy account must not reuse any voter account",
-            );
-          }
-
           const lifecyclePeriodDuration = UInt32.from(
-            LIFECYCLE_PERIOD_DURATION_SLOTS,
+            fixture.lifecyclePeriodDurationSlots,
           );
-          const pauseControllerPrivateKey = PrivateKey.random();
-          const multisigParticipantsPublicKeys = Array.from({ length: 5 }, () =>
-            PrivateKey.random().toPublicKey(),
+          const selectedVoteActions = fixture.voters.slice(0, VOTES_TO_CAST);
+          assert.equal(selectedVoteActions.length, VOTES_TO_CAST);
+          const voterPrivateKeys = selectedVoteActions.map(({ privateKey }) =>
+            PrivateKey.fromBase58(privateKey),
           );
-
-          const currentSlot = await getCurrentGlobalSlot();
-          const treasuryDeployedAtSlot = currentSlot;
-          logTestStep(TEST_NAME, "deploying treasury owner", {
-            treasuryOwnerPublicKey: treasuryOwnerPrivateKey
-              .toPublicKey()
-              .toBase58(),
-            pauseControllerPublicKey: pauseControllerPrivateKey
-              .toPublicKey()
-              .toBase58(),
-            treasuryDeployedAtSlot,
-            lifecyclePeriodDurationSlots: LIFECYCLE_PERIOD_DURATION_SLOTS,
-            allowDeployToExistingAccount: true,
-            proofsEnabled: true,
-            stakingEpochLedgerFixturePath: STAKING_EPOCH_LEDGER_FIXTURE_PATH,
-            treasuryOwnerLedgerBalance: treasuryOwnerLedgerEntry.balance,
-          });
-          const deployOutput = await runProofCli(
-            [
-              "treasury-owner",
-              "deploy",
-              "--mina-node-url",
-              MINA_NODE_URL,
-              "--sender-private-key",
-              senderPrivateKey.toBase58(),
-              "--treasury-owner-private-key",
-              treasuryOwnerPrivateKey.toBase58(),
-              "--pause-controller-private-key",
-              pauseControllerPrivateKey.toBase58(),
-              "--treasury-deployed-at-slot",
-              String(treasuryDeployedAtSlot),
-              "--multisig-participants-public-keys",
-              multisigParticipantsPublicKeys
-                .map((key) => key.toBase58())
-                .join(","),
-              "--allow-deploy-to-existing-account",
-              "true",
-              "--lifecycle-period-duration",
-              lifecyclePeriodDuration.toString(),
-              "--fee",
-              TX_FEE.toString(),
-              "--wait",
-              "true",
-            ],
-            {
-              timeoutMs: 900_000,
-              streamOutput: true,
-              streamLabel: "treasury-owner deploy api e2e",
-            },
-          );
-          const deployResult = parseTreasuryOwnerDeployResult(deployOutput);
-          assert(deployResult, "expected treasury-owner deploy JSON output");
-          assert(
-            deployResult.treasuryOwnerTxHash,
-            "expected treasury-owner deploy tx hash",
-          );
+          const senderPrivateKey = voterPrivateKeys[0];
+          const treasuryOwnerPublicKeyBase58 = fixture.ownerPublicKey;
           const treasuryOwnerPublicKey = PublicKey.fromBase58(
-            deployResult.treasuryOwnerAddress,
+            fixture.ownerPublicKey,
           );
+          const treasuryOwnerLedgerBalance = fixture.ownerBalance;
+          logTestStep(TEST_NAME, "using prepared Treasury deployment", {
+            treasuryOwnerPublicKey: fixture.ownerPublicKey,
+            lifecycleId: proofLifecycleId,
+            lifecycleStartSlot: lifecycle.startSlot,
+            lifecyclePeriodDurationSlots: fixture.lifecyclePeriodDurationSlots,
+            stakingLedgerRoot: fixture.stakingLedgerRoot,
+          });
           dataSource = createInMemoryDataSource("public", [
             ProposalEntity,
             ProposalEventFactEntity,
+            ProposalProjectionReplayEntity,
             ProposalExecutionEntity,
             VoteEntity,
             VoteNullifierEntity,
@@ -890,8 +642,17 @@ describe(
           });
           await repository.initialize();
           await dataSource.synchronize();
+          // This new test database has no earlier projection to replay.
+          await dataSource
+            .getRepository(ProposalProjectionReplayEntity)
+            .insert({
+              projectionName: "proposal",
+              targetChangeSequence: "0",
+              state: "complete",
+              completedAt: new Date(),
+            });
 
-          const archiveClient = new ArchiveClient(ARCHIVE_NODE_URL, {
+          const archiveClient = new ArchiveClient(fixture.archiveNodeUrl, {
             treasuryOwnerContractAddress: treasuryOwnerPublicKey.toBase58(),
             archiveRequestTimeoutMs: ARCHIVE_REQUEST_TIMEOUT_MS,
           });
@@ -925,8 +686,8 @@ describe(
             new EventProcessorRouter([
               new ProposalCreatedEventHandler({
                 resolveTreasuryBalanceForLifecycle: async (lifecycleId) =>
-                  lifecycleId === Number(PROPOSAL_LIFECYCLE_ID.toBigint())
-                    ? treasuryOwnerLedgerEntry.balance
+                  lifecycleId === Number(proposalLifecycleId.toBigint())
+                    ? treasuryOwnerLedgerBalance
                     : null,
               }),
               new ProposalVoteDispatchedEventHandler(
@@ -934,8 +695,8 @@ describe(
                 undefined,
                 {
                   resolveTreasuryBalanceForLifecycle: async (lifecycleId) =>
-                    lifecycleId === Number(PROPOSAL_LIFECYCLE_ID.toBigint())
-                      ? treasuryOwnerLedgerEntry.balance
+                    lifecycleId === Number(proposalLifecycleId.toBigint())
+                      ? treasuryOwnerLedgerBalance
                       : null,
                 },
               ),
@@ -955,6 +716,7 @@ describe(
             name: "processor-api-test",
             port: processorApiPort,
             registerRoutes: async (app) => {
+              createProposalContentRoutes({ dataSource })(app);
               createProcessorStatusRoutes({
                 dataSource,
                 processorName: PROCESSOR_NAME,
@@ -983,6 +745,7 @@ describe(
           await processor.start();
           await processorApiServer.start();
 
+          const lifecycleTxHashes = new Set<string>();
           const proposalPrivateKey = PrivateKey.random();
           const expectedProposalPublicKey = proposalPrivateKey
             .toPublicKey()
@@ -990,21 +753,24 @@ describe(
           const recipientPublicKey = PrivateKey.random().toPublicKey();
           const recipientPublicKeyBase58 = recipientPublicKey.toBase58();
 
-          logTestStep(TEST_NAME, "creating proposal in lifecycle 0", {
+          logTestStep(TEST_NAME, "creating proposal in selected lifecycle", {
             treasuryOwnerPublicKey: treasuryOwnerPublicKey.toBase58(),
             proposalPublicKey: expectedProposalPublicKey,
-            proposalLifecycleId: PROPOSAL_LIFECYCLE_ID.toString(),
+            proposalLifecycleId: proposalLifecycleId.toString(),
             recipientPublicKey: recipientPublicKeyBase58,
             amount: PROPOSAL_AMOUNT.toString(),
             proofsEnabled: true,
             proposalContentPath,
           });
+          await validatePreparedLightnetFixture(fixture);
           const createOutput = await runProofCli(
             [
               "proposal",
               "create",
+              "--api-url",
+              processorApiBase,
               "--mina-node-url",
-              MINA_NODE_URL,
+              fixture.minaNodeUrl,
               "--sender-private-key",
               senderPrivateKey.toBase58(),
               "--treasury-owner-public-key",
@@ -1012,7 +778,7 @@ describe(
               "--proposal-private-key",
               proposalPrivateKey.toBase58(),
               "--proposal-lifecycle-id",
-              PROPOSAL_LIFECYCLE_ID.toString(),
+              proposalLifecycleId.toString(),
               "--recipient-public-key",
               recipientPublicKeyBase58,
               "--amount",
@@ -1041,6 +807,7 @@ describe(
             "expected proposal transaction hash",
           );
 
+          lifecycleTxHashes.add(createResult.proposalTxHash);
           await waitForApiState(
             "proposal create API projection",
             indexerApiBase,
@@ -1050,7 +817,12 @@ describe(
                 state.snapshot,
                 proposalPublicKeyBase58,
               );
-              const eventCounts = countIndexedEvents(state.indexedEvents);
+              const eventCounts = countIndexedEvents(
+                state.indexedEvents.filter(
+                  (event) =>
+                    event.txHash && lifecycleTxHashes.has(event.txHash),
+                ),
+              );
               assert.equal(eventCounts.proposalCreated, 1);
               assert(
                 state.indexedEvents.some(
@@ -1067,7 +839,7 @@ describe(
               );
               assert.equal(
                 proposalState.proposal?.lifecycleId,
-                Number(PROPOSAL_LIFECYCLE_ID.toBigint()),
+                Number(proposalLifecycleId.toBigint()),
               );
               assert.equal(
                 proposalState.proposal?.amount,
@@ -1101,12 +873,19 @@ describe(
           );
 
           const votePhaseStartSlot =
-            treasuryDeployedAtSlot + LIFECYCLE_PERIOD_DURATION_SLOTS * 2;
+            lifecycle.startSlot + fixture.lifecyclePeriodDurationSlots * 2;
           const slotBeforeVotes = await getCurrentGlobalSlot();
           if (slotBeforeVotes < votePhaseStartSlot) {
             await waitForSlotWithPollingLogs(
               "waiting for vote phase",
               votePhaseStartSlot,
+              Math.max(
+                900_000,
+                fixture.lifecyclePeriodDurationSlots *
+                  2 *
+                  fixture.slotDurationMs +
+                  120_000,
+              ),
             );
           }
 
@@ -1123,11 +902,13 @@ describe(
             const voterPublicKey = voterPrivateKey.toPublicKey().toBase58();
             assert.strictEqual(
               voterPublicKey,
-              fixtureVoteAction.publicKey,
+              PrivateKey.fromBase58(fixtureVoteAction.privateKey)
+                .toPublicKey()
+                .toBase58(),
               `fixture voter #${index + 1} public key mismatch`,
             );
 
-            const vote = fixtureVoteToProposalVote(fixtureVoteAction.vote);
+            const vote = fixtureVoteAction.vote;
             logTestStep(TEST_NAME, "casting vote", {
               index: index + 1,
               voterPublicKey,
@@ -1142,7 +923,7 @@ describe(
                 "proposal",
                 "vote",
                 "--mina-node-url",
-                MINA_NODE_URL,
+                fixture.minaNodeUrl,
                 "--sender-private-key",
                 voterPrivateKey.toBase58(),
                 "--treasury-owner-public-key",
@@ -1168,7 +949,9 @@ describe(
             ).catch(async (error) => {
               const currentSlot = await getCurrentGlobalSlot().catch(() => -1);
               const votePhaseEndSlot =
-                treasuryDeployedAtSlot + LIFECYCLE_PERIOD_DURATION_SLOTS * 3;
+                lifecycle.startSlot +
+                fixture.lifecyclePeriodDurationSlots * 3 -
+                1;
               throw new Error(
                 `vote ${index + 1} CLI submission failed at slot=${currentSlot} during vote-phase-end=${votePhaseEndSlot}: ${String(error)}`,
               );
@@ -1184,6 +967,7 @@ describe(
             );
             assert(voteResult.voteTxHash, "expected vote transaction hash");
 
+            lifecycleTxHashes.add(voteResult.voteTxHash);
             sentVoteActions.push({
               index: index + 1,
               vote,
@@ -1217,7 +1001,12 @@ describe(
                 state.snapshot,
                 proposalPublicKeyBase58,
               );
-              const eventCounts = countIndexedEvents(state.indexedEvents);
+              const eventCounts = countIndexedEvents(
+                state.indexedEvents.filter(
+                  (event) =>
+                    event.txHash && lifecycleTxHashes.has(event.txHash),
+                ),
+              );
               assert.equal(eventCounts.proposalCreated, 1);
               if (
                 eventCounts.proposalVoteDispatched !== sentVoteActions.length
@@ -1288,7 +1077,7 @@ describe(
           );
 
           logTestStep(TEST_NAME, "fetching proposal actions via CLI", {
-            archiveNodeUrl: ARCHIVE_NODE_URL,
+            archiveNodeUrl: fixture.archiveNodeUrl,
             treasuryOwnerPublicKey: treasuryOwnerPublicKey.toBase58(),
             proposalPublicKey: proposalPublicKeyBase58,
             outputPath: voteActionsOutputPath,
@@ -1303,7 +1092,7 @@ describe(
                 "proposal",
                 "fetch-actions",
                 "--archive-node-url",
-                ARCHIVE_NODE_URL,
+                fixture.archiveNodeUrl,
                 "--treasury-owner-public-key",
                 treasuryOwnerPublicKey.toBase58(),
                 "--proposal-public-key",
@@ -1360,7 +1149,7 @@ describe(
             TEST_NAME,
             "running vote-reducer trace-run-batch CLI command",
             {
-              lifecycleId: PROOF_LIFECYCLE_ID,
+              lifecycleId: proofLifecycleId,
               voteActionsPath: voteActionsOutputPath,
             },
           );
@@ -1368,8 +1157,12 @@ describe(
             [
               "vote-reducer",
               "trace-run-batch",
+              "--staking-ledger-to-voting-ledger-proof-path",
+              fixture.exhaustedProofPath,
+              "--treasury-owner-public-key",
+              treasuryOwnerPublicKeyBase58,
               "--lifecycle-id",
-              PROOF_LIFECYCLE_ID,
+              proofLifecycleId,
               "--vote-actions-path",
               voteActionsOutputPath,
             ],
@@ -1398,7 +1191,7 @@ describe(
               TEST_NAME,
               "running vote-reducer prove-run-batch CLI command",
               {
-                lifecycleId: PROOF_LIFECYCLE_ID,
+                lifecycleId: proofLifecycleId,
                 queueName,
                 redisHost,
                 redisPort,
@@ -1408,8 +1201,10 @@ describe(
               [
                 "vote-reducer",
                 "prove-run-batch",
+                "--vote-actions-path",
+                voteActionsOutputPath,
                 "--lifecycle-id",
-                PROOF_LIFECYCLE_ID,
+                proofLifecycleId,
                 "--queue-name",
                 queueName,
                 "--redis-host",
@@ -1428,7 +1223,7 @@ describe(
               TEST_NAME,
               "running vote-reducer prove-merge CLI command",
               {
-                lifecycleId: PROOF_LIFECYCLE_ID,
+                lifecycleId: proofLifecycleId,
                 queueName,
                 outputPath: voteReducerMergedProofPath,
               },
@@ -1437,8 +1232,10 @@ describe(
               [
                 "vote-reducer",
                 "prove-merge",
+                "--vote-actions-path",
+                voteActionsOutputPath,
                 "--lifecycle-id",
-                PROOF_LIFECYCLE_ID,
+                proofLifecycleId,
                 "--queue-name",
                 queueName,
                 "--redis-host",
@@ -1472,23 +1269,33 @@ describe(
             "expected vote-reducer merged proof JSON to contain publicOutput",
           );
           JSON.parse(
-            await readFile(STAKING_LEDGER_TO_VOTING_LEDGER_PROOF_PATH, "utf8"),
+            await readFile(fixture.exhaustedProofPath, "utf8"),
           ) as unknown;
 
           logTestStep(TEST_NAME, "running proposal tally-votes CLI command", {
-            lifecycleId: PROOF_LIFECYCLE_ID,
+            lifecycleId: proofLifecycleId,
             treasuryOwnerPublicKey: treasuryOwnerPublicKey.toBase58(),
             proposalPublicKey: proposalPublicKeyBase58,
             voteReducerProofPath: voteReducerMergedProofPath,
-            stakingLedgerToVotingLedgerProofPath:
-              STAKING_LEDGER_TO_VOTING_LEDGER_PROOF_PATH,
+            stakingLedgerToVotingLedgerProofPath: fixture.exhaustedProofPath,
           });
+          await waitForSlotWithPollingLogs(
+            "waiting for cooldown phase",
+            lifecycle.startSlot + fixture.lifecyclePeriodDurationSlots * 3,
+            Math.max(
+              900_000,
+              fixture.lifecyclePeriodDurationSlots *
+                3 *
+                fixture.slotDurationMs +
+                120_000,
+            ),
+          );
           const tallyOutput = await runProofCli(
             [
               "proposal",
               "tally-votes",
               "--mina-node-url",
-              MINA_NODE_URL,
+              fixture.minaNodeUrl,
               "--sender-private-key",
               senderPrivateKey.toBase58(),
               "--treasury-owner-public-key",
@@ -1498,11 +1305,11 @@ describe(
               "--vote-reducer-proof-path",
               voteReducerMergedProofPath,
               "--staking-ledger-to-voting-ledger-proof-path",
-              STAKING_LEDGER_TO_VOTING_LEDGER_PROOF_PATH,
+              fixture.exhaustedProofPath,
               "--lifecycle-id",
-              PROOF_LIFECYCLE_ID,
+              proofLifecycleId,
               "--lifecycle-period-duration",
-              String(LIFECYCLE_PERIOD_DURATION_SLOTS),
+              String(fixture.lifecyclePeriodDurationSlots),
               "--fee",
               TX_FEE.toString(),
               "--wait",
@@ -1525,6 +1332,7 @@ describe(
             "expected proposal tally-votes tx hash",
           );
 
+          lifecycleTxHashes.add(tallyResult.tallyTxHash);
           await waitForApiState(
             "proposal tally API projection",
             indexerApiBase,
@@ -1534,7 +1342,12 @@ describe(
                 state.snapshot,
                 proposalPublicKeyBase58,
               );
-              const eventCounts = countIndexedEvents(state.indexedEvents);
+              const eventCounts = countIndexedEvents(
+                state.indexedEvents.filter(
+                  (event) =>
+                    event.txHash && lifecycleTxHashes.has(event.txHash),
+                ),
+              );
               assert.equal(eventCounts.proposalVotesTallied, 1);
               assert(
                 state.indexedEvents.some(
@@ -1569,12 +1382,19 @@ describe(
           );
 
           const executePhaseStartSlot =
-            treasuryDeployedAtSlot + LIFECYCLE_PERIOD_DURATION_SLOTS * 4;
+            lifecycle.startSlot + fixture.lifecyclePeriodDurationSlots * 4;
           const slotBeforeExecute = await getCurrentGlobalSlot();
           if (slotBeforeExecute < executePhaseStartSlot) {
             await waitForSlotWithPollingLogs(
               "waiting for execute phase",
               executePhaseStartSlot,
+              Math.max(
+                900_000,
+                fixture.lifecyclePeriodDurationSlots *
+                  4 *
+                  fixture.slotDurationMs +
+                  120_000,
+              ),
             );
           }
 
@@ -1590,7 +1410,7 @@ describe(
               "proposal",
               "execute",
               "--mina-node-url",
-              MINA_NODE_URL,
+              fixture.minaNodeUrl,
               "--sender-private-key",
               senderPrivateKey.toBase58(),
               "--treasury-owner-public-key",
@@ -1602,7 +1422,7 @@ describe(
               "--amount-to-pay-out",
               PROPOSAL_AMOUNT_WITH_BOND.toString(),
               "--lifecycle-period-duration",
-              String(LIFECYCLE_PERIOD_DURATION_SLOTS),
+              String(fixture.lifecyclePeriodDurationSlots),
               "--fee",
               TX_FEE.toString(),
               "--wait",
@@ -1635,6 +1455,7 @@ describe(
             "expected proposal execute tx hash",
           );
 
+          lifecycleTxHashes.add(executeResult.executeTxHash);
           await waitForApiState(
             "proposal execute API projection",
             indexerApiBase,
@@ -1644,7 +1465,12 @@ describe(
                 state.snapshot,
                 proposalPublicKeyBase58,
               );
-              const eventCounts = countIndexedEvents(state.indexedEvents);
+              const eventCounts = countIndexedEvents(
+                state.indexedEvents.filter(
+                  (event) =>
+                    event.txHash && lifecycleTxHashes.has(event.txHash),
+                ),
+              );
               assert.equal(eventCounts.proposalCreated, 1);
               assert.equal(
                 eventCounts.proposalVoteDispatched,
@@ -1693,7 +1519,11 @@ describe(
               ].join("\n"),
           );
         } finally {
-          process.env.SQLITE_DATA_DIRECTORY = originalSqliteDataDirectory;
+          if (originalSqliteDataDirectory === undefined) {
+            delete process.env.SQLITE_DATA_DIRECTORY;
+          } else {
+            process.env.SQLITE_DATA_DIRECTORY = originalSqliteDataDirectory;
+          }
           if (processorApiServer) {
             await processorApiServer.stop().catch(() => null);
           }

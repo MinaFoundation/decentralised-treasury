@@ -37,7 +37,6 @@ const REPOSITORY_ROOT = fileURLToPath(
 const COMMITTED_PROOF_FILES = [
   "apps/cli/artifacts/exhausted-proof.json",
   "apps/cli/artifacts/merged-proof.json",
-  "apps/cli/test/fixtures/proposal-tally-votes-vote-reducer-merge.json",
   "apps/cli/test/fixtures/staking-ledger-to-voting-ledger-proof-mini.json",
 ] as const;
 const PROOF_PAYLOAD_FIELDS = [

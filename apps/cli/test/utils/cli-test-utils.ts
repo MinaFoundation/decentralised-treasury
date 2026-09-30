@@ -309,6 +309,84 @@ export async function ensureLightnetReady(
   );
 }
 
+export async function ensureExistingLightnetReady(options: {
+  minaNodeUrl: string;
+  expectedChainId: string;
+  expectedSlotDurationMs: number;
+  expectedSlotsPerEpoch: number;
+  timeoutMs?: number;
+}): Promise<void> {
+  const timeoutMs = options.timeoutMs ?? 120_000;
+  const startedAt = Date.now();
+  let lastError: unknown;
+
+  while (Date.now() - startedAt < timeoutMs) {
+    try {
+      const response = await fetch(options.minaNodeUrl, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          query:
+            "{ daemonStatus { chainId consensusConfiguration { slotDuration slotsPerEpoch } } bestChain(maxLength:1) { stateHash } }",
+        }),
+      });
+      if (!response.ok) {
+        throw new Error(
+          `Lightnet status query failed with HTTP ${response.status}`,
+        );
+      }
+      const payload = (await response.json()) as {
+        data?: {
+          daemonStatus?: {
+            chainId?: string;
+            consensusConfiguration?: {
+              slotDuration?: number;
+              slotsPerEpoch?: number;
+            };
+          };
+          bestChain?: Array<{ stateHash?: string }>;
+        };
+        errors?: Array<{ message?: string }>;
+      };
+      if (payload.errors?.length) {
+        throw new Error(
+          payload.errors
+            .map((error) => error.message ?? "GraphQL error")
+            .join("; "),
+        );
+      }
+      const status = payload.data?.daemonStatus;
+      if (!status || !payload.data?.bestChain?.[0]?.stateHash) {
+        throw new Error("Lightnet has no ready best chain");
+      }
+      if (status.chainId !== options.expectedChainId) {
+        throw new Error(
+          `Lightnet chainId mismatch: expected ${options.expectedChainId}, got ${String(status.chainId)}`,
+        );
+      }
+      const consensus = status.consensusConfiguration;
+      if (consensus?.slotDuration !== options.expectedSlotDurationMs) {
+        throw new Error(
+          `Lightnet slot duration mismatch: expected ${options.expectedSlotDurationMs}, got ${String(consensus?.slotDuration)}`,
+        );
+      }
+      if (consensus.slotsPerEpoch !== options.expectedSlotsPerEpoch) {
+        throw new Error(
+          `Lightnet slots per epoch mismatch: expected ${options.expectedSlotsPerEpoch}, got ${String(consensus.slotsPerEpoch)}`,
+        );
+      }
+      return;
+    } catch (error) {
+      lastError = error;
+      await sleep(2_000);
+    }
+  }
+
+  throw new Error(
+    `Prepared Lightnet did not become ready within ${timeoutMs}ms: ${String(lastError)}`,
+  );
+}
+
 async function runLightnetStopForcefully(): Promise<void> {
   try {
     await runLightnetStop();

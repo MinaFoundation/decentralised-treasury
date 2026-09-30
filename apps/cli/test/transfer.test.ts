@@ -1,30 +1,47 @@
 import assert from "node:assert";
-import { after, before, describe, it } from "node:test";
-import { type ChildProcess } from "node:child_process";
+import { before, describe, it } from "node:test";
 import { Mina, PrivateKey } from "o1js";
 import {
-  ensureLightnetReady,
+  ensureExistingLightnetReady,
   getCurrentGlobalSlot,
   LIGHTNET_ACCOUNT_MANAGER_ENDPOINT,
   logTestStep,
   MINA_NODE_URL,
-  parseLightnetAccount,
   parseTransferResult,
-  runCli,
+  runCli as runCliWithEnv,
   waitForGlobalSlot,
 } from "./utils/cli-test-utils.js";
 
+import {
+  loadPreparedLightnetFixture,
+  type PreparedLightnetFixture,
+} from "./utils/prepared-lightnet-fixture.js";
+
+let fixture: PreparedLightnetFixture;
+const runCli = (
+  args: string[],
+  options: NonNullable<Parameters<typeof runCliWithEnv>[1]> = {},
+) =>
+  runCliWithEnv(args, {
+    ...options,
+    envOverrides: {
+      ...options.envOverrides,
+      MINA_NODE_URL: fixture.minaNodeUrl,
+      LIGHTNET_ACCOUNT_MANAGER_ENDPOINT: fixture.accountManagerUrl,
+      NETWORK: fixture.networkId,
+      PROOFS_ENABLED: String(fixture.proofsEnabled),
+      LIFECYCLE_PERIOD_DURATION: String(fixture.lifecyclePeriodDurationSlots),
+      SENDER_PRIVATE_KEY,
+      TRANSFER_AMOUNT,
+      TX_WAIT: "true",
+    },
+  });
+
 const TRANSFER_TEST_NAME = "transfer.test";
 
-function requireEnv(name: string): string {
-  const value = process.env[name];
-  if (!value) {
-    throw new Error(`Missing required env var ${name} for transfer e2e test`);
-  }
-  return value;
-}
-
-async function fetchAccountBalanceNanomina(publicKeyBase58: string): Promise<bigint> {
+async function fetchAccountBalanceNanomina(
+  publicKeyBase58: string,
+): Promise<bigint> {
   const response = await fetch(MINA_NODE_URL, {
     method: "POST",
     headers: { "content-type": "application/json" },
@@ -74,24 +91,39 @@ async function fetchAccountBalanceNanomina(publicKeyBase58: string): Promise<big
   return total ? BigInt(total) : 0n;
 }
 
-const SENDER_PRIVATE_KEY = requireEnv("SENDER_PRIVATE_KEY");
-const TRANSFER_AMOUNT = requireEnv("TRANSFER_AMOUNT");
-
-let lightnetProcess: ChildProcess | undefined;
+let SENDER_PRIVATE_KEY: string;
+const TRANSFER_AMOUNT = process.env.TRANSFER_AMOUNT ?? "1000000000";
 
 before(async () => {
-  logTestStep(TRANSFER_TEST_NAME, "setup: starting Lightnet for transfer e2e");
-  lightnetProcess = await ensureLightnetReady();
+  logTestStep(
+    TRANSFER_TEST_NAME,
+    "setup: checking the prepared Lightnet for transfer e2e",
+  );
+  fixture = await loadPreparedLightnetFixture();
+  assert.strictEqual(
+    MINA_NODE_URL,
+    fixture.minaNodeUrl,
+    "MINA_NODE_URL must match the prepared fixture before importing this suite",
+  );
+  assert.strictEqual(
+    LIGHTNET_ACCOUNT_MANAGER_ENDPOINT,
+    fixture.accountManagerUrl,
+    "The account manager must match the prepared fixture",
+  );
+  await ensureExistingLightnetReady({
+    minaNodeUrl: fixture.minaNodeUrl,
+    expectedChainId: fixture.chainId,
+    expectedSlotDurationMs: fixture.slotDurationMs,
+    expectedSlotsPerEpoch: fixture.slotsPerEpoch,
+  });
+  SENDER_PRIVATE_KEY = fixture.voters[4]!.privateKey;
   Mina.setActiveInstance(
     Mina.Network({
       mina: MINA_NODE_URL,
+      networkId: fixture.networkId,
       lightnetAccountManager: LIGHTNET_ACCOUNT_MANAGER_ENDPOINT,
     }),
   );
-});
-
-after(() => {
-  lightnetProcess?.kill("SIGTERM");
 });
 
 describe("transfer CLI", { concurrency: 1 }, () => {
@@ -100,16 +132,19 @@ describe("transfer CLI", { concurrency: 1 }, () => {
       .toPublicKey()
       .toBase58();
 
-    logTestStep(TRANSFER_TEST_NAME, "acquiring recipient Lightnet account");
-    const recipientOutput = await runCli(["lightnet", "acquire-account"], {
-      timeoutMs: 120_000,
-      streamOutput: true,
-      streamLabel: "transfer recipient setup",
-    });
-    const recipient = parseLightnetAccount(recipientOutput);
-    assert(recipient, "expected recipient account JSON output");
+    const recipient = {
+      publicKey: PrivateKey.random().toPublicKey().toBase58(),
+    };
+    assert.notStrictEqual(
+      recipient.publicKey,
+      senderPublicKey,
+      "The new recipient must differ from the sender",
+    );
 
-    const recipientBalanceBefore = await fetchAccountBalanceNanomina(recipient.publicKey);
+    const recipientBalanceBefore = await fetchAccountBalanceNanomina(
+      recipient.publicKey,
+    );
+    assert.strictEqual(recipientBalanceBefore, 0n);
     logTestStep(TRANSFER_TEST_NAME, "running transfer CLI command", {
       senderPublicKey,
       recipientPublicKey: recipient.publicKey,
@@ -138,7 +173,9 @@ describe("transfer CLI", { concurrency: 1 }, () => {
     const currentSlot = await getCurrentGlobalSlot();
     await waitForGlobalSlot(currentSlot + 1, 120_000);
 
-    const recipientBalanceAfter = await fetchAccountBalanceNanomina(recipient.publicKey);
+    const recipientBalanceAfter = await fetchAccountBalanceNanomina(
+      recipient.publicKey,
+    );
     assert.strictEqual(
       recipientBalanceAfter - recipientBalanceBefore,
       BigInt(TRANSFER_AMOUNT),

@@ -311,7 +311,7 @@ test("live operator exports, merges CLI signatures, pauses and unpauses through 
           "--multisig-signer-private-key",
           stack.participants[participant]!.privateKey,
           "--nonce",
-          operation.controllerNonce,
+          operation.controllerNonce!,
         ]);
         const result = JSON.parse(signed.trim().split("\n").at(-1)!);
         expect(result.dataHash).toBe(operation.messageHash);
