@@ -1,3 +1,5 @@
+import { PublicKey } from "o1js";
+import { findDefaultTokenAccountIndex } from "@repo/sdk/src/utils/default-token-account.js";
 import type { EventsApiServerOptions } from "@repo/indexer";
 import { Account } from "@repo/sdk/src/provable/account.js";
 import type { PrefixedMerkleWitness36 } from "@repo/sdk/src/provable/merkle-tree/prefixed-merkle-tree.js";
@@ -140,6 +142,9 @@ export function createStakingLedgerWitnessRoutes({
         try {
           lifecycleId = parseLifecycleId(request.params.lifecycleId);
           publicKey = await parsePublicKey(request.params.publicKey);
+          if (request.query.tokenId !== undefined && request.query.tokenId !== "1") {
+            throw new RequestValidationError("tokenId must be 1 (the default token)");
+          }
         } catch (error) {
           if (error instanceof RequestValidationError) {
             response.status(400).json({
@@ -157,7 +162,14 @@ export function createStakingLedgerWitnessRoutes({
 
         try {
           const service = await stakingLedgerServices.getService(lifecycleId);
-          const accountLookup = await service.getAccountByPublicKey(publicKey);
+          let accountLookup;
+          if (request.query.tokenId === "1") {
+            const accounts = await service.getAllAccounts();
+            const index = findDefaultTokenAccountIndex(accounts, PublicKey.fromBase58(publicKey));
+            accountLookup = index < 0 ? null : { index: BigInt(index), account: accounts[index]! };
+          } else {
+            accountLookup = await service.getAccountByPublicKey(publicKey);
+          }
           if (!accountLookup) {
             response.status(404).json({
               error: STAKING_LEDGER_ACCOUNT_NOT_FOUND_ERROR,

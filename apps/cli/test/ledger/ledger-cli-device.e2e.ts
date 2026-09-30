@@ -1,3 +1,5 @@
+import { Account } from "@repo/sdk/src/provable/account.js";
+import { SqliteStakingLedgerService } from "@repo/sdk/src/services/sqlite/sqlite-staking-ledger-service.js";
 import assert from "node:assert/strict";
 import { spawn, type ChildProcess } from "node:child_process";
 import { createRequire } from "node:module";
@@ -363,7 +365,10 @@ function signingCommandPaths(): string[] {
   );
 }
 
-async function startContentApi(): Promise<{
+async function startContentApi(proofInputs: {
+  account: ReturnType<typeof Account.toJSON>;
+  witness: Record<string, unknown>;
+}): Promise<{
   url: string;
   close(): Promise<void>;
 }> {
@@ -374,7 +379,15 @@ async function startContentApi(): Promise<{
     }
     response.statusCode = 200;
     response.setHeader("content-type", "application/json");
-    response.end(JSON.stringify({ ok: true }));
+    response.end(
+      JSON.stringify(
+        request.method === "GET"
+          ? request.url?.includes("/accounts/")
+            ? { index: "2" }
+            : proofInputs
+          : { ok: true },
+      ),
+    );
   });
   await new Promise<void>((resolve, reject) => {
     server.once("error", reject);
@@ -618,9 +631,19 @@ test("selected signature-producing CLI commands work with a physical Ledger on t
         ...template[1],
         pk: roles.sender.publicKey,
         delegate: roles.sender.publicKey,
-        balance: (STAKING_TOTAL_CURRENCY - STAKING_VOTER_BALANCE).toString(),
+        balance: (
+          STAKING_TOTAL_CURRENCY -
+          STAKING_VOTER_BALANCE -
+          1n
+        ).toString(),
       },
     ];
+    stakingLedger.push({
+      ...template[1],
+      pk: roles.treasuryOwner.publicKey,
+      delegate: roles.treasuryOwner.publicKey,
+      balance: "1",
+    });
     const stakingLedgerPath = join(tempRoot, "staking-ledger.json");
     const stakingProofPath = join(tempRoot, "staking-ledger-exhausted.json");
     await writeFile(stakingLedgerPath, JSON.stringify(stakingLedger, null, 2));
@@ -784,7 +807,19 @@ test("selected signature-producing CLI commands work with a physical Ledger on t
         .transferTxHash,
     );
 
-    contentApi = await startContentApi();
+    const snapshotService = new SqliteStakingLedgerService({
+      lifecycleId: LIFECYCLE_ID,
+      dbPath: join(sqliteDirectory, `${LIFECYCLE_ID}.sqlite`),
+    });
+    await snapshotService.start();
+    try {
+      contentApi = await startContentApi({
+        account: Account.toJSON(await snapshotService.getAccount(2n)),
+        witness: (await snapshotService.getWitness(2n)).toJSON(),
+      });
+    } finally {
+      await snapshotService.close();
+    }
     const proposalContentPath = join(tempRoot, "proposal.md");
     await writeFile(
       proposalContentPath,

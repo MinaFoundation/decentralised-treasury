@@ -60,6 +60,7 @@ import {
 } from "../../provable/contracts/treasury-owner.js";
 import { TreasuryPauseControllerSmartContract } from "../../provable/contracts/treasury-pause-controller/treasury-pause-controller.js";
 import { BOND_AMOUNT_DIVISOR } from "../../provable/contracts/treasury-constants.js";
+import { findDefaultTokenAccountIndex } from "../../utils/default-token-account.js";
 import { assertMinimumProposalAmount } from "../../utils/proposal-amount.js";
 import { KeyvSqlite } from "@keyv/sqlite";
 import { createSqliteVotingLedgerStorage } from "../../storage/sqlite/factory/sqlite-voting-ledger-storage.js";
@@ -339,6 +340,7 @@ export class SqliteTreasuryOwnerService implements TreasuryOwnerService {
     options: CreateTreasuryProposalOptions,
   ): Promise<CreateTreasuryProposalResult> {
     assertMinimumProposalAmount(options.amount.toBigInt());
+    const { treasuryOwnerAccount, treasuryOwnerAccountWitness } = options;
     const {
       senderPublicKey,
       treasuryOwnerPublicKey,
@@ -385,6 +387,8 @@ export class SqliteTreasuryOwnerService implements TreasuryOwnerService {
             zkAppUri: ZkappUri.from(proposalZkappUri),
           },
           proposalLifecycleId,
+          treasuryOwnerAccount,
+          treasuryOwnerAccountWitness,
         );
       },
     );
@@ -1026,12 +1030,13 @@ export class SqliteTreasuryOwnerService implements TreasuryOwnerService {
 
     try {
       const stakingAccounts = await stakingLedger.getAllAccounts();
-      const treasuryOwnerIndex = stakingAccounts.findIndex((account) =>
-        account.pk.equals(treasuryOwnerPublicKey).toBoolean(),
+      const treasuryOwnerIndex = findDefaultTokenAccountIndex(
+        stakingAccounts,
+        treasuryOwnerPublicKey,
       );
       if (treasuryOwnerIndex < 0) {
         throw new Error(
-          `Treasury owner public key ${treasuryOwnerPublicKey.toBase58()} was not found in sqlite staking ledger lifecycle ${lifecycleId}.`,
+          `Default-token Treasury Owner account ${treasuryOwnerPublicKey.toBase58()} was not found in sqlite staking ledger lifecycle ${lifecycleId}.`,
         );
       }
 

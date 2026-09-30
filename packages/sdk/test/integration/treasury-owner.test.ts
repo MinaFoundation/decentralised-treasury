@@ -450,6 +450,8 @@ it("should create a proposal", async () => {
           zkAppUri: ZkappUri.from(dummyZkAppUri),
         },
         UInt32.from(0),
+        treasuryOwnerAccount,
+        await stakingLedger.getWitness(0n),
       );
     });
 

@@ -385,6 +385,7 @@ export function ProposalCreatePageContainer({
             const { preparedTransaction, provedTransactionJson } =
               await buildAndProveCreateProposal(
                 {
+                  apiUrl: settings.value.apiUrl,
                   minaNodeUrl: settings.value.minaNodeUrl,
                   networkId: settings.value.networkId,
                   treasuryOwnerContractAddress: treasuryOwnerAddress,

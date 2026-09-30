@@ -1,3 +1,4 @@
+import { createTreasurySnapshot, applyTreasurySnapshot } from "../../utils/treasury-snapshot.js";
 import {
   AccountUpdate,
   Field,
@@ -22,7 +23,7 @@ import {
 } from "../../../src/provable/contracts/treasury-owner.js";
 import { BOND_AMOUNT_DIVISOR } from "../../../src/provable/contracts/treasury-constants.js";
 import { hashWithPrefix } from "../../../src/provable/hashing-helpers.js";
-import { PrefixedMerkleTree } from "../../../src/provable/merkle-tree/prefixed-merkle-tree.js";
+import { PrefixedMerkleTree, PrefixedMerkleWitness36 } from "../../../src/provable/merkle-tree/prefixed-merkle-tree.js";
 import { TreasuryPauseControllerSmartContract } from "../../../src/provable/contracts/treasury-pause-controller/treasury-pause-controller.js";
 import {
   ProposalStatus,
@@ -128,7 +129,9 @@ export async function createOwnerDeploymentFixture() {
     await owner.deploy();
   }, [ownerKey]);
 
-  return { blockchain, feePayer, pauseController, owner };
+  const snapshot = await createTreasurySnapshot(owner.address);
+  applyTreasurySnapshot(blockchain, snapshot);
+  return { blockchain, feePayer, pauseController, owner, ...snapshot };
 }
 
 export async function submitProposal(
@@ -177,6 +180,8 @@ export async function submitProposal(
           zkAppUri: ZkappUri.from("https://assurance.invalid/proposal"),
         },
         options.lifecycleId ?? UInt32.from(0),
+        fixture.treasuryOwnerAccount,
+        fixture.treasuryOwnerAccountWitness,
       );
     },
     keys,
@@ -214,7 +219,8 @@ export async function createOwnerProposalFixture(
     | Awaited<ReturnType<PrefixedMerkleTree["getWitness"]>>
     | undefined;
   let stakingLedgerRoot: Field | undefined;
-  if (options.stakingSnapshot === true) {
+  {
+    if (options.stakingSnapshot === true) {
     await sendTransaction(feePayer, async () => {
       const fundingUpdate = AccountUpdate.createSigned(
         feePayer.key.toPublicKey(),
@@ -223,6 +229,7 @@ export async function createOwnerProposalFixture(
       await owner.receive(treasuryFunding);
     });
 
+    }
     treasurySnapshotAccount = Account.empty();
     treasurySnapshotAccount.pk = owner.address;
     treasurySnapshotAccount.delegate = owner.address;
@@ -272,6 +279,8 @@ export async function createOwnerProposalFixture(
         zkAppUri: ZkappUri.from("https://assurance.invalid/proposal"),
       },
       UInt32.from(0),
+      treasurySnapshotAccount!,
+      new PrefixedMerkleWitness36(treasurySnapshotWitness!),
     );
   }, [proposalKey]);
 

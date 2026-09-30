@@ -1,3 +1,4 @@
+import { createTreasurySnapshot, applyTreasurySnapshot } from "../../../packages/sdk/test/utils/treasury-snapshot.js";
 import assert from "node:assert/strict";
 import test from "node:test";
 import { Bool, Field, Mina, PrivateKey, Signature, UInt32, UInt64 } from "o1js";
@@ -113,7 +114,10 @@ for (const signer of ["in-memory", "ledger"] as const) {
       [sender.toBase58(), owner.toPublicKey().toBase58()],
     ]);
     assert.equal(local.getAccount(sender).nonce.toBigint(), 2n);
+    const snapshot = await createTreasurySnapshot(owner.toPublicKey());
+    applyTreasurySnapshot(local, snapshot);
     const proposalResult = await service.createProposal({
+      ...snapshot,
       minaNodeUrl: "unused",
       senderPublicKey: sender,
       treasuryOwnerPublicKey: owner.toPublicKey(),

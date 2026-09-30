@@ -1,3 +1,5 @@
+import { createTreasurySnapshot, applyTreasurySnapshot } from "../../../sdk/test/utils/treasury-snapshot.js";
+import { Account } from "../../../sdk/src/provable/account.js";
 import assert from "node:assert/strict";
 import {
   assertServerProofMode,
@@ -194,6 +196,15 @@ async function main() {
   await incrementServerSlot(1);
   local.incrementGlobalSlot(1);
 
+  const snapshot = await createTreasurySnapshot(treasuryOwnerPublicKey);
+  applyTreasurySnapshot(local, snapshot);
+  const snapshotResponse = await fetch(`${minaBaseUrl}/admin/network-state`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ stakingEpochDataLedgerHash: snapshot.root.toString(), stakingEpochDataLedgerTotalCurrency: snapshot.treasuryOwnerAccount.balance.toString() }),
+  });
+  assert.equal(snapshotResponse.status, 200);
+
   const createProposalTx = await Mina.transaction(
     { sender: payerPublicKey },
     async () => {
@@ -211,6 +222,8 @@ async function main() {
           zkAppUri: ZkappUri.from("https://example.com/proposals/1"),
         },
         UInt32.from(0),
+        snapshot.treasuryOwnerAccount,
+        snapshot.treasuryOwnerAccountWitness,
       );
     },
   );
@@ -226,6 +239,8 @@ async function main() {
 
   console.log(
     `PROPOSAL_CREATED_RESULT:${JSON.stringify({
+      treasuryOwnerAccount: Account.toJSON(snapshot.treasuryOwnerAccount),
+      treasuryOwnerAccountWitness: snapshot.treasuryOwnerAccountWitness.toJSON(),
       treasuryOwnerPublicKey: treasuryOwnerPublicKey.toBase58(),
       multisigParticipants:
         TreasuryPauseControllerSmartContract.multisigParticipants.map((key) =>

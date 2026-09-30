@@ -1,12 +1,9 @@
 import { it } from "node:test";
 import assert from "node:assert";
 import { join } from "node:path";
-import { Mina, PrivateKey, PublicKey, UInt32 } from "o1js";
+import { Mina, PrivateKey, UInt32 } from "o1js";
 import { SqliteTreasuryOwnerService } from "../../src/services/sqlite/sqlite-treasury-owner-service.js";
 
-const LIGHTNET_SQLITE_DATA_DIRECTORY = join(
-  new URL("../../../cli/test/fixtures/.data/sqlite/", import.meta.url).pathname,
-);
 const TREASURY_OWNER_COMPILE_CACHE_DIRECTORY = join(
   new URL("../.data/cache/sqlite-treasury-owner-service", import.meta.url).pathname,
 );
@@ -40,34 +37,6 @@ it("supports compile with service-level progress logging", async () => {
   assert(compileResult.treasuryProposalVerificationKey);
   assert(compileResult.treasuryPauseControllerVerificationKey);
   assert(compileResult.treasuryOwnerVerificationKey);
-});
-
-it("extracts treasury-owner witness from sqlite staking ledger fixture", async () => {
-  const service = new SqliteTreasuryOwnerService();
-  const treasuryOwnerPublicKey = PublicKey.fromBase58(
-    "B62qr81JquSrKixS4x48fzCWmDHueZgqYmdyKp4kHsKnoXuzc8qcE9g",
-  );
-  const previousSqliteDataDirectory = process.env.SQLITE_DATA_DIRECTORY;
-  process.env.SQLITE_DATA_DIRECTORY = LIGHTNET_SQLITE_DATA_DIRECTORY;
-
-  try {
-    const {
-      treasuryOwnerAccount,
-      treasuryOwnerAccountWitness,
-    } = await service.getTreasuryOwnerProofInputsFromSqliteStakingLedger(
-      "0",
-      treasuryOwnerPublicKey,
-    );
-
-    assert(treasuryOwnerAccount.pk.equals(treasuryOwnerPublicKey).toBoolean());
-    assert(treasuryOwnerAccountWitness);
-  } finally {
-    if (previousSqliteDataDirectory === undefined) {
-      delete process.env.SQLITE_DATA_DIRECTORY;
-    } else {
-      process.env.SQLITE_DATA_DIRECTORY = previousSqliteDataDirectory;
-    }
-  }
 });
 
 it("determines current lifecycle period using Mina global slot", async () => {

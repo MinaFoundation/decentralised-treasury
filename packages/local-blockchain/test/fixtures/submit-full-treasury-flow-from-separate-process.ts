@@ -528,6 +528,8 @@ async function main() {
           zkAppUri: ZkappUri.from("https://example.com/proposals/full-flow"),
         },
         UInt32.from(0),
+        treasuryOwnerLedgerAccount,
+        await stakingLedger.getWitness(0n),
       );
     },
   );

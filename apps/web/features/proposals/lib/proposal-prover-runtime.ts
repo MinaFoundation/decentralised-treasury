@@ -15,6 +15,7 @@ import { createNetworkCompileState } from "@repo/sdk/src/utils/network-compile-s
 const MINA_DECIMALS = 1_000_000_000n;
 
 export interface PrepareCreateProposalTransactionInput {
+  apiUrl: string;
   minaNodeUrl: string;
   networkId?: string;
   treasuryOwnerContractAddress: string;
@@ -695,6 +696,14 @@ async function constructCreateProposalTransactionInCurrentThread(
   const treasuryOwnerPublicKey = PublicKey.fromBase58(
     input.treasuryOwnerContractAddress,
   );
+  const { fetchTreasuryOwnerProofInputs } =
+    await import("@repo/sdk/src/services/fetch-treasury-owner-proof-inputs.js");
+  const { treasuryOwnerAccount, treasuryOwnerAccountWitness } =
+    await fetchTreasuryOwnerProofInputs(
+      resolveProverEndpointUrl(input.apiUrl),
+      String(input.lifecycleId),
+      treasuryOwnerPublicKey,
+    );
   const proposalPrivateKey = PrivateKey.random();
   const proposalPublicKey = proposalPrivateKey.toPublicKey();
   const proposalAmount = UInt64.from(amountNanomina);
@@ -791,6 +800,8 @@ async function constructCreateProposalTransactionInCurrentThread(
           zkAppUri: ZkappUri.from(proposalArtifacts.proposalZkAppUri),
         },
         lifecycleId,
+        treasuryOwnerAccount,
+        treasuryOwnerAccountWitness,
       );
     },
   );

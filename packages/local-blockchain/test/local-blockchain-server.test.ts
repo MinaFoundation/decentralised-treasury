@@ -960,6 +960,8 @@ describe(suiteName, suiteOptions, () => {
       ) as {
         treasuryOwnerPublicKey: string;
         multisigParticipants: string[];
+        treasuryOwnerAccount: ReturnType<typeof Account.toJSON>;
+        treasuryOwnerAccountWitness: ReturnType<PrefixedMerkleWitness36["toJSON"]>;
       };
 
       Mina.setActiveInstance(Mina.Network(graphqlUrl));
@@ -1031,6 +1033,8 @@ describe(suiteName, suiteOptions, () => {
               zkAppUri: ZkappUri.from("https://example.com/local-ui-create"),
             },
             UInt32.from(0),
+            Account.fromJSON(payload.treasuryOwnerAccount),
+            PrefixedMerkleWitness36.fromJSON(payload.treasuryOwnerAccountWitness),
           );
         },
       );

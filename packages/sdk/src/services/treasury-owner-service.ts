@@ -53,6 +53,8 @@ export interface DeployTreasuryOwnerResult {
 }
 
 export interface CreateTreasuryProposalOptions {
+  treasuryOwnerAccount: Account;
+  treasuryOwnerAccountWitness: PrefixedMerkleWitness36;
   minaNodeUrl: string;
   senderPublicKey: PublicKey;
   treasuryOwnerPublicKey: PublicKey;

@@ -1,3 +1,4 @@
+import { fetchTreasuryOwnerProofInputs } from "@repo/sdk/src/services/fetch-treasury-owner-proof-inputs.js";
 import { Command, Option } from "commander";
 import { PrivateKey, PublicKey, TokenId, UInt32, UInt64 } from "o1js";
 import { assertMinimumProposalAmount } from "@repo/sdk/src/utils/proposal-amount.js";
@@ -177,7 +178,13 @@ export async function createProposal(
     lifecyclePeriodDuration: options.lifecyclePeriodDuration,
   });
 
+  const proofInputs = await fetchTreasuryOwnerProofInputs(
+    options.apiUrl,
+    options.proposalLifecycleId.toString(),
+    options.treasuryOwnerPublicKey,
+  );
   const result = await service.createProposal({
+    ...proofInputs,
     minaNodeUrl: options.minaNodeUrl,
     senderPublicKey: sender.publicKey,
     treasuryOwnerPublicKey: options.treasuryOwnerPublicKey,

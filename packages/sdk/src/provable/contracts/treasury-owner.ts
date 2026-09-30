@@ -10,13 +10,16 @@ import {
   Reducer,
   State,
   TokenContract,
+  TokenId,
   UInt32,
   UInt64,
   method,
   state,
 } from "o1js";
 import { provableLog } from "../../logging/logger.js";
-import { Account } from "../account.js";
+import { Account, packToFields } from "../account.js";
+import { hashWithPrefix } from "../hashing-helpers.js";
+import { accountHashPrefix, accountLedgerHashPrefixes } from "../../ledgers/staking-ledger/staking-ledger.js";
 import { PrefixedMerkleWitness36 } from "../merkle-tree/prefixed-merkle-tree.js";
 import {
   ActionStateHistory,
@@ -231,6 +234,8 @@ export class TreasuryOwnerSmartContract extends TokenContract {
     proposalPublicKey: PublicKey,
     proposal: Proposal,
     lifecycleId: UInt32,
+    treasuryOwnerAccount: Account,
+    treasuryOwnerAccountWitness: PrefixedMerkleWitness36,
   ) {
     provableLog("createProposal", { lifecycleId });
 
@@ -241,6 +246,28 @@ export class TreasuryOwnerSmartContract extends TokenContract {
 
     const { stakingEpochDataLedgerHash, stakingEpochDataLedgerTotalCurrency } =
       await this.snapshotStakingEpochData();
+    treasuryOwnerAccount.pk.equals(this.address).assertTrue(
+      "Treasury owner account public key does not match",
+    );
+    treasuryOwnerAccount.tokenId.assertEquals(
+      TokenId.default,
+      "Treasury owner account token id does not match",
+    );
+    treasuryOwnerAccount.balance.assertGreaterThan(
+      UInt64.zero,
+      "Treasury owner staking snapshot balance must be positive",
+    );
+    const treasuryOwnerAccountLeaf = hashWithPrefix(
+      accountHashPrefix,
+      packToFields(Account.toHashInput(treasuryOwnerAccount)),
+    );
+    treasuryOwnerAccountWitness.calculateRoot(
+      treasuryOwnerAccountLeaf,
+      accountLedgerHashPrefixes,
+    ).assertEquals(
+      stakingEpochDataLedgerHash,
+      "Treasury owner account witness does not match staking ledger hash",
+    );
     await this.requireLifecyclePeriod(LifecyclePeriod.PROPOSAL, lifecycleId);
     await this.requireNotPaused();
 

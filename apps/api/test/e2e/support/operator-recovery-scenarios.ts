@@ -174,41 +174,59 @@ export async function runOperatorRecoveryScenarios(
           `recovery-${stopped}.md`,
         );
         await writeFile(contentPath, contents);
-        const beforeCount = (await admin()).submittedTransactions;
+        const before = await protectedState();
+        const beforeEvents = (await events()).items;
+        const beforeCount = before.transactions;
         await services.stop(stopped);
-        const pending = stack
-          .cli([
-            "proposal",
-            "create",
-            "--api-url",
-            stack.treasuryApiUrl,
-            "--sender-private-key",
-            stack.proposer.privateKey,
-            "--treasury-owner-public-key",
-            stack.treasuryOwnerPublicKey,
-            "--proposal-private-key",
-            key.toBase58(),
-            "--proposal-lifecycle-id",
-            "0",
-            "--recipient-public-key",
-            stack.recipientPublicKey,
-            "--amount",
-            amount,
-            "--content-file",
-            contentPath,
-            "--lifecycle-period-duration",
-            "200",
-            "--fee",
-            "100000000",
-            "--wait",
-            "true",
-          ])
-          .then(
-            (output) => ({ output, error: null }),
-            (error: Error) => ({ output: null, error }),
-          );
+        const submit = () =>
+          stack
+            .cli([
+              "proposal",
+              "create",
+              "--api-url",
+              stack.treasuryApiUrl,
+              "--sender-private-key",
+              stack.proposer.privateKey,
+              "--treasury-owner-public-key",
+              stack.treasuryOwnerPublicKey,
+              "--proposal-private-key",
+              key.toBase58(),
+              "--proposal-lifecycle-id",
+              "0",
+              "--recipient-public-key",
+              stack.recipientPublicKey,
+              "--amount",
+              amount,
+              "--content-file",
+              contentPath,
+              "--lifecycle-period-duration",
+              "200",
+              "--fee",
+              "100000000",
+              "--wait",
+              "true",
+            ])
+            .then(
+              (output) => ({ output, error: null }),
+              (error: Error) => ({ output: null, error }),
+            );
+        let pending = submit();
         let restored = false;
         try {
+          if (stopped === "app-api") {
+            const rejected = await pending;
+            assert.ok(
+              rejected.error,
+              "Missing witness API must reject before submission",
+            );
+            assert.match(rejected.error.message, /fetch failed|ECONNREFUSED/iu);
+            assert.deepEqual(await protectedState(), before);
+            assert.deepEqual((await events()).items, beforeEvents);
+            services.start(stopped);
+            restored = true;
+            await waitForUrl(`${stack.treasuryApiUrl}/readyz`);
+            pending = submit();
+          }
           // Compilation can take minutes. Observe the same bounded command.
           const deadline =
             Date.now() +
@@ -239,18 +257,11 @@ export async function runOperatorRecoveryScenarios(
                 "Processor backlog",
               );
             }
-          } else {
-            const result = await pending;
-            assert.ok(
-              result.error,
-              "The stopped API must make content publication fail",
-            );
-            assert.match(result.error.message, /fetch failed|ECONNREFUSED/iu);
           }
-          services.start(stopped);
-          restored = true;
-          if (stopped === "app-api")
-            await waitForUrl(`${stack.treasuryApiUrl}/readyz`);
+          if (!restored) {
+            services.start(stopped);
+            restored = true;
+          }
           const page = await eventually(
             events,
             (page) =>
@@ -268,24 +279,14 @@ export async function runOperatorRecoveryScenarios(
           );
           assert.equal(created.length, 1);
           const txHash = created[0]!.txHash;
-          if (stopped === "app-api") {
-            await eventually(
-              () => projection(publicKey),
-              (value) => value.proposalPublicKey === publicKey,
-              "Projection before retry",
-            );
-            const retry = await postContent(publicKey, contents);
-            assert.equal(retry.status, 200);
-          } else {
-            const result = await pending;
-            assert.equal(result.error, null, result.error?.message);
-            const submitted = parseCliJson<{
-              proposalAddress: string;
-              proposalTxHash: string;
-            }>(result.output!, "proposalTxHash");
-            assert.equal(submitted.proposalAddress, publicKey);
-            assert.equal(submitted.proposalTxHash, txHash);
-          }
+          const result = await pending;
+          assert.equal(result.error, null, result.error?.message);
+          const submitted = parseCliJson<{
+            proposalAddress: string;
+            proposalTxHash: string;
+          }>(result.output!, "proposalTxHash");
+          assert.equal(submitted.proposalAddress, publicKey);
+          assert.equal(submitted.proposalTxHash, txHash);
           const proposal = { publicKey, contents, txHash, amount };
           await assertProjection(proposal);
           assert.deepEqual(
