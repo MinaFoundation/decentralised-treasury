@@ -244,7 +244,7 @@ releases:
           publicBaseUrl: https://{{ .Values.host }}
           publicEnv:
             NEXT_PUBLIC_SLOT_DURATION_MS: "90000"
-            NEXT_PUBLIC_NETWORK_ID: DEVNET
+            NEXT_PUBLIC_NETWORK_ID: devnet
 
         # The break-glass console. Served on its own hostname by the
         # in-cluster proxy, which is not cosmetic: the console talks to the
@@ -273,7 +273,7 @@ releases:
           enabled: true
           publicBaseUrl: https://{{ .Values.backofficeHost }}
           publicEnv:
-            NEXT_PUBLIC_NETWORK_ID: DEVNET
+            NEXT_PUBLIC_NETWORK_ID: devnet
           auth:
             mode: basic
             basic:

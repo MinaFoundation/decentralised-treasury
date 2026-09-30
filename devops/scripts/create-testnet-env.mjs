@@ -13,7 +13,15 @@ const DEFAULT_BROWSER_TREASURY_API_URL = "http://127.0.0.1:3100/api";
 const DEFAULT_BROWSER_INDEXER_API_URL = "http://127.0.0.1:3100/indexer";
 const DEFAULT_BROWSER_PROCESSOR_API_URL = "http://127.0.0.1:3100/processor";
 const DEFAULT_BROWSER_MINA_NODE_URL = "http://127.0.0.1:3100/mina/graphql";
-const DEFAULT_NETWORK_ID = "DEVNET";
+const DEFAULT_NETWORK = "devnet";
+
+function parseNetwork(value) {
+  const network = value.trim().toLowerCase();
+  if (network !== "mainnet" && network !== "devnet") {
+    throw new Error("Network must be mainnet or devnet.");
+  }
+  return network;
+}
 const BROWSER_PROVER_ENV_KEYS = [
   "NEXT_PUBLIC_VOTE_REDUCER_VERIFICATION_KEY_JSON",
   "NEXT_PUBLIC_STAKING_LEDGER_TO_VOTING_LEDGER_VERIFICATION_KEY_JSON",
@@ -97,7 +105,12 @@ function createProgram() {
       "--sender-private-key <key>",
       "Use an existing funded sender key instead of generating one",
     )
-    .option("--network-id <id>", "Browser network label", DEFAULT_NETWORK_ID)
+    .option(
+      "--network <network>",
+      "Mina network",
+      parseNetwork,
+      DEFAULT_NETWORK,
+    )
     .option(
       "--output <path>",
       "Runtime Compose env file path",
@@ -334,7 +347,7 @@ function buildWebEnvFile(options, roles, browserProverEnv = {}) {
     ),
     formatEnvLine("NEXT_PUBLIC_SLOT_DURATION_MS", options.slotDurationMs),
     formatEnvLine("NEXT_PUBLIC_PROOFS_ENABLED", options.proofsEnabled),
-    formatEnvLine("NEXT_PUBLIC_NETWORK_ID", options.networkId),
+    formatEnvLine("NEXT_PUBLIC_NETWORK_ID", options.network),
     ...formatBrowserProverEnvLines(browserProverEnv),
   ];
 
@@ -349,7 +362,7 @@ function buildLocalBlockchainEnvFile(options) {
     formatEnvLine("MINA_ARCHIVE_PORT", "8282"),
     formatEnvLine("MINA_NODE_HOST", "127.0.0.1"),
     formatEnvLine("PROOFS_ENABLED", options.proofsEnabled),
-    formatEnvLine("MINA_NETWORK_ID", options.networkId),
+    formatEnvLine("NETWORK", options.network),
   ];
 
   return `${lines.join("\n")}\n`;

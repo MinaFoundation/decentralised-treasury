@@ -421,8 +421,8 @@ function ledgerTransactionArgs(
   return [
     "--mina-node-url",
     minaNodeUrl,
-    "--network-id",
-    "testnet",
+    "--network",
+    "devnet",
     "--signer",
     "ledger",
     "--sender-public-key",
@@ -475,7 +475,7 @@ test("selected signature-producing CLI commands work with a physical Ledger on t
   const archiveNodeUrl = `http://127.0.0.1:${archivePort}/graphql`;
   const commonEnv = {
     MINA_NODE_URL: minaNodeUrl,
-    MINA_NETWORK_ID: "testnet",
+    NETWORK: "devnet",
     PROOFS_ENABLED: "false",
     SQLITE_DATA_DIRECTORY: sqliteDirectory,
   };
@@ -546,8 +546,8 @@ test("selected signature-producing CLI commands work with a physical Ledger on t
         "transfer",
         "--signer",
         "in-memory",
-        "--network-id",
-        "testnet",
+        "--network",
+        "devnet",
         "--mina-node-url",
         minaNodeUrl,
         "--sender-private-key",
@@ -569,8 +569,8 @@ test("selected signature-producing CLI commands work with a physical Ledger on t
         "transfer",
         "--signer",
         "in-memory",
-        "--network-id",
-        "testnet",
+        "--network",
+        "devnet",
         "--mina-node-url",
         minaNodeUrl,
         "--sender-private-key",

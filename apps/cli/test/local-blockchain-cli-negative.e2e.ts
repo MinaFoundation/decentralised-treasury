@@ -573,7 +573,7 @@ test(
     const archiveNodeUrl = `http://127.0.0.1:${archivePort}/graphql`;
     const commonEnv = {
       MINA_NODE_URL: minaNodeUrl,
-      MINA_NETWORK_ID: "testnet",
+      NETWORK: "devnet",
       PROOFS_ENABLED: PROOFS_ENABLED_VALUE,
       SQLITE_DATA_DIRECTORY: sqliteDirectory,
       TS_NODE_PROJECT: CLI_TS_NODE_PROJECT,
@@ -1521,14 +1521,13 @@ test(
           ]);
 
           const service = new SqliteTreasuryOwnerService();
+          configureMinaNetwork(minaNodeUrl, "devnet");
           await service.compile({
             proofsEnabled: PROOFS_ENABLED,
             lifecyclePeriodDuration: UInt32.from(LIFECYCLE_PERIOD_DURATION),
             cachePath: join(commandDirectory, "cache"),
           });
           assert.equal(VoteReducer.proofsEnabled, PROOFS_ENABLED);
-          configureMinaNetwork(minaNodeUrl, "testnet");
-
           const originalVerify = await VoteReducer.verify(originalProgramProof);
           const donorVerify = await VoteReducer.verify(donorProgramProof);
           const alteredVerify = await VoteReducer.verify(alteredProgramProof);

@@ -5,13 +5,14 @@ import {
   StakingLedgerToVotingLedgerProgramOutput,
 } from "../../provable/staking-ledger-to-voting-ledger.js";
 import { Task } from "../task-queue.js";
-import { Proof, Cache, JsonProof } from "o1js";
+import { Proof, JsonProof } from "o1js";
 import { logger, provableLog, time, timeEnd } from "../../logging/logger.js";
 
 import { StakingLedgerToVotingLedgerDigestTrace } from "../tracing/staking-ledger-to-voting-ledger-tracer.js";
 import { readdirSync } from "node:fs";
 import { ReplayableStakingLedger } from "../../ledgers/staking-ledger/replayable-staking-ledger.js";
 import { ReplayableVotingLedger } from "../../ledgers/voting-ledger/replayable-voting-ledger.js";
+import { configureProvingNetwork } from "../proving-network.js";
 
 export interface StakingLedgerToVotingLedgerDigestTaskInput {
   trace: StakingLedgerToVotingLedgerDigestTrace;
@@ -35,8 +36,10 @@ export const StakingLedgerToVotingLedgerDigestTask: Task<
   public static taskName = "staking-ledger-to-voting-ledger-digest";
 
   public static async prepare() {
+    const { network, cache } = configureProvingNetwork();
     logger.info("compiling staking ledger to voting ledger", {
       proofsEnabled,
+      network,
     });
 
     stakingLedgerToVotingLedgerContext.set({
@@ -47,7 +50,7 @@ export const StakingLedgerToVotingLedgerDigestTask: Task<
     time("compile", "info");
     await StakingLedgerToVotingLedger.compile({
       proofsEnabled,
-      cache: Cache.FileSystem(`${process.cwd()}/cache`),
+      cache,
     });
     timeEnd("compile", "info");
   }

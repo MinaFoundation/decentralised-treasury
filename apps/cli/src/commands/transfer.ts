@@ -10,8 +10,8 @@ import {
 import { parseBooleanOption, parseIntOption } from "./option-parsers.js";
 import {
   configureMinaNetwork,
-  minaNetworkIdOption,
-  type MinaNetworkId,
+  minaNetworkOption,
+  type TreasuryNetwork,
 } from "./mina-instance.js";
 import {
   configureSigningOptions,
@@ -30,7 +30,7 @@ function parsePublicKey(value: string): PublicKey {
 
 interface TransferCommandOptions {
   minaNodeUrl: string;
-  networkId: MinaNetworkId;
+  network: TreasuryNetwork;
   signer: SignerMode;
   senderPrivateKey?: PrivateKey;
   senderPublicKey?: PublicKey;
@@ -90,11 +90,11 @@ export async function transfer(options: TransferCommandOptions): Promise<void> {
   });
   const transactionSigner = createTransactionSigner(
     [sender, funding],
-    options.networkId,
+    options.network,
   );
   const senderPublicKey = sender.publicKey;
   const fundingPublicKey = funding.publicKey;
-  configureMinaNetwork(options.minaNodeUrl, options.networkId);
+  configureMinaNetwork(options.minaNodeUrl, options.network);
   const [senderSnapshot, fundingSnapshot, recipientSnapshot] =
     await Promise.all([
       readAccountSnapshot(senderPublicKey),
@@ -190,7 +190,7 @@ export default function transferCommandFactory(program: Command) {
         .env("MINA_NODE_URL")
         .default("http://127.0.0.1:8080/graphql"),
     )
-    .addOption(minaNetworkIdOption())
+    .addOption(minaNetworkOption())
     .addOption(
       new Option(
         "--sender-private-key <sender-private-key>",

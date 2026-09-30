@@ -10,6 +10,7 @@ import {
   BOND_AMOUNT_DIVISOR,
   parseProposalAmountMinaToNanomina as parseCreateProposalAmount,
 } from "@repo/sdk/src/utils/proposal-amount.js";
+import { createNetworkCompileState } from "@repo/sdk/src/utils/network-compile-state.js";
 
 const MINA_DECIMALS = 1_000_000_000n;
 
@@ -97,6 +98,7 @@ export interface PreparedExecuteProposalTransaction {
 }
 
 export interface SerializedProposalCompileArtifacts {
+  network: "mainnet" | "devnet";
   lifecyclePeriodDuration: string;
   voteReducerVerificationKeyJson: string;
   stakingLedgerToVotingLedgerVerificationKeyJson: string;
@@ -107,6 +109,8 @@ export interface SerializedProposalCompileArtifacts {
 
 interface ProposalProverOptions {
   proofsEnabled?: boolean;
+  network?: string;
+  minaNodeUrl?: string;
 }
 
 function getRuntimeOrigin(): string | undefined {
@@ -245,8 +249,7 @@ function assertProofsPresent(label: string, transactionJson: string): void {
   );
 }
 
-let compileContractsPromise: Promise<void> | null = null;
-let compileContractsProofsEnabled: boolean | null = null;
+const compileContracts = createNetworkCompileState();
 let compiledProposalCompileArtifacts: SerializedProposalCompileArtifacts | null =
   null;
 
@@ -337,6 +340,7 @@ function getConfiguredProposalCompileArtifacts(): SerializedProposalCompileArtif
   const configuredEmptyVotingLedgerRoot = emptyVotingLedgerRoot as string;
 
   return {
+    network: resolveMinaNetworkId(runtimeConfig.networkId),
     lifecyclePeriodDuration: configuredLifecyclePeriodDuration,
     voteReducerVerificationKeyJson: configuredVoteReducerVerificationKeyJson,
     stakingLedgerToVotingLedgerVerificationKeyJson:
@@ -398,55 +402,75 @@ export async function getProposalModules(): Promise<{
   };
 }
 
+async function configureProposalNetwork(
+  minaNodeUrl: string,
+  networkValue: string,
+  proofsEnabled: boolean,
+): Promise<"mainnet" | "devnet"> {
+  const network = resolveMinaNetworkId(networkValue);
+  const { o1js } = await getProposalModules();
+  const instance = o1js.Mina.Network({
+    mina: resolveProverEndpointUrl(minaNodeUrl),
+    networkId: network,
+  });
+  instance.proofsEnabled = proofsEnabled;
+  o1js.Mina.setActiveInstance(instance);
+  return network;
+}
+
 export async function compileProposalContractsInCurrentThread(
   options?: ProposalProverOptions,
 ): Promise<void> {
   const proofsEnabled = options?.proofsEnabled ?? true;
-  if (
-    !compileContractsPromise ||
-    compileContractsProofsEnabled !== proofsEnabled
-  ) {
-    compileContractsPromise = (async () => {
-      const configuredArtifacts = getConfiguredProposalCompileArtifacts();
-      const {
-        o1js,
-        TreasuryOwnerSmartContract,
-        TreasuryPauseControllerSmartContract,
-        TreasuryProposalSmartContract,
-        MULTISIG_PARTICIPANTS_COUNT,
-      } = await getProposalModules();
-      const { UInt32, VerificationKey } = o1js;
-      await applySerializedProposalCompileArtifactsInCurrentThread(
-        configuredArtifacts,
-      );
-      TreasuryOwnerSmartContract.lifecyclePeriodDuration = UInt32.from(
-        configuredArtifacts.lifecyclePeriodDuration,
-      );
-      TreasuryPauseControllerSmartContract.multisigParticipants = Array.from(
-        { length: MULTISIG_PARTICIPANTS_COUNT },
-        () => o1js.PublicKey.empty(),
-      );
-      const { verificationKey: treasuryProposalVerificationKey } =
-        await TreasuryProposalSmartContract.compile();
-      TreasuryOwnerSmartContract.proposalContractVerificationKey =
-        treasuryProposalVerificationKey;
-      await TreasuryPauseControllerSmartContract.compile();
-      await TreasuryOwnerSmartContract.compile();
-      compiledProposalCompileArtifacts = {
-        ...configuredArtifacts,
-        treasuryProposalVerificationKeyJson: JSON.stringify(
-          VerificationKey.toJSON(treasuryProposalVerificationKey),
-        ),
-      };
-    })();
-    compileContractsProofsEnabled = proofsEnabled;
-  }
-
-  await compileContractsPromise;
+  const runtimeConfig = getRuntimeConfig();
+  const network = resolveMinaNetworkId(
+    options?.network ?? runtimeConfig.networkId,
+  );
+  const compileKey = `${network}:${String(proofsEnabled)}`;
+  await compileContracts.run(compileKey, async () => {
+    const configuredArtifacts = getConfiguredProposalCompileArtifacts();
+    const {
+      o1js,
+      TreasuryOwnerSmartContract,
+      TreasuryPauseControllerSmartContract,
+      TreasuryProposalSmartContract,
+      MULTISIG_PARTICIPANTS_COUNT,
+    } = await getProposalModules();
+    const { UInt32, VerificationKey } = o1js;
+    await configureProposalNetwork(
+      options?.minaNodeUrl ?? runtimeConfig.minaNodeUrl,
+      network,
+      proofsEnabled,
+    );
+    await applySerializedProposalCompileArtifactsInCurrentThread(
+      configuredArtifacts,
+    );
+    TreasuryOwnerSmartContract.lifecyclePeriodDuration = UInt32.from(
+      configuredArtifacts.lifecyclePeriodDuration,
+    );
+    TreasuryPauseControllerSmartContract.multisigParticipants = Array.from(
+      { length: MULTISIG_PARTICIPANTS_COUNT },
+      () => o1js.PublicKey.empty(),
+    );
+    const { verificationKey: treasuryProposalVerificationKey } =
+      await TreasuryProposalSmartContract.compile();
+    TreasuryOwnerSmartContract.proposalContractVerificationKey =
+      treasuryProposalVerificationKey;
+    await TreasuryPauseControllerSmartContract.compile();
+    await TreasuryOwnerSmartContract.compile();
+    compiledProposalCompileArtifacts = {
+      ...configuredArtifacts,
+      treasuryProposalVerificationKeyJson: JSON.stringify(
+        VerificationKey.toJSON(treasuryProposalVerificationKey),
+      ),
+    };
+  });
 }
 
 export async function serializeProposalCompileArtifactsInCurrentThread(options?: {
   proofsEnabled?: boolean;
+  network?: string;
+  minaNodeUrl?: string;
 }): Promise<SerializedProposalCompileArtifacts> {
   await compileProposalContractsInCurrentThread(options);
   return (
@@ -460,6 +484,12 @@ export async function applySerializedProposalCompileArtifactsInCurrentThread(
   const { o1js, TreasuryOwnerSmartContract, TreasuryProposalSmartContract } =
     await getProposalModules();
   const { Field, UInt32, VerificationKey } = o1js;
+  const activeNetwork = String(o1js.Mina.getNetworkId());
+  if (artifacts.network !== activeNetwork) {
+    throw new Error(
+      `Proposal compile artifacts target ${artifacts.network}, but the active network is ${activeNetwork}.`,
+    );
+  }
   const voteReducerVerificationKey = VerificationKey.fromJSON(
     parseJsonStringValue(artifacts.voteReducerVerificationKeyJson),
   );
@@ -619,6 +649,14 @@ async function constructCreateProposalTransactionInCurrentThread(
   const amountNanomina = parseCreateProposalAmount(input.amount);
   assertMinimumProposalAmount(amountNanomina);
   const startedAt = Date.now();
+  const runtimeConfig = getRuntimeConfig();
+  const proofsEnabled =
+    options?.proofsEnabled ?? resolveProofsEnabled(runtimeConfig.proofsEnabled);
+  const network = await configureProposalNetwork(
+    input.minaNodeUrl,
+    input.networkId ?? runtimeConfig.networkId,
+    proofsEnabled,
+  );
   if (options?.compileArtifacts) {
     console.info("[proposal-prover][create] applying cached compile artifacts");
     await applySerializedProposalCompileArtifactsInCurrentThread(
@@ -629,7 +667,9 @@ async function constructCreateProposalTransactionInCurrentThread(
       "[proposal-prover][create] compile artifacts missing, compiling in current thread",
     );
     await compileProposalContractsInCurrentThread({
-      proofsEnabled: options?.proofsEnabled,
+      proofsEnabled,
+      network,
+      minaNodeUrl: input.minaNodeUrl,
     });
   }
   const modulesReadyAt = Date.now();
@@ -671,13 +711,6 @@ async function constructCreateProposalTransactionInCurrentThread(
     zkAppUriHash: proposalArtifacts.zkAppUriHash,
     elapsedMs: artifactsReadyAt - startedAt,
   });
-
-  Mina.setActiveInstance(
-    Mina.Network({
-      mina: resolveProverEndpointUrl(input.minaNodeUrl),
-      networkId: resolveMinaNetworkId(input.networkId ?? "DEVNET"),
-    }),
-  );
 
   console.info("[proposal-prover][create] fetch sender account start", {
     senderAddress: senderPublicKeyBase58,
@@ -845,13 +878,23 @@ async function constructVoteProposalTransactionInCurrentThread(
     compileArtifacts?: SerializedProposalCompileArtifacts;
   },
 ): Promise<ConstructedVoteProposalTransaction> {
+  const runtimeConfig = getRuntimeConfig();
+  const proofsEnabled =
+    options?.proofsEnabled ?? resolveProofsEnabled(runtimeConfig.proofsEnabled);
+  const network = await configureProposalNetwork(
+    input.minaNodeUrl,
+    input.networkId ?? runtimeConfig.networkId,
+    proofsEnabled,
+  );
   if (options?.compileArtifacts) {
     await applySerializedProposalCompileArtifactsInCurrentThread(
       options.compileArtifacts,
     );
   } else {
     await compileProposalContractsInCurrentThread({
-      proofsEnabled: options?.proofsEnabled,
+      proofsEnabled,
+      network,
+      minaNodeUrl: input.minaNodeUrl,
     });
   }
 
@@ -863,13 +906,6 @@ async function constructVoteProposalTransactionInCurrentThread(
   );
   const proposalPublicKey = PublicKey.fromBase58(input.proposalPublicKey);
   const feeNanomina = Number(parseDecimalMinaToNanomina(input.fee));
-
-  Mina.setActiveInstance(
-    Mina.Network({
-      mina: resolveProverEndpointUrl(input.minaNodeUrl),
-      networkId: resolveMinaNetworkId(input.networkId ?? "DEVNET"),
-    }),
-  );
 
   const treasuryOwner = new TreasuryOwnerSmartContract(treasuryOwnerPublicKey);
   const proposalTokenId = treasuryOwner.deriveTokenId();
@@ -1000,13 +1036,23 @@ async function constructExecuteProposalTransactionInCurrentThread(
     compileArtifacts?: SerializedProposalCompileArtifacts;
   },
 ): Promise<ConstructedExecuteProposalTransaction> {
+  const runtimeConfig = getRuntimeConfig();
+  const proofsEnabled =
+    options?.proofsEnabled ?? resolveProofsEnabled(runtimeConfig.proofsEnabled);
+  const network = await configureProposalNetwork(
+    input.minaNodeUrl,
+    input.networkId ?? runtimeConfig.networkId,
+    proofsEnabled,
+  );
   if (options?.compileArtifacts) {
     await applySerializedProposalCompileArtifactsInCurrentThread(
       options.compileArtifacts,
     );
   } else {
     await compileProposalContractsInCurrentThread({
-      proofsEnabled: options?.proofsEnabled,
+      proofsEnabled,
+      network,
+      minaNodeUrl: input.minaNodeUrl,
     });
   }
 
@@ -1023,13 +1069,6 @@ async function constructExecuteProposalTransactionInCurrentThread(
     parseProposalAmountMinaToNanomina(input.amount),
   );
   const feeNanomina = Number(parseDecimalMinaToNanomina(input.fee));
-
-  Mina.setActiveInstance(
-    Mina.Network({
-      mina: resolveProverEndpointUrl(input.minaNodeUrl),
-      networkId: resolveMinaNetworkId(input.networkId ?? "DEVNET"),
-    }),
-  );
 
   const treasuryOwner = new TreasuryOwnerSmartContract(treasuryOwnerPublicKey);
   const proposalTokenId = treasuryOwner.deriveTokenId();
@@ -1137,7 +1176,12 @@ export async function proveTransactionJsonInCurrentThread(
     rawValue: getRuntimeConfig().proofsEnabled,
     resolved: proofsEnabled,
   });
-  await compileProposalContractsInCurrentThread({ proofsEnabled });
+  const runtimeConfig = getRuntimeConfig();
+  await compileProposalContractsInCurrentThread({
+    proofsEnabled,
+    network: runtimeConfig.networkId,
+    minaNodeUrl: runtimeConfig.minaNodeUrl,
+  });
   try {
     const { o1js } = await getProposalModules();
     o1js.Mina.activeInstance.proofsEnabled = proofsEnabled;

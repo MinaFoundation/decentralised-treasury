@@ -111,7 +111,7 @@ export async function startLocalTreasuryStack(
     PROOFS_ENABLED: mode,
     NODE_NO_WARNINGS: "1",
     SQLITE_DATA_DIRECTORY: join(artifactDirectory, "sqlite"),
-    MINA_NETWORK_ID: "devnet",
+    NETWORK: "devnet",
   };
   await mkdir(env.SQLITE_DATA_DIRECTORY!, { recursive: true });
 

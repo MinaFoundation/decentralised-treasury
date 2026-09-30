@@ -2,6 +2,7 @@
 
 import { installRuntimeConfig } from "../../runtime-config/lib/install-runtime-config";
 import type { TreasuryRuntimeConfig } from "../../runtime-config/lib/runtime-config.types";
+import { resolveTreasuryNetwork } from "@repo/sdk/src/utils/mina-network.js";
 import type { SerializedProposalCompileArtifacts } from "../lib/proposal-prover-runtime";
 import type {
   ProposalProverWorkerRequest,
@@ -12,7 +13,7 @@ import type {
 type ProposalProverRuntime = typeof import("../lib/proposal-prover-runtime");
 
 let compileArtifacts: SerializedProposalCompileArtifacts | null = null;
-let compileProofsEnabled: boolean | null = null;
+let compileKey: string | null = null;
 let status: ProposalProverWorkerStatus = {
   ready: false,
   phase: "idle",
@@ -81,8 +82,11 @@ function getErrorMessage(
 
 async function ensureCompiled(
   proofsEnabled: boolean,
+  runtimeConfig: TreasuryRuntimeConfig,
 ): Promise<SerializedProposalCompileArtifacts> {
-  if (compileArtifacts && compileProofsEnabled === proofsEnabled) {
+  const network = resolveTreasuryNetwork(runtimeConfig.networkId);
+  const nextCompileKey = `${network}:${String(proofsEnabled)}`;
+  if (compileArtifacts && compileKey === nextCompileKey) {
     console.info("[proposal-prover][worker] reusing compile artifacts", {
       proofsEnabled,
     });
@@ -93,6 +97,8 @@ async function ensureCompiled(
     };
     return compileArtifacts;
   }
+  compileArtifacts = null;
+  compileKey = null;
 
   status = {
     ready: false,
@@ -107,8 +113,10 @@ async function ensureCompiled(
     await getProposalProverRuntime();
   compileArtifacts = await serializeProposalCompileArtifactsInCurrentThread({
     proofsEnabled,
+    network,
+    minaNodeUrl: runtimeConfig.minaNodeUrl,
   });
-  compileProofsEnabled = proofsEnabled;
+  compileKey = nextCompileKey;
   console.info("[proposal-prover][worker] compile complete", {
     proofsEnabled,
     compileArtifactKeys: Object.keys(compileArtifacts ?? {}),
@@ -175,7 +183,10 @@ self.onmessage = async (event: MessageEvent<ProposalProverWorkerRequest>) => {
     }
 
     if (message.type === "compile") {
-      const nextArtifacts = await ensureCompiled(message.proofsEnabled);
+      const nextArtifacts = await ensureCompiled(
+        message.proofsEnabled,
+        message.runtimeConfig,
+      );
       postResponse({
         id: message.id,
         ok: true,
@@ -187,7 +198,10 @@ self.onmessage = async (event: MessageEvent<ProposalProverWorkerRequest>) => {
 
     if (message.type === "buildAndProveCreateProposal") {
       const createStartedAt = Date.now();
-      const nextCompileArtifacts = await ensureCompiled(message.proofsEnabled);
+      const nextCompileArtifacts = await ensureCompiled(
+        message.proofsEnabled,
+        message.runtimeConfig,
+      );
       console.info("[proposal-prover][worker] create compile artifacts ready", {
         id: message.id,
         elapsedMs: Date.now() - createStartedAt,
@@ -244,7 +258,10 @@ self.onmessage = async (event: MessageEvent<ProposalProverWorkerRequest>) => {
     }
 
     if (message.type === "buildAndProveVoteProposal") {
-      const nextCompileArtifacts = await ensureCompiled(message.proofsEnabled);
+      const nextCompileArtifacts = await ensureCompiled(
+        message.proofsEnabled,
+        message.runtimeConfig,
+      );
       status = {
         ready: true,
         phase: "proving",
@@ -288,7 +305,10 @@ self.onmessage = async (event: MessageEvent<ProposalProverWorkerRequest>) => {
     }
 
     if (message.type === "buildAndProveExecuteProposal") {
-      const nextCompileArtifacts = await ensureCompiled(message.proofsEnabled);
+      const nextCompileArtifacts = await ensureCompiled(
+        message.proofsEnabled,
+        message.runtimeConfig,
+      );
       status = {
         ready: true,
         phase: "proving",
@@ -331,7 +351,7 @@ self.onmessage = async (event: MessageEvent<ProposalProverWorkerRequest>) => {
       return;
     }
 
-    await ensureCompiled(message.proofsEnabled);
+    await ensureCompiled(message.proofsEnabled, message.runtimeConfig);
     status = {
       ready: true,
       phase: "proving",

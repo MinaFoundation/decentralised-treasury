@@ -445,7 +445,7 @@ function buildLocalBlockchainEnv() {
     MINA_NODE_HOST: "0.0.0.0",
     MINA_NODE_PORT: String(parseHostPort("MINA_NODE_PORT", "8080")),
     MINA_ARCHIVE_PORT: String(parseHostPort("MINA_ARCHIVE_PORT", "8282")),
-    MINA_NETWORK_ID: "LOCALNET",
+    NETWORK: "LOCALNET",
     PROOFS_ENABLED: PROOF_MODE,
   };
 }
@@ -577,7 +577,7 @@ function runCli(args, env = {}, options = {}) {
       cwd: CLI_WORK_DIRECTORY,
       env: {
         MINA_NODE_URL: minaNodeUrl,
-        MINA_NETWORK_ID: SIGNING_NETWORK_ID,
+        NETWORK: SIGNING_NETWORK_ID,
         PROOFS_ENABLED: PROOF_MODE,
         SQLITE_DATA_DIRECTORY,
         TS_NODE_PROJECT: CLI_TYPESCRIPT_PROJECT,
@@ -1428,7 +1428,7 @@ async function withCliProvingWorker(label, callback) {
       env: {
         ...process.env,
         MINA_NODE_URL: minaNodeUrl,
-        MINA_NETWORK_ID: SIGNING_NETWORK_ID,
+        NETWORK: SIGNING_NETWORK_ID,
         PROOFS_ENABLED: PROOF_MODE,
         SQLITE_DATA_DIRECTORY,
         TS_NODE_PROJECT: CLI_TYPESCRIPT_PROJECT,

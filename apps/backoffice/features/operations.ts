@@ -1,4 +1,5 @@
 import type { BackofficeRuntimeConfig } from "./runtime-config";
+import { resolveTreasuryNetwork } from "@repo/sdk/src/utils/mina-network.js";
 
 export const PARTICIPANT_COUNT = 5;
 export const REQUIRED_SIGNATURE_COUNT = 3;
@@ -390,10 +391,7 @@ export async function fetchTreasuryStatus(
     import("@repo/sdk/src/provable/contracts/treasury-pause-controller/treasury-pause-controller.js"),
   ]);
   const { Mina, PublicKey, fetchAccount } = o1js;
-  const networkId = config.networkId.toLowerCase() as
-    | "mainnet"
-    | "testnet"
-    | "devnet";
+  const networkId = resolveTreasuryNetwork(config.networkId);
   const nodeUrl = resolveEndpointUrl(config.minaNodeUrl);
   Mina.setActiveInstance(
     Mina.Network({
@@ -524,10 +522,7 @@ export async function fetchProposalStatus(
     import("@repo/sdk/src/provable/contracts/treasury-proposal/treasury-proposal.js"),
   ]);
   const { Mina, PublicKey, fetchAccount } = o1js;
-  const networkId = config.networkId.toLowerCase() as
-    | "mainnet"
-    | "testnet"
-    | "devnet";
+  const networkId = resolveTreasuryNetwork(config.networkId);
   Mina.setActiveInstance(
     Mina.Network({
       mina: resolveEndpointUrl(config.minaNodeUrl),

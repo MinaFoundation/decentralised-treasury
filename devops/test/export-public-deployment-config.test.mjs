@@ -39,7 +39,7 @@ function fixture() {
     accountQuery: {
       accessPermission: "proofOrSignature",
       databaseUrl: "postgres://operator:do-not-export@db/treasury",
-      networkId: "testnet",
+      networkId: "devnet",
       nonce: "44",
       password: "account-query-password",
       pauseControllerAddress,
@@ -93,7 +93,7 @@ function fixture() {
       buildIdentity: "treasury-images@sha256:build-identity",
       lifecyclePeriodDuration: "7140",
       multisigParticipantsPublicKeys: participants,
-      networkId: "testnet",
+      networkId: "devnet",
       password: "intended-password",
       pauseControllerAddress,
       policyConstants: {
@@ -185,7 +185,7 @@ test("happy path writes the default deployment record and SHA-256 digest", async
     assert.equal(commandResult.outputPath, await realpath(expectedOutput));
 
     const record = JSON.parse(await readFile(expectedOutput, "utf8"));
-    assert.equal(record.publicConfiguration.networkId, "testnet");
+    assert.equal(record.publicConfiguration.networkId, "devnet");
     assert.equal(
       record.publicConfiguration.comparisons.networkId.matches,
       true,
@@ -205,11 +205,21 @@ test("happy path writes the default deployment record and SHA-256 digest", async
 
 test("a mismatch between intended data and the MINA account query is rejected", () => {
   const input = fixture();
-  input.accountQuery.networkId = "devnet";
+  input.accountQuery.networkId = "mainnet";
 
   assert.throws(
     () => buildPublicDeploymentRecord(input),
     /networkId in accountQuery mismatch/,
+  );
+});
+
+test("unsupported public network IDs are rejected", () => {
+  const input = fixture();
+  input.intended.networkId = "testnet";
+
+  assert.throws(
+    () => buildPublicDeploymentRecord(input),
+    /intended\.networkId must be mainnet or devnet/,
   );
 });
 

@@ -14,7 +14,7 @@ import type { OperationPackage, TreasuryStatus } from "./operations";
 const participants = ["key-1", "key-2", "key-3", "key-4", "key-5"];
 
 const status: TreasuryStatus = {
-  networkId: "testnet",
+  networkId: "devnet",
   treasuryOwnerAddress: "owner",
   pauseControllerAddress: "controller",
   treasuryBalance: "1000000000",
@@ -30,7 +30,7 @@ const status: TreasuryStatus = {
 const operation: OperationPackage = {
   schemaVersion: 1,
   kind: "pauseTreasury",
-  networkId: "testnet",
+  networkId: "devnet",
   treasuryOwnerAddress: "owner",
   pauseControllerAddress: "controller",
   controllerNonce: "2",

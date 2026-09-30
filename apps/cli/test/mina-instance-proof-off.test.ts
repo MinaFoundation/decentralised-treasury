@@ -89,7 +89,7 @@ test(
       const contractKey = PrivateKey.random();
       const contract = new ProofOffContract(contractKey.toPublicKey());
       process.env.PROOFS_ENABLED = "false";
-      configureMinaNetwork(`${baseUrl}/graphql`, "testnet");
+      configureMinaNetwork(`${baseUrl}/graphql`, "devnet");
 
       // No contract compilation occurs. Both deployment signatures must survive
       // the adapter, or the simulator rejects this transaction.

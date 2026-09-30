@@ -35,6 +35,8 @@ import {
   type UnpauseTreasuryResult,
 } from "../pause-controller-service.js";
 import { logger } from "../../index.js";
+import { minaNetworkCacheKey } from "../../utils/mina-network.js";
+import { join } from "node:path";
 
 export class SqlitePauseControllerService implements PauseControllerService {
   private seedParticipantsForCompile() {
@@ -53,7 +55,8 @@ export class SqlitePauseControllerService implements PauseControllerService {
   public async compile(
     options: CompilePauseControllerOptions = {},
   ): Promise<CompilePauseControllerResult> {
-    const cachePath = options.cachePath ?? `${process.cwd()}/cache`;
+    const cacheRoot = options.cachePath ?? `${process.cwd()}/cache`;
+    const cachePath = join(cacheRoot, minaNetworkCacheKey(Mina.getNetworkId()));
     const cache = Cache.FileSystem(cachePath);
     this.seedParticipantsForCompile();
     const { verificationKey: pauseControllerVerificationKey } =

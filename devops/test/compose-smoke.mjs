@@ -107,7 +107,7 @@ function startLocalBlockchain() {
     MINA_NODE_HOST: "0.0.0.0",
     MINA_NODE_PORT: String(parseHostPort("MINA_NODE_PORT", "8080")),
     MINA_ARCHIVE_PORT: String(parseHostPort("MINA_ARCHIVE_PORT", "8282")),
-    MINA_NETWORK_ID: "LOCALNET",
+    NETWORK: "LOCALNET",
     PROOFS_ENABLED: "false",
   };
 

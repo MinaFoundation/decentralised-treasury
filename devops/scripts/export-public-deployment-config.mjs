@@ -9,7 +9,7 @@ const UINT32_MAX = 4_294_967_295n;
 const MINA_PUBLIC_KEY = /^B62[1-9A-HJ-NP-Za-km-z]{52}$/;
 const DEPLOYMENT_ID = /^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$/;
 const WITHDRAWAL_PERMISSIONS = new Set(["proof", "proofOrSignature"]);
-const NETWORK_IDS = new Set(["mainnet", "devnet", "testnet"]);
+const NETWORK_IDS = new Set(["mainnet", "devnet"]);
 
 function usage() {
   return [
@@ -96,7 +96,7 @@ function requireString(value, path) {
 function requireNetworkId(value, path) {
   const networkId = requireString(value, path);
   if (!NETWORK_IDS.has(networkId)) {
-    throw new Error(`${path} must be mainnet, devnet, or testnet`);
+    throw new Error(`${path} must be mainnet or devnet`);
   }
   return networkId;
 }

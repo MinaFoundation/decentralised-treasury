@@ -127,8 +127,8 @@ test("every signature-producing CLI command exposes explicit Ledger indices", ()
     assert.ok(optionNames.has("signer"), `${expectation.path} lacks --signer`);
     if (!expectation.path.startsWith("multisig-sign ")) {
       assert.ok(
-        optionNames.has("networkId"),
-        `${expectation.path} lacks --network-id`,
+        optionNames.has("network"),
+        `${expectation.path} lacks --network`,
       );
     }
     for (const option of expectation.ledgerIndexOptions) {

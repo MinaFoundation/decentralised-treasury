@@ -74,6 +74,8 @@ import { PrefixedMerkleWitness36 } from "../../provable/merkle-tree/prefixed-mer
 import { Vote } from "../../provable/contracts/treasury-proposal/vote-reducer.js";
 import { logger } from "../../index.js";
 import { MULTISIG_PARTICIPANTS_COUNT } from "../../provable/contracts/treasury-pause-controller/multisig-signatures.js";
+import { minaNetworkCacheKey } from "../../utils/mina-network.js";
+import { join } from "node:path";
 
 type MinaPermission = ReturnType<typeof Permissions.proof>;
 
@@ -127,7 +129,8 @@ export class SqliteTreasuryOwnerService implements TreasuryOwnerService {
       options.proofsEnabled ?? process.env.PROOFS_ENABLED === "true";
     const lifecyclePeriodDuration =
       options.lifecyclePeriodDuration ?? LIFECYCLE_PERIOD_DURATION;
-    const cachePath = options.cachePath ?? `${process.cwd()}/cache`;
+    const cacheRoot = options.cachePath ?? `${process.cwd()}/cache`;
+    const cachePath = join(cacheRoot, minaNetworkCacheKey(Mina.getNetworkId()));
     const cache = Cache.FileSystem(cachePath);
 
     logger.info(

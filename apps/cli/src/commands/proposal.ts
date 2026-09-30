@@ -13,8 +13,8 @@ import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname } from "node:path";
 import {
   configureMinaNetwork,
-  minaNetworkIdOption,
-  type MinaNetworkId,
+  minaNetworkOption,
+  type TreasuryNetwork,
 } from "./mina-instance.js";
 import { submitProposalContents } from "./proposal-content-api.js";
 import {
@@ -39,7 +39,7 @@ function parsePublicKey(value: string): PublicKey {
 interface CreateProposalCommandOptions {
   apiUrl: string;
   minaNodeUrl: string;
-  networkId: MinaNetworkId;
+  network: TreasuryNetwork;
   signer: SignerMode;
   senderPrivateKey?: PrivateKey;
   senderPublicKey?: PublicKey;
@@ -61,7 +61,7 @@ interface CreateProposalCommandOptions {
 
 interface VoteProposalCommandOptions {
   minaNodeUrl: string;
-  networkId: MinaNetworkId;
+  network: TreasuryNetwork;
   signer: SignerMode;
   senderPrivateKey?: PrivateKey;
   senderPublicKey?: PublicKey;
@@ -88,7 +88,7 @@ interface FetchProposalActionsCommandOptions {
 
 interface TallyVotesProposalCommandOptions {
   minaNodeUrl: string;
-  networkId: MinaNetworkId;
+  network: TreasuryNetwork;
   signer: SignerMode;
   senderPrivateKey?: PrivateKey;
   senderPublicKey?: PublicKey;
@@ -107,7 +107,7 @@ interface TallyVotesProposalCommandOptions {
 
 interface ExecuteProposalCommandOptions {
   minaNodeUrl: string;
-  networkId: MinaNetworkId;
+  network: TreasuryNetwork;
   signer: SignerMode;
   senderPrivateKey?: PrivateKey;
   senderPublicKey?: PublicKey;
@@ -125,7 +125,7 @@ interface ExecuteProposalCommandOptions {
 
 interface ReadProposalStateCommandOptions {
   minaNodeUrl: string;
-  networkId: MinaNetworkId;
+  network: TreasuryNetwork;
   treasuryOwnerPublicKey: PublicKey;
   proposalPublicKey: PublicKey;
 }
@@ -158,7 +158,7 @@ export async function createProposal(
   const proposalPublicKey = proposal.publicKey;
   const transactionSigner = createTransactionSigner(
     [sender, proposal],
-    options.networkId,
+    options.network,
   );
   const [proposalContents, proposalZkappUri] = await Promise.all([
     readProposalMarkdownContent({
@@ -172,10 +172,10 @@ export async function createProposal(
     await import("@repo/sdk/src/services/sqlite/sqlite-treasury-owner-service.js");
   const service = new SqliteTreasuryOwnerService();
 
+  configureMinaNetwork(options.minaNodeUrl, options.network);
   await service.compile({
     lifecyclePeriodDuration: options.lifecyclePeriodDuration,
   });
-  configureMinaNetwork(options.minaNodeUrl, options.networkId);
 
   const result = await service.createProposal({
     minaNodeUrl: options.minaNodeUrl,
@@ -226,16 +226,16 @@ export async function voteProposal(
   });
   const transactionSigner = createTransactionSigner(
     [sender, voter],
-    options.networkId,
+    options.network,
   );
   const { SqliteTreasuryOwnerService } =
     await import("@repo/sdk/src/services/sqlite/sqlite-treasury-owner-service.js");
   const service = new SqliteTreasuryOwnerService();
 
+  configureMinaNetwork(options.minaNodeUrl, options.network);
   await service.compile({
     lifecyclePeriodDuration: options.lifecyclePeriodDuration,
   });
-  configureMinaNetwork(options.minaNodeUrl, options.networkId);
 
   const result = await service.voteProposal({
     minaNodeUrl: options.minaNodeUrl,
@@ -264,17 +264,14 @@ export async function tallyVotesProposal(
     publicKey: options.senderPublicKey,
     ledgerAccountIndex: options.senderLedgerAccountIndex,
   });
-  const transactionSigner = createTransactionSigner(
-    [sender],
-    options.networkId,
-  );
+  const transactionSigner = createTransactionSigner([sender], options.network);
   const { SqliteTreasuryOwnerService } =
     await import("@repo/sdk/src/services/sqlite/sqlite-treasury-owner-service.js");
   const service = new SqliteTreasuryOwnerService();
+  configureMinaNetwork(options.minaNodeUrl, options.network);
   await service.compile({
     lifecyclePeriodDuration: options.lifecyclePeriodDuration,
   });
-  configureMinaNetwork(options.minaNodeUrl, options.networkId);
 
   const [voteReducerProofJson, stakingLedgerToVotingLedgerProofJson] =
     await Promise.all([
@@ -326,17 +323,14 @@ export async function executeProposal(
     publicKey: options.senderPublicKey,
     ledgerAccountIndex: options.senderLedgerAccountIndex,
   });
-  const transactionSigner = createTransactionSigner(
-    [sender],
-    options.networkId,
-  );
+  const transactionSigner = createTransactionSigner([sender], options.network);
   const { SqliteTreasuryOwnerService } =
     await import("@repo/sdk/src/services/sqlite/sqlite-treasury-owner-service.js");
   const service = new SqliteTreasuryOwnerService();
+  configureMinaNetwork(options.minaNodeUrl, options.network);
   await service.compile({
     lifecyclePeriodDuration: options.lifecyclePeriodDuration,
   });
-  configureMinaNetwork(options.minaNodeUrl, options.networkId);
 
   const result = await service.executeProposal({
     minaNodeUrl: options.minaNodeUrl,
@@ -401,7 +395,7 @@ export async function readProposalState(
   const { SqliteTreasuryOwnerService } =
     await import("@repo/sdk/src/services/sqlite/sqlite-treasury-owner-service.js");
   const service = new SqliteTreasuryOwnerService();
-  configureMinaNetwork(options.minaNodeUrl, options.networkId);
+  configureMinaNetwork(options.minaNodeUrl, options.network);
   const result = await service.getProposalState({
     minaNodeUrl: options.minaNodeUrl,
     treasuryOwnerPublicKey: options.treasuryOwnerPublicKey,
@@ -435,7 +429,7 @@ export default function proposalCommandFactory(program: Command) {
           .env("MINA_NODE_URL")
           .default("http://127.0.0.1:8080/graphql"),
       )
-      .addOption(minaNetworkIdOption())
+      .addOption(minaNetworkOption())
       .addOption(
         new Option(
           "--sender-private-key <sender-private-key>",
@@ -538,7 +532,7 @@ export default function proposalCommandFactory(program: Command) {
           .env("MINA_NODE_URL")
           .default("http://127.0.0.1:8080/graphql"),
       )
-      .addOption(minaNetworkIdOption())
+      .addOption(minaNetworkOption())
       .addOption(
         new Option(
           "--sender-private-key <sender-private-key>",
@@ -625,7 +619,7 @@ export default function proposalCommandFactory(program: Command) {
           .env("MINA_NODE_URL")
           .default("http://127.0.0.1:8080/graphql"),
       )
-      .addOption(minaNetworkIdOption())
+      .addOption(minaNetworkOption())
       .addOption(
         new Option(
           "--sender-private-key <sender-private-key>",
@@ -711,7 +705,7 @@ export default function proposalCommandFactory(program: Command) {
         .env("MINA_NODE_URL")
         .default("http://127.0.0.1:8080/graphql"),
     )
-    .addOption(minaNetworkIdOption())
+    .addOption(minaNetworkOption())
     .addOption(
       new Option(
         "--treasury-owner-public-key <treasury-owner-public-key>",
@@ -774,7 +768,7 @@ export default function proposalCommandFactory(program: Command) {
           .env("MINA_NODE_URL")
           .default("http://127.0.0.1:8080/graphql"),
       )
-      .addOption(minaNetworkIdOption())
+      .addOption(minaNetworkOption())
       .addOption(
         new Option(
           "--sender-private-key <sender-private-key>",

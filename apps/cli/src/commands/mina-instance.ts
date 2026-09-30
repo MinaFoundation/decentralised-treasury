@@ -1,13 +1,15 @@
 import { Option } from "commander";
 import {
+  resolveTreasuryNetwork,
+  type TreasuryNetwork,
+} from "@repo/sdk/src/utils/mina-network.js";
+import {
   Mina,
   type PendingTransaction,
   type PrivateKey,
   type Transaction,
   type TransactionPromise,
 } from "o1js";
-
-export type MinaNetworkId = "mainnet" | "devnet" | "testnet";
 
 // o1js retains these methods at runtime after signing and proving.
 type RuntimeTransaction = Transaction<false, false> & Transaction<true, true>;
@@ -36,23 +38,22 @@ function withTransactionMethods<Proven extends boolean, Signed extends boolean>(
   }) as unknown as TransactionPromise<Proven, Signed>;
 }
 
-export function minaNetworkIdOption(): Option {
-  return new Option("--network-id <network-id>", "Mina signature network")
-    .choices(["mainnet", "devnet", "testnet"])
-    .argParser((value) => value.toLowerCase())
-    .env("MINA_NETWORK_ID")
-    .default("devnet");
+export function minaNetworkOption(): Option {
+  return new Option("--network <network>", "Mina network")
+    .argParser(resolveTreasuryNetwork)
+    .env("NETWORK")
+    .default("mainnet");
 }
 
 export function configureMinaNetwork(
   minaNodeUrl: string,
-  networkId: MinaNetworkId,
+  network: TreasuryNetwork,
 ): void {
-  const network = Mina.Network({ mina: minaNodeUrl, networkId });
+  const instance = Mina.Network({ mina: minaNodeUrl, networkId: network });
   if (process.env.PROOFS_ENABLED === "false") {
-    network.proofsEnabled = false;
-    const createTransaction = network.transaction.bind(network);
-    network.transaction = (sender, callback) =>
+    instance.proofsEnabled = false;
+    const createTransaction = instance.transaction.bind(instance);
+    instance.transaction = (sender, callback) =>
       withTransactionMethods(
         createTransaction(sender, callback).then((original) => {
           // Mina.Network ignores proofsEnabled when it creates a transaction.
@@ -69,5 +70,7 @@ export function configureMinaNetwork(
         }),
       );
   }
-  Mina.setActiveInstance(network);
+  Mina.setActiveInstance(instance);
 }
+
+export type { TreasuryNetwork };

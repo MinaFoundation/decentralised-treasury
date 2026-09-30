@@ -1,8 +1,9 @@
 import type { OperationPackage } from "./operations";
 import type { BackofficeRuntimeConfig } from "./runtime-config";
+import { resolveTreasuryNetwork } from "@repo/sdk/src/utils/mina-network.js";
+import { createNetworkCompileState } from "@repo/sdk/src/utils/network-compile-state.js";
 
-const pauseCompilePromises = new Map<boolean, Promise<void>>();
-const fullCompilePromises = new Map<boolean, Promise<void>>();
+const compileState = createNetworkCompileState();
 
 function parseJsonValue(value: string | undefined, name: string): unknown {
   if (!value?.trim())
@@ -64,80 +65,77 @@ export async function compileBreakGlassContracts(
 ): Promise<void> {
   const loaded = await modules();
   const proofsEnabled = config.proofsEnabled ?? true;
-  const { PublicKey, Field, UInt32, VerificationKey } = loaded.o1js;
-  loaded.controller.TreasuryPauseControllerSmartContract.multisigParticipants =
-    Array.from({ length: 5 }, () => PublicKey.empty());
-  if (!pauseCompilePromises.has(proofsEnabled)) {
-    pauseCompilePromises.set(
-      proofsEnabled,
-      proofsEnabled
-        ? loaded.controller.TreasuryPauseControllerSmartContract.compile().then(
-            () => undefined,
-          )
-        : Promise.resolve(),
-    );
-  }
-  await pauseCompilePromises.get(proofsEnabled);
-  if (!includeProposalContracts) return;
-  if (!fullCompilePromises.has(proofsEnabled))
-    fullCompilePromises.set(
-      proofsEnabled,
-      (async () => {
-        const configuredProposalVerificationKey = VerificationKey.fromJSON(
+  const networkId = resolveTreasuryNetwork(config.networkId);
+  const nextCompileKey = `${networkId}:${String(proofsEnabled)}:${String(includeProposalContracts)}`;
+  await compileState.run(nextCompileKey, async () => {
+    const { PublicKey, Field, Mina, UInt32, VerificationKey } = loaded.o1js;
+    const network = Mina.Network({
+      mina: endpoint(config.minaNodeUrl),
+      networkId,
+    });
+    network.proofsEnabled = proofsEnabled;
+    Mina.setActiveInstance(network);
+    loaded.controller.TreasuryPauseControllerSmartContract.multisigParticipants =
+      Array.from({ length: 5 }, () => PublicKey.empty());
+    if (proofsEnabled) {
+      await loaded.controller.TreasuryPauseControllerSmartContract.compile();
+    }
+    if (includeProposalContracts) {
+      const configuredProposalVerificationKey = VerificationKey.fromJSON(
+        parseJsonValue(
+          config.treasuryProposalVerificationKeyJson,
+          "NEXT_PUBLIC_TREASURY_PROPOSAL_VERIFICATION_KEY_JSON",
+        ) as { data: string; hash: string },
+      );
+      loaded.proposal.TreasuryProposalSmartContract.voteReducerVerificationKey =
+        VerificationKey.fromJSON(
           parseJsonValue(
-            config.treasuryProposalVerificationKeyJson,
-            "NEXT_PUBLIC_TREASURY_PROPOSAL_VERIFICATION_KEY_JSON",
+            config.voteReducerVerificationKeyJson,
+            "NEXT_PUBLIC_VOTE_REDUCER_VERIFICATION_KEY_JSON",
           ) as { data: string; hash: string },
         );
-        loaded.proposal.TreasuryProposalSmartContract.voteReducerVerificationKey =
-          VerificationKey.fromJSON(
-            parseJsonValue(
-              config.voteReducerVerificationKeyJson,
-              "NEXT_PUBLIC_VOTE_REDUCER_VERIFICATION_KEY_JSON",
-            ) as { data: string; hash: string },
-          );
-        loaded.proposal.TreasuryProposalSmartContract.stakingLedgerToVotingLedgerVerificationKey =
-          VerificationKey.fromJSON(
-            parseJsonValue(
-              config.stakingLedgerToVotingLedgerVerificationKeyJson,
-              "NEXT_PUBLIC_STAKING_LEDGER_TO_VOTING_LEDGER_VERIFICATION_KEY_JSON",
-            ) as { data: string; hash: string },
-          );
-        if (!config.emptyVotingLedgerRoot || !config.emptyNullifierRoot) {
-          throw new Error(
-            "Empty voting and nullifier roots are required for proposal toggling.",
-          );
-        }
-        loaded.proposal.TreasuryProposalSmartContract.emptyVotingLedgerRoot =
-          Field(config.emptyVotingLedgerRoot);
-        loaded.proposal.TreasuryProposalSmartContract.emptyNullifierRoot =
-          Field(config.emptyNullifierRoot);
-        const verificationKey = proofsEnabled
-          ? (await loaded.proposal.TreasuryProposalSmartContract.compile())
-              .verificationKey
-          : configuredProposalVerificationKey;
-        if (
-          verificationKey.hash.toString() !==
-          configuredProposalVerificationKey.hash.toString()
-        ) {
-          throw new Error(
-            "The configured treasury proposal verification key does not match this build.",
-          );
-        }
-        loaded.owner.TreasuryOwnerSmartContract.proposalContractVerificationKey =
-          verificationKey;
-        if (!config.lifecyclePeriodDuration) {
-          throw new Error(
-            "NEXT_PUBLIC_LIFECYCLE_PERIOD_DURATION is required for proposal toggling.",
-          );
-        }
-        loaded.owner.TreasuryOwnerSmartContract.lifecyclePeriodDuration =
-          UInt32.from(config.lifecyclePeriodDuration);
-        if (proofsEnabled)
-          await loaded.owner.TreasuryOwnerSmartContract.compile();
-      })(),
-    );
-  await fullCompilePromises.get(proofsEnabled);
+      loaded.proposal.TreasuryProposalSmartContract.stakingLedgerToVotingLedgerVerificationKey =
+        VerificationKey.fromJSON(
+          parseJsonValue(
+            config.stakingLedgerToVotingLedgerVerificationKeyJson,
+            "NEXT_PUBLIC_STAKING_LEDGER_TO_VOTING_LEDGER_VERIFICATION_KEY_JSON",
+          ) as { data: string; hash: string },
+        );
+      if (!config.emptyVotingLedgerRoot || !config.emptyNullifierRoot) {
+        throw new Error(
+          "Empty voting and nullifier roots are required for proposal toggling.",
+        );
+      }
+      loaded.proposal.TreasuryProposalSmartContract.emptyVotingLedgerRoot =
+        Field(config.emptyVotingLedgerRoot);
+      loaded.proposal.TreasuryProposalSmartContract.emptyNullifierRoot = Field(
+        config.emptyNullifierRoot,
+      );
+      const verificationKey = proofsEnabled
+        ? (await loaded.proposal.TreasuryProposalSmartContract.compile())
+            .verificationKey
+        : configuredProposalVerificationKey;
+      if (
+        verificationKey.hash.toString() !==
+        configuredProposalVerificationKey.hash.toString()
+      ) {
+        throw new Error(
+          "The configured treasury proposal verification key does not match this build.",
+        );
+      }
+      loaded.owner.TreasuryOwnerSmartContract.proposalContractVerificationKey =
+        verificationKey;
+      if (!config.lifecyclePeriodDuration) {
+        throw new Error(
+          "NEXT_PUBLIC_LIFECYCLE_PERIOD_DURATION is required for proposal toggling.",
+        );
+      }
+      loaded.owner.TreasuryOwnerSmartContract.lifecyclePeriodDuration =
+        UInt32.from(config.lifecyclePeriodDuration);
+      if (proofsEnabled)
+        await loaded.owner.TreasuryOwnerSmartContract.compile();
+    }
+  });
 }
 
 function createSignatureSet(
@@ -166,12 +164,10 @@ export async function buildAndProveBreakGlassTransaction(input: {
   const operation = input.operation;
   const sender = PublicKey.fromBase58(input.senderAddress);
   const controllerKey = PublicKey.fromBase58(operation.pauseControllerAddress);
+  const networkId = resolveTreasuryNetwork(input.config.networkId);
   const network = Mina.Network({
     mina: endpoint(input.config.minaNodeUrl),
-    networkId: input.config.networkId.toLowerCase() as
-      | "mainnet"
-      | "testnet"
-      | "devnet",
+    networkId,
   });
   network.proofsEnabled = input.config.proofsEnabled ?? true;
   Mina.setActiveInstance(network);

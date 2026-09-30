@@ -9,6 +9,11 @@ import { logger, provableLog } from "@repo/sdk/src/index.js";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname } from "node:path";
 import { parseIntOption } from "./option-parsers.js";
+import {
+  configureMinaNetwork,
+  minaNetworkOption,
+  type TreasuryNetwork,
+} from "./mina-instance.js";
 
 interface BaseOptions {
   lifecycleId: string;
@@ -125,7 +130,11 @@ async function readVoteActions(
   };
 }
 
-export async function compile() {
+export async function compile(options: {
+  minaNodeUrl: string;
+  network: TreasuryNetwork;
+}) {
+  configureMinaNetwork(options.minaNodeUrl, options.network);
   logger.info(
     `[vote-reducer:compile] starting (lifecycleId=${VOTE_REDUCER_COMPILE_LIFECYCLE_ID})`,
   );
@@ -291,6 +300,12 @@ export default function voteReducerCommandFactory(program: Command) {
 
   command
     .command("compile")
+    .addOption(
+      new Option("--mina-node-url <mina-node-url>", "Mina GraphQL URL")
+        .env("MINA_NODE_URL")
+        .default("http://127.0.0.1:8080/graphql"),
+    )
+    .addOption(minaNetworkOption())
     .action(compile);
 
   command

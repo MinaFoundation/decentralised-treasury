@@ -7,6 +7,7 @@ import type {
   RuntimeConfigEnv,
   TreasuryRuntimeConfig,
 } from "./runtime-config.types";
+import { resolveTreasuryNetwork } from "@repo/sdk/src/utils/mina-network.js";
 
 function readField(
   env: RuntimeConfigEnv,
@@ -34,12 +35,15 @@ function readField(
  * `process.env.NEXT_PUBLIC_*` reads into both the client and the server bundle
  * at build time, which is exactly the baking this module exists to avoid.
  */
-export function readRuntimeConfig(env: RuntimeConfigEnv): TreasuryRuntimeConfig {
+export function readRuntimeConfig(
+  env: RuntimeConfigEnv,
+): TreasuryRuntimeConfig {
   const config: Record<string, string | undefined> = {};
 
   for (const name of RUNTIME_CONFIG_FIELD_NAMES) {
     config[name] = readField(env, name);
   }
+  config.networkId = resolveTreasuryNetwork(config.networkId);
 
   return config as TreasuryRuntimeConfig;
 }

@@ -47,7 +47,7 @@ function operation(): OperationPackage {
   return {
     schemaVersion: 1,
     kind: "pauseTreasury",
-    networkId: "testnet",
+    networkId: "devnet",
     treasuryOwnerAddress: "owner",
     pauseControllerAddress: "controller",
     controllerNonce: "9",

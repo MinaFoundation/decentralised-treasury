@@ -18,7 +18,7 @@ describe("serializeRuntimeConfig", () => {
 
   it("escapes a value that would otherwise close the script element", () => {
     const config = readRuntimeConfig({
-      NEXT_PUBLIC_NETWORK_ID: "</script><script>alert(1)</script>",
+      NEXT_PUBLIC_TREASURY_API_URL: "</script><script>alert(1)</script>",
     });
     const serialized = serializeRuntimeConfig(config);
 
@@ -29,7 +29,7 @@ describe("serializeRuntimeConfig", () => {
 
   it("escapes the line separators that are legal in JSON but not in JavaScript", () => {
     const config = readRuntimeConfig({
-      NEXT_PUBLIC_NETWORK_ID: "a\u2028b\u2029c",
+      NEXT_PUBLIC_TREASURY_API_URL: "a\u2028b\u2029c",
     });
     const serialized = serializeRuntimeConfig(config);
 

@@ -33,7 +33,7 @@ const emptyPublicKey =
   "B62qiTKpEPjGTSHZrtM8uXiKgn8So916pLmNJKDhKeyBQL9TDb3nvBG";
 
 const activeStatus: TreasuryStatus = {
-  networkId: "testnet",
+  networkId: "devnet",
   treasuryOwnerAddress:
     "B62qowner8Aw7sX4mQ2kHy5rP9vJ3nWd6cF1tL8yR2uK6pN4bV7zC3",
   pauseControllerAddress:

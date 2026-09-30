@@ -12,6 +12,7 @@ import {
   assertOperationMessageHash,
   type OperationPackage,
 } from "./operations";
+import { resolveTreasuryNetwork } from "@repo/sdk/src/utils/mina-network.js";
 
 interface AuroResult {
   hash?: string;
@@ -267,14 +268,7 @@ export async function signTransactionWithLedger(
       import("@repo/sdk/src/signing/ledger-signing.js"),
     ]);
   const transaction = Transaction.fromJSON(JSON.parse(transactionJson));
-  const normalizedNetworkId = networkId.toLowerCase();
-  if (
-    normalizedNetworkId !== "mainnet" &&
-    normalizedNetworkId !== "testnet" &&
-    normalizedNetworkId !== "devnet"
-  ) {
-    throw new Error(`Ledger does not support network ID ${networkId}.`);
-  }
+  const normalizedNetworkId = resolveTreasuryNetwork(networkId);
   const signed = await withLedger((ledger) =>
     signTransactionWithLedgerClient(
       transaction,

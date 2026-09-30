@@ -680,7 +680,7 @@ test(
     const archiveNodeUrl = `http://127.0.0.1:${archivePort}/graphql`;
     const commonEnv = {
       MINA_NODE_URL: minaNodeUrl,
-      MINA_NETWORK_ID: "testnet",
+      NETWORK: "devnet",
       PROOFS_ENABLED: PROOFS_ENABLED_VALUE,
       SQLITE_DATA_DIRECTORY: sqliteDirectory,
       TS_NODE_PROJECT: CLI_TS_NODE_PROJECT,

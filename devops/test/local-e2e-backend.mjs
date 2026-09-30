@@ -101,7 +101,7 @@ export function createLocalE2EBackendLauncher(dependencies = {}) {
     const env = {
       ...inherited,
       PROOFS_ENABLED: mode,
-      MINA_NETWORK_ID: inherited.MINA_NETWORK_ID ?? "devnet",
+      NETWORK: inherited.NETWORK ?? "devnet",
       MINA_NODE_URL: minaNodeUrl,
       ARCHIVE_NODE_URL: archiveNodeUrl,
       TREASURY_OWNER_CONTRACT_ADDRESS: options.treasuryOwnerPublicKey,

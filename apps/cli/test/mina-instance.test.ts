@@ -3,7 +3,7 @@ import { describe, it } from "node:test";
 import { Mina } from "o1js";
 import {
   configureMinaNetwork,
-  minaNetworkIdOption,
+  minaNetworkOption,
 } from "../src/commands/mina-instance.js";
 import { createProgram } from "../src/cli.js";
 
@@ -14,7 +14,7 @@ describe("Mina CLI network configuration", () => {
       for (const value of [undefined, "true", "false", "FALSE", ""] as const) {
         if (value === undefined) delete process.env.PROOFS_ENABLED;
         else process.env.PROOFS_ENABLED = value;
-        configureMinaNetwork("http://127.0.0.1:8080/graphql", "testnet");
+        configureMinaNetwork("http://127.0.0.1:8080/graphql", "devnet");
         assert.equal(Mina.getProofsEnabled(), value !== "false");
       }
     } finally {
@@ -29,29 +29,29 @@ describe("Mina CLI network configuration", () => {
 
     configureMinaNetwork("http://127.0.0.1:8080/graphql", "devnet");
     assert.equal(Mina.getNetworkId(), "devnet");
-
-    configureMinaNetwork("http://127.0.0.1:8080/graphql", "testnet");
-    assert.equal(Mina.getNetworkId(), "testnet");
   });
 
-  it("defines safe CLI choices and a devnet default", () => {
-    const option = minaNetworkIdOption();
+  it("normalizes supported values and defaults to mainnet", () => {
+    const option = minaNetworkOption();
 
-    assert.deepEqual(option.argChoices, ["mainnet", "devnet", "testnet"]);
     assert.equal(option.parseArg?.("MAINNET", undefined), "mainnet");
-    assert.equal(option.defaultValue, "devnet");
-    assert.equal(option.envVar, "MINA_NETWORK_ID");
+    assert.equal(option.parseArg?.("DeVnEt", undefined), "devnet");
+    assert.throws(() => option.parseArg?.("testnet", undefined));
+    assert.equal(option.defaultValue, "mainnet");
+    assert.equal(option.envVar, "NETWORK");
   });
 
   it("adds the network option to each command that configures o1js", () => {
     const program = createProgram();
     const commandPaths = [
       ["transfer"],
+      ["treasury-owner", "compile"],
       ["treasury-owner", "deploy"],
       ["treasury-owner", "fund-treasury"],
       ["treasury-owner", "emergency-withdraw"],
       ["treasury-owner", "read-state"],
       ["pause-controller", "deploy"],
+      ["pause-controller", "compile"],
       ["pause-controller", "read-state"],
       ["pause-controller", "pause-treasury"],
       ["pause-controller", "unpause-treasury"],
@@ -62,6 +62,8 @@ describe("Mina CLI network configuration", () => {
       ["proposal", "execute"],
       ["proposal", "read-state"],
       ["proposal", "tally-votes"],
+      ["vote-reducer", "compile"],
+      ["staking-ledger-to-voting-ledger", "compile"],
     ];
 
     for (const commandPath of commandPaths) {
@@ -74,10 +76,10 @@ describe("Mina CLI network configuration", () => {
         command = child;
       }
       const option = command.options.find(
-        (candidate) => candidate.attributeName() === "networkId",
+        (candidate) => candidate.attributeName() === "network",
       );
-      assert(option, `missing --network-id on ${commandPath.join(" ")}`);
-      assert.equal(option.defaultValue, "devnet");
+      assert(option, `missing --network on ${commandPath.join(" ")}`);
+      assert.equal(option.defaultValue, "mainnet");
     }
   });
 });

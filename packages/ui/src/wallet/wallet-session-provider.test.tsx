@@ -43,7 +43,7 @@ function TestConsumer() {
             transactionJson: "{}",
             expectedSenderAddress: activeSession?.address ?? "",
             minaNodeUrl: "https://mina.example/graphql",
-            networkId: "testnet",
+            networkId: "devnet",
             fee: "0.1",
             memo: "Test",
           })

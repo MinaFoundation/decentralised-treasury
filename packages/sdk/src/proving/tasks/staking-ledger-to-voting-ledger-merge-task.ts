@@ -6,10 +6,11 @@ import {
   StakingLedgerToVotingLedgerProgramOutput,
 } from "../../provable/staking-ledger-to-voting-ledger.js";
 import { Task } from "../task-queue.js";
-import { Cache, JsonProof, Proof } from "o1js";
+import { JsonProof, Proof } from "o1js";
 import { ReplayableStakingLedger } from "../../ledgers/staking-ledger/replayable-staking-ledger.js";
 import { ReplayableVotingLedger } from "../../ledgers/voting-ledger/replayable-voting-ledger.js";
 import { logger, provableLog, time, timeEnd } from "../../logging/logger.js";
+import { configureProvingNetwork } from "../proving-network.js";
 
 export interface StakingLedgerToVotingLedgerMergeTaskInput {
   proofs: {
@@ -55,10 +56,10 @@ export const StakingLedgerToVotingLedgerMergeTask: Task<
       return {
         proofs: {
           1: await SideLoadedStakingLedgerToVotingLedgerProof.fromJSON(
-            proofs[1]
+            proofs[1],
           ),
           2: await SideLoadedStakingLedgerToVotingLedgerProof.fromJSON(
-            proofs[2]
+            proofs[2],
           ),
         },
       };
@@ -74,8 +75,10 @@ export const StakingLedgerToVotingLedgerMergeTask: Task<
   };
 
   public static async prepare() {
+    const { network, cache } = configureProvingNetwork();
     logger.info("compiling staking ledger to voting ledger", {
       proofsEnabled,
+      network,
     });
 
     stakingLedgerToVotingLedgerContext.set({
@@ -86,7 +89,7 @@ export const StakingLedgerToVotingLedgerMergeTask: Task<
     time("compile", "info");
     await StakingLedgerToVotingLedger.compile({
       proofsEnabled,
-      cache: Cache.FileSystem(`${process.cwd()}/cache`),
+      cache,
     });
     timeEnd("compile", "info");
   }
@@ -101,14 +104,14 @@ export const StakingLedgerToVotingLedgerMergeTask: Task<
       proof1?.publicInput,
       proof1?.publicOutput,
       proof2?.publicInput,
-      proof2?.publicOutput
+      proof2?.publicOutput,
     );
 
     time("merge", "info");
     const result = await StakingLedgerToVotingLedger.merge(
       proof1.publicInput,
       proof1,
-      proof2
+      proof2,
     );
     timeEnd("merge", "info");
 

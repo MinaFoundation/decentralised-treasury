@@ -20,8 +20,8 @@ import {
 import { parseBooleanOption, parseIntOption } from "./option-parsers.js";
 import {
   configureMinaNetwork,
-  minaNetworkIdOption,
-  type MinaNetworkId,
+  minaNetworkOption,
+  type TreasuryNetwork,
 } from "./mina-instance.js";
 import {
   addTransactionSignerOptions,
@@ -55,7 +55,7 @@ function parsePublicKeys(value: string): PublicKey[] {
 
 interface DeployTreasuryOwnerCommandOptions {
   minaNodeUrl: string;
-  networkId: MinaNetworkId;
+  network: TreasuryNetwork;
   signer: SignerMode;
   senderPrivateKey?: PrivateKey;
   senderPublicKey?: PublicKey;
@@ -78,12 +78,14 @@ interface DeployTreasuryOwnerCommandOptions {
 }
 
 interface CompileTreasuryOwnerCommandOptions {
+  minaNodeUrl: string;
+  network: TreasuryNetwork;
   lifecyclePeriodDuration: UInt32;
 }
 
 interface TransferToTreasuryCommandOptions {
   minaNodeUrl: string;
-  networkId: MinaNetworkId;
+  network: TreasuryNetwork;
   signer: SignerMode;
   senderPrivateKey?: PrivateKey;
   senderPublicKey?: PublicKey;
@@ -102,7 +104,7 @@ interface TransferToTreasuryCommandOptions {
 
 interface EmergencyWithdrawCommandOptions {
   minaNodeUrl: string;
-  networkId: MinaNetworkId;
+  network: TreasuryNetwork;
   signer: SignerMode;
   senderPrivateKey?: PrivateKey;
   senderPublicKey?: PublicKey;
@@ -120,7 +122,7 @@ interface EmergencyWithdrawCommandOptions {
 
 interface ReadTreasuryOwnerStateCommandOptions {
   minaNodeUrl: string;
-  networkId: MinaNetworkId;
+  network: TreasuryNetwork;
   treasuryOwnerPublicKey: PublicKey;
   lifecyclePeriodDuration: UInt32;
 }
@@ -129,6 +131,7 @@ export async function compileTreasuryOwner(
   options: CompileTreasuryOwnerCommandOptions,
 ): Promise<void> {
   const startedAt = Date.now();
+  configureMinaNetwork(options.minaNodeUrl, options.network);
   logger.info(
     `[treasury-owner:compile] starting (lifecyclePeriodDuration=${options.lifecyclePeriodDuration.toString()})`,
   );
@@ -146,6 +149,7 @@ export async function compileTreasuryOwner(
   );
 
   const browserCompileConfig = {
+    network: options.network,
     lifecyclePeriodDuration: options.lifecyclePeriodDuration.toString(),
     voteReducerVerificationKeyJson: VerificationKey.toJSON(
       result.voteReducerVerificationKey,
@@ -161,6 +165,7 @@ export async function compileTreasuryOwner(
   };
 
   const browserEnv = {
+    NEXT_PUBLIC_NETWORK_ID: browserCompileConfig.network,
     NEXT_PUBLIC_LIFECYCLE_PERIOD_DURATION:
       browserCompileConfig.lifecyclePeriodDuration,
     NEXT_PUBLIC_VOTE_REDUCER_VERIFICATION_KEY_JSON: JSON.stringify(
@@ -243,7 +248,7 @@ export async function deployTreasuryOwner(
   });
   const transactionSigner = createTransactionSigner(
     [sender, treasuryOwner, pauseController],
-    options.networkId,
+    options.network,
   );
   const senderPublicKey = sender.publicKey.toBase58();
   const treasuryOwnerPublicKey = treasuryOwner.publicKey.toBase58();
@@ -256,6 +261,9 @@ export async function deployTreasuryOwner(
     await import("@repo/sdk/src/services/sqlite/sqlite-treasury-owner-service.js");
   const service = new SqliteTreasuryOwnerService();
 
+  logger.info("[treasury-owner:deploy] configuring Mina network instance");
+  configureMinaNetwork(options.minaNodeUrl, options.network);
+
   logger.info(
     "[treasury-owner:deploy] compiling treasury-owner dependencies and contracts",
   );
@@ -266,9 +274,6 @@ export async function deployTreasuryOwner(
   logger.info(
     `[treasury-owner:deploy] compile completed (elapsedMs=${Date.now() - compileStartedAt})`,
   );
-
-  logger.info("[treasury-owner:deploy] configuring Mina network instance");
-  configureMinaNetwork(options.minaNodeUrl, options.networkId);
 
   logger.info(
     "[treasury-owner:deploy] preparing pause-controller and treasury-owner deployment transactions",
@@ -331,15 +336,15 @@ export async function transferToTreasury(
   });
   const transactionSigner = createTransactionSigner(
     [sender, funding],
-    options.networkId,
+    options.network,
   );
   const { SqliteTreasuryOwnerService } =
     await import("@repo/sdk/src/services/sqlite/sqlite-treasury-owner-service.js");
   const service = new SqliteTreasuryOwnerService();
+  configureMinaNetwork(options.minaNodeUrl, options.network);
   await service.compile({
     lifecyclePeriodDuration: options.lifecyclePeriodDuration,
   });
-  configureMinaNetwork(options.minaNodeUrl, options.networkId);
   const result = await service.transferToTreasury({
     minaNodeUrl: options.minaNodeUrl,
     senderPublicKey: sender.publicKey,
@@ -375,13 +380,13 @@ export async function emergencyWithdraw(
   });
   const transactionSigner = createTransactionSigner(
     [sender, treasuryOwner],
-    options.networkId,
+    options.network,
   );
   const { SqliteTreasuryOwnerService } =
     await import("@repo/sdk/src/services/sqlite/sqlite-treasury-owner-service.js");
   const service = new SqliteTreasuryOwnerService();
 
-  configureMinaNetwork(options.minaNodeUrl, options.networkId);
+  configureMinaNetwork(options.minaNodeUrl, options.network);
   const result = await service.emergencyWithdraw({
     minaNodeUrl: options.minaNodeUrl,
     senderPublicKey: sender.publicKey,
@@ -404,7 +409,7 @@ export async function readTreasuryOwnerState(
   const { SqliteTreasuryOwnerService } =
     await import("@repo/sdk/src/services/sqlite/sqlite-treasury-owner-service.js");
   const service = new SqliteTreasuryOwnerService();
-  configureMinaNetwork(options.minaNodeUrl, options.networkId);
+  configureMinaNetwork(options.minaNodeUrl, options.network);
   const [state, currentLifecyclePeriod] = await Promise.all([
     service.getTreasuryOwnerState({
       minaNodeUrl: options.minaNodeUrl,
@@ -433,6 +438,12 @@ export default function treasuryOwnerCommandFactory(program: Command) {
     .command("compile")
     .description("Compile treasury owner contracts and dependencies")
     .addOption(
+      new Option("--mina-node-url <mina-node-url>", "Mina GraphQL URL")
+        .env("MINA_NODE_URL")
+        .default("http://127.0.0.1:8080/graphql"),
+    )
+    .addOption(minaNetworkOption())
+    .addOption(
       new Option(
         "--lifecycle-period-duration <lifecycle-period-duration>",
         "Duration of lifecycle period in slots",
@@ -451,7 +462,7 @@ export default function treasuryOwnerCommandFactory(program: Command) {
         .env("MINA_NODE_URL")
         .default("http://127.0.0.1:8080/graphql"),
     )
-    .addOption(minaNetworkIdOption())
+    .addOption(minaNetworkOption())
     .addOption(
       new Option(
         "--sender-private-key <sender-private-key>",
@@ -558,7 +569,7 @@ export default function treasuryOwnerCommandFactory(program: Command) {
         .env("MINA_NODE_URL")
         .default("http://127.0.0.1:8080/graphql"),
     )
-    .addOption(minaNetworkIdOption())
+    .addOption(minaNetworkOption())
     .addOption(
       new Option(
         "--sender-private-key <sender-private-key>",
@@ -640,7 +651,7 @@ export default function treasuryOwnerCommandFactory(program: Command) {
         .env("MINA_NODE_URL")
         .default("http://127.0.0.1:8080/graphql"),
     )
-    .addOption(minaNetworkIdOption())
+    .addOption(minaNetworkOption())
     .addOption(
       new Option(
         "--sender-private-key <sender-private-key>",
@@ -708,7 +719,7 @@ export default function treasuryOwnerCommandFactory(program: Command) {
         .env("MINA_NODE_URL")
         .default("http://127.0.0.1:8080/graphql"),
     )
-    .addOption(minaNetworkIdOption())
+    .addOption(minaNetworkOption())
     .addOption(
       new Option(
         "--treasury-owner-public-key <treasury-owner-public-key>",

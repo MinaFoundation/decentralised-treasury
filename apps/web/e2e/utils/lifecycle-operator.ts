@@ -148,7 +148,7 @@ export async function tallyBrowserVotes(
           SQLITE_DATA_DIRECTORY: join(stack.artifactDirectory, "sqlite"),
           MINA_NODE_URL: stack.minaNodeUrl,
           ARCHIVE_NODE_URL: stack.archiveUrl,
-          MINA_NETWORK_ID: "devnet",
+          NETWORK: "devnet",
         },
         stdio: ["ignore", "pipe", "pipe"],
       },

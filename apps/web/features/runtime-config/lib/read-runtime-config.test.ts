@@ -8,7 +8,7 @@ describe("readRuntimeConfig", () => {
     const config = readRuntimeConfig({});
 
     expect(config.buildSha).toBe("unknown");
-    expect(config.networkId).toBe("MAINNET");
+    expect(config.networkId).toBe("mainnet");
     expect(config.apiUrl).toBe("http://127.0.0.1:3100/api");
     expect(config.indexerApiUrl).toBe("http://127.0.0.1:3100/indexer");
     expect(config.processorApiUrl).toBe("http://127.0.0.1:3100/processor");
@@ -68,7 +68,9 @@ describe("readRuntimeConfig", () => {
   });
 
   it("keeps the legacy NEXT_PUBLIC_API_URL name working", () => {
-    const config = readRuntimeConfig({ NEXT_PUBLIC_API_URL: "https://legacy/api" });
+    const config = readRuntimeConfig({
+      NEXT_PUBLIC_API_URL: "https://legacy/api",
+    });
 
     expect(config.apiUrl).toBe("https://legacy/api");
   });

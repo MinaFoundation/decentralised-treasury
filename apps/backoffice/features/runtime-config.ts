@@ -1,9 +1,13 @@
 import { createElement } from "react";
+import {
+  resolveTreasuryNetwork,
+  type TreasuryNetwork,
+} from "@repo/sdk/src/utils/mina-network.js";
 
 export interface BackofficeRuntimeConfig {
   proofsEnabled?: boolean;
   buildSha: string;
-  networkId: string;
+  networkId: TreasuryNetwork;
   apiUrl: string;
   indexerApiUrl: string;
   processorApiUrl: string;
@@ -93,6 +97,7 @@ function readConfig(env: RuntimeEnv): BackofficeRuntimeConfig {
   }
   return {
     ...result,
+    networkId: resolveTreasuryNetwork(result.networkId),
     proofsEnabled: mode === "true",
   } as unknown as BackofficeRuntimeConfig;
 }

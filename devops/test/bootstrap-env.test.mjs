@@ -7,19 +7,19 @@ test("parses proof and signature network overrides", () => {
     "testnet",
     "--proofs-enabled",
     "false",
-    "--network-id",
-    "testnet",
+    "--network",
+    "DEVNET",
   ]);
 
   assert.equal(options.proofsEnabled, "false");
-  assert.equal(options.networkId, "testnet");
+  assert.equal(options.network, "devnet");
 });
 
 test("applies proof and signature network overrides to each consumer", () => {
   const source = [
     "PROOFS_ENABLED=true",
     "NEXT_PUBLIC_PROOFS_ENABLED=true",
-    "MINA_NETWORK_ID=devnet",
+    "NETWORK=devnet",
     "NEXT_PUBLIC_NETWORK_ID=DEVNET",
     "# PROOFS_ENABLED=true",
   ].join("\n");
@@ -27,13 +27,13 @@ test("applies proof and signature network overrides to each consumer", () => {
   assert.equal(
     applyRuntimeOverrides(source, {
       proofsEnabled: "false",
-      networkId: "testnet",
+      network: "mainnet",
     }),
     [
       "PROOFS_ENABLED=false",
       "NEXT_PUBLIC_PROOFS_ENABLED=false",
-      "MINA_NETWORK_ID=testnet",
-      "NEXT_PUBLIC_NETWORK_ID=testnet",
+      "NETWORK=mainnet",
+      "NEXT_PUBLIC_NETWORK_ID=mainnet",
       "# PROOFS_ENABLED=true",
     ].join("\n"),
   );
@@ -45,7 +45,7 @@ test("rejects unsupported proof and signature network values", () => {
     /must be true or false/,
   );
   assert.throws(
-    () => parseArgs(["testnet", "--network-id", "localnet"]),
-    /must be mainnet, devnet, or testnet/,
+    () => parseArgs(["testnet", "--network", "localnet"]),
+    /must be mainnet or devnet/,
   );
 });

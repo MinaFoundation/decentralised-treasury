@@ -72,7 +72,7 @@ function parseArgs(argv) {
     nextPublicProcessorApiUrl: undefined,
     nextPublicMinaNodeUrl: undefined,
     proofsEnabled: undefined,
-    networkId: undefined,
+    network: undefined,
     freshKeys: false,
     overwriteSecrets: false,
   };
@@ -131,12 +131,12 @@ function parseArgs(argv) {
       options.proofsEnabled = value;
       continue;
     }
-    if (arg === "--network-id") {
+    if (arg === "--network") {
       const value = readValue().toLowerCase();
-      if (!new Set(["mainnet", "devnet", "testnet"]).has(value)) {
-        throw new Error("--network-id must be mainnet, devnet, or testnet");
+      if (!new Set(["mainnet", "devnet"]).has(value)) {
+        throw new Error("--network must be mainnet or devnet");
       }
-      options.networkId = value;
+      options.network = value;
       continue;
     }
     if (arg === "--fresh-keys") {
@@ -153,7 +153,7 @@ function parseArgs(argv) {
   if (!options.family || !FAMILY_CONFIG[options.family]) {
     const families = Object.keys(FAMILY_CONFIG).join(" | ");
     throw new Error(
-      `Usage: pnpm env:bootstrap <${families}> [-- --sender-private-key <key>] [--mina-node-url <url>] [--archive-node-url <url>] [--compose-mina-node-upstream <url>] [--compose-archive-node-url <url>] [--next-public-treasury-api-url <url>] [--next-public-indexer-api-url <url>] [--next-public-processor-api-url <url>] [--next-public-mina-node-url <url>] [--proofs-enabled <true|false>] [--network-id <mainnet|devnet|testnet>] [--fresh-keys] [--overwrite-secrets]`,
+      `Usage: pnpm env:bootstrap <${families}> [-- --sender-private-key <key>] [--mina-node-url <url>] [--archive-node-url <url>] [--compose-mina-node-upstream <url>] [--compose-archive-node-url <url>] [--next-public-treasury-api-url <url>] [--next-public-indexer-api-url <url>] [--next-public-processor-api-url <url>] [--next-public-mina-node-url <url>] [--proofs-enabled <true|false>] [--network <mainnet|devnet>] [--fresh-keys] [--overwrite-secrets]`,
     );
   }
 
@@ -385,10 +385,10 @@ function applyRuntimeOverrides(content, options) {
       `$1=${options.proofsEnabled}`,
     );
   }
-  if (options.networkId !== undefined) {
+  if (options.network !== undefined) {
     result = result.replace(
-      /^(MINA_NETWORK_ID|NEXT_PUBLIC_NETWORK_ID)=.*$/gm,
-      `$1=${options.networkId}`,
+      /^(NETWORK|NEXT_PUBLIC_NETWORK_ID)=.*$/gm,
+      `$1=${options.network}`,
     );
   }
   return result;

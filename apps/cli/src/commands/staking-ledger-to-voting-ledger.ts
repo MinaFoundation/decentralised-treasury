@@ -6,6 +6,11 @@ import { copyFile, mkdir, unlink, writeFile } from "node:fs/promises";
 import { dirname } from "node:path";
 import { parseIntOption } from "./option-parsers.js";
 import {
+  configureMinaNetwork,
+  minaNetworkOption,
+  type TreasuryNetwork,
+} from "./mina-instance.js";
+import {
   cleanCheckpoint,
   pullCheckpoint,
   pushCheckpoint,
@@ -56,7 +61,11 @@ function resolveRedisConfig({
   };
 }
 
-export async function compile() {
+export async function compile(options: {
+  minaNodeUrl: string;
+  network: TreasuryNetwork;
+}) {
+  configureMinaNetwork(options.minaNodeUrl, options.network);
   logger.info(
     `[staking-ledger-to-voting-ledger:compile] starting (lifecycleId=${STAKING_LEDGER_TO_VOTING_LEDGER_COMPILE_LIFECYCLE_ID})`,
   );
@@ -382,7 +391,14 @@ export async function proveMerge({
 export async function proveExhaust({
   lifecycleId,
   proofOutputPath,
-}: Pick<BaseOptions, "lifecycleId"> & { proofOutputPath?: string }) {
+  minaNodeUrl,
+  network,
+}: Pick<BaseOptions, "lifecycleId"> & {
+  proofOutputPath?: string;
+  minaNodeUrl: string;
+  network: TreasuryNetwork;
+}) {
+  configureMinaNetwork(minaNodeUrl, network);
   const startedAt = Date.now();
   logger.info(
     `[staking-ledger-to-voting-ledger:prove-exhaust] starting (lifecycleId=${lifecycleId})`,
@@ -418,7 +434,15 @@ export default function stakingLedgerToVotingLedgerCommandFactory(
 ) {
   const command = program.command("staking-ledger-to-voting-ledger");
 
-  command.command("compile").action(compile);
+  command
+    .command("compile")
+    .addOption(
+      new Option("--mina-node-url <mina-node-url>", "Mina GraphQL URL")
+        .env("MINA_NODE_URL")
+        .default("http://127.0.0.1:8080/graphql"),
+    )
+    .addOption(minaNetworkOption())
+    .action(compile);
 
   command
     .command("trace-digest")
@@ -559,6 +583,12 @@ export default function stakingLedgerToVotingLedgerCommandFactory(
 
   command
     .command("prove-exhaust")
+    .addOption(
+      new Option("--mina-node-url <mina-node-url>", "Mina GraphQL URL")
+        .env("MINA_NODE_URL")
+        .default("http://127.0.0.1:8080/graphql"),
+    )
+    .addOption(minaNetworkOption())
     .addOption(
       new Option("--lifecycle-id <lifecycle-id>", "Lifecycle ID")
         .env("LIFECYCLE_ID")

@@ -57,7 +57,7 @@ const message = MultisigSignature.dataPauseTreasury(UInt32.from(2));
 const operation: OperationPackage = {
   schemaVersion: 1,
   kind: "pauseTreasury",
-  networkId: "testnet",
+  networkId: "devnet",
   treasuryOwnerAddress: PrivateKey.random().toPublicKey().toBase58(),
   pauseControllerAddress: PrivateKey.random().toPublicKey().toBase58(),
   controllerNonce: "2",

@@ -9,6 +9,7 @@ import {
   type ReactNode,
 } from "react";
 import type { TreasuryEndpointSettings } from "@repo/ui/treasury-settings-dialog";
+import { resolveTreasuryNetwork } from "@repo/sdk/src/utils/mina-network.js";
 import {
   getRuntimeConfig,
   type BackofficeRuntimeConfig,
@@ -76,12 +77,13 @@ export function BackofficeSettingsProvider({
       defaultSettings,
       config: {
         ...runtimeConfig,
-        networkId: settings.networkId?.trim() || runtimeConfig.networkId,
+        networkId: resolveTreasuryNetwork(
+          settings.networkId?.trim() || runtimeConfig.networkId,
+        ),
         apiUrl: settings.apiUrl.trim(),
         indexerApiUrl: settings.indexerApiUrl.trim(),
         processorApiUrl: settings.processorApiUrl.trim(),
-        minaNodeUrl:
-          settings.minaNodeUrl.trim() || runtimeConfig.minaNodeUrl,
+        minaNodeUrl: settings.minaNodeUrl.trim() || runtimeConfig.minaNodeUrl,
       },
       saveSettings: (nextSettings) => {
         setSettings(nextSettings);

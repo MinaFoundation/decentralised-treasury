@@ -5,12 +5,13 @@ import {
   VoteReducerPublicOutput,
 } from "../../provable/contracts/treasury-proposal/vote-reducer.js";
 import { Task } from "../task-queue.js";
-import { Cache, JsonProof, Proof } from "o1js";
+import { JsonProof, Proof } from "o1js";
 import { VoteReducerRunBatchTrace } from "../tracing/vote-reducer-tracer.js";
 import { readdirSync } from "node:fs";
 import { ReplayableVotingLedger } from "../../ledgers/voting-ledger/replayable-voting-ledger.js";
 import { ReplayableNullifierLedger } from "../../ledgers/nullifier-ledger/replayable-nullifier-ledger.js";
 import { logger, provableLog, time, timeEnd } from "../../logging/logger.js";
+import { configureProvingNetwork } from "../proving-network.js";
 
 export interface VoteReducerRunBatchTaskInput {
   trace: VoteReducerRunBatchTrace;
@@ -31,20 +32,18 @@ export const VoteReducerRunBatchTask: Task<
   public static taskName = "vote-reducer-run-batch";
 
   public static async prepare() {
-    logger.info("compiling vote reducer", { proofsEnabled });
+    const { network, cache } = configureProvingNetwork();
+    logger.info("compiling vote reducer", { proofsEnabled, network });
 
     voteReducerContext.set({
       votingLedger: new ReplayableVotingLedger({}, {}),
       nullifierLedger: new ReplayableNullifierLedger({}, {}),
     });
 
-    const files = readdirSync(`${process.cwd()}/cache`);
-    logger.info("cache files", `${process.cwd()}/cache`, files);
-
     time("compile", "info");
     await VoteReducer.compile({
       proofsEnabled,
-      cache: Cache.FileSystem(`${process.cwd()}/cache`),
+      cache,
     });
     timeEnd("compile", "info");
   }
@@ -104,11 +103,11 @@ export const VoteReducerRunBatchTask: Task<
 
     const votingLedger = new ReplayableVotingLedger(
       votingLedgerWitnesses,
-      votingAccounts
+      votingAccounts,
     );
     const nullifierLedger = new ReplayableNullifierLedger(
       nullifierLedgerWitnesses,
-      nullifiers
+      nullifiers,
     );
 
     voteReducerContext.set({

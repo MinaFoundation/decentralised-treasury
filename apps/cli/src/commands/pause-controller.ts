@@ -10,8 +10,8 @@ import { logger } from "@repo/sdk/src/index.js";
 import { parseBooleanOption, parseIntOption } from "./option-parsers.js";
 import {
   configureMinaNetwork,
-  minaNetworkIdOption,
-  type MinaNetworkId,
+  minaNetworkOption,
+  type TreasuryNetwork,
 } from "./mina-instance.js";
 import {
   addTransactionSignerOptions,
@@ -22,7 +22,7 @@ import {
 
 interface BasePauseControllerCommandOptions {
   minaNodeUrl: string;
-  networkId: MinaNetworkId;
+  network: TreasuryNetwork;
   signer: SignerMode;
   senderPrivateKey?: PrivateKey;
   senderPublicKey?: PublicKey;
@@ -36,12 +36,14 @@ interface BasePauseControllerCommandOptions {
 }
 
 interface CompilePauseControllerCommandOptions {
+  minaNodeUrl: string;
+  network: TreasuryNetwork;
   cachePath?: string;
 }
 
 interface DeployPauseControllerCommandOptions {
   minaNodeUrl: string;
-  networkId: MinaNetworkId;
+  network: TreasuryNetwork;
   signer: SignerMode;
   senderPrivateKey?: PrivateKey;
   senderPublicKey?: PublicKey;
@@ -82,7 +84,7 @@ interface RotateMultisigKeysCommandOptions extends BasePauseControllerCommandOpt
 
 interface ReadPauseControllerStateCommandOptions {
   minaNodeUrl: string;
-  networkId: MinaNetworkId;
+  network: TreasuryNetwork;
   pauseControllerPublicKey: PublicKey;
 }
 
@@ -148,6 +150,7 @@ function parsePublicKeys(value: string): PublicKey[] {
 export async function compilePauseController(
   options: CompilePauseControllerCommandOptions,
 ): Promise<void> {
+  configureMinaNetwork(options.minaNodeUrl, options.network);
   const { SqlitePauseControllerService } =
     await import("@repo/sdk/src/services/sqlite/sqlite-pause-controller-service.js");
   const service = new SqlitePauseControllerService();
@@ -184,16 +187,16 @@ export async function deployPauseController(
   });
   const transactionSigner = createTransactionSigner(
     [sender, pauseController],
-    options.networkId,
+    options.network,
   );
   const { SqlitePauseControllerService } =
     await import("@repo/sdk/src/services/sqlite/sqlite-pause-controller-service.js");
   const service = new SqlitePauseControllerService();
+  configureMinaNetwork(options.minaNodeUrl, options.network);
   logger.info(
     `[pause-controller:deploy] compiling pause controller (participants=${options.multisigParticipantsPublicKeys.length})`,
   );
   await service.compile();
-  configureMinaNetwork(options.minaNodeUrl, options.networkId);
   const result = await service.deploy({
     minaNodeUrl: options.minaNodeUrl,
     senderPublicKey: sender.publicKey,
@@ -221,7 +224,7 @@ export async function readPauseControllerState(
   const { SqlitePauseControllerService } =
     await import("@repo/sdk/src/services/sqlite/sqlite-pause-controller-service.js");
   const service = new SqlitePauseControllerService();
-  configureMinaNetwork(options.minaNodeUrl, options.networkId);
+  configureMinaNetwork(options.minaNodeUrl, options.network);
   const result = await service.getPauseControllerState({
     minaNodeUrl: options.minaNodeUrl,
     pauseControllerPublicKey: options.pauseControllerPublicKey,
@@ -239,15 +242,12 @@ export async function pauseTreasury(
     publicKey: options.senderPublicKey,
     ledgerAccountIndex: options.senderLedgerAccountIndex,
   });
-  const transactionSigner = createTransactionSigner(
-    [sender],
-    options.networkId,
-  );
+  const transactionSigner = createTransactionSigner([sender], options.network);
   const { SqlitePauseControllerService } =
     await import("@repo/sdk/src/services/sqlite/sqlite-pause-controller-service.js");
   const service = new SqlitePauseControllerService();
+  configureMinaNetwork(options.minaNodeUrl, options.network);
   await service.compile();
-  configureMinaNetwork(options.minaNodeUrl, options.networkId);
   const result = await service.pauseTreasury({
     minaNodeUrl: options.minaNodeUrl,
     senderPublicKey: sender.publicKey,
@@ -274,15 +274,12 @@ export async function unpauseTreasury(
     publicKey: options.senderPublicKey,
     ledgerAccountIndex: options.senderLedgerAccountIndex,
   });
-  const transactionSigner = createTransactionSigner(
-    [sender],
-    options.networkId,
-  );
+  const transactionSigner = createTransactionSigner([sender], options.network);
   const { SqlitePauseControllerService } =
     await import("@repo/sdk/src/services/sqlite/sqlite-pause-controller-service.js");
   const service = new SqlitePauseControllerService();
+  configureMinaNetwork(options.minaNodeUrl, options.network);
   await service.compile();
-  configureMinaNetwork(options.minaNodeUrl, options.networkId);
   const result = await service.unpauseTreasury({
     minaNodeUrl: options.minaNodeUrl,
     senderPublicKey: sender.publicKey,
@@ -309,10 +306,7 @@ export async function togglePauseProposal(
     publicKey: options.senderPublicKey,
     ledgerAccountIndex: options.senderLedgerAccountIndex,
   });
-  const transactionSigner = createTransactionSigner(
-    [sender],
-    options.networkId,
-  );
+  const transactionSigner = createTransactionSigner([sender], options.network);
   const [{ SqlitePauseControllerService }, { SqliteTreasuryOwnerService }] =
     await Promise.all([
       import("@repo/sdk/src/services/sqlite/sqlite-pause-controller-service.js"),
@@ -320,10 +314,10 @@ export async function togglePauseProposal(
     ]);
   const service = new SqlitePauseControllerService();
   const treasuryOwnerService = new SqliteTreasuryOwnerService();
+  configureMinaNetwork(options.minaNodeUrl, options.network);
   await treasuryOwnerService.compile({
     lifecyclePeriodDuration: options.lifecyclePeriodDuration,
   });
-  configureMinaNetwork(options.minaNodeUrl, options.networkId);
   const result = await service.togglePauseProposal({
     minaNodeUrl: options.minaNodeUrl,
     senderPublicKey: sender.publicKey,
@@ -352,15 +346,12 @@ export async function rotateMultisigKeys(
     publicKey: options.senderPublicKey,
     ledgerAccountIndex: options.senderLedgerAccountIndex,
   });
-  const transactionSigner = createTransactionSigner(
-    [sender],
-    options.networkId,
-  );
+  const transactionSigner = createTransactionSigner([sender], options.network);
   const { SqlitePauseControllerService } =
     await import("@repo/sdk/src/services/sqlite/sqlite-pause-controller-service.js");
   const service = new SqlitePauseControllerService();
+  configureMinaNetwork(options.minaNodeUrl, options.network);
   await service.compile();
-  configureMinaNetwork(options.minaNodeUrl, options.networkId);
   const result = await service.rotateMultisigKeys({
     minaNodeUrl: options.minaNodeUrl,
     senderPublicKey: sender.publicKey,
@@ -389,6 +380,12 @@ export default function pauseControllerCommandFactory(program: Command) {
     .command("compile")
     .description("Compile pause controller contract")
     .addOption(
+      new Option("--mina-node-url <mina-node-url>", "Mina GraphQL URL")
+        .env("MINA_NODE_URL")
+        .default("http://127.0.0.1:8080/graphql"),
+    )
+    .addOption(minaNetworkOption())
+    .addOption(
       new Option(
         "--cache-path <cache-path>",
         "Optional compile cache directory",
@@ -404,7 +401,7 @@ export default function pauseControllerCommandFactory(program: Command) {
         .env("MINA_NODE_URL")
         .default("http://127.0.0.1:8080/graphql"),
     )
-    .addOption(minaNetworkIdOption())
+    .addOption(minaNetworkOption())
     .addOption(
       new Option(
         "--sender-private-key <sender-private-key>",
@@ -466,7 +463,7 @@ export default function pauseControllerCommandFactory(program: Command) {
         .env("MINA_NODE_URL")
         .default("http://127.0.0.1:8080/graphql"),
     )
-    .addOption(minaNetworkIdOption())
+    .addOption(minaNetworkOption())
     .addOption(
       new Option(
         "--pause-controller-public-key <pause-controller-public-key>",
@@ -486,7 +483,7 @@ export default function pauseControllerCommandFactory(program: Command) {
         .env("MINA_NODE_URL")
         .default("http://127.0.0.1:8080/graphql"),
     )
-    .addOption(minaNetworkIdOption())
+    .addOption(minaNetworkOption())
     .addOption(
       new Option(
         "--sender-private-key <sender-private-key>",
@@ -565,7 +562,7 @@ export default function pauseControllerCommandFactory(program: Command) {
         .env("MINA_NODE_URL")
         .default("http://127.0.0.1:8080/graphql"),
     )
-    .addOption(minaNetworkIdOption())
+    .addOption(minaNetworkOption())
     .addOption(
       new Option(
         "--sender-private-key <sender-private-key>",
@@ -646,7 +643,7 @@ export default function pauseControllerCommandFactory(program: Command) {
         .env("MINA_NODE_URL")
         .default("http://127.0.0.1:8080/graphql"),
     )
-    .addOption(minaNetworkIdOption())
+    .addOption(minaNetworkOption())
     .addOption(
       new Option(
         "--sender-private-key <sender-private-key>",
@@ -752,7 +749,7 @@ export default function pauseControllerCommandFactory(program: Command) {
         .env("MINA_NODE_URL")
         .default("http://127.0.0.1:8080/graphql"),
     )
-    .addOption(minaNetworkIdOption())
+    .addOption(minaNetworkOption())
     .addOption(
       new Option(
         "--sender-private-key <sender-private-key>",

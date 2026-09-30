@@ -6,7 +6,7 @@ import { describe, it } from "node:test";
 import { Field, PrivateKey, Signature, UInt32 } from "o1js";
 
 import { loadApiConfig } from "../../../apps/api/src/config.js";
-import { minaNetworkIdOption } from "../../../apps/cli/src/commands/mina-instance.js";
+import { minaNetworkOption } from "../../../apps/cli/src/commands/mina-instance.js";
 import {
   createLedgerTransactionSigner,
   resolveSigningAccount,
@@ -48,7 +48,7 @@ function deploymentFixture() {
       buildIdentity: "sha256:caller-intent-build",
       lifecyclePeriodDuration: "7140",
       multisigParticipantsPublicKeys: participants,
-      networkId: "testnet",
+      networkId: "devnet",
       pauseControllerAddress,
       policyConstants: {
         basisPoints: "10000",
@@ -127,7 +127,7 @@ function deploymentFixture() {
     },
     accountQuery: {
       accessPermission: "proofOrSignature",
-      networkId: "testnet",
+      networkId: "devnet",
       nonce: "44",
       pauseControllerAddress,
       pauseControllerVerificationKeyHash: "5002",
@@ -223,12 +223,12 @@ describe("proof-off caller intent", () => {
         mutate(input) {
           input.intended.networkId = "berkeley";
         },
-        error: /must be mainnet, devnet, or testnet/,
+        error: /must be mainnet or devnet/,
       },
       {
         name: "conflicting observed network",
         mutate(input) {
-          input.accountQuery.networkId = "devnet";
+          input.accountQuery.networkId = "mainnet";
         },
         error: /networkId in accountQuery mismatch/,
       },
@@ -369,32 +369,27 @@ describe("proof-off caller intent", () => {
   });
 
   it("CALL-INTENT-003 gives explicit CLI network input precedence over the environment", () => {
-    const previousNetworkId = process.env.MINA_NETWORK_ID;
-    process.env.MINA_NETWORK_ID = "testnet";
+    const previousNetworkId = process.env.NETWORK;
+    process.env.NETWORK = "devnet";
 
     try {
       const cases = [
         { input: "MAINNET", expected: "mainnet" },
         { input: "devnet", expected: "devnet" },
-        { input: "TeStNeT", expected: "testnet" },
       ];
 
       for (const testCase of cases) {
         const program = new Command()
           .exitOverride()
-          .addOption(minaNetworkIdOption());
-        program.parse(["--network-id", testCase.input], { from: "user" });
-        assert.equal(
-          program.opts().networkId,
-          testCase.expected,
-          testCase.input,
-        );
+          .addOption(minaNetworkOption());
+        program.parse(["--network", testCase.input], { from: "user" });
+        assert.equal(program.opts().network, testCase.expected, testCase.input);
       }
     } finally {
       if (previousNetworkId === undefined) {
-        delete process.env.MINA_NETWORK_ID;
+        delete process.env.NETWORK;
       } else {
-        process.env.MINA_NETWORK_ID = previousNetworkId;
+        process.env.NETWORK = previousNetworkId;
       }
     }
   });
@@ -577,7 +572,7 @@ describe("proof-off caller intent", () => {
     );
     const guardStart = runtimeSource.indexOf("function assertProofsPresent(");
     const guardEnd = runtimeSource.indexOf(
-      "let compileContractsPromise",
+      "const compileContracts =",
       guardStart,
     );
     assert.ok(guardStart >= 0 && guardEnd > guardStart);
@@ -598,7 +593,7 @@ describe("proof-off caller intent", () => {
     );
   });
 
-  it("CALL-INTENT-010 keys Web compile reuse by mode and keeps worker tasks on the inherited mode (source characterization)", async () => {
+  it("CALL-INTENT-010 keys Web compile reuse by network and mode and keeps worker tasks on the inherited mode (source characterization)", async () => {
     // The Web worker is an entry point, and worker-job-process.ts exits when
     // it has no task-module argument. Characterize these process seams.
     const webWorkerSource = compact(
@@ -608,13 +603,19 @@ describe("proof-off caller intent", () => {
     );
     assert.ok(
       webWorkerSource.includes(
-        "compileArtifacts && compileProofsEnabled === proofsEnabled",
+        "const nextCompileKey = `${network}:${String(proofsEnabled)}`;",
       ),
-      "compile reuse checks the requested mode",
+      "compile identity includes the requested network and mode",
     );
     assert.ok(
-      webWorkerSource.includes("compileProofsEnabled = proofsEnabled;"),
-      "compiled artifacts record their mode",
+      webWorkerSource.includes(
+        "compileArtifacts && compileKey === nextCompileKey",
+      ),
+      "reuse requires a matching compile identity",
+    );
+    assert.ok(
+      webWorkerSource.includes("compileKey = nextCompileKey;"),
+      "compiled artifacts record their identity",
     );
 
     const workerSource = compact(
@@ -671,16 +672,19 @@ describe("proof-off caller intent", () => {
     );
   });
 
-  it("CALL-INTENT-012 records same-mode stale compile reuse after config change (source characterization)", async () => {
+  it("CALL-INTENT-012 records network-aware compile reuse and its remaining configuration limit (source characterization)", async () => {
     const workerSource = compact(
       await readRepositorySource(
         "apps/web/features/proposals/workers/treasury-proposal.worker.ts",
       ),
     );
     const reuseStart = workerSource.indexOf(
-      "if (compileArtifacts && compileProofsEnabled === proofsEnabled)",
+      "const network = resolveTreasuryNetwork(runtimeConfig.networkId);",
     );
-    const reuseEnd = workerSource.indexOf("status = {", reuseStart);
+    const reuseEnd = workerSource.indexOf(
+      "compileArtifacts = null;",
+      reuseStart,
+    );
     const reuseCondition = workerSource.slice(reuseStart, reuseEnd);
 
     assert.ok(reuseStart >= 0 && reuseEnd > reuseStart);
@@ -688,11 +692,23 @@ describe("proof-off caller intent", () => {
       workerSource.includes("adoptRuntimeConfig(message.runtimeConfig);"),
       "each request installs its current config",
     );
-    assert.equal(
-      reuseCondition.includes("runtimeConfig"),
-      false,
-      "Compile reuse does not bind the current runtime config",
+    assert.ok(
+      reuseCondition.includes(
+        "const nextCompileKey = `${network}:${String(proofsEnabled)}`;",
+      ),
+      "compile reuse binds network and proof mode",
     );
+    for (const field of [
+      "lifecyclePeriodDuration",
+      "treasuryProposalVerificationKeyJson",
+      "voteReducerVerificationKeyJson",
+    ]) {
+      assert.equal(
+        reuseCondition.includes(field),
+        false,
+        `Compile reuse does not bind ${field}; same-network, same-mode config changes remain outside its identity`,
+      );
+    }
   });
 
   it("CALL-INTENT-013 keeps software and mock Ledger signing intent equal", async () => {
@@ -863,7 +879,7 @@ describe("proof-off caller intent", () => {
     const acceptedSigner = createLedgerTransactionSigner(
       "ledger",
       [account("Sender", first, 7), account("Funding", first, 7)],
-      "testnet",
+      "devnet",
       async (transaction, indices, networkId) => {
         calls.push({ indices: [...indices], networkId });
         return transaction;
@@ -881,7 +897,7 @@ describe("proof-off caller intent", () => {
       ]),
     );
     assert.deepEqual(calls, [
-      { indices: [[first.toBase58(), 7]], networkId: "testnet" },
+      { indices: [[first.toBase58(), 7]], networkId: "devnet" },
     ]);
 
     assert.throws(
