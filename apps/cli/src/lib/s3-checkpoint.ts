@@ -6,6 +6,8 @@ import {
 import { Upload } from "@aws-sdk/lib-storage";
 import { NodeHttpHandler } from "@smithy/node-http-handler";
 import { createReadStream, createWriteStream } from "node:fs";
+import { rename, rm } from "node:fs/promises";
+import { randomUUID } from "node:crypto";
 import { pipeline } from "node:stream/promises";
 import type { Readable } from "node:stream";
 
@@ -40,7 +42,10 @@ export function parseS3Uri(uri: string): S3Location {
   return { bucket, key };
 }
 
-function checkpointLocation(prefixUri: string, lifecycleId: string): S3Location {
+function checkpointLocation(
+  prefixUri: string,
+  lifecycleId: string,
+): S3Location {
   const { bucket, key } = parseS3Uri(prefixUri);
   const trimmedKey = key.replace(/\/+$/, "");
   return {
@@ -102,7 +107,20 @@ export async function pullCheckpoint(
     if (!response.Body) {
       return false;
     }
-    await pipeline(response.Body as Readable, createWriteStream(destinationPath));
+    const temporaryPath = `${destinationPath}.${randomUUID()}.restore`;
+    try {
+      await pipeline(
+        response.Body as Readable,
+        createWriteStream(temporaryPath, { flags: "wx" }),
+      );
+      // Restore requires exclusive access: no SQLite handle may be open here.
+      for (const suffix of ["-wal", "-shm", "-journal"]) {
+        await rm(`${destinationPath}${suffix}`, { force: true });
+      }
+      await rename(temporaryPath, destinationPath);
+    } finally {
+      await rm(temporaryPath, { force: true });
+    }
     return true;
   } catch (error) {
     if (isNotFound(error)) {

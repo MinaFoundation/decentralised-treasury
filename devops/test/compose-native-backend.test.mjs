@@ -59,3 +59,11 @@ test("Compose selects native o1js only for real proof services", async () => {
     );
   }
 });
+
+test("Compose gives checkpoint shutdown time for both upload attempts", async () => {
+  const source = await readFile(composePath, "utf8");
+  assert.match(
+    serviceBlock(source, "voting-ledger-scheduler"),
+    /^    stop_grace_period: 21m$/mu,
+  );
+});

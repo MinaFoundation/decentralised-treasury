@@ -111,6 +111,9 @@ export async function traceDigest({
     lifecycleId,
   });
   let sigtermHandler: (() => void) | undefined;
+  let stopping = false;
+  const stopTracing = new Error("Trace stopped after SIGTERM");
+  let checkpointInFlight: Promise<void> | null = null;
   try {
     await service.start();
 
@@ -127,7 +130,6 @@ export async function traceDigest({
     // failed checkpoint is logged and swallowed - losing one interval's
     // snapshot should not fail an otherwise-successful run, since the
     // previous checkpoint (or a from-scratch restart) is still available.
-    let checkpointInFlight: Promise<void> | null = null;
     const runCheckpoint = async (index: number): Promise<void> => {
       // checkpointWal() truncates the WAL into the main .sqlite file, giving
       // a complete snapshot at that instant - but tracing keeps running
@@ -170,42 +172,40 @@ export async function traceDigest({
       return attempt;
     };
 
-    if (checkpointEnabled) {
-      // Kubernetes sends SIGTERM before a spot reclaim tears the pod down, so
-      // taking one immediate checkpoint here bounds the lost work to whatever
-      // happens between this handler and the grace period expiring, rather
-      // than the full interval - the periodic checkpoint below is the
-      // fallback for a hard kill that skips SIGTERM entirely.
-      sigtermHandler = () => {
-        logger.info(
-          "[staking-ledger-to-voting-ledger:trace-digest] SIGTERM received - checkpointing before exit",
-        );
-        void scheduleCheckpoint(lastTracedIndex).finally(() => {
-          process.exit(143);
-        });
-      };
-      process.once("SIGTERM", sigtermHandler);
-    }
+    sigtermHandler = () => {
+      stopping = true;
+      logger.info(
+        "[staking-ledger-to-voting-ledger:trace-digest] SIGTERM received - stopping after the current trace batch",
+      );
+    };
+    process.on("SIGTERM", sigtermHandler);
 
     let sinceCheckpoint = 0;
-    await service.traceDigest(startIndex, endIndex, (index) => {
-      tracedCount += 1;
-      lastTracedIndex = index;
-      logger.info(
-        `[staking-ledger-to-voting-ledger:trace-digest] traced index=${index} (count=${tracedCount})`,
-      );
-      if (checkpointEnabled) {
-        sinceCheckpoint += 1;
-        if (sinceCheckpoint >= checkpointInterval!) {
-          sinceCheckpoint = 0;
-          void scheduleCheckpoint(index);
+    try {
+      await service.traceDigest(startIndex, endIndex, (index) => {
+        tracedCount += 1;
+        lastTracedIndex = index;
+        logger.info(
+          `[staking-ledger-to-voting-ledger:trace-digest] traced index=${index} (count=${tracedCount})`,
+        );
+        // The tracer calls this after committing the complete batch.
+        if (stopping) throw stopTracing;
+        if (checkpointEnabled) {
+          sinceCheckpoint += 1;
+          if (sinceCheckpoint >= checkpointInterval!) {
+            sinceCheckpoint = 0;
+            void scheduleCheckpoint(index);
+          }
         }
-      }
-    });
+      });
+    } catch (error) {
+      if (error !== stopTracing) throw error;
+    }
 
     if (checkpointEnabled) {
       // Covers the tail: the run may finish partway through an interval, and
       // that last partial batch would otherwise never get checkpointed.
+      await checkpointInFlight;
       await scheduleCheckpoint(lastTracedIndex);
     }
 
@@ -213,10 +213,15 @@ export async function traceDigest({
       `[staking-ledger-to-voting-ledger:trace-digest] done (count=${tracedCount}, elapsedMs=${Date.now() - startedAt})`,
     );
   } finally {
-    if (sigtermHandler) {
-      process.removeListener("SIGTERM", sigtermHandler);
+    try {
+      await checkpointInFlight;
+      await service.close();
+    } finally {
+      if (sigtermHandler) {
+        process.removeListener("SIGTERM", sigtermHandler);
+      }
+      if (stopping) process.exitCode = 143;
     }
-    await service.close();
   }
 }
 

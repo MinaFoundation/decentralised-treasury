@@ -65,8 +65,38 @@ log_info() { echo "[voting-ledger-scheduler] $*"; }
 log_warn() { echo "[voting-ledger-scheduler] WARN $*" >&2; }
 log_error() { echo "[voting-ledger-scheduler] ERROR $*" >&2; }
 
+active_child=""
+restore_output_file=""
+
+stop_scheduler() {
+  # Ignore repeated requests while the child finishes its own shutdown.
+  trap '' TERM INT
+  if [ -n "$active_child" ]; then
+    kill -"$1" "$active_child" 2>/dev/null || :
+    wait "$active_child" || :
+  fi
+  if [ -n "$restore_output_file" ]; then
+    rm -f "$restore_output_file"
+  fi
+  exit "$2"
+}
+trap 'stop_scheduler TERM 143' TERM
+trap 'stop_scheduler INT 130' INT
+
+run_child() {
+  "$@" &
+  active_child=$!
+  if wait "$active_child"; then
+    child_status=0
+  else
+    child_status=$?
+  fi
+  active_child=""
+  return "$child_status"
+}
+
 run_cli() {
-  pnpm run cli -- "$@"
+  run_child node apps/cli/bin/mina-treasury.cjs "$@"
 }
 
 now_epoch_seconds() { date +%s; }
@@ -267,14 +297,18 @@ process_candidate() {
 
   resume_index=""
   if checkpointing_enabled; then
-    if restore_output=$(run_cli staking-ledger-to-voting-ledger checkpoint-restore \
+    # Keep run_cli in this shell so the termination trap owns its child.
+    restore_output_file=$(mktemp "${SQLITE_DATA_DIRECTORY}/.checkpoint-restore.XXXXXX")
+    if run_cli staking-ledger-to-voting-ledger checkpoint-restore \
       --lifecycle-id "$lifecycle_id" \
       --expected-ledger-hash "$ledger_hash" \
-      --s3-uri "$CHECKPOINT_S3_URI"); then
-      resume_index=$(printf '%s\n' "$restore_output" | sed -n 's/^RESUME_INDEX=\([0-9][0-9]*\)$/\1/p')
+      --s3-uri "$CHECKPOINT_S3_URI" > "$restore_output_file"; then
+      resume_index=$(sed -n 's/^RESUME_INDEX=\([0-9][0-9]*\)$/\1/p' "$restore_output_file")
     else
       log_warn "checkpoint-restore failed for lifecycleId=${lifecycle_id} - falling back to a fresh hydration"
     fi
+    rm -f "$restore_output_file"
+    restore_output_file=""
   fi
 
   if [ -n "$resume_index" ]; then
@@ -426,7 +460,7 @@ case "${1:-}" in
         status=$?
         log_error "process-pending cycle exited with status ${status} - will retry next cycle"
       fi
-      sleep "$POLL_INTERVAL_SECONDS"
+      run_child sleep "$POLL_INTERVAL_SECONDS"
     done
     ;;
   *)

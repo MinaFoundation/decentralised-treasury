@@ -741,7 +741,7 @@ describe("proof-off queue and restart operations", () => {
     }
   });
 
-  it("OPS-RESTART-013/018 records non-atomic and presence-only completion marker handling", async () => {
+  it("OPS-RESTART-013/018 records non-atomic markers and lifecycle hash checks", async () => {
     const provingScheduler = await readFile(
       `${REPOSITORY_ROOT}/devops/docker/proving-scheduler-entrypoint.sh`,
       "utf8",
@@ -756,7 +756,8 @@ describe("proof-off queue and restart operations", () => {
       assert.doesNotMatch(source, /mktemp.*marker|mv .*marker/u);
     }
     assert.match(provingScheduler, /\[ -e "\$\(proven_marker_path/u);
-    assert.match(votingScheduler, /\[ -e "\$\(done_marker_path/u);
+    assert.match(votingScheduler, /\[ -e "\$done_marker" \]/u);
+    assert.match(votingScheduler, /completed_hash.*!=.*\$hash/u);
   });
 
   it("OPS-RESTART-014 bounds queue dependency faults before listener creation", async () => {
@@ -798,7 +799,7 @@ describe("proof-off queue and restart operations", () => {
       "utf8",
     );
 
-    assert.match(source, /process\.once\("SIGTERM"/u);
+    assert.match(source, /process\.on\("SIGTERM"/u);
     assert.match(source, /await scheduleCheckpoint/u);
     assert.match(source, /process\.removeListener\("SIGTERM"/u);
     assert.doesNotMatch(source, /SIGKILL/u);

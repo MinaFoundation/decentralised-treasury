@@ -12,19 +12,34 @@ if (cliArgs[0] === "--") {
 
 const child = spawn(
   process.execPath,
-  ["--loader", "ts-node/esm", cliEntry, ...cliArgs],
+  ["--loader", require.resolve("ts-node/esm"), cliEntry, ...cliArgs],
   {
     stdio: "inherit",
     cwd: process.cwd(),
-    env: process.env,
+    env: {
+      ...process.env,
+      TS_NODE_PROJECT:
+        process.env.TS_NODE_PROJECT ?? resolve(packageRoot, "tsconfig.json"),
+    },
   },
 );
 
+const forwardTerm = () => child.kill("SIGTERM");
+const forwardInt = () => child.kill("SIGINT");
+process.on("SIGTERM", forwardTerm);
+process.on("SIGINT", forwardInt);
+
+child.on("error", (error) => {
+  console.error(error);
+  process.exit(1);
+});
+
 child.on("exit", (code, signal) => {
+  process.removeListener("SIGTERM", forwardTerm);
+  process.removeListener("SIGINT", forwardInt);
   if (signal) {
     process.kill(process.pid, signal);
     return;
   }
   process.exit(code ?? 1);
 });
-

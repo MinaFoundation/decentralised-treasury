@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { execFile } from "node:child_process";
+import { execFile, spawn } from "node:child_process";
 import {
   chmod,
   mkdtemp,
@@ -12,6 +12,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { promisify } from "node:util";
+import { createInterface } from "node:readline";
 import test from "node:test";
 
 const execFileAsync = promisify(execFile);
@@ -28,16 +29,16 @@ async function createHarness() {
   const sqliteDirectory = join(root, "sqlite");
   const ledgerDirectory = join(root, "ledgers");
   const binDirectory = join(root, "bin");
-  const callLog = join(root, "pnpm-calls.log");
+  const callLog = join(root, "cli-calls.log");
   await Promise.all([
     mkdir(sqliteDirectory),
     mkdir(ledgerDirectory),
     mkdir(binDirectory),
   ]);
 
-  const fakePnpm = join(binDirectory, "pnpm");
+  const fakeNode = join(binDirectory, "node");
   await writeFile(
-    fakePnpm,
+    fakeNode,
     `#!/bin/sh
 printf '%s\n' "$*" >> "$SCHEDULER_CALL_LOG"
 case "$*" in
@@ -55,7 +56,7 @@ exit 0
 `,
     "utf8",
   );
-  await chmod(fakePnpm, 0o755);
+  await chmod(fakeNode, 0o755);
 
   const env = {
     ...process.env,
@@ -240,3 +241,136 @@ test("root mismatch leaves no usable completion marker", async (context) => {
   );
   assert.match(failure, /root hash mismatch/);
 });
+
+test(
+  "container SIGTERM reaches trace-digest and waits for its checkpoint and SQLite close",
+  { timeout: 30_000 },
+  async (context) => {
+    const harness = await createHarness();
+    context.after(harness.cleanup);
+    await writeSnapshot(harness, "17", HASH_A);
+    const eventLog = join(harness.root, "shutdown-events.log");
+    const preload = join(harness.root, "trace-service.mjs");
+    // Keep the real shell, launcher, CLI command, and shutdown handler. Replace
+    // external services so the subprocess test needs no S3 or proof generation.
+    await writeFile(
+      preload,
+      String.raw`
+import { appendFileSync } from "node:fs";
+import { writeFile } from "node:fs/promises";
+import { createRequire } from "node:module";
+import { join } from "node:path";
+import { pathToFileURL } from "node:url";
+import { setTimeout as delay } from "node:timers/promises";
+if (process.argv[1]?.endsWith("/src/cli.ts")) {
+  if (!process.argv.includes("trace-digest")) {
+    if (process.argv.includes("checkpoint-restore")) console.log("FRESH");
+    process.exit(0);
+  }
+  const root = process.env.SHUTDOWN_REPOSITORY_ROOT;
+  const { SqliteStakingLedgerToVotingLedgerService: Service } = await import(
+    pathToFileURL(join(root, "packages/sdk/src/services/sqlite/sqlite-staking-ledger-to-voting-ledger-service.ts")).href
+  );
+  const require = createRequire(join(root, "apps/cli/package.json"));
+  const { Upload } = await import(require.resolve("@aws-sdk/lib-storage"));
+  const record = (event) => appendFileSync(process.env.SHUTDOWN_EVENT_LOG, event + "\n");
+  const database = join(process.env.SQLITE_DATA_DIRECTORY, "17.sqlite");
+  Service.prototype.start = async () => { await writeFile(database, "initial"); };
+  Service.prototype.writeCheckpointLedgerHash = async () => {};
+  Service.prototype.checkpointWal = async () => { record("wal"); };
+  Service.prototype.traceDigest = async (_start, _end, complete) => {
+    console.log("TRACE_READY");
+    for (let index = 0; index < 1000; index++) {
+      await delay(25);
+      await writeFile(database, "batch " + index);
+      record("batch " + index);
+      complete(index);
+    }
+  };
+  Upload.prototype.done = async function () {
+    const chunks = [];
+    for await (const chunk of this.params.Body) chunks.push(Buffer.from(chunk));
+    record("upload " + Buffer.concat(chunks).toString());
+    return {};
+  };
+  Service.prototype.close = async () => {
+    await delay(100);
+    record("closed");
+  };
+  process.on("exit", (code) => record("exit " + code));
+}
+`,
+    );
+    const scheduler = spawn("/bin/sh", [SCHEDULER_SCRIPT], {
+      cwd: REPOSITORY_ROOT,
+      detached: true,
+      env: {
+        ...harness.env,
+        PATH: process.env.PATH,
+        NODE_OPTIONS: `--import=${preload}`,
+        NODE_NO_WARNINGS: "1",
+        SHUTDOWN_REPOSITORY_ROOT: REPOSITORY_ROOT,
+        SHUTDOWN_EVENT_LOG: eventLog,
+        CHECKPOINT_INTERVAL: "100000",
+        CHECKPOINT_S3_URI: "s3://test/checkpoints",
+      },
+      stdio: ["ignore", "pipe", "pipe"],
+    });
+    context.after(() => {
+      try {
+        process.kill(-scheduler.pid, "SIGKILL");
+      } catch (error) {
+        if (error.code !== "ESRCH") throw error;
+      }
+    });
+    let output = "";
+    scheduler.stdout.on("data", (chunk) => {
+      output += chunk;
+    });
+    scheduler.stderr.on("data", (chunk) => {
+      output += chunk;
+    });
+    const exited = new Promise((resolve) =>
+      scheduler.once("close", (code, signal) => resolve({ code, signal })),
+    );
+    await new Promise((resolve, reject) => {
+      const timer = setTimeout(
+        () => reject(new Error(`Trace readiness timed out: ${output}`)),
+        10_000,
+      );
+      context.after(() => clearTimeout(timer));
+      const lines = createInterface({ input: scheduler.stdout });
+      lines.on("line", (line) => {
+        if (line === "TRACE_READY") {
+          clearTimeout(timer);
+          resolve();
+        }
+      });
+      scheduler.once("error", reject);
+      scheduler.once("close", () =>
+        reject(new Error(`Scheduler exited before trace readiness: ${output}`)),
+      );
+    });
+    scheduler.kill("SIGTERM");
+    assert.deepEqual(await exited, { code: 143, signal: null }, output);
+    const events = (await readFile(eventLog, "utf8")).trim().split("\n");
+    const lastBatch = events
+      .filter((event) => event.startsWith("batch "))
+      .at(-1);
+    assert(lastBatch, output);
+    assert.deepEqual(events.slice(-4), [
+      "wal",
+      `upload ${lastBatch}`,
+      "closed",
+      "exit 143",
+    ]);
+    await assert.rejects(
+      readFile(join(harness.sqliteDirectory, "17.sqlite.done")),
+      /ENOENT/,
+    );
+    assert.doesNotMatch(
+      output,
+      /cycle summary|checkpoint-clean|trace-digest done for/,
+    );
+  },
+);
