@@ -54,6 +54,8 @@ docker login
 ./devops/scripts/publish-images.sh
 ```
 
+The script builds `linux/arm64` first, then `linux/amd64`. It pushes a per-architecture tag for each build. When all builds succeed, it joins these tags into the multi-architecture tag and `:latest`. Set `SPLIT_PLATFORMS=false` for one parallel build. A parallel build needs more memory.
+
 Use a single architecture for a faster local build check:
 
 ```bash

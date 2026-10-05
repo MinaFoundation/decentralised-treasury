@@ -44,7 +44,7 @@ The script refuses to run on a dirty working tree, because the tag would not
 identify the code inside the image. Override with `ALLOW_DIRTY=true` only for
 throwaway builds.
 
-It builds four image targets for `linux/amd64` and `linux/arm64`:
+It builds four image targets for `linux/arm64` and `linux/amd64`:
 
 | Dockerfile target | Pushed to                                                                                                                                                                 | Contents                                                                      |
 | ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
@@ -53,6 +53,16 @@ It builds four image targets for `linux/amd64` and `linux/arm64`:
 | `docs`            | `dt-docs`                                                                                                                                                                 | Static documentation site behind nginx, served at `/docs/`                    |
 | `base`            | `dt-api`, `dt-api-migrate`, `dt-indexer`, `dt-indexer-api`, `dt-processor`, `dt-processor-api`, `dt-voting-ledger-scheduler`, `dt-proving-worker`, `dt-proving-scheduler` | the pnpm workspace; services differ only by the command the orchestrator runs |
 
+The script builds one architecture at a time, in `PLATFORMS` order. It builds
+all targets for `linux/arm64` first, then all targets for `linux/amd64`. Each
+build pushes a per-architecture tag, for example `dt-web:<tag>-arm64`. When all
+builds succeed, the script joins these tags into the multi-architecture `<tag>`
+and `:latest`. A failed build does not move `<tag>` or `:latest`.
+
+One build at a time uses approximately half the memory of a parallel build. A
+parallel build of the docs target stopped with exit code 137 in a Docker Desktop
+VM with 6 GB of memory.
+
 Useful overrides:
 
 ```sh
@@ -60,6 +70,7 @@ NAMESPACE=my-org ./devops/scripts/publish-images.sh
 PLATFORMS=linux/amd64 ./devops/scripts/publish-images.sh   # single arch, much faster
 PUSH=false ./devops/scripts/publish-images.sh              # check both arches compile
 MOVE_LATEST=false ./devops/scripts/publish-images.sh       # leave :latest where it is
+SPLIT_PLATFORMS=false ./devops/scripts/publish-images.sh   # one parallel build, needs more memory
 ```
 
 Cross-architecture builds run the foreign architecture under QEMU emulation and
