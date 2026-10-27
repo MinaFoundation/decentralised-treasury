@@ -1,4 +1,5 @@
 import { useId } from "react";
+import { Check } from "lucide-react";
 import { Button } from "../../components/ui/button";
 import {
   Dialog,
@@ -41,17 +42,24 @@ export function ProposalAcknowledgements({
       {(["kyc", "terms"] as const).map((key) => {
         return (
           <div key={key} className="flex items-start gap-3">
-            <input
-              id={`${id}-${key}`}
-              type="checkbox"
-              required
-              checked={value[key]}
-              onChange={(event) =>
-                onChange({ ...value, [key]: event.target.checked })
-              }
-              aria-describedby={`${id}-description`}
-              className="mt-1 h-4 w-4 shrink-0 cursor-pointer accent-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ring"
-            />
+            <span className="relative mt-1 h-4 w-4 shrink-0">
+              <input
+                id={`${id}-${key}`}
+                type="checkbox"
+                required
+                checked={value[key]}
+                onChange={(event) =>
+                  onChange({ ...value, [key]: event.target.checked })
+                }
+                aria-describedby={`${id}-description`}
+                className="peer block h-4 w-4 cursor-pointer appearance-none rounded-[3px] border border-muted-foreground bg-background checked:border-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ring forced-colors:appearance-auto"
+              />
+              <Check
+                aria-hidden="true"
+                strokeWidth={3}
+                className="pointer-events-none absolute inset-0 h-4 w-4 p-px text-primary opacity-0 peer-checked:opacity-100 forced-colors:hidden"
+              />
+            </span>
             <div className="min-w-0 text-sm leading-6">
               <label htmlFor={`${id}-${key}`} className="cursor-pointer">
                 {key === "kyc" ? (
