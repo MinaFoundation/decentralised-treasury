@@ -14,7 +14,11 @@ export interface ProposalAcknowledgementsConfig {
   readMoreLabel: string;
   closeLabel: string;
   kyc: ProposalAcknowledgement;
-  terms: ProposalAcknowledgement;
+  terms: {
+    beforeLink: string;
+    link: { label: string; href: string };
+    afterLink: string;
+  };
 }
 
 // UI copy and destinations only. Acceptance is never stored with a proposal.
@@ -50,20 +54,13 @@ export const defaultProposalAcknowledgements: ProposalAcknowledgementsConfig = {
     ],
   },
   terms: {
-    label:
-      "I have read and accepted the Terms and Conditions governing the MINA Decentralized Treasury, and I acknowledge and agree to the privacy terms describing how my personal data will be collected and processed.",
-    title: "Terms and Conditions",
-    sections: [
-      {
-        text: "I have read and accepted the Terms and Conditions governing the MINA Decentralized Treasury, and I acknowledge and agree to the privacy terms describing how my personal data will be collected and processed.",
-        links: [
-          {
-            label: "Read the Terms and Conditions",
-            // Temporary destination supplied for the pending terms details.
-            href: "https://info.minadt.com/terms",
-          },
-        ],
-      },
-    ],
+    beforeLink: "I have read and accepted the ",
+    link: {
+      label: "Terms and Conditions",
+      // Temporary destination supplied for the pending terms details.
+      href: "https://info.minadt.com/terms",
+    },
+    afterLink:
+      " governing the MINA Decentralized Treasury, and I acknowledge and agree to the privacy terms describing how my personal data will be collected and processed.",
   },
 };

@@ -34,15 +34,17 @@ Default local URL: `http://127.0.0.1:3100`
 
 ## Proposal acknowledgements
 
-Proposal creation requires two unchecked acknowledgements: KYC with its Privacy
-Notice, and Terms and Conditions with privacy acceptance. Each Read more button
-opens the existing shared dialog. Reading a dialog does not select its checkbox.
+Proposal creation starts with two unchecked acknowledgements: KYC with its Privacy
+Notice, and Terms and Conditions with privacy acceptance. The KYC Read more button
+opens the existing shared dialog. The inline Terms and Conditions link opens the
+terms in a new tab. Reading either does not select a checkbox.
+Both checkboxes must be selected before creation.
 
 Configure all labels, notice text, and links in
 `packages/ui/src/treasury/proposals/proposal-acknowledgements-config.ts`.
 The shared form also accepts an `acknowledgementsConfig` prop for UI overrides.
 The terms link currently uses the supplied placeholder, `https://info.minadt.com/terms`.
-Replace its notice and destination when the final terms are available.
+Replace the destination when the final terms are available.
 
 Acceptance stays in component state. It resets after form submission, when a
 different draft opens, and when the wallet, lifecycle, period, or configuration changes.

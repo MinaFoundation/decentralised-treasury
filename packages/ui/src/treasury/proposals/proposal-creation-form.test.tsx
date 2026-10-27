@@ -22,11 +22,23 @@ const validProposalProps = {
   initialAmount: "10",
 };
 
+const acknowledgementLabels = {
+  kyc: defaultProposalAcknowledgements.kyc.label,
+  terms: [
+    defaultProposalAcknowledgements.terms.beforeLink,
+    defaultProposalAcknowledgements.terms.link.label,
+    defaultProposalAcknowledgements.terms.afterLink,
+  ]
+    .join(" ")
+    .replace(/\s+/g, " ")
+    .trim(),
+};
+
 function acceptAcknowledgements(): void {
   for (const key of ["kyc", "terms"] as const) {
     fireEvent.click(
       screen.getByRole("checkbox", {
-        name: defaultProposalAcknowledgements[key].label,
+        name: acknowledgementLabels[key],
       }),
     );
   }
@@ -184,7 +196,7 @@ describe("TreasuryProposalCreationForm", () => {
       for (const key of accepted) {
         fireEvent.click(
           screen.getByRole("checkbox", {
-            name: defaultProposalAcknowledgements[key].label,
+            name: acknowledgementLabels[key],
           }),
         );
       }
@@ -221,7 +233,7 @@ describe("TreasuryProposalCreationForm", () => {
     expect(submit).toHaveProperty("disabled", true);
   });
 
-  it("opens and closes read-more dialogs without acceptance or submission", async () => {
+  it("opens and closes the KYC dialog without acceptance or submission", async () => {
     const onSubmit = vi.fn();
     render(
       <TreasuryProposalCreationForm
@@ -229,8 +241,8 @@ describe("TreasuryProposalCreationForm", () => {
         onSubmit={onSubmit}
       />,
     );
-    for (const key of ["kyc", "terms"] as const) {
-      const acknowledgement = defaultProposalAcknowledgements[key];
+    const acknowledgement = defaultProposalAcknowledgements.kyc;
+    for (const closeMethod of ["button", "escape"]) {
       fireEvent.click(
         screen.getByRole("button", {
           name: `Read more: ${acknowledgement.title}`,
@@ -242,7 +254,7 @@ describe("TreasuryProposalCreationForm", () => {
       expect(
         within(dialog).getByText(acknowledgement.sections[0]!.text),
       ).toBeTruthy();
-      if (key === "kyc") {
+      if (closeMethod === "button") {
         fireEvent.click(within(dialog).getByRole("button", { name: "Close" }));
       } else {
         fireEvent.keyDown(dialog, { key: "Escape", code: "Escape" });
@@ -255,7 +267,36 @@ describe("TreasuryProposalCreationForm", () => {
     }
   });
 
-  it("uses configured checkbox copy, dialog copy, and links", () => {
+  it("links the terms words without opening a dialog, acceptance, or submission", () => {
+    const onSubmit = vi.fn();
+    render(
+      <TreasuryProposalCreationForm
+        {...validProposalProps}
+        onSubmit={onSubmit}
+      />,
+    );
+    const link = screen.getByRole("link", { name: "Terms and Conditions" });
+    expect(link.closest("label")?.textContent).toBe(
+      acknowledgementLabels.terms,
+    );
+    expect(link.getAttribute("href")).toBe("https://info.minadt.com/terms");
+    expect(link.getAttribute("target")).toBe("_blank");
+    expect(link.getAttribute("rel")).toBe("noopener noreferrer");
+    expect(
+      screen.queryByRole("button", { name: /Read more: Terms/ }),
+    ).toBeNull();
+    expect(screen.getAllByRole("button", { name: /Read more:/ })).toHaveLength(
+      1,
+    );
+    fireEvent.click(link);
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(screen.queryAllByRole("checkbox", { checked: true })).toHaveLength(
+      0,
+    );
+    expect(onSubmit).not.toHaveBeenCalled();
+  });
+
+  it("uses configured checkbox copy, KYC dialog copy, and links", () => {
     const config: ProposalAcknowledgementsConfig = {
       title: "Custom acknowledgements",
       description: "Custom description",
@@ -272,15 +313,9 @@ describe("TreasuryProposalCreationForm", () => {
         ],
       },
       terms: {
-        label: "Custom terms acceptance",
-        title: "Custom terms",
-        sections: [
-          {
-            title: "Custom privacy",
-            text: "Custom privacy details",
-            links: [{ label: "Policy", href: "https://example.com/policy" }],
-          },
-        ],
+        beforeLink: "I accept the ",
+        link: { label: "Custom terms", href: "https://example.com/terms" },
+        afterLink: " and custom privacy.",
       },
     };
     render(
@@ -290,24 +325,32 @@ describe("TreasuryProposalCreationForm", () => {
       />,
     );
     expect(screen.getByText(config.description)).toBeTruthy();
-    for (const key of ["kyc", "terms"] as const) {
-      expect(
-        screen.getByRole("checkbox", { name: config[key].label }),
-      ).toBeTruthy();
-      fireEvent.click(
-        screen.getByRole("button", { name: `Details: ${config[key].title}` }),
-      );
-      const dialog = screen.getByRole("dialog", { name: config[key].title });
-      const section = config[key].sections[0]!;
-      expect(within(dialog).getByText(section.text)).toBeTruthy();
-      const link = within(dialog).getByRole("link", {
-        name: section.links[0]!.label,
-      });
-      expect(link.getAttribute("href")).toBe(section.links[0]!.href);
-      expect(link.getAttribute("target")).toBe("_blank");
-      expect(link.getAttribute("rel")).toBe("noopener noreferrer");
-      fireEvent.click(within(dialog).getByRole("button", { name: "Dismiss" }));
-    }
+    expect(screen.getByRole("group", { name: config.title })).toBeTruthy();
+    expect(
+      screen.getByRole("checkbox", { name: config.kyc.label }),
+    ).toBeTruthy();
+    expect(
+      screen.getByRole("checkbox", {
+        name: "I accept the Custom terms and custom privacy.",
+      }),
+    ).toBeTruthy();
+    const termsLink = screen.getByRole("link", {
+      name: config.terms.link.label,
+    });
+    expect(termsLink.getAttribute("href")).toBe(config.terms.link.href);
+    fireEvent.click(
+      screen.getByRole("button", { name: `Details: ${config.kyc.title}` }),
+    );
+    const dialog = screen.getByRole("dialog", { name: config.kyc.title });
+    const section = config.kyc.sections[0]!;
+    expect(within(dialog).getByText(section.text)).toBeTruthy();
+    const link = within(dialog).getByRole("link", {
+      name: section.links[0]!.label,
+    });
+    expect(link.getAttribute("href")).toBe(section.links[0]!.href);
+    expect(link.getAttribute("target")).toBe("_blank");
+    expect(link.getAttribute("rel")).toBe("noopener noreferrer");
+    fireEvent.click(within(dialog).getByRole("button", { name: "Dismiss" }));
   });
 
   it("resets acceptance when the wallet, lifecycle, or form instance changes", () => {
