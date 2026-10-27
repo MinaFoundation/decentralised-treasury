@@ -72,6 +72,8 @@ async function fillProposal(page: Page, title: string) {
   await page
     .getByLabel("Content", { exact: true })
     .fill("Fund a public treasury test deliverable.");
+  await page.getByRole("checkbox", { name: /KYC requirement/ }).check();
+  await page.getByRole("checkbox", { name: /Terms and Conditions/ }).check();
 }
 
 for (const scenario of [

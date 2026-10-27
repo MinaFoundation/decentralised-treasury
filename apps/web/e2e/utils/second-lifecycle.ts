@@ -278,6 +278,8 @@ export async function completeSecondLifecycle(input: {
     await page
       .getByLabel("Content", { exact: true })
       .fill("Keep the completed lifecycle 0 proposal unchanged.");
+    await page.getByRole("checkbox", { name: /KYC requirement/ }).check();
+    await page.getByRole("checkbox", { name: /Terms and Conditions/ }).check();
     await page
       .getByRole("button", { name: "Create proposal", exact: true })
       .click();

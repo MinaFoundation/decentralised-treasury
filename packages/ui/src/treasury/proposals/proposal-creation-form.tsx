@@ -39,6 +39,11 @@ import {
   hashMarkdownContentToZkappUri,
 } from "@repo/sdk/src/utils/proposal-content-hash.js";
 import type { TreasuryLifecyclePeriodId } from "../lifecycle/lifecycle-period-info";
+import { ProposalAcknowledgements } from "./proposal-acknowledgements";
+import {
+  defaultProposalAcknowledgements,
+  type ProposalAcknowledgementsConfig,
+} from "./proposal-acknowledgements-config";
 
 const DEFAULT_PROPOSAL_CONTENT_TEMPLATE = `## Summary
 
@@ -175,6 +180,7 @@ export interface TreasuryProposalCreationFormProps {
   initialAmount?: string;
   initialRecipient?: string;
   submitLabel?: string;
+  acknowledgementsConfig?: ProposalAcknowledgementsConfig;
   onSubmit?: (draft: TreasuryProposalCreationDraft) => void;
   onSaveDraft?: (draft: TreasuryProposalCreationDraft) => void;
   onConnectWalletClick?: () => void;
@@ -193,6 +199,7 @@ export function TreasuryProposalCreationForm({
   initialAmount = "",
   initialRecipient = "",
   submitLabel,
+  acknowledgementsConfig = defaultProposalAcknowledgements,
   onSubmit,
   onSaveDraft,
   onConnectWalletClick,
@@ -214,6 +221,10 @@ export function TreasuryProposalCreationForm({
     useState<string>(() => generateProposalContractAddress());
   const [zkAppUriHash, setZkAppUriHash] = useState<string | null>(null);
   const [isZkAppUriHashLoading, setIsZkAppUriHashLoading] = useState(false);
+  const [acknowledgements, setAcknowledgements] = useState({
+    kyc: false,
+    terms: false,
+  });
 
   useEffect(() => {
     setTitle(initialTitle || initialContentParts.title);
@@ -232,6 +243,15 @@ export function TreasuryProposalCreationForm({
   }, [initialRecipient]);
 
   const normalizedWalletAddress = connectedWalletAddress?.trim() ?? "";
+  useEffect(() => {
+    setAcknowledgements({ kyc: false, terms: false });
+  }, [
+    normalizedWalletAddress,
+    lifecycleId,
+    currentPeriod,
+    acknowledgementsConfig,
+  ]);
+
   const hasConnectedWallet = normalizedWalletAddress.length > 0;
   const normalizedTitle = title.trim();
   const normalizedContent = content.trim();
@@ -312,19 +332,20 @@ export function TreasuryProposalCreationForm({
         })
       : null;
 
+  const canCreateProposal =
+    currentPeriod == null || currentPeriod === "proposal";
   const canSubmit =
     walletError === null &&
     titleError === null &&
     contentError === null &&
     amountError === null &&
-    recipientError === null;
+    recipientError === null &&
+    (!canCreateProposal || (acknowledgements.kyc && acknowledgements.terms));
   const canSubmitWithoutWallet =
     titleError === null &&
     contentError === null &&
     amountError === null &&
     recipientError === null;
-  const canCreateProposal =
-    currentPeriod == null || currentPeriod === "proposal";
   const isDraftOnlyPeriod = !canCreateProposal;
   const resolvedSubmitLabel = isDraftOnlyPeriod
     ? intl.formatMessage({
@@ -419,6 +440,7 @@ export function TreasuryProposalCreationForm({
       return;
     }
     onSubmit?.(draft);
+    setAcknowledgements({ kyc: false, terms: false });
   };
 
   const handleSaveDraftClick = (): void => {
@@ -850,6 +872,14 @@ export function TreasuryProposalCreationForm({
                   })}
                 </AlertDescription>
               </Alert>
+
+              {canCreateProposal ? (
+                <ProposalAcknowledgements
+                  value={acknowledgements}
+                  onChange={setAcknowledgements}
+                  config={acknowledgementsConfig}
+                />
+              ) : null}
 
               <div className="flex flex-col items-stretch gap-2 pt-1">
                 <Button

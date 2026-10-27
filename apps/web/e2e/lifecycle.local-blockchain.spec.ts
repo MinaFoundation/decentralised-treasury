@@ -178,6 +178,10 @@ test("S40-006/007: browser completes two lifecycles with distinct snapshots on o
       await page
         .getByLabel("Content", { exact: true })
         .fill("Approve and execute a real browser payout.");
+      await page.getByRole("checkbox", { name: /KYC requirement/ }).check();
+      await page
+        .getByRole("checkbox", { name: /Terms and Conditions/ })
+        .check();
       await page
         .getByRole("button", { name: "Create proposal", exact: true })
         .click();

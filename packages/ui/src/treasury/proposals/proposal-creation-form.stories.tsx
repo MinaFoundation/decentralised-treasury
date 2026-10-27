@@ -1,4 +1,6 @@
 import { type JSX, useState } from "react";
+import { Button } from "../../components/ui/button";
+import { ProposalAcknowledgements } from "./proposal-acknowledgements";
 import { TreasuryTransactionFlowDialog } from "../../treasury/transactions/transaction-flow-dialog";
 import {
   TreasuryProposalCreationForm,
@@ -8,6 +10,22 @@ import {
 export default {
   title: "Treasury/Proposal Creation Form",
 };
+
+export const Acknowledgements = {
+  render: (): JSX.Element => <AcknowledgementsStory />,
+};
+
+function AcknowledgementsStory(): JSX.Element {
+  const [accepted, setAccepted] = useState({ kyc: false, terms: false });
+  return (
+    <div className="w-full max-w-md space-y-5 p-6">
+      <ProposalAcknowledgements value={accepted} onChange={setAccepted} />
+      <Button disabled={!accepted.kyc || !accepted.terms} className="w-full">
+        Create proposal
+      </Button>
+    </div>
+  );
+}
 
 export const Default = {
   render: (): JSX.Element => (

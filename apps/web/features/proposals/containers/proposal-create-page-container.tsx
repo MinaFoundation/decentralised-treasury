@@ -336,6 +336,7 @@ export function ProposalCreatePageContainer({
       ) : null}
 
       <TreasuryProposalCreationForm
+        key={draftId ?? "new"}
         lifecycleId={resolvedLifecycleId}
         connectedWalletAddress={wallet.address ?? null}
         currentPeriod={createProposalPeriod}

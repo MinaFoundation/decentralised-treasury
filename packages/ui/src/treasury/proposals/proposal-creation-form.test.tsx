@@ -8,6 +8,29 @@ import {
 } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { TreasuryProposalCreationForm } from "./proposal-creation-form";
+import {
+  defaultProposalAcknowledgements,
+  type ProposalAcknowledgementsConfig,
+} from "./proposal-acknowledgements-config";
+
+const validProposalProps = {
+  lifecycleId: 12,
+  connectedWalletAddress: "wallet",
+  initialTitle: "Proposal",
+  initialContent: "Work",
+  initialRecipient: "recipient",
+  initialAmount: "10",
+};
+
+function acceptAcknowledgements(): void {
+  for (const key of ["kyc", "terms"] as const) {
+    fireEvent.click(
+      screen.getByRole("checkbox", {
+        name: defaultProposalAcknowledgements[key].label,
+      }),
+    );
+  }
+}
 
 afterEach(() => {
   cleanup();
@@ -37,6 +60,7 @@ describe("TreasuryProposalCreationForm", () => {
       expect(screen.getByLabelText("Amount").getAttribute("aria-invalid")).toBe(
         "true",
       );
+      acceptAcknowledgements();
       fireEvent.click(screen.getByRole("button", { name: "Create proposal" }));
       expect(onSubmit).not.toHaveBeenCalled();
     },
@@ -62,6 +86,7 @@ describe("TreasuryProposalCreationForm", () => {
     );
     expect(screen.getByText(bond)).toBeTruthy();
     expect(screen.getByLabelText("Amount").getAttribute("min")).toBe("10");
+    acceptAcknowledgements();
     fireEvent.click(screen.getByRole("button", { name: "Create proposal" }));
     expect(onSubmit).toHaveBeenCalledWith(expect.objectContaining({ amount }));
   });
@@ -128,6 +153,7 @@ describe("TreasuryProposalCreationForm", () => {
       },
     });
 
+    acceptAcknowledgements();
     fireEvent.click(screen.getByRole("button", { name: "Create proposal" }));
 
     expect(onSubmit).toHaveBeenCalledWith({
@@ -139,6 +165,183 @@ describe("TreasuryProposalCreationForm", () => {
       amount: "96,000",
       recipient: "B62qrecipientAmbassador1111111111111111111111111111111111",
     });
+  });
+
+  it.each([
+    { accepted: [] },
+    { accepted: ["kyc"] },
+    { accepted: ["terms"] },
+  ] as const)(
+    "blocks creation with $accepted accepted, including direct form submission",
+    ({ accepted }) => {
+      const onSubmit = vi.fn();
+      const { container } = render(
+        <TreasuryProposalCreationForm
+          {...validProposalProps}
+          onSubmit={onSubmit}
+        />,
+      );
+      for (const key of accepted) {
+        fireEvent.click(
+          screen.getByRole("checkbox", {
+            name: defaultProposalAcknowledgements[key].label,
+          }),
+        );
+      }
+      const submit = screen.getByRole("button", { name: "Create proposal" });
+      expect(submit).toHaveProperty("disabled", true);
+      fireEvent.click(submit);
+      fireEvent.submit(container.querySelector("form")!);
+      expect(onSubmit).not.toHaveBeenCalled();
+    },
+  );
+
+  it("submits only proposal fields after both acknowledgements and resets acceptance", () => {
+    const onSubmit = vi.fn();
+    render(
+      <TreasuryProposalCreationForm
+        {...validProposalProps}
+        onSubmit={onSubmit}
+      />,
+    );
+    acceptAcknowledgements();
+    const submit = screen.getByRole("button", { name: "Create proposal" });
+    expect(submit).toHaveProperty("disabled", false);
+    fireEvent.click(submit);
+    expect(onSubmit).toHaveBeenCalledExactlyOnceWith({
+      lifecycleId: 12,
+      proposerAddress: "wallet",
+      content: "# Proposal\n\nWork",
+      amount: "10",
+      recipient: "recipient",
+    });
+    expect(screen.queryAllByRole("checkbox", { checked: true })).toHaveLength(
+      0,
+    );
+    expect(submit).toHaveProperty("disabled", true);
+  });
+
+  it("opens and closes read-more dialogs without acceptance or submission", async () => {
+    const onSubmit = vi.fn();
+    render(
+      <TreasuryProposalCreationForm
+        {...validProposalProps}
+        onSubmit={onSubmit}
+      />,
+    );
+    for (const key of ["kyc", "terms"] as const) {
+      const acknowledgement = defaultProposalAcknowledgements[key];
+      fireEvent.click(
+        screen.getByRole("button", {
+          name: `Read more: ${acknowledgement.title}`,
+        }),
+      );
+      const dialog = screen.getByRole("dialog", {
+        name: acknowledgement.title,
+      });
+      expect(
+        within(dialog).getByText(acknowledgement.sections[0]!.text),
+      ).toBeTruthy();
+      if (key === "kyc") {
+        fireEvent.click(within(dialog).getByRole("button", { name: "Close" }));
+      } else {
+        fireEvent.keyDown(dialog, { key: "Escape", code: "Escape" });
+      }
+      await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+      expect(screen.queryAllByRole("checkbox", { checked: true })).toHaveLength(
+        0,
+      );
+      expect(onSubmit).not.toHaveBeenCalled();
+    }
+  });
+
+  it("uses configured checkbox copy, dialog copy, and links", () => {
+    const config: ProposalAcknowledgementsConfig = {
+      title: "Custom acknowledgements",
+      description: "Custom description",
+      readMoreLabel: "Details",
+      closeLabel: "Dismiss",
+      kyc: {
+        label: "Custom KYC acceptance",
+        title: "Custom KYC",
+        sections: [
+          {
+            text: "Custom verification details",
+            links: [{ label: "Verify", href: "https://example.com/verify" }],
+          },
+        ],
+      },
+      terms: {
+        label: "Custom terms acceptance",
+        title: "Custom terms",
+        sections: [
+          {
+            title: "Custom privacy",
+            text: "Custom privacy details",
+            links: [{ label: "Policy", href: "https://example.com/policy" }],
+          },
+        ],
+      },
+    };
+    render(
+      <TreasuryProposalCreationForm
+        {...validProposalProps}
+        acknowledgementsConfig={config}
+      />,
+    );
+    expect(screen.getByText(config.description)).toBeTruthy();
+    for (const key of ["kyc", "terms"] as const) {
+      expect(
+        screen.getByRole("checkbox", { name: config[key].label }),
+      ).toBeTruthy();
+      fireEvent.click(
+        screen.getByRole("button", { name: `Details: ${config[key].title}` }),
+      );
+      const dialog = screen.getByRole("dialog", { name: config[key].title });
+      const section = config[key].sections[0]!;
+      expect(within(dialog).getByText(section.text)).toBeTruthy();
+      const link = within(dialog).getByRole("link", {
+        name: section.links[0]!.label,
+      });
+      expect(link.getAttribute("href")).toBe(section.links[0]!.href);
+      expect(link.getAttribute("target")).toBe("_blank");
+      expect(link.getAttribute("rel")).toBe("noopener noreferrer");
+      fireEvent.click(within(dialog).getByRole("button", { name: "Dismiss" }));
+    }
+  });
+
+  it("resets acceptance when the wallet, lifecycle, or form instance changes", () => {
+    const { rerender } = render(
+      <TreasuryProposalCreationForm {...validProposalProps} />,
+    );
+    acceptAcknowledgements();
+    rerender(
+      <TreasuryProposalCreationForm
+        {...validProposalProps}
+        connectedWalletAddress="another-wallet"
+      />,
+    );
+    expect(screen.queryAllByRole("checkbox", { checked: true })).toHaveLength(
+      0,
+    );
+    acceptAcknowledgements();
+    rerender(
+      <TreasuryProposalCreationForm
+        {...validProposalProps}
+        connectedWalletAddress="another-wallet"
+        lifecycleId={13}
+      />,
+    );
+    expect(screen.queryAllByRole("checkbox", { checked: true })).toHaveLength(
+      0,
+    );
+    acceptAcknowledgements();
+    rerender(
+      <TreasuryProposalCreationForm key="new-draft" {...validProposalProps} />,
+    );
+    expect(screen.queryAllByRole("checkbox", { checked: true })).toHaveLength(
+      0,
+    );
   });
 
   it("routes wallet connection through the primary action when no wallet is connected", () => {
@@ -340,6 +543,7 @@ describe("TreasuryProposalCreationForm", () => {
       name: "Save as draft",
     });
     expect(draftButtons).toHaveLength(1);
+    expect(screen.getAllByRole("checkbox", { checked: false })).toHaveLength(2);
 
     fireEvent.click(draftButtons[0] as HTMLButtonElement);
 
@@ -370,6 +574,7 @@ describe("TreasuryProposalCreationForm", () => {
     );
 
     expect(screen.getByText("Proposal submissions are not open")).toBeTruthy();
+    expect(screen.queryAllByRole("checkbox")).toHaveLength(0);
     expect(
       screen.getByText(
         "The current lifecycle (Lifecycle 12) is currently in the cooldown period. You can save this proposal as a draft and submit it once the proposal period begins.",
