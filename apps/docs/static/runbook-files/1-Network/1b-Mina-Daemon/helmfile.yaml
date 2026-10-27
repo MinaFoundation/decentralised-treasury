@@ -1,7 +1,7 @@
 ---
 releases:
 - name: node-0
-  chart: git::https://github.com/MinaFoundation/helm-charts.git@mina-daemon?ref=mina-daemon-2.2.0
+  chart: git::https://github.com/MinaFoundation/helm-charts.git@mina-daemon?ref=mina-daemon-2.3.0
   values:
     - deployment:
         testnet: devnet
@@ -18,6 +18,11 @@ releases:
         # Adds the `exposeGraphql: "true"` pod label that the graphql-proxy
         # Service below selects on. Without it the proxy has no endpoints.
         exposeGraphql: true
+        # The full GraphQL API on 3085 stays inside the pod. Only the
+        # graphql-public-proxy sidecar on 3000 reaches it. The full API carries
+        # operator mutations, such as setConnectionGatingConfig and
+        # archivePrecomputedBlock, that assume a trusted caller.
+        graphqlListen: localhost
         logLevel: Error
         fileLogLevel: Error
         libp2pKeys:
@@ -26,6 +31,11 @@ releases:
         archive:
           enabled: true
           address: archive:3086
+      graphqlPublicProxy:
+        # Proposals and votes are zkApp transactions. Every other mutation
+        # stays hidden. The proxy also refuses WebSocket.
+        allowedMutations:
+          - sendZkapp
       readinessProbe:
         # The chart's 1200s default leaves the pod unready long after it is
         # actually Synced.
@@ -56,17 +66,13 @@ releases:
             # node.exposeGraphql is true.
             selector:
               exposeGraphql: "true"
+            # The filtered proxy only. The full API on 3085 is not reachable
+            # from outside the pod (node.graphqlListen: localhost).
             ports:
-              # Read-only proxy served by the graphql-public-proxy sidecar.
               - name: proxy
                 protocol: TCP
                 port: 3000
                 targetPort: 3000
-              # Full daemon GraphQL.
-              - name: graphql
-                protocol: TCP
-                port: 3085
-                targetPort: 3085
 
         # EXAMPLE ONLY - the values below are environment specific and the
         # placeholders will not work as written. Replace the host and the

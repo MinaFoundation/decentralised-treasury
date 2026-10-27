@@ -14,7 +14,8 @@ communicates with peers and validates the chain. It supplies these services:
 
 - **Blocks for the archive node** through the archive RPC at `archive:3086`.
 - **Restricted GraphQL on `:3000`** for the treasury CLI and browser. They use GraphQL to
-  read account state and submit zkApp transactions.
+  read account state and submit zkApp transactions. The proxy forwards queries
+  and `sendZkapp`. It refuses all other mutations and all WebSocket connections.
 
 ```text
   network peers <--p2p 10801--> node-0 (mina) --(archive:3086)--> archive-node
@@ -31,9 +32,9 @@ stores the data that it receives from this daemon. If the daemon is not
 | Component       | Object                                               | Role                                                                             |
 | --------------- | ---------------------------------------------------- | -------------------------------------------------------------------------------- |
 | Daemon          | `Deployment/node-0`, container `mina`                | Runs the Mina node                                                               |
-| Public proxy    | container `graphql-public-proxy` (same pod, `:3000`) | Read-only GraphQL filter for public exposure                                     |
+| Public proxy    | container `graphql-public-proxy` (same pod, `:3000`) | GraphQL filter for public exposure. Forwards queries and `sendZkapp` only.       |
 | Daemon service  | `Service/node-0`                                     | p2p `10801`, client `8301`                                                       |
-| GraphQL service | `Service/node-0-graphql`                             | `3085` (graphql), `3000` (proxy)                                                 |
+| GraphQL service | `Service/node-0-graphql`                             | `3000` (proxy) only. The full API on `3085` stays inside the pod.                |
 | libp2p keys     | init container + secret                              | Creates the keys on the first start (`libp2pKeys.create: true`)                  |
 | Proxy service   | `Service/graphql-proxy`                              | Selects pods with the `exposeGraphql: "true"` label. It does not run a workload. |
 | Proxy ingress   | `Ingress/graphql-proxy`                              | Supplies the public HTTPS entry point. Step 2 identifies the example values.     |
@@ -43,7 +44,9 @@ from peers. It does not resume the previous sync. Include the resync time in the
 restart plan.
 
 - Charts: <https://github.com/MinaFoundation/helm-charts.git>. Use
-  `mina-daemon`, pinned to `mina-daemon-2.2.0`, and `raw` for the proxy objects.
+  `mina-daemon`, pinned to `mina-daemon-2.3.0`, and `raw` for the proxy objects.
+  Chart `2.3.0` uses the proxy image `minafoundation/mina-graphql-public-proxy:0.0.14`,
+  pinned by digest.
 - Image tag: Use the network release announcement in
   <https://github.com/MinaProtocol/mina/discussions>. See step 1.
 - Values: Use `helmfile.yaml` in this directory.
@@ -83,15 +86,17 @@ kubectl get deploy -n devnet archive-node \
 
 ## 2. Check The Values That Matter
 
-| Value                                | Current                     | Why                                                                                                                        |
-| ------------------------------------ | --------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
-| `deployment.testnet` / `peerListURL` | `devnet` / devnet bootnodes | An incorrect pair gives the incorrect chain id and prevents peer connections.                                              |
-| `node.archive.enabled` / `address`   | `true` / `archive:3086`     | `archive` is the Service name from `1a`. These values enable the archive data path.                                        |
-| `node.exposeGraphql`                 | `true`                      | Adds the `exposeGraphql: "true"` pod label that the proxy Service selects. Without this label, the proxy has no endpoints. |
-| `podLabels.queryableNode`            | `"true"`                    | The staking ledger provider (`1c`) requires this label.                                                                    |
-| `node.libp2pKeys.create`             | `true`                      | Creates a key pair on the first start.                                                                                     |
-| `readinessProbe.initialDelaySeconds` | `120`                       | The chart default is `1200`. That value kept the pod unready after the daemon reached `Synced`.                            |
-| `resources`                          | 16Gi/4 → 24Gi/6             | Smaller resources cause an OOM kill during catch-up.                                                                       |
+| Value                                 | Current                     | Why                                                                                                                         |
+| ------------------------------------- | --------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| `deployment.testnet` / `peerListURL`  | `devnet` / devnet bootnodes | An incorrect pair gives the incorrect chain id and prevents peer connections.                                               |
+| `node.archive.enabled` / `address`    | `true` / `archive:3086`     | `archive` is the Service name from `1a`. These values enable the archive data path.                                         |
+| `node.exposeGraphql`                  | `true`                      | Adds the `exposeGraphql: "true"` pod label that the proxy Service selects. Without this label, the proxy has no endpoints.  |
+| `node.graphqlListen`                  | `localhost`                 | Keeps the full API on `3085` inside the pod. Only the proxy sidecar reaches it. The chart default, `all`, publishes `3085`. |
+| `graphqlPublicProxy.allowedMutations` | `[sendZkapp]`               | Proposals and votes are zkApp transactions. Without this value, the proxy hides `sendZkapp` and submissions fail.           |
+| `podLabels.queryableNode`             | `"true"`                    | The staking ledger provider (`1c`) requires this label.                                                                     |
+| `node.libp2pKeys.create`              | `true`                      | Creates a key pair on the first start.                                                                                      |
+| `readinessProbe.initialDelaySeconds`  | `120`                       | The chart default is `1200`. That value kept the pod unready after the daemon reached `Synced`.                             |
+| `resources`                           | 16Gi/4 → 24Gi/6             | Smaller resources cause an OOM kill during catch-up.                                                                        |
 
 **The Ingress contains `<REPLACE: …>` placeholders.** Set the host and the
 certificate ARN before you apply the resources. Adjust the annotations for your
@@ -118,6 +123,20 @@ helmfile template . | kubectl apply -f -
 The update strategy is `Recreate`. A pod-template change stops the node before
 the new node starts. The archive keeps its existing data. The guardian fills the
 gap during its next hourly run.
+
+**Upgrade from a release that published port `3085`.** After this apply, port
+`3085` cannot connect from outside the pod. Before you apply, move every client
+in the cluster to port `3000`: `minaNodeUrl` and `minaGraphqlPort` in runbook
+`1c`, and `minaNodeUpstream` and `config.minaNodeUrl` in runbook `2c`. A client
+that still uses port `3085` loses the daemon. The ledger provider then exports
+first and hashes after, which is much slower.
+
+After the apply, `Service/graphql-proxy` must show port `3000` only:
+
+```bash
+kubectl get service graphql-proxy -n devnet \
+  -o jsonpath='{range .spec.ports[*]}{.name}{" "}{.port}{"\n"}{end}'
+```
 
 ## 4. Wait For Sync
 
@@ -189,6 +208,8 @@ If this query fails but the in-cluster checks succeed, check the Ingress. Check
 the `<REPLACE: …>` host and certificate placeholders, controller annotations,
 and DNS. The daemon and proxy Service are not the cause in this condition.
 
+Then do the security checks in [Public GraphQL security](#public-graphql-security).
+
 ## 7. Confirm The Archive Is Being Fed
 
 Run this command two times with a one-minute interval. The `max_height` value
@@ -222,16 +243,18 @@ NEXT_PUBLIC_MINA_NODE_URL=https://devnet.minaprotocol.network/graphql
 
 ## Troubleshooting
 
-| Symptom                                              | Cause / fix                                                                                                                                                                  |
-| ---------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `Peers: 0`                                           | `peerListURL` is incorrect or not reachable, or egress is blocked. Confirm that the URL resolves from inside the pod.                                                        |
-| Chain id differs                                     | The image and peer list select different networks. Correct the pair. A restart without this correction does not solve the problem.                                           |
-| Stays in `Bootstrap`/`Catchup`                       | This state is normal during a cold start because there is no PVC. If the state continues, check the memory limits. An OOM kill during catch-up restarts the complete resync. |
-| Pod is not `Ready`, but status is `Synced`           | Check the readiness probe timing. Confirm that `readinessProbe.initialDelaySeconds` is `120`, not the chart default of `1200`.                                               |
-| Archive height does not increase, daemon is `Synced` | `node.archive.address` is incorrect, or `archive-node` is down. The archive address is a start argument. Correct it, and then restart the daemon.                            |
-| Pod is `Pending`                                     | No node can accept the 16Gi/4 CPU request. Compare `nodeSelector` and `tolerations` with the nodepool.                                                                       |
-| `graphql-proxy` has no endpoints                     | `node.exposeGraphql` is not `true`, or `node-0` is not `Ready`.                                                                                                              |
-| Ingress is available but has no certificate          | The operator applied the `<REPLACE: …>` ARN placeholder without a replacement value.                                                                                         |
+| Symptom                                               | Cause / fix                                                                                                                                                                  |
+| ----------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `Peers: 0`                                            | `peerListURL` is incorrect or not reachable, or egress is blocked. Confirm that the URL resolves from inside the pod.                                                        |
+| Chain id differs                                      | The image and peer list select different networks. Correct the pair. A restart without this correction does not solve the problem.                                           |
+| Stays in `Bootstrap`/`Catchup`                        | This state is normal during a cold start because there is no PVC. If the state continues, check the memory limits. An OOM kill during catch-up restarts the complete resync. |
+| Pod is not `Ready`, but status is `Synced`            | Check the readiness probe timing. Confirm that `readinessProbe.initialDelaySeconds` is `120`, not the chart default of `1200`.                                               |
+| Archive height does not increase, daemon is `Synced`  | `node.archive.address` is incorrect, or `archive-node` is down. The archive address is a start argument. Correct it, and then restart the daemon.                            |
+| Pod is `Pending`                                      | No node can accept the 16Gi/4 CPU request. Compare `nodeSelector` and `tolerations` with the nodepool.                                                                       |
+| `graphql-proxy` has no endpoints                      | `node.exposeGraphql` is not `true`, or `node-0` is not `Ready`.                                                                                                              |
+| `sendZkapp` fails with `Cannot query field`           | `graphqlPublicProxy.allowedMutations` does not contain `sendZkapp`. Add it. Do not route the treasury to port `3085`.                                                        |
+| A client in the cluster cannot connect to port `3085` | This is correct with `node.graphqlListen: localhost`. Use port `3000` for reads and `sendZkapp`. Use `kubectl exec` for operator calls.                                      |
+| Ingress is available but has no certificate           | The operator applied the `<REPLACE: …>` ARN placeholder without a replacement value.                                                                                         |
 
 ## References
 
@@ -241,13 +264,64 @@ NEXT_PUBLIC_MINA_NODE_URL=https://devnet.minaprotocol.network/graphql
 
 ## Public GraphQL security
 
-Both public ingress routes use the restricted proxy on port `3000`.
-Keep the full daemon API on port `3085` inside the private network.
-Do not publish it through an ingress or a browser proxy.
-Use an authenticated operator connection for administrative calls.
-The ledger provider can use the internal service on port `3085`.
+This configuration closes audit finding #03. The full daemon API contains
+operator mutations. For example, `setConnectionGatingConfig` can isolate the
+node from its peers, and `archivePrecomputedBlock` sends an unverified block to
+the archive.
 
-After deployment, check the public route with an administrative mutation.
-The proxy must reject it. Also check account queries and `sendZkapp`.
-If the deployed proxy does not support the required operations, configure a narrow operation allowlist before exposing it.
-Never restore public access to port `3085` to resolve an operation failure.
+The configuration has three controls:
+
+- **Proxy allowlist.** The proxy on port `3000` forwards queries and the
+  mutations in `graphqlPublicProxy.allowedMutations`. This runbook allows
+  `sendZkapp` only. The proxy validates each request against the filtered
+  schema. An alias, a fragment, a second operation, or a batch cannot reach a
+  hidden mutation.
+- **No WebSocket.** The proxy closes each WebSocket upgrade. The daemon runs
+  GraphQL over WebSocket, mutations included. The treasury `/mina/` route also
+  refuses upgrades.
+- **Private full API.** `node.graphqlListen: localhost` keeps port `3085` inside
+  the pod. No Service, Ingress, or other pod can reach it.
+
+Both public routes use port `3000`: `Ingress/graphql-proxy` and the treasury
+`/mina/graphql` route. For operator calls, use `kubectl exec` into the `mina`
+container, as in step 6. Never publish port `3085` to correct an operation
+failure.
+
+After each deployment, do these checks on the public endpoint. Set
+`GRAPHQL_URL` to the Ingress URL, for example
+`https://devnet.minaprotocol.network/graphql`.
+
+1. An operator mutation must fail with `Cannot query field
+"setConnectionGatingConfig"`:
+
+   ```bash
+   curl -s -X POST "$GRAPHQL_URL" -H "content-type: application/json" \
+     -d '{"query":"mutation { setConnectionGatingConfig(input:{trustedPeers:[],bannedPeers:[],isolate:false}) { isolate } }"}'
+   ```
+
+2. A WebSocket upgrade must fail. `curl` must not print `101 Switching Protocols`:
+
+   ```bash
+   curl -si --max-time 5 "$GRAPHQL_URL" \
+     -H "Connection: Upgrade" -H "Upgrade: websocket" \
+     -H "Sec-WebSocket-Version: 13" -H "Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==" \
+     | head -1
+   ```
+
+3. `sendZkapp` must be in the schema. This request sends an empty command. It
+   must fail with `Field ZkappCommandInput.feePayer ... was not provided`, not
+   with `Cannot query field "sendZkapp"`:
+
+   ```bash
+   curl -s -X POST "$GRAPHQL_URL" -H "content-type: application/json" \
+     -d '{"query":"mutation { sendZkapp(input:{zkappCommand:{}}) { zkapp { hash } } }"}'
+   ```
+
+4. Port `3085` must not be reachable from another pod:
+
+   ```bash
+   kubectl run graphql-check -n devnet --rm -i --restart=Never --image=curlimages/curl -- \
+     curl -s --max-time 5 http://node-0-graphql:3085/graphql
+   ```
+
+   The command must fail to connect.

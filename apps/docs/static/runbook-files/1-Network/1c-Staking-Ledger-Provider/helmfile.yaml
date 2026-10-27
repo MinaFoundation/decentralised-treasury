@@ -14,8 +14,11 @@ releases:
         minaContainer: mina
 
         # Cheap probe, used only to decide whether there is work to do. The
-        # hash that names an export is re-read from the pod it came from.
-        minaNodeUrl: http://graphql-proxy:3085/graphql
+        # hash that names an export is re-read from the pod it came from, on
+        # minaGraphqlPort. Both are reads, so both use the filtered proxy:
+        # runbook 1b keeps the full API on 3085 inside the pod.
+        minaNodeUrl: http://graphql-proxy:3000/graphql
+        minaGraphqlPort: 3000
 
         pollIntervalSeconds: 3600
 

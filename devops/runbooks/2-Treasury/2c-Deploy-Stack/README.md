@@ -48,25 +48,32 @@ proposal toggle or key rotation.
 
 ### Complete the chart security migration before deployment
 
-The checked-in Helmfile pins exact published source commit
-`c648c68ab8ee1f1cb2a88e91c022411aafcb82f2` from
-[PR 346](https://github.com/MinaFoundation/helm-charts/pull/346). This makes
-source review and rendering deterministic before a release tag exists. The PR
-still needs the required reviews, merge, and a release tag. This pin does not
-claim that the chart was released or deployed. Complete those gates and the
-security migration below before a rollout. Do not select a moving branch or an
-unverified release tag.
+The checked-in Helmfile pins the release tag `decentralized-treasury-0.10.2`.
+This tag contains the workload separation from
+[PR 346](https://github.com/MinaFoundation/helm-charts/pull/346) and the
+`/mina/` route fix from
+[PR 349](https://github.com/MinaFoundation/helm-charts/pull/349). The route
+refuses WebSocket upgrades and never forwards an `Upgrade` header to the
+daemon (audit finding #03). The tag does not show that the chart is deployed.
+Complete the security migration below before a rollout. Do not select a moving
+branch or an unverified release tag.
+
+`minaNodeUpstream` and `config.minaNodeUrl` use the filtered proxy on port
+`3000` from runbook `1b`. That proxy forwards queries and `sendZkapp` only.
+The browser, the staking-ledger sync, and the tally scheduler need nothing
+more. Runbook `1b` keeps the full API on port `3085` inside the daemon pod, so
+port `3085` cannot connect from the treasury.
 
 The new chart separates each workload identity and the public artifact server.
 Configure cloud roles through `serviceAccounts.<component>.annotations`:
 
-| Component | Cloud permissions |
-| --- | --- |
-| `api`, `processor` | List and read the required SQLite prefix. No writes. |
-| `tally-scheduler`, if enabled | List and read the required SQLite and proof prefixes. No writes. |
-| `voting-ledger-scheduler` | Read its ledger source; write its SQLite, marker, and checkpoint prefixes. |
-| `proving-scheduler` | Read its inputs; write its completed SQLite, proof, and marker prefixes. |
-| Other workloads, including public servers | No cloud credentials. |
+| Component                                 | Cloud permissions                                                          |
+| ----------------------------------------- | -------------------------------------------------------------------------- |
+| `api`, `processor`                        | List and read the required SQLite prefix. No writes.                       |
+| `tally-scheduler`, if enabled             | List and read the required SQLite and proof prefixes. No writes.           |
+| `voting-ledger-scheduler`                 | Read its ledger source; write its SQLite, marker, and checkpoint prefixes. |
+| `proving-scheduler`                       | Read its inputs; write its completed SQLite, proof, and marker prefixes.   |
+| Other workloads, including public servers | No cloud credentials.                                                      |
 
 For example, replace the role placeholders in the reviewed chart values:
 
@@ -356,12 +363,14 @@ verification keys. The keys can be absent or compiled with a different
 
 | Symptom                                                                     | Cause / fix                                                                                                                                                    |
 | --------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| All ingress routes return 502                                               | Check the chart Service and its `artifacts` selector. Remove obsolete `extraObjects` overrides before the security upgrade.  |
+| All ingress routes return 502                                               | Check the chart Service and its `artifacts` selector. Remove obsolete `extraObjects` overrides before the security upgrade.                                    |
 | `proxy` crash-loops, `could not build server_names_hash`                    | The console hostname is longer than one hash bucket. Fixed in chart `0.4.1`.                                                                                   |
 | `proving-scheduler` shows `5/6`                                             | `PROOFS_ENABLED` does not reach that container, and its entrypoint requires it. Fixed in chart `0.4.0`; otherwise set it in `proving.scheduler.extraEnvVars`.  |
 | The console reports `Treasury owner account was not found: [object Object]` | A failed fetch, not a missing account: its Mina node is on another origin and answers no CORS. Route it via `ingress.hosts.backoffice`.                        |
 | One release lands across two namespaces                                     | `kubectl apply` was run without `-n`. Most objects carry no `metadata.namespace`, so they follow the current context. See "Apply".                             |
 | `/mina/graphql` returns 502, but other routes respond                       | `minaNodeUpstream` must be an FQDN, not a Service name without a domain.                                                                                       |
+| Proposal or vote submission fails with `Cannot query field "sendZkapp"`     | The daemon proxy hides `sendZkapp`. Set `graphqlPublicProxy.allowedMutations: [sendZkapp]` in runbook `1b`. Do not point the treasury at port `3085`.          |
+| `/mina/graphql` returns 400 to a WebSocket client                           | This is correct. The route refuses WebSocket upgrades. The apps use HTTP POST only.                                                                            |
 | The UI loads, but proposal actions fail                                     | `verification-keys.yaml` is empty, or the keys use an incorrect network or duration.                                                                           |
 | The indexer does not process all archive data                               | `EVENTS_START_HEIGHT` is unset, so the indexer starts at genesis.                                                                                              |
 | Pods show `CreateContainerConfigError`                                      | The `securityContext.runAsUser: 1000` workaround is absent.                                                                                                    |
