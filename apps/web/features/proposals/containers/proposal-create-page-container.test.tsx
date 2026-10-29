@@ -1,10 +1,14 @@
-import { render, screen, waitFor } from "@testing-library/react";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { cleanup, render, screen, waitFor } from "@testing-library/react";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { ProposalCreatePageContainer } from "./proposal-create-page-container";
 
 const state = vi.hoisted(() => ({
   treasury: {} as { currentLifecycleId?: number; currentPeriod?: string },
   owner: "treasury-owner",
+  wallet: { address: "wallet", status: "connected" } as {
+    address: string;
+    status: "connected" | "disconnected";
+  },
   estimate: vi.fn(async () => ({})),
 }));
 
@@ -33,7 +37,7 @@ vi.mock("../../runtime-config/lib/get-runtime-config", () => ({
 }));
 vi.mock("../../treasury-header/hooks/use-wallet-session", () => ({
   useWalletSession: () => ({
-    wallet: { address: "wallet" },
+    wallet: state.wallet,
     connectWallet: vi.fn(),
     signAndSubmitZkapp: vi.fn(),
   }),
@@ -57,18 +61,27 @@ vi.mock("../hooks/use-proposal-prover-worker", () => ({
 vi.mock("@repo/ui/treasury-proposal-creation-form", () => ({
   TreasuryProposalCreationForm: ({
     lifecycleId,
+    connectedWalletAddress,
   }: {
     lifecycleId: number | null;
-  }) => <button>Create proposal for {String(lifecycleId)}</button>,
+    connectedWalletAddress: string | null;
+  }) => (
+    <button data-wallet-address={connectedWalletAddress ?? ""}>
+      Create proposal for {String(lifecycleId)}
+    </button>
+  ),
 }));
 vi.mock("@repo/ui/treasury-transaction-flow-dialog", () => ({
   TreasuryTransactionFlowDialog: () => null,
 }));
 
+afterEach(cleanup);
+
 describe("proposal creation lifecycle readiness", () => {
   beforeEach(() => {
     state.treasury = {};
     state.owner = "treasury-owner";
+    state.wallet = { address: "wallet", status: "connected" };
     state.estimate.mockClear();
   });
 
@@ -92,6 +105,21 @@ describe("proposal creation lifecycle readiness", () => {
         "treasury-owner",
       ),
     );
+  });
+
+  it("clears the form wallet on disconnect even if the store retains its address", () => {
+    state.treasury = { currentLifecycleId: 0, currentPeriod: "proposal" };
+    const view = render(<ProposalCreatePageContainer />);
+    const form = screen.getByRole("button", { name: "Create proposal for 0" });
+    expect(form.getAttribute("data-wallet-address")).toBe("wallet");
+
+    state.wallet = { address: "wallet", status: "disconnected" };
+    view.rerender(<ProposalCreatePageContainer />);
+    expect(form.getAttribute("data-wallet-address")).toBe("");
+
+    state.wallet = { address: "wallet", status: "connected" };
+    view.rerender(<ProposalCreatePageContainer />);
+    expect(form.getAttribute("data-wallet-address")).toBe("wallet");
   });
 
   it("keeps the missing-configuration error visible without a lifecycle", () => {

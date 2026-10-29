@@ -53,7 +53,7 @@ export function ProposalAcknowledgements({
                   onChange({ ...value, [key]: event.target.checked })
                 }
                 aria-describedby={`${id}-description`}
-                className="peer block h-4 w-4 cursor-pointer appearance-none rounded-[3px] border border-muted-foreground bg-background checked:border-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ring forced-colors:appearance-auto"
+                className="peer block h-4 w-4 cursor-pointer appearance-none rounded-[3px] border border-muted-foreground bg-background checked:border-2 checked:border-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-foreground forced-colors:appearance-auto"
               />
               <Check
                 aria-hidden="true"
@@ -75,7 +75,7 @@ export function ProposalAcknowledgements({
                     <button
                       type="button"
                       aria-label={`${config.readMoreLabel}: ${config.kyc.title}`}
-                      className="rounded-sm font-medium underline underline-offset-4 hover:text-foreground/70 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ring"
+                      className="rounded-sm font-medium underline underline-offset-4 hover:text-foreground/70 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-foreground"
                     >
                       {config.readMoreLabel}
                     </button>
@@ -105,7 +105,11 @@ export function ProposalAcknowledgements({
                     </div>
                     <DialogFooter className="mt-0 shrink-0 border-t px-5 py-4 sm:px-6">
                       <DialogClose asChild>
-                        <Button type="button" variant="outline">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          className="focus-visible:ring-foreground"
+                        >
                           {config.closeLabel}
                         </Button>
                       </DialogClose>
@@ -131,7 +135,7 @@ function AcknowledgementText({ text }: { text: ProposalAcknowledgementText }) {
         href={part.href}
         target="_blank"
         rel="noopener noreferrer"
-        className="rounded-sm font-medium underline underline-offset-4 hover:text-foreground/70 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ring"
+        className="rounded-sm font-medium underline underline-offset-4 hover:text-foreground/70 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-foreground"
       >
         {part.label}
       </a>
