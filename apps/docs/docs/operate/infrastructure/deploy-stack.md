@@ -63,25 +63,32 @@ proposal toggle or key rotation.
 
 ### Complete the chart security migration before deployment
 
-The checked-in Helmfile pins exact published source commit
-`c648c68ab8ee1f1cb2a88e91c022411aafcb82f2` from
-[PR 346](https://github.com/MinaFoundation/helm-charts/pull/346). This makes
-source review and rendering deterministic before a release tag exists. The PR
-still needs the required reviews, merge, and a release tag. This pin does not
-claim that the chart was released or deployed. Complete those gates and the
-security migration below before a rollout. Do not select a moving branch or an
-unverified release tag.
+The checked-in Helmfile pins the release tag `decentralized-treasury-0.10.2`.
+This tag contains the workload separation from
+[PR 346](https://github.com/MinaFoundation/helm-charts/pull/346) and the
+`/mina/` route fix from
+[PR 349](https://github.com/MinaFoundation/helm-charts/pull/349). The route
+refuses WebSocket upgrades and never forwards an `Upgrade` header to the
+daemon (audit finding #03). The tag does not show that the chart is deployed.
+Complete the security migration below before a rollout. Do not select a moving
+branch or an unverified release tag.
+
+`minaNodeUpstream` and `config.minaNodeUrl` use the filtered proxy on port
+`3000` from runbook `1b`. That proxy forwards queries and `sendZkapp` only.
+The browser, the staking-ledger sync, and the tally scheduler need nothing
+more. Runbook `1b` keeps the full API on port `3085` inside the daemon pod, so
+port `3085` cannot connect from the treasury.
 
 The new chart separates each workload identity and the public artifact server.
 Configure cloud roles through `serviceAccounts.<component>.annotations`:
 
-| Component | Cloud permissions |
-| --- | --- |
-| `api`, `processor` | List and read the required SQLite prefix. No writes. |
-| `tally-scheduler`, if enabled | List and read the required SQLite and proof prefixes. No writes. |
-| `voting-ledger-scheduler` | Read its ledger source; write its SQLite, marker, and checkpoint prefixes. |
-| `proving-scheduler` | Read its inputs; write its completed SQLite, proof, and marker prefixes. |
-| Other workloads, including public servers | No cloud credentials. |
+| Component                                 | Cloud permissions                                                          |
+| ----------------------------------------- | -------------------------------------------------------------------------- |
+| `api`, `processor`                        | List and read the required SQLite prefix. No writes.                       |
+| `tally-scheduler`, if enabled             | List and read the required SQLite and proof prefixes. No writes.           |
+| `voting-ledger-scheduler`                 | Read its ledger source; write its SQLite, marker, and checkpoint prefixes. |
+| `proving-scheduler`                       | Read its inputs; write its completed SQLite, proof, and marker prefixes.   |
+| Other workloads, including public servers | No cloud credentials.                                                      |
 
 For example, replace the role placeholders in the reviewed chart values:
 
@@ -371,12 +378,14 @@ verification keys. The keys can be absent or compiled with a different
 
 | Symptom                                                                     | Cause / fix                                                                                                                                                    |
 | --------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| All ingress routes return 502                                               | Check the chart Service and its `artifacts` selector. Remove obsolete `extraObjects` overrides before the security upgrade.  |
+| All ingress routes return 502                                               | Check the chart Service and its `artifacts` selector. Remove obsolete `extraObjects` overrides before the security upgrade.                                    |
 | `proxy` crash-loops, `could not build server_names_hash`                    | The console hostname is longer than one hash bucket. Fixed in chart `0.4.1`.                                                                                   |
 | `proving-scheduler` shows `5/6`                                             | `PROOFS_ENABLED` does not reach that container, and its entrypoint requires it. Fixed in chart `0.4.0`; otherwise set it in `proving.scheduler.extraEnvVars`.  |
 | The console reports `Treasury owner account was not found: [object Object]` | A failed fetch, not a missing account: its Mina node is on another origin and answers no CORS. Route it via `ingress.hosts.backoffice`.                        |
 | One release lands across two namespaces                                     | `kubectl apply` was run without `-n`. Most objects carry no `metadata.namespace`, so they follow the current context. See "Apply".                             |
 | `/mina/graphql` returns 502, but other routes respond                       | `minaNodeUpstream` must be an FQDN, not a Service name without a domain.                                                                                       |
+| Proposal or vote submission fails with `Cannot query field "sendZkapp"`     | The daemon proxy hides `sendZkapp`. Set `graphqlPublicProxy.allowedMutations: [sendZkapp]` in runbook `1b`. Do not point the treasury at port `3085`.          |
+| `/mina/graphql` returns 400 to a WebSocket client                           | This is correct. The route refuses WebSocket upgrades. The apps use HTTP POST only.                                                                            |
 | The UI loads, but proposal actions fail                                     | `verification-keys.yaml` is empty, or the keys use an incorrect network or duration.                                                                           |
 | The indexer does not process all archive data                               | `EVENTS_START_HEIGHT` is unset, so the indexer starts at genesis.                                                                                              |
 | Pods show `CreateContainerConfigError`                                      | The `securityContext.runAsUser: 1000` workaround is absent.                                                                                                    |
@@ -437,7 +446,8 @@ environments:
         certificateArn: "<REPLACE: ACM certificate ARN>"
         # Mina daemon GraphQL (runbook 1b). Must be an FQDN and plain HTTP:
         # the /mina/ route 502s on a bare name, and sends no SNI, so an HTTPS
-        # upstream fails the handshake.
+        # upstream fails the handshake. Port 3000 is the filtered proxy, which
+        # forwards sendZkapp and no other mutation.
         minaNodeUpstream: http://graphql-proxy.devnet.svc.cluster.local:3000
         # Archive node API (runbook 1a).
         archiveNodeUrl: http://archive-node-api:8080
@@ -446,8 +456,9 @@ environments:
 releases:
   - name: decentralized-treasury
     namespace: {{ .Values.namespace }}
-    # Immutable source commit from PR 346. Review, merge, and a release tag are pending.
-    chart: git::https://github.com/MinaFoundation/helm-charts.git@decentralized-treasury?ref=c648c68ab8ee1f1cb2a88e91c022411aafcb82f2
+    # Release tag. 0.10.2 contains the PR 346 workload separation and the
+    # /mina/ route that refuses WebSocket (audit 03).
+    chart: git::https://github.com/MinaFoundation/helm-charts.git@decentralized-treasury?ref=decentralized-treasury-0.10.2
     values:
       - verification-keys.yaml
       - fullnameOverride: decentralized-treasury
@@ -513,8 +524,9 @@ releases:
           archiveNodeUrl: {{ .Values.archiveNodeUrl }}
           # Read server-side for slotSinceGenesis, slotsPerEpoch and the
           # staking ledger hash. Distinct from proxy.minaNodeUpstream, which is
-          # what the browser talks to.
-          minaNodeUrl: http://graphql-proxy:3085/graphql
+          # what the browser talks to. Reads and the tally's sendZkapp only,
+          # so the filtered proxy on 3000 is enough.
+          minaNodeUrl: http://graphql-proxy:3000/graphql
           # Emitted by `treasury-owner deploy`. A wrong address indexes nothing
           # at all rather than erroring.
           treasuryOwnerContractAddress: "<REPLACE: treasury owner public key>"
@@ -793,6 +805,6 @@ backoffice:
 
 ## Sources
 
-- `devops/runbooks/2-Treasury/2c-Deploy-Stack/README.md` (SHA-256: `27a82dc6f60be5e3f75ac7f6b97e82a0dfefdce40c67b9cc624d76502ac3315a`)
-- `devops/runbooks/2-Treasury/2c-Deploy-Stack/helmfile.yaml` (SHA-256: `e0bb2d7d32019840f2a201eb88bf6ae69f8bb5fc65ed9f7b056fa970a9cc2b98`)
+- `devops/runbooks/2-Treasury/2c-Deploy-Stack/README.md` (SHA-256: `351d370f9329773ff183432fd8743d896b4b56a0cf04875bf4f203799c0e2e72`)
+- `devops/runbooks/2-Treasury/2c-Deploy-Stack/helmfile.yaml` (SHA-256: `e303e2b54ffe3525f9184eab5e45cb52d3fa0108b34387ea54682fbeb6c2c944`)
 - `devops/runbooks/2-Treasury/2c-Deploy-Stack/verification-keys.yaml` (SHA-256: `1ffb15646b8b8835aa9041afdd7041ba5c75349413cc87a7d081aafd528cff61`)

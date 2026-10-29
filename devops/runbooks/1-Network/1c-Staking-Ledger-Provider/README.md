@@ -42,13 +42,13 @@ selects a file by its hash.
 
 ## Components
 
-| Component  | Object                                       | Role                                                                                |
-| ---------- | -------------------------------------------- | ----------------------------------------------------------------------------------- |
-| Fetch loop | Deployment `mina-staking-ledgers-provider-fetch`, container `fetch`                            | Polls the chain, runs commands in the daemon, and exports and verifies ledgers      |
-| Server     | Deployment `mina-staking-ledgers-provider-serve`, container `serve` (nginx, `:8080`)           | Read-only JSON autoindex over the ledger directory                                  |
-| Storage    | `PVC/mina-staking-ledgers-provider` (20Gi)   | Published archives. The fetch and serve pods share this claim on one node. The server mount is read-only. |
-| Service    | `Service/mina-staking-ledgers-provider:8080` | Supplies the treasury download endpoint                                             |
-| RBAC       | `Role` + `RoleBinding`                       | `pods get/list` and `pods/exec create`, bound only to fetch. Serve has no Kubernetes API token.          |
+| Component  | Object                                                                               | Role                                                                                                      |
+| ---------- | ------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------- |
+| Fetch loop | Deployment `mina-staking-ledgers-provider-fetch`, container `fetch`                  | Polls the chain, runs commands in the daemon, and exports and verifies ledgers                            |
+| Server     | Deployment `mina-staking-ledgers-provider-serve`, container `serve` (nginx, `:8080`) | Read-only JSON autoindex over the ledger directory                                                        |
+| Storage    | `PVC/mina-staking-ledgers-provider` (20Gi)                                           | Published archives. The fetch and serve pods share this claim on one node. The server mount is read-only. |
+| Service    | `Service/mina-staking-ledgers-provider:8080`                                         | Supplies the treasury download endpoint                                                                   |
+| RBAC       | `Role` + `RoleBinding`                                                               | `pods get/list` and `pods/exec create`, bound only to fetch. Serve has no Kubernetes API token.           |
 
 Keep the replica count at `1`. The template rejects all other values.
 
@@ -96,7 +96,8 @@ Render checks do not establish these live permissions.
 | `fullnameOverride`    | `mina-staking-ledgers-provider`     | The treasury chart uses this exact Service name by default. Without the override, Helm adds the release-name prefix and the default does not resolve. |
 | `minaNodeLabel`       | `queryableNode=true`                | Selects candidate daemon pods. The provider probes each match and uses the first pod that reports `Synced`.                                           |
 | `minaContainer`       | `mina`                              | Identifies the container in which the provider runs the export command.                                                                               |
-| `minaNodeUrl`         | `http://graphql-proxy:3085/graphql` | This low-cost probe determines whether work exists. The provider reads the export hash again from the selected pod IP.                                |
+| `minaNodeUrl`         | `http://graphql-proxy:3000/graphql` | This low-cost probe determines whether work exists. The provider reads the export hash again from the selected pod IP.                                |
+| `minaGraphqlPort`     | `3000`                              | The port for the hash read on the selected pod IP. Runbook `1b` keeps `3085` inside the pod, so the chart default of `3085` cannot connect.           |
 | `pollIntervalSeconds` | `3600`                              | An epoch is 7d10h30m, so an hourly poll is more frequent than required. A no-op cycle uses one GraphQL query.                                         |
 | `exportNextEpoch`     | `true`                              | `next(N)` is byte-identical to `staking(N+1)`. An early export gives up to one epoch of additional preparation time.                                  |
 | `keepLastN`           | `8`                                 | A lifecycle spans four epochs and can require an old ledger. The value supplies additional retention because a pruned ledger is not recoverable.      |

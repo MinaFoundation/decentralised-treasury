@@ -16,7 +16,8 @@ environments:
         certificateArn: "<REPLACE: ACM certificate ARN>"
         # Mina daemon GraphQL (runbook 1b). Must be an FQDN and plain HTTP:
         # the /mina/ route 502s on a bare name, and sends no SNI, so an HTTPS
-        # upstream fails the handshake.
+        # upstream fails the handshake. Port 3000 is the filtered proxy, which
+        # forwards sendZkapp and no other mutation.
         minaNodeUpstream: http://graphql-proxy.devnet.svc.cluster.local:3000
         # Archive node API (runbook 1a).
         archiveNodeUrl: http://archive-node-api:8080
@@ -25,8 +26,9 @@ environments:
 releases:
   - name: decentralized-treasury
     namespace: {{ .Values.namespace }}
-    # Immutable source commit from PR 346. Review, merge, and a release tag are pending.
-    chart: git::https://github.com/MinaFoundation/helm-charts.git@decentralized-treasury?ref=c648c68ab8ee1f1cb2a88e91c022411aafcb82f2
+    # Release tag. 0.10.2 contains the PR 346 workload separation and the
+    # /mina/ route that refuses WebSocket (audit 03).
+    chart: git::https://github.com/MinaFoundation/helm-charts.git@decentralized-treasury?ref=decentralized-treasury-0.10.2
     values:
       - verification-keys.yaml
       - fullnameOverride: decentralized-treasury
@@ -92,8 +94,9 @@ releases:
           archiveNodeUrl: {{ .Values.archiveNodeUrl }}
           # Read server-side for slotSinceGenesis, slotsPerEpoch and the
           # staking ledger hash. Distinct from proxy.minaNodeUpstream, which is
-          # what the browser talks to.
-          minaNodeUrl: http://graphql-proxy:3085/graphql
+          # what the browser talks to. Reads and the tally's sendZkapp only,
+          # so the filtered proxy on 3000 is enough.
+          minaNodeUrl: http://graphql-proxy:3000/graphql
           # Emitted by `treasury-owner deploy`. A wrong address indexes nothing
           # at all rather than erroring.
           treasuryOwnerContractAddress: "<REPLACE: treasury owner public key>"

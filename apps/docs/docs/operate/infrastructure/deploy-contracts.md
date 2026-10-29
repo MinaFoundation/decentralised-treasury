@@ -129,8 +129,10 @@ actions from the archive node. The procedures in this runbook and `2c` do not
 require additional archive configuration.
 
 `MINA_NODE_URL` does not require a port-forward. Runbook `1b` exposes the daemon
-GraphQL endpoint through the `graphql-proxy` Ingress. Confirm that the endpoint
-responds before you continue:
+GraphQL endpoint through the `graphql-proxy` Ingress. This endpoint is the
+filtered proxy on port `3000`. It forwards queries and `sendZkapp`, which is
+sufficient for all commands in this runbook. Confirm that the endpoint responds
+before you continue:
 
 ```bash
 curl -s -X POST https://devnet.minaprotocol.network/graphql \
@@ -284,10 +286,10 @@ fail, but it does not cause deployment to fail.
 
 Select the mode before deployment:
 
-| Mode | Effect |
-| --- | --- |
-| `proof` | Requires a contract proof for withdrawals. Disables emergency Owner-signature withdrawal. This is the default. |
-| `proofOrSignature` | Allows contract proofs or the Treasury Owner signature for withdrawals. Enables emergency withdrawal. |
+| Mode               | Effect                                                                                                         |
+| ------------------ | -------------------------------------------------------------------------------------------------------------- |
+| `proof`            | Requires a contract proof for withdrawals. Disables emergency Owner-signature withdrawal. This is the default. |
+| `proofOrSignature` | Allows contract proofs or the Treasury Owner signature for withdrawals. Enables emergency withdrawal.          |
 
 Pass the mode with `--withdrawal-permission`, as shown below. Alternatively,
 set `TREASURY_WITHDRAWAL_PERMISSION` in `apps/cli/.env.<family>` and omit the option.
@@ -424,4 +426,4 @@ grep -E '^(MINA_NODE_URL|LIFECYCLE_PERIOD_DURATION|TREASURY_DEPLOYED_AT_SLOT|PRO
 
 ## Sources
 
-- `devops/runbooks/2-Treasury/2b-Deploy-Contracts/README.md` (SHA-256: `5adf866ab3b9f8888de731b78e41b174ce822d18c383cbd0c9162632ca843a44`)
+- `devops/runbooks/2-Treasury/2b-Deploy-Contracts/README.md` (SHA-256: `cd0d6c8d4e0bd8a6fd4cf36b00858c36661bb04cfbfb7120d5e657f2388b859b`)
