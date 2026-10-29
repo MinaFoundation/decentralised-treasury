@@ -58,7 +58,7 @@ export function ProposalAcknowledgements({
               <Check
                 aria-hidden="true"
                 strokeWidth={3}
-                className="pointer-events-none absolute inset-0 h-4 w-4 p-px text-primary opacity-0 peer-checked:opacity-100 forced-colors:hidden"
+                className="pointer-events-none absolute inset-0.5 h-3 w-3 text-primary opacity-0 peer-checked:opacity-100 forced-colors:hidden"
               />
             </span>
             <div className="min-w-0 text-sm leading-6">
