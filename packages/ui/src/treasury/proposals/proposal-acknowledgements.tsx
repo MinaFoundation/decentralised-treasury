@@ -13,6 +13,7 @@ import {
 import {
   defaultProposalAcknowledgements,
   type ProposalAcknowledgementsConfig,
+  type ProposalAcknowledgementText,
 } from "./proposal-acknowledgements-config";
 
 export type ProposalAcknowledgementsValue = { kyc: boolean; terms: boolean };
@@ -65,18 +66,7 @@ export function ProposalAcknowledgements({
                 {key === "kyc" ? (
                   config.kyc.label
                 ) : (
-                  <>
-                    {config.terms.beforeLink}
-                    <a
-                      href={config.terms.link.href}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="rounded-sm font-medium underline underline-offset-4 hover:text-foreground/70 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ring"
-                    >
-                      {config.terms.link.label}
-                    </a>
-                    {config.terms.afterLink}
-                  </>
+                  <AcknowledgementText text={config.terms.text} />
                 )}
               </label>{" "}
               {key === "kyc" ? (
@@ -105,17 +95,10 @@ export function ProposalAcknowledgements({
                           {section.title ? (
                             <h3 className="font-semibold">{section.title}</h3>
                           ) : null}
-                          <p>{section.text}</p>
-                          {section.links.map((link) => (
-                            <a
-                              key={link.href}
-                              href={link.href}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="block w-fit rounded-sm font-medium underline underline-offset-4 hover:text-foreground/70 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ring"
-                            >
-                              {link.label}
-                            </a>
+                          {section.paragraphs.map((text, paragraphIndex) => (
+                            <p key={paragraphIndex}>
+                              <AcknowledgementText text={text} />
+                            </p>
                           ))}
                         </section>
                       ))}
@@ -135,5 +118,23 @@ export function ProposalAcknowledgements({
         );
       })}
     </fieldset>
+  );
+}
+
+function AcknowledgementText({ text }: { text: ProposalAcknowledgementText }) {
+  return text.map((part, index) =>
+    typeof part === "string" ? (
+      part
+    ) : (
+      <a
+        key={index}
+        href={part.href}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="rounded-sm font-medium underline underline-offset-4 hover:text-foreground/70 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ring"
+      >
+        {part.label}
+      </a>
+    ),
   );
 }

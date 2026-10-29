@@ -24,12 +24,9 @@ const validProposalProps = {
 
 const acknowledgementLabels = {
   kyc: defaultProposalAcknowledgements.kyc.label,
-  terms: [
-    defaultProposalAcknowledgements.terms.beforeLink,
-    defaultProposalAcknowledgements.terms.link.label,
-    defaultProposalAcknowledgements.terms.afterLink,
-  ]
-    .join(" ")
+  terms: defaultProposalAcknowledgements.terms.text
+    .map((part) => (typeof part === "string" ? part : part.label))
+    .join("")
     .replace(/\s+/g, " ")
     .trim(),
 };
@@ -251,9 +248,45 @@ describe("TreasuryProposalCreationForm", () => {
       const dialog = screen.getByRole("dialog", {
         name: acknowledgement.title,
       });
-      expect(
-        within(dialog).getByText(acknowledgement.sections[0]!.text),
-      ).toBeTruthy();
+      const links = within(dialog).getAllByRole("link");
+      expect(links).toHaveLength(8);
+      for (const [name, href, count] of [
+        [
+          "Decentralized Treasury Terms and Conditions",
+          "https://info.minadt.com/terms",
+          2,
+        ],
+        [
+          "Blockpass",
+          "https://verify-with.blockpass.org/?clientId=decentralized_treasury_mina_73e2d",
+          1,
+        ],
+        [
+          "Continue to KYC verification",
+          "https://verify-with.blockpass.org/?clientId=decentralized_treasury_mina_73e2d",
+          1,
+        ],
+        [
+          "Blockpass UK Limited",
+          "https://verify-with.blockpass.org/?clientId=decentralized_treasury_mina_73e2d",
+          1,
+        ],
+        ["Privacy Policy", "https://www.minafoundation.com/privacy-policy", 2],
+        [
+          "https://www.minafoundation.com/privacy-policy",
+          "https://www.minafoundation.com/privacy-policy",
+          1,
+        ],
+      ] as const) {
+        const matches = within(dialog).getAllByRole("link", { name });
+        expect(matches).toHaveLength(count);
+        for (const link of matches) {
+          expect(link.getAttribute("href")).toBe(href);
+          expect(link.getAttribute("target")).toBe("_blank");
+          expect(link.getAttribute("rel")).toBe("noopener noreferrer");
+          expect(link.parentElement?.tagName).toBe("P");
+        }
+      }
       if (closeMethod === "button") {
         fireEvent.click(within(dialog).getByRole("button", { name: "Close" }));
       } else {
@@ -267,7 +300,7 @@ describe("TreasuryProposalCreationForm", () => {
     }
   });
 
-  it("links the terms words without opening a dialog, acceptance, or submission", () => {
+  it("links terms and privacy words without opening a dialog, acceptance, or submission", () => {
     const onSubmit = vi.fn();
     render(
       <TreasuryProposalCreationForm
@@ -275,25 +308,30 @@ describe("TreasuryProposalCreationForm", () => {
         onSubmit={onSubmit}
       />,
     );
-    const link = screen.getByRole("link", { name: "Terms and Conditions" });
-    expect(link.closest("label")?.textContent).toBe(
-      acknowledgementLabels.terms,
-    );
-    expect(link.getAttribute("href")).toBe("https://info.minadt.com/terms");
-    expect(link.getAttribute("target")).toBe("_blank");
-    expect(link.getAttribute("rel")).toBe("noopener noreferrer");
+    for (const [name, href] of [
+      ["Terms and Conditions", "https://info.minadt.com/terms"],
+      ["privacy terms", "https://www.minafoundation.com/privacy-policy"],
+    ]) {
+      const link = screen.getByRole("link", { name });
+      expect(link.closest("label")?.textContent).toBe(
+        acknowledgementLabels.terms,
+      );
+      expect(link.getAttribute("href")).toBe(href);
+      expect(link.getAttribute("target")).toBe("_blank");
+      expect(link.getAttribute("rel")).toBe("noopener noreferrer");
+      fireEvent.click(link);
+      expect(screen.queryByRole("dialog")).toBeNull();
+      expect(screen.queryAllByRole("checkbox", { checked: true })).toHaveLength(
+        0,
+      );
+      expect(onSubmit).not.toHaveBeenCalled();
+    }
     expect(
       screen.queryByRole("button", { name: /Read more: Terms/ }),
     ).toBeNull();
     expect(screen.getAllByRole("button", { name: /Read more:/ })).toHaveLength(
       1,
     );
-    fireEvent.click(link);
-    expect(screen.queryByRole("dialog")).toBeNull();
-    expect(screen.queryAllByRole("checkbox", { checked: true })).toHaveLength(
-      0,
-    );
-    expect(onSubmit).not.toHaveBeenCalled();
   });
 
   it("uses configured checkbox copy, KYC dialog copy, and links", () => {
@@ -307,15 +345,24 @@ describe("TreasuryProposalCreationForm", () => {
         title: "Custom KYC",
         sections: [
           {
-            text: "Custom verification details",
-            links: [{ label: "Verify", href: "https://example.com/verify" }],
+            paragraphs: [
+              [
+                "Custom verification details: ",
+                { label: "Verify", href: "https://example.com/verify" },
+                ".",
+              ],
+            ],
           },
         ],
       },
       terms: {
-        beforeLink: "I accept the ",
-        link: { label: "Custom terms", href: "https://example.com/terms" },
-        afterLink: " and custom privacy.",
+        text: [
+          "I accept the ",
+          { label: "Custom terms", href: "https://example.com/terms" },
+          " and ",
+          { label: "custom privacy", href: "https://example.com/privacy" },
+          ".",
+        ],
       },
     };
     render(
@@ -335,19 +382,21 @@ describe("TreasuryProposalCreationForm", () => {
       }),
     ).toBeTruthy();
     const termsLink = screen.getByRole("link", {
-      name: config.terms.link.label,
+      name: "Custom terms",
     });
-    expect(termsLink.getAttribute("href")).toBe(config.terms.link.href);
+    expect(termsLink.getAttribute("href")).toBe("https://example.com/terms");
+    expect(
+      screen.getByRole("link", { name: "custom privacy" }).getAttribute("href"),
+    ).toBe("https://example.com/privacy");
     fireEvent.click(
       screen.getByRole("button", { name: `Details: ${config.kyc.title}` }),
     );
     const dialog = screen.getByRole("dialog", { name: config.kyc.title });
-    const section = config.kyc.sections[0]!;
-    expect(within(dialog).getByText(section.text)).toBeTruthy();
-    const link = within(dialog).getByRole("link", {
-      name: section.links[0]!.label,
-    });
-    expect(link.getAttribute("href")).toBe(section.links[0]!.href);
+    const link = within(dialog).getByRole("link", { name: "Verify" });
+    expect(link.closest("p")?.textContent).toBe(
+      "Custom verification details: Verify.",
+    );
+    expect(link.getAttribute("href")).toBe("https://example.com/verify");
     expect(link.getAttribute("target")).toBe("_blank");
     expect(link.getAttribute("rel")).toBe("noopener noreferrer");
     fireEvent.click(within(dialog).getByRole("button", { name: "Dismiss" }));
